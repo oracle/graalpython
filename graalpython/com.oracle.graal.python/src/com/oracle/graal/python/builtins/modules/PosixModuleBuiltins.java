@@ -330,6 +330,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "getuid", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetUidNode extends PythonBuiltinNode {
+        @Specialization
+        int getPid() {
+            // TODO: this needs to be implemented properly at some point (consider managed execution
+            // as well)
+            return 1000;
+        }
+    }
+
     @Builtin(name = "fstat", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class FstatNode extends PythonFileNode {

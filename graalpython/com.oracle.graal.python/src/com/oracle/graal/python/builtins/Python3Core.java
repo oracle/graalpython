@@ -41,54 +41,10 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.*;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
-import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins;
@@ -232,6 +188,7 @@ public final class Python3Core implements PythonCore {
                         "_ast",
                         "java",
                         "pyio_patches",
+                        "pwd",
                         "_contextvars"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -345,6 +302,7 @@ public final class Python3Core implements PythonCore {
                         new ThreadBuiltins(),
                         new LockBuiltins(),
                         new RLockBuiltins(),
+                        new PwdModuleBuiltins(),
                         new ContextvarsModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
