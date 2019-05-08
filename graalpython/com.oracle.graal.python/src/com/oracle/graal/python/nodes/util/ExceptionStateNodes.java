@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
@@ -152,21 +153,24 @@ public abstract class ExceptionStateNodes {
 
         @Child private ReadExceptionStateFromFrameNode readFrameNode;
 
-        public PException execute(Object callerFrameOrExceptionArg) {
-            if (callerFrameOrExceptionArg == null || callerFrameOrExceptionArg instanceof PException) {
-                return (PException) callerFrameOrExceptionArg;
-            } else if (callerFrameOrExceptionArg instanceof Frame) {
+        public PException execute(Frame frame) {
+            PException exception = PArguments.getException(frame);
+            if (exception != null) {
+                return exception;
+            }
+
+            Reference callerFrameInfo = PArguments.getCallerFrameInfo(frame);
+            if (callerFrameInfo != null) {
                 if (readFrameNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     readFrameNode = insert(ReadExceptionStateFromFrameNodeGen.create());
                 }
                 // In order to provide the same semantics when reading the exception state from the
                 // materialized caller frame, we need to return 'NO_EXCEPTION' if we got 'null'.
-                PException fromCallerFrame = readFrameNode.execute((Frame) callerFrameOrExceptionArg);
-                return fromCallerFrame != null ? PException.NO_EXCEPTION : fromCallerFrame;
+                PException fromCallerFrame = readFrameNode.execute(callerFrameInfo.getFrame());
+                return fromCallerFrame != null ? fromCallerFrame : PException.NO_EXCEPTION;
             }
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException();
+            return null;
         }
 
         public static ReadExceptionStateFromArgsNode create() {
@@ -209,7 +213,7 @@ public abstract class ExceptionStateNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
             }
-            e = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
+            e = readFromArgsNode.execute(frame);
             if (e == null) {
                 e = fromStackWalk();
             }
@@ -319,7 +323,7 @@ public abstract class ExceptionStateNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
             }
-            return readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
+            return readFromArgsNode.execute(frame);
         }
 
         public static PassCaughtExceptionNode create() {

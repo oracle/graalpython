@@ -1504,7 +1504,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
                     }
-                    PException fromArgs = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
+                    PException fromArgs = readFromArgsNode.execute(frame);
                     if (fromArgs != null) {
                         return fromArgs;
                     } else {
