@@ -141,19 +141,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         vm_args += extra_vm_args
 
     vm_args.append("com.oracle.graal.python.shell.GraalPythonMain")
-
-    # FIXME: need to set this also for native launcher...
-    # JE: I think this should be done in GraalPythonMain using an Option or a system property.
-    toolchain = mx.distribution("SULONG_TOOLCHAIN").get_output()
-    env = os.environ.copy()
-    if "CC" not in env:
-        env["CC"] = os.path.join(toolchain, "bin", "clang")
-    if "CXX" not in env:
-        env["CXX"] = os.path.join(toolchain, "bin", "clang++")
-    if "LDSHARED" not in env:
-        env["LDSHARED"] = os.path.join(toolchain, "bin", "clang") + " -shared -fPIC"
-
-    return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
+    return mx.run_java(vm_args + graalpython_args, jdk=jdk, **kwargs)
 
 
 def punittest(args):
