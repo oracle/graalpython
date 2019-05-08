@@ -41,7 +41,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -58,10 +57,8 @@ abstract class AbstractInvokeNode extends Node {
     @CompilationFinal private boolean excSlotInitialized;
     @CompilationFinal private FrameSlot excSlot;
     @CompilationFinal private BranchProfile illegalFrameSlotProfile;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final ConditionProfile isClassBodyProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile nullFrameProfile = ConditionProfile.createBinaryProfile();
 
     protected static boolean shouldInlineGenerators() {
         return PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.ForceInlineGeneratorCalls);

@@ -58,9 +58,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
 /**
- * An ExecutionContext ensures proper entry and exit for Python calls on both
- * sides of the call, and depending on whether the other side is also a Python
- * frame.
+ * An ExecutionContext ensures proper entry and exit for Python calls on both sides of the call, and
+ * depending on whether the other side is also a Python frame.
  */
 @ValueType
 public abstract class ExecutionContext implements AutoCloseable {
@@ -115,7 +114,7 @@ public abstract class ExecutionContext implements AutoCloseable {
             }
             if (calleeRootNode.needsExceptionState()) {
                 PException curExc = PArguments.getException(frame);
-                if (curExc == PException.LAZY_FETCH_EXCEPTION) {
+                if (curExc == null) {
                     // bad, but we must provide the exception state
 
                     // TODO: frames: check that this also set
@@ -158,10 +157,10 @@ public abstract class ExecutionContext implements AutoCloseable {
 
         @Override
         public void close() {
-            /* equivalent to PyPy's ExecutionContext.leave. Note that
-             * <tt>got_exception</tt> in their code is handled automatically by
-             * the Truffle lazy exceptions, so here we only deal with explicitly
-             * escaped frames.
+            /*
+             * equivalent to PyPy's ExecutionContext.leave. Note that <tt>got_exception</tt> in
+             * their code is handled automatically by the Truffle lazy exceptions, so here we only
+             * deal with explicitly escaped frames.
              */
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             if (info.isEscaped()) {
@@ -180,7 +179,8 @@ public abstract class ExecutionContext implements AutoCloseable {
                         if (PArguments.isPythonFrame(callerFrame)) {
                             callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
                         } else {
-                            // TODO: frames: an assertion should be that this is one of our entry point call nodes
+                            // TODO: frames: an assertion should be that this is one of our entry
+                            // point call nodes
                             callerInfo = PFrame.Reference.EMPTY;
                         }
                     } else {
@@ -199,10 +199,11 @@ public abstract class ExecutionContext implements AutoCloseable {
         private ForeignCallContext(VirtualFrame frame, PythonContext context, Node callNode) {
             this.context = context;
             assert context.popTopFrameInfo() == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
-                "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
+                            "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             info.setCallNode(callNode);
-            // TODO: frames: add an assumption that none of the callers interop calls ever need these infos
+            // TODO: frames: add an assumption that none of the callers interop calls ever need
+            // these infos
             context.setTopFrameInfo(info);
         }
 
