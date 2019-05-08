@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,9 +51,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class LookupAndCallUnaryNode extends Node {
 
@@ -104,7 +106,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
     protected PythonUnaryBuiltinNode getBuiltin(Object receiver) {
         assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String || receiver instanceof PNone;
-        Object attribute = LookupAttributeInMRONode.lookupSlow(GetClassNode.getItSlowPath(receiver), name);
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonUnaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
@@ -214,6 +216,33 @@ public abstract class LookupAndCallUnaryNode extends Node {
             return PNone.NO_VALUE;
         } else {
             return dispatchNode.executeObject(attr, receiver);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class LookupAndCallUnaryDynamicNode extends Node {
+
+        public abstract Object executeObject(Object receiver, String name);
+
+        @Specialization
+        static Object doObject(Object receiver, String name,
+                        @Cached LookupInheritedAttributeNode.Dynamic getattr,
+                        @Cached CallUnaryMethodNode dispatchNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+
+            Object attr = getattr.execute(receiver, name);
+            if (profile.profile(attr != PNone.NO_VALUE)) {
+                return dispatchNode.executeObject(attr, receiver);
+            }
+            return PNone.NO_VALUE;
+        }
+
+        public static LookupAndCallUnaryDynamicNode create() {
+            return LookupAndCallUnaryNodeGen.LookupAndCallUnaryDynamicNodeGen.create();
+        }
+
+        public static LookupAndCallUnaryDynamicNode getUncached() {
+            return LookupAndCallUnaryNodeGen.LookupAndCallUnaryDynamicNodeGen.getUncached();
         }
     }
 }

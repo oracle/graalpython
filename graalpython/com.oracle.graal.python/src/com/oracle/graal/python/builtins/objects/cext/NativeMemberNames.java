@@ -129,7 +129,7 @@ public final class NativeMemberNames {
     public static final String SET_USED = "used";
     public static final String MMAP_DATA = "data";
 
-    @CompilationFinal(dimensions = 1) public static final String[] values;
+    @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
         Field[] declaredFields = NativeMemberNames.class.getDeclaredFields();
         values = new String[declaredFields.length - 1]; // omit the values field
@@ -147,7 +147,7 @@ public final class NativeMemberNames {
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
     public static boolean isValid(String name) {
         for (int i = 0; i < values.length; i++) {
-            if (values[i].equals(name)) {
+            if (name.equals(values[i])) {
                 return true;
             }
         }

@@ -98,6 +98,8 @@ MICRO_BENCHMARKS = {
     'call-classmethod': ITER_15 + ['50000000'],
     'mmap-anonymous': ITER_15 + ['1000'],
     'mmap-file': ITER_15 + ['1000'],
+    'generate-functions': ITER_15 + ['10000000'],
+    'try-except': ITER_15 + ['1000000'],
 }
 
 

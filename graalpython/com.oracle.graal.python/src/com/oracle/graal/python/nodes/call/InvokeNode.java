@@ -27,34 +27,43 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.argument.ApplyKeywordsNode;
-import com.oracle.graal.python.nodes.argument.ArityCheckNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ReadExceptionStateFromArgsNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 abstract class AbstractInvokeNode extends Node {
 
+    @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
+
+    @CompilationFinal private boolean excSlotInitialized;
+    @CompilationFinal private FrameSlot excSlot;
+    @CompilationFinal private BranchProfile illegalFrameSlotProfile;
+
+    private final ConditionProfile needsExceptionStateProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsFrameProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile isClassBodyProfile = ConditionProfile.createBinaryProfile();
 
@@ -76,14 +85,54 @@ abstract class AbstractInvokeNode extends Node {
         return callTarget;
     }
 
-    protected final MaterializedFrame getCallerFrame(VirtualFrame frame, CallTarget callTarget) {
+    protected final Object getCallerFrameOrException(VirtualFrame frame, CallTarget callTarget) {
         if (frame == null) {
             return null;
         }
 
-        RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (needsFrameProfile.profile(rootNode instanceof PRootNode && ((PRootNode) rootNode).needsCallerFrame())) {
+        RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
+        if (needsFrameProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsCallerFrame())) {
             return frame.materialize();
+        }
+
+        if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
+            RootNode rootNode = getRootNode();
+            if (!excSlotInitialized) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                assert excSlot == null;
+                excSlot = rootNode.getFrameDescriptor().findFrameSlot(FrameSlotIDs.CAUGHT_EXCEPTION);
+                // The current assumption is that the 'storeExceptionState' flag is only true if the
+                // frame provides an exception and so, there must be a corresponding frame slot.
+                illegalFrameSlotProfile = BranchProfile.create();
+                excSlotInitialized = true;
+            }
+            // If there is a '<caught_exception>' frame slot, then read from it. If the value is not
+            // null, return it.
+            // Otherwise, look into the arguments. Again, if not null, return it.
+            // Otherwise, return NO_EXCEPTION (we are now sure, there was no exception set).
+            if (excSlot != null) {
+                try {
+                    PException fromSlot = (PException) frame.getObject(excSlot);
+                    if (fromSlot != null) {
+                        return fromSlot;
+                    }
+                } catch (FrameSlotTypeException e) {
+                    illegalFrameSlotProfile.enter();
+                    throw new IllegalStateException();
+                }
+            }
+            if (rootNode instanceof PRootNode) {
+                if (readFromArgsNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
+                }
+                PException fromArgs = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
+                if (fromArgs != null) {
+                    return fromArgs;
+                }
+            } else {
+                return PException.NO_EXCEPTION;
+            }
         }
         return null;
     }
@@ -96,65 +145,50 @@ abstract class AbstractInvokeNode extends Node {
         }
     }
 
-    @TruffleBoundary
-    protected static Arity getArity(PFunction callee) {
-        return callee.getArity();
-    }
-
-    @TruffleBoundary
-    protected static Arity getArity(PBuiltinFunction callee) {
-        return callee.getArity();
-    }
-
     protected static boolean isBuiltin(Object callee) {
         return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
+    }
+
+    @Override
+    public Node copy() {
+        AbstractInvokeNode copy = (AbstractInvokeNode) super.copy();
+        copy.excSlot = null;
+        copy.excSlotInitialized = false;
+        return copy;
     }
 }
 
 final class GenericInvokeNode extends AbstractInvokeNode {
     @Child private IndirectCallNode callNode = Truffle.getRuntime().createIndirectCallNode();
-    @Child private ArityCheckNode arityCheck = ArityCheckNode.create();
-    @Child private ApplyKeywordsNode applyKeywords = ApplyKeywordsNode.create();
 
     public static GenericInvokeNode create() {
         return new GenericInvokeNode();
     }
 
-    protected Object execute(VirtualFrame frame, PFunction callee, Object[] arguments, PKeyword[] keywords) {
+    protected Object execute(VirtualFrame frame, PFunction callee, Object[] arguments) {
         RootCallTarget callTarget = getCallTarget(callee);
-        MaterializedFrame callerFrame = getCallerFrame(frame, callTarget);
-        PArguments.setCallerFrame(arguments, callerFrame);
+        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callTarget));
         optionallySetClassBodySpecial(arguments, callTarget);
-        Arity arity = getArity(callee);
-        Object[] combined = applyKeywords.execute(arity, arguments, keywords);
-        PArguments.setGlobals(combined, callee.getGlobals());
-        PArguments.setClosure(combined, callee.getClosure());
-        arityCheck.execute(arity, combined, PArguments.getKeywordArguments(combined));
-        return callNode.call(callTarget, combined);
+        PArguments.setGlobals(arguments, callee.getGlobals());
+        PArguments.setClosure(arguments, callee.getClosure());
+        return callNode.call(callTarget, arguments);
 
     }
 
-    protected Object execute(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords) {
+    protected Object execute(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments) {
         RootCallTarget callTarget = getCallTarget(callee);
-        MaterializedFrame callerFrame = getCallerFrame(frame, callTarget);
-        PArguments.setCallerFrame(arguments, callerFrame);
+        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callTarget));
         optionallySetClassBodySpecial(arguments, callTarget);
-        Arity arity = getArity(callee);
-        PArguments.setKeywordArguments(arguments, keywords);
-        arityCheck.execute(arity, arguments, keywords);
         return callNode.call(callTarget, arguments);
     }
 }
 
 abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     @Child private DirectCallNode callNode;
-    @Child private ArityCheckNode arityCheck = ArityCheckNode.create();
-    private final Arity arity;
     protected final boolean isBuiltin;
 
-    protected CallTargetInvokeNode(CallTarget callTarget, Arity arity, boolean isBuiltin, boolean isGenerator) {
+    protected CallTargetInvokeNode(CallTarget callTarget, boolean isBuiltin, boolean isGenerator) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
-        this.arity = arity;
         if (isBuiltin) {
             callNode.cloneCallTarget();
         }
@@ -168,60 +202,36 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     public static CallTargetInvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return CallTargetInvokeNodeGen.create(callTarget, callee.getArity(), builtin, callee.isGeneratorFunction());
+        return CallTargetInvokeNodeGen.create(callTarget, builtin, callee.isGeneratorFunction());
     }
 
     @TruffleBoundary
     public static CallTargetInvokeNode create(PBuiltinFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return CallTargetInvokeNodeGen.create(callTarget, callee.getArity(), builtin, false);
+        return CallTargetInvokeNodeGen.create(callTarget, builtin, false);
     }
 
-    public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments, PKeyword[] keywords);
+    public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments);
 
-    @Specialization(guards = {"keywords.length == 0"})
-    protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments, PKeyword[] keywords) {
+    @Specialization
+    protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
+        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callNode.getCallTarget()));
         optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
-        arityCheck.execute(arity, arguments, keywords);
-        return callNode.call(arguments);
-    }
-
-    @Specialization(guards = {"!isBuiltin"})
-    protected Object doWithKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments, PKeyword[] keywords,
-                    @Cached("create()") ApplyKeywordsNode applyKeywords) {
-        Object[] combined = applyKeywords.execute(arity, arguments, keywords);
-        PArguments.setGlobals(combined, globals);
-        PArguments.setClosure(combined, closure);
-        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
-        optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
-        arityCheck.execute(arity, combined, PArguments.getKeywordArguments(combined));
-        return callNode.call(combined);
-    }
-
-    @Specialization(guards = "isBuiltin")
-    protected Object doBuiltinWithKeywords(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
-                    PKeyword[] keywords) {
-        PArguments.setKeywordArguments(arguments, keywords);
-        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
-        optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
-        arityCheck.execute(arity, arguments, keywords);
         return callNode.call(arguments);
     }
 }
 
 public abstract class InvokeNode extends AbstractInvokeNode {
+    private static final GenericInvokeNode UNCACHED = new GenericInvokeNode();
     @Child private DirectCallNode callNode;
-    @Child private ArityCheckNode arityCheck = ArityCheckNode.create();
-    private final Arity arity;
     private final PythonObject globals;
     private final PCell[] closure;
     protected final boolean isBuiltin;
 
-    protected InvokeNode(CallTarget callTarget, Arity calleeArity, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
+    protected InvokeNode(CallTarget callTarget, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
         if (isBuiltin && PythonOptions.getEnableForcedSplits()) {
             callNode.cloneCallTarget();
@@ -229,56 +239,41 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         if (isGenerator && shouldInlineGenerators()) {
             this.callNode.forceInlining();
         }
-        this.arity = calleeArity;
         this.globals = globals;
         this.closure = closure;
         this.isBuiltin = isBuiltin;
     }
 
-    public abstract Object execute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords);
+    public abstract Object execute(VirtualFrame frame, Object[] arguments);
 
     @TruffleBoundary
     public static InvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return InvokeNodeGen.create(callTarget, getArity(callee), callee.getGlobals(), callee.getClosure(), builtin, callee.isGeneratorFunction());
+        return InvokeNodeGen.create(callTarget, callee.getGlobals(), callee.getClosure(), builtin, callee.isGeneratorFunction());
     }
 
     @TruffleBoundary
     public static InvokeNode create(PBuiltinFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return InvokeNodeGen.create(callTarget, getArity(callee), null, null, builtin, false);
+        return InvokeNodeGen.create(callTarget, null, null, builtin, false);
     }
 
-    @Specialization(guards = {"keywords.length == 0"})
-    protected Object doNoKeywords(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) {
+    public static Object invokeUncached(PFunction callee, Object[] arguments) {
+        return UNCACHED.execute(null, callee, arguments);
+    }
+
+    public static Object invokeUncached(PBuiltinFunction callee, Object[] arguments) {
+        return UNCACHED.execute(null, callee, arguments);
+    }
+
+    @Specialization
+    protected Object doNoKeywords(VirtualFrame frame, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
+        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callNode.getCallTarget()));
         optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
-        arityCheck.execute(arity, arguments, keywords);
-        return callNode.call(arguments);
-    }
-
-    @Specialization(guards = {"!isBuiltin"})
-    protected Object doWithKeywords(VirtualFrame frame, Object[] arguments, PKeyword[] keywords,
-                    @Cached("create()") ApplyKeywordsNode applyKeywords) {
-        Object[] combined = applyKeywords.execute(arity, arguments, keywords);
-        PArguments.setGlobals(combined, globals);
-        PArguments.setClosure(combined, closure);
-        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
-        optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
-        arityCheck.execute(arity, combined, PArguments.getKeywordArguments(combined));
-        return callNode.call(combined);
-    }
-
-    @Specialization(guards = "isBuiltin")
-    protected Object doBuiltinWithKeywords(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) {
-        PArguments.setKeywordArguments(arguments, keywords);
-        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
-        optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
-        arityCheck.execute(arity, arguments, keywords);
         return callNode.call(arguments);
     }
 }

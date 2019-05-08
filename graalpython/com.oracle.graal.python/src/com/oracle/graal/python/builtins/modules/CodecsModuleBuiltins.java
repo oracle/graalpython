@@ -261,7 +261,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unicode_escape_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @Builtin(name = "unicode_escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
     @ImportStatic(PythonArithmeticTypes.class)
     abstract static class UnicodeEscapeEncode extends PythonBinaryBuiltinNode {
@@ -337,7 +337,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unicode_escape_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @Builtin(name = "unicode_escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
     abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isBytes(bytes)")
@@ -358,7 +358,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends EncodeBaseNode {
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -434,7 +434,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__truffle_raw_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @Builtin(name = "__truffle_raw_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
     public abstract static class RawEncodeNode extends EncodeBaseNode {
 
@@ -488,7 +488,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends EncodeBaseNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
@@ -554,7 +554,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__truffle_raw_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @Builtin(name = "__truffle_raw_decode", minNumOfPositionalArgs = 1, parameterNames = {"bytes", "errors"})
     @GenerateNodeFactory
     abstract static class RawDecodeNode extends EncodeBaseNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
@@ -616,7 +616,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.lookup(name)
-    @Builtin(name = "__truffle_lookup", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "__truffle_lookup", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality

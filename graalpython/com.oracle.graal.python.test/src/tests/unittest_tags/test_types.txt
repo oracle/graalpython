@@ -1,0 +1,6 @@
+test_boolean_ops
+test_comparisons
+test_float_constructor
+test_floats
+test_normal_integers
+test_numeric_types

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -21,11 +21,11 @@ extern "C" {
    pointer is NULL. */
 
 typedef struct PyMemberDef {
-    char *name;
+    const char *name;
     int type;
     Py_ssize_t offset;
     int flags;
-    char *doc;
+    const char *doc;
 } PyMemberDef;
 
 /* Types */

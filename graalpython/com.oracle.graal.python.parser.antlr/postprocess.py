@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ import re
 
 COPYRIGHT_HEADER = """\
 /*
- * Copyright (c) 2017-2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017-2019, Oracle and/or its affiliates.
  * Copyright (c) 2014 by Bart Kiers
  *
  * The MIT License (MIT)
@@ -70,12 +70,12 @@ COPYRIGHT_HEADER = """\
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 // Checkstyle: stop
+// JaCoCo Exclude
 //@formatter:off
 {0}
 """
 
 PTRN_SUPPRESS_WARNINGS = re.compile(r"@SuppressWarnings.*")
-PTRN_GENBY = re.compile(r"Generated from (?P<path>.*)/(?P<grammar>.*.g4)")
 
 
 def replace_suppress_warnings(line):
@@ -86,14 +86,9 @@ def replace_rulectx(line):
         return line.replace("(RuleContext)_localctx", "_localctx")
 
 
-def replace_genby(line):
-        return PTRN_GENBY.sub("Generated from \g<grammar>", line)
-
-
 TRANSFORMS = [
         replace_suppress_warnings,
         replace_rulectx,
-        replace_genby,
 ]
 
 
@@ -101,8 +96,7 @@ def postprocess(file):
         lines = []
         for line in file:
                 for transform in TRANSFORMS:
-                        if hasattr(transform, '__call__'):
-                                line = transform(line)
+                        line = transform(line)
                 lines.append(line)
         return ''.join(lines)
 

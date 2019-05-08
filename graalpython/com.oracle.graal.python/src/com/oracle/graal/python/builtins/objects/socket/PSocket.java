@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.socket;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectableChannel;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -62,7 +61,6 @@ public class PSocket extends PythonBuiltinObject {
 
     private double timeout;
 
-    @SuppressWarnings("unused") private SelectableChannel channel;
     private InetSocketAddress address = EPHEMERAL_ADDRESS;
 
     public PSocket(LazyPythonClass cls, int family, int type, int proto) {

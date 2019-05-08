@@ -41,7 +41,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public abstract class WriteLocalVariableNode extends StatementNode implements WriteIdentifierNode {
     @Child private WriteLocalFrameSlotNode writeNode;
 
-    protected abstract static class WriteLocalFrameSlotNode extends FrameSlotNode {
+    public abstract static class WriteLocalFrameSlotNode extends FrameSlotNode {
         public WriteLocalFrameSlotNode(FrameSlot slot) {
             super(slot);
         }

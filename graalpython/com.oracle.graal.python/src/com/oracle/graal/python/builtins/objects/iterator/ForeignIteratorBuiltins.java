@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -39,15 +39,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PForeignArrayIterator)
 public class ForeignIteratorBuiltins extends PythonBuiltins {
@@ -57,45 +56,27 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
         return ForeignIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-
-        @Child private Node readNode;
-        @Child private PForeignToPTypeNode fromForeignNode;
-
-        private Node getReadNode() {
-            if (readNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNode = insert(Message.READ.createNode());
-            }
-            return readNode;
-        }
-
-        private PForeignToPTypeNode getFromForeignNode() {
-            if (fromForeignNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                fromForeignNode = insert(PForeignToPTypeNode.create());
-            }
-            return fromForeignNode;
-        }
-
         @Specialization
-        public Object next(PForeignArrayIterator foreignIter) {
+        public Object next(PForeignArrayIterator foreignIter,
+                        @Cached PForeignToPTypeNode fromForeignNode,
+                        @CachedLibrary(limit = "3") InteropLibrary interop) {
             if (foreignIter.getCursor() >= foreignIter.getSize()) {
                 throw raise(StopIteration);
             }
 
             try {
-                Object element = ForeignAccess.sendRead(getReadNode(), foreignIter.getForeignArray(), foreignIter.advance());
-                return getFromForeignNode().executeConvert(element);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                Object element = interop.readArrayElement(foreignIter.getForeignArray(), foreignIter.advance());
+                return fromForeignNode.executeConvert(element);
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw raise(PythonErrorType.StopIteration);
             }
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

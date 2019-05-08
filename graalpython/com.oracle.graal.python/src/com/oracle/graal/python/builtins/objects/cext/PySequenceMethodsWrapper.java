@@ -40,30 +40,105 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
  */
+@ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     public PySequenceMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
     }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PySequenceMethodsWrapper;
-    }
-
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PySequenceMethodsWrapperMRForeign.ACCESS;
-    }
-
     public PythonManagedClass getPythonClass() {
         return (PythonManagedClass) getDelegate();
     }
+
+    @ExportMessage
+    protected boolean hasMembers() {
+        return true;
+    }
+
+    @ExportMessage
+    protected boolean isMemberReadable(String member) {
+        switch (member) {
+            case NativeMemberNames.SQ_REPEAT:
+            case NativeMemberNames.SQ_ITEM:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @ExportMessage
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    protected Object readMember(String member,
+                    @Cached LookupAttributeInMRONode.Dynamic getSqItemNode,
+                    @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
+                    @Cached CExtNodes.ToSulongNode toSulongNode,
+                    @Cached BranchProfile errorProfile,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
+        Object result;
+        try {
+            switch (member) {
+                case NativeMemberNames.SQ_REPEAT:
+                    result = toSulongNode.execute(getSqRepeatNode.execute(this.getPythonClass(), __MUL__));
+                    break;
+                case NativeMemberNames.SQ_ITEM:
+                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(this.getPythonClass(), __GETITEM__));
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.create(member);
+            }
+        } catch (PException e) {
+            errorProfile.enter();
+            context.setCurrentException(e);
+            e.getExceptionObject().reifyException();
+            result = getNativeNullNode.execute(null);
+        }
+        return result;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
+    }
+
 }

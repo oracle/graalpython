@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,62 +37,3 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _pyio
-import io
-
-import _io
-import _sysconfig
-import builtins
-import sys
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# patch _io
-#
-# ----------------------------------------------------------------------------------------------------------------------
-
-@__builtin__
-def open(*args, **kwargs):
-    return _pyio.open(*args, **kwargs)
-
-
-for module in [_io, io]:
-    setattr(module, 'open', open)
-    setattr(module, 'TextIOWrapper', _pyio.TextIOWrapper)
-    setattr(module, 'IncrementalNewlineDecoder', _pyio.IncrementalNewlineDecoder)
-    setattr(module, 'BufferedRandom', _pyio.BufferedRandom)
-    setattr(module, 'BufferedRWPair', _pyio.BufferedRWPair)
-    setattr(module, 'BufferedWriter', _pyio.BufferedWriter)
-    setattr(module, 'BufferedReader', _pyio.BufferedReader)
-    setattr(module, 'StringIO', _pyio.StringIO)
-    setattr(module, '_IOBase', _pyio.IOBase)
-    setattr(module, 'BufferedIOBase', _pyio.BufferedIOBase)
-    setattr(module, 'RawIOBase', _pyio.RawIOBase)
-    setattr(module, 'FileIO', _pyio.FileIO)
-    setattr(module, 'BytesIO', _pyio.BytesIO)
-    setattr(module, '_TextIOBase', _pyio.TextIOBase)
-
-
-setattr(builtins, 'open', open)
-
-
-sys.stdin = _pyio.TextIOWrapper(_pyio.BufferedReader(sys.stdin), encoding="utf-8", line_buffering=True)
-sys.stdin.mode = "r"
-sys.__stdin__ = sys.stdin
-sys.stdout = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stdout), encoding="utf-8", line_buffering=True)
-sys.stdout.mode = "w"
-sys.__stdout__ = sys.stdout
-sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr), encoding="utf-8", line_buffering=True)
-sys.stderr.mode = "w"
-sys.__stderr__ = sys.stderr
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# patch _thread (needed for setuptools if threading is disabled)
-#
-# ----------------------------------------------------------------------------------------------------------------------
-if not _sysconfig.get_config_var('WITH_THREAD'):
-    import _dummy_thread
-    sys.modules["_thread"] = _dummy_thread

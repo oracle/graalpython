@@ -27,14 +27,18 @@ package com.oracle.graal.python.builtins.objects.type;
 
 class MROMergeState {
 
+    MROMergeState(PythonAbstractClass[] mro) {
+        this.mro = mro;
+    }
+
     /** The mro of the base type we're representing. */
-    public PythonAbstractClass[] mro;
+    private final PythonAbstractClass[] mro;
 
     /**
      * The index of the next item to be merged from mro, or mro.length if this base has been
      * completely merged.
      */
-    public int next;
+    private int next;
 
     public boolean isMerged() {
         return mro.length == next;
@@ -64,5 +68,4 @@ class MROMergeState {
         }
         return false;
     }
-
 }

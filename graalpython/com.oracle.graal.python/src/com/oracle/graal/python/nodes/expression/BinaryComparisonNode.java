@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,8 +30,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -45,6 +47,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
     @Child private LookupAndCallBinaryNode callNode;
     @Child private CastToBooleanNode castToBoolean;
+    @Child private PRaiseNode raiseNode;
 
     BinaryComparisonNode(String magicMethod, String magicReverseMethod, String operation) {
         this.magicMethod = magicMethod;
@@ -71,7 +74,11 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         } else if (magicMethod == __NE__) {
             return left != right;
         } else {
-            throw raise(TypeError, "'%s' not supported between instances of '%p' and '%p'", operation, left, right);
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            throw raiseNode.raise(TypeError, "'%s' not supported between instances of '%p' and '%p'", operation, left, right);
         }
     }
 
@@ -83,7 +90,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         return left ? 1.0 : 0.0;
     }
 
-    private boolean profile(boolean value) {
+    private boolean profileCondition(boolean value) {
         return profile.profile(value);
     }
 
@@ -104,7 +111,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doBB(boolean left, boolean right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -113,7 +120,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doBI(boolean left, int right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(asInt(left), right));
+            return profileCondition(callNode.executeBool(asInt(left), right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -122,7 +129,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doBL(boolean left, long right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(asInt(left), right));
+            return profileCondition(callNode.executeBool(asInt(left), right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -131,7 +138,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doBD(boolean left, double right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(asDouble(left), right));
+            return profileCondition(callNode.executeBool(asDouble(left), right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -140,7 +147,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doIB(int left, boolean right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, asInt(right)));
+            return profileCondition(callNode.executeBool(left, asInt(right)));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -149,7 +156,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doII(int left, int right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -158,7 +165,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doIL(int left, long right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -167,7 +174,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doID(int left, double right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -176,7 +183,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doLB(long left, boolean right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, asInt(right)));
+            return profileCondition(callNode.executeBool(left, asInt(right)));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -185,7 +192,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doLI(long left, int right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -194,7 +201,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doLI(long left, long right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -203,7 +210,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doLI(long left, double right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -212,7 +219,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doDB(double left, boolean right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, asDouble(right)));
+            return profileCondition(callNode.executeBool(left, asDouble(right)));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -221,7 +228,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doDI(double left, int right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -230,7 +237,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doDL(double left, long right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }
@@ -239,7 +246,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doDD(double left, double right) throws UnexpectedResultException {
         try {
-            return profile(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(left, right));
         } catch (UnexpectedResultException e) {
             throw handleUnexpectedResult(e.getResult(), left, right);
         }

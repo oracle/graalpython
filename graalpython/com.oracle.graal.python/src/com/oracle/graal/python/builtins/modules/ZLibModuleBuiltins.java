@@ -77,7 +77,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -373,7 +372,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zlib_deflateInit", fixedNumOfPositionalArgs = 6)
+    @Builtin(name = "zlib_deflateInit", minNumOfPositionalArgs = 6)
     @GenerateNodeFactory
     abstract static class DeflateInitNode extends PythonBuiltinNode {
         /**
@@ -414,13 +413,9 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public DeflaterWrapper(Deflater deflater) {
             this.deflater = deflater;
         }
-
-        public ForeignAccess getForeignAccess() {
-            return null;
-        }
     }
 
-    @Builtin(name = "zlib_deflateCompress", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "zlib_deflateCompress", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class DeflateCompress extends PythonTernaryBuiltinNode {
         @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -453,7 +448,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zlib_inflateInit", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "zlib_inflateInit", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InflateInitNode extends PythonBinaryBuiltinNode {
         @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -484,13 +479,9 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public InflaterWrapper(Inflater inflater) {
             this.inflater = inflater;
         }
-
-        public ForeignAccess getForeignAccess() {
-            return null;
-        }
     }
 
-    @Builtin(name = "zlib_inflateDecompress", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "zlib_inflateDecompress", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class InflaterDecompress extends PythonTernaryBuiltinNode {
         @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -510,7 +501,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 try {
                     bytesWritten = stream.inflater.inflate(result, 0, result.length);
                 } catch (DataFormatException e) {
-                    throw raise(ZLibError, e.getMessage());
+                    throw raise(ZLibError, e);
                 }
                 baos.write(result, 0, bytesWritten);
             }
@@ -524,7 +515,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.compress(data, level=-1)
-    @Builtin(name = "compress", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"level"})
+    @Builtin(name = "compress", minNumOfPositionalArgs = 1, parameterNames = {"", "level"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class CompressNode extends PythonBinaryBuiltinNode {
@@ -573,7 +564,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.decompress(data, wbits=MAX_WBITS, bufsize=DEF_BUF_SIZE)
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"wbits", "bufsize"})
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, parameterNames = {"data", "wbits", "bufsize"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DecompressNode extends PythonTernaryBuiltinNode {

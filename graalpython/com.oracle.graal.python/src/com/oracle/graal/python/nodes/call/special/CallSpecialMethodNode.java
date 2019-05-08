@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,15 +41,16 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinWithFrameNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -60,6 +61,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
@@ -79,16 +81,19 @@ abstract class CallSpecialMethodNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        PythonLanguage language = getRootNode().getLanguage(PythonLanguage.class);
-        if (language == null) {
-            language = PythonLanguage.getCurrent();
-        }
-        return language.singleContextAssumption;
+        return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
     protected static PythonUnaryBuiltinNode getUnary(Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonUnaryBuiltinNode.class);
+        }
+        return null;
+    }
+
+    protected static PythonUnaryBuiltinWithFrameNode getUnaryWithFrame(Object func) {
+        if (func instanceof PBuiltinFunction) {
+            return getBuiltin((PBuiltinFunction) func, PythonUnaryBuiltinWithFrameNode.class);
         }
         return null;
     }
@@ -114,23 +119,16 @@ abstract class CallSpecialMethodNode extends Node {
         return null;
     }
 
-    protected static boolean takesFixedNumOfPositionalArgs(PMethod func) {
-        Arity arity = getArity(func.getFunction());
-        return arity != null && arity.takesFixedNumOfPositionalArgs();
-    }
-
-    protected static boolean takesFixedNumOfPositionalArgs(PBuiltinMethod func) {
-        Arity arity = getArity(func.getFunction());
-        return arity != null && arity.takesFixedNumOfPositionalArgs();
-    }
-
-    private static Arity getArity(Object func) {
-        if (func instanceof PFunction) {
-            return ((PFunction) func).getArity();
-        } else if (func instanceof PBuiltinFunction) {
-            return ((PBuiltinFunction) func).getArity();
+    protected static boolean takesSelfArg(Object func) {
+        if (func instanceof PBuiltinFunction) {
+            RootNode functionRootNode = ((PBuiltinFunction) func).getFunctionRootNode();
+            if (functionRootNode instanceof BuiltinFunctionRootNode) {
+                return ((BuiltinFunctionRootNode) functionRootNode).declaresExplicitSelf();
+            }
+        } else if (func instanceof PBuiltinMethod) {
+            return takesSelfArg(((PBuiltinMethod) func).getFunction());
         }
-        return null;
+        return true;
     }
 
     protected static RootCallTarget getCallTarget(PMethod meth) {

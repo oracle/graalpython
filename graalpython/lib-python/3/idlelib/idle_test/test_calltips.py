@@ -54,18 +54,17 @@ class Get_signatureTest(unittest.TestCase):
             self.assertEqual(signature(obj), out)
 
         if List.__doc__ is not None:
-            gtest(List, List.__doc__)  # This and append_doc changed in 3.7.
+            gtest(List, '(iterable=(), /)' + ct._argument_positional + '\n' +
+                  List.__doc__)
         gtest(list.__new__,
-               '(*args, **kwargs)\nCreate and return a new object.'
-               '  See help(type) for accurate signature.')
+               '(*args, **kwargs)\nCreate and return a new object.  See help(type) for accurate signature.')
         gtest(list.__init__,
                '(self, /, *args, **kwargs)' + ct._argument_positional + '\n' +
                'Initialize self.  See help(type(self)) for accurate signature.')
-
-        append_doc =  "L.append(object) -> None -- append object to end"
-        gtest(list.append, append_doc)
-        gtest([].append, append_doc)
-        gtest(List.append, append_doc)
+        append_doc = ct._argument_positional + "\nAppend object to the end of the list."
+        gtest(list.append, '(self, object, /)' + append_doc)
+        gtest(List.append, '(self, object, /)' + append_doc)
+        gtest([].append, '(object, /)' + append_doc)
 
         gtest(types.MethodType, "method(function, instance)")
         gtest(SB(), default_tip)
@@ -75,7 +74,7 @@ class Get_signatureTest(unittest.TestCase):
 non-overlapping occurrences of the pattern in string by the
 replacement repl.  repl can be either a string or a callable;
 if a string, backslash escapes in it are processed.  If it is
-a callable, it's passed the match object and must return''')
+a callable, it's passed the Match object and must return''')
         gtest(p.sub, '''(repl, string, count=0)\nReturn the string obtained by replacing the leftmost non-overlapping occurrences o...''')
 
     def test_signature_wrap(self):

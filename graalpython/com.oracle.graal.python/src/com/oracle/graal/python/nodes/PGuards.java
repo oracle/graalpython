@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -65,8 +66,8 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -88,6 +89,10 @@ public abstract class PGuards {
     /**
      * Specialization guards.
      */
+
+    public static boolean isSameObject(Object left, Object right) {
+        return left == right;
+    }
 
     public static boolean isEmpty(Object[] array) {
         return array.length == 0;
@@ -111,6 +116,14 @@ public abstract class PGuards {
 
     public static boolean isFunction(Object value) {
         return value instanceof PBuiltinFunction || value instanceof PFunction;
+    }
+
+    public static boolean isPBuiltinFunction(Object value) {
+        return value instanceof PBuiltinFunction;
+    }
+
+    public static boolean isPFunction(Object value) {
+        return value instanceof PFunction;
     }
 
     public static boolean isCallable(Object value) {
@@ -252,6 +265,10 @@ public abstract class PGuards {
         return !isPythonBuiltinClass(klass);
     }
 
+    public static boolean isPythonBuiltinClassType(Object klass) {
+        return klass instanceof PythonBuiltinClassType;
+    }
+
     public static boolean isPythonBuiltinClass(Object klass) {
         return klass instanceof PythonBuiltinClass;
     }
@@ -280,12 +297,20 @@ public abstract class PGuards {
         return obj instanceof PBuiltinFunction;
     }
 
+    public static boolean isMethod(Object value) {
+        return value instanceof PMethod || value instanceof PBuiltinMethod;
+    }
+
     public static boolean isBuiltinMethod(Object obj) {
         return obj instanceof PBuiltinMethod;
     }
 
     public static boolean isBuiltinObject(Object obj) {
         return obj instanceof PythonBuiltinObject;
+    }
+
+    public static boolean isAnyPythonObject(Object obj) {
+        return obj instanceof PythonAbstractObject;
     }
 
     public static boolean isForeignObject(Object obj) {
@@ -318,6 +343,10 @@ public abstract class PGuards {
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytes || obj instanceof PByteArray;
+    }
+
+    public static boolean isMemoryView(Object obj) {
+        return obj instanceof PMemoryView;
     }
 
     public static boolean isPSlice(Object obj) {

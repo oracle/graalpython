@@ -40,27 +40,29 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.util.function.Function;
+
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.nodes.Node;
-import java.util.function.Function;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
-
-    @Node.Child private LookupAndCallUnaryNode callIndexNode;
+    @Child private LookupAndCallUnaryNode callIndexNode;
 
     private final Function<Object, Byte> typeErrorHandler;
 
@@ -90,15 +92,17 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
     }
 
     @Specialization
-    public long toInt(double x) {
+    public long toInt(double x,
+                    @Cached PRaiseNode raise) {
         if (typeErrorHandler != null) {
             return typeErrorHandler.apply(x);
         }
-        throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
     }
 
     @Specialization(guards = "!isNumber(x)")
-    public Object toInt(Object x) {
+    public Object toInt(Object x,
+                    @Cached PRaiseNode raise) {
         if (callIndexNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
@@ -108,10 +112,10 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
             if (typeErrorHandler != null) {
                 return typeErrorHandler.apply(x);
             }
-            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+            throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
         }
         if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-            throw raise(TypeError, " __index__ returned non-int (type %p)", result);
+            throw raise.raise(TypeError, " __index__ returned non-int (type %p)", result);
         }
         return result;
     }

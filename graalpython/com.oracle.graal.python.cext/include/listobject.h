@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -76,7 +76,7 @@ PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE *out);
 #ifndef Py_LIMITED_API
 #define PyList_GET_ITEM(op, i) (((PyListObject *)(op))->ob_item[i])
 #define PyList_SET_ITEM(op, i, v) (((PyListObject *)(op))->ob_item[i] = (v))
-#define PyList_GET_SIZE(op)    Py_SIZE(op)
+#define PyList_GET_SIZE(op)    (assert(PyList_Check(op)),Py_SIZE(op))
 #define _PyList_ITEMS(op)      (((PyListObject *)(op))->ob_item)
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,7 +29,9 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -38,26 +40,29 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 /**
  * The layout of an argument array for a normal frame.
  *
- *                            +-------------------+
- * INDEX_KEYWORD_ARGUMENTS -> | PKeyword[]        |
- *                            +-------------------+
- * INDEX_GENERATOR_FRAME   -> | MaterializedFrame |
- *                            +-------------------+
- * INDEX_CALLER_FRAME      -> | MaterializedFrame |
- *                            +-------------------+
- * SPECIAL_ARGUMENT        -> | Object            |
- *                            +-------------------+
- * INDEX_GLOBALS_ARGUMENT  -> | PythonObject      |
- *                            +-------------------+
- * INDEX_PFRAME_ARGUMENT   -> | PFrame[1]         |
- *                            +-------------------+
- * INDEX_CLOSURE           -> | PCell[]           |
- *                            +-------------------+
- * USER_ARGUMENTS          -> | arg_0             |
- *                            | arg_1             |
- *                            | ...               |
- *                            | arg_(nArgs-1)     |
- *                            +-------------------+
+ *                                         +-------------------+
+ * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |
+ *                                         +-------------------+
+ * INDEX_KEYWORD_ARGUMENTS              -> | PKeyword[]        |
+ *                                         +-------------------+
+ * INDEX_GENERATOR_FRAME                -> | MaterializedFrame |
+ *                                         +-------------------+
+ * INDEX_CALLER_FRAME_OR_EXCEPTION      -> | MaterializedFrame |
+ *                                         | / PException      |
+ *                                         +-------------------+
+ * SPECIAL_ARGUMENT                     -> | Object            |
+ *                                         +-------------------+
+ * INDEX_GLOBALS_ARGUMENT               -> | PythonObject      |
+ *                                         +-------------------+
+ * INDEX_PFRAME_ARGUMENT                -> | PFrame[1]         |
+ *                                         +-------------------+
+ * INDEX_CLOSURE                        -> | PCell[]           |
+ *                                         +-------------------+
+ * USER_ARGUMENTS                       -> | arg_0             |
+ *                                         | arg_1             |
+ *                                         | ...               |
+ *                                         | arg_(nArgs-1)     |
+ *                                         +-------------------+
  *
  * The layout of a generator frame (stored in INDEX_GENERATOR_FRAME in the figure above)
  * is different in the second index:
@@ -74,15 +79,17 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 //@formatter:on
 public final class PArguments {
+    public static final Object[] EMPTY_VARARGS = new Object[0];
 
-    public static final int INDEX_KEYWORD_ARGUMENTS = 0;
-    public static final int INDEX_GENERATOR_FRAME = 1;
-    public static final int INDEX_CALLER_FRAME = 2;
-    public static final int INDEX_SPECIAL_ARGUMENT = 3;
-    public static final int INDEX_GLOBALS_ARGUMENT = 4;
-    public static final int INDEX_PFRAME_ARGUMENT = 5;
-    public static final int INDEX_CLOSURE = 6;
-    public static final int USER_ARGUMENTS_OFFSET = 7;
+    public static final int INDEX_VARIABLE_ARGUMENTS = 0;
+    public static final int INDEX_KEYWORD_ARGUMENTS = 1;
+    public static final int INDEX_GENERATOR_FRAME = 2;
+    public static final int INDEX_CALLER_FRAME_OR_EXCEPTION = 3;
+    public static final int INDEX_SPECIAL_ARGUMENT = 4;
+    public static final int INDEX_GLOBALS_ARGUMENT = 5;
+    public static final int INDEX_PFRAME_ARGUMENT = 6;
+    public static final int INDEX_CLOSURE = 7;
+    public static final int USER_ARGUMENTS_OFFSET = 8;
 
     private static PFrame[] getPFrameWrapper() {
         // this is needed to bypass the fact that PFrame instances get a READONLY frame which will
@@ -92,7 +99,7 @@ public final class PArguments {
     }
 
     private static Object[] iInitArguments() {
-        return new Object[]{PKeyword.EMPTY_KEYWORDS, null, null, null, null, getPFrameWrapper(), null};
+        return new Object[]{EMPTY_VARARGS, PKeyword.EMPTY_KEYWORDS, null, null, null, null, getPFrameWrapper(), null};
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -107,9 +114,22 @@ public final class PArguments {
 
     public static Object[] create(int userArgumentLength) {
         Object[] initialArguments = new Object[USER_ARGUMENTS_OFFSET + userArgumentLength];
+        initialArguments[INDEX_VARIABLE_ARGUMENTS] = EMPTY_VARARGS;
         initialArguments[INDEX_KEYWORD_ARGUMENTS] = PKeyword.EMPTY_KEYWORDS;
         initialArguments[INDEX_PFRAME_ARGUMENT] = getPFrameWrapper();
         return initialArguments;
+    }
+
+    public static void setVariableArguments(Object[] arguments, Object... variableArguments) {
+        arguments[INDEX_VARIABLE_ARGUMENTS] = variableArguments;
+    }
+
+    public static Object[] getVariableArguments(Frame frame) {
+        return getVariableArguments(frame.getArguments());
+    }
+
+    public static Object[] getVariableArguments(Object[] frame) {
+        return (Object[]) frame[INDEX_VARIABLE_ARGUMENTS];
     }
 
     public static void setKeywordArguments(Object[] arguments, PKeyword[] keywordArguments) {
@@ -223,12 +243,31 @@ public final class PArguments {
         arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
     }
 
-    public static Frame getCallerFrame(Frame frame) {
-        return (Frame) frame.getArguments()[INDEX_CALLER_FRAME];
+    /**
+     * The caller frame or exception argument is used for two purposes:
+     * <ul>
+     * <li>The caller frame if the callee requested it.</li>
+     * <li>The currently handled exception (i.e. the caught exception).</li>
+     * </ul>
+     * These two purposes are exclusive in the sence that if the caller frame is requested, it will
+     * also contain the caught exception in the special frame slot named
+     * {@link FrameSlotIDs#CAUGHT_EXCEPTION}.
+     */
+    public static Object getCallerFrameOrException(Frame frame) {
+        return frame.getArguments()[INDEX_CALLER_FRAME_OR_EXCEPTION];
+    }
+
+    public static void setCallerFrameOrException(Object[] arguments, Object callerFrameOrException) {
+        arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = callerFrameOrException;
     }
 
     public static void setCallerFrame(Object[] arguments, Frame callerFrame) {
-        arguments[INDEX_CALLER_FRAME] = callerFrame;
+        arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = callerFrame;
+    }
+
+    public static void setCaughtException(Object[] arguments, PException caughtException) {
+        assert !(arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] instanceof Frame);
+        arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = caughtException;
     }
 
     public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {

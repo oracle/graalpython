@@ -30,7 +30,6 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
-import mx_subst
 import mx_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
@@ -81,6 +80,7 @@ class AbstractPythonVm(Vm):
     __metaclass__ = ABCMeta
 
     def __init__(self, config_name, options=None):
+        super(AbstractPythonVm, self).__init__()
         self._config_name = config_name
         self._options = options
 
@@ -208,7 +208,7 @@ class GraalPythonVm(GuestVm):
             # '-Dgraal.TruffleCompilationExceptionsAreFatal=true'
         ]
 
-        dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
+        dists = ["GRAALPYTHON", "TRUFFLE_NFI", "GRAALPYTHON-LAUNCHER"]
         # add configuration specified distributions
         if self._distributions:
             assert isinstance(self._distributions, list), "distributions must be either None or a list"
@@ -219,9 +219,9 @@ class GraalPythonVm(GuestVm):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
-                extra_polyglot_args += [mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>')]
+                extra_polyglot_args += ["--experimental-options"]
             else:
-                extra_polyglot_args += [mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>')]
+                extra_polyglot_args += ["--experimental-options"]
 
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
@@ -256,6 +256,7 @@ python_vm_registry = mx_benchmark.VmRegistry(PYTHON_VM_REGISTRY_NAME, known_host
 
 class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, bench_path, benchmarks, python_path=None):
+        super(PythonBenchmarkSuite, self).__init__()
         self._name = name
         self._python_path = python_path
         self._harness_path = HARNESS_PATH

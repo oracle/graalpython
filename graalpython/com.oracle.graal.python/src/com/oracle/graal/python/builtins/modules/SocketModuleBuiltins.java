@@ -67,7 +67,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
-    @Builtin(name = "socket", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 5, keywordArguments = {"family", "type", "proto", "fileno"}, constructsClass = PythonBuiltinClassType.PSocket)
+    @Builtin(name = "socket", minNumOfPositionalArgs = 1, parameterNames = {"cls", "family", "type", "proto", "fileno"}, constructsClass = PythonBuiltinClassType.PSocket)
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
@@ -100,7 +100,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gethostname", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "gethostname", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetHostnameNode extends PythonBuiltinNode {
         @Specialization

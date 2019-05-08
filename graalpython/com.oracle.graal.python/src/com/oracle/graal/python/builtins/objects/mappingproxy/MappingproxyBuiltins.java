@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.mappingproxy;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -43,6 +44,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -53,6 +55,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -64,7 +67,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         return MappingproxyBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 
@@ -76,7 +79,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -86,7 +89,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // keys()
-    @Builtin(name = KEYS, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = KEYS, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
 
@@ -97,7 +100,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // items()
-    @Builtin(name = ITEMS, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = ITEMS, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
 
@@ -108,7 +111,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // values()
-    @Builtin(name = "values", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "values", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
 
@@ -145,7 +148,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -159,7 +162,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -169,7 +172,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBuiltinNode {
 
@@ -180,7 +183,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -190,7 +193,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // copy()
-    @Builtin(name = "copy", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -198,4 +201,27 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
             return factory().createDict(proxy.getDictStorage());
         }
     }
+
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doProxyProxy(PMappingproxy self, PMappingproxy other,
+                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+            return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        Object doProxDict(PMappingproxy self, PDict other,
+                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+            return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        PNotImplemented doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
 }

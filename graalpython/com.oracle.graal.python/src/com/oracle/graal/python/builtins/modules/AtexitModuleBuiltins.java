@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -96,7 +96,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unregister", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "unregister", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization

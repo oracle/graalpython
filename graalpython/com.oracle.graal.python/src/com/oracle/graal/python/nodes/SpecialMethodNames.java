@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+
 public abstract class SpecialMethodNames {
 
     public static final String __NEW__ = "__new__";
@@ -161,13 +163,27 @@ public abstract class SpecialMethodNames {
     public static final String TOBYTES = "tobytes";
     public static final String DECODE = "decode";
     public static final String __SIZEOF__ = "__sizeof__";
+    public static final String __CLASS_GETITEM__ = "__class_getitem__";
 
     public static final String RICHCMP = "__truffle_richcompare__";
     public static final String TRUFFLE_SOURCE = "__truffle_source__";
 
     // (tfel): The order of these matches the one in CPython, and thus is assumed to remain the same
     // in various places
-    public static final String[] COMPARE_OPSTRINGS = new String[]{"<", "<=", "==", "!=", ">", ">="};
-    public static final String[] COMPARE_OPNAMES = new String[]{__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__};
-    public static final String[] COMPARE_REVERSALS = new String[]{__GT__, __GE__, __EQ__, __NE__, __GT__, __GE__};
+    @CompilationFinal(dimensions = 1) private static final String[] COMPARE_OPSTRINGS = new String[]{"<", "<=", "==", "!=", ">", ">="};
+    @CompilationFinal(dimensions = 1) private static final String[] COMPARE_OPNAMES = new String[]{__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__};
+    @CompilationFinal(dimensions = 1) private static final String[] COMPARE_REVERSALS = new String[]{__GT__, __GE__, __EQ__, __NE__, __GT__, __GE__};
+    public static final int COMPARE_OP_COUNT = COMPARE_OPNAMES.length;
+
+    public static String getCompareOpString(int op) {
+        return COMPARE_OPSTRINGS[op];
+    }
+
+    public static String getCompareName(int op) {
+        return COMPARE_OPNAMES[op];
+    }
+
+    public static String getCompareReversal(int op) {
+        return COMPARE_REVERSALS[op];
+    }
 }

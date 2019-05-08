@@ -52,7 +52,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -82,18 +82,17 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.api.SulongToolchain;
@@ -141,9 +140,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__create_dynamic__", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "__create_dynamic__", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ImportStatic(Message.class)
     public abstract static class CreateDynamic extends PythonBuiltinNode {
         protected static final String INITIALIZE_CAPI = "initialize_capi";
         protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
@@ -155,8 +153,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run(PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
-                        @Cached("EXECUTE.createNode()") Node executeNode,
-                        @Cached("READ.createNode()") Node readNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary interop) {
             String name = moduleSpec.getAttribute("name").toString();
             String path = moduleSpec.getAttribute("origin").toString();
 
@@ -165,7 +162,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 return existingModule;
             }
 
-            return loadDynamicModuleWithSpec(name, path, readNode, executeNode);
+            return loadDynamicModuleWithSpec(name, path, interop);
         }
 
         @SuppressWarnings({"static-method", "unused"})
@@ -176,7 +173,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object loadDynamicModuleWithSpec(String name, String path, Node readNode, Node executeNode) {
+        private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) {
             ensureCapiWasLoaded();
             Env env = getContext().getEnv();
             String basename = name.substring(name.lastIndexOf('.') + 1);
@@ -185,13 +182,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallTarget callTarget = env.parse(Source.newBuilder(LLVM_LANGUAGE, env.getTruffleFile(path)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
-                throw raise(ImportError, "cannot load %s: %s", path, e.getMessage());
+                throw raise(ImportError, "cannot load %s: %m", path, e);
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
             }
             TruffleObject pyinitFunc;
             try {
-                pyinitFunc = (TruffleObject) ForeignAccess.sendRead(readNode, sulongLibrary, "PyInit_" + basename);
+                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, "PyInit_" + basename);
             } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
@@ -201,7 +198,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // clear current exception such that native code has clean environment
                 getContext().setCaughtException(null);
 
-                Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
+                Object nativeResult = interop.execute(pyinitFunc);
                 getCheckResultNode().execute("PyInit_" + basename, nativeResult);
 
                 // restore previous exception state
@@ -235,7 +232,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
                 SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
-                TruffleFile capiFile = env.getTruffleFile(String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), toolchain.getIdentifier(), "capi.so"));
+                TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), toolchain.getIdentifier(), "capi.so"));
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
@@ -249,13 +246,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
                 CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), INITIALIZE_CAPI), capi);
                 ctxt.setCapiWasLoaded(capi);
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), RUN_CAPI_LOADED_HOOKS), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), RUN_CAPI_LOADED_HOOKS), capi);
 
                 // initialization needs to be finished already but load memoryview implemenation
                 // immediately
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 
@@ -310,7 +307,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "exec_dynamic", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "exec_dynamic", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
@@ -320,7 +317,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_builtin", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
@@ -342,7 +339,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "create_builtin", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "create_builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -362,7 +359,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_fix_co_filename", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "_fix_co_filename", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class FixCoFilename extends PythonBinaryBuiltinNode {
         @Specialization

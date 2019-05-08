@@ -116,7 +116,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.gmtime([seconds])
-    @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "__truffle_gmtime_tuple__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
@@ -160,7 +160,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.time()
-    @Builtin(name = "time", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "time", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonTimeNode extends PythonBuiltinNode {
 
@@ -178,7 +178,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.monotonic()
-    @Builtin(name = "monotonic", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "monotonic", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonMonotonicNode extends PythonBuiltinNode {
 
@@ -190,7 +190,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.clock()
-    @Builtin(name = "clock", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "clock", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonClockNode extends PythonBuiltinNode {
         /**
@@ -216,7 +216,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sleep", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "sleep", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SleepNode extends PythonBuiltinNode {
@@ -232,6 +232,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 try {
                     Thread.sleep(seconds * 1000);
                 } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
 
                 secs = deadline - (long) timeSeconds();
@@ -257,6 +258,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 try {
                     Thread.sleep(millis, nanos);
                 } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
                 secs = deadline - timeSeconds();
                 if (secs < 0) {
@@ -299,8 +301,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         private int getIntValue(Object oValue, int min, int max, String errorMessage) {
             Object iValue = getCastIntNode().execute(oValue);
             long value = IMPOSSIBLE;
-            if (iValue instanceof Integer || iValue instanceof Long) {
+            if (iValue instanceof Long) {
                 value = (long) iValue;
+            } else if (iValue instanceof Integer) {
+                value = (int) iValue;
             } else if (iValue instanceof PInt) {
                 value = ((PInt) iValue).longValueExact();
             }
@@ -599,7 +603,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         break;
                 }
                 lastc = i + 1;
-                i++;
             }
             return s;
         }
@@ -625,7 +628,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mktime", fixedNumOfPositionalArgs = 1, doc = "mktime(tuple) -> floating point number\n\n" +
+    @Builtin(name = "mktime", minNumOfPositionalArgs = 1, doc = "mktime(tuple) -> floating point number\n\n" +
                     "Convert a time tuple in local time to seconds since the Epoch.\n" +
                     "Note that mktime(gmtime(0)) will not generally return zero for most\n" +
                     "time zones; instead the returned value will either be equal to that\n" +

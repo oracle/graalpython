@@ -56,7 +56,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         return BuiltinFunctionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -74,7 +74,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__objclass__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__objclass__", minNumOfPositionalArgs = 1, isGetter = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {

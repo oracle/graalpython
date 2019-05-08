@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,8 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -38,7 +40,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class AssertNode extends StatementNode {
-
+    @Child private PRaiseNode raise;
     @Child private CastToBooleanNode condition;
     @Child private ExpressionNode message;
     @Child private LookupAndCallUnaryNode callNode;
@@ -53,7 +55,7 @@ public class AssertNode extends StatementNode {
     public void executeVoid(VirtualFrame frame) {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            assertionsEnabled = !PythonOptions.getOption(getContext(), PythonOptions.PythonOptimizeFlag);
+            assertionsEnabled = !PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.PythonOptimizeFlag);
         }
         if (assertionsEnabled) {
             try {
@@ -87,7 +89,11 @@ public class AssertNode extends StatementNode {
                 assertionMessage = "internal exception occurred";
             }
         }
-        return raise(AssertionError, assertionMessage);
+        if (raise == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raise = insert(PRaiseNode.create());
+        }
+        return raise.raise(AssertionError, assertionMessage);
     }
 
     public CastToBooleanNode getCondition() {

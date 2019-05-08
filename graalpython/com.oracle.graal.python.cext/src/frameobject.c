@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,5 +45,5 @@ PyTypeObject PyFrame_Type = PY_TRUFFLE_TYPE("frame", &PyType_Type, Py_TPFLAGS_DE
 
 UPCALL_ID(PyTruffleFrame_New);
 PyFrameObject* PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals, PyObject *locals) {
-    return UPCALL_CEXT_O(_jls_PyTruffleFrame_New, native_to_java((PyObject*)tstate), native_to_java(code), native_to_java(globals), native_to_java(locals));
+    return (PyFrameObject*)(UPCALL_CEXT_O(_jls_PyTruffleFrame_New, native_to_java((PyObject*)tstate), native_to_java((PyObject*)code), native_to_java(globals), native_to_java(locals)));
 }

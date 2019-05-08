@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -79,7 +79,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -109,8 +109,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private String getFormattedMessage(String format, Object... args) {
             try {
-                // pre-format for '%p' which retrieves the Python class of an argument
-                if (format.contains("%p")) {
+                // pre-format for custom error message formatter
+                if (ErrorMessageFormatter.containsCustomSpecifier(format)) {
                     return formatter.format(getGetClassNode(), format, args);
                 }
                 return String.format(format, args);
@@ -164,7 +164,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTEXT__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __CONTEXT__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
 
@@ -174,7 +174,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__suppress_context__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__suppress_context__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SuppressContextNode extends PythonBuiltinNode {
 
@@ -212,7 +212,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "with_traceback", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "with_traceback", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class WithTracebackNode extends PythonBuiltinNode {
 

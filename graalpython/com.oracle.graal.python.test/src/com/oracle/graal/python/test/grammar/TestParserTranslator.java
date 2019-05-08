@@ -107,6 +107,10 @@ import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -118,6 +122,28 @@ public class TestParserTranslator {
     public TestParserTranslator() {
         PythonTests.enterContext();
         context = PythonLanguage.getContextRef().get();
+    }
+
+    private static class JUnitRootNode extends RootNode {
+
+        @Child private ExpressionNode body;
+
+        public JUnitRootNode(TruffleLanguage<?> language, ExpressionNode body) {
+            super(language);
+            this.body = body;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return body.execute(frame);
+        }
+
+    }
+
+    private Object runInRoot(ExpressionNode expr) {
+        JUnitRootNode jUnitRootNode = new JUnitRootNode(context.getLanguage(), expr);
+        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(jUnitRootNode);
+        return callTarget.call();
     }
 
     RootNode parse(String src) {
@@ -175,8 +201,7 @@ public class TestParserTranslator {
     }
 
     Object literalAs(String src, Class<? extends PNode> klass) {
-        ExpressionNode firstChild = (ExpressionNode) parseAs(src, klass);
-        return firstChild.execute(null);
+        return runInRoot((ExpressionNode) parseAs(src, klass));
     }
 
     <T> T literalAs(String src, Class<? extends PNode> klass, Class<? extends T> rklass) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -43,7 +43,7 @@ import java.util.zip.ZipFile;
 
 public class PZipImporter extends PythonBuiltinObject {
 
-    public static String SEPARATOR = File.separator;
+    public static final String SEPARATOR = File.separator;
 
     /**
      * pathname of the Zip archive
@@ -75,10 +75,10 @@ public class PZipImporter extends PythonBuiltinObject {
 
     private static class SearchOrderEntry {
 
-        public String suffix;
-        public EnumSet<EntryType> type;
+        String suffix;
+        EnumSet<EntryType> type;
 
-        public SearchOrderEntry(String suffix, EnumSet<EntryType> type) {
+        SearchOrderEntry(String suffix, EnumSet<EntryType> type) {
             this.suffix = suffix;
             this.type = type;
         }
@@ -86,11 +86,11 @@ public class PZipImporter extends PythonBuiltinObject {
 
     protected static class ModuleCodeData {
 
-        public String code;
-        public boolean isPackage;
-        public String path;
+        String code;
+        boolean isPackage;
+        String path;
 
-        public ModuleCodeData(String code, boolean isPackage, String path) {
+        ModuleCodeData(String code, boolean isPackage, String path) {
             this.code = code;
             this.isPackage = isPackage;
             this.path = path;
@@ -200,14 +200,19 @@ public class PZipImporter extends PythonBuiltinObject {
      */
     @CompilerDirectives.TruffleBoundary
     private String getCode(String filenameAndSuffix) {
+        ZipFile zip = null;
         try {
-            ZipFile zip = new ZipFile(archive);
+            zip = new ZipFile(archive);
             ZipEntry entry = zip.getEntry(filenameAndSuffix);
             InputStream in = zip.getInputStream(entry);
 
             // reading the file should be done better?
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-            StringBuilder code = new StringBuilder();
+            int size = (int) entry.getSize();
+            if (size < 0) {
+                size = (int) entry.getCompressedSize();
+            }
+            StringBuilder code = new StringBuilder(size < 16 ? 16 : size);
             String line;
             while ((line = reader.readLine()) != null) {
                 code.append(line);
@@ -217,6 +222,14 @@ public class PZipImporter extends PythonBuiltinObject {
             return code.toString();
         } catch (IOException e) {
             throw new RuntimeException("Can not read code from " + makePackagePath(filenameAndSuffix), e);
+        } finally {
+            if (zip != null) {
+                try {
+                    zip.close();
+                } catch (IOException e) {
+                    // just ignore it.
+                }
+            }
         }
     }
 

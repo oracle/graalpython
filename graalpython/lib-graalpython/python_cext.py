@@ -39,8 +39,8 @@
 
 import _imp
 import sys
+import _thread
 
-_thread = None
 capi = capi_to_java = None
 _capi_hooks = []
 
@@ -1317,9 +1317,6 @@ def PyRun_String(source, typ, globals, locals):
 
 @may_raise
 def PyThread_allocate_lock():
-    global _thread
-    if not _thread:
-        import _thread
     return _thread.allocate_lock()
 
 
@@ -1331,11 +1328,6 @@ def PyThread_acquire_lock(lock, waitflag):
 @may_raise
 def PyThread_release_lock(lock):
     return lock.release()
-
-
-@may_raise
-def PySlice_GetIndicesEx(start, stop, step, length):
-    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
 
 
 @may_raise

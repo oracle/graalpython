@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,24 +44,47 @@ import static com.oracle.graal.python.nodes.BuiltinNames.GLOBALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
 public abstract class AbstractImportNode extends StatementNode {
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @Child PythonObjectFactory objectFactory;
 
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
 
     public AbstractImportNode() {
         super();
+    }
+
+    protected PythonContext getContext() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = PythonLanguage.getContextRef();
+        }
+        return contextRef.get();
+    }
+
+    protected PythonObjectFactory factory() {
+        if (objectFactory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            objectFactory = insert(PythonObjectFactory.create());
+        }
+        return objectFactory;
     }
 
     protected Object importModule(String name) {
@@ -87,8 +110,8 @@ public abstract class AbstractImportNode extends StatementNode {
     @TruffleBoundary
     protected Object importModule(String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
-        if (!getCore().isInitialized()) {
-            PythonModule builtinModule = getCore().lookupBuiltinModule(name);
+        if (!getContext().getCore().isInitialized()) {
+            PythonModule builtinModule = getContext().getCore().lookupBuiltinModule(name);
             if (builtinModule != null) {
                 return builtinModule;
             }
@@ -97,7 +120,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     Object __import__(String name, Object globals, String[] fromList, int level) {
-        PMethod builtinImport = (PMethod) getContext().getBuiltins().getAttribute(__IMPORT__);
+        PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule("builtins").getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
         return getCallNode().execute(null, builtinImport, new Object[]{name}, new PKeyword[]{

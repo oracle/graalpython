@@ -1,0 +1,16 @@
+*AutoFileTests.testAttributes
+*AutoFileTests.testBlksize
+*AutoFileTests.testErrnoOnClosedFileno
+*AutoFileTests.testErrnoOnClosedIsatty
+*AutoFileTests.testErrnoOnClosedReadable
+*AutoFileTests.testErrnoOnClosedSeekable
+*AutoFileTests.testErrnoOnClosedWritable
+*AutoFileTests.testErrors
+*AutoFileTests.testMethods
+*AutoFileTests.testOpenDirFD
+*AutoFileTests.testOpendir
+*AutoFileTests.testReadintoByteArray
+*AutoFileTests.testSeekTell
+*AutoFileTests.testWritelinesList
+*AutoFileTests.testWritelinesUserList
+*AutoFileTests.test_none_args

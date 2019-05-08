@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
@@ -68,9 +69,11 @@ public abstract class DeleteItemNode extends StatementNode {
 
     public DeleteItemNode() {
         this.notImplementedHandler = () -> new NotImplementedHandler() {
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
             @Override
             public Object execute(Object arg, Object arg2) {
-                throw raise(TypeError, "'%p' object doesn't support item deletion", arg);
+                throw raiseNode.raise(TypeError, "'%p' object doesn't support item deletion", arg);
             }
         };
     }

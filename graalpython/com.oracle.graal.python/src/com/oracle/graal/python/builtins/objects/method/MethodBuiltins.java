@@ -42,10 +42,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -66,7 +68,7 @@ public class MethodBuiltins extends PythonBuiltins {
         return MethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __FUNC__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __FUNC__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FuncNode extends PythonBuiltinNode {
         @Specialization
@@ -80,7 +82,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CODE__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
@@ -90,7 +92,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -108,27 +110,30 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DEFAULTS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetMethodDefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object defaults(PMethod self,
-                        @Cached("create()") FunctionBuiltins.GetFunctionDefaultsNode getFunctionDefaultsNode) {
-            return getFunctionDefaultsNode.execute(self.getFunction(), PNone.NO_VALUE);
+                        @Cached("create()") GetDefaultsNode getDefaultsNode) {
+            Object[] argDefaults = getDefaultsNode.execute(self);
+            assert argDefaults != null;
+            return (argDefaults.length == 0) ? PNone.NONE : factory().createTuple(argDefaults);
         }
     }
 
-    @Builtin(name = __KWDEFAULTS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __KWDEFAULTS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetMethodKwdefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object defaults(PMethod self,
-                        @Cached("create()") FunctionBuiltins.GetFunctionKeywordDefaultsNode getFunctionKwdefaultsNode) {
-            return getFunctionKwdefaultsNode.execute(self.getFunction());
+        Object kwDefaults(PMethod self,
+                        @Cached("create()") GetKeywordDefaultsNode getKeywordDefaultsNode) {
+            PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(self);
+            return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
         }
     }
 
-    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -139,7 +144,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __GET__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization

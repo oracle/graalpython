@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,8 +27,13 @@ package com.oracle.graal.python.test.builtin;
 
 import static com.oracle.graal.python.test.PythonTests.assertPrintContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import org.graalvm.polyglot.Value;
 import org.junit.Test;
+
+import com.oracle.graal.python.test.PythonTests;
 
 public class BuiltinFunctionTests {
 
@@ -352,6 +357,23 @@ public class BuiltinFunctionTests {
                         "id2 = id([])\n" + //
                         "print(id1 == id2)";
         assertPrints("False\n", source);
+    }
+
+    @Test
+    public void cellType() {
+
+        String source = "def foo(n):\n" +
+                        "    m = n + 1\n" +
+                        "    def bar():\n" +
+                        "        return m + 1\n" +
+                        "    return bar\n" +
+                        "\n" +
+                        "foo(3).__closure__[0]";
+        Value eval = PythonTests.eval(source);
+        assertTrue(eval.getMetaObject().hasMember("__name__"));
+        Value type = eval.getMetaObject().getMember("__name__");
+        assertTrue(type.isString());
+        assertEquals("cell", type.asString());
     }
 
 }

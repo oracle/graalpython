@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 
 public final class GeneratorControlData {
 
@@ -35,7 +35,7 @@ public final class GeneratorControlData {
     private final boolean[] activeFlags;
     private final int[] blockNodeIndices;       // See {@link GeneratorBlockNode}
     private final Object[] forNodeIterators; // See {@link GeneratorForNode}
-    private PException activeException;
+    private ExceptionState activeException;
 
     public GeneratorControlData(int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         this.activeFlags = new boolean[numOfActiveFlags];
@@ -67,11 +67,11 @@ public final class GeneratorControlData {
         forNodeIterators[slot] = value;
     }
 
-    public PException getActiveException() {
+    public ExceptionState getActiveException() {
         return activeException;
     }
 
-    public void setActiveException(PException activeException) {
+    public void setActiveException(ExceptionState activeException) {
         this.activeException = activeException;
     }
 }

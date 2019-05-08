@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -48,6 +49,12 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 public abstract class PRootNode extends RootNode {
     @CompilationFinal private boolean needsCallerFrame = false;
+
+    /**
+     * Flag indicating if some child node of this root node eventually needs the exception state.
+     * Hence, the caller of this root node should provide the exception state in the arguments.
+     */
+    @CompilationFinal private boolean needsExceptionState = false;
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -68,6 +75,17 @@ public abstract class PRootNode extends RootNode {
         }
     }
 
+    public boolean needsExceptionState() {
+        return needsExceptionState;
+    }
+
+    public void setNeedsExceptionState() {
+        CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
+        if (!this.needsExceptionState) {
+            this.needsExceptionState = true;
+        }
+    }
+
     @Override
     public boolean isCaptureFramesForTrace() {
         return true;
@@ -77,4 +95,6 @@ public abstract class PRootNode extends RootNode {
     public boolean isCloningAllowed() {
         return true;
     }
+
+    public abstract Signature getSignature();
 }

@@ -1,0 +1,5 @@
+test_builtin_errors
+test_errno_mapping
+test_windows_error
+test_errno_mapping
+test_init_kwdargs

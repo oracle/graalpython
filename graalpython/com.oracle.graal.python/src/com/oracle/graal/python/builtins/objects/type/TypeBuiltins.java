@@ -129,7 +129,7 @@ public class TypeBuiltins extends PythonBuiltins {
         return TypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -152,7 +152,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MRO__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __MRO__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class MroAttrNode extends PythonBuiltinNode {
         @Specialization
@@ -162,7 +162,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mro", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "mro", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization
@@ -255,7 +255,7 @@ public class TypeBuiltins extends PythonBuiltins {
             Object newMethod = lookupNew.execute(self);
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
-                Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments, arguments.length) : arguments;
+                Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 PythonAbstractClass newInstanceKlass = getClass.execute(newInstance);
                 if (isSameType(newInstanceKlass, self)) {
@@ -268,7 +268,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         if (initMethod != PNone.NO_VALUE) {
                             Object[] initArgs;
                             if (doCreateArgs) {
-                                initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments, arguments.length);
+                                initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
                             } else {
                                 // XXX: (tfel) is this valid? I think it should be fine...
                                 arguments[0] = newInstance;
@@ -304,7 +304,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
         public static GetattributeNode create() {
@@ -452,7 +452,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BASES__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __BASES__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class BasesNode extends PythonBuiltinNode {
         @Specialization
@@ -462,7 +462,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     @ImportStatic(NativeMemberNames.class)
     abstract static class DictNode extends PythonUnaryBuiltinNode {
@@ -482,12 +482,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doNative(PythonNativeClass self,
-                        @Cached("create(TP_DICT)") CExtNodes.GetTypeMemberNode getTpDictNode) {
-            return getTpDictNode.execute(self);
+                        @Cached CExtNodes.GetTypeMemberNode getTpDictNode) {
+            return getTpDictNode.execute(self, NativeMemberNames.TP_DICT);
         }
     }
 
-    @Builtin(name = __INSTANCECHECK__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __INSTANCECHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
         @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
@@ -519,7 +519,7 @@ public class TypeBuiltins extends PythonBuiltins {
             }
 
             Object instanceClass = getAttributeNode.executeObject(instance, __CLASS__);
-            return instanceClass instanceof PythonClass && isSubtypeNode.execute(instanceClass, cls);
+            return PGuards.isManagedClass(instanceClass) && isSubtypeNode.execute(instanceClass, cls);
         }
 
         @Fallback
@@ -533,7 +533,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUBCLASSCHECK__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __SUBCLASSCHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
@@ -595,7 +595,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUBCLASSES__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __SUBCLASSES__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SubclassesNode extends PythonUnaryBuiltinNode {
 
@@ -644,9 +644,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
             return getQualName(tpName);
         }
 
@@ -694,9 +694,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
             return getModuleName(tpName);
         }
 
@@ -745,9 +745,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         String getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
             return getQualName(tpName);
         }
 
@@ -793,8 +793,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_DICTOFFSET)") GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls);
+                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_DICTOFFSET);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -830,8 +830,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_ITEMSIZE)") GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls);
+                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_ITEMSIZE);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -867,8 +867,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_BASICSIZE)") GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls);
+                        @Cached("create()") GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_BASICSIZE);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -877,7 +877,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__flags__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__flags__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class FlagsNode extends PythonUnaryBuiltinNode {
         @Child TypeNodes.GetTypeFlagsNode getFlagsNode = TypeNodes.GetTypeFlagsNode.create();

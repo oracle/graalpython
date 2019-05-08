@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.WithNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -72,9 +73,9 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
+    protected ExceptionState doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
         if (!gen.isActive(frame, enterSlot)) {
-            PException activeException = super.doEnter(frame, withObject, enterCallable);
+            ExceptionState activeException = super.doEnter(frame, withObject, enterCallable);
             gen.setActiveException(frame, activeException);
             gen.setActive(frame, enterSlot, true);
             return activeException;
@@ -100,7 +101,7 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected void doLeave(VirtualFrame frame, Object withObject, PException exceptionState, boolean gotException, Object exitCallable) {
+    protected void doLeave(VirtualFrame frame, Object withObject, ExceptionState exceptionState, boolean gotException, Object exitCallable) {
         if (gen.isActive(frame, yieldSlot)) {
             gen.setActive(frame, yieldSlot, false);
         } else {

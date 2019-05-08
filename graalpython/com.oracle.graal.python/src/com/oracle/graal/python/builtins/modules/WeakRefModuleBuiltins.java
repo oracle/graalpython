@@ -44,6 +44,7 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -114,6 +115,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             try {
                 reference = weakRefQueue.remove();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             if (reference instanceof PReferenceType.WeakRefStorage) {
                 return new WeakrefCallbackAction((PReferenceType.WeakRefStorage) reference);
@@ -137,32 +139,37 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeObject(object)")
         public PReferenceType refType(LazyPythonClass cls, Object object, Object callback) {
-            return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
+            if (callback instanceof PNone) {
+                return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
+            } else {
+                return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
+            }
         }
 
         @Specialization
         public PReferenceType refType(LazyPythonClass cls, PythonAbstractNativeObject pythonObject, Object callback,
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") IsBuiltinClassProfile profile) {
+            Object actualCallback = callback instanceof PNone ? null : callback;
             LazyPythonClass clazz = getClassNode.execute(pythonObject);
 
             // if the object is a type, a weak ref is allowed
             if (profile.profileClass(clazz, PythonBuiltinClassType.PythonClass)) {
-                return factory().createReferenceType(cls, pythonObject, callback, getWeakReferenceQueue());
+                return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
             }
 
             // if the object's type is a native type, we need to consider 'tp_weaklistoffset'
             if (PGuards.isNativeClass(clazz)) {
                 if (getTpWeaklistoffsetNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create(NativeMemberNames.TP_WEAKLISTOFFSET));
+                    getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create());
                 }
-                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz);
+                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMemberNames.TP_WEAKLISTOFFSET);
                 if (tpWeaklistoffset != PNone.NO_VALUE) {
-                    return factory().createReferenceType(cls, pythonObject, callback, getWeakReferenceQueue());
+                    return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
                 }
             }
-            return refType(cls, pythonObject, callback);
+            return refType(cls, pythonObject, actualCallback);
         }
 
         @Fallback
@@ -177,13 +184,20 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                 ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
                 return queue;
             } else {
-                throw new IllegalStateException("the weak reference queue was modified!");
+                CompilerDirectives.transferToInterpreter();
+                if (PythonLanguage.getContextRef().get().getCore().isInitialized()) {
+                    throw new IllegalStateException("the weak reference queue was modified!");
+                } else {
+                    // returning a null reference queue is fine, it just means
+                    // that the finalizer won't run
+                    return null;
+                }
             }
         }
     }
 
     // getweakrefcount(obj)
-    @Builtin(name = "getweakrefcount", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getweakrefcount", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetWeakRefCountNode extends PythonBuiltinNode {
         @Specialization
@@ -198,7 +212,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // getweakrefs()
-    @Builtin(name = "getweakrefs", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getweakrefs", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetWeakRefsNode extends PythonBuiltinNode {
         @Specialization
@@ -208,7 +222,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // _remove_dead_weakref()
-    @Builtin(name = "_remove_dead_weakref", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "_remove_dead_weakref", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RemoveDeadWeakRefsNode extends PythonBuiltinNode {
         @Specialization

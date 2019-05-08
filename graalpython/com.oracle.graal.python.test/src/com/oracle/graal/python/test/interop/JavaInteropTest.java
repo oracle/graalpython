@@ -53,9 +53,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.After;
@@ -67,14 +67,14 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.interop.CanResolve;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.MessageResolution;
-import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 @RunWith(Enclosed.class)
 public class JavaInteropTest {
@@ -89,6 +89,7 @@ public class JavaInteropTest {
             out = new ByteArrayOutputStream();
             err = new ByteArrayOutputStream();
             Builder builder = Context.newBuilder();
+            builder.allowExperimentalOptions(true);
             builder.allowAllAccess(true);
             builder.out(out);
             builder.err(err);
@@ -113,7 +114,7 @@ public class JavaInteropTest {
 
         @Test
         public void evalNonInteractiveThrowsSyntaxError() throws IOException {
-            try (Context c = Context.newBuilder().allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
+            try (Context c = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
                 c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(false).build());
             } catch (PolyglotException t) {
                 assertTrue(t.isSyntaxError());
@@ -125,7 +126,7 @@ public class JavaInteropTest {
 
         @Test
         public void evalNonInteractiveInInteractiveTerminalThrowsSyntaxError() throws IOException {
-            try (Context c = Context.newBuilder().allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
+            try (Context c = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
                 c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(false).build());
             } catch (PolyglotException t) {
                 assertTrue(t.isSyntaxError());
@@ -137,7 +138,7 @@ public class JavaInteropTest {
 
         @Test
         public void evalInteractiveInNonInteractiveTerminalThrowsSyntaxError() throws IOException {
-            try (Context c = Context.newBuilder().allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
+            try (Context c = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
                 c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(true).build());
             } catch (PolyglotException t) {
                 assertTrue(t.isSyntaxError());
@@ -149,7 +150,7 @@ public class JavaInteropTest {
 
         @Test
         public void evalInteractiveInInteractiveTerminalThrowsSyntaxError() throws IOException {
-            try (Context c = Context.newBuilder().allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
+            try (Context c = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
                 c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(true).build());
             } catch (PolyglotException t) {
                 assertTrue(t.isSyntaxError());
@@ -304,84 +305,89 @@ public class JavaInteropTest {
             assertEquals("'e39957904b7e79caf4fa54f30e8e4ee74d4e9e37'", dacapo.getMember("sha1").toString());
         }
 
+        @ExportLibrary(InteropLibrary.class)
         public static class ForeignObjectWithOOInvoke implements TruffleObject {
             public String getMyName() {
                 return getClass().getName();
             }
 
-            public ForeignAccess getForeignAccess() {
-                return JavaObjectKindMRForeign.ACCESS;
+            @ExportMessage
+            boolean hasMembers() {
+                return true;
+            }
+
+            @ExportMessage
+            Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+                return new InteropArray(new Object[]{"getMyName"});
+            }
+
+            @ExportMessage
+            boolean isMemberInvocable(String member) {
+                return member.equals("getMyName");
+            }
+
+            @ExportMessage
+            Object invokeMember(String member, Object... arguments) throws ArityException, UnknownIdentifierException {
+                if (arguments.length != 0) {
+                    throw ArityException.create(0, arguments.length);
+                } else if (!member.equals("getMyName")) {
+                    throw UnknownIdentifierException.create(member);
+                } else {
+                    return getMyName();
+                }
             }
         }
 
-        @MessageResolution(receiverType = ForeignObjectWithOOInvoke.class)
-        public static class JavaObjectKindMR {
-            @Resolve(message = "INVOKE")
-            abstract static class InvokeNode extends Node {
-                Object access(ForeignObjectWithOOInvoke object, String name, Object[] arguments) {
-                    if (name.equals("getMyName") && arguments.length == 0) {
-                        return object.getMyName();
-                    } else {
-                        throw UnknownIdentifierException.raise(name);
-                    }
-                }
-            }
-
-            @CanResolve
-            abstract static class CheckFunction extends Node {
-                protected static boolean test(TruffleObject receiver) {
-                    return receiver instanceof ForeignObjectWithOOInvoke;
-                }
-            }
-        }
-
+        @ExportLibrary(InteropLibrary.class)
         public static class ForeignObjectWithoutOOInvoke implements TruffleObject {
             public String getMyName() {
                 return getClass().getName();
             }
 
-            public ForeignAccess getForeignAccess() {
-                return JavaNonOOKindMRForeign.ACCESS;
+            @ExportMessage
+            boolean hasMembers() {
+                return true;
+            }
+
+            @ExportMessage
+            Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+                return new InteropArray(new Object[]{"getMyName"});
+            }
+
+            @ExportMessage
+            boolean isMemberReadable(String member) {
+                return member.equals("getMyName");
+            }
+
+            @ExportMessage
+            Object readMember(String member) throws UnknownIdentifierException {
+                if (member.equals("getMyName")) {
+                    return new GetMyNameMethod(this);
+                } else {
+                    throw UnknownIdentifierException.create(member);
+                }
             }
         }
 
-        @MessageResolution(receiverType = ForeignObjectWithOOInvoke.class)
-        public static class JavaNonOOKindMR {
-            static class GetMyNameMethod implements TruffleObject {
-                private ForeignObjectWithoutOOInvoke self;
+        @ExportLibrary(InteropLibrary.class)
+        public static class GetMyNameMethod implements TruffleObject {
+            private ForeignObjectWithoutOOInvoke self;
 
-                public GetMyNameMethod(ForeignObjectWithoutOOInvoke object2) {
-                    this.self = object2;
-                }
-
-                public ForeignAccess getForeignAccess() {
-                    return JavaNonOOKindMRForeign.ACCESS;
-                }
+            public GetMyNameMethod(ForeignObjectWithoutOOInvoke object2) {
+                this.self = object2;
             }
 
-            @Resolve(message = "READ")
-            abstract static class InvokeNode extends Node {
-                Object access(ForeignObjectWithoutOOInvoke object, String name) {
-                    if (name.equals("getMyName")) {
-                        return new GetMyNameMethod(object);
-                    } else {
-                        throw UnknownIdentifierException.raise(name);
-                    }
-                }
+            @ExportMessage
+            boolean isExecutable() {
+                return true;
             }
 
-            @Resolve(message = "EXECUTE")
-            abstract static class ExecuteNode extends Node {
-                Object access(GetMyNameMethod method, Object[] arguments) {
-                    assert arguments.length == 0;
-                    return method.self.getMyName();
-                }
-            }
-
-            @CanResolve
-            abstract static class CheckFunction extends Node {
-                protected static boolean test(TruffleObject receiver) {
-                    return receiver instanceof ForeignObjectWithoutOOInvoke || receiver instanceof GetMyNameMethod;
+            @ExportMessage
+            Object execute(Object... arguments) throws ArityException {
+                if (arguments.length != 0) {
+                    throw ArityException.create(0, arguments.length);
+                } else {
+                    return self.getMyName();
                 }
             }
         }
@@ -508,7 +514,7 @@ public class JavaInteropTest {
             private Builder builder;
 
             OptionsChecker(String option, String code, String... values) {
-                this.builder = Context.newBuilder("python").engine(engine).allowAllAccess(true);
+                this.builder = Context.newBuilder("python").engine(engine).allowExperimentalOptions(true).allowAllAccess(true);
                 this.option = "python." + option;
                 this.source = Source.create("python", code);
                 this.values = values;
@@ -523,7 +529,6 @@ public class JavaInteropTest {
         @Parameters(name = "{0}")
         public static OptionsChecker[] input() {
             return new OptionsChecker[]{
-                            new OptionsChecker("OpaqueFilesystem", "import sys; sys.graal_python_opaque_filesystem", "true", "false"),
                             new OptionsChecker("InspectFlag", "import sys; sys.flags.inspect", "true", "false"),
                             new OptionsChecker("QuietFlag", "import sys; sys.flags.quiet", "true", "false"),
                             new OptionsChecker("VerboseFlag", "import sys; sys.flags.verbose", "true", "false"),
@@ -534,7 +539,8 @@ public class JavaInteropTest {
                             new OptionsChecker("PythonOptimizeFlag", "import sys; sys.flags.debug", "true", "false"),
                             new OptionsChecker("PythonOptimizeFlag", "import sys; sys.flags.optimize", "true", "false"),
                             new OptionsChecker("PythonOptimizeFlag", "__debug__", "true", "false"),
-                            new OptionsChecker("Executable", "import sys; sys.executable", "graalpython", "python3")
+                            new OptionsChecker("Executable", "import sys; sys.executable", "graalpython", "python3"),
+                            new OptionsChecker("IsolateFlag", "import sys; sys.flags.isolated", "true", "false")
             };
         }
 

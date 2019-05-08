@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -813,7 +813,7 @@ unicodedata.UCD.normalize
 
     self: self
     form: str
-    unistr as input: object(subclass_of='&PyUnicode_Type')
+    unistr as input: unicode
     /
 
 Return the normal form 'form' for the Unicode string unistr.
@@ -824,11 +824,8 @@ Valid values for form are 'NFC', 'NFKC', 'NFD', and 'NFKD'.
 static PyObject *
 unicodedata_UCD_normalize_impl(PyObject *self, const char *form,
                                PyObject *input)
-/*[clinic end generated code: output=62d1f8870027efdc input=cd092e631cf11883]*/
+/*[clinic end generated code: output=62d1f8870027efdc input=1744c55f4ab79bf0]*/
 {
-    if (PyUnicode_READY(input) == -1)
-        return NULL;
-
     if (PyUnicode_GET_LENGTH(input) == 0) {
         /* Special case empty input strings, since resizing
            them  later would cause internal errors. */
@@ -929,11 +926,12 @@ is_unified_ideograph(Py_UCS4 code)
 {
     return
         (0x3400 <= code && code <= 0x4DB5)   || /* CJK Ideograph Extension A */
-        (0x4E00 <= code && code <= 0x9FD5)   || /* CJK Ideograph */
+        (0x4E00 <= code && code <= 0x9FEF)   || /* CJK Ideograph */
         (0x20000 <= code && code <= 0x2A6D6) || /* CJK Ideograph Extension B */
         (0x2A700 <= code && code <= 0x2B734) || /* CJK Ideograph Extension C */
         (0x2B740 <= code && code <= 0x2B81D) || /* CJK Ideograph Extension D */
-        (0x2B820 <= code && code <= 0x2CEA1);   /* CJK Ideograph Extension E */
+        (0x2B820 <= code && code <= 0x2CEA1) || /* CJK Ideograph Extension E */
+        (0x2CEB0 <= code && code <= 0x2EBEF);   /* CJK Ideograph Extension F */
 }
 
 /* macros used to determine if the given code point is in the PUA range that
@@ -1328,7 +1326,7 @@ PyDoc_STRVAR(unicodedata_docstring,
 "This module provides access to the Unicode Character Database which\n\
 defines character properties for all Unicode characters. The data in\n\
 this database is based on the UnicodeData.txt file version\n\
-" UNIDATA_VERSION " which is publically available from ftp://ftp.unicode.org/.\n\
+" UNIDATA_VERSION " which is publicly available from ftp://ftp.unicode.org/.\n\
 \n\
 The module uses the same names and symbols as defined by the\n\
 UnicodeData File Format " UNIDATA_VERSION ".");

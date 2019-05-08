@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -84,6 +85,8 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -108,8 +111,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         COMPILE_TIME = compile_time;
     }
 
-    public static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix"};
-    public static final String[] BASE_PREFIX_ATTRIBUTES = new String[]{"base_prefix", "base_exec_prefix"};
+    private static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix"};
+    private static final String[] BASE_PREFIX_ATTRIBUTES = new String[]{"base_prefix", "base_exec_prefix"};
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -149,6 +152,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         String os = getPythonOSName();
         builtinConstants.put("platform", os);
+        if (os.equals("darwin")) {
+            builtinConstants.put("_framework", PNone.NONE);
+        }
         builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
 
         super.initialize(core);
@@ -181,8 +187,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         sys.setAttribute("graal_python_core_home", PythonOptions.getOption(context, PythonOptions.CoreHome));
         sys.setAttribute("graal_python_stdlib_home", PythonOptions.getOption(context, PythonOptions.StdLibHome));
-        sys.setAttribute("graal_python_opaque_filesystem", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystem));
-        sys.setAttribute("graal_python_opaque_filesystem_prefix", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystemPrefixes));
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
@@ -191,12 +195,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
                         PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
                         PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
-                        !context.isExecutableAccessAllowed(), // isolated
+                        PythonOptions.getFlag(context, PythonOptions.IsolateFlag), // isolated
                         PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
                         PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
                         PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
                         PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
                         PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
+                        false, // dev_mode
+                        0, // utf8_mode
         }));
 
         Env env = context.getEnv();
@@ -204,24 +210,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
         SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
-        String cextModuleHome = String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), "modules", toolchain.getIdentifier());
-        String cextHome = String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), toolchain.getIdentifier());
-        String cextSrc = String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), "src");
+        String cextModuleHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "modules", toolchain.getIdentifier());
+        String cextHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), toolchain.getIdentifier());
+        String cextSrc = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "src");
 
         Object[] path;
         int pathIdx = 0;
+        boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
+        int defaultPaths = doIsolate ? 3 : 4;
         if (option.length() > 0) {
             String[] split = option.split(PythonCore.PATH_SEPARATOR);
-            path = new Object[split.length + 4];
+            path = new Object[split.length + defaultPaths];
             System.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
         } else {
-            path = new Object[4];
+            path = new Object[defaultPaths];
         }
-        path[pathIdx] = getScriptPath(env, args);
-        path[pathIdx + 1] = PythonCore.getStdlibHome(env);
-        path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
-        path[pathIdx + 3] = cextModuleHome;
+        if (!doIsolate) {
+            path[pathIdx++] = getScriptPath(env, args);
+        }
+        path[pathIdx++] = PythonCore.getStdlibHome(env);
+        path[pathIdx++] = PythonCore.getCoreHome(env) + env.getFileNameSeparator() + "modules";
+        path[pathIdx++] = cextModuleHome;
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
         sys.setAttribute("graal_python_cext_home", cextHome);
@@ -265,30 +275,34 @@ public class SysModuleBuiltins extends PythonBuiltins {
     static String getPythonOSName() {
         String property = System.getProperty("os.name");
         String os = "java";
-        if (property.toLowerCase().contains("cygwin")) {
-            os = "cygwin";
-        } else if (property.toLowerCase().contains("linux")) {
-            os = "linux";
-        } else if (property.toLowerCase().contains("mac")) {
-            os = "darwin";
-        } else if (property.toLowerCase().contains("windows")) {
-            os = "win32";
-        } else if (property.toLowerCase().contains("sunos")) {
-            os = "sunos";
-        } else if (property.toLowerCase().contains("freebsd")) {
-            os = "freebsd";
+        if (property != null) {
+            if (property.toLowerCase().contains("cygwin")) {
+                os = "cygwin";
+            } else if (property.toLowerCase().contains("linux")) {
+                os = "linux";
+            } else if (property.toLowerCase().contains("mac")) {
+                os = "darwin";
+            } else if (property.toLowerCase().contains("windows")) {
+                os = "win32";
+            } else if (property.toLowerCase().contains("sunos")) {
+                os = "sunos";
+            } else if (property.toLowerCase().contains("freebsd")) {
+                os = "freebsd";
+            }
         }
         return os;
     }
 
-    @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "exc_info")
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
+
         @Specialization
-        public Object run(
-                        @Cached("create()") GetClassNode getClassNode) {
-            PythonContext context = getContext();
-            PException currentException = context.getCaughtException();
+        public Object run(VirtualFrame frame,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
+            PException currentException = getCaughtExceptionNode.execute(frame);
+            assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
@@ -297,6 +311,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
             }
         }
+
     }
 
     @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
@@ -309,8 +324,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Child private DirectCallNode call;
 
         @Specialization
-        Object first(@SuppressWarnings("unused") PNone arg) {
-            return counted(0);
+        Object first(@SuppressWarnings("unused") PNone arg,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return counted(0, lang);
         }
 
         /*
@@ -339,10 +355,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object counted(int num) {
+        Object counted(int num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             if (call == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                GetStackTraceRootNode rootNode = new GetStackTraceRootNode(getRootNode().getLanguage(PythonLanguage.class));
+                GetStackTraceRootNode rootNode = new GetStackTraceRootNode(lang);
                 call = insert(Truffle.getRuntime().createDirectCallNode(Truffle.getRuntime().createCallTarget(rootNode)));
             }
             int actual = num + 1; // skip dummy frame
@@ -362,28 +379,32 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedLong(long num) {
-            return counted(PInt.intValueExact(num));
+        Object countedLong(long num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return counted(PInt.intValueExact(num), lang);
         }
 
         @Specialization
-        Object countedLongOvf(long num) {
+        Object countedLongOvf(long num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             try {
-                return counted(PInt.intValueExact(num));
+                return counted(PInt.intValueExact(num), lang);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedPInt(PInt num) {
-            return counted(num.intValueExact());
+        Object countedPInt(PInt num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return counted(num.intValueExact(), lang);
         }
 
         @Specialization
-        Object countedPIntOvf(PInt num) {
+        Object countedPIntOvf(PInt num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             try {
-                return counted(num.intValueExact());
+                return counted(num.intValueExact(), lang);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
@@ -395,7 +416,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
@@ -404,7 +425,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencodeerrors", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
@@ -413,7 +434,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "intern", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization
@@ -430,7 +451,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getdefaultencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getdefaultencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
@@ -493,7 +514,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__graal_get_toolchain_path", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "__graal_get_toolchain_path", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public static abstract class GetToolPathNode extends PythonUnaryBuiltinNode {

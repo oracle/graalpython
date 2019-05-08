@@ -37,15 +37,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
@@ -78,7 +82,7 @@ public final class PythonContext {
     private PException currentException;
 
     /* corresponds to 'PyThreadState.exc_*' */
-    private PException caughtException;
+    private PException caughtException = PException.LAZY_FETCH_EXCEPTION;
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -97,6 +101,9 @@ public final class PythonContext {
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
+
+    /* native pointers for context-insensitive singletons like PNone.NONE */
+    private final Object[] singletonNativePtrs = new Object[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
     private final PosixResources resources;
@@ -231,17 +238,50 @@ public final class PythonContext {
 
     public void initialize() {
         core.initialize(this);
-        setupRuntimeInformation();
+        setupRuntimeInformation(false);
         core.postInitialize();
     }
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
-        setupRuntimeInformation();
+        setupRuntimeInformation(true);
         core.postInitialize();
     }
 
-    private void setupRuntimeInformation() {
+    /**
+     * During pre-initialization, we're also loading code from the Python standard library. Since
+     * some of those modules may be packages, they will have their __path__ attribute set to the
+     * absolute path of the package on the build system. We use this function to patch the paths
+     * during build time and after starting up from a pre-initialized context so they point to the
+     * run-time package paths.
+     */
+    private void patchPackagePaths(String from, String to) {
+        for (Object v : sysModules.getDictStorage().values()) {
+            if (v instanceof PythonModule) {
+                Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);
+                if (path instanceof PList) {
+                    Object[] paths = ((PList) path).getSequenceStorage().getCopyOfInternalArray();
+                    for (int i = 0; i < paths.length; i++) {
+                        Object pathElement = paths[i];
+                        String strPath;
+                        if (pathElement instanceof PString) {
+                            strPath = ((PString) pathElement).getValue();
+                        } else if (pathElement instanceof String) {
+                            strPath = (String) pathElement;
+                        } else {
+                            continue;
+                        }
+                        if (strPath.startsWith(from)) {
+                            paths[i] = strPath.replace(from, to);
+                        }
+                    }
+                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__PATH__, core.factory().createList(paths));
+                }
+            }
+        }
+    }
+
+    private void setupRuntimeInformation(boolean isPatching) {
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
@@ -253,7 +293,17 @@ public final class PythonContext {
 
         sysModules.setItem(__MAIN__, mainModule);
 
-        OpaqueBytes.initializeForNewContext(this);
+        final String stdLibPlaceholder = "!stdLibHome!";
+        final String stdLibHome = PythonCore.getStdlibHome(getEnv());
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Patch any pre-loaded packages' paths if we're running
+            // pre-initialization
+            patchPackagePaths(stdLibHome, stdLibPlaceholder);
+        } else if (isPatching && ImageInfo.inImageRuntimeCode()) {
+            // Patch any pre-loaded packages' paths to the new stdlib home if
+            // we're patching a pre-initialized context
+            patchPackagePaths(stdLibPlaceholder, stdLibHome);
+        }
 
         currentException = null;
         isInitialized = true;
@@ -352,5 +402,19 @@ public final class PythonContext {
             nativeClassStableAssumptions.put(cls, assumption);
         }
         return assumption;
+    }
+
+    public void setSingletonNativePtr(PythonAbstractObject obj, Object nativePtr) {
+        assert PythonLanguage.getSingletonNativePtrIdx(obj) != -1 : "invalid special singleton object";
+        assert singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] == null;
+        singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] = nativePtr;
+    }
+
+    public Object getSingletonNativePtr(PythonAbstractObject obj) {
+        int singletonNativePtrIdx = PythonLanguage.getSingletonNativePtrIdx(obj);
+        if (singletonNativePtrIdx != -1) {
+            return singletonNativePtrs[singletonNativePtrIdx];
+        }
+        return null;
     }
 }

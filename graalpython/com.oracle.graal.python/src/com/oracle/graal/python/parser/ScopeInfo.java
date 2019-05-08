@@ -28,12 +28,12 @@ package com.oracle.graal.python.parser;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -69,9 +69,9 @@ public final class ScopeInfo {
      * Symbols which are local variables but are closed over in nested scopes
      */
     // variables that are referenced in enclosed contexts
-    private LinkedHashSet<String> cellVars;
+    private TreeSet<String> cellVars;
     // variables that are referenced from enclosing contexts
-    private LinkedHashSet<String> freeVars;
+    private TreeSet<String> freeVars;
 
     /**
      * An optional field that stores translated nodes of default argument values.
@@ -79,7 +79,14 @@ public final class ScopeInfo {
      * function has default arguments.
      */
     private List<ExpressionNode> defaultArgumentNodes;
-    private ReadDefaultArgumentNode[] defaultArgumentReads;
+
+    /**
+     * An optional field that stores translated nodes of default keyword-only argument values.
+     * Keyword-only arguments are all arguments after a varargs marker (named or unnamed).
+     * {@link #defaultArgumentNodes} is not null only when {@link #scopeKind} is Function, and the
+     * function has default arguments.
+     */
+    private List<KwDefaultExpressionNode> kwDefaultArgumentNodes;
 
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
@@ -167,7 +174,7 @@ public final class ScopeInfo {
 
     public void addCellVar(String identifier, boolean createFrameSlot) {
         if (cellVars == null) {
-            cellVars = new LinkedHashSet<>();
+            cellVars = new TreeSet<>();
         }
         cellVars.add(identifier);
         if (createFrameSlot) {
@@ -181,7 +188,7 @@ public final class ScopeInfo {
 
     protected void addFreeVar(String identifier, boolean createFrameSlot) {
         if (freeVars == null) {
-            freeVars = new LinkedHashSet<>();
+            freeVars = new TreeSet<>();
         }
         freeVars.add(identifier);
         if (createFrameSlot) {
@@ -229,16 +236,17 @@ public final class ScopeInfo {
         this.defaultArgumentNodes = defaultArgumentNodes;
     }
 
+    public void setDefaultKwArgumentNodes(List<KwDefaultExpressionNode> defaultArgs) {
+        this.kwDefaultArgumentNodes = defaultArgs;
+
+    }
+
     public List<ExpressionNode> getDefaultArgumentNodes() {
         return defaultArgumentNodes;
     }
 
-    public void setDefaultArgumentReads(ReadDefaultArgumentNode[] defaultArgumentReads) {
-        this.defaultArgumentReads = defaultArgumentReads;
-    }
-
-    public ReadDefaultArgumentNode[] getDefaultArgumentReads() {
-        return this.defaultArgumentReads;
+    public List<KwDefaultExpressionNode> getDefaultKwArgumentNodes() {
+        return kwDefaultArgumentNodes;
     }
 
     public void createFrameSlotsForCellAndFreeVars() {
@@ -268,4 +276,5 @@ public final class ScopeInfo {
         }
         throw new IllegalStateException("Cannot find argument for name " + name + " in scope " + getScopeId());
     }
+
 }

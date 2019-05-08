@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,18 +25,21 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "builtins")
 public final class BuiltinsLiteralNode extends LiteralNode {
+    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
 
     @Override
     public Object execute(VirtualFrame frame) {
-        return builtinsLiteral(getContext());
+        return builtinsLiteral(contextRef.get());
     }
 
     @TruffleBoundary

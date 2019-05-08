@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,17 +42,23 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
-import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,9 +67,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class CastToListNode extends UnaryOpNode {
-
     public static CastToListNode create() {
         return CastToListNodeGen.create(null);
+    }
+
+    public static CastToListNode getUncached() {
+        return CastToListUncachedNode.UNCACHED;
     }
 
     @Child private GetLazyClassNode getClassNode;
@@ -94,18 +103,20 @@ public abstract class CastToListNode extends UnaryOpNode {
     @Specialization(guards = {"cannotBeOverridden(getClass(v))", "cachedLength == getLength(v)", "cachedLength < 32"})
     @ExplodeLoop
     protected PList starredTupleCachedLength(PTuple v,
+                    @Cached PythonObjectFactory factory,
                     @Cached("getLength(v)") int cachedLength) {
         SequenceStorage s = v.getSequenceStorage();
         Object[] array = new Object[cachedLength];
         for (int i = 0; i < cachedLength; i++) {
-            array[i] = getItemNode().execute(s, i);
+            array[i] = getGetItemNode().execute(s, i);
         }
-        return factory().createList(array);
+        return factory.createList(array);
     }
 
     @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(getClass(v))")
-    protected PList starredTuple(PTuple v) {
-        return factory().createList(v.getArray().clone());
+    protected PList starredTuple(PTuple v,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createList(v.getArray().clone());
     }
 
     @Specialization(guards = "cannotBeOverridden(getClass(v))")
@@ -113,19 +124,23 @@ public abstract class CastToListNode extends UnaryOpNode {
         return v;
     }
 
-    protected GetAttributeNode getList() {
-        return GetAttributeNode.create("list", new BuiltinsLiteralNode());
-    }
-
     @Specialization(rewriteOn = PException.class)
     protected PList starredIterable(PythonObject value,
-                    @Cached("create()") ConstructListNode constructListNode) {
+                    @Cached ConstructListNode constructListNode) {
         return constructListNode.execute(PythonBuiltinClassType.PList, value);
     }
 
     @Specialization
-    protected PList starredGeneric(Object v) {
-        throw raise(TypeError, "%s is not iterable", v);
+    protected PList starredGeneric(Object v,
+                    @Cached ConstructListNode constructListNode,
+                    @Cached IsBuiltinClassProfile attrProfile,
+                    @Cached PRaiseNode raise) {
+        try {
+            return constructListNode.execute(PythonBuiltinClassType.PList, v);
+        } catch (PException e) {
+            e.expectAttributeError(attrProfile);
+            throw raise.raise(TypeError, "%s is not iterable", v);
+        }
     }
 
     protected int getLength(PTuple t) {
@@ -136,11 +151,36 @@ public abstract class CastToListNode extends UnaryOpNode {
         return lenNode.execute(t.getSequenceStorage());
     }
 
-    protected SequenceStorageNodes.GetItemNode getItemNode() {
+    protected SequenceStorageNodes.GetItemNode getGetItemNode() {
         if (getItemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
         }
         return getItemNode;
+    }
+}
+
+final class CastToListUncachedNode extends CastToListNode {
+    static CastToListUncachedNode UNCACHED = new CastToListUncachedNode();
+
+    private final ReadAttributeFromObjectNode getlist = ReadAttributeFromObjectNode.getUncached();
+    private final LookupInheritedAttributeNode.Dynamic getCall = LookupInheritedAttributeNode.Dynamic.getUncached();
+    private final CallNode callList = CallNode.getUncached();
+
+    @Override
+    public PList executeWith(Object list) {
+        Object builtins = PythonLanguage.getContextRef().get().getCore().lookupBuiltinModule("builtins");
+        Object listType = getlist.execute(builtins, "list");
+        return (PList) callList.execute(null, getCall.execute(listType, SpecialMethodNames.__CALL__), listType, list);
+    }
+
+    @Override
+    public ExpressionNode getOperand() {
+        throw new IllegalStateException("CastToListNode used in uncached case for rewriting");
+    }
+
+    @Override
+    public Object execute(VirtualFrame frame) {
+        throw new IllegalStateException("CastToListNode used in uncached case in syntax");
     }
 }

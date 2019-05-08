@@ -30,6 +30,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -44,7 +45,7 @@ import com.oracle.graal.python.nodes.control.BreakTargetNode;
 import com.oracle.graal.python.nodes.control.ContinueNode;
 import com.oracle.graal.python.nodes.control.ContinueTargetNode;
 import com.oracle.graal.python.nodes.control.ElseNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnNode;
@@ -138,8 +139,8 @@ public class NodeFactory {
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots cellSlots) {
-        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots);
+                    ExecutionCellSlots cellSlots, Signature signature) {
+        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots, signature);
     }
 
     public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {
@@ -179,8 +180,8 @@ public class NodeFactory {
         return new TernaryIfNode(condition, thenPart, elsePart);
     }
 
-    public GetIteratorNode createGetIterator(ExpressionNode collection) {
-        return GetIteratorNode.create(collection);
+    public GetIteratorExpressionNode createGetIterator(ExpressionNode collection) {
+        return GetIteratorExpressionNode.create(collection);
     }
 
     public StatementNode createElse(StatementNode forNode, StatementNode orelse) {
@@ -208,7 +209,11 @@ public class NodeFactory {
     }
 
     public StatementNode createBreakTarget(StatementNode forNode) {
-        return new BreakTargetNode(forNode);
+        return new BreakTargetNode(forNode, null);
+    }
+
+    public StatementNode createBreakTarget(StatementNode forNode, StatementNode orelse) {
+        return new BreakTargetNode(forNode, orelse);
     }
 
     public YieldNode createYield(ExpressionNode right, FrameSlot returnSlot) {
@@ -510,10 +515,6 @@ public class NodeFactory {
 
     public CastToBooleanNode createYesNode(ExpressionNode operand) {
         return CastToBooleanNode.createIfTrueNode(operand);
-    }
-
-    public StatementNode createTryFinallyNode(StatementNode body, StatementNode finalbody) {
-        return new TryFinallyNode(body, finalbody);
     }
 
     public StatementNode createTryExceptElseFinallyNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode elseNode, StatementNode finalbody) {

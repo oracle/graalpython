@@ -134,8 +134,8 @@ public class PythonProvider implements LanguageProvider {
         addValueSnippet(context, snippets, "DictType:KeyNumber",   OBJECT,     "lambda: {1: 'Bacon', 0: 'Ham'}");
 
         // TODO remove '*args' from following value constructors once this is fixed in Truffle TCK
-        addValueSnippet(context, snippets, "LambdaType:Id",     executable(ANY, ANY),     "lambda: lambda x, *args: x");
-        addValueSnippet(context, snippets, "LambdaType:+1",     executable(NUMBER, NUMBER),     "lambda: lambda x, *args: x + 1");
+        addValueSnippet(context, snippets, "LambdaType:Id",     intersection(OBJECT, executable(ANY, ANY)),     "lambda: lambda x, *args: x");
+        addValueSnippet(context, snippets, "LambdaType:+1",     intersection(OBJECT, executable(NUMBER, NUMBER)),     "lambda: lambda x, *args: x + 1");
 
         // @formatter:on
         return snippets;
@@ -318,7 +318,13 @@ public class PythonProvider implements LanguageProvider {
         int slashIndex = resourceName.lastIndexOf('/');
         String scriptName = slashIndex >= 0 ? resourceName.substring(slashIndex + 1) : resourceName;
         Reader in = new InputStreamReader(PythonProvider.class.getResourceAsStream(resourceName), "UTF-8");
-        return Source.newBuilder(ID, in, scriptName).build();
+        try {
+            return Source.newBuilder(ID, in, scriptName).build();
+        } finally {
+            if (in != null) {
+                in.close();
+            }
+        }
     }
 
     private abstract static class PResultVerifier implements ResultVerifier {

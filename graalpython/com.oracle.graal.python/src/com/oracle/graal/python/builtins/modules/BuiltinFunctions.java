@@ -87,11 +87,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.NextNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -101,12 +99,11 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
-import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -119,8 +116,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
-import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -134,6 +131,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -141,7 +139,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -211,7 +209,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // abs(x)
-    @Builtin(name = ABS, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = ABS, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -246,7 +244,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // bin(object)
-    @Builtin(name = BIN, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = BIN, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class BinNode extends PythonUnaryBuiltinNode {
@@ -283,7 +281,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public String doPI(PInt x) {
             BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(2));
+            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(2));
         }
 
         @Specialization
@@ -300,7 +298,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // oct(object)
-    @Builtin(name = OCT, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = OCT, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class OctNode extends PythonUnaryBuiltinNode {
@@ -337,7 +335,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public String doPI(PInt x) {
             BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(8));
+            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(8));
         }
 
         @Specialization
@@ -354,7 +352,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // hex(object)
-    @Builtin(name = HEX, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = HEX, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class HexNode extends PythonUnaryBuiltinNode {
@@ -391,7 +389,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public String doPI(PInt x) {
             BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(8));
+            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(8));
         }
 
         @Specialization
@@ -408,7 +406,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // callable(object)
-    @Builtin(name = CALLABLE, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = CALLABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CallableNode extends PythonBuiltinNode {
 
@@ -438,7 +436,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // chr(i)
-    @Builtin(name = CHR, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = CHR, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ChrNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -513,7 +511,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
-        @Child private ListAppendNode appendNode;
+        @Child private AppendNode appendNode;
 
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
@@ -541,17 +539,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return dirNode.executeObject(object);
         }
 
-        private ListAppendNode getAppendNode() {
+        private AppendNode getAppendNode() {
             if (appendNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(ListAppendNode.create());
+                appendNode = insert(AppendNode.create());
             }
             return appendNode;
         }
     }
 
     // divmod(a, b)
-    @Builtin(name = DIVMOD, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = DIVMOD, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(BinaryArithmetic.class)
@@ -584,19 +582,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return factory().createTuple(new Object[]{div, mod});
         }
 
-        @TruffleBoundary
-        private static BigInteger[] divideAndRemainder(PInt a, PInt b) {
-            BigInteger[] result = a.getValue().divideAndRemainder(b.getValue());
-            assert result.length == 2;
-            return result;
-        }
     }
 
     // eval(expression, globals=None, locals=None)
-    @Builtin(name = EVAL, fixedNumOfPositionalArgs = 1, keywordArguments = {"globals", "locals"})
+    @Builtin(name = EVAL, minNumOfPositionalArgs = 1, parameterNames = {"expression", "globals", "locals"})
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
         protected final String funcname = "eval";
+        private final BranchProfile hasFreeVarsBranch = BranchProfile.create();
         @Child protected CompileNode compileNode = CompileNode.create(false);
         @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
@@ -607,6 +600,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 hasGetItemNode = insert(HasInheritedAttributeNode.create(SpecialMethodNames.__GETITEM__));
             }
             return hasGetItemNode;
+        }
+
+        protected void assertNoFreeVars(PCode code) {
+            Object[] freeVars = code.getFreeVars();
+            if (freeVars.length > 0) {
+                hasFreeVarsBranch.enter();
+                throw raise(PythonBuiltinClassType.TypeError, "code object passed to %s may not contain free variables", getMode());
+            }
+        }
+
+        protected String getMode() {
+            return "eval";
         }
 
         protected boolean isMapping(Object object) {
@@ -623,7 +628,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected PCode createAndCheckCode(Object source) {
-            return compileNode.execute(source, "<string>", "eval", 0, false, -1);
+            PCode code = compileNode.execute(source, "<string>", getMode(), 0, false, -1);
+            assertNoFreeVars(code);
+            return code;
         }
 
         private static void inheritGlobals(Frame callerFrame, Object[] args) {
@@ -684,22 +691,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setPFrame(args, factory().createPFrame(globals));
             RootCallTarget rootCallTarget = code.getRootCallTarget();
             if (rootCallTarget == null) {
-                rootCallTarget = extractRootCallTargetFromSource(code);
-            }
-            if (rootCallTarget == null) {
-                throw raise(ValueError, "cannot create the rootCallTarget from the code object: %p", code);
+                throw raise(ValueError, "cannot create the a call target from the code object: %p", code);
             }
             return indirectCallNode.call(rootCallTarget, args);
-        }
-
-        @TruffleBoundary
-        private RootCallTarget extractRootCallTargetFromSource(PCode code) {
-            Source src = Source.newBuilder("python", new String(code.getCodestring()), code.getName()).build();
-            Node root = getCore().getParser().parse(ParserMode.File, getCore(), src, null);
-            if (root instanceof RootNode) {
-                return Truffle.getRuntime().createCallTarget((RootNode) root);
-            }
-            return null;
         }
 
         @Specialization(guards = {"isMapping(locals)"})
@@ -734,27 +728,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = EXEC, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, parameterNames = {"source"})
+    @Builtin(name = EXEC, minNumOfPositionalArgs = 1, parameterNames = {"source", "globals", "locals"})
     @GenerateNodeFactory
     abstract static class ExecNode extends EvalNode {
-        private final BranchProfile hasFreeVars = BranchProfile.create();
-
-        private void assertNoFreeVars(PCode code) {
-            RootNode rootNode = code.getRootNode();
-            if (rootNode instanceof PClosureRootNode && ((PClosureRootNode) rootNode).hasFreeVars()) {
-                hasFreeVars.enter();
-                throw raise(PythonBuiltinClassType.TypeError, "code object passed to exec() may not contain free variables");
-            }
-        }
+        protected abstract Object executeInternal(VirtualFrame frame);
 
         @Override
-        protected PCode createAndCheckCode(Object source) {
-            PCode code = compileNode.execute(source, "<string>", "exec", 0, false, -1);
-            assertNoFreeVars(code);
-            return code;
+        protected String getMode() {
+            return "exec";
         }
-
-        protected abstract Object executeInternal(VirtualFrame frame);
 
         @Override
         public final Object execute(VirtualFrame frame) {
@@ -764,7 +746,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
-    @Builtin(name = COMPILE, fixedNumOfPositionalArgs = 3, keywordArguments = {"flags", "dont_inherit", "optimize"})
+    @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
@@ -791,12 +773,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return compile(new String(toBytesNode.execute(source)), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
-        @Specialization
-        @TruffleBoundary
-        PCode compile(OpaqueBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            return compile(new String(source.getBytes()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
-        }
-
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
@@ -813,7 +789,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
             }
-            Supplier<PCode> createCode = () -> factory().createCode((RootNode) getCore().getParser().parse(pm, getCore(), source, null));
+            Supplier<PCode> createCode = () -> factory().createCode(Truffle.getRuntime().createCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null)));
             if (getCore().isInitialized()) {
                 return createCode.get();
             } else {
@@ -833,7 +809,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // delattr(object, name)
-    @Builtin(name = DELATTR, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = DELATTR, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelAttrNode extends PythonBinaryBuiltinNode {
         @Child DeleteAttributeNode delNode = DeleteAttributeNode.create();
@@ -918,7 +894,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // id(object)
-    @Builtin(name = ID, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = ID, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IdNode extends PythonBuiltinNode {
         /**
@@ -1078,7 +1054,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // isinstance(object, classinfo)
-    @Builtin(name = ISINSTANCE, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = ISINSTANCE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsInstanceNode extends PythonBinaryBuiltinNode {
         @Child private GetClassNode getClassNode = GetClassNode.create();
@@ -1147,7 +1123,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // issubclass(class, classinfo)
-    @Builtin(name = ISSUBCLASS, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = ISSUBCLASS, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsSubClassNode extends PythonBinaryBuiltinNode {
         @Child private LookupAndCallBinaryNode subclassCheckNode = LookupAndCallBinaryNode.create(__SUBCLASSCHECK__);
@@ -1223,14 +1199,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // len(s)
-    @Builtin(name = LEN, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = LEN, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         private static final Supplier<NoAttributeHandler> NO_LEN = () -> new NoAttributeHandler() {
             @Override
             public Object execute(Object receiver) {
-                throw raise(TypeError, "object of type '%p' has no len()", receiver);
+                throw PRaiseNode.getUncached().raise(TypeError, "object of type '%p' has no len()", receiver);
             }
         };
 
@@ -1341,7 +1317,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // max(iterable, *[, key])
     // max(arg1, arg2, *args[, key])
-    @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordArguments = {"key"})
+    @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key"})
     @GenerateNodeFactory
     public abstract static class MaxNode extends MinMaxNode {
 
@@ -1349,7 +1325,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // min(iterable, *[, key])
     // min(arg1, arg2, *args[, key])
-    @Builtin(name = MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordArguments = {"key"})
+    @Builtin(name = MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key"})
     @GenerateNodeFactory
     public abstract static class MinNode extends MinMaxNode {
 
@@ -1385,12 +1361,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected static NextNode create() {
-            return NextNodeFactory.create();
+            return BuiltinFunctionsFactory.NextNodeFactory.create();
         }
     }
 
     // ord(c)
-    @Builtin(name = ORD, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = ORD, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class OrdNode extends PythonBuiltinNode {
 
@@ -1416,7 +1392,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
-    @Builtin(name = PRINT, takesVarArgs = true, keywordArguments = {"sep", "end", "file", "flush"}, doc = "\n" +
+    @Builtin(name = PRINT, takesVarArgs = true, keywordOnlyNames = {"sep", "end", "file", "flush"}, doc = "\n" +
                     "print(value, ..., sep=' ', end='\\n', file=sys.stdout, flush=False)\n" +
                     "\n" +
                     "Prints the values to a stream, or to sys.stdout by default.\n" +
@@ -1527,7 +1503,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // repr(object)
-    @Builtin(name = REPR, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = REPR, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -1557,7 +1533,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // setattr(object, name, value)
-    @Builtin(name = SETATTR, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = SETATTR, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetAttrNode extends PythonBuiltinNode {
         @Specialization
@@ -1580,7 +1556,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (getDebuggerSessionCount() > 0) {
                 // we already have a Truffle debugger attached, it'll stop here
                 return PNone.NONE;
-            } else {
+            } else if (getContext().isInitialized()) {
                 if (getSysModuleNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getSysModuleNode = insert(HashingStorageNodes.GetItemNode.create());
@@ -1594,6 +1570,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.RuntimeError, "lost sys.breakpointhook");
                 }
                 return callNode.execute(frame, breakpointhook, args, kwargs);
+            } else {
+                return PNone.NONE;
             }
         }
 
@@ -1618,7 +1596,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = POW, minNumOfPositionalArgs = 2, keywordArguments = {"z"})
+    @Builtin(name = POW, minNumOfPositionalArgs = 2, parameterNames = {"x", "y", "z"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonBuiltinNode {
         @Child LookupAndCallTernaryNode powNode = TernaryArithmetic.Pow.create();
@@ -1630,7 +1608,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // sum(iterable[, start])
-    @Builtin(name = SUM, fixedNumOfPositionalArgs = 1, keywordArguments = {"start"})
+    @Builtin(name = SUM, minNumOfPositionalArgs = 1, parameterNames = {"iterable", "start"})
     @GenerateNodeFactory
     public abstract static class SumFunctionNode extends PythonBuiltinNode {
 
@@ -1728,7 +1706,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BUILTIN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BUILTIN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
         @Child GetItemNode getNameNode = GetItemNode.create();
@@ -1744,9 +1722,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
              * won't work when they are called from an instance of that class due to the implicit
              * currying with "self".
              */
-            Arity arity = func.getArity();
+            Signature signature = func.getSignature();
             PFunction builtinFunc;
-            if (arity.getParameterIds().length > 0 && arity.getParameterIds()[0].equals("self")) {
+            if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
                 /*
                  * If the first parameter is called self, we assume the function does explicitly
                  * declare the module argument
@@ -1762,32 +1740,32 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 });
             } else {
                 /*
-                 * Otherwise, we create a new function with an arity that requires one extra
+                 * Otherwise, we create a new function with a signature that requires one extra
                  * argument in front. We actually modify the function's AST here, so the original
-                 * PFunction cannot be used anymore (its Arity won't agree with it's indexed
+                 * PFunction cannot be used anymore (its signature won't agree with it's indexed
                  * parameter reads).
                  */
                 FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
-                if (!functionRootNode.isRewritten()) {
-                    functionRootNode.setRewritten();
-                    func.getFunctionRootNode().accept(new NodeVisitor() {
-                        public boolean visit(Node node) {
-                            if (node instanceof ReadVarArgsNode) {
-                                ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
-                                node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
-                            } else if (node instanceof ReadIndexedArgumentNode) {
-                                node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                            } else if (node instanceof PythonCallNode) {
-                                node.replace(((PythonCallNode) node).asSpecialCall());
-                            }
-                            return true;
+                assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
+                functionRootNode = functionRootNode.copyWithNewSignature(signature.createWithSelf());
+                functionRootNode.setRewritten();
+                functionRootNode.accept(new NodeVisitor() {
+                    public boolean visit(Node node) {
+                        if (node instanceof ReadVarArgsNode) {
+                            ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
+                            node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
+                        } else if (node instanceof ReadIndexedArgumentNode) {
+                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                        } else if (node instanceof PythonCallNode) {
+                            node.replace(((PythonCallNode) node).asSpecialCall());
                         }
-                    });
-                }
+                        return true;
+                    }
+                });
 
                 String name = func.getName();
-                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arity.createWithSelf(name), Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
-                                func.getGlobals(), func.getClosure());
+                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), Truffle.getRuntime().createCallTarget(functionRootNode),
+                                func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
             }
 
             PythonObject globals = func.getGlobals();
@@ -1803,7 +1781,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DUMP_TRUFFLE_AST__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __DUMP_TRUFFLE_AST__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DumpTruffleAstNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1837,7 +1815,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "input", keywordArguments = {"prompt"})
+    @Builtin(name = "input", parameterNames = {"prompt"})
     @GenerateNodeFactory
     abstract static class InputNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1877,7 +1855,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "globals", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "globals", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GlobalsNode extends PythonBuiltinNode {
         @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
@@ -1900,7 +1878,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "locals", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "locals", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
         @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();

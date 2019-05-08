@@ -51,8 +51,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.graalvm.nativeimage.ImageInfo;
-
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -77,6 +76,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
     @Override
@@ -84,7 +85,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         return PosixSubprocessModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "fork_exec", fixedNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
+    @Builtin(name = "fork_exec", minNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
                     "fds_to_keep", "cwd", "env", "p2cread", "p2cwrite", "c2pread", "c2pwrite", "errread", "errwrite",
                     "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"})
     @GenerateNodeFactory
@@ -129,6 +130,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
             }
 
+            PythonLanguage.getLogger().fine(() -> "_posixsubprocess.fork_exec: " + String.join(" ", argStrings));
             ProcessBuilder pb = new ProcessBuilder(argStrings);
             if (p2cread != -1 && p2cwrite != -1) {
                 pb.redirectInput(Redirect.PIPE);
@@ -155,7 +157,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.OSError, "working directory %s is not accessible", cwd);
                 }
             } catch (SecurityException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
 
             Map<String, String> environment = pb.environment();

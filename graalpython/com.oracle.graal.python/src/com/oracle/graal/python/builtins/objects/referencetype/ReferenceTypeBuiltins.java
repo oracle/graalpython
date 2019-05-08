@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,7 +74,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__callback__
-    @Builtin(name = __CALLBACK__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __CALLBACK__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeCallbackPropertyNode extends PythonBuiltinNode {
         @Specialization
@@ -84,7 +84,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__call__()
-    @Builtin(name = __CALL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeCallNode extends PythonBuiltinNode {
         @Specialization
@@ -94,7 +94,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__hash__
-    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeHashNode extends PythonBuiltinNode {
         @Specialization(guards = "self.getObject() != null")
@@ -109,7 +109,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__repr__
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeReprNode extends PythonBuiltinNode {
         @Specialization(guards = "self.getObject() == null")
@@ -133,7 +133,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__eq__
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RefTypeEqNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
@@ -149,7 +149,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__ne__
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RefTypeNeNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})

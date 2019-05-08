@@ -28,8 +28,8 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
-import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -49,7 +49,7 @@ import com.oracle.truffle.api.source.SourceSection;
 /**
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
-public class FunctionRootNode extends PClosureFunctionRootNode implements CellSupplier {
+public class FunctionRootNode extends PClosureFunctionRootNode {
     private final ContextReference<PythonContext> contextRef;
     private final PCell[] cells;
     private final ExecutionCellSlots executionCellSlots;
@@ -63,8 +63,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private ExpressionNode uninitializedBody;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots executionCellSlots) {
-        super(language, frameDescriptor, executionCellSlots);
+                    ExecutionCellSlots executionCellSlots, Signature signature) {
+        super(language, frameDescriptor, executionCellSlots, signature);
         this.contextRef = language.getContextReference();
         this.executionCellSlots = executionCellSlots;
         this.cells = new PCell[this.cellVarSlots.length];
@@ -78,24 +78,26 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
     }
 
+    public FunctionRootNode copyWithNewSignature(Signature newSignature) {
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
+    }
+
     @Override
     public String getName() {
         return functionName;
     }
 
-    @Override
     public PCell[] getCells() {
         return cells;
     }
 
-    @Override
     public FrameSlot[] getCellVarSlots() {
         return cellVarSlots;
     }
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots);
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
     }
 
     @ExplodeLoop
@@ -109,7 +111,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
                 cell = (PCell) FrameUtil.getObjectSafe(frame, frameSlot);
             }
             if (cell == null) {
-                cell = new PCell();
+                cell = new PCell(cellEffectivelyFinalAssumptions[i]);
             }
 
             // store the cell as a local var

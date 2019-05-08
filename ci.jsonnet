@@ -1,8 +1,8 @@
 {
-  overlay: "d20cc2abdeb3cfb022e1a8035e40e350e5cfe5fc",
+  overlay: "627f30447cbecc2e4f5d16553cbfc6b669396c5d",
 
   // ======================================================================================================
-  // 
+  //
   // help:
   //  1) to get the json out of the jsonnet configuration make sure the `jsonnet` executable is in path
   //  2) execute the following command: jsonnet ci.jsonnet > ci.json
@@ -41,13 +41,13 @@
 
   // ------------------------------------------------------------------------------------------------------
   //
-  // utility funcs 
+  // utility funcs
   //
   // ------------------------------------------------------------------------------------------------------
   local utils = {
     download: function(name, version, platformSpecific = true)
       {name: name, version: version, platformspecific: platformSpecific},
-    
+
     getValue: function(object, field)
       if (!std.objectHas(object, field)) then
         error "unknown field: "+field+" in "+object+", valid choices are: "+std.objectFields(object)
@@ -57,7 +57,7 @@
     graalOption: function(name, value)
       ["--Ja", "@-Dgraal."+name+"="+value],
   },
-  
+
   // ------------------------------------------------------------------------------------------------------
   //
   // platform mixins
@@ -71,7 +71,7 @@
       "mercurial": ">=3.2.4",
       "gcc": "==4.9.1",
       "llvm": "==4.0.1",
-      "python": "==3.4.1",
+      "python": "==3.6.5",
       "libffi": ">=3.2.1",
       "bzip2": ">=1.0.6",
     },
@@ -111,7 +111,7 @@
   // ------------------------------------------------------------------------------------------------------
   local pypyMixin = {
     downloads +: {
-      PYPY_HOME: utils.download("pypy3", "5.8.0-minimal"),
+      PYPY_HOME: utils.download("pypy3", "7.1.0.beta"),
     },
   },
   pypyMixin: pypyMixin,
@@ -128,11 +128,12 @@
 
   local labsjdk8Mixin = {
     downloads +: {
-      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.55"),
-      EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+20")] },
+      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.59"),
+      EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+28")] },
     },
     environment +: {
       CI: "true",
+      GRAALVM_CHECK_EXPERIMENTAL_OPTIONS: "true",
       PATH: "$JAVA_HOME/bin:$PATH",
     },
   },
@@ -211,6 +212,9 @@
   local testGate = function(type, platform)
     baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform},
 
+  local testGateTime = function(type, platform, timelimit)
+    baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform} + {timelimit: timelimit},
+
   local styleGate = baseGraalGate + eclipseMixin + linuxMixin + {
     tags:: "style,fullbuild,python-license",
     name: "python-style",
@@ -243,29 +247,46 @@
       name: "deploy-binaries-"+platform,
     },
 
+  local coverageGate = commonBuilder + {
+      targets: TARGET.weekly,
+      timelimit: TIME_LIMIT["4h"],
+      run +: [
+          // cannot run with excluded "GeneratedBy" since that would lead to "command line too long"
+          // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-junit", '--jacocout', 'html'],
+          // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated'],
+          ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-unittest,python-tagged-unittest,python-junit", '--jacocout', 'html'],
+          ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated'],
+      ],
+      name: "python-coverage"
+    } + getPlatform(platform="linux"),
   // ------------------------------------------------------------------------------------------------------
   //
   // the gates
   //
   // ------------------------------------------------------------------------------------------------------
   local gates = [
-    // unittests 
+    // unittests
     testGate(type="unittest", platform="linux"),
     testGate(type="unittest", platform="darwin"),
+    testGateTime(type="tagged-unittest", platform="linux", timelimit=TIME_LIMIT["2h"]),
+    testGateTime(type="tagged-unittest", platform="darwin", timelimit=TIME_LIMIT["2h"]),
     testGate(type="svm-unittest", platform="linux"),
     testGate(type="svm-unittest", platform="darwin"),
 
-    // junit 
+    // junit
     testGate(type="junit", platform="linux"),
     testGate(type="junit", platform="darwin"),
 
-    // style 
+    // style
     styleGate,
+
+    // coverage
+    coverageGate,
 
     // graalvm gates
     graalVmGate,
 
-    // deploy binaries 
+    // deploy binaries
     deployGate(platform="linux"),
     deployGate(platform="darwin"),
   ],

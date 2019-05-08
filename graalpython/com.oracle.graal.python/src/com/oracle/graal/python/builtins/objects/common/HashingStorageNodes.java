@@ -47,7 +47,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -61,9 +60,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.CopyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.DelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.DiffNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.DynamicObjectSetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.DynamicObjectSetItemNodeFactory.DynamicObjectSetItemCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.EqualsNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.GetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.GetItemNodeFactory.GetItemCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.InvalidateMroNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.KeysEqualsNodeGen;
@@ -78,13 +77,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsHashableNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -103,6 +102,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -121,6 +121,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public abstract class HashingStorageNodes {
 
     public static class PythonEquivalence extends Equivalence {
+        @Child private PRaiseNode raise;
         @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==", null, null);
         @Child private CastToBooleanNode castToBoolean = CastToBooleanNode.createIfTrueNode();
@@ -169,7 +170,11 @@ public abstract class HashingStorageNodes {
         }
 
         private PException hashCodeTypeError() {
-            return raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+            if (raise == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raise = insert(PRaiseNode.create());
+            }
+            return raise.raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
         }
 
         @Override
@@ -182,8 +187,10 @@ public abstract class HashingStorageNodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
-    abstract static class DictStorageBaseNode extends PNodeWithContext {
+    // TODO qualified name is a workaround for a DSL bug
+    @com.oracle.truffle.api.dsl.ImportStatic(PGuards.class)
+    abstract static class DictStorageBaseNode extends com.oracle.truffle.api.nodes.Node {
+        @Child private PRaiseNode raise;
         @Child private GetLazyClassNode getClassNode;
         @Child private IsHashableNode isHashableNode;
         @Child private Equivalence equivalenceNode;
@@ -227,8 +234,16 @@ public abstract class HashingStorageNodes {
             return isHashableNode.execute(key);
         }
 
+        protected PRaiseNode getRaise() {
+            if (raise == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raise = insert(PRaiseNode.create());
+            }
+            return raise;
+        }
+
         protected PException unhashable(Object key) {
-            return raise(TypeError, "unhashable type: '%p'", key);
+            return getRaise().raise(TypeError, "unhashable type: '%p'", key);
         }
 
         protected boolean wrappedString(PString s) {
@@ -243,6 +258,13 @@ public abstract class HashingStorageNodes {
             // We cannot store this key in the dynamic object -> switch to generic store
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
             newStorage.addAll(storage, getEquivalence());
+            return newStorage;
+        }
+
+        protected static EconomicMapStorage switchToEconomicMap(HashingStorage storage, Equivalence equiv) {
+            // We cannot store this key in the dynamic object -> switch to generic store
+            EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
+            newStorage.addAll(storage, equiv);
             return newStorage;
         }
 
@@ -325,9 +347,10 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isEmpty(kwargs)")
-        public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs) {
+        public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs,
+                        @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             HashingStorage dictStorage = iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
-            dictStorage.addAll(new KeywordsStorage(kwargs));
+            unionNode.execute(dictStorage, new KeywordsStorage(kwargs));
             return dictStorage;
         }
 
@@ -402,7 +425,7 @@ public abstract class HashingStorageNodes {
                     len = seqLenNode.execute(element);
 
                     if (lengthTwoProfile.profile(len != 2)) {
-                        throw raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", elements.size(), len);
+                        throw getRaise().raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", elements.size(), len);
                     }
 
                     // really check for Java String since PString can be subclassed
@@ -412,7 +435,7 @@ public abstract class HashingStorageNodes {
                 }
             } catch (PException e) {
                 if (isTypeErrorProfile.profileException(e, TypeError)) {
-                    throw raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", elements.size());
+                    throw getRaise().raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", elements.size());
                 } else {
                     e.expectStopIteration(errorProfile);
                 }
@@ -427,11 +450,6 @@ public abstract class HashingStorageNodes {
                 storage.addAll(new KeywordsStorage(kwargs));
             }
             return storage;
-        }
-
-        @TruffleBoundary
-        private static PSequence[] enlarge(PSequence[] elements, int newCapacity) {
-            return Arrays.copyOf(elements, newCapacity);
         }
 
         public static InitNode create() {
@@ -787,271 +805,334 @@ public abstract class HashingStorageNodes {
         }
     }
 
+    @GenerateUncached
     protected abstract static class InvalidateMroNode extends Node {
         public abstract void execute(DynamicObjectStorage s, String key, Object val);
 
         @Specialization
-        void doPythonNativeObjectDictStorage(PythonNativeObjectDictStorage storage, String key, @SuppressWarnings("unused") Object val) {
+        static void doPythonNativeObjectDictStorage(PythonNativeObjectDictStorage storage, String key, @SuppressWarnings("unused") Object val) {
             storage.invalidateAttributeInMROFinalAssumptions(key);
         }
 
-        @Fallback
+        @Specialization(guards = "!isNativeObjectDictStorage(storage)")
         @SuppressWarnings("unused")
-        void doPythonNativeObjectDictStorage(DynamicObjectStorage storage, String key, Object val) {
+        static void doPythonNativeObjectDictStorage(DynamicObjectStorage storage, String key, Object val) {
             // do nothing
+        }
+
+        protected static boolean isNativeObjectDictStorage(DynamicObjectStorage storage) {
+            return storage instanceof PythonNativeObjectDictStorage;
         }
 
         public static InvalidateMroNode create() {
             return InvalidateMroNodeGen.create();
         }
+
+        public static InvalidateMroNode getUncached() {
+            return InvalidateMroNodeGen.getUncached();
+        }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class DynamicObjectSetItemNode extends SetItemBaseNode {
-
-        @Child private InvalidateMroNode actionNode = InvalidateMroNode.create();
+    public abstract static class DynamicObjectSetItemNode extends SetItemBaseNode {
 
         public abstract HashingStorage execute(DynamicObjectStorage s, Object key, Object val);
 
-        // write to existing property; no shape change
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "cachedName.equals(name)",
-                                        "shapeCheck(shape, storage.getStore())",
-                                        "location != null",
-                                        "canSet(location, value)"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected HashingStorage doDynamicObjectExistingCached(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
-                        Object value,
-                        @SuppressWarnings("unused") @Cached("name") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, name, value)") Location location) {
-            try {
-                location.set(storage.getStore(), value, shape);
+        @TypeSystemReference(PythonArithmeticTypes.class)
+        abstract static class DynamicObjectSetItemCachedNode extends DynamicObjectSetItemNode {
+            @Child private InvalidateMroNode actionNode = InvalidateMroNode.create();
+
+            // write to existing property; no shape change
+            @Specialization(limit = "3", //
+                            guards = {
+                                            "cachedName.equals(name)",
+                                            "shapeCheck(shape, storage.getStore())",
+                                            "location != null",
+                                            "canSet(location, value)"
+                            }, //
+                            assumptions = {
+                                            "shape.getValidAssumption()"
+                            })
+            protected HashingStorage doDynamicObjectExistingCached(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
+                            Object value,
+                            @SuppressWarnings("unused") @Cached("name") String cachedName,
+                            @Cached("lookupShape(storage.getStore())") Shape shape,
+                            @Cached("lookupLocation(shape, name, value)") Location location) {
+                try {
+                    location.set(storage.getStore(), value, shape);
+                    actionNode.execute(storage, name, value);
+                    return storage;
+                } catch (IncompatibleLocationException | FinalLocationException ex) {
+                    /* Our guards ensure that the value can be stored, so this cannot happen. */
+                    throw new IllegalStateException(ex);
+                }
+            }
+
+            // add new property; shape change
+            @Specialization(limit = "3", //
+                            guards = {
+                                            "cachedName.equals(name)",
+                                            "shapeCheck(oldShape, storage.getStore())",
+                                            "oldLocation == null",
+                                            "canStore(newLocation, value)"
+                            }, //
+                            assumptions = {
+                                            "oldShape.getValidAssumption()",
+                                            "newShape.getValidAssumption()"
+                            })
+            @SuppressWarnings("unused")
+            protected HashingStorage doDynamicObjectNewCached(DynamicObjectStorage storage, String name, Object value,
+                            @Cached("name") String cachedName,
+                            @Cached("lookupShape(storage.getStore())") Shape oldShape,
+                            @Cached("lookupLocation(oldShape, name, value)") Location oldLocation,
+                            @Cached("defineProperty(oldShape, name, value)") Shape newShape,
+                            @Cached("lookupLocation(newShape, name)") Location newLocation) {
+                try {
+                    newLocation.set(storage.getStore(), value, oldShape, newShape);
+                    actionNode.execute(storage, name, value);
+                    return storage;
+                } catch (IncompatibleLocationException ex) {
+                    /* Our guards ensure that the value can be stored, so this cannot happen. */
+                    throw new IllegalStateException(ex);
+                }
+            }
+
+            /**
+             * The generic case is used if the number of shapes accessed overflows the limit of the
+             * polymorphic inline cache.
+             */
+            @TruffleBoundary
+            @Specialization(replaces = {"doDynamicObjectExistingCached", "doDynamicObjectNewCached"}, guards = {"storage.getStore().getShape().isValid()", "!exceedsLimit(storage)"})
+            protected HashingStorage doDynamicObjectUncached(DynamicObjectStorage storage, String name, Object value) {
+                storage.getStore().define(name, value);
                 actionNode.execute(storage, name, value);
                 return storage;
-            } catch (IncompatibleLocationException | FinalLocationException ex) {
-                /* Our guards ensure that the value can be stored, so this cannot happen. */
-                throw new IllegalStateException(ex);
+            }
+
+            @Specialization(guards = {"storage.getStore().getShape().isValid()", "exceedsLimit(storage)"})
+            protected HashingStorage doDynamicObjectGeneralize(FastDictStorage storage, String name, Object value) {
+                HashingStorage newStorage = switchToEconomicMap(storage);
+                newStorage.setItem(name, value, getEquivalence());
+                return newStorage;
+            }
+
+            @TruffleBoundary
+            @Specialization(guards = {"!storage.getStore().getShape().isValid()"})
+            protected HashingStorage doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name, Object value) {
+                storage.getStore().updateShape();
+                return doDynamicObjectUncached(storage, name, value);
             }
         }
 
-        // add new property; shape change
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "cachedName.equals(name)",
-                                        "shapeCheck(oldShape, storage.getStore())",
-                                        "oldLocation == null",
-                                        "canStore(newLocation, value)"
-                        }, //
-                        assumptions = {
-                                        "oldShape.getValidAssumption()",
-                                        "newShape.getValidAssumption()"
-                        })
-        @SuppressWarnings("unused")
-        protected HashingStorage doDynamicObjectNewCached(DynamicObjectStorage storage, String name, Object value,
-                        @Cached("name") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape oldShape,
-                        @Cached("lookupLocation(oldShape, name, value)") Location oldLocation,
-                        @Cached("defineProperty(oldShape, name, value)") Shape newShape,
-                        @Cached("lookupLocation(newShape, name)") Location newLocation) {
-            try {
-                newLocation.set(storage.getStore(), value, oldShape, newShape);
-                actionNode.execute(storage, name, value);
-                return storage;
-            } catch (IncompatibleLocationException ex) {
-                /* Our guards ensure that the value can be stored, so this cannot happen. */
-                throw new IllegalStateException(ex);
+        private static final class DynamicObjectSetItemUncachedNode extends DynamicObjectSetItemNode {
+            private static final DynamicObjectSetItemUncachedNode INSTANCE = new DynamicObjectSetItemUncachedNode();
+
+            @Override
+            public HashingStorage execute(DynamicObjectStorage s, Object key, Object val) {
+                if (key instanceof String || key instanceof PString) {
+                    String skey = key instanceof String ? (String) key : ((PString) key).getValue();
+                    if (!exceedsLimit(s)) {
+                        DynamicObject store = s.getStore();
+                        Shape shape = store.getShape();
+                        if (!shape.isValid()) {
+                            store.updateShape();
+                        }
+                        store.define(skey, val);
+                        InvalidateMroNode.getUncached().execute(s, skey, val);
+                    } else {
+                        // switch to economic map
+                        Equivalence slowPathEquivalence = HashingStorage.getSlowPathEquivalence(skey);
+                        EconomicMapStorage newStorage = EconomicMapStorage.create(s.length() + 1, false);
+                        newStorage.addAll(s, slowPathEquivalence);
+                        newStorage.setItem(skey, val, slowPathEquivalence);
+                        return newStorage;
+                    }
+                }
+                return null;
             }
-        }
 
-        /**
-         * The generic case is used if the number of shapes accessed overflows the limit of the
-         * polymorphic inline cache.
-         */
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectExistingCached", "doDynamicObjectNewCached"}, guards = {"storage.getStore().getShape().isValid()", "!exceedsLimit(storage)"})
-        protected HashingStorage doDynamicObjectUncached(DynamicObjectStorage storage, String name, Object value) {
-            storage.getStore().define(name, value);
-            actionNode.execute(storage, name, value);
-            return storage;
-        }
-
-        @Specialization(guards = {"storage.getStore().getShape().isValid()", "exceedsLimit(storage)"})
-        protected HashingStorage doDynamicObjectGeneralize(FastDictStorage storage, String name, Object value) {
-            HashingStorage newStorage = switchToEconomicMap(storage);
-            newStorage.setItem(name, value, getEquivalence());
-            return newStorage;
-        }
-
-        @TruffleBoundary
-        @Specialization(guards = {"!storage.getStore().getShape().isValid()"})
-        protected HashingStorage doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name, Object value) {
-            storage.getStore().updateShape();
-            return doDynamicObjectUncached(storage, name, value);
         }
 
         public static DynamicObjectSetItemNode create() {
-            return DynamicObjectSetItemNodeGen.create();
+            return DynamicObjectSetItemCachedNodeGen.create();
+        }
+
+        public static DynamicObjectSetItemNode getUncached() {
+            return DynamicObjectSetItemUncachedNode.INSTANCE;
         }
     }
 
     public abstract static class GetItemNode extends DictStorageBaseNode {
 
-        public abstract Object execute(HashingStorage storage, Object key);
-
-        @Specialization(guards = "isHashable(key)")
-        @SuppressWarnings("unused")
-        Object doEmptyStorage(EmptyStorage storage, Object key) {
-            return null;
-        }
-
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "cachedName.equals(name)",
-                                        "shapeCheck(shape, storage.getStore())"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected static Object doDynamicObjectString(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
-                        @SuppressWarnings("unused") @Cached("name") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, name)") Location location) {
-
-            return location != null ? location.get(storage.getStore(), shape) : null;
-        }
-
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectString"}, guards = "storage.getStore().getShape().isValid()")
-        protected Object doDynamicObjectUncached(DynamicObjectStorage storage, String name) {
-            return storage.getStore().get(name);
-        }
-
-        @Specialization(guards = "!storage.getStore().getShape().isValid()")
-        protected Object doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name) {
-            CompilerDirectives.transferToInterpreter();
-            storage.getStore().updateShape();
-            return doDynamicObjectUncached(storage, name);
-        }
-
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "wrappedString(name)",
-                                        "cachedName.equals(name.getValue())",
-                                        "shapeCheck(shape, storage.getStore())"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected static Object doDynamicObjectPString(DynamicObjectStorage storage, @SuppressWarnings("unused") PString name,
-                        @SuppressWarnings("unused") @Cached("name.getValue()") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, cachedName)") Location location) {
-
-            return location != null ? location.get(storage.getStore(), shape) : null;
-        }
-
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectPString"}, guards = {"wrappedString(name)", "storage.getStore().getShape().isValid()"})
-        protected Object doDynamicObjectUncachedPString(DynamicObjectStorage storage, PString name) {
-            return storage.getStore().get(name.getValue());
-        }
-
-        @Specialization(guards = {"wrappedString(name)", "!storage.getStore().getShape().isValid()"})
-        protected Object doDynamicObjectUpdateShapePString(DynamicObjectStorage storage, PString name) {
-            CompilerDirectives.transferToInterpreter();
-            storage.getStore().updateShape();
-            return doDynamicObjectUncachedPString(storage, name);
-        }
-
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        Object doDynamicObject(PythonObjectHybridDictStorage storage, Object key) {
-            return storage.getItem(key, getEquivalence());
-        }
-
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        @SuppressWarnings("unused")
-        Object doDynamicObject(DynamicObjectStorage storage, Object key) {
-            return null;
-        }
-
-        @Specialization
-        Object doKeywordsString(KeywordsStorage storage, String key) {
-            return storage.getItem(key, DEFAULT_EQIVALENCE);
-        }
-
-        @Specialization(guards = "wrappedString(key)")
-        Object doKeywordsString(KeywordsStorage storage, PString key) {
-            return storage.getItem(key.getValue(), DEFAULT_EQIVALENCE);
-        }
-
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        @SuppressWarnings("unused")
-        Object doKeywordsObject(KeywordsStorage storage, Object key) {
-            return null;
-        }
-
-        @Specialization
-        Object doLocalsString(LocalsStorage storage, String key) {
-            return storage.getItem(key, DEFAULT_EQIVALENCE);
-        }
-
-        @Specialization(guards = "wrappedString(key)")
-        Object doLocalsString(LocalsStorage storage, PString key) {
-            return storage.getItem(key.getValue(), DEFAULT_EQIVALENCE);
-        }
-
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        @SuppressWarnings("unused")
-        Object doLocalsObject(LocalsStorage storage, Object key) {
-            return null;
-        }
-
-        @Specialization(guards = "isHashable(key)")
-        Object doGeneric(EconomicMapStorage storage, Object key) {
-            return storage.getItem(key, getEquivalence());
-        }
-
-        @Specialization(guards = "isHashable(key)")
-        Object doGeneric(HashMapStorage storage, Object key) {
-            return storage.getItem(key, getEquivalence());
-        }
-
-        @Specialization(guards = "!isHashable(key)")
-        Object doUnhashable(@SuppressWarnings("unused") HashingStorage storage, Object key) {
-            throw unhashable(key);
-        }
+        private static final GetItemUncachedNode UNCACHED = new GetItemUncachedNode();
 
         public static GetItemNode create() {
-            return GetItemNodeGen.create();
+            return GetItemCachedNodeGen.create();
+        }
+
+        public static GetItemNode getUncached() {
+            return UNCACHED;
+        }
+
+        public abstract Object execute(HashingStorage storage, Object key);
+
+        abstract static class GetItemCachedNode extends GetItemNode {
+
+            @Specialization(guards = "isHashable(key)")
+            @SuppressWarnings("unused")
+            Object doEmptyStorage(EmptyStorage storage, Object key) {
+                return null;
+            }
+
+            @Specialization(limit = "3", //
+                            guards = {
+                                            "cachedName.equals(name)",
+                                            "shapeCheck(shape, storage.getStore())"
+                            }, //
+                            assumptions = {
+                                            "shape.getValidAssumption()"
+                            })
+            protected static Object doDynamicObjectString(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
+                            @SuppressWarnings("unused") @Cached("name") String cachedName,
+                            @Cached("lookupShape(storage.getStore())") Shape shape,
+                            @Cached("lookupLocation(shape, name)") Location location) {
+
+                return location != null ? location.get(storage.getStore(), shape) : null;
+            }
+
+            @TruffleBoundary
+            @Specialization(replaces = {"doDynamicObjectString"}, guards = "storage.getStore().getShape().isValid()")
+            protected Object doDynamicObjectUncached(DynamicObjectStorage storage, String name) {
+                return storage.getStore().get(name);
+            }
+
+            @Specialization(guards = "!storage.getStore().getShape().isValid()")
+            protected Object doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name) {
+                CompilerDirectives.transferToInterpreter();
+                storage.getStore().updateShape();
+                return doDynamicObjectUncached(storage, name);
+            }
+
+            @Specialization(limit = "3", //
+                            guards = {
+                                            "wrappedString(name)",
+                                            "cachedName.equals(name.getValue())",
+                                            "shapeCheck(shape, storage.getStore())"
+                            }, //
+                            assumptions = {
+                                            "shape.getValidAssumption()"
+                            })
+            protected static Object doDynamicObjectPString(DynamicObjectStorage storage, @SuppressWarnings("unused") PString name,
+                            @SuppressWarnings("unused") @Cached("name.getValue()") String cachedName,
+                            @Cached("lookupShape(storage.getStore())") Shape shape,
+                            @Cached("lookupLocation(shape, cachedName)") Location location) {
+
+                return location != null ? location.get(storage.getStore(), shape) : null;
+            }
+
+            @TruffleBoundary
+            @Specialization(replaces = {"doDynamicObjectPString"}, guards = {"wrappedString(name)", "storage.getStore().getShape().isValid()"})
+            protected Object doDynamicObjectUncachedPString(DynamicObjectStorage storage, PString name) {
+                return storage.getStore().get(name.getValue());
+            }
+
+            @Specialization(guards = {"wrappedString(name)", "!storage.getStore().getShape().isValid()"})
+            protected Object doDynamicObjectUpdateShapePString(DynamicObjectStorage storage, PString name) {
+                CompilerDirectives.transferToInterpreter();
+                storage.getStore().updateShape();
+                return doDynamicObjectUncachedPString(storage, name);
+            }
+
+            @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+            Object doDynamicObject(PythonObjectHybridDictStorage storage, Object key) {
+                return storage.getItem(key, getEquivalence());
+            }
+
+            @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+            @SuppressWarnings("unused")
+            Object doDynamicObject(DynamicObjectStorage storage, Object key) {
+                return null;
+            }
+
+            @Specialization
+            Object doKeywordsString(KeywordsStorage storage, String key) {
+                return storage.getItem(key, DEFAULT_EQIVALENCE);
+            }
+
+            @Specialization(guards = "wrappedString(key)")
+            Object doKeywordsString(KeywordsStorage storage, PString key) {
+                return storage.getItem(key.getValue(), DEFAULT_EQIVALENCE);
+            }
+
+            @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+            @SuppressWarnings("unused")
+            Object doKeywordsObject(KeywordsStorage storage, Object key) {
+                return null;
+            }
+
+            @Specialization
+            Object doLocalsString(LocalsStorage storage, String key) {
+                return storage.getItem(key, DEFAULT_EQIVALENCE);
+            }
+
+            @Specialization(guards = "wrappedString(key)")
+            Object doLocalsString(LocalsStorage storage, PString key) {
+                return storage.getItem(key.getValue(), DEFAULT_EQIVALENCE);
+            }
+
+            @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+            @SuppressWarnings("unused")
+            Object doLocalsObject(LocalsStorage storage, Object key) {
+                return null;
+            }
+
+            @Specialization(guards = "isHashable(key)")
+            Object doGeneric(EconomicMapStorage storage, Object key) {
+                return storage.getItem(key, getEquivalence());
+            }
+
+            @Specialization(guards = "isHashable(key)")
+            Object doGeneric(HashMapStorage storage, Object key) {
+                return storage.getItem(key, getEquivalence());
+            }
+
+            @Specialization(guards = "!isHashable(key)")
+            Object doUnhashable(@SuppressWarnings("unused") HashingStorage storage, Object key) {
+                throw unhashable(key);
+            }
+        }
+
+        private static final class GetItemUncachedNode extends GetItemNode {
+
+            @Override
+            @TruffleBoundary
+            public Object execute(HashingStorage storage, Object key) {
+                return storage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
+            }
+
         }
     }
 
     public abstract static class EqualsNode extends DictStorageBaseNode {
 
-        @Child private GetItemNode getLeftItemNode;
-        @Child private GetItemNode getRightItemNode;
+        @Child private GetItemNode leftItemNode;
+        @Child private GetItemNode rightItemNode;
 
         public abstract boolean execute(HashingStorage selfStorage, HashingStorage other);
 
         private GetItemNode getLeftItemNode() {
-            if (getLeftItemNode == null) {
+            if (leftItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getLeftItemNode = insert(GetItemNode.create());
+                leftItemNode = insert(GetItemNode.create());
             }
-            return getLeftItemNode;
+            return leftItemNode;
         }
 
         private GetItemNode getRightItemNode() {
-            if (getRightItemNode == null) {
+            if (rightItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getRightItemNode = insert(GetItemNode.create());
+                rightItemNode = insert(GetItemNode.create());
             }
-            return getRightItemNode;
+            return rightItemNode;
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
@@ -1358,8 +1439,8 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "!setUnion")
         public HashingStorage doGeneric(HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
-            newStorage.addAll(left);
-            newStorage.addAll(right);
+            newStorage.addAll(left, getEquivalence());
+            newStorage.addAll(right, getEquivalence());
             return newStorage;
         }
 
@@ -1483,20 +1564,30 @@ public abstract class HashingStorageNodes {
         }
     }
 
-    public abstract static class LenNode extends PNodeWithContext {
+    @GenerateUncached
+    public abstract static class LenNode extends Node {
 
         protected static final int MAX_STORAGES = 8;
 
         public abstract int execute(HashingStorage s);
 
         @Specialization(limit = "MAX_STORAGES", guards = "s.getClass() == cachedClass")
-        int doCached(HashingStorage s,
+        static int doCached(HashingStorage s,
                         @Cached("s.getClass()") Class<? extends HashingStorage> cachedClass) {
             return cachedClass.cast(s).length();
         }
 
+        @Specialization(replaces = "doCached")
+        static int doGeneric(HashingStorage s) {
+            return s.length();
+        }
+
         public static LenNode create() {
             return LenNodeGen.create();
+        }
+
+        public static LenNode getUncached() {
+            return LenNodeGen.getUncached();
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -48,7 +48,7 @@ public class CodeBuiltins extends PythonBuiltins {
         return CodeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "co_freevars", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_freevars", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetFreeVarsNode extends PythonBuiltinNode {
         @Specialization
@@ -61,7 +61,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_cellvars", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_cellvars", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetCellVarsNode extends PythonBuiltinNode {
         @Specialization
@@ -74,7 +74,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_filename", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_filename", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetFilenameNode extends PythonBuiltinNode {
         @Specialization
@@ -87,7 +87,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_firstlineno", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_firstlineno", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLinenoNode extends PythonBuiltinNode {
         @Specialization
@@ -96,7 +96,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_name", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_name", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetNameNode extends PythonBuiltinNode {
         @Specialization
@@ -110,7 +110,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_argcount", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_argcount", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetArgCountNode extends PythonBuiltinNode {
         @Specialization
@@ -119,7 +119,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_kwonlyargcount", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_kwonlyargcount", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetKnownlyArgCountNode extends PythonBuiltinNode {
         @Specialization
@@ -128,7 +128,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_nlocals", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_nlocals", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetNLocalsNode extends PythonBuiltinNode {
         @Specialization
@@ -137,7 +137,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_stacksize", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_stacksize", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetStackSizeNode extends PythonBuiltinNode {
         @Specialization
@@ -146,7 +146,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_flags", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_flags", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetFlagsNode extends PythonBuiltinNode {
         @Specialization
@@ -155,21 +155,20 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_code", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_code", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
             byte[] codestring = self.getCodestring();
             if (codestring == null) {
-                // TODO: this is for the moment undefined
                 codestring = new byte[0];
             }
             return factory().createBytes(codestring);
         }
     }
 
-    @Builtin(name = "co_consts", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_consts", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetConstsNode extends PythonBuiltinNode {
         @Specialization
@@ -183,7 +182,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_names", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_names", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetNamesNode extends PythonBuiltinNode {
         @Specialization
@@ -197,7 +196,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_varnames", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_varnames", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetVarNamesNode extends PythonBuiltinNode {
         @Specialization
@@ -210,7 +209,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "co_lnotab", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_lnotab", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLNoTabNode extends PythonBuiltinNode {
         @Specialization

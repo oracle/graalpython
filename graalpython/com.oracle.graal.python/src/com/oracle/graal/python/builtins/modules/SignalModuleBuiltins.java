@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -115,22 +114,23 @@ public class SignalModuleBuiltins extends PythonBuiltins {
                     poll = signalQueue.poll();
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             return poll;
         });
     }
 
     private static class SignalTriggerAction implements AsyncHandler.AsyncAction {
-        private final Object callable;
+        private final Object callableObject;
         private final int signum;
 
         SignalTriggerAction(Object callable, int signum) {
-            this.callable = callable;
+            this.callableObject = callable;
             this.signum = signum;
         }
 
         public Object callable() {
-            return callable;
+            return callableObject;
         }
 
         public Object[] arguments() {
@@ -142,7 +142,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "alarm", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AlarmNode extends PythonUnaryBuiltinNode {
@@ -169,7 +169,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -199,11 +199,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
-    @Builtin(name = "signal", fixedNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "signal", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
-        @Child CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-
         private int getSignum(long signum) {
             try {
                 return toIntExact(signum);
@@ -309,18 +307,29 @@ final class Signals {
         }
     }
 
-    @TruffleBoundary
-    synchronized static void scheduleAlarm(long seconds) {
-        new Thread(() -> {
+    private static class Alarm implements Runnable {
+        private final long seconds;
+
+        Alarm(long seconds) {
+            this.seconds = seconds;
+        }
+
+        public void run() {
             long t0 = System.currentTimeMillis();
             while ((System.currentTimeMillis() - t0) < seconds * 1000) {
                 try {
                     Thread.sleep(seconds * 1000);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
             }
             sun.misc.Signal.raise(new sun.misc.Signal("ALRM"));
-        }).start();
+        }
+    }
+
+    @TruffleBoundary
+    synchronized static void scheduleAlarm(long seconds) {
+        new Thread(new Alarm(seconds)).start();
     }
 
     private static class PythonSignalHandler implements sun.misc.SignalHandler {

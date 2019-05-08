@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -54,27 +55,17 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
+@GenerateUncached
 public abstract class GetLazyClassNode extends PNodeWithContext {
-    private final ValueProfile classProfile = ValueProfile.createClassProfile();
-
-    /*
-     * =============== Changes in this class must be mirrored in GetClassNode ===============
-     */
-
-    public static GetLazyClassNode create() {
-        return GetLazyClassNodeGen.create();
-    }
 
     public abstract LazyPythonClass execute(boolean object);
 
@@ -84,15 +75,28 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
 
     public abstract LazyPythonClass execute(double object);
 
-    public final LazyPythonClass execute(Object object) {
-        return executeGetClass(classProfile.profile(object));
+    public abstract LazyPythonClass execute(Object object);
+
+    public static GetLazyClassNode create() {
+        return GetLazyClassNodeGen.create();
     }
 
-    protected abstract LazyPythonClass executeGetClass(Object object);
+    public static GetLazyClassNode getUncached() {
+        return GetLazyClassNodeGen.getUncached();
+    }
+
+    /*
+     * =============== Changes in this class must be mirrored in GetClassNode ===============
+     */
 
     @Specialization
     protected static LazyPythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
         return PythonBuiltinClassType.GetSetDescriptor;
+    }
+
+    @Specialization
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PCell object) {
+        return PythonBuiltinClassType.PCell;
     }
 
     @Specialization
@@ -167,38 +171,6 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
 
     @Specialization(guards = "isForeignObject(object)")
     protected static LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object) {
-        return PythonBuiltinClassType.TruffleObject;
-    }
-
-    @TruffleBoundary
-    public static LazyPythonClass getItSlowPath(Object o) {
-        if (PGuards.isForeignObject(o)) {
-            return PythonBuiltinClassType.TruffleObject;
-        } else if (o instanceof String) {
-            return PythonBuiltinClassType.PString;
-        } else if (o instanceof Boolean) {
-            return PythonBuiltinClassType.Boolean;
-        } else if (o instanceof Double || o instanceof Float) {
-            return PythonBuiltinClassType.PFloat;
-        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte || o instanceof PythonNativeVoidPtr) {
-            return PythonBuiltinClassType.PInt;
-        } else if (o instanceof PythonBuiltinClassType) {
-            return PythonBuiltinClassType.PythonClass;
-        } else if (o instanceof PythonObject) {
-            return ((PythonObject) o).getLazyPythonClass();
-        } else if (o instanceof PythonAbstractNativeObject) {
-            return GetNativeClassNode.doSlowPath((PythonAbstractNativeObject) o);
-        } else if (o instanceof PEllipsis) {
-            return PythonBuiltinClassType.PEllipsis;
-        } else if (o instanceof PNotImplemented) {
-            return PythonBuiltinClassType.PNotImplemented;
-        } else if (o instanceof PNone) {
-            return PythonBuiltinClassType.PNone;
-        } else if (o instanceof GetSetDescriptor) {
-            return PythonBuiltinClassType.GetSetDescriptor;
-        } else {
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("unknown type " + o.getClass().getName());
-        }
+        return PythonBuiltinClassType.ForeignObject;
     }
 }

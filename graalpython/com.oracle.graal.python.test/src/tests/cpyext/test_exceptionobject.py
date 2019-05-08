@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -48,7 +48,35 @@ except:
     TB = sys.exc_info()[2]
 
 
-class TestExceptionobject(CPyExtTestCase):
+class TestExceptionobject(object):
+    def test_exc_info(self):
+        TestExcInfo = CPyExtType("TestExcInfo",
+                             """
+                             PyObject* get_exc_info(PyObject* self) {
+                                 PyObject* typ;
+                                 PyObject* val;
+                                 PyObject* tb;
+                                 PyErr_GetExcInfo(&typ, &val, &tb);
+                                 Py_INCREF(typ);
+                                 return typ;
+                             }
+                             """,
+                             tp_methods='{"get_exc_info", (PyCFunction)get_exc_info, METH_NOARGS, ""}'
+        )
+        tester = TestExcInfo()
+        try:
+            raise IndexError
+        except:
+            exc_type = tester.get_exc_info()
+            assert exc_type == IndexError
+
+            # do a second time because this time we won't do a stack walk
+            exc_type = tester.get_exc_info()
+            assert exc_type == IndexError
+        else:
+            assert False
+
+class TestExceptionobjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super().compile_module(name)
@@ -64,3 +92,4 @@ class TestExceptionobject(CPyExtTestCase):
         argspec="OO",
         arguments=["PyObject* exc", "PyObject* tb"],
     )
+

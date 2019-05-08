@@ -1,0 +1,13 @@
+*EnumerateTestCase.test_argumentcheck
+*EnumerateTestCase.test_basicfunction
+*EnumerateTestCase.test_exception_propagation
+*EnumerateTestCase.test_getitemseqn
+*EnumerateTestCase.test_illformediterable
+*EnumerateTestCase.test_iteratorgenerator
+*EnumerateTestCase.test_iteratorseqn
+*EnumerateTestCase.test_noniterable
+*TestReversed.test_args
+*TestReversed.test_gc
+*TestReversed.test_objmethods
+*TestReversed.test_range_optimization
+*EnumerateStartTestCase.test_basicfunction

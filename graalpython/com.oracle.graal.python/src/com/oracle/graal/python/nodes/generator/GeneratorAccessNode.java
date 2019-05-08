@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -74,11 +74,11 @@ final class GeneratorAccessNode extends Node {
         getControlData(frame).setIteratorAt(iteratorSlot, value);
     }
 
-    public PException getActiveException(VirtualFrame frame) {
+    public ExceptionState getActiveException(VirtualFrame frame) {
         return getControlData(frame).getActiveException();
     }
 
-    public void setActiveException(VirtualFrame frame, PException ex) {
+    public void setActiveException(VirtualFrame frame, ExceptionState ex) {
         getControlData(frame).setActiveException(ex);
     }
 

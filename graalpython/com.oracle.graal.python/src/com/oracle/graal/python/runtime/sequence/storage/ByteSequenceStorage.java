@@ -39,9 +39,13 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     private byte[] values;
 
     public ByteSequenceStorage(byte[] elements) {
+        this(elements, elements.length);
+    }
+
+    public ByteSequenceStorage(byte[] elements, int length) {
         this.values = elements;
         this.capacity = values.length;
-        this.length = elements.length;
+        this.length = length;
     }
 
     public ByteSequenceStorage(int capacity) {

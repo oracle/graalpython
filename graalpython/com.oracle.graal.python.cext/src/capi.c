@@ -59,8 +59,8 @@ cache_t cache;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
-    PY_TRUFFLE_CEXT = (void*)polyglot_import("python_cext");
-    PY_BUILTIN = (void*)polyglot_import("python_builtins");
+    PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
+    PY_BUILTIN = (void*)polyglot_eval("python", "import builtins\nbuiltins");
 
     PY_TRUFFLE_LANDING = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)));
     PY_TRUFFLE_LANDING_L = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
@@ -189,6 +189,10 @@ static void initialize_globals() {
     // error marker
     void *jerrormarker = UPCALL_CEXT_PTR(polyglot_from_string("Py_ErrorHandler", SRC_CS));
     truffle_assign_managed(&marker_struct, jerrormarker);
+
+    // long zero, long one
+    _PyLong_Zero = (PyObject *)&_Py_FalseStruct;
+    _PyLong_One = (PyObject *)&_Py_TrueStruct;
 }
 
 static void initialize_bufferprocs() {
@@ -707,7 +711,11 @@ void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
     return native_to_java(fun(module, pnone));
 }
 
-void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs) {
+    return native_to_java(fun(self, PySequence_Fast_ITEMS((PyObject*)args), PyLong_AsSsize_t(nargs)));
+}
+
+void* wrap_fastcall_with_keywords(_PyCFunctionFastWithKeywords fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
     return native_to_java(fun(self, PySequence_Fast_ITEMS((PyObject*)args), PyLong_AsSsize_t(nargs), kwnames));
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -74,7 +75,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
 
     @Child private LookupInheritedAttributeNode getThrowNode;
     @Child private CallNode callThrowNode;
-    @Child private GetClassNode getExceptionClassNode;
+    @Child private GetClassNode getExcClassNode;
 
     @Child private LookupAndCallBinaryNode getSendNode;
     @Child private CallNode callSendNode;
@@ -91,9 +92,19 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     @Child private ExpressionNode right;
     @Child private WriteNode yieldWriteNode;
 
+    @Child private PythonObjectFactory ofactory;
+
     public YieldFromNode(ExpressionNode right, WriteNode yieldSlot) {
         this.right = right;
         this.yieldWriteNode = yieldSlot;
+    }
+
+    private PythonObjectFactory factory() {
+        if (ofactory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            ofactory = insert(PythonObjectFactory.create());
+        }
+        return ofactory;
     }
 
     @Override
@@ -216,11 +227,11 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     }
 
     private GetClassNode getExceptionClassNode() {
-        if (getExceptionClassNode == null) {
+        if (getExcClassNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getExceptionClassNode = insert(GetClassNode.create());
+            getExcClassNode = insert(GetClassNode.create());
         }
-        return getExceptionClassNode;
+        return getExcClassNode;
     }
 
     private LookupInheritedAttributeNode getGetCloseNode() {

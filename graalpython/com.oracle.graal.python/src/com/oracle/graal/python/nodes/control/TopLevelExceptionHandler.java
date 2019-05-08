@@ -112,6 +112,9 @@ public class TopLevelExceptionHandler extends RootNode {
                 return run(frame);
             } catch (PException e) {
                 printExc(e);
+                if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
+                    printStackTrace(e);
+                }
                 return null;
             } catch (Exception | StackOverflowError e) {
                 if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
@@ -189,6 +192,8 @@ public class TopLevelExceptionHandler extends RootNode {
             exitcode = ((PInt) attribute).intValue();
         } else if (attribute instanceof PNone) {
             exitcode = 0; // "goto done" case in CPython
+        } else if (attribute instanceof Boolean) {
+            exitcode = ((boolean) attribute) ? 1 : 0;
         }
         if (exitcode != null) {
             throw new PythonExitException(this, exitcode);
@@ -212,7 +217,10 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     private Object run(VirtualFrame frame) {
-        Object[] arguments = createArgs.execute(frame.getArguments());
+        Object[] arguments = PArguments.create(frame.getArguments().length);
+        for (int i = 0; i < frame.getArguments().length; i++) {
+            PArguments.setArgument(arguments, i, frame.getArguments()[i]);
+        }
         PythonContext pythonContext = context.get();
         if (getSourceSection().getSource().isInternal()) {
             // internal sources are not run in the main module

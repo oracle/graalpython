@@ -39,6 +39,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
@@ -51,6 +52,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -65,8 +67,9 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
@@ -223,7 +226,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
@@ -233,13 +236,13 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean eq(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
-                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode nativeIsNode) {
-            return nativeIsNode.execute(self, other);
+                        @Cached CExtNodes.PointerCompareNode nativeIsNode) {
+            return nativeIsNode.execute(__EQ__, self, other);
         }
 
         @Fallback
@@ -248,7 +251,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
 
@@ -257,8 +260,8 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
-                        @Cached("create(__NE__)") CExtNodes.PointerCompareNode nativeNeNode) {
-            return nativeNeNode.execute(self, other);
+                        @Cached CExtNodes.PointerCompareNode nativeNeNode) {
+            return nativeNeNode.execute(__NE__, self, other);
         }
 
         @Fallback
@@ -279,7 +282,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -289,7 +292,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -312,7 +315,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Child private LookupAndCallUnaryNode callLenNode;
@@ -352,7 +355,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
         private final BranchProfile hasDescProfile = BranchProfile.create();
@@ -370,7 +373,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private LookupAttributeInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode dispatchGet;
         @Child private ReadAttributeFromObjectNode attrRead;
-        @Child private LookupAndCallBinaryNode getattrNode;
 
         @Specialization
         protected Object doIt(Object object, Object key) {
@@ -467,9 +469,13 @@ public class ObjectBuiltins extends PythonBuiltins {
             }
             return getDataClassNode.execute(descr);
         }
+
+        public static GetAttributeNode create() {
+            return GetAttributeNodeFactory.create();
+        }
     }
 
-    @Builtin(name = __GETATTR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -478,7 +484,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETATTR__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -510,7 +516,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELATTR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __DELATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -595,7 +601,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __FORMAT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isString(formatString)")
@@ -610,13 +616,13 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = RICHCMP, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = RICHCMP, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
 
         protected BinaryComparisonNode createOp(String op) {
-            return (BinaryComparisonNode) getContext().getLanguage().getNodeFactory().createComparisonOperation(op, null, null);
+            return (BinaryComparisonNode) PythonLanguage.getCurrent().getNodeFactory().createComparisonOperation(op, null, null);
         }
 
         @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")
@@ -624,6 +630,15 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached("op") String cachedOp,
                         @Cached("createOp(op)") BinaryComparisonNode node) {
             return node.executeBool(left, right);
+        }
+    }
+
+    @Builtin(name = __INIT_SUBCLASS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InitSubclass extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone initSubclass(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
         }
     }
 }

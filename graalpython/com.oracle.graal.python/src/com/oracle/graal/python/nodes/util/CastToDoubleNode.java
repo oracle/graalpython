@@ -40,26 +40,27 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToDoubleNode extends PNodeWithContext {
-
-    @Node.Child private LookupAndCallUnaryNode callFloatNode;
+    @Child private LookupAndCallUnaryNode callFloatNode;
 
     public abstract double execute(Object x);
 
@@ -83,14 +84,15 @@ public abstract class CastToDoubleNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isNumber(x)")
-    public double toDouble(Object x) {
+    public double toDouble(Object x,
+                    @Cached PRaiseNode raise) {
         if (callFloatNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callFloatNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
         }
         Object result = callFloatNode.executeObject(x);
         if (result == PNone.NO_VALUE) {
-            throw raise(TypeError, "must be real number, not %p", x);
+            throw raise.raise(TypeError, "must be real number, not %p", x);
         }
         if (result instanceof PFloat) {
             return ((PFloat) result).getValue();
@@ -98,6 +100,6 @@ public abstract class CastToDoubleNode extends PNodeWithContext {
         if (result instanceof Float || result instanceof Double) {
             return (double) result;
         }
-        throw raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
+        throw raise.raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
     }
 }

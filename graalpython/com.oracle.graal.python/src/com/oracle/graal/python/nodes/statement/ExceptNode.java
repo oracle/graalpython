@@ -27,17 +27,19 @@ package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -60,6 +62,8 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private GetMroNode getMroNode;
     @Child private IsSameTypeNode isSameTypeNode;
     @Child private IsTypeNode isTypeNode;
+    @Child private PRaiseNode raiseNode;
+    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
 
     // "object" is the uninitialized value (since it's not a valid error type)
     @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
@@ -85,7 +89,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     public void executeExcept(VirtualFrame frame, PException e) {
-        getContext().setCaughtException(e);
+        ensureSetCaughtExceptionNode().execute(frame, e);
         body.executeVoid(frame);
         throw ExceptionHandledException.INSTANCE;
     }
@@ -249,7 +253,11 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     private PException raiseNoException() {
-        throw raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        throw raiseNode.raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
     }
 
     private boolean derivesFromBaseException(PythonBuiltinClassType error) {
@@ -305,5 +313,13 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             isTypeNode = insert(IsTypeNode.create());
         }
         return isTypeNode.execute(expectedType);
+    }
+
+    private SetCaughtExceptionNode ensureSetCaughtExceptionNode() {
+        if (setCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+        }
+        return setCaughtExceptionNode;
     }
 }

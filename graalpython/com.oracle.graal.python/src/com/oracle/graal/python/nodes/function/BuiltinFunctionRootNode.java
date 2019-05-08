@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,21 +26,22 @@
 package com.oracle.graal.python.nodes.function;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinWithFrameNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -49,8 +50,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class BuiltinFunctionRootNode extends PRootNode {
-
+    private final Signature signature;
     private final Builtin builtin;
+    private final String name;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final boolean declaresExplicitSelf;
 
@@ -85,6 +87,21 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         @Override
         public Object execute(VirtualFrame frame) {
             return node.execute(arg.execute(frame));
+        }
+    }
+
+    private static final class BuiltinUnaryWithFrameCallNode extends BuiltinCallNode {
+        @Child private PythonUnaryBuiltinWithFrameNode node;
+        @Child private ReadArgumentNode arg;
+
+        public BuiltinUnaryWithFrameCallNode(PythonUnaryBuiltinWithFrameNode node, ReadArgumentNode argument) {
+            this.node = node;
+            this.arg = argument;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(frame, arg.execute(frame));
         }
     }
 
@@ -145,7 +162,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
         super(language);
+        CompilerAsserts.neverPartOfCompilation();
+        this.signature = createSignature(factory, builtin, declaresExplicitSelf);
         this.builtin = builtin;
+        this.name = builtin.name();
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
         if (builtin.alwaysNeedsCallerFrame()) {
@@ -153,28 +173,75 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
     }
 
-    private static ReadArgumentNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
-        ArrayList<ReadArgumentNode> args = new ArrayList<>();
-        int numOfPositionalArgs = Math.max(builtin.minNumOfPositionalArgs(), builtin.maxNumOfPositionalArgs());
+    /**
+     * Should return a signature compatible with {@link #createArgumentsList(Builtin, boolean)}
+     */
+    private static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf) {
+        String[] parameterNames = builtin.parameterNames();
+        int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
-        if (builtin.keywordArguments().length > 0 && builtin.maxNumOfPositionalArgs() > builtin.minNumOfPositionalArgs()) {
-            // (tfel): This is actually a specification error, if there are keyword
-            // names, we cannot also have optional positional arguments, but we're
-            // being defensive here.
-            numOfPositionalArgs = builtin.minNumOfPositionalArgs();
+        if (builtin.maxNumOfPositionalArgs() >= 0) {
+            maxNumPosArgs = builtin.maxNumOfPositionalArgs();
+            assert parameterNames.length == 0 : "either give all parameter names explicitly, or define the max number: " + builtin.name() + " - " + String.join(",", builtin.parameterNames()) +
+                            " vs " + builtin.maxNumOfPositionalArgs() + " - " + factory.toString();
         }
 
-        if (builtin.fixedNumOfPositionalArgs() > 0) {
-            numOfPositionalArgs = builtin.fixedNumOfPositionalArgs();
+        if (!declaresExplicitSelf) {
+            // if we don't take the explicit self, we still need to accept it by signature
+            maxNumPosArgs++;
+        } else if (builtin.constructsClass().length > 0 && maxNumPosArgs == 0) {
+            // we have this convention to always declare the cls argument without setting the num
+            // args
+            maxNumPosArgs = 1;
+        }
+
+        if (maxNumPosArgs > 0) {
+            if (parameterNames.length == 0) {
+                PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin " + factory);
+                parameterNames = new String[maxNumPosArgs];
+                parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
+                for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
+                    parameterNames[i] = Character.toString((char) p);
+                }
+            } else {
+                if (declaresExplicitSelf) {
+                    assert parameterNames.length == maxNumPosArgs : "not enough parameter ids on " + factory;
+                } else {
+                    // we don't declare the "self" as a parameter id unless it's explicit
+                    assert parameterNames.length + 1 == maxNumPosArgs : "not enough parameter ids on " + factory;
+                    parameterNames = Arrays.copyOf(parameterNames, parameterNames.length + 1);
+                    System.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
+                    parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
+                }
+            }
+        }
+
+        return new Signature(builtin.takesVarKeywordArgs(), (builtin.takesVarArgs() || builtin.varArgsMarker()) ? parameterNames.length : -1, builtin.varArgsMarker(), parameterNames,
+                        builtin.keywordOnlyNames());
+    }
+
+    /**
+     * Must return argument reads compatible with
+     * {@link #createSignature(NodeFactory, Builtin, boolean)}
+     */
+    private static ReadArgumentNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
+        ArrayList<ReadArgumentNode> args = new ArrayList<>();
+
+        String[] parameterNames = builtin.parameterNames();
+        int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
+
+        if (builtin.maxNumOfPositionalArgs() >= 0) {
+            maxNumPosArgs = builtin.maxNumOfPositionalArgs();
+            assert parameterNames.length == 0 : "either give all parameter names explicitly, or define the max number: " + builtin.name();
         }
 
         if (!needsExplicitSelf) {
             // if we don't declare the explicit self, we just read (and ignore) it
-            numOfPositionalArgs++;
+            maxNumPosArgs++;
         }
 
         // read those arguments that only come positionally
-        for (int i = 0; i < numOfPositionalArgs; i++) {
+        for (int i = 0; i < maxNumPosArgs; i++) {
             args.add(ReadIndexedArgumentNode.create(i));
         }
 
@@ -183,22 +250,13 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             args.add(ReadVarArgsNode.create(args.size(), true));
         }
 
-        // read named keyword arguments
-        for (int i = 0; i < builtin.keywordArguments().length; i++) {
-            String name = builtin.keywordArguments()[i];
-            ReadDefaultArgumentNode defaultNode = new ReadDefaultArgumentNode();
-            defaultNode.setValue(PNone.NO_VALUE);
-            if (!builtin.takesVarArgs()) {
-                // if there's no splat, we also accept the keywords positionally
-                args.add(ReadKeywordNode.create(name, i + numOfPositionalArgs, defaultNode));
-            } else {
-                // if there is a splat, keywords have to be passed by name
-                args.add(ReadKeywordNode.create(name, defaultNode));
-            }
+        int keywordCount = builtin.keywordOnlyNames().length;
+        for (int i = 0; i < keywordCount; i++) {
+            args.add(ReadIndexedArgumentNode.create(i + maxNumPosArgs));
         }
 
         if (builtin.takesVarKeywordArgs()) {
-            args.add(ReadVarKeywordsNode.create(builtin.keywordArguments()));
+            args.add(ReadVarKeywordsNode.create());
         }
 
         return args.toArray(new ReadArgumentNode[args.size()]);
@@ -206,6 +264,16 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     @Override
     public boolean isCloningAllowed() {
+        return true;
+    }
+
+    @Override
+    public boolean isCaptureFramesForTrace() {
+        return false;
+    }
+
+    @Override
+    public boolean isInternal() {
         return true;
     }
 
@@ -231,6 +299,14 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     } else {
                         assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
                         body = insert(new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]));
+                    }
+                } else if (node instanceof PythonUnaryBuiltinWithFrameNode) {
+                    if (!declaresExplicitSelf) {
+                        assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinUnaryWithFrameCallNode((PythonUnaryBuiltinWithFrameNode) node, argumentsList[1]));
+                    } else {
+                        assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinUnaryWithFrameCallNode((PythonUnaryBuiltinWithFrameNode) node, argumentsList[0]));
                     }
                 } else if (node instanceof PythonBinaryBuiltinNode) {
                     if (!declaresExplicitSelf) {
@@ -267,7 +343,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     public String getFunctionName() {
-        return builtin.name();
+        return name;
     }
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
@@ -277,15 +353,20 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<builtin function " + builtin.name() + " at " + Integer.toHexString(hashCode()) + ">";
+        return "<builtin function " + name + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
     @Override
     public String getName() {
-        return builtin.name();
+        return name;
     }
 
     public boolean declaresExplicitSelf() {
         return declaresExplicitSelf;
+    }
+
+    @Override
+    public Signature getSignature() {
+        return signature;
     }
 }

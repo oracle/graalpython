@@ -1,0 +1,10 @@
+test_get_config_vars
+test_get_path
+test_get_path_names
+test_get_paths
+test_get_platform
+test_get_scheme_names
+test_main
+test_srcdir_independent_of_cwd
+test_user_similar
+test_parse_makefile
