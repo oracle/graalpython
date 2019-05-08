@@ -339,3 +339,34 @@ if sys.implementation.name == "graalpython":
             assert repr(ArrayList()) == "[]"
 
             assert java.util.ArrayList == ArrayList
+
+    def test_foreign_object_does_not_leak_Javas_toString():
+        try:
+            from java.util import ArrayList
+        except NotImplementedError as e:
+            assert "host lookup is not allowed" in str(e)
+        else:
+            try:
+                ArrayList(12, "12")
+            except TypeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString
+
+            try:
+                ArrayList(12, foo="12") # keywords are not supported
+            except TypeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString
+
+            try:
+                ArrayList.bar
+            except AttributeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString
+
+            try:
+                del ArrayList.bar
+            except AttributeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString
+
+            try:
+                del ArrayList.bar
+            except AttributeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString

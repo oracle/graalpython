@@ -133,7 +133,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return !lib.isNull(self);
                 }
             } catch (UnsupportedMessageException e) {
-                throw raise(TypeError, "foreign.__bool__ should return a boolean value");
+                throw raise(AttributeError, "'foreign' object has no attribute '__bool__'");
             }
         }
     }
@@ -172,7 +172,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
-            throw raise(AttributeError, "'foreign' object has no attribute 'len'");
+            throw raise(AttributeError, "'foreign' object has no attribute '__len__'");
         }
     }
 
@@ -563,13 +563,14 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 Object res = lib.instantiate(callee, convertedArgs);
                 return toPTypeNode.executeConvert(res);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, "invalid instantiation of foreign object %s()", callee);
+                throw raise(PythonErrorType.TypeError, "invalid instantiation of foreign object");
             }
         }
 
         @Fallback
-        protected Object doGeneric(Object callee, @SuppressWarnings("unused") Object arguments, @SuppressWarnings("unused") Object keywords) {
-            throw raise(PythonErrorType.TypeError, "invalid instantiation of foreign object %s()", callee);
+        @SuppressWarnings("unused")
+        protected Object doGeneric(Object callee, Object arguments, Object keywords) {
+            throw raise(PythonErrorType.TypeError, "invalid instantiation of foreign object");
         }
     }
 
@@ -609,13 +610,14 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable %s()", callee);
+                throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");
             }
         }
 
         @Fallback
-        protected Object doGeneric(Object callee, @SuppressWarnings("unused") Object arguments, @SuppressWarnings("unused") Object keywords) {
-            throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable %s()", callee);
+        @SuppressWarnings("unused")
+        protected Object doGeneric(Object callee, Object arguments, Object keywords) {
+            throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");
         }
 
         public static CallNode create() {
@@ -640,16 +642,15 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
 
         @Specialization
-        protected Object doIt(Object object, Object key,
+        protected Object doIt(Object object, String member,
                         @CachedLibrary(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)") InteropLibrary read) {
             try {
-                String member = (String) key;
                 if (read.isMemberReadable(object, member)) {
                     return toPythonNode.executeConvert(read.readMember(object, member));
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
             }
-            throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
+            throw raise(PythonErrorType.AttributeError, "foreign object has no attribute '%s'", member);
         }
     }
 
@@ -662,7 +663,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 lib.writeMember(object, key, value);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
-                throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
+                throw raise(PythonErrorType.AttributeError, "foreign object has no attribute '%s'", key);
             }
             return PNone.NONE;
         }
@@ -689,7 +690,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 lib.removeMember(object, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
+                throw raise(PythonErrorType.AttributeError, "foreign object has no attribute '%s'", key);
             }
             return PNone.NONE;
         }
@@ -717,7 +718,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     return lib.getMembers(object);
                 } catch (UnsupportedMessageException e) {
-                    throw raise(TypeError, "The object '%s' claims to have members, but does not return them", object);
+                    throw new IllegalStateException("foreign object claims to have members, but does not return them");
                 }
             } else {
                 return factory().createList();
@@ -735,7 +736,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     return lib.asInt(object);
                 } catch (UnsupportedMessageException e) {
-                    throw raise(TypeError, "foreign value '%s' claims it fits into index-sized int, but doesn't", object);
+                    throw new IllegalStateException("foreign value claims it fits into index-sized int, but doesn't");
                 }
             }
             throw raiseIndexError();
@@ -761,7 +762,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return getCallStrNode().executeObject(frame, lib.asBoolean(object));
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the appropriate unbox message");
+                throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
             }
         }
 
@@ -771,7 +772,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return getCallStrNode().executeObject(frame, lib.asString(object));
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the appropriate unbox message");
+                throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
             }
         }
 
@@ -781,7 +782,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return getCallStrNode().executeObject(frame, lib.asLong(object));
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the appropriate unbox message");
+                throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
             }
         }
 
@@ -791,7 +792,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return getCallStrNode().executeObject(frame, lib.asDouble(object));
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the appropriate unbox message");
+                throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
             }
         }
 
