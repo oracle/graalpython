@@ -278,24 +278,6 @@ public final class PArguments {
         arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
     }
 
-    /**
-     * The caller frame or exception argument is used for two purposes:
-     * <ul>
-     * <li>The caller frame if the callee requested it.</li>
-     * <li>The currently handled exception (i.e. the caught exception).</li>
-     * </ul>
-     * These two purposes are exclusive in the sence that if the caller frame is requested, it will
-     * also contain the caught exception in the special frame slot named
-     * {@link FrameSlotIDs#CAUGHT_EXCEPTION}.
-     */
-    public static Object getCallerFrameOrException(Frame frame) {
-        return frame.getArguments()[INDEX_CALLER_FRAME_INFO];
-    }
-
-    public static void setCallerFrameOrException(Object[] arguments, Object callerFrameOrException) {
-        arguments[INDEX_CALLER_FRAME_INFO] = callerFrameOrException;
-    }
-
     public static void setCallerFrame(Object[] arguments, Frame callerFrame) {
         arguments[INDEX_CALLER_FRAME_INFO] = callerFrame;
     }
