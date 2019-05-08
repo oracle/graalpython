@@ -44,6 +44,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -176,7 +177,12 @@ public abstract class ExecutionContext implements AutoCloseable {
                     FrameInstance callerFrameInstance = Truffle.getRuntime().getCallerFrame();
                     if (callerFrameInstance != null) {
                         Frame callerFrame = callerFrameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
-                        callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                        if (PArguments.isPythonFrame(callerFrame)) {
+                            callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                        } else {
+                            // TODO: frames: an assertion should be that this is one of our entry point call nodes
+                            callerInfo = PFrame.Reference.EMPTY;
+                        }
                     } else {
                         callerInfo = PFrame.Reference.EMPTY;
                     }
