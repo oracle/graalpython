@@ -55,6 +55,8 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -1459,6 +1461,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // This is only used during bootstrap and then replaced with Python code
     @Builtin(name = "encode", minNumOfPositionalArgs = 1, parameterNames = {"self", "encoding", "errors"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1499,15 +1502,18 @@ public final class StringBuiltins extends PythonBuiltins {
                     break;
             }
 
+            Charset cs;
             try {
-                Charset cs = Charset.forName(encoding);
+                cs = Charset.forName(encoding);
+            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
+                throw raise(LookupError, "unknown encoding: %s", encoding);
+            }
+            try {
                 ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
                 int n = encoded.remaining();
                 byte[] data = new byte[n];
                 encoded.get(data);
                 return factory().createBytes(data);
-            } catch (IllegalArgumentException e) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeEncodeError, e);
             }
