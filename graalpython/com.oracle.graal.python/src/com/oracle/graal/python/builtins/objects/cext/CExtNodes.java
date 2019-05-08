@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.CallUnaryContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -109,6 +110,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -117,6 +119,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -258,18 +261,18 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     public abstract static class FromNativeSubclassNode extends CExtBaseNode {
 
-        public abstract Double execute(PythonNativeObject object);
+        public abstract Double execute(VirtualFrame frame, PythonNativeObject object);
 
         @Specialization
         @SuppressWarnings("unchecked")
-        public Double execute(PythonNativeObject object,
+        public Double execute(VirtualFrame frame, PythonNativeObject object,
                         @Exclusive @Cached GetClassNode getClass,
                         @Exclusive @Cached IsSubtypeNode isSubtype,
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            if (isFloatSubtype(object, getClass, isSubtype, context)) {
+            if (isFloatSubtype(frame, object, getClass, isSubtype, context)) {
                 try {
                     return (Double) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_FLOAT_AS_DOUBLE), toSulongNode.execute(object));
                 } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
@@ -279,8 +282,8 @@ public abstract class CExtNodes {
             return null;
         }
 
-        public boolean isFloatSubtype(PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype, PythonContext context) {
-            return isSubtype.execute(getClass.execute(object), context.getCore().lookupType(PythonBuiltinClassType.PFloat));
+        public boolean isFloatSubtype(VirtualFrame frame, PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype, PythonContext context) {
+            return isSubtype.execute(frame, getClass.execute(object), context.getCore().lookupType(PythonBuiltinClassType.PFloat));
         }
 
         public static FromNativeSubclassNode create() {
@@ -710,11 +713,16 @@ public abstract class CExtNodes {
                 return b;
             }
 
-            @Specialization
+            @Specialization(guards = "isForeignObject(value)")
             static Object doForeign(Object value,
                             @Exclusive @Cached PCallCapiFunction callNativeNode,
                             @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
                 return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
+            }
+
+            protected static boolean isForeignObject(Object obj) {
+                return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof String || obj instanceof Boolean || obj instanceof Integer ||
+                                obj instanceof Long || obj instanceof Byte);
             }
 
         }
@@ -1110,26 +1118,26 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "args.length == 1")
-        Object upcall1(Object callable, Object[] args,
+        Object upcall1(VirtualFrame frame, Object callable, Object[] args,
                         @Cached("create()") CallUnaryMethodNode callNode,
                         @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode) {
-            return callNode.executeObject(callable, toJavaNode.execute(args[0]));
+            return callNode.executeObject(frame, callable, toJavaNode.execute(args[0]));
         }
 
         @Specialization(guards = "args.length == 2")
-        Object upcall2(Object callable, Object[] args,
+        Object upcall2(VirtualFrame frame, Object callable, Object[] args,
                         @Cached("create()") CallBinaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
             Object[] converted = allToJavaNode.execute(args);
-            return callNode.executeObject(callable, converted[0], converted[1]);
+            return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
 
         @Specialization(guards = "args.length == 3")
-        Object upcall3(Object callable, Object[] args,
+        Object upcall3(VirtualFrame frame, Object callable, Object[] args,
                         @Cached("create()") CallTernaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
             Object[] converted = allToJavaNode.execute(args);
-            return callNode.execute(callable, converted[0], converted[1], converted[2]);
+            return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
@@ -1162,32 +1170,32 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "args.length == 1")
-        Object upcall1(Object cextModule, String name, Object[] args,
+        Object upcall1(VirtualFrame frame, Object cextModule, String name, Object[] args,
                         @Cached("create()") CallUnaryMethodNode callNode,
                         @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             Object callable = getAttrNode.execute(cextModule, name);
-            return callNode.executeObject(callable, toJavaNode.execute(args[0]));
+            return callNode.executeObject(frame, callable, toJavaNode.execute(args[0]));
         }
 
         @Specialization(guards = "args.length == 2")
-        Object upcall2(Object cextModule, String name, Object[] args,
+        Object upcall2(VirtualFrame frame, Object cextModule, String name, Object[] args,
                         @Cached("create()") CallBinaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
             Object callable = getAttrNode.execute(cextModule, name);
-            return callNode.executeObject(callable, converted[0], converted[1]);
+            return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
 
         @Specialization(guards = "args.length == 3")
-        Object upcall3(Object cextModule, String name, Object[] args,
+        Object upcall3(VirtualFrame frame, Object cextModule, String name, Object[] args,
                         @Cached("create()") CallTernaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
             Object callable = getAttrNode.execute(cextModule, name);
-            return callNode.execute(callable, converted[0], converted[1], converted[2]);
+            return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
@@ -1213,37 +1221,37 @@ public abstract class CExtNodes {
         Object upcall0(VirtualFrame frame, Object cextModule, String name, @SuppressWarnings("unused") Object[] args,
                         @Cached("create()") CallNode callNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
             return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(guards = "args.length == 1")
-        Object upcall1(Object cextModule, String name, Object[] args,
+        Object upcall1(VirtualFrame frame, Object cextModule, String name, Object[] args,
                         @Cached("create()") CallUnaryMethodNode callNode,
                         @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
-            return callNode.executeObject(callable, toJavaNode.execute(args[0]));
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
+            return callNode.executeObject(frame, callable, toJavaNode.execute(args[0]));
         }
 
         @Specialization(guards = "args.length == 2")
-        Object upcall2(Object cextModule, String name, Object[] args,
+        Object upcall2(VirtualFrame frame, Object cextModule, String name, Object[] args,
                         @Cached("create()") CallBinaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
-            return callNode.executeObject(callable, converted[0], converted[1]);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
+            return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
 
         @Specialization(guards = "args.length == 3")
-        Object upcall3(Object cextModule, String name, Object[] args,
+        Object upcall3(VirtualFrame frame, Object cextModule, String name, Object[] args,
                         @Cached("create()") CallTernaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
-            return callNode.execute(callable, converted[0], converted[1], converted[2]);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
+            return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
@@ -1252,7 +1260,7 @@ public abstract class CExtNodes {
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
         }
     }
@@ -1260,15 +1268,15 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class AsDouble extends PNodeWithContext {
-        public abstract double execute(boolean arg);
+        public abstract double execute(VirtualFrame frame, boolean arg);
 
-        public abstract double execute(int arg);
+        public abstract double execute(VirtualFrame frame, int arg);
 
-        public abstract double execute(long arg);
+        public abstract double execute(VirtualFrame frame, long arg);
 
-        public abstract double execute(double arg);
+        public abstract double execute(VirtualFrame frame, double arg);
 
-        public abstract double execute(Object arg);
+        public abstract double execute(VirtualFrame frame, Object arg);
 
         public static AsDouble create() {
             return CExtNodesFactory.AsDoubleNodeGen.create();
@@ -1317,19 +1325,23 @@ public abstract class CExtNodes {
         // TODO: this should just use the builtin constructor node so we don't duplicate the corner
         // cases
         @Specialization
-        double runGeneric(PythonAbstractObject value,
+        double runGeneric(VirtualFrame frame, PythonAbstractObject value,
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PassCaughtExceptionNode passExceptionNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
-            Object result = callFloatFunc.executeObject(value, __FLOAT__);
-            if (PGuards.isPFloat(result)) {
-                return ((PFloat) result).getValue();
-            } else if (result instanceof Double) {
-                return (double) result;
-            } else {
-                throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
+            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
+                Object result = ctxManager.executeObject(value, __FLOAT__);
+                if (PGuards.isPFloat(result)) {
+                    return ((PFloat) result).getValue();
+                } else if (result instanceof Double) {
+                    return (double) result;
+                } else {
+                    throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
+                }
             }
         }
     }
@@ -1797,11 +1809,11 @@ public abstract class CExtNodes {
 
         public abstract boolean execute(PythonAbstractNativeObject left, PythonAbstractNativeObject right);
 
-        protected static boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+        protected static boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right, ValueProfile profile) {
             // This check is a bit dangerous since we cannot be sure about the code that is running.
             // Currently, we assume that the pointer object is a Sulong pointer and for this it's
             // fine.
-            return left.equals(right);
+            return left.equalsProfiled(right, profile);
         }
 
     }
@@ -1810,8 +1822,9 @@ public abstract class CExtNodes {
     public abstract static class IsSameNativeObjectFastNode extends IsSameNativeObjectNode {
 
         @Specialization
-        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
-            return IsSameNativeObjectNode.doNativeFast(left, right);
+        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+                        @Cached("createClassProfile()") ValueProfile foreignTypeProfile) {
+            return IsSameNativeObjectNode.doNativeFast(left, right, foreignTypeProfile);
         }
     }
 
@@ -1820,8 +1833,10 @@ public abstract class CExtNodes {
 
         @Specialization
         boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+                        @Cached("createBinaryProfile()") ConditionProfile isEqualProfile,
+                        @Cached("createClassProfile()") ValueProfile foreignTypeProfile,
                         @Cached PointerCompareNode pointerCompareNode) {
-            if (IsSameNativeObjectNode.doNativeFast(left, right)) {
+            if (isEqualProfile.profile(IsSameNativeObjectNode.doNativeFast(left, right, foreignTypeProfile))) {
                 return true;
             }
             return pointerCompareNode.execute(SpecialMethodNames.__EQ__, left, right);

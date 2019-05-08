@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReferenceType)
 public class ReferenceTypeBuiltins extends PythonBuiltins {
@@ -137,13 +138,13 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RefTypeEqNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
-        public boolean eq(PReferenceType self, PReferenceType other,
+        boolean eq(VirtualFrame frame, PReferenceType self, PReferenceType other,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return eqNode.executeBool(self.getObject(), other.getObject());
+            return eqNode.executeBool(frame, self.getObject(), other.getObject());
         }
 
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")
-        public boolean eq(PReferenceType self, PReferenceType other) {
+        boolean eq(PReferenceType self, PReferenceType other) {
             return self == other;
         }
     }
@@ -153,13 +154,13 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RefTypeNeNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
-        public boolean ne(PReferenceType self, PReferenceType other,
+        boolean ne(VirtualFrame frame, PReferenceType self, PReferenceType other,
                         @Cached("create(__NE__, __NE__, __NE__)") BinaryComparisonNode neNode) {
-            return neNode.executeBool(self.getObject(), other.getObject());
+            return neNode.executeBool(frame, self.getObject(), other.getObject());
         }
 
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")
-        public boolean ne(PReferenceType self, PReferenceType other) {
+        boolean ne(PReferenceType self, PReferenceType other) {
             return self != other;
         }
     }

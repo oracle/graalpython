@@ -134,15 +134,15 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PMethod self,
+        protected Object doIt(VirtualFrame frame, PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getName) {
-            return getName.executeObject(self.getFunction(), __NAME__);
+            return getName.executeObject(frame, self.getFunction(), __NAME__);
         }
 
         @Specialization
-        protected Object doIt(PBuiltinMethod self,
+        protected Object doIt(VirtualFrame frame, PBuiltinMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getName) {
-            return getName.executeObject(self.getFunction(), __NAME__);
+            return getName.executeObject(frame, self.getFunction(), __NAME__);
         }
     }
 
@@ -169,7 +169,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        Object getModule(PythonObject self, @SuppressWarnings("unused") PNone none,
+        Object getModule(VirtualFrame frame, PythonObject self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") ReadAttributeFromObjectNode readObject,
                         @Cached("create()") GetAttrNode getAttr,
                         @Cached("create()") WriteAttributeToObjectNode writeObject) {
@@ -180,7 +180,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                 if (globals instanceof PythonModule) {
                     module = ((PythonModule) globals).getAttribute(__NAME__);
                 } else {
-                    module = getAttr.execute(globals, __MODULE__, PNone.NONE);
+                    module = getAttr.execute(frame, globals, __MODULE__, PNone.NONE);
                 }
                 writeObject.execute(self, __MODULE__, module);
             }

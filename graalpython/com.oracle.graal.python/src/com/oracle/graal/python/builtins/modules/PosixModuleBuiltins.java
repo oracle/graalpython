@@ -96,7 +96,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.CastToPathNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ConvertPathlikeObjectNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -334,9 +333,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "fstat", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class FstatNode extends PythonFileNode {
-        @Child StatNode statNode;
+        @Child private StatNode statNode;
 
-        protected abstract Object executeWith(Object fd);
+        protected abstract Object executeWith(VirtualFrame frame, Object fd);
 
         @Specialization(guards = {"fd >= 0", "fd <= 2"})
         Object fstatStd(@SuppressWarnings("unused") int fd) {
@@ -355,7 +354,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fd > 2")
-        Object fstat(int fd,
+        Object fstat(VirtualFrame frame, int fd,
                         @Cached("create()") BranchProfile fstatForNonFile,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             PosixResources resources = getResources();
@@ -365,7 +364,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     statNode = insert(StatNode.create());
                 }
-                return statNode.executeWith(resources.getFilePath(fd), PNone.NO_VALUE);
+                return statNode.executeWith(frame, resources.getFilePath(fd), PNone.NO_VALUE);
             } else {
                 fstatForNonFile.enter();
                 Channel fileChannel = resources.getFileChannel(fd, channelClassProfile);
@@ -392,10 +391,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object fstatPInt(Object fd,
+        Object fstatPInt(VirtualFrame frame, Object fd,
                         @Cached("createOverflow()") CastToIndexNode castToIntNode,
                         @Cached("create()") FstatNode recursive) {
-            return recursive.executeWith(castToIntNode.execute(fd));
+            return recursive.executeWith(frame, castToIntNode.execute(fd));
         }
 
         protected static FstatNode create() {
@@ -440,7 +439,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private static final int S_IFDIR = 0040000;
         private static final int S_IFREG = 0100000;
 
-        protected abstract Object executeWith(Object path, Object followSymlinks);
+        protected abstract Object executeWith(VirtualFrame frame, Object path, Object followSymlinks);
 
         @Specialization
         Object doStatPath(String path, boolean followSymlinks) {
@@ -448,8 +447,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doStatDefault(PIBytesLike path, boolean followSymlinks) {
-            return stat(toJavaString(path), followSymlinks);
+        Object doStatDefault(VirtualFrame frame, PIBytesLike path, boolean followSymlinks) {
+            return stat(toJavaString(frame, path), followSymlinks);
         }
 
         @Specialization(guards = "isNoValue(followSymlinks)")
@@ -458,8 +457,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(followSymlinks)")
-        Object doStatDefault(PIBytesLike path, @SuppressWarnings("unused") PNone followSymlinks) {
-            return stat(toJavaString(path), true);
+        Object doStatDefault(VirtualFrame frame, PIBytesLike path, @SuppressWarnings("unused") PNone followSymlinks) {
+            return stat(toJavaString(frame, path), true);
         }
 
         @TruffleBoundary
@@ -695,13 +694,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return mode;
         }
 
-        @TruffleBoundary
-        private String toJavaString(PIBytesLike bytesLike) {
+        private String toJavaString(VirtualFrame frame, PIBytesLike bytesLike) {
             if (toBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toBytesNode = insert(ToBytesNode.create());
             }
-            return new String(toBytesNode.execute(bytesLike), StandardCharsets.UTF_8);
+            return newString(toBytesNode.execute(frame, bytesLike));
+        }
+
+        @TruffleBoundary
+        private static String newString(byte[] bytes) {
+            return new String(bytes, StandardCharsets.UTF_8);
         }
 
         public static StatNode create() {
@@ -1486,7 +1489,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callFspathNode;
         @CompilationFinal private ValueProfile resultTypeProfile;
 
-        public abstract String execute(Object o);
+        public abstract String execute(VirtualFrame frame, Object o);
 
         @Specialization
         String doPString(String obj) {
@@ -1499,7 +1502,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        String doGeneric(Object obj) {
+        String doGeneric(VirtualFrame frame, Object obj) {
             if (callFspathNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callFspathNode = insert(LookupAndCallUnaryNode.create(__FSPATH__));
@@ -1508,7 +1511,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 resultTypeProfile = ValueProfile.createClassProfile();
             }
-            Object profiled = resultTypeProfile.profile(callFspathNode.executeObject(obj));
+            Object profiled = resultTypeProfile.profile(callFspathNode.executeObject(frame, obj));
             if (profiled instanceof String) {
                 return (String) profiled;
             } else if (profiled instanceof PString) {
@@ -1531,14 +1534,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RenameNode extends PythonFileNode {
         @Specialization
-        Object rename(Object src, Object dst, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PNone kwargs,
+        Object rename(VirtualFrame frame, Object src, Object dst, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PNone kwargs,
                         @Cached("create()") ConvertPathlikeObjectNode convertSrcNode,
                         @Cached("create()") ConvertPathlikeObjectNode convertDstNode) {
-            return rename(convertSrcNode.execute(src), convertDstNode.execute(dst));
+            return rename(convertSrcNode.execute(frame, src), convertDstNode.execute(frame, dst));
         }
 
         @Specialization
-        Object rename(Object src, Object dst, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
+        Object rename(VirtualFrame frame, Object src, Object dst, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
                         @Cached("create()") ConvertPathlikeObjectNode convertSrcNode,
                         @Cached("create()") ConvertPathlikeObjectNode convertDstNode) {
 
@@ -1559,7 +1562,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     effectiveDst = resources.getFilePath((int) value);
                 }
             }
-            return rename(convertSrcNode.execute(effectiveSrc), convertDstNode.execute(effectiveDst));
+            return rename(convertSrcNode.execute(frame, effectiveSrc), convertDstNode.execute(frame, effectiveDst));
         }
 
         private Object rename(String src, String dst) {
@@ -1624,21 +1627,22 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class AccessNode extends PythonBuiltinNode {
 
         @Child private CastToIndexNode castToIntNode;
-        @Child private CastToPathNode castToPathNode;
+        @Child private ConvertPathlikeObjectNode castToPathNode;
 
         private final BranchProfile notImplementedBranch = BranchProfile.create();
 
         @Specialization
-        boolean doGeneric(Object path, Object mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone effective_ids, @SuppressWarnings("unused") PNone follow_symlinks) {
-            return access(castToPath(path), castToInt(mode), PNone.NONE, false, true);
+        boolean doGeneric(VirtualFrame frame, Object path, Object mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone effective_ids,
+                        @SuppressWarnings("unused") PNone follow_symlinks) {
+            return access(castToPath(frame, path), castToInt(mode), PNone.NONE, false, true);
         }
 
-        private String castToPath(Object path) {
+        private String castToPath(VirtualFrame frame, Object path) {
             if (castToPathNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToPathNode = insert(CastToPathNode.create());
+                castToPathNode = insert(ConvertPathlikeObjectNode.create());
             }
-            return castToPathNode.execute(path);
+            return castToPathNode.execute(frame, path);
         }
 
         private int castToInt(Object mode) {
@@ -1673,41 +1677,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 result = result && f.isWritable();
             }
             return result;
-        }
-    }
-
-    abstract static class CastToPathNode extends PNodeWithContext {
-
-        @Child private BuiltinConstructors.StrNode strNode;
-        @Child private CastToPathNode recursive;
-
-        public abstract String execute(Object x);
-
-        public static CastToPathNode create() {
-            return CastToPathNodeGen.create();
-        }
-
-        @Specialization
-        protected String doString(String x) {
-            return x;
-        }
-
-        @Specialization
-        protected String doPString(PString x) {
-            return x.getValue();
-        }
-
-        @Fallback
-        protected String doGeneric(Object x) {
-            if (strNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                strNode = insert(BuiltinConstructorsFactory.StrNodeFactory.create(null));
-            }
-            if (recursive == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursive = insert(CastToPathNode.create());
-            }
-            return recursive.execute(strNode.executeWith(PythonBuiltinClassType.PString, x, PNone.NO_VALUE, PNone.NO_VALUE));
         }
     }
 
@@ -1818,13 +1787,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object getTerminalSize(Object fd) {
+        Object getTerminalSize(VirtualFrame frame, Object fd) {
             Object value = getCastIntNode().execute(fd);
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursiveNode = create();
             }
-            return recursiveNode.execute(value);
+            return recursiveNode.execute(frame, value);
         }
 
         protected GetTerminalSizeNode create() {

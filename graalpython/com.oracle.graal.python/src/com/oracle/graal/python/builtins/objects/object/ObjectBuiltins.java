@@ -140,7 +140,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone setClass(PythonObject self, PythonAbstractClass value,
+        PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
                         @Cached("create()") BranchProfile errorSlotsBranch,
@@ -157,7 +157,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object selfSlots = getLookupSlotsInSelf().execute(lazyClass);
             if (selfSlots != PNone.NO_VALUE) {
                 Object otherSlots = getLookupSlotsInOther().execute(value);
-                if (otherSlots == PNone.NO_VALUE || !getSlotsAreEqual().executeBool(selfSlots, otherSlots)) {
+                if (otherSlots == PNone.NO_VALUE || !getSlotsAreEqual().executeBool(frame, selfSlots, otherSlots)) {
                     errorSlotsBranch.enter();
                     throw raise(TypeError, "__class__ assignment: '%s' object layout differs from '%s'", getTypeName(value), getTypeName(lazyClass));
                 }
@@ -259,18 +259,18 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private CastToBooleanNode ifFalseNode;
 
         @Specialization
-        public boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
+        boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
                         @Cached CExtNodes.PointerCompareNode nativeNeNode) {
             return nativeNeNode.execute(__NE__, self, other);
         }
 
         @Fallback
-        public Object ne(Object self, Object other) {
+        Object ne(VirtualFrame frame, Object self, Object other) {
             if (eqNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 eqNode = insert(LookupAndCallBinaryNode.create(__EQ__));
             }
-            Object result = eqNode.executeObject(self, other);
+            Object result = eqNode.executeObject(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
@@ -278,7 +278,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 ifFalseNode = insert(CastToBooleanNode.createIfFalseNode());
             }
-            return ifFalseNode.executeWith(result);
+            return ifFalseNode.executeBoolean(frame, result);
         }
     }
 
@@ -286,9 +286,9 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object str(Object self,
+        public Object str(VirtualFrame frame, Object self,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode) {
-            return reprNode.executeObject(self);
+            return reprNode.executeObject(frame, self);
         }
     }
 
@@ -297,8 +297,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        String repr(Object self,
+        String repr(VirtualFrame frame, Object self,
                         @Cached("create()") GetClassNode getClass,
                         @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
                         @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
@@ -306,12 +305,17 @@ public class ObjectBuiltins extends PythonBuiltins {
                 return "None";
             }
             PythonAbstractClass type = getClass.execute(self);
-            Object moduleName = readModuleNode.executeObject(type);
-            Object qualName = readQualNameNode.executeObject(type);
+            Object moduleName = readModuleNode.executeObject(frame, type);
+            Object qualName = readQualNameNode.executeObject(frame, type);
             if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
-                return String.format("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
+                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
             }
-            return String.format("<%s object at 0x%x>", qualName, self.hashCode());
+            return strFormat("<%s object at 0x%x>", qualName, self.hashCode());
+        }
+
+        @TruffleBoundary
+        private static String strFormat(String fmt, Object... objects) {
+            return String.format(fmt, objects);
         }
     }
 
@@ -322,15 +326,15 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private LookupAndCallBinaryNode callEqNode;
 
         @Specialization
-        public boolean doGeneric(Object self) {
+        public boolean doGeneric(VirtualFrame frame, Object self) {
             assert self != PNone.NO_VALUE;
             if (self == PNone.NONE) {
                 return false;
             }
-            Object len = getCallLenNode().executeObject(self);
+            Object len = getCallLenNode().executeObject(frame, self);
             if (len != PNone.NO_VALUE) {
                 try {
-                    return getCallEqNode().executeBool(0, len);
+                    return getCallEqNode().executeBool(frame, 0, len);
                 } catch (UnexpectedResultException e) {
                     throw raise(TypeError, "'%p' object cannot be interpreted as an integer", len);
                 }
@@ -375,7 +379,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode attrRead;
 
         @Specialization
-        protected Object doIt(Object object, Object key) {
+        protected Object doIt(VirtualFrame frame, Object object, Object key) {
             LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             LazyPythonClass dataDescClass = null;
@@ -392,7 +396,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     Object get = lookupGet(dataDescClass);
                     if (PGuards.isCallable(get)) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
-                        return dispatch(object, getPythonClass(type, getClassProfile), descr, get);
+                        return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                     }
                 }
             }
@@ -415,7 +419,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (get == PNone.NO_VALUE) {
                     return descr;
                 } else if (PGuards.isCallable(get)) {
-                    return dispatch(object, getPythonClass(type, getClassProfile), descr, get);
+                    return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                 }
             }
             errorProfile.enter();
@@ -430,12 +434,12 @@ public class ObjectBuiltins extends PythonBuiltins {
             return attrRead.execute(object, key);
         }
 
-        private Object dispatch(Object object, Object type, Object descr, Object get) {
+        private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, Object get) {
             if (dispatchGet == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 dispatchGet = insert(CallTernaryMethodNode.create());
             }
-            return dispatchGet.execute(get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
+            return dispatchGet.execute(frame, get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
         }
 
         private Object lookupGet(LazyPythonClass dataDescClass) {
@@ -488,7 +492,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, Object key, Object value,
+        protected PNone doIt(VirtualFrame frame, Object object, Object key, Object value,
                         @Cached("create()") GetLazyClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
@@ -501,7 +505,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 PythonAbstractClass dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupSetNode.execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
-                    callSetNode.execute(set, descr, object, value);
+                    callSetNode.execute(frame, set, descr, object, value);
                     return PNone.NONE;
                 }
             }
@@ -520,7 +524,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, Object key,
+        protected PNone doIt(VirtualFrame frame, Object object, Object key,
                         @Cached("create()") GetLazyClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
@@ -534,7 +538,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 PythonAbstractClass dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupDeleteNode.execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
-                    callSetNode.executeObject(set, descr, object);
+                    callSetNode.executeObject(frame, set, descr, object);
                     return PNone.NONE;
                 }
             }
@@ -605,9 +609,9 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isString(formatString)")
-        Object format(Object self, @SuppressWarnings("unused") Object formatString,
+        Object format(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object formatString,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(self);
+            return strCall.executeObject(frame, self);
         }
 
         @Fallback
@@ -626,10 +630,10 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")
-        boolean richcmp(Object left, Object right, @SuppressWarnings("unused") String op,
+        boolean richcmp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") String op,
                         @SuppressWarnings("unused") @Cached("op") String cachedOp,
                         @Cached("createOp(op)") BinaryComparisonNode node) {
-            return node.executeBool(left, right);
+            return node.executeBool(frame, left, right);
         }
     }
 

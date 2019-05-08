@@ -153,7 +153,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         handlePythonClass(isClassProfile, object, key);
         PHashingCollection dict = object.getDict();
         HashingStorage dictStorage = getDictStorage.execute(dict);
-        HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
+        HashingStorage hashingStorage = setItemNode.execute(null, dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
             dict.setDictStorage(hashingStorage);
@@ -173,7 +173,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         handlePythonClass(isClassProfile, object, key);
         PHashingCollection dict = object.getDict();
         HashingStorage dictStorage = getDictStorage.execute(dict);
-        HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
+        HashingStorage hashingStorage = setItemNode.execute(null, dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
             dict.setDictStorage(hashingStorage);
@@ -183,7 +183,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     private static boolean writeNativeGeneric(PythonAbstractNativeObject object, Object key, Object value, Object d, HashingCollectionNodes.SetItemNode setItemNode, PRaiseNode raiseNode) {
         if (d instanceof PHashingCollection) {
-            setItemNode.execute(((PHashingCollection) d), key, value);
+            setItemNode.execute(null, ((PHashingCollection) d), key, value);
             return true;
         } else {
             throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);

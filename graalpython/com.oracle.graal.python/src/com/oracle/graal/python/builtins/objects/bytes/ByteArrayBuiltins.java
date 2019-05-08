@@ -87,6 +87,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -132,16 +133,16 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Child SequenceStorageNodes.CmpNode eqNode;
+        @Child private SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
-        public boolean eq(PByteArray self, PByteArray other) {
-            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
+        boolean eq(VirtualFrame frame, PByteArray self, PByteArray other) {
+            return getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Specialization
-        public boolean eq(PByteArray self, PBytes other) {
-            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
+        boolean eq(VirtualFrame frame, PByteArray self, PBytes other) {
+            return getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @SuppressWarnings("unused")
@@ -246,12 +247,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object add(PByteArray self, PMemoryView other,
+        public Object add(VirtualFrame frame, PByteArray self, PMemoryView other,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
 
-            Object bytesObj = toBytesNode.executeObject(other);
+            Object bytesObj = toBytesNode.executeObject(frame, other);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
                 return factory().createByteArray(res);
@@ -278,12 +279,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PByteArray add(PByteArray self, PMemoryView other,
+        public PByteArray add(VirtualFrame frame, PByteArray self, PMemoryView other,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
 
-            Object bytesObj = toBytesNode.executeObject(other);
+            Object bytesObj = toBytesNode.executeObject(frame, other);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
                 updateSequenceStorage(self, res);
@@ -364,9 +365,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ByteArrayExtendNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PNone doGeneric(PByteArray byteArray, Object source,
+        PNone doGeneric(VirtualFrame frame, PByteArray byteArray, Object source,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
-            SequenceStorage execute = extendNode.execute(byteArray.getSequenceStorage(), source);
+            SequenceStorage execute = extendNode.execute(frame, byteArray.getSequenceStorage(), source);
             assert byteArray.getSequenceStorage() == execute;
             return PNone.NONE;
         }
@@ -421,7 +422,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ByteArrayCountNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public int count(PByteArray byteArray, Object arg,
+        int count(VirtualFrame frame, PByteArray byteArray, Object arg,
                         @Cached("createClassProfile()") ValueProfile storeProfile,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
@@ -429,7 +430,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             SequenceStorage profiled = storeProfile.profile(byteArray.getSequenceStorage());
             int cnt = 0;
             for (int i = 0; i < profiled.length(); i++) {
-                if (eqNode.executeBool(arg, getItemNode.execute(profiled, i))) {
+                if (eqNode.executeBool(frame, arg, getItemNode.execute(profiled, i))) {
                     cnt++;
                 }
             }
@@ -528,10 +529,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PByteArray join(PByteArray bytes, Object iterable,
+        PByteArray join(VirtualFrame frame, PByteArray bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createByteArray(bytesJoinNode.execute(toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
+            return factory().createByteArray(bytesJoinNode.execute(frame, toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
@@ -577,11 +578,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBytes(other)"})
-        boolean contains(PByteArray self, Object other,
+        boolean contains(VirtualFrame frame, PByteArray self, Object other,
                         @Cached("create()") BranchProfile errorProfile,
                         @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
 
-            if (!containsNode.execute(self.getSequenceStorage(), other)) {
+            if (!containsNode.execute(frame, self.getSequenceStorage(), other)) {
                 errorProfile.enter();
                 throw raise(ValueError, "%s is not in bytes literal", other);
             }
@@ -659,11 +660,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doSliceMemoryview(PByteArray self, PSlice slice, PMemoryView value,
+        PNone doSliceMemoryview(VirtualFrame frame, PByteArray self, PSlice slice, PMemoryView value,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
                         @Cached("createSetSlice()") SequenceStorageNodes.SetItemNode setItemNode) {
-            Object bytesObj = callToBytesNode.executeObject(value);
+            Object bytesObj = callToBytesNode.executeObject(frame, value);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 doSlice(self, slice, bytesObj, setItemNode);
                 return PNone.NONE;

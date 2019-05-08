@@ -94,7 +94,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
     @ExplodeLoop
     private void fillSlots(VirtualFrame frame, Object rhsValue, int stop) {
         for (int i = 0; i < stop; i++) {
-            Object value = getItem.execute(rhsValue, i);
+            Object value = getItem.execute(frame, rhsValue, i);
             slots[i].doWrite(frame, value);
         }
     }
@@ -103,7 +103,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
     private int fillRest(VirtualFrame frame, Object rhsValue, int pos) {
         int current = pos;
         for (int i = starredIndex + 1; i < slots.length; i++) {
-            Object value = getItem.execute(rhsValue, current++);
+            Object value = getItem.execute(frame, rhsValue, current++);
             slots[i].doWrite(frame, value);
         }
         return current;
@@ -127,11 +127,11 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         try {
             // TODO(ls): proper cast to int
             // TODO(ls): the result of the len call doesn't seem to be used in Python
-            int length = (int) lenNode.executeWith(rhsValue);
+            int length = (int) lenNode.executeWith(frame, rhsValue);
             int starredLength = length - (slots.length - 1);
             Object[] array = new Object[starredLength];
             for (int i = 0; i < starredLength; i++) {
-                array[i] = getItem.execute(rhsValue, pos++);
+                array[i] = getItem.execute(frame, rhsValue, pos++);
             }
             slots[starredIndex].doWrite(frame, factory.createList(array));
             return fillRest(frame, rhsValue, pos);
@@ -145,7 +145,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                     if (length + 1 > array.length) {
                         array = Arrays.copyOf(array, array.length << 1);
                     }
-                    array[length] = getItem.execute(rhsValue, pos);
+                    array[length] = getItem.execute(frame, rhsValue, pos);
                     length++;
                     pos++;
                 } catch (PException e2) {
@@ -166,7 +166,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         Object rhsValue = rhs.execute(frame);
         Object getItemAttribute = lookupGetItemNode.execute(rhsValue);
         if (getItemAttribute == NO_VALUE) {
-            rhsValue = constructTupleNode.execute(rhsValue);
+            rhsValue = constructTupleNode.execute(frame, rhsValue);
         }
         doWrite(frame, rhsValue);
     }
@@ -192,13 +192,13 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                     lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
                     raiseNode = insert(PRaiseNode.create());
                 }
-                throw raiseNode.raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(rhsValue));
+                throw raiseNode.raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(frame, rhsValue));
             } else {
                 throw e;
             }
         }
         try {
-            getNonExistingItem.execute(rhsValue, nonExistingItem);
+            getNonExistingItem.execute(frame, rhsValue, nonExistingItem);
             tooManyValuesProfile.enter();
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

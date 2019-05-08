@@ -46,13 +46,17 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.NodeContextManager;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongExactNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongLossyNodeGen;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -61,7 +65,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CastToJavaLongNode extends PNodeWithContext {
+public abstract class CastToJavaLongNode extends PNodeWithGlobalState<NodeContextManager> {
 
     public abstract long execute(Object x);
 
@@ -99,7 +103,7 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
     public long toLong(Object x,
                     @Cached PRaiseNode raise,
                     @Cached LookupAndCallUnaryDynamicNode callIntNode) {
-        Object result = callIntNode.executeObject(x, __INT__);
+        Object result = callIntNode.passState().executeObject(x, __INT__);
         if (result == PNone.NO_VALUE) {
             throw raise.raise(TypeError, "must be numeric, not %p", x);
         }
@@ -113,6 +117,38 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
             return (long) result;
         }
         throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", x, result);
+    }
+
+    public static final class CastToJavaLongContextManager extends NodeContextManager {
+
+        private final CastToJavaLongNode delegate;
+
+        public CastToJavaLongContextManager(CastToJavaLongNode delegate, PythonContext context) {
+            super(context);
+            this.delegate = delegate;
+        }
+
+        public Object execute(Object x) {
+            return delegate.execute(x);
+        }
+    }
+
+    @Override
+    public CastToJavaLongContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
+        if (exceptionState != null) {
+            PythonContext context = contextRef.get();
+            PException cur = context.getCaughtException();
+            if (cur == null) {
+                context.setCaughtException(exceptionState);
+                return new CastToJavaLongContextManager(this, context);
+            }
+        }
+        return passState();
+    }
+
+    @Override
+    public CastToJavaLongContextManager passState() {
+        return new CastToJavaLongContextManager(this, null);
     }
 
     @GenerateUncached

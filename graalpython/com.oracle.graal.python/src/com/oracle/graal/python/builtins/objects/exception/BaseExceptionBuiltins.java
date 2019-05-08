@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -132,9 +132,9 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        public Object args(PBaseException self, Object value,
+        public Object args(VirtualFrame frame, PBaseException self, Object value,
                         @Cached("create()") CastToListNode castToList) {
-            PList list = castToList.executeWith(value);
+            PList list = castToList.execute(frame, value);
             self.setArgs(factory().createTuple(list.getSequenceStorage().getCopyOfInternalArray()));
             return PNone.NONE;
         }

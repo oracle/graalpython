@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild(value = "object", type = ExpressionNode.class)
 @NodeChild(value = "key", type = ExpressionNode.class)
@@ -58,11 +59,11 @@ public abstract class DeleteAttributeNode extends StatementNode {
         return DeleteAttributeNodeGen.create(object, key);
     }
 
-    public abstract void execute(Object object, Object key);
+    public abstract void execute(VirtualFrame frame, Object object, Object key);
 
     @Specialization
-    protected void doIt(Object object, Object key,
+    protected void doIt(VirtualFrame frame, Object object, Object key,
                     @Cached("create(__DELATTR__)") LookupAndCallBinaryNode call) {
-        call.executeObject(object, key);
+        call.executeObject(frame, object, key);
     }
 }

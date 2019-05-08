@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -162,13 +163,13 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
-        Object get(GetSetDescriptor descr, Object obj, LazyPythonClass type,
+        Object get(VirtualFrame frame, GetSetDescriptor descr, Object obj, LazyPythonClass type,
                         @Cached("create()") CallUnaryMethodNode callNode) {
             if (descr_check(descr.getType(), descr.getName(), obj, type)) {
                 return descr;
             }
             if (descr.getGet() != null) {
-                return callNode.executeObject(descr.getGet(), obj);
+                return callNode.executeObject(frame, descr.getGet(), obj);
             } else {
                 branchProfile.enter();
                 throw raise(AttributeError, "attribute '%s' of '%s' objects is not readable", descr.getName(), getTypeName(descr.getType()));
@@ -197,14 +198,14 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         private final BranchProfile branchProfile = BranchProfile.create();
 
         @Specialization
-        Object set(GetSetDescriptor descr, Object obj, Object value,
+        Object set(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
                         @Cached("create()") CallBinaryMethodNode callNode) {
             // the noneType is not important here - there are no setters on None
             if (descr_check(descr.getType(), descr.getName(), obj, getClassNode.execute(obj))) {
                 return descr;
             }
             if (descr.getSet() != null) {
-                return callNode.executeObject(descr.getSet(), obj, value);
+                return callNode.executeObject(frame, descr.getSet(), obj, value);
             } else {
                 branchProfile.enter();
                 throw raise(AttributeError, "attribute '%s' of '%s' object is not writable", descr.getName(), getTypeName(descr.getType()));

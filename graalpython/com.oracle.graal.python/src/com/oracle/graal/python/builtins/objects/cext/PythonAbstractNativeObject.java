@@ -47,6 +47,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
@@ -92,6 +93,17 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
         }
         PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
         return Objects.equals(object, other.object);
+    }
+
+    public boolean equalsProfiled(Object obj, ValueProfile profile) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
+        return Objects.equals(profile.profile(object), profile.profile(other.object));
     }
 
     @Override

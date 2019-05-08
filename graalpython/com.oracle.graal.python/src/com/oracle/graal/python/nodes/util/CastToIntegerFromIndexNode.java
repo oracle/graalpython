@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
@@ -66,7 +67,7 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
 
     private final Function<Object, Byte> typeErrorHandler;
 
-    public abstract Object execute(Object x);
+    public abstract Object execute(VirtualFrame frame, Object x);
 
     public static CastToIntegerFromIndexNode create() {
         return CastToIntegerFromIndexNodeGen.create(null);
@@ -82,17 +83,17 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
     }
 
     @Specialization
-    public long toInt(long x) {
+    long toInt(long x) {
         return x;
     }
 
     @Specialization
-    public PInt toInt(PInt x) {
+    PInt toInt(PInt x) {
         return x;
     }
 
     @Specialization
-    public long toInt(double x,
+    long toInt(double x,
                     @Cached PRaiseNode raise) {
         if (typeErrorHandler != null) {
             return typeErrorHandler.apply(x);
@@ -101,13 +102,13 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isNumber(x)")
-    public Object toInt(Object x,
+    Object toInt(VirtualFrame frame, Object x,
                     @Cached PRaiseNode raise) {
         if (callIndexNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
         }
-        Object result = callIndexNode.executeObject(x);
+        Object result = callIndexNode.executeObject(frame, x);
         if (result == PNone.NONE) {
             if (typeErrorHandler != null) {
                 return typeErrorHandler.apply(x);

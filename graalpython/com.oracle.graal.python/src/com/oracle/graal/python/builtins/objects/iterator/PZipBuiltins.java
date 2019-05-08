@@ -42,6 +42,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZip)
 public class PZipBuiltins extends PythonBuiltins {
@@ -56,17 +57,17 @@ public class PZipBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "isEmpty(self.getIterators())")
-        public Object __next__(@SuppressWarnings("unused") PZip self) {
+        Object doEmpty(@SuppressWarnings("unused") PZip self) {
             throw raise(PythonErrorType.StopIteration);
         }
 
         @Specialization
-        public Object __next__(PZip self,
+        Object doNext(VirtualFrame frame, PZip self,
                         @Cached("create()") GetNextNode next) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
-                tupleElements[i] = next.execute(iterators[i]);
+                tupleElements[i] = next.execute(frame, iterators[i]);
             }
             return factory().createTuple(tupleElements);
         }

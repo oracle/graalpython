@@ -107,43 +107,43 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     @Specialization(guards = "isInBuiltinDict(frame, builtinProfile)")
     void writeDictBoolean(VirtualFrame frame, boolean value,
                     @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
+        storeNode.execute(frame, getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(guards = "isInBuiltinDict(frame, builtinProfile)")
     void writeDictInt(VirtualFrame frame, int value,
                     @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
+        storeNode.execute(frame, getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(guards = "isInBuiltinDict(frame, builtinProfile)")
     void writeDictLong(VirtualFrame frame, long value,
                     @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
+        storeNode.execute(frame, getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(guards = "isInBuiltinDict(frame, builtinProfile)")
     void writeDictDouble(VirtualFrame frame, double value,
                     @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
+        storeNode.execute(frame, getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(replaces = {"writeDictBoolean", "writeDictInt", "writeDictLong", "writeDictDouble"}, guards = "isInBuiltinDict(frame, builtinProfile)")
     void writeDictObject(VirtualFrame frame, Object value,
                     @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
+        storeNode.execute(frame, getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(replaces = {"writeDictBoolean", "writeDictInt", "writeDictLong", "writeDictDouble", "writeDictObject"}, guards = "isInDict(frame)")
     void writeGenericDict(VirtualFrame frame, Object value,
                     @Cached("create()") SetItemNode storeNode) {
-        storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
+        storeNode.executeWith(frame, PArguments.getGlobals(frame), attributeId, value);
     }
 
     @Specialization(guards = "isInModule(frame)")
     void writeModule(VirtualFrame frame, Object value,
                     @Cached("create(attributeId)") SetAttributeNode storeNode) {
-        storeNode.executeVoid(PArguments.getGlobals(frame), value);
+        storeNode.executeVoid(frame, PArguments.getGlobals(frame), value);
     }
 
     public Object getAttributeId() {

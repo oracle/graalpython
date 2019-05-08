@@ -92,7 +92,7 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
     protected Object readMember(String member,
                     @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         // translate key to attribute name
-        PythonClassNativeWrapper nativeWrapper = this.getPythonClass().getNativeWrapper();
+        PythonClassNativeWrapper nativeWrapper = getPythonClass().getClassNativeWrapper();
         // TODO handle case if nativeWrapper does not exist yet
         Object result;
         switch (member) {

@@ -87,12 +87,23 @@ public abstract class ExceptionStateNodes {
             return frameSlot;
         }
 
+        protected final FrameSlot findSlot(VirtualFrame frame) {
+            RootNode rootNode = getRootNode();
+            if (rootNode != null) {
+                return findFameSlot(frame, rootNode);
+            }
+            return null;
+        }
     }
 
+    /**
+     * Writes an exception into frame slot with name {@link FrameSlotIDs#CAUGHT_EXCEPTION}. The
+     * frame slot is created if it does not yet exist. This node should primarily be used in an
+     * exception handler to make the exception accessible.
+     */
     public static final class SetCaughtExceptionNode extends ExceptionStateBaseNode {
 
         @CompilationFinal private FrameSlot excSlot;
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         public void execute(VirtualFrame frame, PException e) {
             RootNode rootNode = getRootNode();
@@ -139,7 +150,7 @@ public abstract class ExceptionStateNodes {
 
     public static final class ReadExceptionStateFromArgsNode extends Node {
 
-        @Child ReadExceptionStateFromFrameNode readFrameNode;
+        @Child private ReadExceptionStateFromFrameNode readFrameNode;
 
         public PException execute(Object callerFrameOrExceptionArg) {
             if (callerFrameOrExceptionArg == null || callerFrameOrExceptionArg instanceof PException) {
@@ -149,7 +160,10 @@ public abstract class ExceptionStateNodes {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     readFrameNode = insert(ReadExceptionStateFromFrameNodeGen.create());
                 }
-                return readFrameNode.execute((Frame) callerFrameOrExceptionArg);
+                // In order to provide the same semantics when reading the exception state from the
+                // materialized caller frame, we need to return 'NO_EXCEPTION' if we got 'null'.
+                PException fromCallerFrame = readFrameNode.execute((Frame) callerFrameOrExceptionArg);
+                return fromCallerFrame != null ? PException.NO_EXCEPTION : fromCallerFrame;
             }
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException();
@@ -160,14 +174,26 @@ public abstract class ExceptionStateNodes {
         }
     }
 
-    public static final class GetCaughtExceptionNode extends Node {
+    /**
+     * Use this node to forcefully get the current exception state. <it>Forcefully</it> means, if
+     * the exception state is not provided in the frame, in the arguments or in the context, it will
+     * do a full stack walk and request the exception state for the next time from the callers. The
+     * returned object may escape to the value space.
+     */
+    public static final class GetCaughtExceptionNode extends ExceptionStateBaseNode {
 
         @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
 
         @CompilationFinal private FrameSlot excSlot;
-        private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-        public PException execute(@SuppressWarnings("unused") VirtualFrame frame) {
+        private final ConditionProfile notInFrameProfile = ConditionProfile.createBinaryProfile();
+
+        public PException execute(VirtualFrame frame) {
+
+            if (frame == null) {
+                return getFromContext();
+            }
 
             if (excSlot == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -175,7 +201,7 @@ public abstract class ExceptionStateNodes {
             }
 
             PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
-            if (profile.profile(e != null)) {
+            if (notInFrameProfile.profile(e != null)) {
                 return e;
             }
 
@@ -185,22 +211,43 @@ public abstract class ExceptionStateNodes {
             }
             e = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
             if (e == null) {
-                // The very-slow path: This is the first time we want to fetch the exception state
-                // from the context. The caller didn't know that it is necessary to provide the
-                // exception in the context. So, we do a full stack walk until the first frame
-                // having the exception state in the special slot. And we set the appropriate flag
-                // on the root node such that the next time, we will find the exception state in the
-                // context immediately.
-                CompilerDirectives.transferToInterpreter();
-
-                // TODO(fa) performance warning ?
-                e = fullStackWalk();
+                e = fromStackWalk();
             }
             return ensure(e);
         }
 
+        private PException getFromContext() {
+            // contextRef acts as a branch profile
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
+            PythonContext ctx = contextRef.get();
+            PException fromContext = ctx.getCaughtException();
+            if (fromContext == null) {
+                fromContext = fromStackWalk();
+
+                // important: set into context to avoid stack walk next time
+                ctx.setCaughtException(fromContext != null ? fromContext : PException.NO_EXCEPTION);
+            }
+            return ensure(fromContext);
+        }
+
+        private static PException fromStackWalk() {
+            // The very-slow path: This is the first time we want to fetch the exception state
+            // from the context. The caller didn't know that it is necessary to provide the
+            // exception in the context. So, we do a full stack walk until the first frame
+            // having the exception state in the special slot. And we set the appropriate flag
+            // on the root node such that the next time, we will find the exception state in the
+            // context immediately.
+            CompilerDirectives.transferToInterpreter();
+
+            // TODO(fa) performance warning ?
+            return fullStackWalk();
+        }
+
         @TruffleBoundary
-        private static PException fullStackWalk() {
+        public static PException fullStackWalk() {
 
             return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<PException>() {
                 public PException visitFrame(FrameInstance frameInstance) {
@@ -233,21 +280,60 @@ public abstract class ExceptionStateNodes {
             return e != PException.NO_EXCEPTION ? e : null;
         }
 
-        protected FrameSlot findSlot(VirtualFrame frame) {
-            RootNode rootNode = getRootNode();
-            if (rootNode != null) {
-                return SetCaughtExceptionNode.findFameSlot(frame, rootNode);
-            }
-            return null;
-        }
-
         public static GetCaughtExceptionNode create() {
             return new GetCaughtExceptionNode();
         }
 
     }
 
-    public static final class SaveExceptionStateNode extends Node {
+    /**
+     * Use this node to pass the exception state if provided. This node won't do a full stack walk
+     * and may return {@link PException#NO_EXCEPTION}. This node should primarily be used to move
+     * the exception state from the frame to the context or vice versa.
+     */
+    public static final class PassCaughtExceptionNode extends ExceptionStateBaseNode {
+
+        @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
+
+        @CompilationFinal private FrameSlot excSlot;
+
+        private final ConditionProfile notInFrameProfile = ConditionProfile.createBinaryProfile();
+
+        public PException execute(VirtualFrame frame) {
+
+            if (frame == null) {
+                return null;
+            }
+
+            if (excSlot == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excSlot = findSlot(frame);
+            }
+
+            PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
+            if (notInFrameProfile.profile(e != null)) {
+                return e;
+            }
+
+            if (readFromArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
+            }
+            return readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
+        }
+
+        public static PassCaughtExceptionNode create() {
+            return new PassCaughtExceptionNode();
+        }
+
+    }
+
+    /**
+     * Saves the current local exception state. This is required for nested {@code try-except}
+     * statements because all exception handlers in one function store the exception state to the
+     * same frame slot.
+     */
+    public static final class SaveExceptionStateNode extends ExceptionStateBaseNode {
 
         @CompilationFinal private FrameSlot excSlot;
 
@@ -261,20 +347,15 @@ public abstract class ExceptionStateNodes {
             return new ExceptionState(e, ExceptionState.SOURCE_FRAME);
         }
 
-        protected FrameSlot findSlot(VirtualFrame frame) {
-            RootNode rootNode = getRootNode();
-            if (rootNode != null) {
-                return SetCaughtExceptionNode.findFameSlot(frame, rootNode);
-            }
-            return null;
-        }
-
         public static SaveExceptionStateNode create() {
             return new SaveExceptionStateNode();
         }
 
     }
 
+    /**
+     * Restores the exception state.
+     */
     public abstract static class RestoreExceptionStateNode extends ExceptionStateBaseNode {
 
         public abstract void execute(VirtualFrame frame, ExceptionState state);

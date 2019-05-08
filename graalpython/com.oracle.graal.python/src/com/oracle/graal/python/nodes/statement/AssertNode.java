@@ -81,7 +81,7 @@ public class AssertNode extends StatementNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     callNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__STR__));
                 }
-                assertionMessage = (String) callNode.executeObject(messageObj);
+                assertionMessage = (String) callNode.executeObject(frame, messageObj);
             } catch (PException e) {
                 // again, Python exceptions just fall through
                 throw e;

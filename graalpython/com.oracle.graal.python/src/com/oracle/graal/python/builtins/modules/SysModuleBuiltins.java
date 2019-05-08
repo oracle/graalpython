@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -80,7 +81,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
@@ -316,17 +316,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
          * behavior. (it only captures the frames if a CallTarget boundary is crossed)
          */
         private static final class GetStackTraceRootNode extends RootNode {
-            private final ContextReference<PythonContext> contextRef;
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
             protected GetStackTraceRootNode(PythonLanguage language) {
                 super(language);
-                this.contextRef = language.getContextReference();
             }
 
             @Override
             public Object execute(VirtualFrame frame) {
-                CompilerDirectives.transferToInterpreter();
-                throw contextRef.get().getCore().raise(ValueError, null);
+                throw raiseNode.raise(ValueError);
             }
 
             @Override
@@ -449,16 +447,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Child private CastToIntegerFromIntNode castToIntNode = CastToIntegerFromIntNode.create();
 
         @Specialization(guards = "isNoValue(dflt)")
-        protected Object doGeneric(Object object, @SuppressWarnings("unused") PNone dflt,
+        protected Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
                         @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode) {
-            Object result = castToIntNode.execute(callSizeofNode.executeObject(object));
+            Object result = castToIntNode.execute(callSizeofNode.executeObject(frame, object));
             return checkResult(result);
         }
 
         @Specialization(guards = "!isNoValue(dflt)")
-        protected Object doGeneric(Object object, Object dflt,
+        protected Object doGeneric(VirtualFrame frame, Object object, Object dflt,
                         @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode) {
-            Object result = castToIntNode.execute(callSizeofNode.executeObject(object));
+            Object result = castToIntNode.execute(callSizeofNode.executeObject(frame, object));
             if (result == PNone.NO_VALUE) {
                 return dflt;
             }

@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -56,58 +57,57 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateNodeFactory
 public abstract class SetNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructSetNode extends PNodeWithContext {
-        @Child PRaiseNode raise;
+        @Child private PRaiseNode raise;
         @Child private SetItemNode setItemNode;
 
-        public abstract PSet execute(LazyPythonClass cls, Object value);
+        public abstract PSet execute(VirtualFrame frame, LazyPythonClass cls, Object value);
 
-        public final PSet executeWith(Object value) {
-            return this.execute(PythonBuiltinClassType.PSet, value);
+        public final PSet executeWith(VirtualFrame frame, Object value) {
+            return this.execute(frame, PythonBuiltinClassType.PSet, value);
         }
 
         @Specialization
-        @TruffleBoundary
-        public PSet setString(LazyPythonClass cls, String arg,
+        PSet setString(VirtualFrame frame, LazyPythonClass cls, String arg,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PSet set = factory.createSet(cls);
-            for (int i = 0; i < arg.length(); i++) {
-                getSetItemNode().execute(set, String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
+            for (int i = 0; i < PString.length(arg); i++) {
+                getSetItemNode().execute(frame, set, PString.valueOf(PString.charAt(arg, i)), PNone.NO_VALUE);
             }
             return set;
         }
 
         @Specialization(guards = "emptyArguments(none)")
         @SuppressWarnings("unused")
-        public PSet set(LazyPythonClass cls, PNone none,
+        PSet set(LazyPythonClass cls, PNone none,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createSet();
         }
 
         @Specialization(guards = "!isNoValue(iterable)")
-        public PSet setIterable(LazyPythonClass cls, Object iterable,
+        PSet setIterable(VirtualFrame frame, LazyPythonClass cls, Object iterable,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
             PSet set = factory.createSet(cls);
-            Object iterator = getIterator.executeWith(iterable);
+            Object iterator = getIterator.executeWith(frame, iterable);
             while (true) {
                 try {
-                    getSetItemNode().execute(set, next.execute(iterator), PNone.NO_VALUE);
+                    getSetItemNode().execute(frame, set, next.execute(frame, iterator), PNone.NO_VALUE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return set;
@@ -116,7 +116,7 @@ public abstract class SetNodes {
         }
 
         @Fallback
-        public PSet setObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
+        PSet setObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
             if (raise == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raise = insert(PRaiseNode.create());

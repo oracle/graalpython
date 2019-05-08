@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -184,17 +185,17 @@ abstract class AccessForeignItemNodes {
     @ImportStatic(SpecialMethodNames.class)
     protected abstract static class SetForeignItemNode extends AccessForeignItemBaseNode {
 
-        public abstract Object execute(Object object, Object idx, Object value);
+        public abstract Object execute(VirtualFrame frame, Object object, Object idx, Object value);
 
         @Specialization
-        public Object doForeignObjectSlice(Object object, PSlice idxSlice, PSequence pvalues,
+        public Object doForeignObjectSlice(VirtualFrame frame, Object object, PSlice idxSlice, PSequence pvalues,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("create()") PTypeToForeignNode valueToForeignNode) {
             try {
                 SliceInfo mslice = materializeSlice(idxSlice, object, lib);
                 for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
-                    Object convertedValue = valueToForeignNode.executeConvert(getItemNode.executeObject(pvalues, j));
+                    Object convertedValue = valueToForeignNode.executeConvert(getItemNode.executeObject(frame, pvalues, j));
                     writeForeignValue(object, i, convertedValue, lib);
                 }
                 return PNone.NONE;
