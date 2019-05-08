@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "dbbedbd8bce9ac6268f14486380d26f9a808f919",
+                "version": "40f2851207e30135a443d9ea6d9d937872522d57",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "dbbedbd8bce9ac6268f14486380d26f9a808f919",
+                "version": "40f2851207e30135a443d9ea6d9d937872522d57",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -241,8 +241,8 @@ suite = {
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_HOME>/include",
-                "CLANG": "<sulongNativeToolchain:CC>",
-                "PLATFORM": "<sulongNativeToolchainSubdir>",
+                "CLANG": "<toolchainGetToolPath:native,CC>",
+                "PLATFORM": "<toolchainGetIdentifier:native>",
                 "OS": "<os>",
             },
         },
