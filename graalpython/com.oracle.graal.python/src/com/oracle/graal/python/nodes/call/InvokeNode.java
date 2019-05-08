@@ -110,6 +110,7 @@ final class GenericInvokeNode extends AbstractInvokeNode {
         return new GenericInvokeNode();
     }
 
+    @SuppressWarnings("try")
     private Object doCall(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
         optionallySetClassBodySpecial(arguments, callTarget);
         try (ExecutionContext ec = ExecutionContext.call(frame, arguments, callTarget, this)) {
@@ -162,6 +163,7 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments);
 
     @Specialization
+    @SuppressWarnings("try")
     protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
@@ -218,6 +220,7 @@ public abstract class InvokeNode extends AbstractInvokeNode {
     }
 
     @Specialization
+    @SuppressWarnings("try")
     protected Object doNoKeywords(VirtualFrame frame, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
@@ -226,5 +229,9 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct, this)) {
             return callNode.call(arguments);
         }
+    }
+
+    public final RootNode getCurrentRootNode() {
+        return callNode.getCurrentRootNode();
     }
 }

@@ -140,6 +140,7 @@ import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -1455,21 +1456,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     abstract static class MethodDescriptorRoot extends PRootNode {
-        @Child protected DirectCallNode directCallNode;
+        @Child protected InvokeNode invokeNode;
         @Child protected ReadIndexedArgumentNode readSelfNode;
 
         protected final PythonObjectFactory factory;
-        @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
-        private final ConditionProfile needsExceptionStateProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile needsFrameProfile = ConditionProfile.createBinaryProfile();
 
         @TruffleBoundary
-        protected MethodDescriptorRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+        protected MethodDescriptorRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction builtinFunction) {
             super(language);
             this.factory = factory;
             this.readSelfNode = ReadIndexedArgumentNode.create(0);
-            assert callTarget instanceof RootCallTarget && ((RootCallTarget) callTarget).getRootNode() instanceof ExternalFunctionNode;
-            this.directCallNode = Truffle.getRuntime().createDirectCallNode(callTarget);
+            assert builtinFunction.getCallTarget().getRootNode() instanceof ExternalFunctionNode;
+            this.invokeNode = InvokeNode.create(builtinFunction);
         }
 
         @Override
@@ -1479,48 +1477,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public String getName() {
-            return directCallNode.getCurrentRootNode().getName();
+            return invokeNode.getCurrentRootNode().getName();
         }
 
         @Override
         public String toString() {
-            return "<METH root " + directCallNode.getCurrentRootNode().getName() + ">";
-        }
-
-        protected final Object getCallerFrameOrException(VirtualFrame frame, CallTarget callTarget) {
-            if (frame == null) {
-                return null;
-            }
-
-            RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
-            if (needsFrameProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsCallerFrame())) {
-                return frame.materialize();
-            }
-
-            if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
-                RootNode rootNode = getRootNode();
-                if (rootNode instanceof PRootNode) {
-                    if (readFromArgsNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
-                    }
-                    PException fromArgs = readFromArgsNode.execute(frame);
-                    if (fromArgs != null) {
-                        return fromArgs;
-                    } else {
-                        // bad but we must provide the exception state
-                        CompilerDirectives.transferToInterpreter();
-                        PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                        PException result = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                        // now, set in our args, such that we won't do this again
-                        PArguments.setCallerFrameOrException(frame.getArguments(), result);
-                        return result;
-                    }
-                } else {
-                    return PException.NO_EXCEPTION;
-                }
-            }
-            return null;
+            return "<METH root " + invokeNode.getCurrentRootNode().getName() + ">";
         }
     }
 
@@ -1530,7 +1492,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        protected MethKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+        protected MethKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
             super(language, factory, callTarget);
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
@@ -1543,9 +1505,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, factory.createTuple(args), factory.createDict(kwargs));
-            PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, directCallNode.getCallTarget()));
-            PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, directCallNode.getCallTarget()));
-            return directCallNode.call(arguments);
+            return invokeNode.execute(frame, arguments);
         }
 
         @Override
@@ -1559,7 +1519,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Child private ReadVarArgsNode readVarargsNode;
 
-        protected MethVarargsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+        protected MethVarargsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
             super(language, factory, callTarget);
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
         }
@@ -1570,8 +1530,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, factory.createTuple(args));
-            PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, directCallNode.getCallTarget()));
-            return directCallNode.call(arguments);
+            return invokeNode.execute(frame, arguments);
         }
 
         @Override
@@ -1583,7 +1542,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     static class MethNoargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self"}, new String[0]);
 
-        protected MethNoargsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+        protected MethNoargsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
             super(language, factory, callTarget);
         }
 
@@ -1592,8 +1551,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object self = readSelfNode.execute(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, PNone.NONE);
-            PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, directCallNode.getCallTarget()));
-            return directCallNode.call(arguments);
+            return invokeNode.execute(frame, arguments);
         }
 
         @Override
@@ -1607,7 +1565,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        protected MethORoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+        protected MethORoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
             super(language, factory, callTarget);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
         }
@@ -1618,8 +1576,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object arg = readArgNode.execute(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, arg);
-            PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, directCallNode.getCallTarget()));
-            return directCallNode.call(arguments);
+            return invokeNode.execute(frame, arguments);
         }
 
         @Override
@@ -1633,7 +1590,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Child private ReadVarArgsNode readVarargsNode;
 
-        protected MethFastcallRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+        protected MethFastcallRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
             super(language, factory, callTarget);
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
         }
@@ -1644,7 +1601,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length);
-            return directCallNode.call(arguments);
+            return invokeNode.execute(frame, arguments);
         }
 
         @Override
@@ -1658,9 +1615,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
+        @Child private InvokeNode invokeNode;
 
-        protected MethFastcallWithKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
-            super(language, factory, callTarget);
+        protected MethFastcallWithKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction fun) {
+            super(language, factory, fun);
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
         }
@@ -1672,8 +1630,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length, factory.createDict(kwargs));
-            PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, directCallNode.getCallTarget()));
-            return directCallNode.call(arguments);
+            return invokeNode.execute(frame, arguments);
         }
 
         @Override
@@ -1690,7 +1647,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function,
                         @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(lang, factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(lang, factory(), function)));
         }
     }
 
@@ -1702,7 +1659,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function,
                         @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(lang, factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(lang, factory(), function)));
         }
     }
 
@@ -1714,7 +1671,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function,
                         @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(lang, factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(lang, factory(), function)));
         }
     }
 
@@ -1726,7 +1683,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function,
                         @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethORoot(lang, factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethORoot(lang, factory(), function)));
         }
     }
 
@@ -1738,7 +1695,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function,
                         @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(lang, factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(lang, factory(), function)));
         }
     }
 
@@ -1750,7 +1707,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function,
                         @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethFastcallWithKeywordsRoot(lang, factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethFastcallWithKeywordsRoot(lang, factory(), function)));
         }
     }
 
