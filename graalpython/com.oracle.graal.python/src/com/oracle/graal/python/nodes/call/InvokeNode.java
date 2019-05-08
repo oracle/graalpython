@@ -46,7 +46,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -100,78 +99,6 @@ abstract class AbstractInvokeNode extends Node {
         copy.excSlot = null;
         copy.excSlotInitialized = false;
         return copy;
-    }
-}
-
-final class GenericInvokeNode extends AbstractInvokeNode {
-    @Child private IndirectCallNode callNode = Truffle.getRuntime().createIndirectCallNode();
-
-    public static GenericInvokeNode create() {
-        return new GenericInvokeNode();
-    }
-
-    @SuppressWarnings("try")
-    private Object doCall(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
-        optionallySetClassBodySpecial(arguments, callTarget);
-        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, callTarget, this)) {
-            return callNode.call(callTarget, arguments);
-        }
-    }
-
-    protected Object execute(VirtualFrame frame, PFunction callee, Object[] arguments) {
-        PArguments.setGlobals(arguments, callee.getGlobals());
-        PArguments.setClosure(arguments, callee.getClosure());
-        RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callTarget, arguments);
-    }
-
-    protected Object execute(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments) {
-        RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callTarget, arguments);
-    }
-}
-
-abstract class CallTargetInvokeNode extends AbstractInvokeNode {
-    @Child private DirectCallNode callNode;
-    protected final boolean isBuiltin;
-
-    protected CallTargetInvokeNode(CallTarget callTarget, boolean isBuiltin, boolean isGenerator) {
-        this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
-        if (isBuiltin) {
-            callNode.cloneCallTarget();
-        }
-        if (isGenerator && shouldInlineGenerators()) {
-            this.callNode.forceInlining();
-        }
-        this.isBuiltin = isBuiltin;
-    }
-
-    @TruffleBoundary
-    public static CallTargetInvokeNode create(PFunction callee) {
-        RootCallTarget callTarget = getCallTarget(callee);
-        boolean builtin = isBuiltin(callee);
-        return CallTargetInvokeNodeGen.create(callTarget, builtin, callee.isGeneratorFunction());
-    }
-
-    @TruffleBoundary
-    public static CallTargetInvokeNode create(PBuiltinFunction callee) {
-        RootCallTarget callTarget = getCallTarget(callee);
-        boolean builtin = isBuiltin(callee);
-        return CallTargetInvokeNodeGen.create(callTarget, builtin, false);
-    }
-
-    public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments);
-
-    @Specialization
-    @SuppressWarnings("try")
-    protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments) {
-        PArguments.setGlobals(arguments, globals);
-        PArguments.setClosure(arguments, closure);
-        RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
-        optionallySetClassBodySpecial(arguments, ct);
-        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct, this)) {
-            return callNode.call(arguments);
-        }
     }
 }
 
