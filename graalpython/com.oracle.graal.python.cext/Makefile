@@ -50,15 +50,6 @@ endif
 LIBDIR=../lib-graalpython
 TARGET_LIB=${LIBDIR}/${PLATFORM}/capi${SO_EXT}
 
-#<<<<<<< HEAD
-#SOURCE_FILES=$(wildcard ${VPATH}/src/*.c)
-#OBJ_FILES=${SOURCE_FILES:${VPATH}/src/%.c=${PLATFORM}/%.o}
-#INCLUDE_FILES=$(wildcard ${VPATH}/include/*.h)
-#
-#MODULE_SOURCES=$(wildcard ${VPATH}/modules/*.c)
-#MODULE_OBJ_FILES=$(MODULE_SOURCES:${VPATH}/modules/%.c=modules/${PLATFORM}/%.o})
-#MODULE_TARGETS=$(MODULE_SOURCES:${VPATH}/modules/%.c=${LIBDIR}/modules/${PLATFORM}/%${SO_EXT})
-#=======
 SOURCE_FILES=$(wildcard src/*.c)
 OBJ_FILES=${SOURCE_FILES:%.c=%.o}
 OBJ_FILES=${SOURCE_FILES:src/%.c=${PLATFORM}/%.o}
@@ -67,7 +58,6 @@ INCLUDE_FILES=$(wildcard include/*.h)
 MODULE_SOURCES=$(wildcard modules/*.c)
 MODULE_OBJ_FILES=$(MODULE_SOURCES:modules/%.c=modules/${PLATFORM}/%.o})
 MODULE_TARGETS=$(MODULE_SOURCES:modules/%.c=${LIBDIR}/modules/${PLATFORM}/%${SO_EXT})
-#>>>>>>> upstream/je/sulong-toolchain
 
 # These are just needed to allow compilation from source, because include needs
 # to be next to lib-graalpython
@@ -87,13 +77,6 @@ rebuild:
 	$(MAKE) clean
 	$(MAKE) default
 
-#<<<<<<< HEAD
-#=======
-#${LIBDIR}/modules/%.bc: modules/%.o
-#	$(QUIETLY) mkdir -p ${LIBDIR}/modules
-#	$(QUIETLY) llvm-link -o $@ $+
-#
-#>>>>>>> upstream/je/sulong-toolchain
 ${TARGET_LIB}: ${OBJ_FILES}
 	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) ${CLANG} -fPIC -shared -o $@ $+
@@ -102,7 +85,6 @@ ${PLATFORM}/%.o: src/%.c Makefile src/capi.h ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) ${CLANG} ${CFLAGS} ${WARNINGS} ${INCLUDES} -c -o $@ -c $<
 
-#<<<<<<< HEAD
 modules/${PLATFORM}/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) ${CLANG} ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
@@ -110,15 +92,6 @@ modules/${PLATFORM}/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES}
 ${LIBDIR}/modules/${PLATFORM}/%${SO_EXT}: modules/${PLATFORM}/%.o
 	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) ${CLANG} -fPIC -shared ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $<
-#=======
-#src/%.o: src/%.c Makefile src/capi.h ${INCLUDE_FILES}
-#	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-#	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
-#
-#modules/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES}
-#	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-#	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
-#>>>>>>> upstream/je/sulong-toolchain
 
 ../include/%.h: ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p ../include/
