@@ -594,9 +594,7 @@ public final class Python3Core implements PythonCore {
         String suffix = env.getFileNameSeparator() + basename + ".py";
         TruffleFile file = env.getTruffleFile(prefix + suffix);
         try {
-            if (file.exists()) {
-                return getLanguage().newSource(ctxt, file, basename);
-            }
+            return getLanguage().newSource(ctxt, file, basename);
         } catch (SecurityException | IOException t) {
             // fall through;
         }
