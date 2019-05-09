@@ -76,9 +76,9 @@ public class PwdModuleBuiltins extends PythonBuiltins {
             String gecos = "";
             String homeDir = System.getProperty("user.home");
             String shell = "";
-            if (osName.contains("win")) {
+            if (osName.contains("Windows")) {
                 // we keep base configs for now, could be changed in future, not tested on windows
-            } else if (osName.contains("nix")) {
+            } else if (osName.contains("Linux")) {
                 UnixSystem unix = new UnixSystem();
                 gid = unix.getGid();
                 shell = "/bin/sh";
