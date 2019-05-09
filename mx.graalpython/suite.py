@@ -379,7 +379,7 @@ suite = {
             "platformDependent": True,
             "description": "Graal.Python support distribution for the GraalVM license files",
             "layout": {
-                "LICENSE_GRAALPYTHON": "file:LICENSE",
+                "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
                 "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
             },
             "maven": False,
