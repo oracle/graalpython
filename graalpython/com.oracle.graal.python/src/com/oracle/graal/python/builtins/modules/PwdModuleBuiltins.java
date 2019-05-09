@@ -40,20 +40,58 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.sun.security.auth.module.UnixSystem;
 
 @CoreFunctions(defineModule = "pwd")
 public class PwdModuleBuiltins extends PythonBuiltins {
 
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return PwdModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "getpwuid", minNumOfPositionalArgs = 1, parameterNames = {"uid"})
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class GetpwuidNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object doGetpwuid(int uid) {
+            String osName = System.getProperty("os.name");
+            String username = System.getProperty("user.name");
+            String password = "NOT_AVAILABLE";
+            long gid = 0;
+            String gecos = "";
+            String homeDir = System.getProperty("user.home");
+            String shell = "";
+            if (osName.contains("win")) {
+                // we keep base configs for now, could be changed in future, not tested on windows
+            } else if (osName.contains("nix")) {
+                UnixSystem unix = new UnixSystem();
+                gid = unix.getGid();
+                shell = "/bin/sh";
+            }
+            return factory().createTuple(new Object[]{
+                            username,
+                            password,
+                            uid,
+                            gid,
+                            gecos,
+                            homeDir,
+                            shell
+            });
+        }
     }
 }

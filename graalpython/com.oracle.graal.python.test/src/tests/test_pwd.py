@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,15 +37,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from _descriptor import make_named_tuple_class
+import unittest
 
-passwd_result = make_named_tuple_class("passwd_result", [
-    "pw_name", "pw_passwd", "pw_uid", "pw_gid",
-    "pw_gecos", "pw_dir", "pw_shell"
-])
 
-old_getpwuid = getpwuid
-
-@__builtin__
-def getpwuid(uid):
-    return passwd_result(old_getpwuid(uid))
+class PwdTests(unittest.TestCase):
+    def test_getpwuid(self):
+        import pwd
+        passwd = pwd.getpwuid(1000)
+        self.assertIsNotNone(passwd.pw_name)
+        self.assertIsNotNone(passwd.pw_passwd)
+        assert passwd.pw_uid == 1000
+        self.assertIsNotNone(passwd.pw_gid)
+        self.assertIsNotNone(passwd.pw_gecos)
+        self.assertIsNotNone(passwd.pw_shell)
