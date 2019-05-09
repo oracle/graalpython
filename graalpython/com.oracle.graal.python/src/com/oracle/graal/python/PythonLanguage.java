@@ -93,6 +93,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 
 import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionValues;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -151,6 +152,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void finalizeContext(PythonContext context) {
         context.runShutdownHooks();
         super.finalizeContext(context);
+    }
+
+    @Override
+    protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
+        // Buffered IO was applied during context initialization
+        return (firstOptions.get(PythonOptions.UnbufferedIO) == newOptions.get(PythonOptions.UnbufferedIO) &&
+                // internal sources were marked during context initialization
+                firstOptions.get(PythonOptions.ExposeInternalSources) == newOptions.get(PythonOptions.ExposeInternalSources) &&
+                // we cache CatchAllExceptions hard on TryExceptNode
+                firstOptions.get(PythonOptions.CatchAllExceptions) == newOptions.get(PythonOptions.CatchAllExceptions) &&
+                // we statically cache WithThread in SysConfigModuleBuiltins
+                firstOptions.get(PythonOptions.WithThread) == newOptions.get(PythonOptions.WithThread) &&
+                // disabling TRegex has an effect on the _sre Python code that is created
+                firstOptions.get(PythonOptions.WithTRegex) == newOptions.get(PythonOptions.WithTRegex)
+        );
     }
 
     @Override
