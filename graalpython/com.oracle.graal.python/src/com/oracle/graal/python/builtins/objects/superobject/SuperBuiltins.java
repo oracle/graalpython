@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -90,11 +91,13 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
@@ -260,19 +263,20 @@ public final class SuperBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }
 
-            Object cls = getClassFromTarget(target);
+            Reference currentFrameInfo = PArguments.getCurrentFrameInfo(target);
+            RootNode rootNode = currentFrameInfo.getCallNode().getRootNode();
+            Object cls = getClassFromTarget(target, rootNode);
             if (cls == null) {
                 throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
             }
             return init(frame, self, cls, obj);
         }
 
-        @TruffleBoundary
-        private Object getClassFromTarget(Frame target) {
+        private Object getClassFromTarget(Frame target, RootNode rootNode) {
             // TODO: remove me
             // TODO: do it properly via the python API in super.__init__ :
             // sys._getframe(1).f_code.co_closure?
-            FrameSlot classSlot = target.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
+            FrameSlot classSlot = getClassFrameSlot(rootNode.getFrameDescriptor());
             Object cls = PNone.NONE;
             if (classSlot != null) {
                 try {
@@ -285,6 +289,11 @@ public final class SuperBuiltins extends PythonBuiltins {
                 }
             }
             return cls;
+        }
+
+        @TruffleBoundary
+        private static FrameSlot getClassFrameSlot(FrameDescriptor fd) {
+            return fd.findFrameSlot(SpecialAttributeNames.__CLASS__);
         }
 
         private CellBuiltins.GetRefNode getGetRefNode() {
