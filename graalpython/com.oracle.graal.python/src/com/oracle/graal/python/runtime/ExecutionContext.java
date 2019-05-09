@@ -44,7 +44,6 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -62,7 +61,7 @@ import com.oracle.truffle.api.nodes.RootNode;
  * depending on whether the other side is also a Python frame.
  */
 @ValueType
-public abstract class ExecutionContext implements AutoCloseable {
+public abstract class ExecutionContext {
     /**
      * Prepare a call from a Python frame to a Python function.
      */
@@ -78,13 +77,6 @@ public abstract class ExecutionContext implements AutoCloseable {
     }
 
     /**
-     * Wrap the execution of a Python callee called from a Python frame.
-     */
-    public static final ExecutionContext callee(VirtualFrame frame, RootNode node) {
-        return new CalleeContext(frame, node);
-    }
-
-    /**
      * Prepare a call from a foreign frame to a Python function.
      */
     public static final ExecutionContext interopCallee(PythonContext context, Object[] pArguments) {
@@ -92,7 +84,6 @@ public abstract class ExecutionContext implements AutoCloseable {
         return new ForeignToPythonCallContext(context, pArguments);
     }
 
-    @Override
     public abstract void close();
 
     private static final class CallContext extends ExecutionContext {
@@ -135,13 +126,12 @@ public abstract class ExecutionContext implements AutoCloseable {
         }
     }
 
-    private static final class CalleeContext extends ExecutionContext {
-        private final VirtualFrame frame;
-        private final RootNode node;
+    public abstract static class CalleeContext extends ExecutionContext {
 
-        private CalleeContext(VirtualFrame frame, RootNode node) {
-            this.frame = frame;
-            this.node = node;
+        /**
+         * Wrap the execution of a Python callee called from a Python frame.
+         */
+        public static void enter(VirtualFrame frame) {
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference();
@@ -152,11 +142,9 @@ public abstract class ExecutionContext implements AutoCloseable {
             if (customLocals != null) {
                 thisFrameRef.setCustomLocals(customLocals);
             }
-            CompilerDirectives.ensureVirtualized(this);
         }
 
-        @Override
-        public void close() {
+        public static void exit(VirtualFrame frame, RootNode node) {
             /*
              * equivalent to PyPy's ExecutionContext.leave. Note that <tt>got_exception</tt> in
              * their code is handled automatically by the Truffle lazy exceptions, so here we only

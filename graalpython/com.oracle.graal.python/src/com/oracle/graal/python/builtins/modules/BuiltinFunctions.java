@@ -184,7 +184,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
@@ -680,8 +679,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
-            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this)) {
+            ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this);
+            try {
                 return indirectCallNode.call(code.getRootCallTarget(), args);
+            } finally {
+                ec.close();
             }
         }
 
@@ -699,8 +701,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (rootCallTarget == null) {
                 throw raise(ValueError, "cannot create the a call target from the code object: %p", code);
             }
-            try (ExecutionContext ec = ExecutionContext.call(frame, args, rootCallTarget, this)) {
+            ExecutionContext ec = ExecutionContext.call(frame, args, rootCallTarget, this);
+            try {
                 return indirectCallNode.call(rootCallTarget, args);
+            } finally {
+                ec.close();
             }
         }
 
@@ -712,8 +717,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
-            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this)) {
+            ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this);
+            try {
                 return indirectCallNode.call(code.getRootCallTarget(), args);
+            } finally {
+                ec.close();
             }
         }
 
@@ -724,8 +732,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] args = PArguments.create();
             setCustomGlobals(frame, globals, setBuiltins, args);
             setCustomLocals(args, locals);
-            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this)) {
+            ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this);
+            try {
                 return indirectCallNode.call(code.getRootCallTarget(), args);
+            } finally {
+                ec.close();
             }
         }
 
@@ -1917,8 +1928,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object locals(VirtualFrame frame,
-                             @Cached ReadLocalsNode readLocalsNode,
-                             @Cached ReadCallerFrameNode readCallerFrameNode) {
+                        @Cached ReadLocalsNode readLocalsNode,
+                        @Cached ReadCallerFrameNode readCallerFrameNode) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
             Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
             if (inGenerator.profile(generatorFrame == null)) {

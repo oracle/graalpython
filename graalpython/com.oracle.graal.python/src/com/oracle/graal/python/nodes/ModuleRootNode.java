@@ -32,7 +32,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
-import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -65,8 +65,11 @@ public class ModuleRootNode extends PClosureRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        try (ExecutionContext ec = ExecutionContext.callee(frame, this)) {
+        CalleeContext.enter(frame);
+        try {
             return body.execute(frame);
+        } finally {
+            CalleeContext.exit(frame, this);
         }
     }
 

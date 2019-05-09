@@ -147,8 +147,11 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
-        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct, this)) {
+        ExecutionContext ec = ExecutionContext.call(frame, arguments, ct, this);
+        try {
             return callNode.call(arguments);
+        } finally {
+            ec.close();
         }
     }
 

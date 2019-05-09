@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -600,13 +599,19 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 }
                 Object res = null;
                 if (lib.isExecutable(callee)) {
-                    try (ExecutionContext ec = ExecutionContext.interopCall(frame, context, this)) {
+                    ExecutionContext ec = ExecutionContext.interopCall(frame, context, this);
+                    try {
                         res = lib.execute(callee, convertedArgs);
+                    } finally {
+                        ec.close();
                     }
                     return toPTypeNode.executeConvert(res);
                 } else {
-                    try (ExecutionContext ec = ExecutionContext.interopCall(frame, context, this)) {
+                    ExecutionContext ec = ExecutionContext.interopCall(frame, context, this);
+                    try {
                         res = lib.instantiate(callee, convertedArgs);
+                    } finally {
+                        ec.close();
                     }
                     return toPTypeNode.executeConvert(res);
                 }
