@@ -334,8 +334,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class GetUidNode extends PythonBuiltinNode {
         @Specialization
         int getPid() {
-            // TODO: this needs to be implemented properly at some point (consider managed execution
-            // as well)
+            String osName = System.getProperty("os.name");
+            if (osName.contains("Linux")) {
+                return (int) new com.sun.security.auth.module.UnixSystem().getUid();
+            }
             return 1000;
         }
     }
