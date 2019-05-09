@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
@@ -436,8 +435,6 @@ public final class Python3Core implements PythonCore {
             for (PythonBuiltins builtin : builtins) {
                 builtin.postInitialize(this);
             }
-
-            loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
 
             initialized = true;
         }
