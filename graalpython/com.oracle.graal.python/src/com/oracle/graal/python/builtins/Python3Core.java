@@ -97,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
@@ -168,6 +167,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -606,8 +606,8 @@ public final class Python3Core implements PythonCore {
 
     private void loadFile(String s, String prefix) {
         Source source = getSource(s, prefix);
-        Supplier<PCode> getCode = () -> objectFactory.createCode(Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null)));
-        RootCallTarget callTarget = getLanguage().cacheCode(source.getName(), getCode).getRootCallTarget();
+        Supplier<CallTarget> getCode = () -> Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null));
+        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(source.getName(), getCode);
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects

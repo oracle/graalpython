@@ -565,9 +565,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         singleContextAssumption.invalidate();
     }
 
-    private final ConcurrentHashMap<String, PCode> cachedCode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
 
-    public PCode cacheCode(String filename, Supplier<PCode> createCode) {
+    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
         return cachedCode.computeIfAbsent(filename, f -> createCode.get());
     }
 
