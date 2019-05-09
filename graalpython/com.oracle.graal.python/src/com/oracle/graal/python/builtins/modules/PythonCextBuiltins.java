@@ -1612,7 +1612,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private InvokeNode invokeNode;
 
         protected MethFastcallWithKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction fun) {
             super(language, factory, fun);
