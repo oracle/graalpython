@@ -1499,10 +1499,10 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doit(Object argument) {
+        Object doit(VirtualFrame frame, Object argument) {
             try {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{argument});
-                return invokeNode.execute(null, arguments);
+                return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
@@ -1528,10 +1528,10 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doit(Object arg1, Object arg2) {
+        Object doit(VirtualFrame frame, Object arg1, Object arg2) {
             try {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2});
-                return invokeNode.execute(null, arguments);
+                return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
@@ -1557,10 +1557,10 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doit(Object arg1, Object arg2, Object arg3) {
+        Object doit(VirtualFrame frame, Object arg1, Object arg2, Object arg3) {
             try {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2, arg3});
-                return invokeNode.execute(null, arguments);
+                return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
@@ -1592,7 +1592,7 @@ public abstract class CExtNodes {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             try {
                 Object[] arguments = createArgsNode.execute(func, args);
-                return invokeNode.execute(null, arguments);
+                return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);

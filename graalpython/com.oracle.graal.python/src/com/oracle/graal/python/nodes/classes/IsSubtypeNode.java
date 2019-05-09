@@ -197,7 +197,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
             throw raise.raise(PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
         }
 
-        return abstractIsSubclassNode.execute(null, derived, cls);
+        return abstractIsSubclassNode.execute(frame, derived, cls);
     }
 
     protected MroSequenceStorage getMro(LazyPythonClass clazz) {

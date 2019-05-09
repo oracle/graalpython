@@ -93,7 +93,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
                                 CompilerDirectives.transferToInterpreterAndInvalidate();
                                 callClassGetItemNode = insert(CallNode.create());
                             }
-                            return callClassGetItemNode.execute(null, classGetItem, arg2);
+                            return callClassGetItemNode.execute(frame, classGetItem, arg2);
                         }
                     }
                     if (raiseNode == null) {
