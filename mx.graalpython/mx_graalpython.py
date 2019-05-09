@@ -394,9 +394,14 @@ def graalpython_gate_runner(args, tasks):
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-            # Test that stdlib paths are not cached on e.g. encodings module
+            # Test that stdlib paths are not cached on packages
             out = mx.OutputCapture()
             mx.run([svm_image, "-S", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__path__)"], out=mx.TeeOutputCapture(out))
+            if "/foobar" not in out.data:
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar", got:\n' + success)
+            # Test that stdlib paths are not cached on modules
+            out = mx.OutputCapture()
+            mx.run([svm_image, "-S", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__file__)"], out=mx.TeeOutputCapture(out))
             if "/foobar" not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar", got:\n' + success)
             # Finally, test that we can start even if the graalvm was moved
