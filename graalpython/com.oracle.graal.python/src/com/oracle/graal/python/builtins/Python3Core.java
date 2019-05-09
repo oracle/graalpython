@@ -596,10 +596,12 @@ public final class Python3Core implements PythonCore {
         try {
             return getLanguage().newSource(ctxt, file, basename);
         } catch (SecurityException | IOException t) {
-            // fall through;
+            String errorMessage = "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
+            PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
+            PException e = new PException(null, null);
+            e.setMessage(errorMessage);
+            throw e;
         }
-        PythonLanguage.getLogger().log(Level.SEVERE, "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.");
-        throw new RuntimeException();
     }
 
     private void loadFile(String s, String prefix) {
