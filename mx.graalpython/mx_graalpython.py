@@ -195,6 +195,7 @@ class GraalPythonTags(object):
     graalvm = 'python-graalvm'
     graalvm_sandboxed = 'python-graalvm-sandboxed'
     svm = 'python-svm'
+    native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
 
 
@@ -411,10 +412,53 @@ def graalpython_gate_runner(args, tasks):
             shutil.move(graalvm_home, new_graalvm_home)
             launcher = os.path.join(new_graalvm_home, "bin", "graalpython")
             mx.log(launcher)
-            mx.run([launcher, "-S", "-c", "print(b'abc'.decode('ascii'))"]) # Should not fail
+            mx.run([launcher, "--log.python.level=FINE", "-S", "-c", "print(b'abc'.decode('ascii'))"], out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            assert "Using preinitialized context." in out.data
+            # And test that we can start even if the graalvm was moved and we cannot use a preinitialized context
+            # n.b.: Forcing unbuffered IO is incompatible with the preinitialized context
+            out = mx.OutputCapture()
+            mx.run([launcher, "--log.python.level=FINE", "-u", "-S", "-c", "print(b'abc'.decode('ascii'))"], out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            assert "Using preinitialized context." not in out.data
+
+    with Task('GraalPython GraalVM native embedding', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.native_image_embedder]) as task:
+        if task:
+            run_embedded_native_python_test()
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
+
+
+def run_embedded_native_python_test(args=None):
+    filename = dirname = progname = None
+    with mx.TempDirCwd(os.getcwd()) as dirname:
+        try:
+            python_launcher = python_gvm()
+            graalvm_javac = os.path.join(os.path.dirname(python_launcher), "javac")
+            graalvm_native_image = os.path.join(os.path.dirname(python_launcher), "native-image")
+
+            filename = os.path.join(dirname, "HelloWorld.java")
+            with open(filename, "w") as f:
+                f.write("""
+                import org.graalvm.polyglot.*;
+
+                public class HelloWorld {
+                    public static void main(String[] args) {
+                        try (Context context = Context.create("python")) {
+                            context.eval("python", "print(42)");
+                        }
+                    }
+                }
+                """)
+            out = mx.OutputCapture()
+            mx.run([graalvm_javac, filename])
+            mx.run([graalvm_native_image, "--language:python", "HelloWorld"])
+            mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
+            assert "42" in out.data
+        finally:
+            try:
+                os.unlink(filename)
+            except:
+                pass
 
 
 def run_shared_lib_test(args=None):

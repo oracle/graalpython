@@ -171,6 +171,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
+        if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
+            return false;
+        }
         ensureHomeInOptions(newEnv);
         PythonCore.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
