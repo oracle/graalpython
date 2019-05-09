@@ -31,7 +31,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
 import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
 import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
@@ -41,9 +40,9 @@ import static com.oracle.truffle.api.TruffleFile.LAST_MODIFIED_TIME;
 import static com.oracle.truffle.api.TruffleFile.SIZE;
 import static com.oracle.truffle.api.TruffleFile.UNIX_CTIME;
 import static com.oracle.truffle.api.TruffleFile.UNIX_DEV;
-import static com.oracle.truffle.api.TruffleFile.UNIX_INODE;
 import static com.oracle.truffle.api.TruffleFile.UNIX_GID;
 import static com.oracle.truffle.api.TruffleFile.UNIX_GROUP;
+import static com.oracle.truffle.api.TruffleFile.UNIX_INODE;
 import static com.oracle.truffle.api.TruffleFile.UNIX_MODE;
 import static com.oracle.truffle.api.TruffleFile.UNIX_NLINK;
 import static com.oracle.truffle.api.TruffleFile.UNIX_OWNER;
