@@ -91,11 +91,10 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.LanguageInfo;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import com.oracle.truffle.llvm.api.SulongToolchain;
+import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -231,7 +230,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-                SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
+                Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
                 TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), toolchain.getIdentifier(), "capi.so"));
                 Object capi = null;
                 try {

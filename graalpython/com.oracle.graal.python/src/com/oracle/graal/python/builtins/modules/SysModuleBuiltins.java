@@ -95,7 +95,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.llvm.api.SulongToolchain;
+import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -209,7 +209,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         String option = PythonOptions.getOption(context, PythonOptions.PythonPath);
 
         LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-        SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
+        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         String cextModuleHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "modules", toolchain.getIdentifier());
         String cextHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), toolchain.getIdentifier());
         String cextSrc = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "src");
@@ -525,7 +525,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         protected Object getToolPath(String tool) {
             Env env = getContext().getEnv();
             LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-            SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             TruffleFile toolPath = toolchain.getToolPath(tool);
             if (toolPath == null) {
                 return PNone.NONE;
