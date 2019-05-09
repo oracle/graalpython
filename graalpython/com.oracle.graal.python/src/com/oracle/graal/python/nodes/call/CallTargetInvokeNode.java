@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -94,12 +94,9 @@ public abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     protected Object doSimple(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments) {
         RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
-        ExecutionContext ec = ExecutionContext.call(frame, arguments, ct, this);
-        try {
-            return callNode.call(arguments);
-        } finally {
-            ec.close();
-        }
+
+        CallContext.enter(frame, arguments, ct, this);
+        return callNode.call(arguments);
     }
 
     @Specialization(replaces = "doSimple")

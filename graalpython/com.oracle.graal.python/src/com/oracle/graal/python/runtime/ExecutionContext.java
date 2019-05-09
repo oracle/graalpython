@@ -62,12 +62,6 @@ import com.oracle.truffle.api.nodes.RootNode;
  */
 @ValueType
 public abstract class ExecutionContext {
-    /**
-     * Prepare a call from a Python frame to a Python function.
-     */
-    public static final ExecutionContext call(VirtualFrame currentFrame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
-        return new CallContext(currentFrame, callArguments, callTarget, callNode);
-    }
 
     /**
      * Prepare a call from a Python frame to a foreign callable.
@@ -86,8 +80,11 @@ public abstract class ExecutionContext {
 
     public abstract void close();
 
-    private static final class CallContext extends ExecutionContext {
-        private CallContext(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
+    public abstract static class CallContext extends ExecutionContext {
+        /**
+         * Prepare a call from a Python frame to a Python function.
+         */
+        public static void enter(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
             // equivalent to PyPy's ExecutionContext.enter `frame.f_backref =
             // self.topframeref` we here pass the current top frame reference to
             // the next frame. An optimization we do is to only pass the frame
@@ -118,11 +115,6 @@ public abstract class ExecutionContext {
                 }
                 PArguments.setException(callArguments, curExc);
             }
-        }
-
-        @Override
-        public void close() {
-            // Nothing to do at this point
         }
     }
 
