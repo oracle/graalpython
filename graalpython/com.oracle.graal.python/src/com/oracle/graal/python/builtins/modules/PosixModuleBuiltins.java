@@ -331,7 +331,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getuid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class GetUidNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetUidNode extends PythonBuiltinNode {
         @Specialization
         int getPid() {
             return getSystemUid();
