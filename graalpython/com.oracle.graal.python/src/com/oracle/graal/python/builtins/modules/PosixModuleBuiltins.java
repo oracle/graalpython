@@ -331,9 +331,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getuid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class GetUidNode extends PythonBuiltinNode {
+    public abstract static class GetUidNode extends PythonUnaryBuiltinNode {
         @Specialization
         int getPid() {
+            return getSystemUid();
+        }
+
+        @TruffleBoundary
+        int getSystemUid() {
             String osName = System.getProperty("os.name");
             if (osName.contains("Linux")) {
                 return (int) new com.sun.security.auth.module.UnixSystem().getUid();

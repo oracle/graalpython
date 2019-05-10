@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -69,6 +70,11 @@ public class PwdModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGetpwuid(int uid) {
+            return factory().createTuple(createPwuidObject(uid));
+        }
+
+        @TruffleBoundary
+        public Object[] createPwuidObject(int uid) {
             String osName = System.getProperty("os.name");
             String username = System.getProperty("user.name");
             String password = "NOT_AVAILABLE";
@@ -83,15 +89,17 @@ public class PwdModuleBuiltins extends PythonBuiltins {
                 gid = unix.getGid();
                 shell = "/bin/sh";
             }
-            return factory().createTuple(new Object[]{
-                            username,
-                            password,
-                            uid,
-                            gid,
-                            gecos,
-                            homeDir,
-                            shell
-            });
+
+            return new Object[]{
+                    username,
+                    password,
+                    uid,
+                    gid,
+                    gecos,
+                    homeDir,
+                    shell
+            };
         }
     }
+
 }
