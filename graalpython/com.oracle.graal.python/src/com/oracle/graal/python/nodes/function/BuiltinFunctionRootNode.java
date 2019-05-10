@@ -27,7 +27,6 @@ package com.oracle.graal.python.nodes.function;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
