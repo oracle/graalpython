@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,59 +37,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
-__dir__ = __file__.rpartition("/")[0]
+import unittest
 
 
-try:
-    raise TypeError
-except:
-    TB = sys.exc_info()[2]
-
-
-class TestExceptionobject(object):
-    def test_exc_info(self):
-        TestExcInfo = CPyExtType("TestExcInfo",
-                             """
-                             PyObject* get_exc_info(PyObject* self) {
-                                 PyObject* typ;
-                                 PyObject* val;
-                                 PyObject* tb;
-                                 PyErr_GetExcInfo(&typ, &val, &tb);
-                                 Py_INCREF(typ);
-                                 return typ;
-                             }
-                             """,
-                             tp_methods='{"get_exc_info", (PyCFunction)get_exc_info, METH_NOARGS, ""}'
-        )
-        tester = TestExcInfo()
-        try:
-            raise IndexError
-        except:
-            exc_type = tester.get_exc_info()
-            assert exc_type == IndexError
-
-            # do a second time because this time we won't do a stack walk
-            exc_type = tester.get_exc_info()
-            assert exc_type == IndexError
-        else:
-            assert False
-
-class TestExceptionobjectFunctions(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super().compile_module(name)
-
-    test_PyException_SetTraceback = CPyExtFunction(
-        lambda args: 0,
-        lambda: (
-            (
-                AssertionError(), TB
-            ),
-        ),
-        resultspec="i",
-        argspec="OO",
-        arguments=["PyObject* exc", "PyObject* tb"],
-    )
-
+class PwdTests(unittest.TestCase):
+    def test_getpwuid(self):
+        import pwd
+        passwd = pwd.getpwuid(1000)
+        self.assertIsNotNone(passwd.pw_name)
+        self.assertIsNotNone(passwd.pw_passwd)
+        assert passwd.pw_uid == 1000
+        self.assertIsNotNone(passwd.pw_gid)
+        self.assertIsNotNone(passwd.pw_gecos)
+        self.assertIsNotNone(passwd.pw_shell)

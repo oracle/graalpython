@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
@@ -232,6 +233,7 @@ public final class Python3Core implements PythonCore {
                         "_ast",
                         "java",
                         "pyio_patches",
+                        "pwd",
                         "_contextvars"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -345,6 +347,7 @@ public final class Python3Core implements PythonCore {
                         new ThreadBuiltins(),
                         new LockBuiltins(),
                         new RLockBuiltins(),
+                        new PwdModuleBuiltins(),
                         new ContextvarsModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
