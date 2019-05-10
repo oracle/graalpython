@@ -400,6 +400,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         protected String getFileSystemEncoding() {
             return System.getProperty("file.encoding");
         }
