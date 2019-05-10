@@ -48,8 +48,14 @@ def __import__(filename, module_name):
     import sys, posix
     module = sys.modules[module_name]
     if filename.startswith("%s"):
-        filename = filename % sys.graal_python_core_home
-    fd = posix.open(filename, posix.O_RDONLY)
+        full_filename = filename % sys.graal_python_core_home
+        filename = filename[len("%s"):]
+    elif filename.startswith(sys.graal_python_stdlib_home):
+        full_filename = filename
+        filename = filename[len(sys.graal_python_stdlib_home):]
+    else:
+        raise RuntimeError("There was an import during bootstrap outside the core or stdlib home.")
+    fd = posix.open(full_filename, posix.O_RDONLY)
     content = posix.read(fd, sys.maxsize)
     posix.close(fd)
     code = compile(content, filename, "exec")

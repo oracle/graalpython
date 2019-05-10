@@ -30,6 +30,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
@@ -553,12 +554,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private final ConcurrentHashMap<Object, Source> cachedSources = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Source> cachedSources = new ConcurrentHashMap<>();
 
     public Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
         try {
-            return cachedSources.computeIfAbsent(src, t -> {
+            return cachedSources.computeIfAbsent(name, t -> {
                 try {
+                    PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching source for " + name);
                     return newSource(ctxt, Source.newBuilder(ID, src).name(name));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -587,7 +589,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
 
     public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
-        return cachedCode.computeIfAbsent(filename, f -> createCode.get());
+        return cachedCode.computeIfAbsent(filename, f -> {
+                PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+                return createCode.get();
+            });
     }
 
     public static Shape freshShape() {
