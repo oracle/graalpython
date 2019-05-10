@@ -91,13 +91,13 @@ public class PwdModuleBuiltins extends PythonBuiltins {
             }
 
             return new Object[]{
-                    username,
-                    password,
-                    uid,
-                    gid,
-                    gecos,
-                    homeDir,
-                    shell
+                            username,
+                            password,
+                            uid,
+                            gid,
+                            gecos,
+                            homeDir,
+                            shell
             };
         }
     }
