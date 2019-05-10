@@ -202,20 +202,16 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
 
             TruffleFile tfile = getContext().getEnv().getTruffleFile(path);
-            boolean accessAllowed = true;
-            try {
-                accessAllowed = tfile.exists() || tfile.isRegularFile();
-            } catch (SecurityException e) {
-                accessAllowed = false;
-            }
-            if (!accessAllowed) {
-                throw raise(PythonErrorType.ZipImportError, "access denied by the filesystem");
-            }
-
             String prefix = "";
             String archive = "";
             while (true) {
-                if (tfile.isRegularFile()) {
+                boolean isRegularFile;
+                try {
+                    isRegularFile = tfile.isRegularFile();
+                } catch (SecurityException e) {
+                    isRegularFile = false;
+                }
+                if (isRegularFile) {
                     // we don't have to store absolute path
                     archive = tfile.getPath();
                     break;
@@ -228,7 +224,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 tfile = parentFile;
             }
 
-            if (tfile.exists() && tfile.isRegularFile()) {
+            boolean existsAndIsRegular;
+            try {
+                existsAndIsRegular = tfile.exists() && tfile.isRegularFile();
+            } catch (SecurityException e) {
+                existsAndIsRegular = false;
+            }
+
+            if (existsAndIsRegular) {
                 Object files = self.getZipDirectoryCache().getItem(path);
                 if (files == null) {
                     // fill the cache
@@ -288,6 +291,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                         }
                     } catch (IOException ex) {
                         throw raise(PythonErrorType.ZipImportError, "not a Zip file: '%s'", archive);
+                    } catch (SecurityException ex) {
+                        throw raise(PythonErrorType.ZipImportError, "security exception while reading: '%s'", archive);
                     } finally {
                         if (zis != null) {
                             try {
