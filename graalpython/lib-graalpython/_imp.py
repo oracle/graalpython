@@ -87,6 +87,10 @@ is_frozen_package = get_frozen_object
 
 @__builtin__
 def freeze_module(mod, key=None):
+    """
+    Freeze a module under the optional key in the language cache so that it can
+    be shared across multiple contexts.
+    """
     is_package = hasattr(mod, "__path__")
     name = key or mod.__name__
     graal_python_cache_module_code(key, mod.__file__, is_package)
@@ -94,6 +98,12 @@ def freeze_module(mod, key=None):
 
 @__builtin__
 def cache_all_file_modules():
+    """
+    Caches all modules loaded during initialization through the normal import
+    mechanism on the language, so that any additional contexts created in the
+    same engine can re-use the cached CallTargets. See the _imp module for
+    details on the module caching.
+    """
     import sys
     for k,v in sys.modules.items():
         if hasattr(v, "__file__"):

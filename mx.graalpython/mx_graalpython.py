@@ -429,6 +429,12 @@ mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
 
 
 def run_embedded_native_python_test(args=None):
+    """
+    Test that embedding an engine where a context was initialized at native image
+    build-time is enough to create multiple contexts from that engine without
+    those contexts having access to the core files, due to caching in the shared
+    engine.
+    """
     filename = dirname = progname = None
     with mx.TempDirCwd(os.getcwd()) as dirname:
         try:

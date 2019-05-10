@@ -39,8 +39,4 @@
 
 import _imp
 
-# Caches all modules loaded during initialization through the normal import
-# mechanism on the language, so that any additional contexts created in the same
-# engine can re-use the cached CallTargets. See the _imp module for details on
-# the module caching.
 _imp.cache_all_file_modules()
