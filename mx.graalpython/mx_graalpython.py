@@ -435,7 +435,7 @@ def run_embedded_native_python_test(args=None):
     those contexts having access to the core files, due to caching in the shared
     engine.
     """
-    filename = dirname = progname = None
+    filename = dirname = None
     with mx.TempDirCwd(os.getcwd()) as dirname:
         try:
             python_launcher = python_gvm()
