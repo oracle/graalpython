@@ -519,6 +519,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    @TruffleBoundary
     public static TruffleLogger getLogger() {
         return TruffleLogger.getLogger(ID);
     }
