@@ -109,8 +109,9 @@ class CachedLoader:
     @staticmethod
     def exec_module(module):
         import sys
-        exec(graal_python_get_cached_code(module.__name__), module.__dict__)
-        sys.modules[module.__name__] = module
+        modulename = module.__name__
+        exec(graal_python_get_cached_code(modulename), module.__dict__)
+        sys.modules[modulename] = module
 
 
 class CachedImportFinder:
