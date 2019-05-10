@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -281,6 +282,33 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PythonModule posix = core.lookupBuiltinModule("posix");
         Object environAttr = posix.getAttribute("environ");
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
+    }
+
+    @Builtin(name = "execv", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ExecvNode extends PythonBuiltinNode {
+
+        @Specialization
+        Object execute(String path, PList args) {
+            return doExecute(path, args);
+        }
+
+        @TruffleBoundary
+        Object doExecute(String path, PList args) {
+            try {
+                int size = args.getSequenceStorage().length();
+                String[] cmd = new String[1 + size];
+                cmd[0] = path;
+                for (int i = 1; i < size; i++) {
+                    cmd[i + 3] = args.getSequenceStorage().getItemNormalized(i).toString();
+                }
+                new ProcessBuilder(cmd).start();
+            } catch (IOException e) {
+                throw raise(PythonErrorType.ValueError, "Could not execute script '%s'", e.getMessage());
+            }
+            return PNone.NONE;
+        }
+
     }
 
     @Builtin(name = "getcwd", minNumOfPositionalArgs = 0)
