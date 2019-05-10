@@ -159,15 +159,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
         // Buffered IO was applied during context initialization
         return (firstOptions.get(PythonOptions.UnbufferedIO).equals(newOptions.get(PythonOptions.UnbufferedIO)) &&
-                // internal sources were marked during context initialization
-                firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
-                // we cache CatchAllExceptions hard on TryExceptNode
-                firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)) &&
-                // we statically cache WithThread in SysConfigModuleBuiltins
-                firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
-                // disabling TRegex has an effect on the _sre Python code that is created
-                firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex))
-        );
+                        // internal sources were marked during context initialization
+                        firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
+                        // we cache CatchAllExceptions hard on TryExceptNode
+                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)) &&
+                        // we statically cache WithThread in SysConfigModuleBuiltins
+                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
+                        // disabling TRegex has an effect on the _sre Python code that is created
+                        firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
     }
 
     @Override
@@ -579,9 +578,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
         return cachedCode.computeIfAbsent(filename, f -> {
-                PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching CallTarget for " + filename);
-                return createCode.get();
-            });
+            PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+            return createCode.get();
+        });
     }
 
     @TruffleBoundary

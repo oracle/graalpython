@@ -92,4 +92,3 @@ class TestExceptionobjectFunctions(CPyExtTestCase):
         argspec="OO",
         arguments=["PyObject* exc", "PyObject* tb"],
     )
-
