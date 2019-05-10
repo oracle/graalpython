@@ -51,3 +51,13 @@ class PosixTests(unittest.TestCase):
         self.assertIsNotNone(uname.release)
         self.assertIsNotNone(uname.version)
         self.assertIsNotNone(uname.machine)
+
+    def test_execv(self, tmpdir):
+        print tmpdir
+
+        sub = tmpdir.mkdir("sub")
+        sub.join("testfile.sh").write("echo \"something echo\" > {}/sub/test.txt".format(tmpdir))
+        import os
+        toExecute = tmpdir + '/testfile.sh'
+        os.execv(toExecute, [toExecute])
+        assert os.path.isfile(tmpdir + '/sub/test.txt')
