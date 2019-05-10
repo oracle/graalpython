@@ -48,7 +48,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -71,6 +73,8 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -78,10 +82,13 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -370,4 +377,87 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
+
+    @Builtin(name = "graal_python_cache_module_code", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class CacheModuleCode extends PythonTernaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public Object run(String modulename, String moduleFile, boolean isPackage,
+                          @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                          @CachedLanguage PythonLanguage lang) {
+            assert !ctxt.isInitialized() : "this can only be called during initialization";
+            CompilerDirectives.transferToInterpreter();
+            final CallTarget ct = lang.cacheCode(moduleFile, () -> null);
+            if (ct == null) {
+                throw new AssertionError("cannot cache something we haven't cached before");
+            }
+            CallTarget cachedCt = lang.cacheCode(modulename, () -> ct, isPackage);
+            if (cachedCt != ct) {
+                PythonLanguage.getLogger().log(Level.WARNING, () -> "Invalid attempt to re-cache " + modulename);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public Object run(String modulename, PCode code, boolean isPackage,
+                          @CachedLanguage PythonLanguage lang) {
+            final CallTarget ct = code.getRootCallTarget();
+            if (ct == null) {
+                throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
+            }
+            CallTarget cachedCt = lang.cacheCode(modulename, () -> ct, isPackage);
+            if (cachedCt != ct) {
+                PythonLanguage.getLogger().log(Level.WARNING, () -> "Invalid attempt to re-cache " + modulename);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "graal_python_has_cached_code", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class HasCachedCode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public boolean run(String modulename,
+                           @CachedLanguage PythonLanguage lang) {
+            boolean b = lang.hasCachedCode(modulename);
+            if (b) {
+                PythonLanguage.getLogger().log(Level.FINEST, () -> "Cached code re-used for " + modulename);
+            }
+            return b;
+        }
+    }
+
+    @Builtin(name = "graal_python_cached_code_is_package", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CachedCodeIsPackage extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object run(String modulename,
+                          @CachedLanguage PythonLanguage lang) {
+            Boolean b = lang.cachedCodeIsPackage(modulename);
+            if (b != null) {
+                PythonLanguage.getLogger().log(Level.FINEST, () -> "Cached code re-used for " + modulename);
+                return b;
+            } else {
+                return PNone.NONE;
+            }
+        }
+    }
+
+    @Builtin(name = "graal_python_get_cached_code", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetCachedCode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object run(String modulename,
+                          @CachedLanguage PythonLanguage lang) {
+            final CallTarget ct = lang.cacheCode(modulename, () -> null);
+            if (ct == null) {
+                throw raise(ImportError, "no cached code for %s", modulename);
+            } else {
+                return factory().createCode((RootCallTarget) ct);
+            }
+        }
+    }
+
 }

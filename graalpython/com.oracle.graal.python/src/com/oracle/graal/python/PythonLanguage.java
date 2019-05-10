@@ -574,12 +574,31 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Boolean> cachedCodeIsPackage = new ConcurrentHashMap<>();
 
+    @TruffleBoundary
     public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
         return cachedCode.computeIfAbsent(filename, f -> {
                 PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching CallTarget for " + filename);
                 return createCode.get();
             });
+    }
+
+    @TruffleBoundary
+    public Boolean cachedCodeIsPackage(String name) {
+        return cachedCodeIsPackage.get(name);
+    }
+
+    @TruffleBoundary
+    public boolean hasCachedCode(String name) {
+        return cachedCode.get(name) != null;
+    }
+
+    @TruffleBoundary
+    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode, boolean isPackage) {
+        CallTarget ct = cacheCode(filename, createCode);
+        cachedCodeIsPackage.computeIfAbsent(filename, t -> isPackage);
+        return ct;
     }
 
     public static Shape freshShape() {

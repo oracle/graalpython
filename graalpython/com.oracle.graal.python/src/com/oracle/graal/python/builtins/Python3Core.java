@@ -234,7 +234,8 @@ public final class Python3Core implements PythonCore {
                         "pyio_patches",
                         "pwd",
                         "_contextvars"));
-
+        // must be last
+        coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
 

@@ -83,3 +83,39 @@ def get_frozen_object(name):
 
 
 is_frozen_package = get_frozen_object
+
+
+@__builtin__
+def freeze_module(mod):
+    is_package = hasattr(mod, "__path__")
+    graal_python_cache_module_code(mod.__name__, mod.__file__, is_package)
+
+
+@__builtin__
+def cache_all_file_modules():
+    import sys
+    for k,v in sys.modules.items():
+        if hasattr(v, "__file__"):
+            if not graal_python_has_cached_code(k):
+                freeze_module(v)
+
+
+class CachedLoader:
+    @staticmethod
+    def create_module(spec):
+        pass
+
+    @staticmethod
+    def exec_module(module):
+        import sys
+        exec(graal_python_get_cached_code(module.__name__), module.__dict__)
+        sys.modules[module.__name__] = module
+
+
+class CachedImportFinder:
+    @staticmethod
+    def find_spec(fullname, path, target=None):
+        from _frozen_importlib import ModuleSpec
+        is_package = graal_python_cached_code_is_package(fullname)
+        if is_package is not None:
+            return ModuleSpec(fullname, CachedLoader, is_package=is_package)

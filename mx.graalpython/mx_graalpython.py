@@ -442,18 +442,31 @@ def run_embedded_native_python_test(args=None):
                 import org.graalvm.polyglot.*;
 
                 public class HelloWorld {
+                    static final Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("log.python.level", "FINEST").build();
+                    static {
+                       try (Context contextNull = Context.newBuilder("python").engine(engine).build()) {
+                           contextNull.initialize("python");
+                       }
+                    }
+
                     public static void main(String[] args) {
-                        try (Context context = Context.create("python")) {
-                            context.eval("python", "print(42)");
+                        try (Context context1 = Context.newBuilder("python").engine(engine).build()) {
+                            context1.eval("python", "print(42)");
+                            try (Context context2 = Context.newBuilder("python").engine(engine).build()) {
+                                context2.eval("python", "print(42 + 1)");
+                            }
                         }
                     }
                 }
                 """)
             out = mx.OutputCapture()
             mx.run([graalvm_javac, filename])
-            mx.run([graalvm_native_image, "--language:python", "HelloWorld"])
+            mx.run([graalvm_native_image, "--initialize-at-build-time", "--language:python", "HelloWorld"])
             mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
             assert "42" in out.data
+            assert "43" in out.data
+            assert "code re-used for encodings" in out.data
+            assert "code re-used for _pyio" in out.data
         finally:
             try:
                 os.unlink(filename)

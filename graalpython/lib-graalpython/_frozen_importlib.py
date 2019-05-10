@@ -53,3 +53,6 @@ importlib = load()
 importlib._install(sys, _imp)
 importlib._install_external_importers()
 sys.modules["builtins"].__import__ = __builtin__(importlib.__import__)
+
+# Insert our meta finder for caching
+sys.meta_path.insert(0, _imp.CachedImportFinder)
