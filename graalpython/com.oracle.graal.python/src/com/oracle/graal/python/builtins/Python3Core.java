@@ -591,15 +591,18 @@ public final class Python3Core implements PythonCore {
         Env env = ctxt.getEnv();
         String suffix = env.getFileNameSeparator() + basename + ".py";
         TruffleFile file = env.getTruffleFile(prefix + suffix);
+        String errorMessage;
         try {
             return PythonLanguage.newSource(ctxt, file, basename);
-        } catch (SecurityException | IOException t) {
-            String errorMessage = "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
-            PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
-            PException e = new PException(null, null);
-            e.setMessage(errorMessage);
-            throw e;
+        } catch (IOException e) {
+            errorMessage = "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
+        } catch (SecurityException e) {
+            errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
+        PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
+        PException e = new PException(null, null);
+        e.setMessage(errorMessage);
+        throw e;
     }
 
     private void loadFile(String s, String prefix) {
