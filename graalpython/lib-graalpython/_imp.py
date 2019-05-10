@@ -86,9 +86,10 @@ is_frozen_package = get_frozen_object
 
 
 @__builtin__
-def freeze_module(mod):
+def freeze_module(mod, key=None):
     is_package = hasattr(mod, "__path__")
-    graal_python_cache_module_code(mod.__name__, mod.__file__, is_package)
+    name = key or mod.__name__
+    graal_python_cache_module_code(key, mod.__file__, is_package)
 
 
 @__builtin__
@@ -97,7 +98,7 @@ def cache_all_file_modules():
     for k,v in sys.modules.items():
         if hasattr(v, "__file__"):
             if not graal_python_has_cached_code(k):
-                freeze_module(v)
+                freeze_module(v, k)
 
 
 class CachedLoader:
