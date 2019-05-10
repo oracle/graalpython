@@ -158,15 +158,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
         // Buffered IO was applied during context initialization
-        return (firstOptions.get(PythonOptions.UnbufferedIO) == newOptions.get(PythonOptions.UnbufferedIO) &&
+        return (firstOptions.get(PythonOptions.UnbufferedIO).equals(newOptions.get(PythonOptions.UnbufferedIO)) &&
                 // internal sources were marked during context initialization
-                firstOptions.get(PythonOptions.ExposeInternalSources) == newOptions.get(PythonOptions.ExposeInternalSources) &&
+                firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
                 // we cache CatchAllExceptions hard on TryExceptNode
-                firstOptions.get(PythonOptions.CatchAllExceptions) == newOptions.get(PythonOptions.CatchAllExceptions) &&
+                firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)) &&
                 // we statically cache WithThread in SysConfigModuleBuiltins
-                firstOptions.get(PythonOptions.WithThread) == newOptions.get(PythonOptions.WithThread) &&
+                firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
                 // disabling TRegex has an effect on the _sre Python code that is created
-                firstOptions.get(PythonOptions.WithTRegex) == newOptions.get(PythonOptions.WithTRegex)
+                firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex))
         );
     }
 
