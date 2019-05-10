@@ -465,8 +465,6 @@ def run_embedded_native_python_test(args=None):
             mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
             assert "42" in out.data
             assert "43" in out.data
-            assert "code re-used for encodings" in out.data
-            assert "code re-used for _pyio" in out.data
         finally:
             try:
                 os.unlink(filename)
