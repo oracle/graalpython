@@ -25,11 +25,13 @@ def get_file():
 
 ZIP_FILE_NAME = 'testzipfile.zip'
 EGG_FILE_NAME = 'testeggfile.egg'
+GR15813_FILE_NAME = 'testGR15813.zip'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ZIP_PATH = os.path.join(DIR_PATH, ZIP_FILE_NAME)
 ZIP_ABS_PATH = os.path.abspath(ZIP_PATH);
 EGG_PATH = os.path.join(DIR_PATH, EGG_FILE_NAME)
 EGG_ABS_PATH = os.path.abspath(EGG_PATH);
+GR15813_PATH = os.path.join(DIR_PATH, GR15813_FILE_NAME)
 
 class ZipImportBaseTestCase(unittest.TestCase):
 
@@ -202,3 +204,15 @@ class BasicEggImportTests(ZipImportBaseTestCase):
         data = self.z.get_data("read.me")
         self.assertTrue(type(data) is bytes)
         self.assertEqual(bytes(b'Pokus\n'), data)
+
+class GR15813ImportTests(ZipImportBaseTestCase):
+
+    # don't edit the zip file !!!
+    def setUp(self):
+        ZipImportBaseTestCase.setUp(self)
+        self.z = zipimport.zipimporter(GR15813_PATH)
+
+    def test_zipimporter_gr_18813(self):
+        self.assertTrue(self.z.prefix == "")
+        self.assertTrue(type(self.z._files) is dict)
+        self.assertTrue(6, len(self.z._files))

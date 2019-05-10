@@ -150,21 +150,23 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                     if (ch == LOC_SIG[1]) {
                         state = AFTER_PK;
                     } else {
-                        state = BEFORE_P;
+                        state = ch != LOC_SIG[0] ? BEFORE_P : AFTER_P;
                     }
                     break;
                 case AFTER_PK:
                     if (ch == LOC_SIG[2]) {
                         state = AFTER_PK3;
                     } else {
-                        state = BEFORE_P;
+                        state = ch != LOC_SIG[0] ? BEFORE_P : AFTER_P;
                     }
                     break;
                 case AFTER_PK3:
                     if (ch == LOC_SIG[3]) {
                         positions.add(pos - 4);  // store the LOC position
+                        state = BEFORE_P;
+                    } else {
+                        state = ch != LOC_SIG[0] ? BEFORE_P : AFTER_P;
                     }
-                    state = BEFORE_P;
             }
             return ch;
         }
@@ -238,15 +240,19 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                         long lastZipEntryCSize = 0;
                         long lastZipEntryPos = 0;
                         int lastZipLocFileHeaderSize = 0;
-                        long zipEntryPos;
+                        long zipEntryPos = 0;
 
                         byte[] extraField;
                         while ((entry = zis.getNextEntry()) != null) {
-                            zipEntryPos = locis.positions.remove(0);
-                            // handles situation when the local file signature is
-                            // in the content of a file
-                            while (lastZipEntryPos + lastZipEntryCSize + lastZipLocFileHeaderSize > zipEntryPos) {
+                            if (!locis.positions.isEmpty()) {
                                 zipEntryPos = locis.positions.remove(0);
+                                // handles situation when the local file signature is
+                                // in the content of a file
+                                while (lastZipEntryPos + lastZipEntryCSize + lastZipLocFileHeaderSize > zipEntryPos) {
+                                    zipEntryPos = locis.positions.remove(0);
+                                }
+                            } else {
+                                throw raise(PythonErrorType.ZipImportError, "cannot handle Zip file: '%s'", archive);
                             }
 
                             PTuple tuple = factory().createTuple(new Object[]{
