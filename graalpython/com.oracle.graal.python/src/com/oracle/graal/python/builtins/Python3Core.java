@@ -591,7 +591,7 @@ public final class Python3Core implements PythonCore {
         String suffix = env.getFileNameSeparator() + basename + ".py";
         TruffleFile file = env.getTruffleFile(prefix + suffix);
         try {
-            return getLanguage().newSource(ctxt, file, basename);
+            return PythonLanguage.newSource(ctxt, file, basename);
         } catch (SecurityException | IOException t) {
             String errorMessage = "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
             PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
@@ -602,9 +602,11 @@ public final class Python3Core implements PythonCore {
     }
 
     private void loadFile(String s, String prefix) {
-        Source source = getSource(s, prefix);
-        Supplier<CallTarget> getCode = () -> Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null));
-        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(source.getName(), getCode);
+        Supplier<CallTarget> getCode = () -> {
+            Source source = getSource(s, prefix);
+            return Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null));
+        };
+        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
