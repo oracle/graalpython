@@ -420,8 +420,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class HasCachedCode extends PythonUnaryBuiltinNode {
         @Specialization
         public boolean run(String modulename,
+                           @CachedContext(PythonLanguage.class) PythonContext ctxt,
                            @CachedLanguage PythonLanguage lang) {
-            boolean b = lang.hasCachedCode(modulename);
+            boolean b = PythonOptions.getFlag(ctxt, PythonOptions.WithCachedSources) && lang.hasCachedCode(modulename);
             if (b) {
                 PythonLanguage.getLogger().log(Level.FINEST, () -> "Cached code re-used for " + modulename);
             }
@@ -434,8 +435,12 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class CachedCodeIsPackage extends PythonUnaryBuiltinNode {
         @Specialization
         public Object run(String modulename,
+                          @CachedContext(PythonLanguage.class) PythonContext ctxt,
                           @CachedLanguage PythonLanguage lang) {
-            Boolean b = lang.cachedCodeIsPackage(modulename);
+            Boolean b = null;
+            if (PythonOptions.getFlag(ctxt, PythonOptions.WithCachedSources)) {
+                b = lang.cachedCodeIsPackage(modulename);
+            }
             if (b != null) {
                 PythonLanguage.getLogger().log(Level.FINEST, () -> "Cached code re-used for " + modulename);
                 return b;
