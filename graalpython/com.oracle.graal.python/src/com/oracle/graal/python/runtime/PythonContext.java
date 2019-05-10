@@ -258,6 +258,7 @@ public final class PythonContext {
     private void patchPackagePaths(String from, String to) {
         for (Object v : sysModules.getDictStorage().values()) {
             if (v instanceof PythonModule) {
+                // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);
                 if (path instanceof PList) {
                     Object[] paths = ((PList) path).getSequenceStorage().getCopyOfInternalArray();
@@ -276,6 +277,18 @@ public final class PythonContext {
                         }
                     }
                     ((PythonModule) v).setAttribute(SpecialAttributeNames.__PATH__, core.factory().createList(paths));
+                }
+
+                // Update module.__file__
+                Object file = ((PythonModule) v).getAttribute(SpecialAttributeNames.__FILE__);
+                String strFile = null;
+                if (file instanceof PString) {
+                    strFile = ((PString) file).getValue();
+                } else if (file instanceof String) {
+                    strFile = (String) file;
+                }
+                if (strFile != null) {
+                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__FILE__, strFile.replace(from, to));
                 }
             }
         }
