@@ -202,6 +202,16 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
 
             TruffleFile tfile = getContext().getEnv().getTruffleFile(path);
+            boolean accessAllowed = true;
+            try {
+                accessAllowed = tfile.exists() || tfile.isRegularFile();
+            } catch (SecurityException e) {
+                accessAllowed = false;
+            }
+            if (!accessAllowed) {
+                throw raise(PythonErrorType.ZipImportError, "access denied by the filesystem");
+            }
+
             String prefix = "";
             String archive = "";
             while (true) {
