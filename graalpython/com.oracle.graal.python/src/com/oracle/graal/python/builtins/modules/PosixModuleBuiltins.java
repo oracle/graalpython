@@ -49,8 +49,10 @@ import static com.oracle.truffle.api.TruffleFile.UNIX_OWNER;
 import static com.oracle.truffle.api.TruffleFile.UNIX_PERMISSIONS;
 import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.ProcessBuilder.Redirect;
@@ -303,11 +305,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 int size = args.getSequenceStorage().length();
                 String[] cmd = new String[size];
-                cmd[0] = path;
-                for (int i = 1; i < size; i++) {
+                for (int i = 0; i < size; i++) {
                     cmd[i] = args.getSequenceStorage().getItemNormalized(i).toString();
                 }
-                new ProcessBuilder(cmd).start();
+                Runtime rt = Runtime.getRuntime();
+                Process pr = rt.exec(cmd);
+                // retrieve output from executed script and print it
+                BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+                String line = "";
+                while ((line = bfr.readLine()) != null) {
+                    System.out.println(line);
+                }
             } catch (IOException e) {
                 throw raise(PythonErrorType.ValueError, "Could not execute script '%s'", e.getMessage());
             }
