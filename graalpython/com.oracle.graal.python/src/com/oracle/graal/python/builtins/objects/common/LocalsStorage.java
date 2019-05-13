@@ -48,16 +48,16 @@ import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 
 // XXX: remove special case for RETURN_SLOT_ID
 public class LocalsStorage extends HashingStorage {
 
-    private final Frame frame;
+    private final MaterializedFrame frame;
     private int len = -1;
 
-    public LocalsStorage(Frame frame) {
+    public LocalsStorage(MaterializedFrame frame) {
         this.frame = frame;
     }
 
@@ -72,7 +72,7 @@ public class LocalsStorage extends HashingStorage {
         return null;
     }
 
-    public Frame getFrame() {
+    public MaterializedFrame getFrame() {
         return frame;
     }
 

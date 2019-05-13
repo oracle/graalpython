@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -77,8 +78,9 @@ public abstract class ReadLocalsNode extends Node {
     @Specialization(guards = {"getPFrame(frame) == null", "!inClassBody(frame)"})
     Object freshLocals(@SuppressWarnings("unused") Object dummy, Frame frame,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
-        PDict localsDict = factory.createDictLocals(frame);
-        PArguments.getCurrentFrameInfo(frame).setPyFrame(factory.createPFrame(frame.materialize(), null, localsDict));
+        MaterializedFrame materialized = frame.materialize();
+        PDict localsDict = factory.createDictLocals(materialized);
+        PArguments.getCurrentFrameInfo(frame).setPyFrame(factory.createPFrame(materialized, null, localsDict));
         return localsDict;
     }
 
@@ -99,7 +101,7 @@ public abstract class ReadLocalsNode extends Node {
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Cached SetItemNode setItemNode) {
         Object storedLocals = getPFrame(frame).getLocals(factory);
-        PDict currentDictLocals = factory.createDictLocals(frame);
+        PDict currentDictLocals = factory.createDictLocals(frame.materialize());
         for (DictEntry entry : currentDictLocals.entries()) {
             setItemNode.executeWith(callingFrame, storedLocals, entry.getKey(), entry.getValue());
         }

@@ -132,7 +132,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
@@ -473,7 +472,7 @@ public abstract class PythonObjectFactory extends Node {
         return createDict(new HashMapStorage(map));
     }
 
-    public PDict createDictLocals(Frame frame) {
+    public PDict createDictLocals(MaterializedFrame frame) {
         return createDict(new LocalsStorage(frame));
     }
 
