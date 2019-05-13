@@ -292,7 +292,7 @@ public abstract class HashingStorageNodes {
         }
 
         protected final DefaultContextManager withGlobalState(VirtualFrame frame) {
-            return PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame));
+            return PNodeWithGlobalState.transferToContext(getContextRef(), frame, this);
         }
 
         protected static EconomicMapStorage switchToEconomicMap(HashingStorage storage, Equivalence equiv) {
@@ -752,7 +752,7 @@ public abstract class HashingStorageNodes {
         @Specialization
         protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, String key, Object value) {
             // immediately replace storage since empty storage is immutable
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), passException(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), frame)) {
                 return cm.execute(switchToFastDictStorage(storage), key, value);
             }
         }
@@ -760,7 +760,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "wrappedString(key)")
         protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, PString key, Object value) {
             // immediately replace storage since empty storage is immutable
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), passException(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), frame)) {
                 return cm.execute(switchToFastDictStorage(storage), cast(key), value);
             }
         }
@@ -778,14 +778,14 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         protected HashingStorage doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, String key, Object value) {
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), passException(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), frame)) {
                 return cm.execute(storage, key, value);
             }
         }
 
         @Specialization(guards = "wrappedString(key)")
         protected HashingStorage doDynamicObjectPString(VirtualFrame frame, DynamicObjectStorage storage, PString key, Object value) {
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), passException(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), frame)) {
                 return cm.execute(storage, cast(key), value);
             }
         }
@@ -1061,16 +1061,12 @@ public abstract class HashingStorageNodes {
             return DynamicObjectSetItemUncachedNode.INSTANCE;
         }
 
-        public DynamicObjectSetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new DynamicObjectSetItemContextManager(this, contextRef.get());
-            }
-            return passState();
+        public DynamicObjectSetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new DynamicObjectSetItemContextManager(this, frame, contextRef.get());
         }
 
         public DynamicObjectSetItemContextManager passState() {
-            return new DynamicObjectSetItemContextManager(this, null);
+            return new DynamicObjectSetItemContextManager(this, null, null);
         }
     }
 
@@ -1078,8 +1074,8 @@ public abstract class HashingStorageNodes {
 
         private final DynamicObjectSetItemNode delegate;
 
-        public DynamicObjectSetItemContextManager(DynamicObjectSetItemNode delegate, PythonContext context) {
-            super(context);
+        public DynamicObjectSetItemContextManager(DynamicObjectSetItemNode delegate, VirtualFrame frame, PythonContext context) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 
@@ -1264,21 +1260,13 @@ public abstract class HashingStorageNodes {
         }
 
         @Override
-        public GetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new GetItemContextManager(this, context);
-                }
-            }
-            return passState();
+        public GetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new GetItemContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public GetItemContextManager passState() {
-            return new GetItemContextManager(this, null);
+            return new GetItemContextManager(this, null, null);
         }
     }
 
@@ -1286,8 +1274,8 @@ public abstract class HashingStorageNodes {
 
         private final GetItemInteropNode delegate;
 
-        public GetItemContextManager(GetItemInteropNode delegate, PythonContext context) {
-            super(context);
+        public GetItemContextManager(GetItemInteropNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

@@ -41,11 +41,14 @@
 package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -54,7 +57,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 
-public abstract class CallTargetInvokeNode extends AbstractInvokeNode {
+public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     @Child private DirectCallNode callNode;
     protected final boolean isBuiltin;
 
@@ -90,20 +93,29 @@ public abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments);
 
     @Specialization(guards = {"globals == null", "closure == null"})
-    @SuppressWarnings("try")
-    protected Object doSimple(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments) {
+    protected Object doNoClosure(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments) {
         RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
 
-        CallContext.enter(frame, arguments, ct, this);
-        return callNode.call(arguments);
+        if (profileIsNullFrame(frame == null)) {
+            PythonContext context = getContextRef().get();
+            PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(context, arguments, ct);
+            try {
+                return callNode.call(arguments);
+            } finally {
+                ForeignToPythonCallContext.exit(context, frameInfo);
+            }
+        } else {
+            CallContext.enter(frame, arguments, ct, this);
+            return callNode.call(arguments);
+        }
     }
 
-    @Specialization(replaces = "doSimple")
-    protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments) {
+    @Specialization(replaces = "doNoClosure")
+    protected Object doGeneric(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        return doSimple(frame, null, null, arguments);
+        return doNoClosure(frame, null, null, arguments);
     }
 
     public final CallTarget getCallTarget() {

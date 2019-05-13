@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -34,28 +35,28 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 abstract class AbstractInvokeNode extends Node {
 
-    @CompilationFinal private boolean excSlotInitialized;
-    @CompilationFinal private FrameSlot excSlot;
-    @CompilationFinal private BranchProfile illegalFrameSlotProfile;
-
     private final ConditionProfile isClassBodyProfile = ConditionProfile.createBinaryProfile();
+
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected static boolean shouldInlineGenerators() {
         return PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.ForceInlineGeneratorCalls);
@@ -87,18 +88,56 @@ abstract class AbstractInvokeNode extends Node {
         return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
     }
 
+    protected ContextReference<PythonContext> getContextRef() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
+        return contextRef;
+    }
+
     @Override
     public Node copy() {
         AbstractInvokeNode copy = (AbstractInvokeNode) super.copy();
-        copy.excSlot = null;
-        copy.excSlotInitialized = false;
         return copy;
     }
 }
 
-public abstract class InvokeNode extends AbstractInvokeNode {
-    private static final GenericInvokeNode UNCACHED = new GenericInvokeNode();
+abstract class DirectInvokeNode extends AbstractInvokeNode {
+
+    @CompilationFinal private int state = 0;
+
+    protected boolean profileIsNullFrame(boolean isNullFrame) {
+        if (state == 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isNullFrame) {
+                state = 0x1;
+            } else {
+                state = 0x2;
+            }
+        }
+
+        if (state == 0x1) {
+            if (!isNullFrame) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException("Invoke node was initialized for a null frame. Cannot use it with non-null frame now.");
+            }
+            return true;
+        }
+        assert state == 0x2;
+        if (isNullFrame) {
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("Invoke node was initialized for a non-null frame. Cannot use it with null frame now.");
+        }
+        return false;
+
+    }
+}
+
+public abstract class InvokeNode extends DirectInvokeNode {
+
     @Child private DirectCallNode callNode;
+
     private final PythonObject globals;
     private final PCell[] closure;
     protected final boolean isBuiltin;
@@ -133,22 +172,35 @@ public abstract class InvokeNode extends AbstractInvokeNode {
     }
 
     public static Object invokeUncached(PFunction callee, Object[] arguments) {
-        return UNCACHED.execute(null, callee, arguments);
+        return GenericInvokeNode.getUncached().execute(null, callee, arguments);
     }
 
     public static Object invokeUncached(PBuiltinFunction callee, Object[] arguments) {
-        return UNCACHED.execute(null, callee, arguments);
+        return GenericInvokeNode.getUncached().execute(null, callee, arguments);
+    }
+
+    public static Object invokeUncached(RootCallTarget ct, Object[] arguments) {
+        return GenericInvokeNode.getUncached().execute(null, ct, arguments);
     }
 
     @Specialization
-    @SuppressWarnings("try")
-    protected Object doNoKeywords(VirtualFrame frame, Object[] arguments) {
+    protected Object doDirect(VirtualFrame frame, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
-        CallContext.enter(frame, arguments, ct, this);
-        return callNode.call(arguments);
+        if (profileIsNullFrame(frame == null)) {
+            PythonContext context = getContextRef().get();
+            PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(context, arguments, ct);
+            try {
+                return callNode.call(arguments);
+            } finally {
+                ForeignToPythonCallContext.exit(context, frameInfo);
+            }
+        } else {
+            CallContext.enter(frame, arguments, ct, this);
+            return callNode.call(arguments);
+        }
     }
 
     public final RootNode getCurrentRootNode() {

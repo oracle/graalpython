@@ -780,7 +780,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @GenerateUncached
     public abstract static class PExecuteNode extends Node {
-        private static final FrameDescriptor EMPTY_FD = new FrameDescriptor();
 
         public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;
 
@@ -789,29 +788,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached PTypeToForeignNode toForeign,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
-                        @Cached ArgumentsFromForeignNode convertArgsNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws UnsupportedMessageException {
+                        @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
             Object isCallable = callAttrGetterNode.execute(receiver, SpecialMethodNames.__CALL__);
             if (isCallable == PNone.NO_VALUE) {
                 throw UnsupportedMessageException.create();
             }
             Object[] convertedArgs = convertArgsNode.execute(arguments);
-            Object[] dummyCallerArgs = PArguments.create();
-            VirtualFrame dummyCallerFrame = Truffle.getRuntime().createVirtualFrame(dummyCallerArgs, EMPTY_FD);
-            contextToFrame(contextRef, dummyCallerArgs);
-            return toForeign.executeConvert(callNode.execute(dummyCallerFrame, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
-        }
-
-        public static void contextToFrame(ContextReference<PythonContext> contextRef, Object[] args) {
-            PythonContext context = contextRef.get();
-            PException caughtException = context.getCaughtException();
-            if (caughtException == null) {
-                CompilerDirectives.transferToInterpreter();
-                PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                caughtException = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                context.setCaughtException(caughtException);
-            }
-            PArguments.setCaughtException(args, caughtException);
+            return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
         }
 
         public static PExecuteNode create() {

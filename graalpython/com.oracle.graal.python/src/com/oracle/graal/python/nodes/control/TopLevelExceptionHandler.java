@@ -49,6 +49,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -63,6 +65,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -232,7 +235,12 @@ public class TopLevelExceptionHandler extends RootNode {
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        return innerCallTarget.call(arguments);
+        PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(pythonContext, arguments, innerCallTarget);
+        try {
+            return innerCallTarget.call(arguments);
+        } finally {
+            ForeignToPythonCallContext.exit(pythonContext, frameInfo);
+        }
     }
 
     @Override

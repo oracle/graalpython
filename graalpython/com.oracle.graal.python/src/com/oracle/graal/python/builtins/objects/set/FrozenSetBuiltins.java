@@ -59,8 +59,6 @@ import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.Bin
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -70,13 +68,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -425,12 +422,15 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("try")
         PBaseSet doHashingCollection(VirtualFrame frame, PBaseSet container, EconomicMapStorage selfStorage, PHashingCollection other,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager ctxManager = PNodeWithGlobalState.transferToContext(contextRef, passExceptionNode.execute(frame))) {
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+
+            PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
+            try {
                 for (Object key : other.getDictStorage().keys()) {
                     selfStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }
+            } finally {
+                ForeignCallContext.exit(context, savedExceptionState);
             }
             return container;
         }

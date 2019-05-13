@@ -47,9 +47,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -94,10 +93,13 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             @Override
             @SuppressWarnings("try")
             public Object execute(VirtualFrame frame) {
-                // we deliberately pass 'null' frame here
-                try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(contextRef, PException.NO_EXCEPTION)) {
-                    return callNode.execute(null, callable, arguments, keywords);
-                }
+                PythonContext context = contextRef.get();
+                context.setTopFrameInfo(PFrame.Reference.EMPTY);
+                context.setCaughtException(PException.NO_EXCEPTION);
+
+                // We deliberately pass 'null' frame here, the execution state will then be taken
+                // from the context.
+                return callNode.execute(null, callable, arguments, keywords);
             }
         }
 

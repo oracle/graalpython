@@ -110,7 +110,6 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1328,12 +1327,11 @@ public abstract class CExtNodes {
         double runGeneric(VirtualFrame frame, PythonAbstractObject value,
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PassCaughtExceptionNode passExceptionNode,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
-            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
+            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(contextRef, frame)) {
                 Object result = ctxManager.executeObject(value, __FLOAT__);
                 if (PGuards.isPFloat(result)) {
                     return ((PFloat) result).getValue();

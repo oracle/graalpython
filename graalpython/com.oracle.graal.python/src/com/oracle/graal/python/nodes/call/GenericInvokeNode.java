@@ -40,27 +40,53 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
+import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public final class GenericInvokeNode extends AbstractInvokeNode {
+public abstract class GenericInvokeNode extends AbstractInvokeNode {
+    private static final GenericInvokeUncachedNode UNCACHED = new GenericInvokeUncachedNode();
+
     @Child private IndirectCallNode callNode = Truffle.getRuntime().createIndirectCallNode();
 
+    private final ConditionProfile isNullFrameProfile;
+
     public static GenericInvokeNode create() {
-        return new GenericInvokeNode();
+        return new GenericInvokeCachedNode();
     }
 
-    @SuppressWarnings("try")
+    public static GenericInvokeNode getUncached() {
+        return UNCACHED;
+    }
+
+    public GenericInvokeNode(ConditionProfile isNullFrameProfile) {
+        this.isNullFrameProfile = isNullFrameProfile;
+    }
+
     private Object doCall(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
         optionallySetClassBodySpecial(arguments, callTarget);
-        CallContext.enter(frame, arguments, callTarget, this);
-        return callNode.call(callTarget, arguments);
+        if (isNullFrameProfile.profile(frame == null)) {
+            PythonContext context = getContextRef().get();
+            PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(context, arguments, callTarget);
+            try {
+                return callNode.call(callTarget, arguments);
+            } finally {
+                ForeignToPythonCallContext.exit(context, frameInfo);
+            }
+        } else {
+            CallContext.enter(frame, arguments, callTarget, this);
+            return callNode.call(callTarget, arguments);
+        }
     }
 
     public Object execute(VirtualFrame frame, PFunction callee, Object[] arguments) {
@@ -77,5 +103,29 @@ public final class GenericInvokeNode extends AbstractInvokeNode {
 
     public Object execute(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
         return doCall(frame, callTarget, arguments);
+    }
+
+    private static final class GenericInvokeCachedNode extends GenericInvokeNode {
+
+        public GenericInvokeCachedNode() {
+            super(ConditionProfile.createBinaryProfile());
+        }
+
+    }
+
+    private static final class GenericInvokeUncachedNode extends GenericInvokeNode {
+        public GenericInvokeUncachedNode() {
+            super(ConditionProfile.getUncached());
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
     }
 }

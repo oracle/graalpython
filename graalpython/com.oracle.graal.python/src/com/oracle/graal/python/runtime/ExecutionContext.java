@@ -42,12 +42,12 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -60,27 +60,9 @@ import com.oracle.truffle.api.nodes.RootNode;
  * An ExecutionContext ensures proper entry and exit for Python calls on both sides of the call, and
  * depending on whether the other side is also a Python frame.
  */
-@ValueType
 public abstract class ExecutionContext {
 
-    /**
-     * Prepare a call from a Python frame to a foreign callable.
-     */
-    public static final ExecutionContext interopCall(VirtualFrame frame, PythonContext context, Node callNode) {
-        return new ForeignCallContext(frame, context, callNode);
-    }
-
-    /**
-     * Prepare a call from a foreign frame to a Python function.
-     */
-    public static final ExecutionContext interopCallee(PythonContext context, Object[] pArguments) {
-        assert PArguments.isPythonFrame(pArguments) : "this must be called with the PArguments to prepare them";
-        return new ForeignToPythonCallContext(context, pArguments);
-    }
-
-    public abstract void close();
-
-    public abstract static class CallContext extends ExecutionContext {
+    public abstract static class CallContext {
         /**
          * Prepare a call from a Python frame to a Python function.
          */
@@ -118,7 +100,7 @@ public abstract class ExecutionContext {
         }
     }
 
-    public abstract static class CalleeContext extends ExecutionContext {
+    public abstract static class CalleeContext {
 
         /**
          * Wrap the execution of a Python callee called from a Python frame.
@@ -173,43 +155,110 @@ public abstract class ExecutionContext {
         }
     }
 
-    private static final class ForeignCallContext extends ExecutionContext {
-        private final PythonContext context;
-
-        private ForeignCallContext(VirtualFrame frame, PythonContext context, Node callNode) {
-            this.context = context;
-            assert context.popTopFrameInfo() == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
+    public abstract static class ForeignCallContext {
+        /**
+         * Prepare a call from a Python frame to a (foreign) callable without frame. This transfer
+         * the exception state from the frame to the context.
+         *
+         * This is mostly useful when using methods annotated with {@code @TruffleBoundary} that
+         * again use nodes that would require a frame. Surround the usage of the callee node by a
+         * context manager and then it is allowed to pass a {@code null} frame. For example:
+         * <p>
+         *
+         * <pre>
+         * public abstract class SomeNode extends Node {
+         *     {@literal @}Child private OtherNode otherNode = OtherNode.create();
+         *
+         *     public abstract Object execute(VirtualFrame frame, Object arg);
+         *
+         *     {@literal @}Specialization
+         *     Object doSomething(VirtualFrame frame, Object arg,
+         *                            {@literal @}Cached PassCaughtExceptionNode passExceptionNode,
+         *                            {@literal @}CachedContext(PythonLanguage.class) ContextReference&lt;PythonContext&gt; contextRef) {
+         *         // ...
+         *         try (DefaultContextManager cm = PNodeWithGlobalState.transfertToContext(contextRef, passExceptionNode.execute(frame))) {
+         *             truffleBoundaryMethod(arg);
+         *         }
+         *         // ...
+         *     }
+         *
+         *     {@literal @}TruffleBoundary
+         *     private void truffleBoundaryMethod(Object arg) {
+         *         otherNode.execute(null, arg);
+         *     }
+         *
+         * </pre>
+         * </p>
+         */
+        public static PException enter(VirtualFrame frame, PythonContext context, Node callNode) {
+            PFrame.Reference prev = context.popTopFrameInfo();
+            assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                             "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             info.setCallNode(callNode);
             // TODO: frames: add an assumption that none of the callers interop calls ever need
             // these infos
             context.setTopFrameInfo(info);
+            return ExceptionContext.enter(context, PArguments.getException(frame));
         }
 
-        @Override
-        public void close() {
-            context.popTopFrameInfo();
+        public static void exit(PythonContext context, PException savedExceptionState) {
+            if (context != null) {
+                context.popTopFrameInfo();
+                ExceptionContext.exit(context, savedExceptionState);
+            }
         }
     }
 
-    private static final class ForeignToPythonCallContext extends ExecutionContext {
-        private final PythonContext context;
-        private final PFrame.Reference topframeref;
+    public abstract static class ForeignToPythonCallContext {
+        /**
+         * Prepare a call from a foreign frame to a Python function.
+         */
+        public static PFrame.Reference enter(PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+            Reference popTopFrameInfo = context.popTopFrameInfo();
+            PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
-        private ForeignToPythonCallContext(PythonContext context, Object[] pArguments) {
-            this.context = context;
-            this.topframeref = context.popTopFrameInfo();
-            PArguments.setCallerFrameInfo(pArguments, this.topframeref);
+            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
+            if (calleeRootNode.needsExceptionState()) {
+                PException curExc = context.getCaughtException();
+                if (curExc == null) {
+                    // bad, but we must provide the exception state
+
+                    // TODO: frames: check that this also set
+                    // needsExceptionState on our own root node
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                    curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                    // now, set in our args, such that we won't do this again
+                    context.setCaughtException(curExc);
+                }
+                PArguments.setException(pArguments, curExc);
+            }
+            return popTopFrameInfo;
         }
 
-        @Override
-        public void close() {
+        public static void exit(PythonContext context, PFrame.Reference frameInfo) {
             // Note that the Python callee, if it escaped, has already been
             // materialized due to a CalleeContext in its RootNode. If this
             // topframeref was marked as escaped, it'll be materialized at the
             // latest needed time
-            context.setTopFrameInfo(this.topframeref);
+            context.setTopFrameInfo(frameInfo);
         }
+    }
+
+    public abstract static class ExceptionContext {
+
+        public static PException enter(PythonContext context, PException exceptionState) {
+            PException cur = context.getCaughtException();
+            context.setCaughtException(exceptionState);
+            return cur;
+        }
+
+        public static void exit(PythonContext context, PException savedExceptionState) {
+            if (context != null) {
+                context.setCaughtException(savedExceptionState);
+            }
+        }
+
     }
 }

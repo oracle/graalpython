@@ -147,11 +147,11 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     }
 
     protected final DefaultContextManager withGlobalState(VirtualFrame frame) {
-        return PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame));
+        return PNodeWithGlobalState.transferToContext(getContextRef(), frame, this);
     }
 
     protected final <T extends NodeContextManager> T withGlobalState(PNodeWithGlobalState<T> node, VirtualFrame frame) {
-        return node.withGlobalState(getContextRef(), passException(frame));
+        return node.withGlobalState(getContextRef(), frame);
     }
 
     public final PException raise(PBaseException exc) {

@@ -88,8 +88,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
-import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -585,35 +586,29 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
          */
-        @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
-        @SuppressWarnings("try")
+        @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "3")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @CachedLibrary("callee") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("create()") PTypeToForeignNode toForeignNode,
-                        @Cached("create()") PForeignToPTypeNode toPTypeNode) {
+                        @Cached PTypeToForeignNode toForeignNode,
+                        @Cached PForeignToPTypeNode toPTypeNode) {
             try {
                 Object[] convertedArgs = new Object[arguments.length];
                 for (int i = 0; i < arguments.length; i++) {
                     convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
                 Object res = null;
-                if (lib.isExecutable(callee)) {
-                    ExecutionContext ec = ExecutionContext.interopCall(frame, context, this);
-                    try {
+                PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
+                try {
+                    if (lib.isExecutable(callee)) {
                         res = lib.execute(callee, convertedArgs);
-                    } finally {
-                        ec.close();
-                    }
-                    return toPTypeNode.executeConvert(res);
-                } else {
-                    ExecutionContext ec = ExecutionContext.interopCall(frame, context, this);
-                    try {
+                        return toPTypeNode.executeConvert(res);
+                    } else {
                         res = lib.instantiate(callee, convertedArgs);
-                    } finally {
-                        ec.close();
+                        return toPTypeNode.executeConvert(res);
                     }
-                    return toPTypeNode.executeConvert(res);
+                } finally {
+                    ForeignCallContext.exit(context, savedExceptionState);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");

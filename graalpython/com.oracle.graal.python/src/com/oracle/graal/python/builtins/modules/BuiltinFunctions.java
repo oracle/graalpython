@@ -132,6 +132,7 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -158,7 +159,6 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -186,7 +186,6 @@ import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
@@ -594,7 +593,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected final String funcname = "eval";
         private final BranchProfile hasFreeVarsBranch = BranchProfile.create();
         @Child protected CompileNode compileNode = CompileNode.create(false);
-        @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
+        @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
 
         private HasInheritedAttributeNode getHasGetItemNode() {
@@ -680,9 +679,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
 
-            // TODO use GenericInvokeNode node here
-            CallContext.enter(frame, args, code.getRootCallTarget(), this);
-            return indirectCallNode.call(code.getRootCallTarget(), args);
+            return invokeNode.execute(frame, code.getRootCallTarget(), args);
         }
 
         @Specialization
@@ -700,9 +697,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(ValueError, "cannot create the a call target from the code object: %p", code);
             }
 
-            // TODO use GenericInvokeNode node here
-            CallContext.enter(frame, args, code.getRootCallTarget(), this);
-            return indirectCallNode.call(rootCallTarget, args);
+            return invokeNode.execute(frame, rootCallTarget, args);
         }
 
         @Specialization(guards = {"isMapping(locals)"})
@@ -714,9 +709,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
 
-            // TODO use GenericInvokeNode node here
-            CallContext.enter(frame, args, code.getRootCallTarget(), this);
-            return indirectCallNode.call(code.getRootCallTarget(), args);
+            return invokeNode.execute(frame, code.getRootCallTarget(), args);
         }
 
         @Specialization(guards = {"isMapping(locals)"})
@@ -727,9 +720,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             setCustomGlobals(frame, globals, setBuiltins, args);
             setCustomLocals(args, locals);
 
-            // TODO use GenericInvokeNode node here
-            CallContext.enter(frame, args, code.getRootCallTarget(), this);
-            return indirectCallNode.call(code.getRootCallTarget(), args);
+            return invokeNode.execute(frame, code.getRootCallTarget(), args);
         }
 
         @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
