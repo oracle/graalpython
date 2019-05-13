@@ -435,47 +435,40 @@ def run_embedded_native_python_test(args=None):
     those contexts having access to the core files, due to caching in the shared
     engine.
     """
-    filename = dirname = None
     with mx.TempDirCwd(os.getcwd()) as dirname:
-        try:
-            python_launcher = python_gvm()
-            graalvm_javac = os.path.join(os.path.dirname(python_launcher), "javac")
-            graalvm_native_image = os.path.join(os.path.dirname(python_launcher), "native-image")
+        python_launcher = python_gvm()
+        graalvm_javac = os.path.join(os.path.dirname(python_launcher), "javac")
+        graalvm_native_image = os.path.join(os.path.dirname(python_launcher), "native-image")
 
-            filename = os.path.join(dirname, "HelloWorld.java")
-            with open(filename, "w") as f:
-                f.write("""
-                import org.graalvm.polyglot.*;
+        filename = os.path.join(dirname, "HelloWorld.java")
+        with open(filename, "w") as f:
+            f.write("""
+            import org.graalvm.polyglot.*;
 
-                public class HelloWorld {
-                    static final Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("log.python.level", "FINEST").build();
-                    static {
-                       try (Context contextNull = Context.newBuilder("python").engine(engine).build()) {
-                           contextNull.initialize("python");
-                       }
-                    }
+            public class HelloWorld {
+                static final Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("log.python.level", "FINEST").build();
+                static {
+                   try (Context contextNull = Context.newBuilder("python").engine(engine).build()) {
+                       contextNull.initialize("python");
+                   }
+                }
 
-                    public static void main(String[] args) {
-                        try (Context context1 = Context.newBuilder("python").engine(engine).build()) {
-                            context1.eval("python", "print(42)");
-                            try (Context context2 = Context.newBuilder("python").engine(engine).build()) {
-                                context2.eval("python", "print(42 + 1)");
-                            }
+                public static void main(String[] args) {
+                    try (Context context1 = Context.newBuilder("python").engine(engine).build()) {
+                        context1.eval("python", "print(b'abc'.decode('ascii'))");
+                        try (Context context2 = Context.newBuilder("python").engine(engine).build()) {
+                            context2.eval("python", "print(b'xyz'.decode('ascii'))");
                         }
                     }
                 }
-                """)
-            out = mx.OutputCapture()
-            mx.run([graalvm_javac, filename])
-            mx.run([graalvm_native_image, "--initialize-at-build-time", "--language:python", "HelloWorld"])
-            mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
-            assert "42" in out.data
-            assert "43" in out.data
-        finally:
-            try:
-                os.unlink(filename)
-            except:
-                pass
+            }
+            """)
+        out = mx.OutputCapture()
+        mx.run([graalvm_javac, filename])
+        mx.run([graalvm_native_image, "--initialize-at-build-time", "--language:python", "HelloWorld"])
+        mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
+        assert "abc" in out.data
+        assert "xyz" in out.data
 
 
 def run_shared_lib_test(args=None):
