@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,22 @@ class PosixTests(unittest.TestCase):
         # test creates a shell script, which again creates a file, to ensure script execution
         # Both files are deleted again in the end
         import os
+        new_file_path, cwd = self.create_file()
+        os.execv(new_file_path, [new_file_path, 'the_input'])
+        assert os.path.isfile(cwd + '/test.txt')
+        self.delete_file(new_file_path, cwd)
+
+    def test_execl(self):
+        # test creates a shell script, which again creates a file, to ensure script execution
+        # Both files are deleted again in the end
+        import os
+        new_file_path, cwd = self.create_file()
+        os.execl(new_file_path, [new_file_path, 'the_input'])
+        assert os.path.isfile(cwd + '/test.txt')
+        self.delete_file(new_file_path, cwd)
+
+    def create_file(self):
+        import os
         import stat
         cwd = os.getcwd()
         new_file_path = os.path.join(cwd , 'myscript.sh')
@@ -64,11 +80,12 @@ class PosixTests(unittest.TestCase):
             script.write('#!/bin/sh\n')
             script.write("echo \"something echo with\" $1 > {}/test.txt\n".format(cwd))
             script.write('echo this is an output\n')
-        assert os.path.isfile(cwd + '/myscript.sh')
+        assert os.path.isfile(new_file_path)
         st = os.stat(new_file_path)
         os.chmod(new_file_path, st.st_mode | stat.S_IEXEC)
-        os.execv(new_file_path, [new_file_path, 'the_input'])
-        assert os.path.isfile(cwd + '/test.txt')
+        return new_file_path, cwd
+
+    def delete_file(self, new_file_path, cwd):
+        import os
         os.remove(new_file_path)
         os.remove(cwd + '/test.txt')
-
