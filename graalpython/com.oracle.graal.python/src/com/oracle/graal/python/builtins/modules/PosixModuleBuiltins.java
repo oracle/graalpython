@@ -139,6 +139,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -296,12 +297,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object execute(PString path, PTuple args) {
+            // in case of execl the PList happens to be in the tuples first entry
+            Object list = args.getSequenceStorage().getItemNormalized(0);
+            return doExecute(path.getValue(), list instanceof PList ? (PList) list : args);
+        }
+
+        @Specialization
         Object execute(PString path, PList args) {
             return doExecute(path.getValue(), args);
         }
 
         @TruffleBoundary
-        Object doExecute(String path, PList args) {
+        Object doExecute(String path, PSequence args) {
             try {
                 int size = args.getSequenceStorage().length();
                 String[] cmd = new String[size];
@@ -310,7 +318,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
                 Runtime rt = Runtime.getRuntime();
                 Process pr = rt.exec(cmd);
-                // retrieve output from executed script and print it
+                // retrieve output from executed script
                 BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
                 String line = "";
                 while ((line = bfr.readLine()) != null) {
