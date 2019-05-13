@@ -63,6 +63,8 @@ def __import__(filename, module_name):
         posix.close(fd)
         code = compile(content, filename, "exec")
     else:
+        # n.b.: for these builtin modules, there's never a full path and none of
+        # them can be packages
         code = _imp.graal_python_get_cached_code(filename)
 
     exec(code, module.__dict__)
