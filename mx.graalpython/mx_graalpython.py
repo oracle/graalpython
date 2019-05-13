@@ -389,7 +389,7 @@ def graalpython_gate_runner(args, tasks):
             svm_image = python_svm(["--version"])
             benchmark = os.path.join(PATH_MESO, "image-magix.py")
             out = mx.OutputCapture()
-            mx.run([svm_image, benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out))
             success = "\n".join([
                 "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
             ])
@@ -397,14 +397,14 @@ def graalpython_gate_runner(args, tasks):
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
             # Test that stdlib paths are not cached on packages
             out = mx.OutputCapture()
-            mx.run([svm_image, "-S", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__path__)"], out=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__path__)"], out=mx.TeeOutputCapture(out))
             if "/foobar" not in out.data:
-                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar", got:\n' + out.data)
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar"')
             # Test that stdlib paths are not cached on modules
             out = mx.OutputCapture()
-            mx.run([svm_image, "-S", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__file__)"], out=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__file__)"], out=mx.TeeOutputCapture(out))
             if "/foobar" not in out.data:
-                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar", got:\n' + out.data)
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar"')
             # Finally, test that we can start even if the graalvm was moved
             out = mx.OutputCapture()
             graalvm_home = svm_image.replace(os.path.sep.join(["", "bin", "graalpython"]), "")

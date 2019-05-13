@@ -157,13 +157,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
-        // Buffered IO was applied during context initialization
-        return (firstOptions.get(PythonOptions.UnbufferedIO).equals(newOptions.get(PythonOptions.UnbufferedIO)) &&
-                        // internal sources were marked during context initialization
-                        firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
+        // internal sources were marked during context initialization
+        return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
                         // we cache CatchAllExceptions hard on TryExceptNode
-                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)) &&
-                        // we statically cache WithThread in SysConfigModuleBuiltins
+                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)));
+    }
+
+    private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
+        // Buffered IO was applied during context initialization
+        return (areOptionsCompatible(firstOptions, newOptions) &&
+                        firstOptions.get(PythonOptions.UnbufferedIO).equals(newOptions.get(PythonOptions.UnbufferedIO)) &&
+                        // we cache WithThread in SysConfigModuleBuiltins
                         firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
                         // disabling TRegex has an effect on the _sre Python code that is created
                         firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
@@ -171,7 +175,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
+        if (!areOptionsCompatibleWithPreinitializedContext(context.getEnv().getOptions(), newEnv.getOptions())) {
+            PythonCore.writeInfo("Cannot use preinitialized context.");
             return false;
         }
         ensureHomeInOptions(newEnv);
