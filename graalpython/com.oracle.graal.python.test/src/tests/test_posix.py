@@ -41,6 +41,7 @@ import unittest
 
 
 class PosixTests(unittest.TestCase):
+
     def test_uname(self):
         # just like cpython, a simple smoke test
         import posix
@@ -52,12 +53,23 @@ class PosixTests(unittest.TestCase):
         self.assertIsNotNone(uname.version)
         self.assertIsNotNone(uname.machine)
 
-    def test_execv(self, tmpdir):
-        print tmpdir
-
-        sub = tmpdir.mkdir("sub")
-        sub.join("testfile.sh").write("echo \"something echo\" > {}/sub/test.txt".format(tmpdir))
+    def test_execv(self):
         import os
-        toExecute = tmpdir + '/testfile.sh'
-        os.execv(toExecute, [toExecute])
-        assert os.path.isfile(tmpdir + '/sub/test.txt')
+        import stat
+        cwd = os.getcwd()
+        new_file_path = os.path.join(cwd , 'myscript.sh')
+
+        with open(new_file_path, 'w') as script:
+            script.write('#!/bin/sh\n')
+            script.write("echo \"something echo\" > {}/test.txt".format(cwd))
+        assert os.path.isfile(cwd + '/myscript.sh')
+
+        st = os.stat(new_file_path)
+        os.chmod(new_file_path, st.st_mode | stat.S_IEXEC)
+
+        os.execv(new_file_path, [new_file_path, 'Something'])
+        assert os.path.isfile(cwd + '/test.txt')
+
+        os.remove(new_file_path)
+        os.remove(cwd + '/test.txt')
+
