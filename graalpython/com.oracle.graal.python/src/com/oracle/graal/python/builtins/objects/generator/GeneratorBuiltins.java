@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -47,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -160,7 +162,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(frame, typ, new Object[0]);
+            Object instance = callTyp.execute(frame, typ, new Object[]{typ});
             if (instance instanceof PBaseException) {
                 PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
@@ -173,7 +175,11 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(frame, typ, val.getArray());
+            Object[] array = val.getArray();
+            Object[] args = new Object[array.length + 1];
+            System.arraycopy(array, 0, args, 1, array.length);
+            args[0] = typ;
+            Object instance = callTyp.execute(frame, typ, args);
             if (instance instanceof PBaseException) {
                 PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
@@ -186,7 +192,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPNone(val)", "!isPTuple(val)"})
         Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, Object val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(frame, typ, new Object[]{val});
+            Object instance = callTyp.execute(frame, typ, new Object[]{typ, val});
             if (instance instanceof PBaseException) {
                 PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
@@ -197,8 +203,16 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object sendThrow(PGenerator self, PBaseException instance, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb) {
+        Object sendThrow(PGenerator self, PBaseException instance, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
+                        @Cached MaterializeFrameNode materializeNode) {
             PException pException = PException.fromObject(instance, this);
+            PFrame.Reference currentFrameInfo = PArguments.getCurrentFrameInfo(self.getArguments());
+            PFrame pyFrame = currentFrameInfo.getPyFrame();
+            if (pyFrame == null) {
+                pyFrame = materializeNode.execute(currentFrameInfo.getFrame());
+                currentFrameInfo.setPyFrame(pyFrame);
+            }
+            pException.getExceptionObject().setTraceback(factory().createTraceback(pyFrame, pException));
             PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);
         }
