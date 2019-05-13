@@ -54,22 +54,21 @@ class PosixTests(unittest.TestCase):
         self.assertIsNotNone(uname.machine)
 
     def test_execv(self):
+        # test creates a shell script, which again creates a file, to ensure script execution
+        # Both files are deleted again in the end
         import os
         import stat
         cwd = os.getcwd()
         new_file_path = os.path.join(cwd , 'myscript.sh')
-
         with open(new_file_path, 'w') as script:
             script.write('#!/bin/sh\n')
-            script.write("echo \"something echo\" > {}/test.txt".format(cwd))
+            script.write("echo \"something echo with\" $1 > {}/test.txt\n".format(cwd))
+            script.write('echo this is an output\n')
         assert os.path.isfile(cwd + '/myscript.sh')
-
         st = os.stat(new_file_path)
         os.chmod(new_file_path, st.st_mode | stat.S_IEXEC)
-
-        os.execv(new_file_path, [new_file_path, 'Something'])
+        os.execv(new_file_path, [new_file_path, 'the_input'])
         assert os.path.isfile(cwd + '/test.txt')
-
         os.remove(new_file_path)
         os.remove(cwd + '/test.txt')
 
