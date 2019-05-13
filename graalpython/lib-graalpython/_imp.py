@@ -86,17 +86,6 @@ is_frozen_package = get_frozen_object
 
 
 @__builtin__
-def freeze_module(mod, key=None):
-    """
-    Freeze a module under the optional key in the language cache so that it can
-    be shared across multiple contexts.
-    """
-    path = getattr(mod, "__path__", None)
-    name = key or mod.__name__
-    graal_python_cache_module_code(key, mod.__file__, path)
-
-
-@__builtin__
 def cache_all_file_modules():
     """
     Caches all modules loaded during initialization through the normal import
@@ -111,6 +100,57 @@ def cache_all_file_modules():
                 freeze_module(v, k)
 
 
+@__builtin__
+def _patch_package_paths(paths):
+    import sys
+    return _sub_package_paths(paths, sys.graal_python_stdlib_home, "!stdlib!")
+
+
+@__builtin__
+def _unpatch_package_paths(paths):
+    import sys
+    return _sub_package_paths(paths, "!stdlib!", sys.graal_python_stdlib_home)
+
+
+@__builtin__
+def _sub_package_paths(paths, fro, to):
+    if paths is not None:
+        return [p.replace(fro, to) for p in paths]
+
+
+@__builtin__
+def freeze_module(mod, key=None):
+    """
+    Freeze a module under the optional key in the language cache so that it can
+    be shared across multiple contexts. If the module is a package in the
+    standard library path, it's __path__ is substituted to not leak the standard
+    library path to other contexts.
+    """
+    import sys
+    path = _patch_package_paths(getattr(mod, "__path__", None))
+    name = key or mod.__name__
+    graal_python_cache_module_code(key, mod.__file__, path)
+
+
+class CachedImportFinder:
+    @staticmethod
+    def find_spec(fullname, path, target=None):
+        from _frozen_importlib import ModuleSpec
+        path = _unpatch_package_paths(graal_python_get_cached_code_path(fullname))
+        if path is not None:
+            if len(path) > 0:
+                submodule_search_locations = path
+                is_package = True
+            else:
+                submodule_search_locations = None
+                is_package = False
+            spec = ModuleSpec(fullname, CachedLoader, is_package=is_package)
+            # we're not setting origin, so the module won't have a __file__
+            # attribute and will show up as built-in
+            spec.submodule_search_locations = submodule_search_locations
+            return spec
+
+
 class CachedLoader:
     import sys
 
@@ -123,20 +163,3 @@ class CachedLoader:
         modulename = module.__name__
         exec(graal_python_get_cached_code(modulename), module.__dict__)
         CachedLoader.sys.modules[modulename] = module
-
-
-class CachedImportFinder:
-    @staticmethod
-    def find_spec(fullname, path, target=None):
-        from _frozen_importlib import ModuleSpec
-        path = graal_python_get_cached_code_path(fullname)
-        if path is not None:
-            if len(path) > 0:
-                submodule_search_locations = path
-                is_package = True
-            else:
-                submodule_search_locations = None
-                is_package = False
-            spec = ModuleSpec(fullname, CachedLoader, is_package=is_package)
-            spec.submodule_search_locations = submodule_search_locations
-            return spec
