@@ -55,8 +55,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Read the locals from the passed frame, updating them from the frame if that
- * is needed. This does <emph>not</emph> let the frame escape.
+ * Read the locals from the passed frame, updating them from the frame if that is needed. This does
+ * <emph>not</emph> let the frame escape.
  **/
 public abstract class ReadLocalsNode extends Node {
     // n.b.: work around DSL issue with Frame as both first arguments
@@ -76,26 +76,28 @@ public abstract class ReadLocalsNode extends Node {
 
     @Specialization(guards = {"getPFrame(frame) == null", "!inClassBody(frame)"})
     Object freshLocals(@SuppressWarnings("unused") Object dummy, Frame frame,
-                       @Shared("factory") @Cached PythonObjectFactory factory) {
-        return factory.createDictLocals(frame);
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        PDict localsDict = factory.createDictLocals(frame);
+        PArguments.getCurrentFrameInfo(frame).setPyFrame(factory.createPFrame(frame.materialize(), null, localsDict));
+        return localsDict;
     }
 
     @Specialization(guards = {"getPFrame(frame) == null", "inClassBody(frame)"})
-    static Object freshLocalsInClassBody(@SuppressWarnings("unused") VirtualFrame callingFrame, Frame frame) {
+    static Object freshLocalsInClassBody(@SuppressWarnings("unused") VirtualFrame callingFrame, @SuppressWarnings("unused") Object dummy, Frame frame) {
         // the namespace argument stores the locals
         return PArguments.getArgument(frame, 0);
     }
 
     @Specialization(guards = {"getPFrame(frame) != null", "inClassBody(frame)"})
     Object frameInClassBody(@SuppressWarnings("unused") Object dummy, Frame frame,
-                           @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
         return getPFrame(frame).getLocals(factory);
     }
 
     @Specialization(guards = {"getPFrame(frame) != null", "!inClassBody(frame)"})
     Object frameToUpdate(VirtualFrame callingFrame, @SuppressWarnings("unused") Object dummy, Frame frame,
-                         @Shared("factory") @Cached PythonObjectFactory factory,
-                         @Cached SetItemNode setItemNode) {
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Cached SetItemNode setItemNode) {
         Object storedLocals = getPFrame(frame).getLocals(factory);
         PDict currentDictLocals = factory.createDictLocals(frame);
         for (DictEntry entry : currentDictLocals.entries()) {

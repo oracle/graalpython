@@ -50,7 +50,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -106,8 +105,8 @@ public final class ReadCallerFrameNode extends Node {
     }
 
     /**
-     * Walk up the stack to find the start frame and from then (level + 1)-times
-     * (counting only Python frames).
+     * Walk up the stack to find the start frame and from then (level + 1)-times (counting only
+     * Python frames).
      */
     private static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, int level) {
         CompilerDirectives.transferToInterpreter();
