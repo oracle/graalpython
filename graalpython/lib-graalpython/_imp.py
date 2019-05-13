@@ -91,9 +91,9 @@ def freeze_module(mod, key=None):
     Freeze a module under the optional key in the language cache so that it can
     be shared across multiple contexts.
     """
-    is_package = hasattr(mod, "__path__")
+    path = getattr(mod, "__path__", None)
     name = key or mod.__name__
-    graal_python_cache_module_code(key, mod.__file__, is_package)
+    graal_python_cache_module_code(key, mod.__file__, path)
 
 
 @__builtin__
@@ -126,20 +126,17 @@ class CachedLoader:
 
 
 class CachedImportFinder:
-    import sys
-
     @staticmethod
     def find_spec(fullname, path, target=None):
         from _frozen_importlib import ModuleSpec
-        is_package = graal_python_cached_code_is_package(fullname)
-        sys = CachedImportFinder.sys
-        if is_package is not None:
-            spec = ModuleSpec(fullname, CachedLoader, is_package=is_package)
-            folder = sys.graal_python_stdlib_home + "/" + fullname.replace(".", "/")
-            if is_package:
-                origin = folder + "/__init__.py"
+        path = graal_python_get_cached_code_path(fullname)
+        if path is not None:
+            if len(path) > 0:
+                submodule_search_locations = path
+                is_package = True
             else:
-                origin = folder + ".py"
-            spec.origin = origin
-            spec.submodule_search_locations = [folder]
+                submodule_search_locations = None
+                is_package = False
+            spec = ModuleSpec(fullname, CachedLoader, is_package=is_package)
+            spec.submodule_search_locations = submodule_search_locations
             return spec

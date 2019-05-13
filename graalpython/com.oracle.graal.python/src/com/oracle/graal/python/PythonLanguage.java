@@ -574,7 +574,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Boolean> cachedCodeIsPackage = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String[]> cachedCodeModulePath = new ConcurrentHashMap<>();
 
     @TruffleBoundary
     public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
@@ -585,8 +585,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    public Boolean cachedCodeIsPackage(String name) {
-        return cachedCodeIsPackage.get(name);
+    public String[] cachedCodeModulePath(String name) {
+        return cachedCodeModulePath.get(name);
     }
 
     @TruffleBoundary
@@ -595,9 +595,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode, boolean isPackage) {
+    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode, String[] modulepath) {
         CallTarget ct = cacheCode(filename, createCode);
-        cachedCodeIsPackage.computeIfAbsent(filename, t -> isPackage);
+        cachedCodeModulePath.computeIfAbsent(filename, t -> modulepath);
         return ct;
     }
 

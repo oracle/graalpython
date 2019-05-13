@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.Se
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -75,6 +77,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -93,6 +96,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -383,17 +387,36 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CacheModuleCode extends PythonTernaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        public Object run(String modulename, String moduleFile, boolean isPackage,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
-                        @CachedLanguage PythonLanguage lang) {
+        public Object run(String modulename, String moduleFile, @SuppressWarnings("unused") PNone modulepath,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return doCache(modulename, moduleFile, new String[0], ctxt, lang);
+        }
+
+        @Specialization
+        public Object run(VirtualFrame frame, String modulename, String moduleFile, PList modulepath,
+                        @Shared("cast") @Cached CastToStringNode castString,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            Object[] pathList = modulepath.getSequenceStorage().getInternalArray();
+            String[] paths = new String[pathList.length];
+            for (int i = 0; i < pathList.length; i++) {
+                paths[i] = castString.execute(frame, pathList[i]);
+            }
+            return doCache(modulename, moduleFile, paths, ctxt, lang);
+        }
+
+        private Object doCache(String modulename, String moduleFile, String[] modulepath, PythonContext ctxt, PythonLanguage lang) {
             assert !ctxt.isInitialized() : "this can only be called during initialization";
-            CompilerDirectives.transferToInterpreter();
             final CallTarget ct = lang.cacheCode(moduleFile, () -> null);
             if (ct == null) {
-                throw new AssertionError("cannot cache something we haven't cached before");
+                throw raise(NotImplementedError, "cannot cache something we haven't cached before");
             }
-            CallTarget cachedCt = lang.cacheCode(modulename, () -> ct, isPackage);
+            return cacheWithModulePath(modulename, modulepath, lang, ct);
+        }
+
+        private static Object cacheWithModulePath(String modulename, String[] modulepath, PythonLanguage lang, final CallTarget ct) {
+            CallTarget cachedCt = lang.cacheCode(modulename, () -> ct, modulepath);
             if (cachedCt != ct) {
                 PythonLanguage.getLogger().log(Level.WARNING, () -> "Invalid attempt to re-cache " + modulename);
             }
@@ -401,18 +424,29 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public Object run(String modulename, PCode code, boolean isPackage,
+        public Object run(String modulename, PCode code, @SuppressWarnings("unused") PNone modulepath,
                         @CachedLanguage PythonLanguage lang) {
             final CallTarget ct = code.getRootCallTarget();
             if (ct == null) {
                 throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
             }
-            CallTarget cachedCt = lang.cacheCode(modulename, () -> ct, isPackage);
-            if (cachedCt != ct) {
-                PythonLanguage.getLogger().log(Level.WARNING, () -> "Invalid attempt to re-cache " + modulename);
+            return cacheWithModulePath(modulename, new String[0], lang, ct);
+        }
+
+        @Specialization
+        public Object run(VirtualFrame frame, String modulename, PCode code, PList modulepath,
+                        @Shared("cast") @Cached CastToStringNode castString,
+                        @CachedLanguage PythonLanguage lang) {
+            final CallTarget ct = code.getRootCallTarget();
+            if (ct == null) {
+                throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
             }
-            return PNone.NONE;
+            Object[] pathList = modulepath.getSequenceStorage().getInternalArray();
+            String[] paths = new String[pathList.length];
+            for (int i = 0; i < pathList.length; i++) {
+                paths[i] = castString.execute(frame, pathList[i]);
+            }
+            return cacheWithModulePath(modulename, paths, lang, ct);
         }
     }
 
@@ -431,20 +465,22 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "graal_python_cached_code_is_package", minNumOfPositionalArgs = 1)
+    @Builtin(name = "graal_python_get_cached_code_path", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CachedCodeIsPackage extends PythonUnaryBuiltinNode {
         @Specialization
         public Object run(String modulename,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @CachedLanguage PythonLanguage lang) {
-            Boolean b = null;
+            String[] modulePath = null;
             if (PythonOptions.getFlag(ctxt, PythonOptions.WithCachedSources)) {
-                b = lang.cachedCodeIsPackage(modulename);
+                modulePath = lang.cachedCodeModulePath(modulename);
             }
-            if (b != null) {
+            if (modulePath != null) {
+                Object[] outPath = new Object[modulePath.length];
+                System.arraycopy(modulePath, 0, outPath, 0, modulePath.length);
                 PythonLanguage.getLogger().log(Level.FINEST, () -> "Cached code re-used for " + modulename);
-                return b;
+                return factory().createList(outPath);
             } else {
                 return PNone.NONE;
             }
