@@ -112,22 +112,34 @@ def cache_all_file_modules():
 
 
 class CachedLoader:
+    import sys
+
     @staticmethod
     def create_module(spec):
         pass
 
     @staticmethod
     def exec_module(module):
-        import sys
         modulename = module.__name__
         exec(graal_python_get_cached_code(modulename), module.__dict__)
-        sys.modules[modulename] = module
+        CachedLoader.sys.modules[modulename] = module
 
 
 class CachedImportFinder:
+    import sys
+
     @staticmethod
     def find_spec(fullname, path, target=None):
         from _frozen_importlib import ModuleSpec
         is_package = graal_python_cached_code_is_package(fullname)
+        sys = CachedImportFinder.sys
         if is_package is not None:
-            return ModuleSpec(fullname, CachedLoader, is_package=is_package)
+            spec = ModuleSpec(fullname, CachedLoader, is_package=is_package)
+            folder = sys.graal_python_stdlib_home + "/" + fullname.replace(".", "/")
+            if is_package:
+                origin = folder + "/__init__.py"
+            else:
+                origin = folder + ".py"
+            spec.origin = origin
+            spec.submodule_search_locations = [folder]
+            return spec
