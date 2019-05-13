@@ -293,14 +293,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return doExecute(path, args);
         }
 
+        @Specialization
+        Object execute(PString path, PList args) {
+            return doExecute(path.getValue(), args);
+        }
+
         @TruffleBoundary
         Object doExecute(String path, PList args) {
             try {
                 int size = args.getSequenceStorage().length();
-                String[] cmd = new String[1 + size];
+                String[] cmd = new String[size];
                 cmd[0] = path;
                 for (int i = 1; i < size; i++) {
-                    cmd[i + 3] = args.getSequenceStorage().getItemNormalized(i).toString();
+                    cmd[i] = args.getSequenceStorage().getItemNormalized(i).toString();
                 }
                 new ProcessBuilder(cmd).start();
             } catch (IOException e) {
