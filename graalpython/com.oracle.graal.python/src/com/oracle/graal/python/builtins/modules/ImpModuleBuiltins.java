@@ -46,7 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
