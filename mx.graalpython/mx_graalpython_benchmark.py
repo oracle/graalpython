@@ -50,10 +50,12 @@ ENV_PYPY_HOME = "PYPY_HOME"
 VM_NAME_GRAALPYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
 VM_NAME_PYPY = "pypy"
+VM_NAME_GRAALPYTHON_SVM = "graalpython-svm"
 GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
+CONFIGURATION_NATIVE = "native"
 CONFIG_EXPERIMENTAL_SPLITTING = "experimental_splitting"
 CONFIGURATION_SANDBOXED = "sandboxed"
 
@@ -223,7 +225,6 @@ class GraalPythonVm(GuestVm):
             else:
                 extra_polyglot_args += ["--experimental-options"]
 
-
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
             vm_args += self._extra_vm_args
@@ -232,7 +233,12 @@ class GraalPythonVm(GuestVm):
             "com.oracle.graal.python.shell.GraalPythonMain"
         ]
         cmd = truffle_options + vm_args + extra_polyglot_args + args
-        return self.host_vm().run(cwd, cmd)
+
+        host_vm = self.host_vm()
+        if hasattr(host_vm, 'run_lang'):
+            return host_vm.run_lang('graalpython', extra_polyglot_args + args, cwd)
+        else:
+            return host_vm.run(cwd, cmd)
 
     def name(self):
         return VM_NAME_GRAALPYTHON
