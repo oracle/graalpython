@@ -30,6 +30,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
@@ -93,6 +94,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 
 import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionValues;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -154,7 +156,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
+    protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
+        // internal sources were marked during context initialization
+        return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
+                        // we cache CatchAllExceptions hard on TryExceptNode
+                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)));
+    }
+
+    private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
+        return (areOptionsCompatible(firstOptions, newOptions) &&
+                        // we cache WithThread in SysConfigModuleBuiltins
+                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
+                        // disabling TRegex has an effect on the _sre Python functions that are
+                        // dynamically created
+                        firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
+    }
+
+    @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
+        if (!areOptionsCompatibleWithPreinitializedContext(context.getEnv().getOptions(), newEnv.getOptions())) {
+            PythonCore.writeInfo("Cannot use preinitialized context.");
+            return false;
+        }
         ensureHomeInOptions(newEnv);
         PythonCore.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
@@ -500,6 +523,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    @TruffleBoundary
     public static TruffleLogger getLogger() {
         return TruffleLogger.getLogger(ID);
     }
@@ -534,20 +558,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private final ConcurrentHashMap<Object, Source> cachedSources = new ConcurrentHashMap<>();
-
-    public Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
-        try {
-            return cachedSources.computeIfAbsent(src, t -> {
-                try {
-                    return newSource(ctxt, Source.newBuilder(ID, src).name(name));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (RuntimeException e) {
-            throw (IOException) e.getCause();
-        }
+    public static Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
+        return newSource(ctxt, Source.newBuilder(ID, src).name(name));
     }
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
@@ -565,10 +577,32 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         singleContextAssumption.invalidate();
     }
 
-    private final ConcurrentHashMap<String, PCode> cachedCode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String[]> cachedCodeModulePath = new ConcurrentHashMap<>();
 
-    public PCode cacheCode(String filename, Supplier<PCode> createCode) {
-        return cachedCode.computeIfAbsent(filename, f -> createCode.get());
+    @TruffleBoundary
+    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
+        return cachedCode.computeIfAbsent(filename, f -> {
+            PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+            return createCode.get();
+        });
+    }
+
+    @TruffleBoundary
+    public String[] cachedCodeModulePath(String name) {
+        return cachedCodeModulePath.get(name);
+    }
+
+    @TruffleBoundary
+    public boolean hasCachedCode(String name) {
+        return cachedCode.get(name) != null;
+    }
+
+    @TruffleBoundary
+    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode, String[] modulepath) {
+        CallTarget ct = cacheCode(filename, createCode);
+        cachedCodeModulePath.computeIfAbsent(filename, t -> modulepath);
+        return ct;
     }
 
     public static Shape freshShape() {

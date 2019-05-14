@@ -195,6 +195,7 @@ class GraalPythonTags(object):
     graalvm = 'python-graalvm'
     graalvm_sandboxed = 'python-graalvm-sandboxed'
     svm = 'python-svm'
+    native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
 
 
@@ -388,7 +389,7 @@ def graalpython_gate_runner(args, tasks):
             svm_image = python_svm(["--version"])
             benchmark = os.path.join(PATH_MESO, "image-magix.py")
             out = mx.OutputCapture()
-            mx.run([svm_image, benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out))
             success = "\n".join([
                 "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
             ])
@@ -396,14 +397,14 @@ def graalpython_gate_runner(args, tasks):
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
             # Test that stdlib paths are not cached on packages
             out = mx.OutputCapture()
-            mx.run([svm_image, "-S", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__path__)"], out=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__path__)"], out=mx.TeeOutputCapture(out))
             if "/foobar" not in out.data:
-                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar", got:\n' + success)
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar"')
             # Test that stdlib paths are not cached on modules
             out = mx.OutputCapture()
-            mx.run([svm_image, "-S", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__file__)"], out=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__file__)"], out=mx.TeeOutputCapture(out))
             if "/foobar" not in out.data:
-                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar", got:\n' + success)
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar"')
             # Finally, test that we can start even if the graalvm was moved
             out = mx.OutputCapture()
             graalvm_home = svm_image.replace(os.path.sep.join(["", "bin", "graalpython"]), "")
@@ -411,10 +412,58 @@ def graalpython_gate_runner(args, tasks):
             shutil.move(graalvm_home, new_graalvm_home)
             launcher = os.path.join(new_graalvm_home, "bin", "graalpython")
             mx.log(launcher)
-            mx.run([launcher, "-S", "-c", "print(b'abc'.decode('ascii'))"]) # Should not fail
+            mx.run([launcher, "--log.python.level=FINE", "-S", "-c", "print(b'abc'.decode('ascii'))"], out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            assert "Using preinitialized context." in out.data
+
+    with Task('GraalPython GraalVM native embedding', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.native_image_embedder]) as task:
+        if task:
+            run_embedded_native_python_test()
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
+
+
+def run_embedded_native_python_test(args=None):
+    """
+    Test that embedding an engine where a context was initialized at native image
+    build-time is enough to create multiple contexts from that engine without
+    those contexts having access to the core files, due to caching in the shared
+    engine.
+    """
+    with mx.TempDirCwd(os.getcwd()) as dirname:
+        python_launcher = python_gvm()
+        graalvm_javac = os.path.join(os.path.dirname(python_launcher), "javac")
+        graalvm_native_image = os.path.join(os.path.dirname(python_launcher), "native-image")
+
+        filename = os.path.join(dirname, "HelloWorld.java")
+        with open(filename, "w") as f:
+            f.write("""
+            import org.graalvm.polyglot.*;
+
+            public class HelloWorld {
+                static final Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("log.python.level", "FINEST").build();
+                static {
+                   try (Context contextNull = Context.newBuilder("python").engine(engine).build()) {
+                       contextNull.initialize("python");
+                   }
+                }
+
+                public static void main(String[] args) {
+                    try (Context context1 = Context.newBuilder("python").engine(engine).build()) {
+                        context1.eval("python", "print(b'abc'.decode('ascii'))");
+                        try (Context context2 = Context.newBuilder("python").engine(engine).build()) {
+                            context2.eval("python", "print(b'xyz'.decode('ascii'))");
+                        }
+                    }
+                }
+            }
+            """)
+        out = mx.OutputCapture()
+        mx.run([graalvm_javac, filename])
+        mx.run([graalvm_native_image, "--initialize-at-build-time", "--language:python", "HelloWorld"])
+        mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
+        assert "abc" in out.data
+        assert "xyz" in out.data
 
 
 def run_shared_lib_test(args=None):

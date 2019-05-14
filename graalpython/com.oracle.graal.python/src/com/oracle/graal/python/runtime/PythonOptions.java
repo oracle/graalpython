@@ -147,6 +147,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
     public static final OptionKey<String> ExecutableList = new OptionKey<>("");
 
+    @Option(category = OptionCategory.EXPERT, help = "Determines wether context startup tries to re-use previously cached sources of the core library.") //
+    public static final OptionKey<Boolean> WithCachedSources = new OptionKey<>(true);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
