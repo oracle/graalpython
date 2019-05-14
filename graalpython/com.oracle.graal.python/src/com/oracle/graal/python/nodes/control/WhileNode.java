@@ -29,7 +29,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -54,7 +56,13 @@ final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode
     public boolean executeRepeating(VirtualFrame frame) {
         if (conditionProfile.profile(condition.executeBoolean(frame))) {
             body.executeVoid(frame);
-            contextRef.get().triggerAsyncActions(this);
+            PythonContext context = contextRef.get();
+            PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
+            try {
+                context.triggerAsyncActions(this);
+            } finally {
+                ForeignCallContext.exit(context, savedExceptionState);
+            }
             return true;
         }
         return false;

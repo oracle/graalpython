@@ -51,22 +51,26 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.Node.Child;
+import com.oracle.truffle.api.nodes.RootNode;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -133,12 +137,14 @@ public class AsyncHandler {
         }
     }
 
-    private static class CallRootNode extends PRootNode {
+    private static class CallRootNode extends RootNode {
         static final int ASYNC_ARGS = 3;
 
         @Child private CallNode callNode = CallNode.create();
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child private MaterializeFrameNode materializeNode = MaterializeFrameNodeGen.create();
+
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);
@@ -146,25 +152,30 @@ public class AsyncHandler {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            // We just do the 'enter' that creates the frame info but this frame will never escape,
-            // so we don't do the exit. This is required to be able to use the
-            // 'ReadCallerFrameNode'.
-            CalleeContext.enter(frame);
-
             Object[] frameArguments = frame.getArguments();
             Object callable = PArguments.getArgument(frameArguments, 0);
             int frameIndex = (int) PArguments.getArgument(frameArguments, 1);
             Node location = (Node) PArguments.getArgument(frameArguments, 2);
             Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARGS, frameArguments.length);
             if (frameIndex >= 0) {
-                arguments[frameIndex] = materializeNode.execute(readCallerFrameNode.executeWith(frame, 0), location);
+                Reference callerFrameInfo = getContext().popTopFrameInfo();
+                getContext().setTopFrameInfo(callerFrameInfo);
+                PFrame pyFrame = callerFrameInfo.getPyFrame();
+                if (pyFrame == null) {
+                    pyFrame = materializeNode.execute(callerFrameInfo.getFrame(), location);
+                    callerFrameInfo.setPyFrame(pyFrame);
+                }
+                arguments[frameIndex] = pyFrame;
             }
-            return callNode.execute(frame, callable, arguments);
+            return callNode.execute(null, callable, arguments);
         }
 
-        @Override
-        public Signature getSignature() {
-            return Signature.EMPTY;
+        private PythonContext getContext() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
+            return contextRef.get();
         }
     }
 

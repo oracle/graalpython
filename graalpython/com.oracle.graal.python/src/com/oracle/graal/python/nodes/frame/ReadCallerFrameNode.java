@@ -128,7 +128,11 @@ public final class ReadCallerFrameNode extends Node {
                             Frame frame = frameInstance.getFrame(frameAccess);
                             assert PArguments.isPythonFrame(frame);
                             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                            info.setCallNode(frameInstance.getCallNode());
+                            Node callNode = frameInstance.getCallNode();
+                            // avoid overriding the location if we don't know it
+                            if (callNode != null) {
+                                info.setCallNode(callNode);
+                            }
                             return frame;
                         }
                         i += 1;
