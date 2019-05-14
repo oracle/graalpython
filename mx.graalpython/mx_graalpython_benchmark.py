@@ -276,6 +276,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = os.path.basename(os.path.splitext(benchmarks[0])[0])
         arg = " ".join(self._benchmarks[bench_name])
+
         return [
             # warmup curves
             StdOutRule(
@@ -308,6 +309,21 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                 }
             ),
         ]
+
+    def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
+        # host-vm rewrite rules 
+        ret_code, out, dims = super(PythonBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
+
+        def _replace_host_vm(key):
+            host_vm = dims.get("host-vm")
+            if host_vm and host_vm.startswith(key):
+                dims['host-vm'] = key
+                mx.logv("[DEBUG] replace 'host-vm': '{key}-python' -> '{key}'".format(key=key))
+
+        _replace_host_vm('graalvm-ce')
+        _replace_host_vm('graalvm-ee')
+
+        return ret_code, out, dims
 
     def run(self, benchmarks, bm_suite_args):
         results = super(PythonBenchmarkSuite, self).run(benchmarks, bm_suite_args)
