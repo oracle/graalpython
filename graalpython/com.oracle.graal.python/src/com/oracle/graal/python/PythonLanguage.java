@@ -167,7 +167,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return (areOptionsCompatible(firstOptions, newOptions) &&
                         // we cache WithThread in SysConfigModuleBuiltins
                         firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
-                        // disabling TRegex has an effect on the _sre Python functions that are dynamically created
+                        // disabling TRegex has an effect on the _sre Python functions that are
+                        // dynamically created
                         firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
     }
 
