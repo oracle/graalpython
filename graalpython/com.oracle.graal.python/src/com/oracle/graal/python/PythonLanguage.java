@@ -164,12 +164,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
-        // Buffered IO was applied during context initialization
         return (areOptionsCompatible(firstOptions, newOptions) &&
-                        firstOptions.get(PythonOptions.UnbufferedIO).equals(newOptions.get(PythonOptions.UnbufferedIO)) &&
                         // we cache WithThread in SysConfigModuleBuiltins
                         firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
-                        // disabling TRegex has an effect on the _sre Python code that is created
+                        // disabling TRegex has an effect on the _sre Python functions that are dynamically created
                         firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
     }
 

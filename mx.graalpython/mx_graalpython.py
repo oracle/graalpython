@@ -414,11 +414,6 @@ def graalpython_gate_runner(args, tasks):
             mx.log(launcher)
             mx.run([launcher, "--log.python.level=FINE", "-S", "-c", "print(b'abc'.decode('ascii'))"], out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             assert "Using preinitialized context." in out.data
-            # And test that we can start even if the graalvm was moved and we cannot use a preinitialized context
-            # n.b.: Forcing unbuffered IO is incompatible with the preinitialized context
-            out = mx.OutputCapture()
-            mx.run([launcher, "--log.python.level=FINE", "-u", "-S", "-c", "print(b'abc'.decode('ascii'))"], out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
-            assert "Using preinitialized context." not in out.data
 
     with Task('GraalPython GraalVM native embedding', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.native_image_embedder]) as task:
         if task:
