@@ -136,13 +136,14 @@ def test_recursive_import_from():
         assert package.recpkg.context is package.recpkg.reduction.context
 
 
-def test_imp_cached_imports():
-    import _imp
+if sys.implementation.name == "graalpython":
+    def test_imp_cached_imports():
+        import _imp
 
-    finder = _imp.CachedImportFinder
+        finder = _imp.CachedImportFinder
 
-    spec = finder.find_spec("encodings", None)
-    assert spec.submodule_search_locations
+        spec = finder.find_spec("encodings", None)
+        assert spec.submodule_search_locations
 
-    spec = finder.find_spec("encodings.utf_8", None)
-    assert not spec.submodule_search_locations
+        spec = finder.find_spec("encodings.utf_8", None)
+        assert not spec.submodule_search_locations
