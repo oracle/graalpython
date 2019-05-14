@@ -56,7 +56,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         int collect() {
             doGc();
             // collect some weak references now
-            getContext().triggerAsyncActions();
+            getContext().triggerAsyncActions(this);
             return 0;
         }
 

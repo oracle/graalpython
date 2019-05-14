@@ -113,7 +113,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
-                context.triggerAsyncActions();
+                context.triggerAsyncActions(this);
             }
             return;
         } catch (YieldException e) {

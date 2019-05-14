@@ -141,7 +141,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
-            contextRef.get().triggerAsyncActions();
+            contextRef.get().triggerAsyncActions(this);
         }
         CalleeContext.enter(frame);
         try {
