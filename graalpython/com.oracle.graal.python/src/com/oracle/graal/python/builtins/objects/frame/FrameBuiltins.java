@@ -148,7 +148,7 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
-                           @Cached ReadLocalsNode readLocals) {
+                        @Cached ReadLocalsNode readLocals) {
             Frame materializedFrame = self.getFrame();
             assert materializedFrame != null : "It's impossible to call f_locals on a frame without that frame having escaped";
             return readLocals.execute(frame, materializedFrame);
@@ -160,10 +160,10 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetBackrefNode extends PythonBuiltinNode {
         @Specialization
         Object getBackref(@SuppressWarnings("unused") VirtualFrame frame, PFrame self,
-                   @Cached BranchProfile noBackref,
-                   @Cached BranchProfile topRef,
-                   @Cached MaterializeFrameNode materializeFrameNode,
-                   @Cached ReadCallerFrameNode readCallerFrame) {
+                        @Cached BranchProfile noBackref,
+                        @Cached BranchProfile topRef,
+                        @Cached MaterializeFrameNode materializeFrameNode,
+                        @Cached ReadCallerFrameNode readCallerFrame) {
             PFrame.Reference backref = self.getBackref();
             if (backref == null) {
                 noBackref.enter();
@@ -181,7 +181,8 @@ public final class FrameBuiltins extends PythonBuiltins {
                 } else {
                     // we need it now, so materialize it
                     PFrame callerFrameObject = materializeFrameNode.execute(callerFrame);
-                    self.setBackref(callerFrameObject.getRef());
+                    backref = callerFrameObject.getRef();
+                    self.setBackref(backref);
                 }
             }
             if (backref.getPyFrame() == null) {
