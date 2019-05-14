@@ -135,7 +135,6 @@ def freeze_module(mod, key=None):
 class CachedImportFinder:
     @staticmethod
     def find_spec(fullname, path, target=None):
-        from _frozen_importlib import ModuleSpec
         path = _unpatch_package_paths(graal_python_get_cached_code_path(fullname))
         if path is not None:
             if len(path) > 0:
@@ -144,7 +143,7 @@ class CachedImportFinder:
             else:
                 submodule_search_locations = None
                 is_package = False
-            spec = ModuleSpec(fullname, CachedLoader, is_package=is_package)
+            spec = CachedImportFinder.ModuleSpec(fullname, CachedLoader, is_package=is_package)
             # we're not setting origin, so the module won't have a __file__
             # attribute and will show up as built-in
             spec.submodule_search_locations = submodule_search_locations
