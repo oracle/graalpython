@@ -57,6 +57,6 @@ def test_weakref_finalizer():
 cleaned_up = False
 def cleanup(ref):
     global cleaned_up
-    # TODO re-enable when __eq__ is properly implemented
-    # assert sys._getframe(1).f_code == test_weakref_finalizer.__code__, sys._getframe(1).f_code
+    caller_code = sys._getframe(1).f_code
+    assert caller_code == test_weakref_finalizer.__code__, "expected: '%s' but was '%s'" % (test_weakref_finalizer.__code__, caller_code)
     cleaned_up = True

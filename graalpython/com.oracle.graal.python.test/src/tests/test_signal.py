@@ -51,8 +51,7 @@ def test_alarm2():
     def handler(signal, frame):
         nonlocal triggered
         caller_code = sys._getframe(1).f_code
-        # TODO re-enable when __eq__ is properly implemented
-        # assert caller_code == test_alarm2.__code__, "expected: '%s' but was '%s'" % (test_alarm2.__code__, caller_code)
+        assert caller_code == test_alarm2.__code__, "expected: '%s' but was '%s'" % (test_alarm2.__code__, caller_code)
         triggered = (signal, frame)
 
     oldhandler = _signal.signal(_signal.SIGALRM, handler)

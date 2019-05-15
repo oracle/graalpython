@@ -74,7 +74,7 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode.NotNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.expression.IsNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -391,9 +391,9 @@ public class TestParserTranslator {
         parseAs("x in y", ContainsNode.class);
         CastToBooleanNode notNode = parseAs("x not in y", CastToBooleanNode.NotNode.class);
         getChild(notNode, 0, ContainsNode.class);
-        parseAs("x is y", IsNode.class);
+        parseAs("x is y", IsExpressionNode.class);
         notNode = parseAs("x is not y", CastToBooleanNode.NotNode.class);
-        getChild(notNode, 0, IsNode.class);
+        getChild(notNode, 0, IsExpressionNode.class);
 
         AndNode parseAs = parseAs("x < y() <= z", AndNode.class);
         PNode leftNode = parseAs.getLeftNode();

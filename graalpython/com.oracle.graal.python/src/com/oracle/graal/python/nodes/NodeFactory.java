@@ -63,7 +63,7 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.IsNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryIfNode;
@@ -397,9 +397,9 @@ public class NodeFactory {
             case "notin":
                 return CastToBooleanNode.createIfFalseNode(ContainsNode.create(right, left));
             case "is":
-                return IsNode.create(left, right);
+                return IsExpressionNode.create(left, right);
             case "isnot":
-                return CastToBooleanNode.createIfFalseNode(IsNode.create(left, right));
+                return CastToBooleanNode.createIfFalseNode(IsExpressionNode.create(left, right));
             default:
                 throw new RuntimeException("unexpected operation: " + operator);
         }

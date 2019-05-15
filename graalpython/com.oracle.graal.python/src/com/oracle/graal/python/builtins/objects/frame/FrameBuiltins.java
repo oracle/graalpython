@@ -138,6 +138,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 return factory().createCode(ct);
             }
             // TODO: frames: this just shouldn't happen anymore
+            assert false : "should not be reached";
             return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0], "<internal>",
                             "<internal>", -1, new byte[0]);
         }
