@@ -184,6 +184,31 @@ class ExceptionTest(unittest.TestCase):
         self.assertEqual([1, 3], log)
 
 
+    def test_gen_from_except(self):
+        def gen():
+            self.assertEqual(sys.exc_info()[0], None)
+            yield
+            
+            try:
+                raise TypeError
+            except TypeError:
+                # we are called from "except ValueError:"
+                self.assertEqual(sys.exc_info()[0], TypeError)
+            self.assertIsNone(sys.exc_info()[0])
+            yield
+            self.assertIsNone(sys.exc_info()[0])
+            yield "done"
+            
+        try:
+            raise ValueError
+        except ValueError:
+            self.assertEqual(sys.exc_info()[0], ValueError)
+            g = gen()
+        next(g)
+        next(g)
+        self.assertEqual(next(g), "done")
+        
+
     def test_stopiteration_warning(self):
         # See also PEP 479.
 
