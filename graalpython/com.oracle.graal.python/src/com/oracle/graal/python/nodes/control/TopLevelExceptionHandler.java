@@ -44,13 +44,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -61,19 +61,25 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleStackTrace;
+import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
@@ -87,6 +93,8 @@ public class TopLevelExceptionHandler extends RootNode {
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
     @Child private CallNode callNode = CallNode.create();
+    @Child private PythonObjectFactory factory;
+    @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNodeGen.create();
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
@@ -150,7 +158,30 @@ public class TopLevelExceptionHandler extends RootNode {
 
         PBaseException value = e.getExceptionObject();
         PythonAbstractClass type = value.getPythonClass();
-        PTraceback tb = value.getTraceback();
+        Object tb;
+        if (value.getTraceback() != null) {
+            tb = value.getTraceback();
+        } else {
+            // find first Python frame
+
+            Frame firstPythonFrame = null;
+            List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
+            for (int i = 0; i < stackTrace.size(); i++) {
+                Frame curFrame = stackTrace.get(i).getFrame();
+                if (PArguments.isPythonFrame(curFrame)) {
+                    firstPythonFrame = curFrame;
+                    break;
+                }
+            }
+            if (firstPythonFrame == null) {
+                // this should never be reached
+                throw new IllegalStateException("Python exception thrown without any Python frames on the stack.");
+            }
+            PFrame escapedFrame = materializeFrameNode.execute(firstPythonFrame, this);
+            PTraceback freshTb = factory().createTraceback(escapedFrame, e);
+            value.setTraceback(freshTb);
+            tb = freshTb;
+        }
 
         PythonModule sys = core.lookupBuiltinModule("sys");
         sys.setAttribute(BuiltinNames.LAST_TYPE, type);
@@ -217,6 +248,14 @@ public class TopLevelExceptionHandler extends RootNode {
     @TruffleBoundary
     private static void printStackTrace(Throwable e) {
         e.printStackTrace();
+    }
+
+    private PythonObjectFactory factory() {
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
+        return factory;
     }
 
     private Object run(VirtualFrame frame) {
