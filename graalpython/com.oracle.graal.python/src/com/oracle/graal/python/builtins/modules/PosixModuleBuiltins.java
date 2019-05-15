@@ -322,7 +322,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
                 int size = args.getSequenceStorage().length();
                 String[] cmd = new String[size];
-                // We don't need the path variable because it's already in the array but I need to process it for CI gate
+                // We don't need the path variable because it's already in the array
+                // but I need to process it for CI gate
                 cmd[0] = path;
                 for (int i = 0; i < size; i++) {
                     cmd[i] = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), i).toString();
@@ -336,6 +337,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 while ((line = bfr.readLine()) != null) {
                     stream.write(line.getBytes());
                 }
+
+                try {
+                    pr.waitFor();
+                } catch (InterruptedException e) {
+                    throw new IOException(e);
+                }
+
                 throw new PythonExitException(this, pr.exitValue());
             } catch (IOException e) {
                 throw raise(PythonErrorType.ValueError, "Could not execute script '%s'", e.getMessage());
