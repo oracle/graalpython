@@ -53,9 +53,9 @@ public abstract class PRootNode extends RootNode {
     @CompilationFinal private Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption("does not need caller frame");
 
     /**
-     * Flag indicating if some child node of this root node (or a callee)
-     * eventually needs the exception state.  Hence, the caller of this root
-     * node should provide the exception state in the arguments.
+     * Flag indicating if some child node of this root node (or a callee) eventually needs the
+     * exception state. Hence, the caller of this root node should provide the exception state in
+     * the arguments.
      */
     @CompilationFinal private Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption("does not need exception state");
 
@@ -111,5 +111,11 @@ public abstract class PRootNode extends RootNode {
 
     protected Assumption getDontNeedExceptionState() {
         return dontNeedExceptionState;
+    }
+
+    public abstract boolean isPythonInternal();
+
+    public static boolean isPythonInternal(RootNode rootNode) {
+        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
     }
 }

@@ -101,4 +101,9 @@ public class ModuleRootNode extends PClosureRootNode {
     public Signature getSignature() {
         return SIGNATURE;
     }
+
+    @Override
+    public boolean isPythonInternal() {
+        return false;
+    }
 }

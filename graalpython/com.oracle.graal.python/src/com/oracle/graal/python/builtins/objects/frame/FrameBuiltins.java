@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
@@ -165,31 +166,37 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Cached BranchProfile topRef,
                         @Cached MaterializeFrameNode materializeFrameNode,
                         @Cached ReadCallerFrameNode readCallerFrame) {
-            PFrame.Reference backref = self.getBackref();
-            if (backref == null) {
-                noBackref.enter();
-                // The backref is not there. There's three cases:
+            PFrame.Reference backref;
+            for (PFrame cur = self;; cur = backref.getPyFrame()) {
+                backref = cur.getBackref();
+                if (backref == null) {
+                    noBackref.enter();
+                    // The backref is not there. There's three cases:
 
-                // a) self is still on the stack and the caller isn't filled in
-                // b) this frame has returned, but not (yet) to a Python caller
-                // c) this frame has no caller (it is/was a top frame)
-                Frame callerFrame = readCallerFrame.executeWith(self.getFrame(), 0);
-                if (callerFrame == null) {
-                    topRef.enter();
-                    // so we won't do this again
-                    self.setBackref(PFrame.Reference.EMPTY);
-                    return PNone.NONE;
-                } else {
-                    // we need it now, so materialize it
-                    PFrame callerFrameObject = materializeFrameNode.execute(callerFrame);
-                    backref = callerFrameObject.getRef();
-                    self.setBackref(backref);
+                    // a) self is still on the stack and the caller isn't filled in
+                    // b) this frame has returned, but not (yet) to a Python caller
+                    // c) this frame has no caller (it is/was a top frame)
+                    Frame callerFrame = readCallerFrame.executeWith(cur.getFrame(), 0);
+                    if (callerFrame == null) {
+                        topRef.enter();
+                        // so we won't do this again
+                        cur.setBackref(PFrame.Reference.EMPTY);
+                        return PNone.NONE;
+                    } else {
+                        // we need it now, so materialize it
+                        PFrame callerFrameObject = materializeFrameNode.execute(callerFrame);
+                        backref = callerFrameObject.getRef();
+                        cur.setBackref(backref);
+                    }
                 }
-            }
-            if (backref.getPyFrame() == null) {
-                return PNone.NONE;
-            } else {
-                return backref.getPyFrame();
+
+                if (backref.getPyFrame() == null) {
+                    return PNone.NONE;
+                } else if (!PRootNode.isPythonInternal(backref.getPyFrame().getTarget().getRootNode())) {
+                    return backref.getPyFrame();
+                }
+
+                assert backref.getPyFrame() != null;
             }
         }
     }

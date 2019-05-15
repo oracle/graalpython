@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
@@ -91,5 +92,11 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public void initializeFrame(VirtualFrame frame) {
         // nothing to do
+    }
+
+    @Override
+    public boolean isPythonInternal() {
+        RootNode rootNode = callTarget.getRootNode();
+        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
     }
 }

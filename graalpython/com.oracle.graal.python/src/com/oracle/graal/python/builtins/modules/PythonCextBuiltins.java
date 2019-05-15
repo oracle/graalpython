@@ -794,6 +794,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return signature;
         }
 
+        @Override
+        public boolean isPythonInternal() {
+            // everything that is implemented in C is internal
+            return true;
+        }
+
         public static ExternalFunctionNode create(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Signature signature) {
             return ExternalFunctionNodeGen.create(lang, name, cwrapper, callable, signature);
         }
@@ -1480,6 +1486,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Override
         public String toString() {
             return "<METH root " + invokeNode.getCurrentRootNode().getName() + ">";
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
         }
     }
 

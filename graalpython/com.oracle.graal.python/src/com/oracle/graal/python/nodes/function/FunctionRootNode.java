@@ -182,4 +182,9 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     public void initializeFrame(VirtualFrame frame) {
         initClosureAndCellVars(frame);
     }
+
+    @Override
+    public boolean isPythonInternal() {
+        return isRewritten;
+    }
 }
