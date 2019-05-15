@@ -107,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemDynamicNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -298,9 +299,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object execute(PString path, PTuple args) {
+            return execute(path.getValue(), args);
+        }
+
+        @Specialization
+        Object execute(String path, PTuple args) {
             // in case of execl the PList happens to be in the tuples first entry
-            Object list = args.getSequenceStorage().getItemNormalized(0);
-            return doExecute(path.getValue(), list instanceof PList ? (PList) list : args);
+            Object list = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), 0);
+            return doExecute(path, list instanceof PList ? (PList) list : args);
         }
 
         @Specialization
@@ -311,25 +317,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object doExecute(String path, PSequence args) {
             try {
+                if (!getContext().isExecutableAccessAllowed()) {
+                    throw raise(OSError, "executable access denied");
+                }
                 int size = args.getSequenceStorage().length();
                 String[] cmd = new String[size];
+                // We don't need the path variable because it's already in the array but I need to process it for CI gate
+                cmd[0] = path;
                 for (int i = 0; i < size; i++) {
-                    cmd[i] = args.getSequenceStorage().getItemNormalized(i).toString();
+                    cmd[i] = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), i).toString();
                 }
                 Runtime rt = Runtime.getRuntime();
                 Process pr = rt.exec(cmd);
                 // retrieve output from executed script
                 BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+                OutputStream stream = getContext().getEnv().out();
                 String line = "";
                 while ((line = bfr.readLine()) != null) {
-                    System.out.println(line);
+                    stream.write(line.getBytes());
                 }
+                throw new PythonExitException(this, pr.exitValue());
             } catch (IOException e) {
                 throw raise(PythonErrorType.ValueError, "Could not execute script '%s'", e.getMessage());
             }
-            return PNone.NONE;
         }
-
     }
 
     @Builtin(name = "getcwd", minNumOfPositionalArgs = 0)
