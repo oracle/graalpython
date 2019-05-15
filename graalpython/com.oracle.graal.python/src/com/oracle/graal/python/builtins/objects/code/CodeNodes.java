@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -142,10 +143,20 @@ public abstract class CodeNodes {
                 }
                 callTarget = Truffle.getRuntime().createCallTarget(rootNode);
             } else {
-                callTarget = Truffle.getRuntime().createCallTarget(new RootNode(PythonLanguage.getCurrent()) {
+                callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(PythonLanguage.getCurrent()) {
                     @Override
                     public Object execute(VirtualFrame frame) {
                         return PNone.NONE;
+                    }
+
+                    @Override
+                    public Signature getSignature() {
+                        return Signature.EMPTY;
+                    }
+
+                    @Override
+                    public boolean isPythonInternal() {
+                        return false;
                     }
                 });
             }
