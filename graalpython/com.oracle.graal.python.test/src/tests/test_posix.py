@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -57,8 +57,10 @@ class PosixTests(unittest.TestCase):
         # test creates a shell script, which again creates a file, to ensure script execution
         # Both files are deleted again in the end
         import os
+        import sys
         new_file_path, cwd = self.create_file()
-        os.execv(new_file_path, [new_file_path, 'the_input'])
+        # os.execv(new_file_path, [new_file_path, 'the_input'])
+        os.system("%s -c \"import os; os.execv('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
         assert os.path.isfile(cwd + '/test.txt')
         self.delete_file(new_file_path, cwd)
 
@@ -66,8 +68,10 @@ class PosixTests(unittest.TestCase):
         # test creates a shell script, which again creates a file, to ensure script execution
         # Both files are deleted again in the end
         import os
+        import sys
         new_file_path, cwd = self.create_file()
-        os.execl(new_file_path, [new_file_path, 'the_input'])
+        # os.execl(new_file_path, [new_file_path, 'the_input'])
+        os.system("%s -c \"import os; os.execl('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
         assert os.path.isfile(cwd + '/test.txt')
         self.delete_file(new_file_path, cwd)
 
