@@ -100,6 +100,7 @@ graalpython/com.oracle.graal.python.cext/include/structseq.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/traceback.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/truffle.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/typeslots.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/ucnhash.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/unicodeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/warnings.h,python.copyright
@@ -520,3 +521,4 @@ mx.graalpython/mx_graalpython.py,zippy.copyright
 mx.graalpython/mx_graalpython_bench_param.py,zippy.copyright
 mx.graalpython/mx_graalpython_benchmark.py,zippy.copyright
 mx.graalpython/suite.py,no.copyright
+
