@@ -158,7 +158,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -729,44 +730,37 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(VirtualFrame frame,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
+            CalleeContext.enter(frame);
+
             Object[] frameArgs = PArguments.getVariableArguments(frame);
+            TruffleObject fun;
+            Object[] arguments;
+
+            if (cwrapper != null) {
+                fun = cwrapper;
+                arguments = new Object[1 + frameArgs.length];
+                arguments[0] = callable;
+                toSulongNode.executeInto(frameArgs, 0, arguments, 1);
+            } else {
+                fun = callable;
+                arguments = new Object[frameArgs.length];
+                toSulongNode.executeInto(frameArgs, 0, arguments, 0);
+            }
+            // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
+            // it to the context since we cannot propagate it through the native frames.
+            PException savedExceptionState = ForeignCallContext.enter(frame, ctx, this);
+
             try {
-                TruffleObject fun;
-                Object[] arguments;
-
-                if (cwrapper != null) {
-                    fun = cwrapper;
-                    arguments = new Object[1 + frameArgs.length];
-                    arguments[0] = callable;
-                    toSulongNode.executeInto(frameArgs, 0, arguments, 1);
-                } else {
-                    fun = callable;
-                    arguments = new Object[frameArgs.length];
-                    toSulongNode.executeInto(frameArgs, 0, arguments, 0);
-                }
-                // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
-                // it to the context since we cannot propagate it through the native frames.
-                PException savedExceptionState = ctx.getCaughtException();
-                if (needsExceptionState()) {
-                    PException execute = getCaughtExceptionNode.execute(frame);
-                    ctx.setCaughtException(execute != null ? execute : PException.NO_EXCEPTION);
-                }
-
-                Object result;
-                result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
-
-                if (needsExceptionState()) {
-                    ctx.setCaughtException(savedExceptionState);
-                }
-
-                return result;
+                return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
+            } finally {
+                ForeignCallContext.exit(ctx, savedExceptionState);
+                CalleeContext.exit(frame, this);
             }
         }
 
@@ -1508,12 +1502,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
-            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-            Object[] arguments = PArguments.create();
-            PArguments.setVariableArguments(arguments, self, factory.createTuple(args), factory.createDict(kwargs));
-            return invokeNode.execute(frame, arguments);
+            CalleeContext.enter(frame);
+            try {
+                Object self = readSelfNode.execute(frame);
+                Object[] args = readVarargsNode.executeObjectArray(frame);
+                PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+                Object[] arguments = PArguments.create();
+                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), factory.createDict(kwargs));
+                return invokeNode.execute(frame, arguments);
+            } finally {
+                CalleeContext.exit(frame, this);
+            }
         }
 
         @Override
@@ -1534,11 +1533,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
-            Object[] arguments = PArguments.create();
-            PArguments.setVariableArguments(arguments, self, factory.createTuple(args));
-            return invokeNode.execute(frame, arguments);
+            CalleeContext.enter(frame);
+            try {
+                Object self = readSelfNode.execute(frame);
+                Object[] args = readVarargsNode.executeObjectArray(frame);
+                Object[] arguments = PArguments.create();
+                PArguments.setVariableArguments(arguments, self, factory.createTuple(args));
+                return invokeNode.execute(frame, arguments);
+            } finally {
+                CalleeContext.exit(frame, this);
+            }
         }
 
         @Override
@@ -1556,10 +1560,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
-            Object[] arguments = PArguments.create();
-            PArguments.setVariableArguments(arguments, self, PNone.NONE);
-            return invokeNode.execute(frame, arguments);
+            CalleeContext.enter(frame);
+            try {
+                Object self = readSelfNode.execute(frame);
+                Object[] arguments = PArguments.create();
+                PArguments.setVariableArguments(arguments, self, PNone.NONE);
+                return invokeNode.execute(frame, arguments);
+            } finally {
+                CalleeContext.exit(frame, this);
+            }
         }
 
         @Override
@@ -1580,11 +1589,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
-            Object arg = readArgNode.execute(frame);
-            Object[] arguments = PArguments.create();
-            PArguments.setVariableArguments(arguments, self, arg);
-            return invokeNode.execute(frame, arguments);
+            CalleeContext.enter(frame);
+            try {
+                Object self = readSelfNode.execute(frame);
+                Object arg = readArgNode.execute(frame);
+                Object[] arguments = PArguments.create();
+                PArguments.setVariableArguments(arguments, self, arg);
+                return invokeNode.execute(frame, arguments);
+            } finally {
+                CalleeContext.exit(frame, this);
+            }
         }
 
         @Override
@@ -1605,11 +1619,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
-            Object[] arguments = PArguments.create();
-            PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length);
-            return invokeNode.execute(frame, arguments);
+            CalleeContext.enter(frame);
+            try {
+                Object self = readSelfNode.execute(frame);
+                Object[] args = readVarargsNode.executeObjectArray(frame);
+                Object[] arguments = PArguments.create();
+                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length);
+                return invokeNode.execute(frame, arguments);
+            } finally {
+                CalleeContext.exit(frame, this);
+            }
         }
 
         @Override
@@ -1632,12 +1651,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
-            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-            Object[] arguments = PArguments.create();
-            PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length, factory.createDict(kwargs));
-            return invokeNode.execute(frame, arguments);
+            CalleeContext.enter(frame);
+            try {
+                Object self = readSelfNode.execute(frame);
+                Object[] args = readVarargsNode.executeObjectArray(frame);
+                PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+                Object[] arguments = PArguments.create();
+                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length, factory.createDict(kwargs));
+                return invokeNode.execute(frame, arguments);
+            } finally {
+                CalleeContext.exit(frame, this);
+            }
         }
 
         @Override
