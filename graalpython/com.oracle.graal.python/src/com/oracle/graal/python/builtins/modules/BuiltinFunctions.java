@@ -1030,6 +1030,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Fallback
+        @TruffleBoundary(allowInlining = true)
         Object doId(Object obj) {
             return obj.hashCode();
         }
