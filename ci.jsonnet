@@ -1,5 +1,5 @@
 {
-  overlay: "a61bf37c3ad98a2593a81604bb586d3021ff1ed6",
+  overlay: "a02d502769517eff6324561f77f7cc73ded73284",
 
   // ======================================================================================================
   //
@@ -56,6 +56,25 @@
 
     graalOption: function(name, value)
       ["--Ja", "@-Dgraal."+name+"="+value],
+
+    contains: function(array, value)
+      std.count(array, value) > 0,
+  },
+
+  // ------------------------------------------------------------------------------------------------------
+  //
+  // configurations
+  //
+  // ------------------------------------------------------------------------------------------------------
+  local JVM = {
+    server: "server",
+  },
+
+  local JVM_CONFIG = {
+    core: "graal-core",
+    enterprise: "graal-enterprise",
+    native: "native",
+    hostspot: "default",
   },
 
   // ------------------------------------------------------------------------------------------------------
@@ -141,13 +160,13 @@
 
   local graalMixin = labsjdk8Mixin + {
     environment +: {
-      HOST_VM: "server",
+      HOST_VM: JVM.server,
     },
   },
 
   local graalCoreMixin = graalMixin + {
     environment +: {
-      HOST_VM_CONFIG: "graal-core",
+      HOST_VM_CONFIG: JVM_CONFIG.core,
     },
   },
   graalCoreMixin:  graalCoreMixin,
@@ -179,7 +198,7 @@
   },
 
   local commonBuilder = baseBuilder + labsjdk8Mixin + {
-    dynamicImports:: "sulong,/compiler",
+    dynamicImports:: "/sulong,/compiler",
 
     setup +: [
       ["mx", "sforceimports"],
@@ -259,6 +278,7 @@
       ],
       name: "python-coverage"
     } + getPlatform(platform="linux"),
+
   // ------------------------------------------------------------------------------------------------------
   //
   // the gates
