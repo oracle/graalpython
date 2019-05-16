@@ -281,11 +281,6 @@ public final class PArguments {
         arguments[INDEX_CALLER_FRAME_INFO] = callerFrame;
     }
 
-    public static void setCaughtException(Object[] arguments, PException caughtException) {
-        assert !(arguments[INDEX_CALLER_FRAME_INFO] instanceof Frame);
-        arguments[INDEX_CALLER_FRAME_INFO] = caughtException;
-    }
-
     public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {
         MaterializedFrame generatorFrame = (MaterializedFrame) arguments[INDEX_GENERATOR_FRAME];
         generatorFrame.getArguments()[INDEX_GENERATOR_FRAME] = generatorArguments;
