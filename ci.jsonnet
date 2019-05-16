@@ -69,6 +69,7 @@
   local JVM = {
     server: "server",
   },
+  JVM: JVM,
 
   local JVM_CONFIG = {
     core: "graal-core",
@@ -76,6 +77,7 @@
     native: "native",
     hostspot: "default",
   },
+  JVM_CONFIG: JVM_CONFIG,
 
   // ------------------------------------------------------------------------------------------------------
   //
