@@ -1348,11 +1348,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffleTraceBack_Here", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyTruffleTraceBack_HereNode extends PythonBuiltinNode {
+    abstract static class PyTruffleTraceBackHereNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object tbHere(PFrame frame, PTraceback tb) {
-            PTraceback newTb = factory().createTraceback(frame, tb);
-            return 0;
+        PTraceback tbHere(PFrame frame, PTraceback tb) {
+            return factory().createTraceback(frame, tb);
         }
     }
 
