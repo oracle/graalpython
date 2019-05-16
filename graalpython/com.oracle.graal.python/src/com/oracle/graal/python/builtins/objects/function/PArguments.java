@@ -29,7 +29,6 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.Frame;
@@ -93,7 +92,7 @@ public final class PArguments {
     public static final int USER_ARGUMENTS_OFFSET = 9;
 
     public static boolean isPythonFrame(Frame frame) {
-        return isPythonFrame(frame.getArguments());
+        return frame != null && isPythonFrame(frame.getArguments());
     }
 
     public static boolean isPythonFrame(Object[] frameArgs) {

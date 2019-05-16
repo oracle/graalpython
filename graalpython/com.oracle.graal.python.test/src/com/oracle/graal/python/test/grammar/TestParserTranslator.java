@@ -58,11 +58,14 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -105,12 +108,13 @@ import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -125,18 +129,33 @@ public class TestParserTranslator {
         context = PythonLanguage.getContextRef().get();
     }
 
-    private static class JUnitRootNode extends RootNode {
+    private static class JUnitRootNode extends PRootNode {
 
         @Child private ExpressionNode body;
 
-        public JUnitRootNode(TruffleLanguage<?> language, ExpressionNode body) {
+        public JUnitRootNode(PythonLanguage language, ExpressionNode body) {
             super(language);
             this.body = body;
         }
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return body.execute(frame);
+            CalleeContext.enter(frame);
+            try {
+                return body.execute(frame);
+            } finally {
+                CalleeContext.exit(frame, this);
+            }
+        }
+
+        @Override
+        public Signature getSignature() {
+            return Signature.EMPTY;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return false;
         }
 
     }
@@ -144,7 +163,13 @@ public class TestParserTranslator {
     private Object runInRoot(ExpressionNode expr) {
         JUnitRootNode jUnitRootNode = new JUnitRootNode(context.getLanguage(), expr);
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(jUnitRootNode);
-        return callTarget.call(PArguments.create());
+        Object[] arguments = PArguments.create();
+        PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(context, arguments, callTarget);
+        try {
+            return callTarget.call(arguments);
+        } finally {
+            ForeignToPythonCallContext.exit(context, frameInfo);
+        }
     }
 
     RootNode parse(String src) {

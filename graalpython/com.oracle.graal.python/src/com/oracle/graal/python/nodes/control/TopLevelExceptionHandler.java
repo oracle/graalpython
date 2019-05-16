@@ -173,14 +173,15 @@ public class TopLevelExceptionHandler extends RootNode {
                     break;
                 }
             }
-            if (firstPythonFrame == null) {
-                // this should never be reached
-                throw new IllegalStateException("Python exception thrown without any Python frames on the stack.");
+            // It might still happen that there is no Python frame involved, e.g., SyntaxError.
+            if (firstPythonFrame != null) {
+                PFrame escapedFrame = materializeFrameNode.execute(firstPythonFrame, this);
+                PTraceback freshTb = factory().createTraceback(escapedFrame, e);
+                value.setTraceback(freshTb);
+                tb = freshTb;
+            } else {
+                tb = PNone.NONE;
             }
-            PFrame escapedFrame = materializeFrameNode.execute(firstPythonFrame, this);
-            PTraceback freshTb = factory().createTraceback(escapedFrame, e);
-            value.setTraceback(freshTb);
-            tb = freshTb;
         }
 
         PythonModule sys = core.lookupBuiltinModule("sys");

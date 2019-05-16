@@ -52,7 +52,6 @@ public class PythonModuleTests {
     private PythonContext context;
 
     private static class PythonModuleTestRootNode extends RootNode {
-
         @Child private CallNode body;
 
         public PythonModuleTestRootNode(PythonLanguage language, CallNode body) {
@@ -66,7 +65,7 @@ public class PythonModuleTests {
             Object[] arguments = frame.getArguments();
             Object[] argsWithoutSelf = new Object[arguments.length - 1];
             System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return body.execute(frame, arguments[0], argsWithoutSelf);
+            return body.execute(null, arguments[0], argsWithoutSelf);
         }
     }
 
