@@ -462,21 +462,34 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyErrSetExcInfo extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object run(PNone typ, PNone val, PNone tb) {
+        Object doClear(PNone typ, PNone val, PNone tb) {
             getContext().setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
+        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
             val.setTraceback(tb);
-            assert tb.getPFrame().getRef().isEscaped() : "It's impossible to have an unescaped PFrame";
+            assert tb == null || tb.getPFrame().getRef().isEscaped() : "It's impossible to have an unescaped PFrame";
             if (val.getException() != null) {
-                getContext().setCurrentException(val.getException());
+                getContext().setCaughtException(val.getException());
             } else {
                 PException pException = PException.fromObject(val, this);
-                getContext().setCurrentException(pException);
+                getContext().setCaughtException(pException);
             }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doWithoutTraceback(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
+            return doFull(typ, val, null);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object doFallback(Object typ, Object val, Object tb) {
+            // TODO we should still store the values to return them with 'PyErr_GetExcInfo' (or
+            // 'sys.exc_info')
             return PNone.NONE;
         }
     }
@@ -759,6 +772,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (ArityException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             } finally {
+                // special case after calling a C function: transfer caught exception back to frame
+                // to simulate the global state semantics
+                PArguments.setException(frame, ctx.getCaughtException());
                 ForeignCallContext.exit(ctx, savedExceptionState);
                 CalleeContext.exit(frame, this);
             }

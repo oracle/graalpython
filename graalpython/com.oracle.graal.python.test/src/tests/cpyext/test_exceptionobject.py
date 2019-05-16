@@ -76,6 +76,52 @@ class TestExceptionobject(object):
         else:
             assert False
 
+    def test_set_exc_info(self):
+        TestSetExcInfo = CPyExtType("TestSetExcInfo",
+                             """
+                             PyObject* set_exc_info(PyObject* self, PyObject* args) {
+                                 PyObject* typ = PyTuple_GetItem(args, 0);
+                                 PyObject* val = PyTuple_GetItem(args, 1);
+                                 PyObject* tb = PyTuple_GetItem(args, 2);
+                                 PyObject* typ1 = NULL;
+                                 PyObject* val1 = NULL;
+                                 PyObject* tb1 = NULL;
+            
+                                 Py_XINCREF(typ);
+                                 Py_XINCREF(val);
+                                 Py_XINCREF(tb);
+                                 PyErr_SetExcInfo(typ, val, tb);
+
+                                 PyErr_GetExcInfo(&typ1, &val1, &tb1);
+                                 // ignore the traceback for now
+                                 if(typ == typ1 && val == val1) {
+                                     return Py_True;
+                                 }
+                                 return Py_False;
+                             }
+                             """,
+                             tp_methods='{"set_exc_info", (PyCFunction)set_exc_info, METH_O, ""}'
+        )
+        tester = TestSetExcInfo()
+        try:
+            raise IndexError
+        except:
+            typ, val, tb = sys.exc_info()
+            assert typ == IndexError
+            
+            
+            
+            # overwrite exception info
+            expected = (ValueError, ValueError(), None)
+            res = tester.set_exc_info(expected)
+            assert res
+            
+            # TODO uncomment once supported
+            # actual = sys.exc_info()
+            # assert actual == expected
+        else:
+            assert False
+
 class TestExceptionobjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
