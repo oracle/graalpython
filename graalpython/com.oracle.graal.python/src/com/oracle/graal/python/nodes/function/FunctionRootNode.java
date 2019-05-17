@@ -63,7 +63,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @Child private ExpressionNode body;
     private ExpressionNode uninitializedBody;
 
-    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
+    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots executionCellSlots, Signature signature) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.contextRef = language.getContextReference();
@@ -77,10 +77,11 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         this.body = new InnerRootNode(this, NodeUtil.cloneNode(body));
         this.uninitializedBody = NodeUtil.cloneNode(body);
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
+        this.isRewritten = isRewritten;
     }
 
     public FunctionRootNode copyWithNewSignature(Signature newSignature) {
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
     }
 
     @Override
@@ -98,8 +99,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public FunctionRootNode copy() {
-        FunctionRootNode copy = new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots,
-                        getSignature());
+        FunctionRootNode copy = new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody,
+                        executionCellSlots, getSignature());
         // share assumptions; this is required due to splitting, otherwise the invoking nodes (i.e.
         // InvokeNode) is testing for the wrong assumptions since it will see a different instance
         // as actually executed.
@@ -168,6 +169,9 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     public void setRewritten() {
         this.isRewritten = true;
+
+        // we need to update the uninitialized body as well
+        this.uninitializedBody = NodeUtil.cloneNode(body);
     }
 
     @Override

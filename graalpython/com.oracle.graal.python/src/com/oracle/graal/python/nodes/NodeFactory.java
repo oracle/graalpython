@@ -140,7 +140,7 @@ public class NodeFactory {
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots cellSlots, Signature signature) {
-        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots, signature);
+        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, false, frameDescriptor, body, cellSlots, signature);
     }
 
     public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {
