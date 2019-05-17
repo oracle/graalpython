@@ -39,7 +39,6 @@ public class TryFinallyNode extends StatementNode {
     @Child private StatementNode finalbody;
     @Child private SaveExceptionStateNode getCaughtExceptionNode;
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
-    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
 
     public TryFinallyNode(StatementNode body, StatementNode finalbody) {
         this.body = body;
@@ -61,7 +60,7 @@ public class TryFinallyNode extends StatementNode {
                 body.executeVoid(frame);
             } catch (PException e) {
                 // any thrown Python exception is visible in the finally block
-                ensureSetCaughtExceptionNode().execute(frame, e);
+                SetCaughtExceptionNode.execute(frame, e);
                 throw e;
             } finally {
                 try {
@@ -103,11 +102,4 @@ public class TryFinallyNode extends StatementNode {
         return getCaughtExceptionNode;
     }
 
-    private SetCaughtExceptionNode ensureSetCaughtExceptionNode() {
-        if (setCaughtExceptionNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
-        }
-        return setCaughtExceptionNode;
-    }
 }

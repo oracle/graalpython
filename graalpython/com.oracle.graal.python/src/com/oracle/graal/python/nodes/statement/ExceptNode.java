@@ -68,7 +68,6 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private IsSameTypeNode isSameTypeNode;
     @Child private IsTypeNode isTypeNode;
     @Child private PRaiseNode raiseNode;
-    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
     @Child private MaterializeFrameNode materializeFrameNode;
     @Child private PythonObjectFactory factory;
 
@@ -96,7 +95,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     public void executeExcept(VirtualFrame frame, PException e) {
-        ensureSetCaughtExceptionNode().execute(frame, e);
+        SetCaughtExceptionNode.execute(frame, e);
         body.executeVoid(frame);
         throw ExceptionHandledException.INSTANCE;
     }
@@ -330,13 +329,5 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             isTypeNode = insert(IsTypeNode.create());
         }
         return isTypeNode.execute(expectedType);
-    }
-
-    private SetCaughtExceptionNode ensureSetCaughtExceptionNode() {
-        if (setCaughtExceptionNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
-        }
-        return setCaughtExceptionNode;
     }
 }
