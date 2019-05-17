@@ -176,7 +176,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // a) self is still on the stack and the caller isn't filled in
                     // b) this frame has returned, but not (yet) to a Python caller
                     // c) this frame has no caller (it is/was a top frame)
-                    Frame callerFrame = readCallerFrame.executeWith(cur.getFrame(), 0);
+                    Frame callerFrame = readCallerFrame.executeWith(cur.getFrame(), false, 0);
                     if (callerFrame == null) {
                         topRef.enter();
                         // so we won't do this again
@@ -192,7 +192,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
                 if (backref.getPyFrame() == null) {
                     return PNone.NONE;
-                } else if (!PRootNode.isPythonInternal(backref.getPyFrame().getTarget().getRootNode())) {
+                } else if (!PRootNode.isPythonInternal(backref.getCallNode().getRootNode())) {
                     return backref.getPyFrame();
                 }
 

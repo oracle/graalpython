@@ -50,7 +50,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -69,35 +68,46 @@ public final class ReadCallerFrameNode extends Node {
     }
 
     public Frame executeWith(Frame frame, int level) {
-        return executeWith(frame, FrameInstance.FrameAccess.MATERIALIZE, level);
+        return executeWith(frame, true, level);
     }
 
     public Frame executeWith(Frame frame, FrameInstance.FrameAccess frameAccess, int level) {
+        return executeWith(frame, frameAccess, true, level);
+    }
+
+    public Frame executeWith(Frame frame, boolean skipInternal, int level) {
+        return executeWith(frame, FrameInstance.FrameAccess.MATERIALIZE, skipInternal, level);
+    }
+
+    public Frame executeWith(Frame frame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
         Frame callerFrame = frame;
         if (cachedCallerFrameProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             cachedCallerFrameProfile = ConditionProfile.createBinaryProfile();
             // executed the first time - don't pollute the profile
-            for (int i = 0; i <= level; i++) {
+            for (int i = 0; i <= level;) {
                 PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(callerFrame);
                 if (callerInfo == null) {
-                    return getCallerFrame(PArguments.getCurrentFrameInfo(frame), frameAccess, level);
+                    return getCallerFrame(PArguments.getCurrentFrameInfo(frame), frameAccess, skipInternal, level);
+                } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {
+                    i++;
                 }
                 callerFrame = callerInfo.getFrame();
             }
         } else {
-            callerFrame = walkLevels(callerFrame, frameAccess, level);
+            callerFrame = walkLevels(callerFrame, frameAccess, skipInternal, level);
         }
         return callerFrame;
     }
 
-    @ExplodeLoop
-    private Frame walkLevels(Frame frame, FrameInstance.FrameAccess frameAccess, int level) {
+    private Frame walkLevels(Frame frame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
         Frame currentFrame = frame;
-        for (int i = 0; i <= level; i++) {
+        for (int i = 0; i <= level;) {
             PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(currentFrame);
             if (cachedCallerFrameProfile.profile(callerInfo == null)) {
-                return getCallerFrame(PArguments.getCurrentFrameInfo(frame), frameAccess, level);
+                return getCallerFrame(PArguments.getCurrentFrameInfo(frame), frameAccess, skipInternal, level);
+            } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {
+                i++;
             }
             currentFrame = callerInfo.getFrame();
         }
@@ -108,7 +118,7 @@ public final class ReadCallerFrameNode extends Node {
      * Walk up the stack to find the start frame and from then (level + 1)-times (counting only
      * Python frames).
      */
-    private static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, int level) {
+    private static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
         CompilerDirectives.transferToInterpreter();
         return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
             int i = -1;
@@ -123,19 +133,28 @@ public final class ReadCallerFrameNode extends Node {
                             i = 0;
                         }
                     } else {
-                        ((PRootNode) rootNode).setNeedsCallerFrame();
-                        if (i == level) {
-                            Frame frame = frameInstance.getFrame(frameAccess);
-                            assert PArguments.isPythonFrame(frame);
-                            PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                            Node callNode = frameInstance.getCallNode();
-                            // avoid overriding the location if we don't know it
-                            if (callNode != null) {
-                                info.setCallNode(callNode);
+                        PRootNode pRootNode = (PRootNode) rootNode;
+                        pRootNode.setNeedsCallerFrame();
+
+                        // Skip frames of builtin functions (if requested) because these do not have
+                        // a Python frame in CPython.
+                        if (!(skipInternal && pRootNode.isPythonInternal())) {
+                            if (i == level) {
+                                Frame frame = frameInstance.getFrame(frameAccess);
+                                assert PArguments.isPythonFrame(frame);
+                                PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
+                                Node callNode = frameInstance.getCallNode();
+                                // avoid overriding the location if we don't know it
+                                if (callNode != null) {
+                                    info.setCallNode(callNode);
+                                }
+                                // We may never return a frame without location because then we
+                                // cannot materialize it.
+                                assert info.getCallNode() != null : "tried to read frame without location";
+                                return frame;
                             }
-                            return frame;
+                            i += 1;
                         }
-                        i += 1;
                     }
                 }
                 return null;

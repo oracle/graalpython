@@ -259,7 +259,11 @@ public final class PFrame extends PythonBuiltinObject {
 
     public RootCallTarget getTarget() {
         if (callTarget == null && location != null) {
-            callTarget = createCallTarget(location);
+            if (location != null) {
+                callTarget = createCallTarget(location);
+            } else if (getRef() != null && getRef().getCallNode() != null) {
+                callTarget = createCallTarget(getRef().getCallNode());
+            }
         }
         return callTarget;
     }

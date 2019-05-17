@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -301,14 +300,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
         PFrame first(VirtualFrame frame, @SuppressWarnings("unused") PNone arg,
                         @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
                         @Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
-            return countedFiltered(frame, 0, readCallerNode, materializeNode);
+            return materializeNode.execute(readCallerNode.executeWith(frame, 0));
         }
 
         @Specialization
         PFrame counted(VirtualFrame frame, int num,
                         @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
                         @Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
-            return countedFiltered(frame, num, readCallerNode, materializeNode);
+            return materializeNode.execute(readCallerNode.executeWith(frame, num));
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
@@ -345,16 +344,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
-        }
-
-        private static PFrame countedFiltered(VirtualFrame frame, int num, ReadCallerFrameNode readCallerNode, MaterializeFrameNode materializeNode) {
-            PFrame f;
-            int i = num;
-            do {
-                f = materializeNode.execute(readCallerNode.executeWith(frame, i));
-                i++;
-            } while (PRootNode.isPythonInternal(f.getTarget().getRootNode()));
-            return f;
         }
 
         private PException raiseCallStackDepth() {
