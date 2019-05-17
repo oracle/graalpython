@@ -754,7 +754,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
+    // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
     @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -826,7 +826,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// delattr(object, name)
+    // delattr(object, name)
     @Builtin(name = DELATTR, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelAttrNode extends PythonBinaryBuiltinNode {
@@ -839,7 +839,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// getattr(object, name[, default])
+    // getattr(object, name[, default])
     @Builtin(name = GETATTR, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
@@ -911,7 +911,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// id(object)
+    // id(object)
     @Builtin(name = ID, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IdNode extends PythonBuiltinNode {
@@ -1088,7 +1088,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// isinstance(object, classinfo)
+    // isinstance(object, classinfo)
     @Builtin(name = ISINSTANCE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsInstanceNode extends PythonBinaryBuiltinNode {
@@ -1157,7 +1157,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// issubclass(class, classinfo)
+    // issubclass(class, classinfo)
     @Builtin(name = ISSUBCLASS, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsSubClassNode extends PythonBinaryBuiltinNode {
@@ -1217,7 +1217,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// iter(object[, sentinel])
+    // iter(object[, sentinel])
     @Builtin(name = ITER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonBuiltinNode {
@@ -1233,7 +1233,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// len(s)
+    // len(s)
     @Builtin(name = LEN, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
@@ -1356,23 +1356,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// max(iterable, *[, key])
-// max(arg1, arg2, *args[, key])
+    // max(iterable, *[, key])
+    // max(arg1, arg2, *args[, key])
     @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key"})
     @GenerateNodeFactory
     public abstract static class MaxNode extends MinMaxNode {
 
     }
 
-// min(iterable, *[, key])
-// min(arg1, arg2, *args[, key])
+    // min(iterable, *[, key])
+    // min(arg1, arg2, *args[, key])
     @Builtin(name = MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key"})
     @GenerateNodeFactory
     public abstract static class MinNode extends MinMaxNode {
 
     }
 
-// next(iterator[, default])
+    // next(iterator[, default])
     @SuppressWarnings("unused")
     @Builtin(name = NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
@@ -1406,7 +1406,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// ord(c)
+    // ord(c)
     @Builtin(name = ORD, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class OrdNode extends PythonBuiltinNode {
@@ -1432,7 +1432,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
+    // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
     @Builtin(name = PRINT, takesVarArgs = true, keywordOnlyNames = {"sep", "end", "file", "flush"}, doc = "\n" +
                     "print(value, ..., sep=' ', end='\\n', file=sys.stdout, flush=False)\n" +
                     "\n" +
@@ -1543,7 +1543,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// repr(object)
+    // repr(object)
     @Builtin(name = REPR, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -1562,7 +1562,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// round(number[, ndigits])
+    // round(number[, ndigits])
     @Builtin(name = ROUND, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
@@ -1573,7 +1573,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// setattr(object, name, value)
+    // setattr(object, name, value)
     @Builtin(name = SETATTR, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetAttrNode extends PythonBuiltinNode {
@@ -1648,7 +1648,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-// sum(iterable[, start])
+    // sum(iterable[, start])
     @Builtin(name = SUM, minNumOfPositionalArgs = 1, parameterNames = {"iterable", "start"})
     @GenerateNodeFactory
     public abstract static class SumFunctionNode extends PythonBuiltinNode {

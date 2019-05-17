@@ -51,8 +51,8 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * This node makes sure that the current frame has a filled-in PFrame object
- * with a backref container that will be filled in by the caller.
+ * This node makes sure that the current frame has a filled-in PFrame object with a backref
+ * container that will be filled in by the caller.
  **/
 public abstract class MaterializeFrameNode extends Node {
     public final PFrame execute(Frame frame) {
@@ -74,29 +74,29 @@ public abstract class MaterializeFrameNode extends Node {
 
     @Specialization(guards = {"getPFrame(frame) == null", "!inClassBody(frame)"})
     static PFrame freshPFrame(Frame frame, Node location,
-                       @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(frame.materialize(), location);
         return doEscapeFrame(frame, escapedFrame);
     }
 
     @Specialization(guards = {"getPFrame(frame) == null", "inClassBody(frame)"})
     static PFrame freshPFrameInClassBody(Frame frame, Node location,
-                       @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
         // the namespace argument stores the locals
         PFrame escapedFrame = factory.createPFrame(frame.materialize(), location, PArguments.getArgument(frame, 0));
         return doEscapeFrame(frame, escapedFrame);
     }
 
     /**
-     * The only way this happens is when we created a PFrame to access (possibly
-     * custom) locals. In this case, there can be no reference to the PFrame
-     * object anywhere else, yet, so we can replace it.
+     * The only way this happens is when we created a PFrame to access (possibly custom) locals. In
+     * this case, there can be no reference to the PFrame object anywhere else, yet, so we can
+     * replace it.
      *
      * @see PFrame#isIncomplete
      **/
     @Specialization(guards = {"getPFrame(frame) != null", "!getPFrame(frame).hasFrame()"})
     static PFrame incompleteFrame(Frame frame, Node location,
-                           @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(frame.materialize(), location, getPFrame(frame).getLocals(factory));
         return doEscapeFrame(frame, escapedFrame);
     }
