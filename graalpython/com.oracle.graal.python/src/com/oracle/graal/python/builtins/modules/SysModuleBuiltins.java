@@ -86,6 +86,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "sys")
@@ -278,14 +279,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
         public Object run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
                         @Cached MaterializeFrameNode frameNode,
-                        @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
+                        @Cached GetCaughtExceptionNode getCaughtExceptionNode,
+                        @Cached ReadCallerFrameNode readCallerFrameNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                PFrame escapedFrame = frameNode.execute(frame, this);
+                Frame callerFrame = readCallerFrameNode.executeWith(frame, 0);
+                PFrame escapedFrame = frameNode.execute(callerFrame, this);
                 exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
                 return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
             }
