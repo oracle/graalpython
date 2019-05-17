@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
@@ -67,15 +68,31 @@ public abstract class ReadLocalsNode extends Node {
         return execute(callingFrame, null, frame);
     }
 
+    protected static boolean isGeneratorFrame(Frame frame) {
+        return PArguments.isGeneratorFrame(frame);
+    }
+
     protected static boolean inClassBody(Frame frame) {
         return PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
     }
 
     protected static PFrame getPFrame(Frame frame) {
-        return PArguments.getCurrentFrameInfo(frame).getPyFrame();
+        Reference frameInfo = PArguments.getCurrentFrameInfo(frame);
+        return frameInfo != null ? frameInfo.getPyFrame() : null;
     }
 
-    @Specialization(guards = {"getPFrame(frame) == null", "!inClassBody(frame)"})
+    @Specialization(guards = {"isGeneratorFrame(frame)"})
+    static Object doGeneratorFrame(@SuppressWarnings("unused") VirtualFrame callingFrame, @SuppressWarnings("unused") Object dummy, MaterializedFrame frame,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        PDict localsDict = PArguments.getGeneratorFrameLocals(frame.getArguments());
+        if (localsDict == null) {
+            localsDict = factory.createDictLocals(frame);
+            PArguments.setGeneratorFrameLocals(frame.getArguments(), localsDict);
+        }
+        return localsDict;
+    }
+
+    @Specialization(guards = {"getPFrame(frame) == null", "!inClassBody(frame)", "!isGeneratorFrame(frame)"})
     Object freshLocals(@SuppressWarnings("unused") Object dummy, Frame frame,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         MaterializedFrame materialized = frame.materialize();
@@ -84,19 +101,19 @@ public abstract class ReadLocalsNode extends Node {
         return localsDict;
     }
 
-    @Specialization(guards = {"getPFrame(frame) == null", "inClassBody(frame)"})
+    @Specialization(guards = {"getPFrame(frame) == null", "inClassBody(frame)", "!isGeneratorFrame(frame)"})
     static Object freshLocalsInClassBody(@SuppressWarnings("unused") VirtualFrame callingFrame, @SuppressWarnings("unused") Object dummy, Frame frame) {
         // the namespace argument stores the locals
         return PArguments.getArgument(frame, 0);
     }
 
-    @Specialization(guards = {"getPFrame(frame) != null", "inClassBody(frame)"})
+    @Specialization(guards = {"getPFrame(frame) != null", "inClassBody(frame)", "!isGeneratorFrame(frame)"})
     Object frameInClassBody(@SuppressWarnings("unused") Object dummy, Frame frame,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         return getPFrame(frame).getLocals(factory);
     }
 
-    @Specialization(guards = {"getPFrame(frame) != null", "!inClassBody(frame)"})
+    @Specialization(guards = {"getPFrame(frame) != null", "!inClassBody(frame)", "!isGeneratorFrame(frame)"})
     Object frameToUpdate(VirtualFrame callingFrame, @SuppressWarnings("unused") Object dummy, Frame frame,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Cached SetItemNode setItemNode) {

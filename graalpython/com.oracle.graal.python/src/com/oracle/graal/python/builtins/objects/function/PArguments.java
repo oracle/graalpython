@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.function;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -73,6 +74,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  *       |                    |         ....         |
  *       |                    +----------------------+
  * INDEX_GENERATOR_FRAME   -> | GeneratorControlData |
+ *       |                    +----------------------+
+ *       |                    |                      |
+ *       |                              ....
+ *       |                    |                      |
+ *       |                    +----------------------+
+ * INDEX_CALLER_FRAME_INFO -> | PDict (locals)       |
  *                            +----------------------+
  *                            |         ....         |
  */
@@ -97,6 +104,15 @@ public final class PArguments {
 
     public static boolean isPythonFrame(Object[] frameArgs) {
         return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_KEYWORD_ARGUMENTS] instanceof PKeyword[];
+    }
+
+    public static boolean isGeneratorFrame(Frame frame) {
+        return frame != null && isGeneratorFrame(frame.getArguments());
+    }
+
+    public static boolean isGeneratorFrame(Object[] frameArgs) {
+        // a generator frame never has a frame info
+        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_CURRENT_FRAME_INFO] == null && frameArgs[INDEX_GENERATOR_FRAME] instanceof GeneratorControlData;
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -301,4 +317,13 @@ public final class PArguments {
 
         return results;
     }
+
+    public static void setGeneratorFrameLocals(Object[] arguments, PDict locals) {
+        arguments[INDEX_CALLER_FRAME_INFO] = locals;
+    }
+
+    public static PDict getGeneratorFrameLocals(Object[] arguments) {
+        return (PDict) arguments[INDEX_CALLER_FRAME_INFO];
+    }
+
 }
