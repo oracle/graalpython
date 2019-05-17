@@ -102,7 +102,7 @@ import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
@@ -1603,11 +1603,11 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
 
-            PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
+            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
             try {
                 return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
             } finally {
-                ForeignCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(context, savedExceptionState);
             }
         }
     }

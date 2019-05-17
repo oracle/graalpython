@@ -70,7 +70,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -726,11 +726,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             reset();
             this.data = dataBytes;
-            PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
+            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
             try {
                 return readObject(0);
             } finally {
-                ForeignCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(context, savedExceptionState);
             }
         }
 

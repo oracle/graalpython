@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -59,12 +59,12 @@ public abstract class NodeContextManager implements AutoCloseable {
             this.savedExceptionState = null;
         }
         if (frame != null) {
-            ForeignCallContext.enter(frame, context, caller);
+            IndirectCallContext.enter(frame, context, caller);
         }
 
     }
 
     public final void close() {
-        ForeignCallContext.exit(context, savedExceptionState);
+        IndirectCallContext.exit(context, savedExceptionState);
     }
 }

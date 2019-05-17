@@ -155,7 +155,7 @@ public abstract class ExecutionContext {
         }
     }
 
-    public abstract static class ForeignCallContext {
+    public abstract static class IndirectCallContext {
         /**
          * Prepare a call from a Python frame to a (foreign) callable without frame. This transfer
          * the exception state from the frame to the context.

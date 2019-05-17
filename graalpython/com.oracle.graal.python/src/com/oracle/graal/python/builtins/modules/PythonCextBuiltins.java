@@ -159,7 +159,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -763,7 +763,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            PException savedExceptionState = ForeignCallContext.enter(frame, ctx, this);
+            PException savedExceptionState = IndirectCallContext.enter(frame, ctx, this);
 
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
@@ -775,7 +775,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(ctx, savedExceptionState);
+                IndirectCallContext.exit(ctx, savedExceptionState);
                 CalleeContext.exit(frame, this);
             }
         }
