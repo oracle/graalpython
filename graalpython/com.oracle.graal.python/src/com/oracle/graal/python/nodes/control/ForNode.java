@@ -36,7 +36,6 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -81,13 +80,7 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
             throw raise.raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
         }
         body.executeVoid(frame);
-        PythonContext context = contextRef.get();
-        PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
-        try {
-            context.triggerAsyncActions(this);
-        } finally {
-            ForeignCallContext.exit(context, savedExceptionState);
-        }
+        contextRef.get().triggerAsyncActions(frame, this);
         return true;
     }
 }

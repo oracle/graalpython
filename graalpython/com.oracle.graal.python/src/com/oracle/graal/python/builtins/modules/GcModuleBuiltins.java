@@ -36,9 +36,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -60,13 +57,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         int collect(VirtualFrame frame) {
             doGc();
             // collect some weak references now
-            PythonContext context = getContext();
-            PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
-            try {
-                context.triggerAsyncActions(this);
-            } finally {
-                ForeignCallContext.exit(context, savedExceptionState);
-            }
+            getContext().triggerAsyncActions(frame, this);
             return 0;
         }
 

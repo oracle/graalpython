@@ -61,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -416,8 +417,8 @@ public final class PythonContext {
     /**
      * Trigger any pending asynchronous actions
      */
-    public void triggerAsyncActions(Node location) {
-        handler.triggerAsyncActions(location);
+    public void triggerAsyncActions(VirtualFrame frame, Node location) {
+        handler.triggerAsyncActions(frame, location);
     }
 
     public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {

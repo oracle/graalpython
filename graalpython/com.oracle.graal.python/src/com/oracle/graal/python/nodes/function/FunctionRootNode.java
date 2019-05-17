@@ -33,9 +33,7 @@ import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -144,13 +142,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     public Object execute(VirtualFrame frame) {
         CalleeContext.enter(frame);
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
-            PythonContext context = contextRef.get();
-            PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
-            try {
-                context.triggerAsyncActions(this);
-            } finally {
-                ForeignCallContext.exit(context, savedExceptionState);
-            }
+            contextRef.get().triggerAsyncActions(frame, this);
         }
         try {
             return body.execute(frame);

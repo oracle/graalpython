@@ -29,10 +29,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.BreakException;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -81,12 +79,7 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
-                PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
-                try {
-                    context.triggerAsyncActions(this);
-                } finally {
-                    ForeignCallContext.exit(context, savedExceptionState);
-                }
+                context.triggerAsyncActions(frame, this);
             } while (condition.executeBoolean(frame));
             return;
         } catch (YieldException e) {
