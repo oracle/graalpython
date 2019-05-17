@@ -1917,7 +1917,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object locals(VirtualFrame frame,
                         @Cached ReadLocalsNode readLocalsNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
+            // This must materialize the frame because otherwise 'ReadLocalsNode' will try and fail.
+            // TODO(fa): can we avoid materialization in some cases ?
+            Frame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
             if (inGenerator.profile(generatorFrame == null)) {
                 return readLocalsNode.execute(frame, callerFrame);
