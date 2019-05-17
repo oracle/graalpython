@@ -66,7 +66,7 @@ public abstract class ExecutionContext {
         /**
          * Prepare a call from a Python frame to a Python function.
          */
-        public static void enter(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
+        public static void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
             // equivalent to PyPy's ExecutionContext.enter `frame.f_backref =
             // self.topframeref` we here pass the current top frame reference to
             // the next frame. An optimization we do is to only pass the frame

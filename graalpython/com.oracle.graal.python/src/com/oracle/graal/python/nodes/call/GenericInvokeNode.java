@@ -84,7 +84,7 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
                 ForeignToPythonCallContext.exit(context, frameInfo);
             }
         } else {
-            CallContext.enter(frame, arguments, callTarget, this);
+            CallContext.prepareCall(frame, arguments, callTarget, this);
             return callNode.call(callTarget, arguments);
         }
     }

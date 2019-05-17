@@ -106,7 +106,7 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
                 ForeignToPythonCallContext.exit(context, frameInfo);
             }
         } else {
-            CallContext.enter(frame, arguments, ct, this);
+            CallContext.prepareCall(frame, arguments, ct, this);
             return callNode.call(arguments);
         }
     }
