@@ -99,7 +99,12 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
 
                 // We deliberately pass 'null' frame here, the execution state will then be taken
                 // from the context.
-                return callNode.execute(null, callable, arguments, keywords);
+                try {
+                    return callNode.execute(null, callable, arguments, keywords);
+                } finally {
+                    context.popTopFrameInfo();
+                    context.setCaughtException(null);
+                }
             }
         }
 
