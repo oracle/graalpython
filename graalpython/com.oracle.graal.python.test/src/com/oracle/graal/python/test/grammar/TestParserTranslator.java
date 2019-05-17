@@ -109,7 +109,7 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.test.PythonTests;
@@ -164,11 +164,11 @@ public class TestParserTranslator {
         JUnitRootNode jUnitRootNode = new JUnitRootNode(context.getLanguage(), expr);
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(jUnitRootNode);
         Object[] arguments = PArguments.create();
-        PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(context, arguments, callTarget);
+        PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, callTarget);
         try {
             return callTarget.call(arguments);
         } finally {
-            ForeignToPythonCallContext.exit(context, frameInfo);
+            IndirectCalleeContext.exit(context, frameInfo);
         }
     }
 

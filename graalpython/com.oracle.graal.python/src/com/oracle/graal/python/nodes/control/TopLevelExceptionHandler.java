@@ -64,7 +64,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -275,11 +275,11 @@ public class TopLevelExceptionHandler extends RootNode {
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(pythonContext, arguments, innerCallTarget);
+        PFrame.Reference frameInfo = IndirectCalleeContext.enter(pythonContext, arguments, innerCallTarget);
         try {
             return innerCallTarget.call(arguments);
         } finally {
-            ForeignToPythonCallContext.exit(pythonContext, frameInfo);
+            IndirectCalleeContext.exit(pythonContext, frameInfo);
         }
     }
 

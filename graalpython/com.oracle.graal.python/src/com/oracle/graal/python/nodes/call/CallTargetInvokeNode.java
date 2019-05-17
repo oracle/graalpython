@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -97,13 +97,18 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
 
+        // If the frame is 'null', we expect the execution state (i.e. caller info and exception
+        // state) in the context. There are two common reasons for having a 'null' frame:
+        // 1. This node is the first invoke node used via interop.
+        // 2. This invoke node is (indirectly) used behind a TruffleBoundary.
+        // This is preferably prepared using 'IndirectCallContext.enter'.
         if (profileIsNullFrame(frame == null)) {
             PythonContext context = getContextRef().get();
-            PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(context, arguments, ct);
+            PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, ct);
             try {
                 return callNode.call(arguments);
             } finally {
-                ForeignToPythonCallContext.exit(context, frameInfo);
+                IndirectCalleeContext.exit(context, frameInfo);
             }
         } else {
             CallContext.prepareCall(frame, arguments, ct, this);

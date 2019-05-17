@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignToPythonCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -77,11 +77,11 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
         optionallySetClassBodySpecial(arguments, callTarget);
         if (isNullFrameProfile.profile(frame == null)) {
             PythonContext context = getContextRef().get();
-            PFrame.Reference frameInfo = ForeignToPythonCallContext.enter(context, arguments, callTarget);
+            PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, callTarget);
             try {
                 return callNode.call(callTarget, arguments);
             } finally {
-                ForeignToPythonCallContext.exit(context, frameInfo);
+                IndirectCalleeContext.exit(context, frameInfo);
             }
         } else {
             CallContext.prepareCall(frame, arguments, callTarget, this);

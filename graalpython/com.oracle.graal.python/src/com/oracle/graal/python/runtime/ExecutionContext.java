@@ -210,7 +210,7 @@ public abstract class ExecutionContext {
         }
     }
 
-    public abstract static class ForeignToPythonCallContext {
+    public abstract static class IndirectCalleeContext {
         /**
          * Prepare a call from a foreign frame to a Python function.
          */
