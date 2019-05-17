@@ -675,7 +675,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached ReadLocalsNode getLocalsNode) {
             PCode code = createAndCheckCode(frame, source);
-            Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
+            // Getting the locals may materialize the frame, so do frame access 'materialized'
+            // TODO(fa): how to avoid materialization of the caller frame ?
+            Frame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
@@ -1026,8 +1028,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         /**
-         * PCode objects are special - we sometimes create them on-demand.
-         * see {@link IsExpressionNode.IsNode#doCode}.
+         * PCode objects are special - we sometimes create them on-demand. see
+         * {@link IsExpressionNode.IsNode#doCode}.
          */
         @Specialization
         @TruffleBoundary(allowInlining = true)
