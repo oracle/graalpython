@@ -84,6 +84,7 @@ public abstract class CodeNodes {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
+        @SuppressWarnings("try")
         public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codestring, Object[] constants, Object[] names,
