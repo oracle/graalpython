@@ -144,6 +144,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
@@ -1024,8 +1025,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return value.hashCode();
         }
 
-        @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
-        Object doId(PythonObject obj) {
+        /**
+         * PCode objects are special - we sometimes create them on-demand.
+         * see {@link IsExpressionNode.IsNode#doCode}.
+         */
+        @Specialization
+        @TruffleBoundary(allowInlining = true)
+        long doId(PCode obj) {
+            RootCallTarget ct = obj.getRootCallTarget();
+            if (ct != null) {
+                return ct.hashCode();
+            } else {
+                return obj.hashCode();
+            }
+        }
+
+        @Specialization(guards = {"!isPCode(obj)", "!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
+        long doId(PythonObject obj) {
             return getId(obj);
         }
 
@@ -1051,7 +1067,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return setLenNode.execute(s) == 0;
         }
 
-        private Object getId(PythonObject obj) {
+        private long getId(PythonObject obj) {
             if (readId == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readId = insert(ReadAttributeFromObjectNode.create());
@@ -1065,7 +1081,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 id = getContext().getNextGlobalId();
                 writeId.execute(obj, ID_KEY, id);
             }
-            return id;
+            assert id instanceof Long : "invalid object ID stored";
+            return (long) id;
         }
     }
 
