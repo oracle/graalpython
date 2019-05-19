@@ -57,8 +57,8 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class MaterializeFrameNode extends Node {
     public final PFrame execute(Frame frame) {
         PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-        Node callNode = info.getCallNode();
         assert info != null && info.getCallNode() != null : "cannot materialize a frame without location information";
+        Node callNode = info.getCallNode();
         return execute(frame, callNode);
     }
 
