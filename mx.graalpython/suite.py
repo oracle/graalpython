@@ -104,19 +104,19 @@ suite = {
             "path": 'graalpython/lib-python',
             "source": [
                 "3"
-            ]
+            ],
         },
 
         "lib.graalpython": {
             "type": "python",
             "path": 'graalpython/lib-graalpython',
-            "source": []
+            "source": [],
         },
 
         "python.site-packages": {
             "type": "python",
             "path": 'graalpython/site-packages',
-            "source": []
+            "source": [],
         },
 
         "perf.benchmarks": {
@@ -124,13 +124,13 @@ suite = {
             "path": 'graalpython/benchmarks',
             "source": [
                 "src"
-            ]
+            ],
         },
 
         "util.scripts": {
             "type": "python",
             "path": 'scripts',
-            "source": []
+            "source": [],
         },
 
         "com.oracle.graal.python.cext": {
@@ -140,7 +140,13 @@ suite = {
                 "include",
                 "src",
                 "modules"
-            ]
+            ],
+        },
+
+        "ci": {
+            "type": "python",
+            "path": "ci_common",
+            "source": [],
         },
     },
 
