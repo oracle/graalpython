@@ -54,7 +54,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * An ExecutionContext ensures proper entry and exit for Python calls on both sides of the call, and
@@ -105,7 +105,7 @@ public abstract class ExecutionContext {
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
-        public static void enter(VirtualFrame frame) {
+        public static void enter(VirtualFrame frame, BranchProfile profile) {
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference();
@@ -114,11 +114,12 @@ public abstract class ExecutionContext {
             // tfel: If there are custom locals, write them into an (incomplete)
             // PFrame here
             if (customLocals != null) {
+                profile.enter();
                 thisFrameRef.setCustomLocals(customLocals);
             }
         }
 
-        public static void exit(VirtualFrame frame, RootNode node) {
+        public static void exit(VirtualFrame frame, PRootNode node) {
             /*
              * equivalent to PyPy's ExecutionContext.leave. Note that <tt>got_exception</tt> in
              * their code is handled automatically by the Truffle lazy exceptions, so here we only
@@ -126,6 +127,11 @@ public abstract class ExecutionContext {
              */
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             if (info.isEscaped()) {
+                // This assumption acts as our branch profile here
+                if (!node.needsCallerFrame()) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    node.setNeedsCallerFrame();
+                }
                 // force the frame so that it can be accessed later
                 info.materialize(frame, node);
                 // if this frame escaped we must ensure that also f_back does
@@ -134,7 +140,6 @@ public abstract class ExecutionContext {
                     // we didn't request the caller frame reference. now we need
                     // it.
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    ((PRootNode) ((RootCallTarget) Truffle.getRuntime().getCurrentFrame().getCallTarget()).getRootNode()).setNeedsCallerFrame();
                     FrameInstance callerFrameInstance = Truffle.getRuntime().getCallerFrame();
                     if (callerFrameInstance != null) {
                         Frame callerFrame = callerFrameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);

@@ -742,10 +742,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame,
+                        @Cached BranchProfile customLocalsProfile,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
-            CalleeContext.enter(frame);
+            CalleeContext.enter(frame, customLocalsProfile);
 
             Object[] frameArgs = PArguments.getVariableArguments(frame);
             TruffleObject fun;
@@ -1505,7 +1506,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     static class MethKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
-
+        private final BranchProfile customLocalsProfile = BranchProfile.create();
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
@@ -1517,7 +1518,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame);
+            CalleeContext.enter(frame, customLocalsProfile);
             try {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);
@@ -1538,7 +1539,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     static class MethVarargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
-
+        private final BranchProfile customLocalsProfile = BranchProfile.create();
         @Child private ReadVarArgsNode readVarargsNode;
 
         protected MethVarargsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
@@ -1548,7 +1549,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame);
+            CalleeContext.enter(frame, customLocalsProfile);
             try {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);
@@ -1568,6 +1569,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     static class MethNoargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self"}, new String[0]);
+        private final BranchProfile customLocalsProfile = BranchProfile.create();
 
         protected MethNoargsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
             super(language, factory, callTarget);
@@ -1575,7 +1577,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame);
+            CalleeContext.enter(frame, customLocalsProfile);
             try {
                 Object self = readSelfNode.execute(frame);
                 Object[] arguments = PArguments.create();
@@ -1594,7 +1596,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     static class MethORoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "arg"}, new String[0]);
-
+        private final BranchProfile customLocalsProfile = BranchProfile.create();
         @Child private ReadIndexedArgumentNode readArgNode;
 
         protected MethORoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
@@ -1604,7 +1606,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame);
+            CalleeContext.enter(frame, customLocalsProfile);
             try {
                 Object self = readSelfNode.execute(frame);
                 Object arg = readArgNode.execute(frame);
@@ -1624,7 +1626,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     static class MethFastcallRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
-
+        private final BranchProfile customLocalsProfile = BranchProfile.create();
         @Child private ReadVarArgsNode readVarargsNode;
 
         protected MethFastcallRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
@@ -1634,7 +1636,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame);
+            CalleeContext.enter(frame, customLocalsProfile);
             try {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);
@@ -1654,7 +1656,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     static class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
-
+        private final BranchProfile customLocalsProfile = BranchProfile.create();
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
@@ -1666,7 +1668,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame);
+            CalleeContext.enter(frame, customLocalsProfile);
             try {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);

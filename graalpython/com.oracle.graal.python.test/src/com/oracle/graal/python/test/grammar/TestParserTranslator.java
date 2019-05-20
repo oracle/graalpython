@@ -119,6 +119,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
 
 public class TestParserTranslator {
@@ -130,7 +131,7 @@ public class TestParserTranslator {
     }
 
     private static class JUnitRootNode extends PRootNode {
-
+        private final BranchProfile profile = BranchProfile.create();
         @Child private ExpressionNode body;
 
         public JUnitRootNode(PythonLanguage language, ExpressionNode body) {
@@ -140,7 +141,7 @@ public class TestParserTranslator {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame);
+            CalleeContext.enter(frame, profile);
             try {
                 return body.execute(frame);
             } finally {

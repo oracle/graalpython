@@ -38,13 +38,14 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class ModuleRootNode extends PClosureRootNode {
     private static final Signature SIGNATURE = new Signature(false, -1, false, new String[0], new String[0]);
     private final String name;
     private final String doc;
-
+    private final BranchProfile customLocalsProfile = BranchProfile.create();
     @Child private ExpressionNode body;
     @Child private WriteGlobalNode writeModuleDoc;
 
@@ -65,7 +66,7 @@ public class ModuleRootNode extends PClosureRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        CalleeContext.enter(frame);
+        CalleeContext.enter(frame, customLocalsProfile);
         try {
             return body.execute(frame);
         } finally {

@@ -47,6 +47,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public final class BuiltinFunctionRootNode extends PRootNode {
     private final Signature signature;
@@ -54,7 +55,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     private final String name;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final boolean declaresExplicitSelf;
-
+    private final BranchProfile customLocalsProfile = BranchProfile.create();
     @Child private BuiltinCallNode body;
 
     private abstract static class BuiltinCallNode extends Node {
@@ -316,7 +317,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
         }
-        CalleeContext.enter(frame);
+        CalleeContext.enter(frame, customLocalsProfile);
         try {
             return body.execute(frame);
         } finally {
