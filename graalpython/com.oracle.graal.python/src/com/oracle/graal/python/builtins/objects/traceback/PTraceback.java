@@ -65,14 +65,12 @@ public final class PTraceback extends PythonBuiltinObject {
 
     private final PFrame frame;
     private final int lasti;
-    private final int lineno;
     private PTraceback next;
 
     public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception) {
         super(clazz);
         this.frame = frame;
         this.exception = exception;
-        this.lineno = frame.getLine();
         this.lasti = 0;
     }
 
@@ -81,7 +79,6 @@ public final class PTraceback extends PythonBuiltinObject {
         this.frame = frame;
         this.exception = next.exception;
         this.next = next;
-        this.lineno = frame.getLine();
         this.lasti = 0;
     }
 
@@ -94,7 +91,7 @@ public final class PTraceback extends PythonBuiltinObject {
     }
 
     public int getLineno() {
-        return lineno;
+        return frame.getLine();
     }
 
     public PTraceback getNext() {
