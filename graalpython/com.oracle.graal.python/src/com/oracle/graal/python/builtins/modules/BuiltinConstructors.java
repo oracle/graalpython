@@ -608,6 +608,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PythonObject reversed(@SuppressWarnings("unused") LazyPythonClass cls, PRange range,
+                        @Cached("createBinaryProfile()") ConditionProfile stepPositiveProfile,
                         @Cached("createBinaryProfile()") ConditionProfile stepOneProfile,
                         @Cached("createBinaryProfile()") ConditionProfile stepMinusOneProfile) {
             int stop;
@@ -628,7 +629,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 stop = range.getStart() - step;
                 step = -step;
             }
-            return factory().createRangeIterator(start, stop, step);
+            return factory().createRangeIterator(start, stop, step, stepPositiveProfile);
         }
 
         @Specialization

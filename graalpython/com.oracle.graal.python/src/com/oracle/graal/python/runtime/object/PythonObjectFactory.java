@@ -140,6 +140,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class PythonObjectFactory extends Node {
@@ -676,9 +677,9 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSequenceReverseIterator(cls, sequence, lengthHint));
     }
 
-    public PIntegerIterator createRangeIterator(int start, int stop, int step) {
+    public PIntegerIterator createRangeIterator(int start, int stop, int step, ConditionProfile stepPositiveProfile) {
         PIntegerIterator object;
-        if (step > 0) {
+        if (stepPositiveProfile.profile(step > 0)) {
             object = new PRangeIterator(PythonBuiltinClassType.PIterator, start, stop, step);
         } else {
             object = new PRangeReverseIterator(PythonBuiltinClassType.PIterator, start, stop, -step);
