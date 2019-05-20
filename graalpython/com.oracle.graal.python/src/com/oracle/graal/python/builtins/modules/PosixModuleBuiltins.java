@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ConvertPathlikeObjectNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -288,34 +289,36 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
     }
 
-    @Builtin(name = "execv", minNumOfPositionalArgs = 2)
+    @Builtin(name = "execv", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     public abstract static class ExecvNode extends PythonBuiltinNode {
 
+        @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+
         @Specialization
-        Object execute(String path, PList args) {
-            return doExecute(path, args);
+        Object execute(PythonModule thisModule, String path, PList args) {
+            return doExecute(thisModule, path, args);
         }
 
         @Specialization
-        Object execute(PString path, PTuple args) {
-            return execute(path.getValue(), args);
+        Object execute(PythonModule thisModule, PString path, PTuple args) {
+            return execute(thisModule, path.getValue(), args);
         }
 
         @Specialization
-        Object execute(String path, PTuple args) {
+        Object execute(PythonModule thisModule, String path, PTuple args) {
             // in case of execl the PList happens to be in the tuples first entry
             Object list = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), 0);
-            return doExecute(path, list instanceof PList ? (PList) list : args);
+            return doExecute(thisModule, path, list instanceof PList ? (PList) list : args);
         }
 
         @Specialization
-        Object execute(PString path, PList args) {
-            return doExecute(path.getValue(), args);
+        Object execute(PythonModule thisModule, PString path, PList args) {
+            return doExecute(thisModule, path.getValue(), args);
         }
 
         @TruffleBoundary
-        Object doExecute(String path, PSequence args) {
+        Object doExecute(PythonModule thisModule, String path, PSequence args) {
             try {
                 if (!getContext().isExecutableAccessAllowed()) {
                     throw raise(OSError, "executable access denied");
@@ -328,8 +331,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 for (int i = 0; i < size; i++) {
                     cmd[i] = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), i).toString();
                 }
-                Runtime rt = Runtime.getRuntime();
-                Process pr = rt.exec(cmd);
+                PDict environ = (PDict) thisModule.getAttribute("environ");
+                ProcessBuilder builder = new ProcessBuilder(cmd);
+                Map<String, String> environment = builder.environment();
+                environ.entries().forEach(entry -> {
+                    environment.put(new String(toBytes.execute(null, (PBytes) entry.key)), new String(toBytes.execute(null, (PBytes) entry.value)));
+                });
+                Process pr = builder.start();
                 // retrieve output from executed script
                 BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
                 OutputStream stream = getContext().getEnv().out();
@@ -337,13 +345,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 while ((line = bfr.readLine()) != null) {
                     stream.write(line.getBytes());
                 }
-
                 try {
                     pr.waitFor();
                 } catch (InterruptedException e) {
                     throw new IOException(e);
                 }
-
                 throw new PythonExitException(this, pr.exitValue());
             } catch (IOException e) {
                 throw raise(PythonErrorType.ValueError, "Could not execute script '%s'", e.getMessage());
@@ -362,7 +368,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return "";
             }
         }
-
     }
 
     @Builtin(name = "chdir", minNumOfPositionalArgs = 1)
