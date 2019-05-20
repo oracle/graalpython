@@ -121,6 +121,8 @@
 #include "iterobject.h"
 #include "datetime.h"
 #include "typeslots.h"
+#include "weakrefobject.h"
+#include "sysmodule.h"
 
 // TODO: we must extend the refcounting behavior to support handles to managed objects
 #undef Py_DECREF
