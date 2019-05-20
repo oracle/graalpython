@@ -108,4 +108,18 @@ local const = import 'constants.libsonnet';
         }
     },
     sulong:: sulong,
+
+    local bench = {
+        packages +: {
+            "make": ">=3.83",
+            "binutils": "==2.23.2",
+        },
+        environment +: {
+            BENCH_RESULTS_FILE_PATH: "bench-results.json",
+        },
+        logs +: [
+            "results.json",
+        ],
+    },
+    bench:: bench,
 }

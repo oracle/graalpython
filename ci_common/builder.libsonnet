@@ -8,7 +8,7 @@ local mixins = import 'mixins.libsonnet';
     // the build templates
     //
     // ------------------------------------------------------------------------------------------------------
-    local baseBuilder = {
+    local base = {
         downloads: {},
         environment: {},
         setup: [],
@@ -20,9 +20,9 @@ local mixins = import 'mixins.libsonnet';
         targets: [],
         run: [],
     },
-    baseBuilder:: baseBuilder,
+    base:: base,
 
-    local commonBuilder = baseBuilder + mixins.labsjdk8 + {
+    local common = base + mixins.labsjdk8 + {
         dynamicImports:: "/sulong,/compiler",
 
         setup +: [
@@ -30,14 +30,14 @@ local mixins = import 'mixins.libsonnet';
             ["mx", "--dynamicimports", self.dynamicImports, "build"],
         ]
     },
-    commonBuilder:: commonBuilder,
+    common:: common,
 
     // ------------------------------------------------------------------------------------------------------
     //
     // the gate templates
     //
     // ------------------------------------------------------------------------------------------------------
-    local baseGate = commonBuilder + {
+    local baseGate = common + {
         tags: "tags must be defined",
 
         // local truffleDebugFlags = utils.graalOption("TraceTruffleCompilation", "true"),
@@ -84,7 +84,7 @@ local mixins = import 'mixins.libsonnet';
     //
     // ------------------------------------------------------------------------------------------------------
     deployGate(platform)::
-        baseBuilder + mixins.graalCore + mixins.sulong + mixins.getPlatform(platform) + {
+        base + mixins.graalCore + mixins.sulong + mixins.getPlatform(platform) + {
             targets: const.TARGET.postMerge,
             setup +: [
                 ["mx", "sversions"],
@@ -97,7 +97,7 @@ local mixins = import 'mixins.libsonnet';
         },
 
     coverageGate::
-        commonBuilder + mixins.getPlatform(platform="linux") + {
+        common + mixins.getPlatform(platform="linux") + {
             targets: const.TARGET.weekly,
             timelimit: const.TIME_LIMIT["4h"],
             run +: [
