@@ -338,12 +338,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     environment.put(new String(toBytes.execute(null, (PBytes) entry.key)), new String(toBytes.execute(null, (PBytes) entry.value)));
                 });
                 Process pr = builder.start();
-                // retrieve output from executed script
                 BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
                 OutputStream stream = getContext().getEnv().out();
                 String line = "";
                 while ((line = bfr.readLine()) != null) {
                     stream.write(line.getBytes());
+                    stream.write("\n".getBytes());
+                }
+                BufferedReader stderr = new BufferedReader(new InputStreamReader(pr.getErrorStream()));
+                OutputStream errStream = getContext().getEnv().err();
+                line = "";
+                while ((line = stderr.readLine()) != null) {
+                    errStream.write(line.getBytes());
+                    errStream.write("\n".getBytes());
                 }
                 try {
                     pr.waitFor();
