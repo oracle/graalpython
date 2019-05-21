@@ -38,13 +38,16 @@
 # SOFTWARE.
 
 import unittest
+import os
+import sys
+import posix
+import stat
 
 
 class PosixTests(unittest.TestCase):
 
     def test_uname(self):
         # just like cpython, a simple smoke test
-        import posix
         uname = posix.uname()
         self.assertRaises(TypeError, lambda: posix.uname(1))
         self.assertIsNotNone(uname.sysname)
@@ -56,10 +59,7 @@ class PosixTests(unittest.TestCase):
     def test_execv(self):
         # test creates a shell script, which again creates a file, to ensure script execution
         # Both files are deleted again in the end
-        import os
-        import sys
         new_file_path, cwd = self.create_file()
-        # os.execv(new_file_path, [new_file_path, 'the_input'])
         os.system("%s -c \"import os; os.execv('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
         assert os.path.isfile(cwd + '/test.txt')
         self.delete_file(new_file_path, cwd)
@@ -67,17 +67,22 @@ class PosixTests(unittest.TestCase):
     def test_execl(self):
         # test creates a shell script, which again creates a file, to ensure script execution
         # Both files are deleted again in the end
-        import os
-        import sys
         new_file_path, cwd = self.create_file()
-        # os.execl(new_file_path, [new_file_path, 'the_input'])
         os.system("%s -c \"import os; os.execl('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
         assert os.path.isfile(cwd + '/test.txt')
         self.delete_file(new_file_path, cwd)
 
+    def test_execv_with_env(self):
+        new_file_path, cwd = self.create_file()
+        with open(new_file_path, 'w') as script:
+                script.write('echo $ENV_VAR> {}/test.txt\n'.format(cwd))
+        os.system("%s -c \"import os; os.environ['ENV_VAR']='the_text'; os.execl('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
+        assert os.path.isfile(cwd + '/test.txt')
+        with open(cwd+'/test.txt', 'r') as result:
+            assert 'the_text' in result.readline()
+        self.delete_file(new_file_path, cwd)
+
     def create_file(self):
-        import os
-        import stat
         cwd = os.getcwd()
         new_file_path = os.path.join(cwd , 'myscript.sh')
         with open(new_file_path, 'w') as script:
@@ -90,6 +95,5 @@ class PosixTests(unittest.TestCase):
         return new_file_path, cwd
 
     def delete_file(self, new_file_path, cwd):
-        import os
         os.remove(new_file_path)
         os.remove(cwd + '/test.txt')
