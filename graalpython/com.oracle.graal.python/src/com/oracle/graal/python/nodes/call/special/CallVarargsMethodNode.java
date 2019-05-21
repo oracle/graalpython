@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNodeFactory.CallCachedVarargsMethodNodeGen;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -102,6 +103,14 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
             return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2]);
         }
 
+        @Specialization(guards = {"arguments.length == 4", "keywords.length == 0", "func == cachedFunc",
+                        "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        Object callQuaternary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
+                        @Cached("getQuaternary(func)") PythonQuaternaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2], arguments[3]);
+        }
+
         @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
         Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
@@ -128,6 +137,13 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                         @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
             return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2]);
+        }
+
+        @Specialization(guards = {"arguments.length == 4", "keywords.length == 0", "func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object callQuaternary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                        @Cached("getQuaternary(func)") PythonQuaternaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2], arguments[4]);
         }
 
         @Specialization

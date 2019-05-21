@@ -158,6 +158,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -1570,7 +1571,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class RangeNode extends PythonBuiltinNode {
+    public abstract static class RangeNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization(guards = "caseStop(start,step)")
         public PSequence rangeStop(Object cls, int stop, Object start, Object step) {
