@@ -97,6 +97,7 @@ graalpython/com.oracle.graal.python.cext/include/setobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sliceobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structmember.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structseq.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/sysmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/traceback.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/truffle.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
@@ -104,6 +105,7 @@ graalpython/com.oracle.graal.python.cext/include/typeslots.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/ucnhash.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/unicodeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/warnings.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/weakrefobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_bz2module.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_sre.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
