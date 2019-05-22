@@ -75,7 +75,8 @@ class PosixTests(unittest.TestCase):
     def test_execv_with_env(self):
         new_file_path, cwd = self.create_file()
         with open(new_file_path, 'w') as script:
-                script.write('echo $ENV_VAR> {}/test.txt\n'.format(cwd))
+            script.write('#!/bin/sh\n')
+            script.write('echo $ENV_VAR > {}/test.txt\n'.format(cwd))
         os.system("%s -c \"import os; os.environ['ENV_VAR']='the_text'; os.execv('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
         assert os.path.isfile(cwd + '/test.txt')
         with open(cwd+'/test.txt', 'r') as result:
