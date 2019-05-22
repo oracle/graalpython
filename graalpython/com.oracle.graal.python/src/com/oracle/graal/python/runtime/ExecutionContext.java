@@ -128,32 +128,38 @@ public abstract class ExecutionContext {
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             if (info.isEscaped()) {
                 // This assumption acts as our branch profile here
+                PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
                 if (!node.needsCallerFrame()) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     node.setNeedsCallerFrame();
+                    if (callerInfo == null) {
+                        // we didn't request the caller frame reference. now we need
+                        // it.
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        FrameInstance callerFrameInstance = Truffle.getRuntime().getCallerFrame();
+                        if (callerFrameInstance != null) {
+                            Frame callerFrame = callerFrameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
+                            if (PArguments.isPythonFrame(callerFrame)) {
+                                callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                            } else {
+                                // TODO: frames: an assertion should be that this is one of our entry
+                                // point call nodes
+                                callerInfo = PFrame.Reference.EMPTY;
+                            }
+                        } else {
+                            callerInfo = PFrame.Reference.EMPTY;
+                        }
+                    }
+                } else {
+                    // caller info was requested, it must be here if there is
+                    // any.  If it isn't, we're in a top-frame.
+                    if (callerInfo == null) {
+                        callerInfo = PFrame.Reference.EMPTY;
+                    }
                 }
                 // force the frame so that it can be accessed later
                 info.materialize(frame, node);
                 // if this frame escaped we must ensure that also f_back does
-                PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
-                if (callerInfo == null) {
-                    // we didn't request the caller frame reference. now we need
-                    // it.
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    FrameInstance callerFrameInstance = Truffle.getRuntime().getCallerFrame();
-                    if (callerFrameInstance != null) {
-                        Frame callerFrame = callerFrameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
-                        if (PArguments.isPythonFrame(callerFrame)) {
-                            callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
-                        } else {
-                            // TODO: frames: an assertion should be that this is one of our entry
-                            // point call nodes
-                            callerInfo = PFrame.Reference.EMPTY;
-                        }
-                    } else {
-                        callerInfo = PFrame.Reference.EMPTY;
-                    }
-                }
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);
             }
