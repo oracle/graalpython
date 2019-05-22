@@ -48,8 +48,10 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class PRootNode extends RootNode {
+    private final BranchProfile exitedEscapedWithoutFrameProfile = BranchProfile.create();
     @CompilationFinal private Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption("does not need caller frame");
 
     /**
@@ -65,6 +67,10 @@ public abstract class PRootNode extends RootNode {
 
     protected PRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor) {
         super(language, frameDescriptor);
+    }
+
+    public BranchProfile getExitedEscapedWithoutFrameProfile() {
+        return exitedEscapedWithoutFrameProfile;
     }
 
     public boolean needsCallerFrame() {

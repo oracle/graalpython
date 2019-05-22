@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -85,11 +86,20 @@ public final class PFrame extends PythonBuiltinObject {
         // it should materialize itself when it returns.
         boolean escaped = false;
 
-        public void materialize(Frame targetFrame, Node location) {
-            if (this.pyFrame == null) {
-                this.frame = targetFrame.materialize();
-                // TODO: frames: this doesn't go through the factory
-                this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame, location);
+        public void materialize(Frame targetFrame, PRootNode location) {
+            assert frame == null || PArguments.getCurrentFrameInfo(frame) == PArguments.getCurrentFrameInfo(targetFrame) : "the frame should be unset or the same";
+            this.frame = targetFrame.materialize();
+            if (this.pyFrame == null || this.pyFrame.isIncomplete()) {
+                location.getExitedEscapedWithoutFrameProfile().enter();
+                if (this.pyFrame == null) {
+                    // TODO: frames: this doesn't go through the factory
+                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame, location);
+                } else {
+                    assert this.pyFrame.getFrame() == null : "PFrame could not have a frame but the reference none";
+                    assert this.pyFrame.localsDict != null : "PFrame was set without a frame or a locals dict";
+                    // this is the case when we had custom locals
+                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame, location, this.pyFrame.localsDict);
+                }
             }
             // TODO: frames: update location
         }
