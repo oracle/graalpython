@@ -89,7 +89,7 @@ public final class PFrame extends PythonBuiltinObject {
         public void materialize(Frame targetFrame, PRootNode location) {
             assert frame == null || PArguments.getCurrentFrameInfo(frame) == PArguments.getCurrentFrameInfo(targetFrame) : "the frame should be unset or the same";
             this.frame = targetFrame.materialize();
-            if (this.pyFrame == null || this.pyFrame.isIncomplete()) {
+            if (this.pyFrame == null || this.pyFrame.frame == null) {
                 location.getExitedEscapedWithoutFrameProfile().enter();
                 if (this.pyFrame == null) {
                     // TODO: frames: this doesn't go through the factory
@@ -206,11 +206,8 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public void setBackref(PFrame.Reference backref) {
-        if (this.backref == null) {
-            this.backref = backref;
-        } else {
-            assert this.backref == backref : "setBackref tried to set a backref different to the one that was previously attached";
-        }
+        assert this.backref == null || this.backref == backref : "setBackref tried to set a backref different to the one that was previously attached";
+        this.backref = backref;
     }
 
     @TruffleBoundary
