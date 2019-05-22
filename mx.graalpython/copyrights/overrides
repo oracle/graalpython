@@ -97,6 +97,7 @@ graalpython/com.oracle.graal.python.cext/include/setobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sliceobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structmember.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structseq.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/sysmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/traceback.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/truffle.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
