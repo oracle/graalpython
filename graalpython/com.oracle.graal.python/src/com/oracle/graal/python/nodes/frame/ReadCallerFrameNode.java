@@ -111,7 +111,11 @@ public final class ReadCallerFrameNode extends Node {
             }
             currentFrame = callerInfo.getFrame();
         }
-        return currentFrame;
+        if (frameAccess == FrameInstance.FrameAccess.MATERIALIZE) {
+            return currentFrame.materialize();
+        } else {
+            return currentFrame;
+        }
     }
 
     /**
