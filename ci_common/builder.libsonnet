@@ -23,7 +23,7 @@ local mixins = import 'mixins.libsonnet';
     base:: base,
 
     local common = base + mixins.labsjdk8 + {
-        dynamicImports:: "/sulong,/compiler",
+        dynamicImports:: "/compiler",
 
         setup +: [
             ["mx", "sforceimports"],
