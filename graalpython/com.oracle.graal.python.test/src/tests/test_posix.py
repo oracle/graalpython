@@ -71,7 +71,7 @@ class PosixTests(unittest.TestCase):
         import sys
         new_file_path, cwd = self.create_file()
         # os.execl(new_file_path, [new_file_path, 'the_input'])
-        os.system("%s -c \"import os; os.execl('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
+        os.system("%s -c \"import os; os.execl('%s', *['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
         assert os.path.isfile(cwd + '/test.txt')
         self.delete_file(new_file_path, cwd)
 

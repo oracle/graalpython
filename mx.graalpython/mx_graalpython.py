@@ -909,11 +909,26 @@ def import_python_sources(args):
 # ----------------------------------------------------------------------------------------------------------------------
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
+    name='Graal.Python license files',
+    short_name='pynl',
+    dir_name='python',
+    license_files=['LICENSE_GRAALPYTHON.txt'],
+    third_party_license_files=['3rd_party_licenses_graalpython.txt'],
+    truffle_jars=[],
+    support_distributions=[
+        'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
+    ],
+    priority=5
+))
+
+
+mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
+    suite=SUITE,
     name='Graal.Python',
     short_name='pyn',
     dir_name='python',
-    license_files=['LICENSE_GRAALPYTHON'],
-    third_party_license_files=['3rd_party_licenses_graalpython.txt'],
+    license_files=[],
+    third_party_license_files=[],
     truffle_jars=[
         'graalpython:GRAALPYTHON',
     ],
@@ -926,10 +941,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             destination='bin/<exe:graalpython>',
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
-            build_args=[
-                '--language:python',
-                '--language:llvm',
-            ]
+            build_args=[],
+            language='python',
         )
     ],
 ))

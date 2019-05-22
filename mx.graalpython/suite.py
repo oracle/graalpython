@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc18",
+    "version": "20.0.0-beta.01",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "87c4ce8eabe466ce13adb10a1bf527b8dc1e8c3b",
+                "version": "445077de669592367c0519ed38e5e1e5cbd7267d",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -360,8 +360,6 @@ suite = {
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],
-                "LICENSE_GRAALPYTHON": "file:LICENSE",
-                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
             },
             "maven": False,
         },
@@ -372,6 +370,17 @@ suite = {
             "layout": {
                 "README_GRAALPYTHON.md": "file:README.md",
                 "./": "file:doc",
+            },
+            "maven": False,
+        },
+
+        "GRAALPYTHON_GRAALVM_LICENSES": {
+            "native": True,
+            "platformDependent": True,
+            "description": "Graal.Python support distribution for the GraalVM license files",
+            "layout": {
+                "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
+                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
             },
             "maven": False,
         },
