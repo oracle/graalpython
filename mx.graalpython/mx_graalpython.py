@@ -904,6 +904,23 @@ def import_python_sources(args):
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
+# add ci verification util
+#
+# ----------------------------------------------------------------------------------------------------------------------
+def verify_ci(dest_suite, args=None):
+    """Verify CI configuration"""
+    base_suite = SUITE
+    if not isinstance(dest_suite, mx.SourceSuite) or not isinstance(base_suite, mx.SourceSuite):
+        raise mx.abort("Can not use verify-ci on binary suites: {} and {} need to be source suites".format(
+            SUITE.name, dest_suite.name))
+    assert isinstance(base_suite, mx.SourceSuite)
+    for ext in [".libsonnet", ".jsonnet"]:
+        mx.log("CI setup verifying *{} files ... ".format(ext))
+        mx.verify_ci(args, base_suite, dest_suite, common_dirs=['ci_common'], extension=ext)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+#
 # register as a GraalVM language
 #
 # ----------------------------------------------------------------------------------------------------------------------
