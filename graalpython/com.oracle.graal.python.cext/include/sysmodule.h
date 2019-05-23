@@ -3,6 +3,7 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
+
 /* System module interface */
 
 #ifndef Py_SYSMODULE_H
@@ -39,6 +40,11 @@ PyAPI_FUNC(PyObject *) PySys_GetXOptions(void);
 
 #ifndef Py_LIMITED_API
 PyAPI_FUNC(size_t) _PySys_GetSizeOf(PyObject *);
+#endif
+
+#ifdef Py_BUILD_CORE
+PyAPI_FUNC(int) _PySys_AddXOptionWithError(const wchar_t *s);
+PyAPI_FUNC(int) _PySys_AddWarnOptionWithError(PyObject *option);
 #endif
 
 #ifdef __cplusplus
