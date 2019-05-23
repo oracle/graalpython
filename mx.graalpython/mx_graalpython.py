@@ -845,6 +845,9 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
+    # re-copy lib-python
+    shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
+
     for inlined_file in pypy_files + extra_pypy_files:
         original_file = None
         name = os.path.basename(inlined_file)
@@ -887,9 +890,6 @@ def import_python_sources(args):
                 original_file = inlined_file
         if original_file is None:
             mx.warn("Could not update %s - original file not found" % inlined_file)
-
-    # re-copy lib-python
-    shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
 
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
