@@ -54,6 +54,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
@@ -1603,6 +1604,19 @@ public final class StringBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctx,
                         @Cached PassCaughtExceptionNode passExceptionNode) {
             return new StringFormatter(getCore(), left).format(frame, ctx, right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode, passExceptionNode);
+        }
+    }
+
+    @Builtin(name = "isascii", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class IsAsciiNode extends PythonUnaryBuiltinNode {
+        private static final CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder();
+
+        @Specialization
+        @TruffleBoundary
+        boolean doString(String self) {
+            return asciiEncoder.canEncode(self);
         }
     }
 
