@@ -57,6 +57,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.List;
@@ -1611,7 +1612,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsAsciiNode extends PythonUnaryBuiltinNode {
-        private static final CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder();
+        private static final CharsetEncoder asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
 
         @Specialization
         @TruffleBoundary
