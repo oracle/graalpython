@@ -156,7 +156,7 @@ public abstract class CodeNodes {
                     }
 
                     @Override
-                    public boolean isPythonInternal() {
+                    public boolean isInternal() {
                         return false;
                     }
                 });

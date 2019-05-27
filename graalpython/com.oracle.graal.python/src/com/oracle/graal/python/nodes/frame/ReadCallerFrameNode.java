@@ -142,7 +142,7 @@ public final class ReadCallerFrameNode extends Node {
 
                         // Skip frames of builtin functions (if requested) because these do not have
                         // a Python frame in CPython.
-                        if (!(skipInternal && pRootNode.isPythonInternal())) {
+                        if (!(skipInternal && pRootNode.isInternal())) {
                             if (i == level) {
                                 Frame frame = frameInstance.getFrame(frameAccess);
                                 assert PArguments.isPythonFrame(frame);

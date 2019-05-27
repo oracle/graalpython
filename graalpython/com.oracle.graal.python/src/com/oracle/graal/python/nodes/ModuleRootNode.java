@@ -104,7 +104,7 @@ public class ModuleRootNode extends PClosureRootNode {
     }
 
     @Override
-    public boolean isPythonInternal() {
+    public boolean isInternal() {
         return false;
     }
 }

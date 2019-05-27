@@ -806,7 +806,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public boolean isPythonInternal() {
+        public boolean isInternal() {
             // everything that is implemented in C is internal
             return true;
         }
@@ -1499,7 +1499,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public boolean isPythonInternal() {
+        public boolean isInternal() {
             return true;
         }
     }

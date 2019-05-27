@@ -95,8 +95,8 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     }
 
     @Override
-    public boolean isPythonInternal() {
+    public boolean isInternal() {
         RootNode rootNode = callTarget.getRootNode();
-        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
+        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isInternal();
     }
 }

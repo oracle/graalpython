@@ -382,9 +382,4 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     public Signature getSignature() {
         return signature;
     }
-
-    @Override
-    public boolean isPythonInternal() {
-        return true;
-    }
 }
