@@ -1606,7 +1606,7 @@ class FileIO(RawIOBase):
         except OSError:
             pass
 
-        result = []
+        result = bytearray()
         while True:
             if len(result) >= bufsize:
                 bufsize = len(result)
@@ -1620,9 +1620,9 @@ class FileIO(RawIOBase):
                 return None
             if not chunk: # reached the end of the file
                 break
-            result.append(chunk)
+            result += chunk
 
-        return b"".join(result)
+        return bytes(result)
 
     def readinto(self, b):
         """Same as RawIOBase.readinto()."""
@@ -2149,6 +2149,7 @@ class TextIOWrapper(TextIOBase):
         self.buffer.write(b)
         if self._line_buffering and (haslf or "\r" in s):
             self.flush()
+        self._set_decoded_chars('')
         self._snapshot = None
         if self._decoder:
             self._decoder.reset()
