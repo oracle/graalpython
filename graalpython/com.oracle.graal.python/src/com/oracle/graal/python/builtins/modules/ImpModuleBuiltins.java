@@ -56,12 +56,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -363,6 +366,26 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
             }
             throw raise(NotImplementedError, "_imp.create_builtin");
+        }
+    }
+
+    @Builtin(name = "source_hash", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SourceHashNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        PBytes run(long magicNumber, PIBytesLike source) {
+            byte[] hash = new byte[Long.BYTES];
+            long hashCode = magicNumber ^ source.hashCode();
+            for (int i = 0; i < hash.length; i++) {
+                hash[i] = (byte) (hashCode << (8 * i));
+            }
+            return factory().createBytes(hash);
+        }
+
+        @Specialization
+        PBytes run(PInt magicNumber, PIBytesLike source) {
+            return run(magicNumber.longValue(), source);
         }
     }
 
