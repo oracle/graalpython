@@ -164,12 +164,24 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTEXT__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        public Object context(PBaseException self, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode readContext) {
+            Object context = readContext.execute(self, __CONTEXT__);
+            if (context == PNone.NO_VALUE) {
+                return PNone.NONE;
+            } else {
+                return context;
+            }
+        }
 
         @Specialization
-        public Object context(@SuppressWarnings("unused") PBaseException self) {
+        public Object context(PBaseException self, PBaseException value,
+                        @Cached("create()") WriteAttributeToObjectNode writeContext) {
+            writeContext.execute(self, __CONTEXT__, value);
             return PNone.NONE;
         }
     }
