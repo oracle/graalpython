@@ -412,10 +412,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private PBytes encodeString(String self, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
-            Charset charset;
-            try {
-                charset = getCharset(encoding);
-            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
+            Charset charset = getCharset(encoding);
+            if (charset == null) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             }
             try {
@@ -545,10 +543,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         String decodeBytes(ByteBuffer bytes, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
-            Charset charset;
-            try {
-                charset = getCharset(encoding);
-            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
+            Charset charset = getCharset(encoding);
+            if (charset == null) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             }
             try {
@@ -627,10 +623,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
         Object lookup(String encoding) {
-            try {
-                getCharset(encoding);
+            if (getCharset(encoding) != null) {
                 return true;
-            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
+            } else {
                 return PNone.NONE;
             }
         }
