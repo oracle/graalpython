@@ -169,6 +169,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -822,7 +823,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
             PythonContext context = getContext();
-            Source source = PythonLanguage.newSource(context, expression, filename, mayBeFromFile);
             ParserMode pm;
             if (mode.equals("exec")) {
                 pm = ParserMode.File;
@@ -833,12 +833,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
             }
-            Supplier<PCode> createCode = () -> factory().createCode(Truffle.getRuntime().createCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null)));
+            Supplier<CallTarget> createCode = () -> {
+                Source source = PythonLanguage.newSource(context, expression, filename, mayBeFromFile);
+                return Truffle.getRuntime().createCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null));
+            };
+            RootCallTarget ct;
             if (getCore().isInitialized()) {
-                return createCode.get();
+                ct = (RootCallTarget) createCode.get();
             } else {
-                return getCore().getLanguage().cacheCode(filename, createCode);
+                ct = (RootCallTarget) getCore().getLanguage().cacheCode(filename, createCode);
             }
+            return factory().createCode(ct);
         }
 
         @SuppressWarnings("unused")

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,4 +36,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+import unittest
+
+
+class JsonTest(unittest.TestCase):
+
+    def test_dump(self):
+        import json
+        import os
+        cwd = os.getcwd()
+        new_file_path = os.path.join(cwd , 'myFile.json')
+        json.dump(['a', 'b', 'c'], open(new_file_path, 'w'))
+        assert json.load(open(new_file_path)) == ['a', 'b', 'c']
+        os.remove(new_file_path)
 

@@ -191,7 +191,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     // READ
     @ExportMessage
-    boolean hasMembers() {
+    protected boolean hasMembers() {
         return true;
     }
 

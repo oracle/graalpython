@@ -349,6 +349,11 @@ def skipUnless(boolean, msg=""):
     return decorator
 
 
+class TextTestResult():
+    "Just a dummy to satisfy the unittest.support import"
+    pass
+
+
 if __name__ == "__main__":
     sys.modules["unittest"] = sys.modules["__main__"]
     patterns = []

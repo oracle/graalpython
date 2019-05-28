@@ -791,7 +791,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         return sb.toString();
     }
 
-    private Object parseNumber(String text) {
+    private Object parseNumber(String inputText) {
+        String text = inputText.replace("_", "");
         if (text.endsWith("j") || text.endsWith("J") || text.contains(".")) {
             return parseDottedNumber(text);
         } else {
