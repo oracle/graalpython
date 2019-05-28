@@ -158,7 +158,7 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
 class CPythonVm(AbstractPythonIterationsControlVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None, iterations=None):
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=0):
         super(CPythonVm, self).__init__(config_name, options=options, iterations=iterations)
         self._virtualenv = virtualenv
 
