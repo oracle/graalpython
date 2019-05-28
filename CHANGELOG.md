@@ -3,6 +3,13 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 19.0.0
+
+* Fix an issue preventing use of encodings in the installable binary
+* Fix return value of process when `os.exit` is called with a boolean
+* Fix interpretation of foreign objects to prefer interpreting them as integer over double
+* Fix performance regression when repeatedly creating a new function in a loop
+
 ## Version 1.0.0 RC16
 
 * No user-facing changes

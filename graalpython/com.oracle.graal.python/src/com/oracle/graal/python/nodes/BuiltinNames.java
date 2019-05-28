@@ -44,9 +44,6 @@ public abstract class BuiltinNames {
     // special arg names
     public static final String SELF = "self";
 
-    // graalpython internals
-    public static final String __BUILTINS_PATCHES__ = "__builtins_patches__";
-
     // cpython internals
     public static final String BREAKPOINT = "breakpoint";
     public static final String MODULE = "module";

@@ -27,7 +27,6 @@ package com.oracle.graal.python.nodes.function;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -181,7 +180,8 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         if (maxNumPosArgs > 0) {
             if (parameterNames.length == 0) {
-                PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin " + factory);
+                // PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin
+                // " + factory);
                 parameterNames = new String[maxNumPosArgs];
                 parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
                 for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
