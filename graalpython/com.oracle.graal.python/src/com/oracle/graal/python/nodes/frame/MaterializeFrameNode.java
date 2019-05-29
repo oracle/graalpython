@@ -148,14 +148,18 @@ public abstract class MaterializeFrameNode extends Node {
         return pyFrame;
     }
 
-    @Specialization(guards = {"!inClassBody(frameToMaterialize)"}, replaces = {"freshPFrame", "alreadyEscapedFrame"})
+    @Specialization(replaces = {"freshPFrame", "alreadyEscapedFrame"})
     static PFrame notInClassBody(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         if (getPFrame(frameToMaterialize) != null) {
             return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, syncValuesNode);
         } else {
-            return freshPFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+            if (inClassBody(frameToMaterialize)) {
+                return freshPFrameInClassBody(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+            } else {
+                return freshPFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+            }
         }
     }
 
