@@ -184,17 +184,18 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         if (matchesProfile.profile(matches)) {
             if (exceptName != null) {
                 PBaseException exceptionObject = e.getExceptionObject();
-                exceptName.doWrite(frame, exceptionObject);
                 if (materializeFrameNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     materializeFrameNode = insert(MaterializeFrameNodeGen.create());
                 }
+
                 PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false);
                 if (factory == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     factory = insert(PythonObjectFactory.create());
                 }
                 exceptionObject.setTraceback(factory.createTraceback(escapedFrame, e));
+                exceptName.doWrite(frame, exceptionObject);
             }
             return true;
         } else {

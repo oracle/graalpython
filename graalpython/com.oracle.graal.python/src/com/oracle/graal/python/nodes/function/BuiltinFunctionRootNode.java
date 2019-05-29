@@ -58,6 +58,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     private final boolean declaresExplicitSelf;
     private final BranchProfile customLocalsProfile = BranchProfile.create();
     @Child private BuiltinCallNode body;
+    @Child private CalleeContext calleeContext = CalleeContext.create();
 
     private abstract static class BuiltinCallNode extends Node {
         public abstract Object execute(VirtualFrame frame);
@@ -351,7 +352,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         try {
             return body.execute(frame);
         } finally {
-            CalleeContext.exit(frame, this);
+            calleeContext.exit(frame, this);
         }
     }
 

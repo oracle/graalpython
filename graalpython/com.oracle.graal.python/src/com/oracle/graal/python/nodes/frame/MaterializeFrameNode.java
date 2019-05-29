@@ -95,7 +95,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(frameToMaterialize.getFrameDescriptor());
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, false);
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, syncValuesNode);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync, syncValuesNode);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "inClassBody(frameToMaterialize)"})
@@ -104,7 +104,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         // the namespace argument stores the locals
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getArgument(frameToMaterialize, 0), true);
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, syncValuesNode);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync, syncValuesNode);
     }
 
     /**
@@ -120,7 +120,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(frameToMaterialize.getFrameDescriptor());
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, inClassBody(frameToMaterialize));
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, syncValuesNode);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync, syncValuesNode);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).hasFrame()"}, replaces = "freshPFrame")
@@ -129,7 +129,7 @@ public abstract class MaterializeFrameNode extends Node {
         // TODO: frames: update the location so the line number is correct
         PFrame pyFrame = getPFrame(frameToMaterialize);
         if (forceSync) {
-            syncValues(frame, frameToMaterialize, pyFrame, syncValuesNode);
+            syncValuesNode.execute(frame, pyFrame, frameToMaterialize);
         }
         if (markAsEscaped) {
             pyFrame.getRef().markAsEscaped();
@@ -148,22 +148,35 @@ public abstract class MaterializeFrameNode extends Node {
         }
     }
 
-    private static PFrame doEscapeFrame(VirtualFrame frame, Frame frameToMaterialize, PFrame escapedFrame, boolean markAsEscaped, SyncFrameValuesNode syncValuesNode) {
+    private static PFrame doEscapeFrame(VirtualFrame frame, Frame frameToMaterialize, PFrame escapedFrame, boolean markAsEscaped, boolean forceSync, SyncFrameValuesNode syncValuesNode) {
         PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         topFrameRef.setPyFrame(escapedFrame);
-        syncValues(frame, frameToMaterialize, escapedFrame, syncValuesNode);
+
+        // on a freshly created PFrame, we do always sync the arguments
+        syncArgs(frameToMaterialize, escapedFrame);
+        if (forceSync) {
+            syncValuesNode.execute(frame, escapedFrame, frameToMaterialize);
+        }
         if (markAsEscaped) {
             topFrameRef.markAsEscaped();
         }
         return escapedFrame;
     }
 
-    private static void syncValues(VirtualFrame frame, Frame frameToMaterialize, PFrame escapedFrame, SyncFrameValuesNode syncValuesNode) {
+    private static void syncArgs(Frame frameToMaterialize, PFrame escapedFrame) {
         Object[] arguments = frameToMaterialize.getArguments();
         Object[] copiedArgs = new Object[arguments.length];
-        System.arraycopy(arguments, 0, copiedArgs, 0, arguments.length);
+
+        // copy only some carefully picked internal arguments
+        PArguments.setSpecialArgument(copiedArgs, PArguments.getSpecialArgument(arguments));
+        PArguments.setGeneratorFrame(copiedArgs, PArguments.getGeneratorFrame(arguments));
+        PArguments.setGlobals(copiedArgs, PArguments.getGlobals(arguments));
+        PArguments.setClosure(copiedArgs, PArguments.getClosure(arguments));
+
+        // copy all user arguments
+        System.arraycopy(arguments, PArguments.USER_ARGUMENTS_OFFSET, copiedArgs, PArguments.USER_ARGUMENTS_OFFSET, PArguments.getUserArgumentLength(arguments));
+
         escapedFrame.setArguments(copiedArgs);
-        syncValuesNode.execute(frame, escapedFrame, frameToMaterialize);
     }
 
     protected static boolean inClassBody(Frame frame) {

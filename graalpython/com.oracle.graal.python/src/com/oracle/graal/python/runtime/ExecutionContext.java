@@ -123,7 +123,9 @@ public abstract class ExecutionContext {
         }
     }
 
-    public abstract static class CalleeContext {
+    public static final class CalleeContext extends Node {
+
+        @Child private MaterializeFrameNode materializeNode;
 
         /**
          * Wrap the execution of a Python callee called from a Python frame.
@@ -142,7 +144,7 @@ public abstract class ExecutionContext {
             }
         }
 
-        public static void exit(VirtualFrame frame, PRootNode node) {
+        public void exit(VirtualFrame frame, PRootNode node) {
             /*
              * equivalent to PyPy's ExecutionContext.leave. Note that <tt>got_exception</tt> in
              * their code is handled automatically by the Truffle lazy exceptions, so here we only
@@ -181,12 +183,27 @@ public abstract class ExecutionContext {
                     }
                 }
                 // force the frame so that it can be accessed later
+                node.getExitedEscapedWithoutFrameProfile().enter();
+                ensureMaterializeNode().execute(frame, node, false, true);
                 info.materialize(frame, node);
                 // if this frame escaped we must ensure that also f_back does
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);
             }
         }
+
+        private MaterializeFrameNode ensureMaterializeNode() {
+            if (materializeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeNode = insert(MaterializeFrameNodeGen.create());
+            }
+            return materializeNode;
+        }
+
+        public static CalleeContext create() {
+            return new CalleeContext();
+        }
+
     }
 
     public abstract static class IndirectCallContext {

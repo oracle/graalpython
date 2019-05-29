@@ -252,8 +252,12 @@ public final class PArguments {
         arguments[INDEX_CLOSURE] = closure;
     }
 
+    public static PCell[] getClosure(Object[] arguments) {
+        return (PCell[]) arguments[INDEX_CLOSURE];
+    }
+
     public static PCell[] getClosure(Frame frame) {
-        return (PCell[]) frame.getArguments()[INDEX_CLOSURE];
+        return getClosure(frame.getArguments());
     }
 
     public static void setArgument(Object[] arguments, int index, Object value) {

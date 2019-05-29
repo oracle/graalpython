@@ -43,6 +43,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class AssertNode extends StatementNode {
     @Child private PRaiseNode raise;
@@ -51,6 +52,8 @@ public class AssertNode extends StatementNode {
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+    private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
     public AssertNode(CastToBooleanNode condition, ExpressionNode message) {
         this.condition = condition;
@@ -65,7 +68,7 @@ public class AssertNode extends StatementNode {
         }
         if (assertionsEnabled) {
             try {
-                if (!condition.executeBoolean(frame)) {
+                if (profile.profile(!condition.executeBoolean(frame))) {
                     throw assertionFailed(frame);
                 }
             } catch (PException e) {

@@ -59,10 +59,13 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     private final SourceSection sourceSection;
     private final boolean isGenerator;
     private final ValueProfile generatorFrameProfile;
-    private boolean isRewritten = false;
     private final BranchProfile customLocalsProfile = BranchProfile.create();
+
     @Child private ExpressionNode body;
+    @Child private CalleeContext calleeContext = CalleeContext.create();
+
     private ExpressionNode uninitializedBody;
+    private boolean isRewritten = false;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots executionCellSlots, Signature signature) {
@@ -143,7 +146,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         try {
             return body.execute(frame);
         } finally {
-            CalleeContext.exit(frame, this);
+            calleeContext.exit(frame, this);
         }
     }
 

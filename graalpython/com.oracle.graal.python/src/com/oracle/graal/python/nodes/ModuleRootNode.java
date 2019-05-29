@@ -48,6 +48,7 @@ public class ModuleRootNode extends PClosureRootNode {
     private final BranchProfile customLocalsProfile = BranchProfile.create();
     @Child private ExpressionNode body;
     @Child private WriteGlobalNode writeModuleDoc;
+    @Child private CalleeContext calleeContext = CalleeContext.create();
 
     public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
         super(language, descriptor, freeVarSlots);
@@ -70,7 +71,7 @@ public class ModuleRootNode extends PClosureRootNode {
         try {
             return body.execute(frame);
         } finally {
-            CalleeContext.exit(frame, this);
+            calleeContext.exit(frame, this);
         }
     }
 
