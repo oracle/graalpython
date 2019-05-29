@@ -186,6 +186,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -1901,6 +1902,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ReportPolymorphism
     public abstract static class TypeNode extends PythonBuiltinNode {
         private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
@@ -1925,13 +1927,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
-        public Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
+        Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(obj);
         }
 
         @Specialization
-        public Object type(VirtualFrame frame, PythonAbstractClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
+        Object type(VirtualFrame frame, PythonAbstractClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
@@ -2299,7 +2301,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(dict)"})
-        public Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
+        Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
                         @Cached("create()") TypeNode nextTypeNode) {
             if (PGuards.isNoValue(bases) && !PGuards.isNoValue(dict) || !PGuards.isNoValue(bases) && PGuards.isNoValue(dict)) {
                 throw raise(TypeError, "type() takes 1 or 3 arguments");
