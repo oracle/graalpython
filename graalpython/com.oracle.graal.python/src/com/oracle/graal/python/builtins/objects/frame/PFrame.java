@@ -62,7 +62,7 @@ public final class PFrame extends PythonBuiltinObject {
     private final Object localsDict;
     private final boolean inClassScope;
     private final Reference virtualFrameInfo;
-    private final Node location;
+    private Node location;
     private RootCallTarget callTarget;
     private int line = -2;
 
@@ -299,5 +299,9 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setArguments(Object[] arguments2) {
         this.arguments = arguments2;
+    }
+
+    public void setLocation(Node location) {
+        this.location = location;
     }
 }

@@ -132,9 +132,8 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).hasFrame()"}, replaces = "freshPFrame")
-    static PFrame alreadyEscapedFrame(@SuppressWarnings("unused") Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+    static PFrame alreadyEscapedFrame(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
-        // TODO: frames: update the location so the line number is correct
         PFrame pyFrame = getPFrame(frameToMaterialize);
         if (forceSync) {
             syncValuesNode.execute(pyFrame, frameToMaterialize);
@@ -142,6 +141,8 @@ public abstract class MaterializeFrameNode extends Node {
         if (markAsEscaped) {
             pyFrame.getRef().markAsEscaped();
         }
+        // update the location so the line number is correct
+        pyFrame.setLocation(location);
         return pyFrame;
     }
 
