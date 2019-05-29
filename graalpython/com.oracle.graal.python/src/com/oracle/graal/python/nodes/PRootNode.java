@@ -47,19 +47,21 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class PRootNode extends RootNode {
     private final BranchProfile exitedEscapedWithoutFrameProfile = BranchProfile.create();
-    @CompilationFinal private Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption("does not need caller frame");
+
+    @CompilationFinal private Assumption dontNeedCallerFrame = createCallerFrameAssumption();
 
     /**
      * Flag indicating if some child node of this root node (or a callee) eventually needs the
      * exception state. Hence, the caller of this root node should provide the exception state in
      * the arguments.
      */
-    @CompilationFinal private Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption("does not need exception state");
+    @CompilationFinal private Assumption dontNeedExceptionState = createExceptionStateAssumption();
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -101,25 +103,34 @@ public abstract class PRootNode extends RootNode {
         return true;
     }
 
+    @Override
+    public Node copy() {
+        PRootNode pRootNode = (PRootNode) super.copy();
+        // create new assumptions such that splits do not share them
+        pRootNode.dontNeedCallerFrame = createCallerFrameAssumption();
+        pRootNode.dontNeedExceptionState = createExceptionStateAssumption();
+        return pRootNode;
+    }
+
     public abstract Signature getSignature();
 
-    protected void setDontNeedCallerFrame(Assumption dontNeedCallerFrame) {
-        this.dontNeedCallerFrame = dontNeedCallerFrame;
-    }
-
-    protected void setDontNeedExceptionState(Assumption dontNeedExceptionState) {
-        this.dontNeedExceptionState = dontNeedExceptionState;
-    }
-
-    protected Assumption getDontNeedCallerFrame() {
+    public final Assumption getDontNeedCallerFrame() {
         return dontNeedCallerFrame;
     }
 
-    protected Assumption getDontNeedExceptionState() {
+    public final Assumption getDontNeedExceptionState() {
         return dontNeedExceptionState;
     }
 
     public static boolean isPythonInternal(RootNode rootNode) {
         return rootNode instanceof PRootNode && ((PRootNode) rootNode).isInternal();
+    }
+
+    private static Assumption createCallerFrameAssumption() {
+        return Truffle.getRuntime().createAssumption("does not need caller frame");
+    }
+
+    private static Assumption createExceptionStateAssumption() {
+        return Truffle.getRuntime().createAssumption("does not need exception state");
     }
 }
