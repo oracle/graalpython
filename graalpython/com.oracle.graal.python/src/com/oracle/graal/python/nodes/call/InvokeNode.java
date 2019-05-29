@@ -189,7 +189,7 @@ public abstract class InvokeNode extends DirectInvokeNode {
     protected Object doDirect(VirtualFrame frame, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
+        RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
         if (profileIsNullFrame(frame == null)) {
             PythonContext context = getContextRef().get();

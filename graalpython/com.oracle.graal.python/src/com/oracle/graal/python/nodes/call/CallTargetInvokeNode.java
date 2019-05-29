@@ -96,7 +96,7 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(guards = {"globals == null", "closure == null"})
     protected Object doNoClosure(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments) {
-        RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
+        RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
 
         // If the frame is 'null', we expect the execution state (i.e. caller info and exception
