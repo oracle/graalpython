@@ -40,19 +40,17 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
-import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -61,19 +59,14 @@ import com.oracle.truffle.api.nodes.Node;
  * <emph>not</emph> let the frame escape.
  **/
 public abstract class ReadLocalsNode extends Node {
-    // n.b.: work around DSL issue with Frame as both first arguments
-    protected abstract Object execute(VirtualFrame callingFrame, Object dummy, Frame frame);
+    public abstract Object execute(VirtualFrame callingFrame, PFrame frame);
 
-    public final Object execute(VirtualFrame callingFrame, Frame frame) {
-        return execute(callingFrame, null, frame);
+    protected static boolean isGeneratorFrame(PFrame frame) {
+        return PArguments.isGeneratorFrame(frame.getArguments());
     }
 
-    protected static boolean isGeneratorFrame(Frame frame) {
-        return PArguments.isGeneratorFrame(frame);
-    }
-
-    protected static boolean inClassBody(Frame frame) {
-        return PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
+    protected static boolean inClassBody(PFrame frame) {
+        return PArguments.getSpecialArgument(frame.getArguments()) instanceof ClassBodyRootNode;
     }
 
     protected static PFrame getPFrame(Frame frame) {
@@ -82,46 +75,31 @@ public abstract class ReadLocalsNode extends Node {
     }
 
     @Specialization(guards = {"isGeneratorFrame(frame)"})
-    static Object doGeneratorFrame(@SuppressWarnings("unused") VirtualFrame callingFrame, @SuppressWarnings("unused") Object dummy, MaterializedFrame frame,
+    static Object doGeneratorFrame(@SuppressWarnings("unused") VirtualFrame callingFrame, PFrame frame,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         PDict localsDict = PArguments.getGeneratorFrameLocals(frame.getArguments());
         if (localsDict == null) {
-            localsDict = factory.createDictLocals(frame);
+            localsDict = factory.createDictLocals(new FrameDescriptor());
             PArguments.setGeneratorFrameLocals(frame.getArguments(), localsDict);
         }
         return localsDict;
     }
 
-    @Specialization(guards = {"getPFrame(frame) == null", "!inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    Object freshLocals(@SuppressWarnings("unused") Object dummy, Frame frame,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        MaterializedFrame materialized = frame.materialize();
-        PDict localsDict = factory.createDictLocals(materialized);
-        PArguments.getCurrentFrameInfo(frame).setPyFrame(factory.createPFrame(materialized, null, localsDict));
-        return localsDict;
-    }
-
-    @Specialization(guards = {"getPFrame(frame) == null", "inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    static Object freshLocalsInClassBody(@SuppressWarnings("unused") VirtualFrame callingFrame, @SuppressWarnings("unused") Object dummy, Frame frame) {
+    @Specialization(guards = {"inClassBody(frame)", "!isGeneratorFrame(frame)"})
+    static Object freshLocalsInClassBody(@SuppressWarnings("unused") VirtualFrame callingFrame, PFrame frame) {
         // the namespace argument stores the locals
-        return PArguments.getArgument(frame, 0);
+        return PArguments.getArgument(frame.getArguments(), 0);
     }
 
-    @Specialization(guards = {"getPFrame(frame) != null", "inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    Object frameInClassBody(@SuppressWarnings("unused") Object dummy, Frame frame,
+    @Specialization(guards = {"inClassBody(frame)", "!isGeneratorFrame(frame)"})
+    Object frameInClassBody(PFrame frame,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
-        return getPFrame(frame).getLocals(factory);
+        return frame.getLocals(factory);
     }
 
-    @Specialization(guards = {"getPFrame(frame) != null", "!inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    Object frameToUpdate(VirtualFrame callingFrame, @SuppressWarnings("unused") Object dummy, Frame frame,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Cached SetItemNode setItemNode) {
-        Object storedLocals = getPFrame(frame).getLocals(factory);
-        PDict currentDictLocals = factory.createDictLocals(frame.materialize());
-        for (DictEntry entry : currentDictLocals.entries()) {
-            setItemNode.executeWith(callingFrame, storedLocals, entry.getKey(), entry.getValue());
-        }
-        return storedLocals;
+    @Specialization(guards = {"!inClassBody(frame)", "!isGeneratorFrame(frame)"})
+    Object frameToUpdate(PFrame frame,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        return frame.getLocals(factory);
     }
 }

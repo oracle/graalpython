@@ -54,14 +54,14 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
-    private Object localsDict;
+    private Object[] arguments;
+    private final Object localsDict;
     private final boolean inClassScope;
-    private final MaterializedFrame frame;
+    private final Reference virtualFrameInfo;
     private final Node location;
     private RootCallTarget callTarget;
     private int line = -2;
@@ -71,34 +71,38 @@ public final class PFrame extends PythonBuiltinObject {
     // TODO: frames: this is a large object, think about how to make this
     // smaller
     public static final class Reference {
-        public static final Reference EMPTY = new Reference();
+        public static final Reference EMPTY = new Reference(null);
 
         // The Python-level frame. Can be incomplete.
         private PFrame pyFrame = null;
-        // The materialized frame. Does not imply a Python-level frame is also
-        // set, sometimes this is just used as a stepping stone to get to the
-        // caller.
-        private MaterializedFrame frame = null;
+
         // The location of the last call
         private Node callNode = null;
-        // A flag wether this frame is escaped. This is implied when frame is
-        // set, but can also be set by a callee frame to inform the caller that
-        // it should materialize itself when it returns.
-        boolean escaped = false;
+
+        // A flag whether this frame is escaped. A Truffle frame is escaped if the corresponding
+        // PFrame may be used without having the Truffle frame on the stack. This flag is also set
+        // by a callee frame to inform the caller that it should materialize itself when it returns.
+        private boolean escaped = false;
+
+        private final Reference callerInfo;
+
+        public Reference(Reference callerInfo) {
+            this.callerInfo = callerInfo;
+        }
 
         public void materialize(Frame targetFrame, PRootNode location) {
-            assert frame == null || PArguments.getCurrentFrameInfo(frame) == PArguments.getCurrentFrameInfo(targetFrame) : "the frame should be unset or the same";
-            this.frame = targetFrame.materialize();
-            if (this.pyFrame == null || this.pyFrame.frame == null) {
+            Reference curFrameInfo = PArguments.getCurrentFrameInfo(targetFrame);
+            boolean inClassScope = PArguments.getSpecialArgument(targetFrame) instanceof ClassBodyRootNode;
+
+            if (this.pyFrame == null || this.pyFrame.virtualFrameInfo == null) {
                 location.getExitedEscapedWithoutFrameProfile().enter();
                 if (this.pyFrame == null) {
                     // TODO: frames: this doesn't go through the factory
-                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame, location);
+                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, curFrameInfo, location, inClassScope);
                 } else {
-                    assert this.pyFrame.getFrame() == null : "PFrame could not have a frame but the reference none";
                     assert this.pyFrame.localsDict != null : "PFrame was set without a frame or a locals dict";
                     // this is the case when we had custom locals
-                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame, location, this.pyFrame.localsDict);
+                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, curFrameInfo, location, this.pyFrame.localsDict, inClassScope);
                 }
             }
             // TODO: frames: update location
@@ -124,14 +128,6 @@ public final class PFrame extends PythonBuiltinObject {
             return escaped;
         }
 
-        public MaterializedFrame getFrame() {
-            return frame;
-        }
-
-        public void setFrame(MaterializedFrame frame) {
-            this.frame = frame;
-        }
-
         public PFrame getPyFrame() {
             return pyFrame;
         }
@@ -139,8 +135,6 @@ public final class PFrame extends PythonBuiltinObject {
         public void setPyFrame(PFrame escapedFrame) {
             assert this.pyFrame == null || this.pyFrame.isIncomplete() || this.pyFrame == escapedFrame : "cannot change the escaped frame";
             this.pyFrame = escapedFrame;
-            this.frame = escapedFrame.getFrame();
-            this.escaped = frame != null;
         }
 
         public Node getCallNode() {
@@ -150,23 +144,27 @@ public final class PFrame extends PythonBuiltinObject {
         public void setCallNode(Node callNode) {
             this.callNode = callNode;
         }
+
+        public Reference getCallerInfo() {
+            return callerInfo;
+        }
     }
 
-    public PFrame(LazyPythonClass cls, MaterializedFrame frame, Node location) {
-        this(cls, frame, location, null);
+    public PFrame(LazyPythonClass cls, Reference virtualFrameInfo, Node location, boolean inClassScope) {
+        this(cls, virtualFrameInfo, location, null, inClassScope);
     }
 
-    public PFrame(LazyPythonClass cls, MaterializedFrame frame, Node location, Object locals) {
+    public PFrame(LazyPythonClass cls, Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
         super(cls);
-        this.frame = frame;
+        this.virtualFrameInfo = virtualFrameInfo;
         this.localsDict = locals;
         this.location = location;
-        this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
+        this.inClassScope = inClassScope;
     }
 
     private PFrame(LazyPythonClass cls, Object locals) {
         super(cls);
-        this.frame = null;
+        this.virtualFrameInfo = null;
         this.location = null;
         this.inClassScope = false;
         this.localsDict = locals;
@@ -177,7 +175,9 @@ public final class PFrame extends PythonBuiltinObject {
         // TODO: frames: extract the information from the threadState object
         Object[] frameArgs = PArguments.create();
         PArguments.setGlobals(frameArgs, globals);
-        this.frame = Truffle.getRuntime().createMaterializedFrame(frameArgs);
+        Reference curFrameInfo = new Reference(null);
+        this.virtualFrameInfo = curFrameInfo;
+        curFrameInfo.setPyFrame(this);
         this.location = code.getRootNode();
         this.inClassScope = code.getRootNode() instanceof ClassBodyRootNode;
         this.line = code.getRootNode() == null ? code.getFirstLineNo() : -2;
@@ -185,17 +185,21 @@ public final class PFrame extends PythonBuiltinObject {
         localsDict = locals;
     }
 
-    public MaterializedFrame getFrame() {
-        return frame;
-    }
-
+    /**
+     * Prefer to use the {@link GetLocalsNode}.<br/>
+     * <br/>
+     *
+     * Returns a dictionary with the locals, possibly creating it from the frame. Note that the
+     * dictionary may have been modified and should then be updated with the current frame locals.
+     * To that end, use the {@link GetLocalsNode} instead of calling this method directly.
+     */
     public Object getLocalsDict() {
         return localsDict;
     }
 
     public PFrame.Reference getRef() {
-        if (frame != null) {
-            return PArguments.getCurrentFrameInfo(this.frame);
+        if (virtualFrameInfo != null) {
+            return virtualFrameInfo;
         } else {
             return null;
         }
@@ -235,13 +239,22 @@ public final class PFrame extends PythonBuiltinObject {
      * dictionary may have been modified and should then be updated with the current frame locals.
      * To that end, use the {@link GetLocalsNode} instead of calling this method directly.
      */
-    public Object getLocals(PythonObjectFactory factory) {
-        if (localsDict == null) {
-            assert frame != null;
-            return localsDict = factory.createDictLocals(frame);
-        } else {
-            return localsDict;
-        }
+    public Object getLocals(@SuppressWarnings("unused") PythonObjectFactory factory) {
+        assert localsDict != null;
+        return localsDict;
+    }
+
+    /**
+     * Prefer to use the
+     * {@link com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetGlobalsNode}.<br/>
+     * <br/>
+     *
+     * Returns a dictionary with the locals, possibly creating it from the frame. Note that the
+     * dictionary may have been modified and should then be updated with the current frame locals.
+     * To that end, use the {@link GetLocalsNode} instead of calling this method directly.
+     */
+    public PythonObject getGlobals() {
+        return PArguments.getGlobals(arguments);
     }
 
     /**
@@ -250,14 +263,14 @@ public final class PFrame extends PythonBuiltinObject {
      * stack attached to it, which is where we check this.
      */
     public boolean isIncomplete() {
-        return location == null && frame == null;
+        return location == null && virtualFrameInfo == null;
     }
 
     /**
      * When this is true, the frame has escaped
      **/
     public boolean hasFrame() {
-        return frame != null;
+        return virtualFrameInfo != null;
     }
 
     public boolean inClassScope() {
@@ -278,5 +291,13 @@ public final class PFrame extends PythonBuiltinObject {
     @TruffleBoundary
     private static RootCallTarget createCallTarget(Node location) {
         return Truffle.getRuntime().createCallTarget(location.getRootNode());
+    }
+
+    public Object[] getArguments() {
+        return arguments;
+    }
+
+    public void setArguments(Object[] arguments2) {
+        this.arguments = arguments2;
     }
 }

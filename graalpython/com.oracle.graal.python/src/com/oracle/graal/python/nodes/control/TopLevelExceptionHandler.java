@@ -175,7 +175,7 @@ public class TopLevelExceptionHandler extends RootNode {
             }
             // It might still happen that there is no Python frame involved, e.g., SyntaxError.
             if (firstPythonFrame != null) {
-                PFrame escapedFrame = materializeFrameNode.execute(firstPythonFrame, this);
+                PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false, firstPythonFrame);
                 PTraceback freshTb = factory().createTraceback(escapedFrame, e);
                 value.setTraceback(freshTb);
                 tb = freshTb;

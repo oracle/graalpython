@@ -59,6 +59,7 @@ import com.oracle.truffle.api.nodes.DirectCallNode;
 
 public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     @Child private DirectCallNode callNode;
+    @Child private CallContext callContext;
     protected final boolean isBuiltin;
 
     protected CallTargetInvokeNode(CallTarget callTarget, boolean isBuiltin, boolean isGenerator) {
@@ -69,6 +70,7 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         if (isGenerator && shouldInlineGenerators()) {
             this.callNode.forceInlining();
         }
+        this.callContext = CallContext.create();
         this.isBuiltin = isBuiltin;
     }
 
@@ -111,7 +113,7 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
                 IndirectCalleeContext.exit(context, frameInfo);
             }
         } else {
-            CallContext.prepareCall(frame, arguments, ct, this);
+            callContext.prepareCall(frame, arguments, ct, this);
             return callNode.call(arguments);
         }
     }

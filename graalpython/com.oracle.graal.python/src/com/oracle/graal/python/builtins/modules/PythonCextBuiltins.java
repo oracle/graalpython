@@ -416,7 +416,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         public Object run(VirtualFrame frame, Object module,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
-                        @Cached MaterializeFrameNode frameNode) {
+                        @Cached MaterializeFrameNode materializeNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             Object result;
@@ -432,7 +432,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // do do it here if it hasn't been done already.
                 PTraceback storedTraceback = exception.getTraceback();
                 if (storedTraceback == null) {
-                    PFrame escapedFrame = frameNode.execute(frame, this);
+                    PFrame escapedFrame = materializeNode.execute(frame, this, true, false);
                     exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
                 }
                 result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});

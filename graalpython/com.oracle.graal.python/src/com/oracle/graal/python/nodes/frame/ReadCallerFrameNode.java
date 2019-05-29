@@ -50,6 +50,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -67,60 +68,71 @@ public final class ReadCallerFrameNode extends Node {
         return new ReadCallerFrameNode();
     }
 
-    public Frame executeWith(Frame frame, int level) {
-        return executeWith(frame, true, level);
+    public final PFrame executeWith(VirtualFrame frame, int level) {
+        return executeWith(frame, PArguments.getCurrentFrameInfo(frame), true, level);
     }
 
-    public Frame executeWith(Frame frame, FrameInstance.FrameAccess frameAccess, int level) {
-        return executeWith(frame, frameAccess, true, level);
+    public final PFrame executeWith(VirtualFrame frame, Frame startFrame, int level) {
+        return executeWith(frame, PArguments.getCurrentFrameInfo(startFrame), true, level);
     }
 
-    public Frame executeWith(Frame frame, boolean skipInternal, int level) {
-        return executeWith(frame, FrameInstance.FrameAccess.MATERIALIZE, skipInternal, level);
+    public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, int level) {
+        return executeWith(frame, startFrameInfo, true, level);
     }
 
-    public Frame executeWith(Frame frame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
-        Frame callerFrame = frame;
+    public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, int level) {
+        return executeWith(frame, startFrameInfo, frameAccess, true, level);
+    }
+
+    public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, boolean skipInternal, int level) {
+        return executeWith(frame, startFrameInfo, FrameInstance.FrameAccess.MATERIALIZE, skipInternal, level);
+    }
+
+    public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
+        PFrame.Reference curFrameInfo = startFrameInfo;
         if (cachedCallerFrameProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             cachedCallerFrameProfile = ConditionProfile.createBinaryProfile();
             // executed the first time - don't pollute the profile
             for (int i = 0; i <= level;) {
-                PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(callerFrame);
+                PFrame.Reference callerInfo = curFrameInfo.getCallerInfo();
                 if (callerInfo == null) {
-                    return getCallerFrame(PArguments.getCurrentFrameInfo(frame), frameAccess, skipInternal, level);
+                    Frame callerFrame = getCallerFrame(startFrameInfo, frameAccess, skipInternal, level);
+                    ensureMaterializeNode().execute(frame, false, callerFrame);
+                    return PArguments.getCurrentFrameInfo(callerFrame).getPyFrame();
                 } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {
                     i++;
                 }
-                callerFrame = callerInfo.getFrame();
+                curFrameInfo = callerInfo;
             }
         } else {
-            callerFrame = walkLevels(callerFrame, frameAccess, skipInternal, level);
+            curFrameInfo = walkLevels(frame, curFrameInfo, frameAccess, skipInternal, level);
         }
-        return callerFrame;
+        return curFrameInfo.getPyFrame();
     }
 
-    private Frame walkLevels(Frame frame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
-        Frame currentFrame = frame;
+    private PFrame.Reference walkLevels(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
+        PFrame.Reference currentFrame = startFrameInfo;
         for (int i = 0; i <= level;) {
-            PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(currentFrame);
+            PFrame.Reference callerInfo = currentFrame.getCallerInfo();
             if (cachedCallerFrameProfile.profile(callerInfo == null)) {
-                return getCallerFrame(PArguments.getCurrentFrameInfo(frame), frameAccess, skipInternal, level);
+                Frame callerFrame = getCallerFrame(startFrameInfo, frameAccess, skipInternal, level);
+                // At this point, we must 'materialize' the frame. Actually, the Truffle frame is
+                // never materialized but we ensure that a corresponding PFrame is created and that
+                // the locals and arguments are synced.
+                ensureMaterializeNode().execute(frame, false, true, callerFrame);
+                return PArguments.getCurrentFrameInfo(callerFrame);
             } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {
                 i++;
             }
-            currentFrame = callerInfo.getFrame();
+            currentFrame = callerInfo;
         }
-        if (frameAccess == FrameInstance.FrameAccess.MATERIALIZE) {
-            return currentFrame.materialize();
-        } else {
-            return currentFrame;
-        }
+        return currentFrame;
     }
 
     /**
      * Walk up the stack to find the start frame and from then (level + 1)-times (counting only
-     * Python frames).
+     * non-internal Python frames).
      */
     private static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
         CompilerDirectives.transferToInterpreter();
@@ -131,15 +143,14 @@ public final class ReadCallerFrameNode extends Node {
                 RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
                 RootNode rootNode = target.getRootNode();
                 if (rootNode instanceof PRootNode) {
+                    PRootNode pRootNode = (PRootNode) rootNode;
+                    pRootNode.setNeedsCallerFrame();
                     if (i < 0) {
                         Frame roFrame = frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
                         if (PArguments.getCurrentFrameInfo(roFrame) == startFrame) {
                             i = 0;
                         }
                     } else {
-                        PRootNode pRootNode = (PRootNode) rootNode;
-                        pRootNode.setNeedsCallerFrame();
-
                         // Skip frames of builtin functions (if requested) because these do not have
                         // a Python frame in CPython.
                         if (!(skipInternal && pRootNode.isInternal())) {
@@ -164,5 +175,13 @@ public final class ReadCallerFrameNode extends Node {
                 return null;
             }
         });
+    }
+
+    private MaterializeFrameNode ensureMaterializeNode() {
+        if (materializeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            materializeNode = insert(MaterializeFrameNodeGen.create());
+        }
+        return materializeNode;
     }
 }

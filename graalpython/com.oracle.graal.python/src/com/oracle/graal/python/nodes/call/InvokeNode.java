@@ -137,6 +137,7 @@ abstract class DirectInvokeNode extends AbstractInvokeNode {
 public abstract class InvokeNode extends DirectInvokeNode {
 
     @Child private DirectCallNode callNode;
+    @Child private CallContext callContext;
 
     private final PythonObject globals;
     private final PCell[] closure;
@@ -153,6 +154,7 @@ public abstract class InvokeNode extends DirectInvokeNode {
         this.globals = globals;
         this.closure = closure;
         this.isBuiltin = isBuiltin;
+        this.callContext = CallContext.create();
     }
 
     public abstract Object execute(VirtualFrame frame, Object[] arguments);
@@ -198,7 +200,7 @@ public abstract class InvokeNode extends DirectInvokeNode {
                 IndirectCalleeContext.exit(context, frameInfo);
             }
         } else {
-            CallContext.prepareCall(frame, arguments, ct, this);
+            callContext.prepareCall(frame, arguments, ct, this);
             return callNode.call(arguments);
         }
     }

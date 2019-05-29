@@ -175,7 +175,7 @@ public class WithNode extends StatementNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             materializeFrameNode = insert(MaterializeFrameNodeGen.create());
         }
-        PFrame escapedFrame = materializeFrameNode.execute(frame, this);
+        PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false);
         PBaseException value = e.getExceptionObject();
         PythonAbstractClass type = getClassNode.execute(value);
         if (factory == null) {

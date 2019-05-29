@@ -103,7 +103,7 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -188,8 +188,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -1964,8 +1962,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // set '__module__' attribute
                 Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
-                    Frame callerFrame = getReadCallerFrameNode().executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
-                    PythonObject globals = PArguments.getGlobals(callerFrame);
+                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
+                    PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
                         String moduleName = getModuleNameFromGlobals(frame, globals);
                         if (moduleName != null) {

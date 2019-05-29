@@ -58,6 +58,7 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
     private static final GenericInvokeUncachedNode UNCACHED = new GenericInvokeUncachedNode();
 
     @Child private IndirectCallNode callNode = Truffle.getRuntime().createIndirectCallNode();
+    @Child private CallContext callContext = CallContext.create();
 
     private final ConditionProfile isNullFrameProfile;
 
@@ -84,7 +85,7 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
                 IndirectCalleeContext.exit(context, frameInfo);
             }
         } else {
-            CallContext.prepareCall(frame, arguments, callTarget, this);
+            callContext.prepareCall(frame, arguments, callTarget, this);
             return callNode.call(callTarget, arguments);
         }
     }

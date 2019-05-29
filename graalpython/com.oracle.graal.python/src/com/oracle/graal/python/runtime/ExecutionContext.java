@@ -45,6 +45,8 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -62,11 +64,13 @@ import com.oracle.truffle.api.profiles.BranchProfile;
  */
 public abstract class ExecutionContext {
 
-    public abstract static class CallContext {
+    public static final class CallContext extends Node {
+        @Child private MaterializeFrameNode materializeNode;
+
         /**
          * Prepare a call from a Python frame to a Python function.
          */
-        public static void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
+        public void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
             // equivalent to PyPy's ExecutionContext.enter `frame.f_backref =
             // self.topframeref` we here pass the current top frame reference to
             // the next frame. An optimization we do is to only pass the frame
@@ -78,7 +82,14 @@ public abstract class ExecutionContext {
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             if (calleeRootNode.needsCallerFrame()) {
                 PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
-                thisInfo.setFrame(frame.materialize());
+
+                // We are handing the PFrame of the current frame to the caller, i.e., it does not
+                // 'escape' since it is still on the stack.
+                // Also, force synchronization of values
+                PFrame pyFrame = ensureMaterializeNode().execute(frame, callNode, false, true);
+                assert thisInfo.getPyFrame() == pyFrame;
+                assert pyFrame.getRef() == thisInfo;
+
                 thisInfo.setCallNode(callNode);
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
@@ -98,6 +109,18 @@ public abstract class ExecutionContext {
                 PArguments.setException(callArguments, curExc);
             }
         }
+
+        private MaterializeFrameNode ensureMaterializeNode() {
+            if (materializeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeNode = insert(MaterializeFrameNodeGen.create());
+            }
+            return materializeNode;
+        }
+
+        public static CallContext create() {
+            return new CallContext();
+        }
     }
 
     public abstract static class CalleeContext {
@@ -108,7 +131,7 @@ public abstract class ExecutionContext {
         public static void enter(VirtualFrame frame, BranchProfile profile) {
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
-            PFrame.Reference thisFrameRef = new PFrame.Reference();
+            PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
             Object customLocals = PArguments.getCustomLocals(frame);
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
             // tfel: If there are custom locals, write them into an (incomplete)
@@ -142,8 +165,8 @@ public abstract class ExecutionContext {
                             if (PArguments.isPythonFrame(callerFrame)) {
                                 callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
                             } else {
-                                // TODO: frames: an assertion should be that this is one of our entry
-                                // point call nodes
+                                // TODO: frames: an assertion should be that this is one of our
+                                // entry point call nodes
                                 callerInfo = PFrame.Reference.EMPTY;
                             }
                         } else {
@@ -152,7 +175,7 @@ public abstract class ExecutionContext {
                     }
                 } else {
                     // caller info was requested, it must be here if there is
-                    // any.  If it isn't, we're in a top-frame.
+                    // any. If it isn't, we're in a top-frame.
                     if (callerInfo == null) {
                         callerInfo = PFrame.Reference.EMPTY;
                     }

@@ -58,13 +58,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -86,7 +87,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "sys")
@@ -278,7 +278,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
-                        @Cached MaterializeFrameNode frameNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
@@ -287,8 +286,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                Frame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-                PFrame escapedFrame = frameNode.execute(callerFrame, this);
+                Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
+                PFrame escapedFrame = readCallerFrameNode.executeWith(frame, currentFrameInfo, 0);
+                currentFrameInfo.markAsEscaped();
                 exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
                 return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
             }
@@ -301,31 +301,27 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public abstract static class GetFrameNode extends PythonBuiltinNode {
         @Specialization
         PFrame first(VirtualFrame frame, @SuppressWarnings("unused") PNone arg,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
-            return materializeNode.execute(readCallerNode.executeWith(frame, 0));
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return escapeFrame(frame, 0, readCallerNode);
         }
 
         @Specialization
         PFrame counted(VirtualFrame frame, int num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
-            return materializeNode.execute(readCallerNode.executeWith(frame, num));
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return escapeFrame(frame, num, readCallerNode);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         PFrame countedLong(VirtualFrame frame, long num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
-            return counted(frame, PInt.intValueExact(num), readCallerNode, materializeNode);
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return counted(frame, PInt.intValueExact(num), readCallerNode);
         }
 
         @Specialization
         PFrame countedLongOvf(VirtualFrame frame, long num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
             try {
-                return counted(frame, PInt.intValueExact(num), readCallerNode, materializeNode);
+                return counted(frame, PInt.intValueExact(num), readCallerNode);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
@@ -333,20 +329,24 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = ArithmeticException.class)
         PFrame countedPInt(VirtualFrame frame, PInt num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
-            return counted(frame, num.intValueExact(), readCallerNode, materializeNode);
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return counted(frame, num.intValueExact(), readCallerNode);
         }
 
         @Specialization
         PFrame countedPIntOvf(VirtualFrame frame, PInt num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
             try {
-                return counted(frame, num.intValueExact(), readCallerNode, materializeNode);
+                return counted(frame, num.intValueExact(), readCallerNode);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
+        }
+
+        private static PFrame escapeFrame(VirtualFrame frame, int num, ReadCallerFrameNode readCallerNode) {
+            Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
+            currentFrameInfo.markAsEscaped();
+            return readCallerNode.executeWith(frame, currentFrameInfo, num);
         }
 
         private PException raiseCallStackDepth() {

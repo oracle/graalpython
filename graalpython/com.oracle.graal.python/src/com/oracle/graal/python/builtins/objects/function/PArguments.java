@@ -180,8 +180,12 @@ public final class PArguments {
         arguments[INDEX_GLOBALS_ARGUMENT] = globals;
     }
 
+    public static PythonObject getGlobals(Object[] arguments) {
+        return (PythonObject) arguments[INDEX_GLOBALS_ARGUMENT];
+    }
+
     public static PythonObject getGlobals(Frame frame) {
-        return (PythonObject) frame.getArguments()[INDEX_GLOBALS_ARGUMENT];
+        return getGlobals(frame.getArguments());
     }
 
     public static PythonObject getGlobalsSafe(Frame frame) {
@@ -277,8 +281,12 @@ public final class PArguments {
         return arguments.length - USER_ARGUMENTS_OFFSET;
     }
 
+    public static MaterializedFrame getGeneratorFrame(Object[] arguments) {
+        return (MaterializedFrame) arguments[INDEX_GENERATOR_FRAME];
+    }
+
     public static MaterializedFrame getGeneratorFrame(Frame frame) {
-        return (MaterializedFrame) frame.getArguments()[INDEX_GENERATOR_FRAME];
+        return getGeneratorFrame(frame.getArguments());
     }
 
     public static Frame getGeneratorFrameSafe(Frame frame) {

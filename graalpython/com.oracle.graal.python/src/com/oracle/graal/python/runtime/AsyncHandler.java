@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -134,7 +133,6 @@ public class AsyncHandler {
         static final int ASYNC_ARGS = 4;
 
         @Child private CallNode callNode = CallNode.create();
-        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child private MaterializeFrameNode materializeNode = MaterializeFrameNodeGen.create();
 
         protected CallRootNode(TruffleLanguage<?> language) {
@@ -150,7 +148,7 @@ public class AsyncHandler {
             Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARGS, frameArguments.length);
             if (frameIndex >= 0) {
                 Node location = (Node) PArguments.getArgument(frameArguments, 2);
-                arguments[frameIndex] = materializeNode.execute(callerFrame, location);
+                arguments[frameIndex] = materializeNode.execute(frame, location, true, false, callerFrame);
             }
             return callNode.execute(callerFrame, callable, arguments);
         }

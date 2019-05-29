@@ -51,9 +51,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
 public final class FrameBuiltins extends PythonBuiltins {
@@ -70,9 +70,8 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(VirtualFrame curFrame, PFrame self) {
-            Frame frame = self.getFrame();
-            if (frame != null) {
-                PythonObject globals = PArguments.getGlobals(frame);
+            if (self.hasFrame()) {
+                PythonObject globals = self.getGlobals();
                 if (globals instanceof PythonModule) {
                     if (getDictNode == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -150,10 +149,19 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
-                        @Cached ReadLocalsNode readLocals) {
-            Frame materializedFrame = self.getFrame();
-            assert materializedFrame != null : "It's impossible to call f_locals on a frame without that frame having escaped";
-            return readLocals.execute(frame, materializedFrame);
+                        @Cached ReadLocalsNode readLocals,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached MaterializeFrameNode materializeNode) {
+            assert self.hasFrame() : "It's impossible to call f_locals on a frame without that frame having escaped";
+            // Special case because this builtin can be called without going through an invoke node:
+            // we need to sync the values of the frame if and only if 'self' represents the current
+            // frame. If 'self' represents another frame on the stack, the values are already
+            // refreshed.
+            if (profile.profile(PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+                PFrame pyFrame = materializeNode.execute(frame, false, true, frame);
+                assert pyFrame == self;
+            }
+            return readLocals.execute(frame, self);
         }
     }
 
@@ -161,10 +169,9 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetBackrefNode extends PythonBuiltinNode {
         @Specialization
-        Object getBackref(@SuppressWarnings("unused") VirtualFrame frame, PFrame self,
+        Object getBackref(VirtualFrame frame, PFrame self,
                         @Cached BranchProfile noBackref,
                         @Cached BranchProfile topRef,
-                        @Cached MaterializeFrameNode materializeFrameNode,
                         @Cached ReadCallerFrameNode readCallerFrame) {
             PFrame.Reference backref;
             for (PFrame cur = self;; cur = backref.getPyFrame()) {
@@ -176,16 +183,18 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // a) self is still on the stack and the caller isn't filled in
                     // b) this frame has returned, but not (yet) to a Python caller
                     // c) this frame has no caller (it is/was a top frame)
-                    Frame callerFrame = readCallerFrame.executeWith(cur.getFrame(), false, 0);
+                    PFrame callerFrame = readCallerFrame.executeWith(frame, cur.getRef(), false, 0);
+
+                    // We don't need to mark the caller frame as 'escaped' because if 'self' is
+                    // escaped, the caller frame will be escaped when leaving the current function.
+
                     if (callerFrame == null) {
                         topRef.enter();
                         // so we won't do this again
                         cur.setBackref(PFrame.Reference.EMPTY);
                         return PNone.NONE;
                     } else {
-                        // we need it now, so materialize it
-                        PFrame callerFrameObject = materializeFrameNode.execute(callerFrame);
-                        backref = callerFrameObject.getRef();
+                        backref = callerFrame.getRef();
                         cur.setBackref(backref);
                     }
                 }

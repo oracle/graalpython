@@ -477,6 +477,10 @@ public abstract class PythonObjectFactory extends Node {
         return createDict(new LocalsStorage(frame));
     }
 
+    public PDict createDictLocals(FrameDescriptor fd) {
+        return createDict(new LocalsStorage(fd));
+    }
+
     public PDict createDict(DynamicObject dynamicObject) {
         return createDict(new FastDictStorage(dynamicObject));
     }
@@ -544,12 +548,12 @@ public abstract class PythonObjectFactory extends Node {
      * Frames, traces and exceptions
      */
 
-    public PFrame createPFrame(MaterializedFrame frame, Node location) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, location));
+    public PFrame createPFrame(PFrame.Reference frameInfo, Node location, boolean inClassBody) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frameInfo, location, inClassBody));
     }
 
-    public PFrame createPFrame(MaterializedFrame frame, Node location, Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, location, locals));
+    public PFrame createPFrame(PFrame.Reference frameInfo, Node location, Object locals, boolean inClassBody) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frameInfo, location, locals, inClassBody));
     }
 
     public PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {

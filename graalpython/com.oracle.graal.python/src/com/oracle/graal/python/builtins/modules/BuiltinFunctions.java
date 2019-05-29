@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -146,6 +147,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
@@ -636,11 +638,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return code;
         }
 
-        private static void inheritGlobals(Frame callerFrame, Object[] args) {
-            PArguments.setGlobals(args, PArguments.getGlobals(callerFrame));
+        private static void inheritGlobals(PFrame callerFrame, Object[] args) {
+            PArguments.setGlobals(args, callerFrame.getGlobals());
         }
 
-        private static void inheritLocals(VirtualFrame frame, Frame callerFrame, Object[] args, ReadLocalsNode getLocalsNode) {
+        private static void inheritLocals(VirtualFrame frame, PFrame callerFrame, Object[] args, ReadLocalsNode getLocalsNode) {
             Object callerLocals = getLocalsNode.execute(frame, callerFrame);
             setCustomLocals(args, callerLocals);
         }
@@ -675,9 +677,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached ReadLocalsNode getLocalsNode) {
             PCode code = createAndCheckCode(frame, source);
-            // Getting the locals may materialize the frame, so do frame access 'materialized'
-            // TODO(fa): how to avoid materialization of the caller frame ?
-            Frame callerFrame = readCallerFrameNode.executeWith(frame, 0);
+            PFrame callerFrame = readCallerFrameNode.executeWith(frame, PArguments.getCurrentFrameInfo(frame), 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
@@ -707,7 +707,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
                         @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
             PCode code = createAndCheckCode(frame, source);
-            Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
+            PFrame callerFrame = readCallerFrameNode.executeWith(frame, PArguments.getCallerFrameInfo(frame), FrameInstance.FrameAccess.READ_ONLY, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
@@ -1907,13 +1907,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "globals", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GlobalsNode extends PythonBuiltinNode {
-        @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+
         private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
         public Object globals(VirtualFrame frame) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
-            PythonObject globals = PArguments.getGlobals(callerFrame);
+            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
+            PythonObject globals = callerFrame.getGlobals();
             if (condProfile.profile(globals instanceof PythonModule)) {
                 PHashingCollection dict = globals.getDict();
                 if (dict == null) {
@@ -1935,15 +1936,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public Object locals(VirtualFrame frame,
                         @Cached ReadLocalsNode readLocalsNode,
-                        @Cached ReadCallerFrameNode readCallerFrameNode) {
-            // This must materialize the frame because otherwise 'ReadLocalsNode' will try and fail.
-            // TODO(fa): can we avoid materialization in some cases ?
-            Frame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-            Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached MaterializeFrameNode materializeNode) {
+            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
+            Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame.getArguments());
             if (inGenerator.profile(generatorFrame == null)) {
                 return readLocalsNode.execute(frame, callerFrame);
             } else {
-                return readLocalsNode.execute(frame, generatorFrame);
+                return readLocalsNode.execute(frame, materializeNode.execute(frame, false, generatorFrame));
             }
         }
     }

@@ -76,6 +76,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
+        // TODO 'materialize' generator frame and create locals dict eagerly
         return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
                         numOfGeneratorForNode);
     }
