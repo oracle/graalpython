@@ -40,13 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class PTraceback extends PythonBuiltinObject {
+
+    /** A marker object to indicate the end of a traceback chain. */
+    public static final PTraceback NO_TRACEBACK = new PTraceback(PythonBuiltinClassType.PTraceback, null, (PException) null);
 
     public static final String TB_FRAME = "tb_frame";
     public static final String TB_NEXT = "tb_next";
@@ -101,4 +106,18 @@ public final class PTraceback extends PythonBuiltinObject {
     public void setNext(PTraceback next) {
         this.next = next;
     }
+
+    public PException getException() {
+        return exception;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (this == NO_TRACEBACK) {
+            return "NO_TRACEBACK";
+        }
+        return super.toString();
+    }
+
 }
