@@ -325,7 +325,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PythonClass createPythonClass(LazyPythonClass metaclass, String name, PythonAbstractClass[] bases) {
-        return trace(new PythonClass(metaclass, name, PythonLanguage.freshShape(), bases));
+        return trace(new PythonClass(metaclass, name, bases));
     }
 
     public PythonNativeClass createNativeClassWrapper(TruffleObject ptr) {
