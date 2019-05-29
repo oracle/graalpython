@@ -1943,7 +1943,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (inGenerator.profile(generatorFrame == null)) {
                 return readLocalsNode.execute(frame, callerFrame);
             } else {
-                return readLocalsNode.execute(frame, materializeNode.execute(frame, false, generatorFrame));
+                return readLocalsNode.execute(frame, materializeNode.execute(frame, this, false, false, generatorFrame));
             }
         }
     }

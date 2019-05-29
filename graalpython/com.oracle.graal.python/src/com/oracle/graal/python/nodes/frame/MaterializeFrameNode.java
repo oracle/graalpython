@@ -87,7 +87,17 @@ public abstract class MaterializeFrameNode extends Node {
 
     public abstract PFrame execute(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)"})
+    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "isGeneratorFrame(frameToMaterialize)"})
+    static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getGeneratorFrameLocals(frameToMaterialize), false);
+        syncArgs(frameToMaterialize, escapedFrame);
+        PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
+        topFrameRef.setPyFrame(escapedFrame);
+        return escapedFrame;
+    }
+
+    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)", "!isGeneratorFrame(frameToMaterialize)"})
     static PFrame freshPFrame(Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
@@ -167,7 +177,7 @@ public abstract class MaterializeFrameNode extends Node {
 
         // copy only some carefully picked internal arguments
         PArguments.setSpecialArgument(copiedArgs, PArguments.getSpecialArgument(arguments));
-        PArguments.setGeneratorFrame(copiedArgs, PArguments.getGeneratorFrame(arguments));
+        PArguments.setGeneratorFrame(copiedArgs, PArguments.getGeneratorFrameSafe(arguments));
         PArguments.setGlobals(copiedArgs, PArguments.getGlobals(arguments));
         PArguments.setClosure(copiedArgs, PArguments.getClosure(arguments));
 
@@ -179,6 +189,10 @@ public abstract class MaterializeFrameNode extends Node {
 
     protected static boolean inClassBody(Frame frame) {
         return PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
+    }
+
+    protected static boolean isGeneratorFrame(Frame frame) {
+        return PArguments.isGeneratorFrame(frame);
     }
 
     protected static PFrame getPFrame(Frame frame) {

@@ -512,7 +512,7 @@ public abstract class PythonObjectFactory extends Node {
     public PGenerator createGenerator(String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots, int numOfActiveFlags,
                     int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTarget, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode));
+                        numOfGeneratorForNode, this));
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,

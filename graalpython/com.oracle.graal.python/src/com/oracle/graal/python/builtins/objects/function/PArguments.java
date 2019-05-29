@@ -112,7 +112,7 @@ public final class PArguments {
 
     public static boolean isGeneratorFrame(Object[] frameArgs) {
         // a generator frame never has a frame info
-        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_CURRENT_FRAME_INFO] == null && frameArgs[INDEX_GENERATOR_FRAME] instanceof GeneratorControlData;
+        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_GENERATOR_FRAME] instanceof GeneratorControlData;
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -293,9 +293,13 @@ public final class PArguments {
         return getGeneratorFrame(frame.getArguments());
     }
 
-    public static Frame getGeneratorFrameSafe(Frame frame) {
-        if (frame.getArguments()[INDEX_GENERATOR_FRAME] instanceof MaterializedFrame) {
-            return getGeneratorFrame(frame);
+    public static MaterializedFrame getGeneratorFrameSafe(Frame frame) {
+        return getGeneratorFrameSafe(frame.getArguments());
+    }
+
+    public static MaterializedFrame getGeneratorFrameSafe(Object[] arguments) {
+        if (arguments[INDEX_GENERATOR_FRAME] instanceof MaterializedFrame) {
+            return getGeneratorFrame(arguments);
         } else {
             return null;
         }
@@ -334,8 +338,11 @@ public final class PArguments {
         arguments[INDEX_CALLER_FRAME_INFO] = locals;
     }
 
+    public static PDict getGeneratorFrameLocals(Frame frame) {
+        return getGeneratorFrameLocals(frame.getArguments());
+    }
+
     public static PDict getGeneratorFrameLocals(Object[] arguments) {
         return (PDict) arguments[INDEX_CALLER_FRAME_INFO];
     }
-
 }

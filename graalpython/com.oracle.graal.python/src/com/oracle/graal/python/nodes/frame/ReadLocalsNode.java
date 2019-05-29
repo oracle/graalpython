@@ -50,7 +50,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -75,13 +74,9 @@ public abstract class ReadLocalsNode extends Node {
     }
 
     @Specialization(guards = {"isGeneratorFrame(frame)"})
-    static Object doGeneratorFrame(@SuppressWarnings("unused") VirtualFrame callingFrame, PFrame frame,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+    static Object doGeneratorFrame(@SuppressWarnings("unused") VirtualFrame callingFrame, PFrame frame) {
         PDict localsDict = PArguments.getGeneratorFrameLocals(frame.getArguments());
-        if (localsDict == null) {
-            localsDict = factory.createDictLocals(new FrameDescriptor());
-            PArguments.setGeneratorFrameLocals(frame.getArguments(), localsDict);
-        }
+        assert localsDict != null : "generator locals dict was not eagerly created";
         return localsDict;
     }
 

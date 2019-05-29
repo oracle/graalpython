@@ -27,10 +27,12 @@ package com.oracle.graal.python.builtins.objects.generator;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
@@ -50,7 +52,7 @@ public final class PGenerator extends PythonBuiltinObject {
     private PCode code;
 
     public static PGenerator create(LazyPythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, PythonObjectFactory factory) {
         /*
          * Setting up the persistent frame in {@link #arguments}.
          */
@@ -59,6 +61,7 @@ public final class PGenerator extends PythonBuiltinObject {
         MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, frameDescriptor);
         PArguments.setGeneratorFrame(arguments, generatorFrame);
         PArguments.setControlData(arguments, generatorArgs);
+        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
         // set generator closure to the generator frame locals
         FrameSlot[] freeVarSlots = cellSlots.getFreeVarSlots();
         FrameSlot[] cellVarSlots = cellSlots.getCellVarSlots();
@@ -77,6 +80,7 @@ public final class PGenerator extends PythonBuiltinObject {
         for (int i = 0; i < cellVarSlots.length; i++) {
             generatorFrame.setObject(cellVarSlots[i], new PCell(cellVarAssumptions[i]));
         }
+        PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
         return new PGenerator(clazz, name, callTarget, frameDescriptor, arguments, closure);
     }
 
