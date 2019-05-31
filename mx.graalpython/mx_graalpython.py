@@ -908,18 +908,21 @@ def import_python_sources(args):
 # add ci verification util
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def verify_ci(dest_suite, common_dirs=None, args=None):
+def verify_ci(dest_suite, common_ci_dir="ci_common", args=None, ext=('.jsonnet', '.libsonnet')):
     """Verify CI configuration"""
-    if common_dirs is None:
-        common_dirs = ['ci_common']
     base_suite = SUITE
     if not isinstance(dest_suite, mx.SourceSuite) or not isinstance(base_suite, mx.SourceSuite):
         raise mx.abort("Can not use verify-ci on binary suites: {} and {} need to be source suites".format(
             SUITE.name, dest_suite.name))
     assert isinstance(base_suite, mx.SourceSuite)
-    for ext in [".libsonnet", ".jsonnet"]:
-        mx.log("CI setup verifying *{} files ... ".format(ext))
-        mx.verify_ci(args, base_suite, dest_suite, common_dirs=common_dirs, extension=ext)
+
+    ci_files = [os.path.join(common_ci_dir, name)
+                for name in os.listdir(os.path.join(SUITE.dir, common_ci_dir))
+                if os.path.splitext(name)[-1] in ext]
+
+    for common_file in ci_files:
+        mx.log("CI setup verifying {} ... ".format(common_file))
+        mx.verify_ci(args, base_suite, dest_suite, common_file=common_file)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
