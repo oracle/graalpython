@@ -34,7 +34,7 @@
 
     // make a builder run with a given primary suite
     withPrimarySuite(suite, builder)::
-        if (std.isArray(builder)) then [
+        if (std.type(builder) == 'array') then [
                 b + (if isBuilder(b) then {environment +: {'MX_PRIMARY_SUITE_PATH': suite}} else {})
                 for b in builder
             ]
