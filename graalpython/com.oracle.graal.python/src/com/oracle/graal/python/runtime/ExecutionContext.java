@@ -164,9 +164,9 @@ public abstract class ExecutionContext {
                         firstRequest = false;
 
                         // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
-                        // 'Truffle.getRuntime().getCallerFrame()' because we still need to filter
-                        // internal frames.
-                        Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, true, 0);
+                        // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
+                        // non-Python frames, even if we do not skip frames of builtin functions.
+                        Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, false, 0);
                         if (PArguments.isPythonFrame(callerFrame)) {
                             callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
                         } else {
