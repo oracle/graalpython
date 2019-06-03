@@ -115,7 +115,9 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         // the namespace argument stores the locals
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getArgument(frameToMaterialize, 0), true);
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync, syncValuesNode);
+        // The locals dict in a class body is always custom; we must not write the values from the
+        // frame to this dict.
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, false, syncValuesNode);
     }
 
     /**
