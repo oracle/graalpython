@@ -143,6 +143,7 @@ public abstract class ExecutionContext {
             // PFrame here
             if (customLocals != null) {
                 profile.enter();
+                assert !(customLocals instanceof PFrame.Reference);
                 thisFrameRef.setCustomLocals(customLocals);
             }
         }
@@ -190,6 +191,8 @@ public abstract class ExecutionContext {
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);
             }
+            // explicitly clear current frame info
+            PArguments.setCurrentFrameInfo(frame, null);
         }
 
         private MaterializeFrameNode ensureMaterializeNode() {
