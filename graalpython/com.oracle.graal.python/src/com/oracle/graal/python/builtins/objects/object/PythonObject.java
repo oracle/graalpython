@@ -35,18 +35,13 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectFactory;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.object.dsl.Layout;
 import com.oracle.truffle.api.object.dsl.Nullable;
@@ -154,10 +149,8 @@ public class PythonObject extends PythonAbstractObject {
 
     @Layout(implicitCastIntToLong = true, implicitCastIntToDouble = false)
     protected static interface PythonObjectLayout {
-        DynamicObjectFactory createPythonObjectShape(LazyPythonClass klass);
+        DynamicObjectFactory createPythonObjectShape(LazyPythonClass lazyPythonClass);
         DynamicObject createPythonObject(DynamicObjectFactory factory, @Nullable PHashingCollection dict);
-
-        boolean isPythonObject(DynamicObject object);
 
         PHashingCollection getDict(DynamicObject object);
         void setDict(DynamicObject object, PHashingCollection dict);

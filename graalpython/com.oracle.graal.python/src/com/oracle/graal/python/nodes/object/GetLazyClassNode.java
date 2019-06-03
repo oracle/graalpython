@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.object.Shape;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
@@ -155,11 +156,12 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PInt;
     }
 
-    @Specialization(guards = "object == cachedObject", assumptions = {"classStable", "singleContextAssumption"}, limit = "1")
+    // if object is constant here, storage will also be constant, so the shape
+    // lookup is the only thing we need.
+    @Specialization(guards = "object.getStorage().getShape() == cachedShape", assumptions = {"singleContextAssumption"}, limit = "1")
     protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
-                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @SuppressWarnings("unused") @Cached("cachedObject.getClassStableAssumption()") Assumption classStable,
                     @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
         return klass;
     }
