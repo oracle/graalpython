@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -128,7 +129,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame incompleteFrame(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
-        PDict locals = factory.createDictLocals(frameToMaterialize.getFrameDescriptor());
+        Object locals = getPFrame(frameToMaterialize).getLocalsDict();
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, inClassBody(frameToMaterialize));
         return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync, syncValuesNode);
     }
@@ -206,12 +207,30 @@ public abstract class MaterializeFrameNode extends Node {
         return PArguments.getCurrentFrameInfo(frame).getPyFrame();
     }
 
+    /**
+     * When refreshing the frame values in the locals dict, there are 4 cases:
+     * <ol>
+     * <li>The locals object is a {@code dict} with a {@code LocalsStorage} having the same frame
+     * descriptor as the frame to synchronize. This then represents the unmodified set of frame
+     * variables and need to be refreshed.</li>
+     * <li>The locals object is a {@code dict} with a storage <b>different</b> to
+     * {@code LocalsStorage}. This may happen if someone retrieves the locals and manually assigns
+     * to the dict. Then the storage changes. In this case we must also refresh the frame
+     * values.</li>
+     * <li>The locals object is some arbitrary custom mapping object (excluding the above 2 cases).
+     * In this case, all code was already working on the custom object and we don't need to do
+     * anything.</li>
+     * <li>The locals object is a {@code dict} with a {@code LocalsStorage} having a different frame
+     * descriptor as the frame to synchronize. This is common when {@code exec} / {@code eval} and
+     * inheriting the locals of the caller. In this case, we don't need to do anything.</li>
+     * </ol>
+     */
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class SyncFrameValuesNode extends Node {
 
         public abstract void execute(VirtualFrame frame, PFrame pyframe, Frame frameToSync);
 
-        @Specialization(guards = {"hasLocalsStorage(pyFrame)", "frameToSync.getFrameDescriptor() == cachedFd"}, //
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync)", "frameToSync.getFrameDescriptor() == cachedFd"}, //
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
         @ExplodeLoop
@@ -247,7 +266,7 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "hasLocalsStorage(pyFrame)", replaces = "doLocalsStorageCached")
+        @Specialization(guards = "hasLocalsStorage(pyFrame, frameToSync)", replaces = "doLocalsStorageCached")
         static void doLocalsStorageUncached(PFrame pyFrame, Frame frameToSync) {
             FrameDescriptor fd = frameToSync.getFrameDescriptor();
             FrameSlot[] cachedSlots = getSlots(fd);
@@ -324,7 +343,7 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "isCustomLocalsObject(pyFrame)")
+        @Specialization(guards = "isCustomLocalsObject(pyFrame, frameToSync)")
         @SuppressWarnings("unused")
         static void doCustomLocalsObject(PFrame pyFrame, Frame frameToSync) {
             // nothing to do; we already worked on the custom object
@@ -334,9 +353,14 @@ public abstract class MaterializeFrameNode extends Node {
             return fd.getSlots().toArray(new FrameSlot[0]);
         }
 
-        protected static boolean hasLocalsStorage(PFrame pyFrame) {
+        /**
+         * Guard that tests if the locals object is a dict having a {@link LocalsStorage} using the
+         * same frame descriptor as the frame to synchronize. That means, the dict represents
+         * unmodified set of frame values of the frame to sync.
+         */
+        protected static boolean hasLocalsStorage(PFrame pyFrame, Frame frameToSync) {
             Object localsObject = pyFrame.getLocalsDict();
-            return localsObject instanceof PDict && ((PDict) localsObject).getDictStorage() instanceof LocalsStorage;
+            return localsObject instanceof PDict && getFd(((PDict) localsObject).getDictStorage()) == frameToSync.getFrameDescriptor();
         }
 
         protected static boolean isDictWithCustomStorage(PFrame pyFrame) {
@@ -345,12 +369,19 @@ public abstract class MaterializeFrameNode extends Node {
             return localsObject instanceof PDict && ((PDict) localsObject).getLazyPythonClass() == PythonBuiltinClassType.PDict;
         }
 
-        protected static boolean isCustomLocalsObject(PFrame pyFrame) {
-            return !(pyFrame.getLocalsDict() instanceof PDict);
+        protected static boolean isCustomLocalsObject(PFrame pyFrame, Frame frameToSync) {
+            return !hasLocalsStorage(pyFrame, frameToSync);
         }
 
         protected static LocalsStorage getLocalsStorage(PFrame pyFrame) {
             return (LocalsStorage) ((PDict) pyFrame.getLocalsDict()).getDictStorage();
+        }
+
+        private static FrameDescriptor getFd(HashingStorage storage) {
+            if (storage instanceof LocalsStorage) {
+                return ((LocalsStorage) storage).getFrame().getFrameDescriptor();
+            }
+            return null;
         }
     }
 }
