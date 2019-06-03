@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+ok # Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -917,6 +917,7 @@ def verify_ci(dest_suite, common_ci_dir="ci_common", args=None, ext=('.jsonnet',
     assert isinstance(base_suite, mx.SourceSuite)
 
     ci_files = mx.suite_ci_files(SUITE, common_ci_dir, extension=ext)
+    log("CI setup checking common file(s): \n\t{0}".format('\n\t'.join(map(str, ci_files))))
     mx.verify_ci(args, base_suite, dest_suite, common_file=ci_files)
 
 
