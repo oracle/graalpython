@@ -134,7 +134,7 @@ public final class ReadCallerFrameNode extends Node {
      * Walk up the stack to find the start frame and from then (level + 1)-times (counting only
      * non-internal Python frames).
      */
-    private static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
+    public static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
         CompilerDirectives.transferToInterpreter();
         return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
             int i = -1;

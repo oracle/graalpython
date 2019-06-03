@@ -47,11 +47,12 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -127,6 +128,8 @@ public abstract class ExecutionContext {
 
         @Child private MaterializeFrameNode materializeNode;
 
+        @CompilationFinal private boolean firstRequest = true;
+
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
@@ -154,34 +157,31 @@ public abstract class ExecutionContext {
             if (info.isEscaped()) {
                 // This assumption acts as our branch profile here
                 PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
-                if (!node.needsCallerFrame()) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    node.setNeedsCallerFrame();
-                    if (callerInfo == null) {
-                        // we didn't request the caller frame reference. now we need
-                        // it.
+                if (callerInfo == null) {
+                    if (firstRequest) {
+                        // we didn't request the caller frame reference. now we need it.
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        FrameInstance callerFrameInstance = Truffle.getRuntime().getCallerFrame();
-                        if (callerFrameInstance != null) {
-                            Frame callerFrame = callerFrameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
-                            if (PArguments.isPythonFrame(callerFrame)) {
-                                callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
-                            } else {
-                                // TODO: frames: an assertion should be that this is one of our
-                                // entry point call nodes
-                                callerInfo = PFrame.Reference.EMPTY;
-                            }
+                        firstRequest = false;
+
+                        // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
+                        // 'Truffle.getRuntime().getCallerFrame()' because we still need to filter
+                        // internal frames.
+                        Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, true, 0);
+                        if (PArguments.isPythonFrame(callerFrame)) {
+                            callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
                         } else {
+                            // TODO: frames: an assertion should be that this is one of our
+                            // entry point call nodes
                             callerInfo = PFrame.Reference.EMPTY;
                         }
-                    }
-                } else {
-                    // caller info was requested, it must be here if there is
-                    // any. If it isn't, we're in a top-frame.
-                    if (callerInfo == null) {
+                    } else {
+                        // caller info was requested, it must be here if there is
+                        // any. If it isn't, we're in a top-frame.
+                        assert node.needsCallerFrame();
                         callerInfo = PFrame.Reference.EMPTY;
                     }
                 }
+
                 // force the frame so that it can be accessed later
                 node.getExitedEscapedWithoutFrameProfile().enter();
                 ensureMaterializeNode().execute(frame, node, false, true);
