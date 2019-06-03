@@ -62,11 +62,16 @@ local mixins = import 'mixins.libsonnet';
     testGateTime(type, platform, timelimit)::
         baseGraalGate + {tags:: "python-"+type} + mixins.getPlatform(platform) + {name: "python-"+ type +"-"+platform} + {timelimit: timelimit},
 
-    local styleGate = baseGraalGate + mixins.eclipse + mixins.linux + {
-        tags:: "style,fullbuild,python-license",
+    local baseStyleGate = baseGraalGate + mixins.eclipse + mixins.linux + {
+        tags:: "style",
         name: "python-style",
 
         timelimit: const.TIME_LIMIT["1h"],
+    },
+    baseStyleGate:: baseStyleGate,
+
+    local styleGate = baseStyleGate + {
+        tags:: super.tags + ",fullbuild,python-license",
     },
     styleGate:: styleGate,
 
