@@ -916,13 +916,8 @@ def verify_ci(dest_suite, common_ci_dir="ci_common", args=None, ext=('.jsonnet',
             SUITE.name, dest_suite.name))
     assert isinstance(base_suite, mx.SourceSuite)
 
-    ci_files = [os.path.join(common_ci_dir, name)
-                for name in os.listdir(os.path.join(SUITE.dir, common_ci_dir))
-                if os.path.splitext(name)[-1] in ext]
-
-    for common_file in ci_files:
-        mx.log("CI setup verifying {} ... ".format(common_file))
-        mx.verify_ci(args, base_suite, dest_suite, common_file=common_file)
+    ci_files = mx.suite_ci_files(SUITE, common_ci_dir, extension=ext)
+    mx.verify_ci(args, base_suite, dest_suite, common_file=ci_files)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
