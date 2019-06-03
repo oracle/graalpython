@@ -245,20 +245,22 @@ public abstract class MaterializeFrameNode extends Node {
 
                 for (int i = 0; i < cachedSlots.length; i++) {
                     FrameSlot slot = cachedSlots[i];
-                    if (frameToSync.isBoolean(slot)) {
-                        target.setBoolean(slot, frameToSync.getBoolean(slot));
-                    } else if (frameToSync.isByte(slot)) {
-                        target.setByte(slot, frameToSync.getByte(slot));
-                    } else if (frameToSync.isDouble(slot)) {
-                        target.setDouble(slot, frameToSync.getDouble(slot));
-                    } else if (frameToSync.isFloat(slot)) {
-                        target.setFloat(slot, frameToSync.getFloat(slot));
-                    } else if (frameToSync.isInt(slot)) {
-                        target.setInt(slot, frameToSync.getInt(slot));
-                    } else if (frameToSync.isLong(slot)) {
-                        target.setLong(slot, frameToSync.getLong(slot));
-                    } else if (frameToSync.isObject(slot)) {
-                        target.setObject(slot, frameToSync.getObject(slot));
+                    if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
+                        if (frameToSync.isBoolean(slot)) {
+                            target.setBoolean(slot, frameToSync.getBoolean(slot));
+                        } else if (frameToSync.isByte(slot)) {
+                            target.setByte(slot, frameToSync.getByte(slot));
+                        } else if (frameToSync.isDouble(slot)) {
+                            target.setDouble(slot, frameToSync.getDouble(slot));
+                        } else if (frameToSync.isFloat(slot)) {
+                            target.setFloat(slot, frameToSync.getFloat(slot));
+                        } else if (frameToSync.isInt(slot)) {
+                            target.setInt(slot, frameToSync.getInt(slot));
+                        } else if (frameToSync.isLong(slot)) {
+                            target.setLong(slot, frameToSync.getLong(slot));
+                        } else if (frameToSync.isObject(slot)) {
+                            target.setObject(slot, frameToSync.getObject(slot));
+                        }
                     }
                 }
             } catch (FrameSlotTypeException e) {
@@ -277,20 +279,22 @@ public abstract class MaterializeFrameNode extends Node {
 
                 for (int i = 0; i < cachedSlots.length; i++) {
                     FrameSlot slot = cachedSlots[i];
-                    if (frameToSync.isBoolean(slot)) {
-                        target.setBoolean(slot, frameToSync.getBoolean(slot));
-                    } else if (frameToSync.isByte(slot)) {
-                        target.setByte(slot, frameToSync.getByte(slot));
-                    } else if (frameToSync.isDouble(slot)) {
-                        target.setDouble(slot, frameToSync.getDouble(slot));
-                    } else if (frameToSync.isFloat(slot)) {
-                        target.setFloat(slot, frameToSync.getFloat(slot));
-                    } else if (frameToSync.isInt(slot)) {
-                        target.setInt(slot, frameToSync.getInt(slot));
-                    } else if (frameToSync.isLong(slot)) {
-                        target.setLong(slot, frameToSync.getLong(slot));
-                    } else if (frameToSync.isObject(slot)) {
-                        target.setObject(slot, frameToSync.getObject(slot));
+                    if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
+                        if (frameToSync.isBoolean(slot)) {
+                            target.setBoolean(slot, frameToSync.getBoolean(slot));
+                        } else if (frameToSync.isByte(slot)) {
+                            target.setByte(slot, frameToSync.getByte(slot));
+                        } else if (frameToSync.isDouble(slot)) {
+                            target.setDouble(slot, frameToSync.getDouble(slot));
+                        } else if (frameToSync.isFloat(slot)) {
+                            target.setFloat(slot, frameToSync.getFloat(slot));
+                        } else if (frameToSync.isInt(slot)) {
+                            target.setInt(slot, frameToSync.getInt(slot));
+                        } else if (frameToSync.isLong(slot)) {
+                            target.setLong(slot, frameToSync.getLong(slot));
+                        } else if (frameToSync.isObject(slot)) {
+                            target.setObject(slot, frameToSync.getObject(slot));
+                        }
                     }
                 }
             } catch (FrameSlotTypeException e) {
@@ -315,9 +319,11 @@ public abstract class MaterializeFrameNode extends Node {
 
             for (int i = 0; i < cachedSlots.length; i++) {
                 FrameSlot slot = cachedSlots[i];
-                Object value = frameToSync.getValue(slot);
-                if (value != null) {
-                    setItemNode.execute(frame, localsDict, slot.getIdentifier(), value);
+                if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
+                    Object value = frameToSync.getValue(slot);
+                    if (value != null) {
+                        setItemNode.execute(frame, localsDict, slot.getIdentifier(), value);
+                    }
                 }
             }
         }
@@ -336,9 +342,11 @@ public abstract class MaterializeFrameNode extends Node {
 
             for (int i = 0; i < slots.length; i++) {
                 FrameSlot slot = slots[i];
-                Object value = frameToSync.getValue(slot);
-                if (value != null) {
-                    setItemNode.execute(frame, localsDict, slot.getIdentifier(), value);
+                if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
+                    Object value = frameToSync.getValue(slot);
+                    if (value != null) {
+                        setItemNode.execute(frame, localsDict, slot.getIdentifier(), value);
+                    }
                 }
             }
         }

@@ -40,20 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 
-// XXX: remove special case for RETURN_SLOT_ID
 public class LocalsStorage extends HashingStorage {
 
     /* This won't be the real (materialized) frame but a clone of it. */
@@ -92,17 +89,11 @@ public class LocalsStorage extends HashingStorage {
     @TruffleBoundary
     public Object getItem(Object key, Equivalence eq) {
         assert eq == DEFAULT_EQIVALENCE;
-        if (RETURN_SLOT_ID.equals(key)) {
-            return null;
-        } else if (isTempLocal(key)) {
+        if (!FrameSlotIDs.isUserFrameSlot(key)) {
             return null;
         }
         FrameSlot slot = frame.getFrameDescriptor().findFrameSlot(key);
         return getValue(slot);
-    }
-
-    private static boolean isTempLocal(Object key) {
-        return key instanceof String && ((String) key).startsWith(TEMP_LOCAL_PREFIX);
     }
 
     @Override
@@ -124,9 +115,7 @@ public class LocalsStorage extends HashingStorage {
     @TruffleBoundary
     public boolean hasKey(Object key, Equivalence eq) {
         assert eq == DEFAULT_EQIVALENCE;
-        if (RETURN_SLOT_ID.equals(key)) {
-            return false;
-        } else if (isTempLocal(key)) {
+        if (!FrameSlotIDs.isUserFrameSlot(key)) {
             return false;
         }
         return frame.getFrameDescriptor().findFrameSlot(key) != null;
@@ -139,7 +128,7 @@ public class LocalsStorage extends HashingStorage {
             len = frame.getFrameDescriptor().getSize();
             for (FrameSlot slot : frame.getFrameDescriptor().getSlots()) {
                 Object identifier = slot.getIdentifier();
-                if (identifier.equals(RETURN_SLOT_ID) || isTempLocal(identifier) || frame.getValue(slot) == null) {
+                if (!FrameSlotIDs.isUserFrameSlot(identifier) || frame.getValue(slot) == null) {
                     len--;
                 }
             }
@@ -219,7 +208,7 @@ public class LocalsStorage extends HashingStorage {
                 FrameSlot nextCandidate = keysIterator().next();
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
-                    if (!RETURN_SLOT_ID.equals(identifier) && !isTempLocal(identifier)) {
+                    if (FrameSlotIDs.isUserFrameSlot(identifier)) {
                         Object nextValue = frame.getValue(nextCandidate);
                         if (nextValue != null) {
                             nextFrameSlot = nextCandidate;
