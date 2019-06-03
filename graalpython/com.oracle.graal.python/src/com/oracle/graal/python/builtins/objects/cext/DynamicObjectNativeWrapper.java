@@ -175,12 +175,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     public PythonObjectDictStorage createNativeMemberStore() {
-        return createNativeMemberStore(null);
-    }
-
-    public PythonObjectDictStorage createNativeMemberStore(Assumption dictStableAssumption) {
         if (nativeMemberStore == null) {
-            nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance(), dictStableAssumption);
+            nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance());
         }
         return nativeMemberStore;
     }
@@ -857,7 +853,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Shared("setItemNode") @Cached HashingStorageNodes.DynamicObjectSetItemNode setItemNode) {
             DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
-            setItemNode.passState().execute(nativeWrapper.createNativeMemberStore(object.getDictUnsetOrSameAsStorageAssumption()), MD_DEF, value);
+            setItemNode.passState().execute(nativeWrapper.createNativeMemberStore(), MD_DEF, value);
             return value;
         }
 
@@ -878,7 +874,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 if (existing != null) {
                     d.setDictStorage(existing.getDictStorage());
                 } else {
-                    d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption()));
+                    d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage()));
                 }
                 object.setDict(d);
             } else {

@@ -583,7 +583,6 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
         Object dict(PythonObject self, PDict dict) {
-            self.getDictUnsetOrSameAsStorageAssumption().invalidate();
             self.setDict(dict);
             return PNone.NONE;
         }

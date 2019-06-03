@@ -68,6 +68,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic({PGuards.class, PythonOptions.class, NativeMemberNames.class})
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
@@ -91,22 +92,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // read from the DynamicObject store
     @Specialization(guards = {
-                    "object == cachedObject"
-    }, assumptions = {
-                    "singleContextAssumption",
-                    "dictUnsetOrSameAsStorageAssumption"
-    })
-    protected Object readFromDynamicStorageCached(PythonObject object, Object key,
-                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
-                    @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
-        return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
-    }
-
-    @Specialization(guards = {
                     "isDictUnsetOrSameAsStorage(object) || isHiddenKey(key)"
-    }, replaces = "readFromDynamicStorageCached")
+    })
     protected Object readFromDynamicStorage(PythonObject object, Object key,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
@@ -114,30 +101,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // read from the Dict
     @Specialization(guards = {
-                    "object == cachedObject",
-                    "!dictUnsetOrSameAsStorageAssumption.isValid()",
-                    "!isHiddenKey(key)"
-    }, assumptions = {
-                    "singleContextAssumption"
-    })
-    protected Object readFromDictCached(PythonObject object, Object key,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
-                    @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
-        Object value = getItemNode.passState().execute(getDictStorage.execute(object.getDict()), key);
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
-    }
-
-    @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "!isDictUnsetOrSameAsStorage(object)"
-    }, replaces = "readFromDictCached")
+    })
     protected Object readFromDict(PythonObject object, Object key,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {

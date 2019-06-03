@@ -161,19 +161,8 @@ public abstract class DynamicObjectStorage extends HashingStorage {
     }
 
     public static final class PythonObjectDictStorage extends DynamicObjectStorage {
-        private final Assumption dictUnsetOrSameAsStorage;
-
         public PythonObjectDictStorage(DynamicObject store) {
-            this(store, null);
-        }
-
-        public PythonObjectDictStorage(DynamicObject store, Assumption dictUnsetOrSameAsStorage) {
             super(store);
-            this.dictUnsetOrSameAsStorage = dictUnsetOrSameAsStorage;
-        }
-
-        public Assumption getDictUnsetOrSameAsStorage() {
-            return dictUnsetOrSameAsStorage;
         }
 
         @Override
