@@ -141,9 +141,8 @@ public abstract class ExecutionContext {
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
             // tfel: If there are custom locals, write them into an (incomplete)
             // PFrame here
-            if (customLocals != null) {
+            if (customLocals != null && !(customLocals instanceof PFrame.Reference)) {
                 profile.enter();
-                assert !(customLocals instanceof PFrame.Reference);
                 thisFrameRef.setCustomLocals(customLocals);
             }
         }
@@ -191,8 +190,6 @@ public abstract class ExecutionContext {
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);
             }
-            // explicitly clear current frame info
-            PArguments.setCurrentFrameInfo(frame, null);
         }
 
         private MaterializeFrameNode ensureMaterializeNode() {
