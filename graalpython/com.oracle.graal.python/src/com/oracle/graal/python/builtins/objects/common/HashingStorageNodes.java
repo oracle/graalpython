@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -1085,6 +1086,7 @@ public abstract class HashingStorageNodes {
     }
 
     public abstract static class GetItemNode extends DictStorageBaseNode {
+        protected static final int MAX_DYNAMIC_STORAGES = 3;
 
         public static GetItemNode create() {
             return GetItemNodeGen.create();
@@ -1098,74 +1100,24 @@ public abstract class HashingStorageNodes {
             return null;
         }
 
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "cachedName.equals(name)",
-                                        "shapeCheck(shape, storage.getStore())"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected static Object doDynamicObjectString(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
-                        @SuppressWarnings("unused") @Cached("name") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, name)") Location location) {
-
-            return location != null ? location.get(storage.getStore(), shape) : null;
+        @Specialization
+        static Object doDynamicObjectString(DynamicObjectStorage storage, String key,
+                        @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            Object result = readKey.execute(storage.getStore(), key);
+            return result == PNone.NO_VALUE ? null : result;
         }
 
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectString"}, guards = "storage.getStore().getShape().isValid()")
-        protected Object doDynamicObjectUncached(DynamicObjectStorage storage, String name) {
-            return storage.getStore().get(name);
+        @Specialization
+        static Object doDynamicObjectPString(DynamicObjectStorage storage, PString key,
+                        @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            Object result = readKey.execute(storage.getStore(), key);
+            return result == PNone.NO_VALUE ? null : result;
         }
 
-        @Specialization(guards = "!storage.getStore().getShape().isValid()")
-        protected Object doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name) {
-            CompilerDirectives.transferToInterpreter();
-            storage.getStore().updateShape();
-            return doDynamicObjectUncached(storage, name);
-        }
-
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "wrappedString(name)",
-                                        "cachedName.equals(name.getValue())",
-                                        "shapeCheck(shape, storage.getStore())"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected static Object doDynamicObjectPString(DynamicObjectStorage storage, @SuppressWarnings("unused") PString name,
-                        @SuppressWarnings("unused") @Cached("name.getValue()") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, cachedName)") Location location) {
-
-            return location != null ? location.get(storage.getStore(), shape) : null;
-        }
-
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectPString"}, guards = {"wrappedString(name)", "storage.getStore().getShape().isValid()"})
-        protected Object doDynamicObjectUncachedPString(DynamicObjectStorage storage, PString name) {
-            return storage.getStore().get(name.getValue());
-        }
-
-        @Specialization(guards = {"wrappedString(name)", "!storage.getStore().getShape().isValid()"})
-        protected Object doDynamicObjectUpdateShapePString(DynamicObjectStorage storage, PString name) {
-            CompilerDirectives.transferToInterpreter();
-            storage.getStore().updateShape();
-            return doDynamicObjectUncachedPString(storage, name);
-        }
-
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
-        Object doDynamicObject(@SuppressWarnings("unused") VirtualFrame frame, PythonObjectHybridDictStorage storage, Object key) {
-            return storage.getItem(key, getEquivalence());
-        }
-
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
-        @SuppressWarnings("unused")
-        Object doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, Object key) {
-            return null;
+        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)", "s.getClass() == cachedClass"}, limit = "MAX_DYNAMIC_STORAGES")
+        Object doDynamicStorage(@SuppressWarnings("unused") VirtualFrame frame, DynamicObjectStorage s, Object key,
+                        @Cached("s.getClass()") Class<? extends DynamicObjectStorage> cachedClass) {
+            return cachedClass.cast(s).getItem(key, getEquivalence());
         }
 
         @Specialization
