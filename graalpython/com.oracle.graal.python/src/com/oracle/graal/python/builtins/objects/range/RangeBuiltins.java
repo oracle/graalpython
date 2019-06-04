@@ -177,7 +177,7 @@ public class RangeBuiltins extends PythonBuiltins {
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         PIntegerIterator iter(PRange self,
-                              @Cached("createBinaryProfile()") ConditionProfile stepPositiveProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile stepPositiveProfile) {
             return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep(), stepPositiveProfile);
         }
     }

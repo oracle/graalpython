@@ -133,6 +133,7 @@ public class TestParserTranslator {
     private static class JUnitRootNode extends PRootNode {
         private final BranchProfile profile = BranchProfile.create();
         @Child private ExpressionNode body;
+        @Child private CalleeContext calleeContext = CalleeContext.create();
 
         public JUnitRootNode(PythonLanguage language, ExpressionNode body) {
             super(language);
@@ -145,7 +146,7 @@ public class TestParserTranslator {
             try {
                 return body.execute(frame);
             } finally {
-                CalleeContext.exit(frame, this);
+                calleeContext.exit(frame, this);
             }
         }
 

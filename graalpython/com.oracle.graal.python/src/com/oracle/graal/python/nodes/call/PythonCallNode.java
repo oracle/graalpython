@@ -167,7 +167,8 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callQuaternary.execute(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame), argumentNodes[3].execute(frame));
+            return callQuaternary.execute(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame),
+                            argumentNodes[3].execute(frame));
         }
     }
 

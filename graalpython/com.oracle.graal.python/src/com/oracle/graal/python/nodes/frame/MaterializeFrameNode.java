@@ -217,8 +217,8 @@ public abstract class MaterializeFrameNode extends Node {
      * variables and need to be refreshed.</li>
      * <li>The locals object is a {@code dict} with a storage <b>different</b> to
      * {@code LocalsStorage}. This may happen if someone retrieves the locals and manually assigns
-     * to the dict. Then the storage changes. In this case we must also refresh the frame
-     * values.</li>
+     * to the dict. Then the storage changes. In this case we must also refresh the frame values.
+     * </li>
      * <li>The locals object is some arbitrary custom mapping object (excluding the above 2 cases).
      * In this case, all code was already working on the custom object and we don't need to do
      * anything.</li>

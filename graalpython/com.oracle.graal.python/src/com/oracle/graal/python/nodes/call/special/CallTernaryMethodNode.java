@@ -136,7 +136,6 @@ public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.execute(frame, func.getSelf(), arg1, arg2, arg3);
     }
 
-
     @Specialization
     Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
                     @Cached("create()") CallNode callNode) {
