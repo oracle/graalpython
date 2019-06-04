@@ -40,17 +40,20 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class DeleteGlobalNode extends StatementNode implements GlobalNode {
     private final String attributeId;
+    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
 
     DeleteGlobalNode(String attributeId) {
         this.attributeId = attributeId;
@@ -62,16 +65,32 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
 
     public abstract Object execute(VirtualFrame frame, Object value);
 
-    @Specialization(guards = "isInDict(frame)")
-    Object writeDict(VirtualFrame frame,
-                    @Cached("create()") DeleteItemNode deleteNode) {
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
+    Object deleteDictCached(VirtualFrame frame,
+                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached DeleteItemNode deleteNode) {
+        deleteNode.executeWith(frame, cachedGlobals, attributeId);
+        return PNone.NONE;
+    }
+
+    @Specialization(guards = "isDict(getGlobals(frame))", replaces = "deleteDictCached")
+    Object deleteDict(VirtualFrame frame,
+                    @Cached DeleteItemNode deleteNode) {
         deleteNode.executeWith(frame, PArguments.getGlobals(frame), attributeId);
         return PNone.NONE;
     }
 
-    @Specialization(guards = "isInModule(frame)")
-    Object writeDict(VirtualFrame frame,
-                    @Cached("create()") DeleteAttributeNode storeNode) {
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
+    Object deleteModuleCached(VirtualFrame frame,
+                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached DeleteAttributeNode storeNode) {
+        storeNode.execute(frame, cachedGlobals, attributeId);
+        return PNone.NONE;
+    }
+
+    @Specialization(guards = "isModule(getGlobals(frame))", replaces = "deleteModuleCached")
+    Object deleteModule(VirtualFrame frame,
+                    @Cached DeleteAttributeNode storeNode) {
         storeNode.execute(frame, PArguments.getGlobals(frame), attributeId);
         return PNone.NONE;
     }
