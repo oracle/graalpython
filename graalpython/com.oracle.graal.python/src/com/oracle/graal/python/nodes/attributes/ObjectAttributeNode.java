@@ -40,10 +40,13 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -63,6 +66,11 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
 
     protected static boolean isDictUnsetOrSameAsStorage(PythonObject object) {
         return object.getDict() == null;
+    }
+
+    protected static boolean hasBuiltinDict(PythonObject object, IsBuiltinClassProfile profile) {
+        PHashingCollection dict = object.getDict();
+        return dict != null && profile.profileObject(object.getDict(), PythonBuiltinClassType.PDict);
     }
 
     protected static Location getLocationOrNull(Property prop) {

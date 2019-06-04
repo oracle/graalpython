@@ -51,11 +51,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectNotTypeNodeGen;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
@@ -68,7 +70,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic({PGuards.class, PythonOptions.class, NativeMemberNames.class})
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
@@ -99,11 +100,50 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
 
+    // special case for the very common module attribute read
+    @Specialization(guards = {
+            "cachedObject == object",
+            "cachedObject.getDict() == cachedDict",
+            "hasBuiltinDict(cachedObject, isBuiltinDict)",
+    }, assumptions = "singleContextAssumption", limit = "1")
+    protected Object readFromBuiltinModuleDict(@SuppressWarnings("unused") PythonModule object, String key,
+                    @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,
+                    @SuppressWarnings("unused") @Cached("cachedObject.getDict()") PHashingCollection cachedDict,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
+                    @Cached HashingStorageNodes.GetItemNode getItemNode) {
+        Object value = getItemNode.execute(null, getDictStorage.execute(cachedDict), key);
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
+    }
+
+    // read from a builtin dict
+    @Specialization(guards = {
+                    "!isHiddenKey(key)",
+                    "hasBuiltinDict(object, isBuiltinDict)",
+    })
+    protected Object readFromBuiltinDict(PythonObject object, String key,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
+                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+        // note that we don't need to pass the state here - string keys are hashable by definition
+        Object value = getItemNode.execute(null, getDictStorage.execute(object.getDict()), key);
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
+    }
+
     // read from the Dict
     @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "!isDictUnsetOrSameAsStorage(object)"
-    })
+    }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"})
     protected Object readFromDict(PythonObject object, Object key,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
