@@ -59,7 +59,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private final FlagsContainer flags;
 
     /** {@code true} if the MRO contains a native class. */
-    private boolean needsNativeAllocation;
+    private final boolean needsNativeAllocation;
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
@@ -79,7 +79,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         // Compute MRO
         this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
-        computeNeedsNativeAllocation();
+        this.needsNativeAllocation = computeNeedsNativeAllocation();
 
         setAttribute(__NAME__, getBaseName(name));
         setAttribute(__QUALNAME__, className);
@@ -129,14 +129,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return className;
     }
 
-    private void computeNeedsNativeAllocation() {
+    private boolean computeNeedsNativeAllocation() {
         for (PythonAbstractClass cls : getMethodResolutionOrder().getInternalClassArray()) {
             if (PGuards.isNativeClass(cls)) {
-                needsNativeAllocation = true;
-                return;
+                return true;
             }
         }
-        needsNativeAllocation = false;
+        return false;
     }
 
     @Override
