@@ -143,7 +143,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         Object callQuaternary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                         @Cached("getQuaternary(func)") PythonQuaternaryBuiltinNode builtinNode) {
-            return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2], arguments[4]);
+            return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2], arguments[3]);
         }
 
         @Specialization
