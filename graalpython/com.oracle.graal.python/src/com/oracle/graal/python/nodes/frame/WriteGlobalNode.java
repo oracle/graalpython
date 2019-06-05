@@ -160,8 +160,8 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     }
 
     @Specialization(replaces = {
-            "writeDictBooleanCached", "writeDictBoolean", "writeDictInt", "writeDictIntCached", "writeDictLong", "writeDictLongCached", "writeDictDouble", "writeDictDoubleCached"
-        }, guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", limit = "1")
+                    "writeDictBooleanCached", "writeDictBoolean", "writeDictInt", "writeDictIntCached", "writeDictLong", "writeDictLongCached", "writeDictDouble", "writeDictDoubleCached"
+    }, guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", limit = "1")
     void writeDictObjectCached(VirtualFrame frame, Object value,
                     @Cached("getGlobals(frame)") Object cachedGlobals,
                     @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
@@ -169,16 +169,18 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     }
 
     @Specialization(replaces = {
-            "writeDictBooleanCached", "writeDictBoolean", "writeDictInt", "writeDictIntCached", "writeDictLong", "writeDictLongCached", "writeDictDouble", "writeDictDoubleCached", "writeDictObjectCached"
-        }, guards = "isBuiltinDict(getGlobals(frame), builtinProfile)")
+                    "writeDictBooleanCached", "writeDictBoolean", "writeDictInt", "writeDictIntCached", "writeDictLong", "writeDictLongCached", "writeDictDouble", "writeDictDoubleCached",
+                    "writeDictObjectCached"
+    }, guards = "isBuiltinDict(getGlobals(frame), builtinProfile)")
     void writeDictObject(VirtualFrame frame, Object value,
                     @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
         storeNode.execute(frame, getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(replaces = {
-            "writeDictBooleanCached", "writeDictBoolean", "writeDictInt", "writeDictIntCached", "writeDictLong", "writeDictLongCached", "writeDictDouble", "writeDictDoubleCached", "writeDictObject", "writeDictObjectCached"
-        }, guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
+                    "writeDictBooleanCached", "writeDictBoolean", "writeDictInt", "writeDictIntCached", "writeDictLong", "writeDictLongCached", "writeDictDouble", "writeDictDoubleCached",
+                    "writeDictObject", "writeDictObjectCached"
+    }, guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
     void writeGenericDictCached(VirtualFrame frame, Object value,
                     @Cached("getGlobals(frame)") Object cachedGlobals,
                     @Cached("create()") SetItemNode storeNode) {
@@ -186,8 +188,9 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     }
 
     @Specialization(replaces = {
-            "writeDictBooleanCached", "writeDictBoolean", "writeDictInt", "writeDictIntCached", "writeDictLong", "writeDictLongCached", "writeDictDouble", "writeDictDoubleCached", "writeDictObject", "writeDictObjectCached", "writeGenericDictCached",
-        }, guards = "isDict(getGlobals(frame))")
+                    "writeDictBooleanCached", "writeDictBoolean", "writeDictInt", "writeDictIntCached", "writeDictLong", "writeDictLongCached", "writeDictDouble", "writeDictDoubleCached",
+                    "writeDictObject", "writeDictObjectCached", "writeGenericDictCached",
+    }, guards = "isDict(getGlobals(frame))")
     void writeGenericDict(VirtualFrame frame, Object value,
                     @Cached("create()") SetItemNode storeNode) {
         storeNode.executeWith(frame, PArguments.getGlobals(frame), attributeId, value);

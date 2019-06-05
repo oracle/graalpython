@@ -102,9 +102,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // special case for the very common module attribute read
     @Specialization(guards = {
-            "cachedObject == object",
-            "cachedObject.getDict() == cachedDict",
-            "hasBuiltinDict(cachedObject, isBuiltinDict)",
+                    "cachedObject == object",
+                    "cachedObject.getDict() == cachedDict",
+                    "hasBuiltinDict(cachedObject, isBuiltinDict)",
     }, assumptions = "singleContextAssumption", limit = "1")
     protected Object readFromBuiltinModuleDict(@SuppressWarnings("unused") PythonModule object, String key,
                     @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,

@@ -78,8 +78,7 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     /**
-     * This is usually final, a fact may be optimized further if the storage
-     * turns into a constant.
+     * This is usually final, a fact may be optimized further if the storage turns into a constant.
      */
     public final LazyPythonClass getLazyPythonClass() {
         return PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(storage);
@@ -150,13 +149,17 @@ public class PythonObject extends PythonAbstractObject {
     @Layout(implicitCastIntToLong = true, implicitCastIntToDouble = false)
     protected static interface PythonObjectLayout {
         DynamicObjectFactory createPythonObjectShape(LazyPythonClass lazyPythonClass);
+
         DynamicObject createPythonObject(DynamicObjectFactory factory, @Nullable PHashingCollection dict);
 
         PHashingCollection getDict(DynamicObject object);
+
         void setDict(DynamicObject object, PHashingCollection dict);
 
         LazyPythonClass getLazyPythonClass(DynamicObjectFactory factory);
+
         LazyPythonClass getLazyPythonClass(DynamicObject object);
+
         void setLazyPythonClass(DynamicObject object, LazyPythonClass klass);
     }
 
