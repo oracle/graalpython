@@ -64,7 +64,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.Wr
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -184,7 +183,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = {
                         "!isHiddenKey(key)",
                         "!isDictUnsetOrSameAsStorage(object)"
-        }, replaces = {"writeToDict", "writeToDictCached"})
+        }, replaces = {"writeToDict"})
         protected boolean writeToDictUncached(PythonObject object, Object key, Object value,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
                         @Cached CallNode callSetItem,

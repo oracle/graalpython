@@ -154,13 +154,13 @@ public class PythonObject extends PythonAbstractObject {
 
         PHashingCollection getDict(DynamicObject object);
 
-        void setDict(DynamicObject object, PHashingCollection dict);
+        void setDict(DynamicObject object, PHashingCollection value);
 
         LazyPythonClass getLazyPythonClass(DynamicObjectFactory factory);
 
         LazyPythonClass getLazyPythonClass(DynamicObject object);
 
-        void setLazyPythonClass(DynamicObject object, LazyPythonClass klass);
+        void setLazyPythonClass(DynamicObject object, LazyPythonClass value);
     }
 
     public static Shape freshShape(LazyPythonClass klass) {
