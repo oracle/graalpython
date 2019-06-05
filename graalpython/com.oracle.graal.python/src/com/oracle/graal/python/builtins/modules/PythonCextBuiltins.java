@@ -263,8 +263,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object run(Object o) {
-            return raiseNative(PNone.NO_VALUE, PythonErrorType.SystemError, "Cannot convert object of type %p to C string.", o, o.getClass().getName());
+        Object run(VirtualFrame frame, Object o) {
+            return raiseNative(frame, PNone.NO_VALUE, PythonErrorType.SystemError, "Cannot convert object of type %p to C string.", o, o.getClass().getName());
         }
     }
 
@@ -838,30 +838,30 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     abstract static class NativeBuiltin extends PythonBuiltinNode {
 
-        protected void transformToNative(PException p) {
-            NativeBuiltin.transformToNative(getContext(), p);
+        protected void transformToNative(VirtualFrame frame, PException p) {
+            NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), p);
         }
 
-        protected static void transformToNative(PythonContext context, PException p) {
-            p.getExceptionObject().reifyException();
+        protected static void transformToNative(PythonContext context, PFrame.Reference frameInfo, PException p) {
+            p.getExceptionObject().reifyException(frameInfo);
             context.setCurrentException(p);
         }
 
-        protected <T> T raiseNative(T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
-            return NativeBuiltin.raiseNative(this, defaultValue, errType, fmt, args);
+        protected <T> T raiseNative(VirtualFrame frame, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+            return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
         }
 
-        protected static <T> T raiseNative(PythonBuiltinBaseNode n, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+        protected static <T> T raiseNative(PythonBuiltinBaseNode n, PFrame.Reference frameInfo, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
             try {
                 throw n.raise(errType, fmt, args);
             } catch (PException p) {
-                NativeBuiltin.transformToNative(n.getContext(), p);
+                NativeBuiltin.transformToNative(n.getContext(), frameInfo, p);
                 return defaultValue;
             }
         }
 
-        protected Object raiseBadArgument(Object errorMarker) {
-            return raiseNative(errorMarker, PythonErrorType.TypeError, "bad argument type for built-in operation");
+        protected Object raiseBadArgument(VirtualFrame frame, Object errorMarker) {
+            return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "bad argument type for built-in operation");
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -918,11 +918,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TrufflePInt_AsPrimitive extends PythonTernaryBuiltinNode {
 
-        public abstract Object executeWith(Object o, int signed, long targetTypeSize);
+        public abstract Object executeWith(VirtualFrame frame, Object o, int signed, long targetTypeSize);
 
-        public abstract long executeLong(Object o, int signed, long targetTypeSize);
+        public abstract long executeLong(VirtualFrame frame, Object o, int signed, long targetTypeSize);
 
-        public abstract int executeInt(Object o, int signed, long targetTypeSize);
+        public abstract int executeInt(VirtualFrame frame, Object o, int signed, long targetTypeSize);
 
         @Specialization(guards = "targetTypeSize == 4")
         int doInt4(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
@@ -939,13 +939,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doIntOther(@SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
-            return raiseUnsupportedSize(targetTypeSize);
+        int doIntOther(VirtualFrame frame, @SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+            return raiseUnsupportedSize(frame, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        int doLong4(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return raiseTooLarge(targetTypeSize);
+        int doLong4(VirtualFrame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return raiseTooLarge(frame, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
@@ -964,12 +964,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doPInt(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
-            return raiseUnsupportedSize(targetTypeSize);
+        int doPInt(VirtualFrame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+            return raiseUnsupportedSize(frame, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        int doPInt4(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
+        int doPInt4(VirtualFrame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
             try {
                 if (signed != 0) {
                     return obj.intValueExact();
@@ -979,12 +979,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     throw new ArithmeticException();
                 }
             } catch (ArithmeticException e) {
-                return raiseTooLarge(targetTypeSize);
+                return raiseTooLarge(frame, targetTypeSize);
             }
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        long doPInt8(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
+        long doPInt8(VirtualFrame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
             try {
                 if (signed != 0) {
                     return obj.longValueExact();
@@ -994,31 +994,30 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     throw new ArithmeticException();
                 }
             } catch (ArithmeticException e) {
-                return raiseTooLarge(targetTypeSize);
+                return raiseTooLarge(frame, targetTypeSize);
             }
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doPInt(@SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
-            return raiseUnsupportedSize(targetTypeSize);
+        int doPInt(VirtualFrame frame, @SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+            return raiseUnsupportedSize(frame, targetTypeSize);
         }
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)"})
-        @SuppressWarnings("unused")
-        int doGeneric(Object obj, boolean signed, int targetTypeSize) {
-            return raiseNative(-1, PythonErrorType.TypeError, "an integer is required", obj);
+        int doGeneric(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean signed, @SuppressWarnings("unused") int targetTypeSize) {
+            return raiseNative(frame, -1, PythonErrorType.TypeError, "an integer is required", obj);
         }
 
-        private int raiseTooLarge(long targetTypeSize) {
-            return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
+        private int raiseTooLarge(VirtualFrame frame, long targetTypeSize) {
+            return raiseNative(frame, -1, PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
         }
 
-        private Integer raiseUnsupportedSize(long targetTypeSize) {
-            return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+        private Integer raiseUnsupportedSize(VirtualFrame frame, long targetTypeSize) {
+            return raiseNative(frame, -1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
         }
 
-        private <T> T raiseNative(T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
-            return NativeBuiltin.raiseNative(this, defaultValue, errType, fmt, args);
+        private <T> T raiseNative(VirtualFrame frame, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+            return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
         }
     }
 
@@ -1036,13 +1035,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 } else if (elementSize == 4L) {
                     return decode4(bytes);
                 }
-                return raiseNative(errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
+                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
             } catch (CharacterCodingException e) {
-                return raiseNative(errorMarker, PythonErrorType.UnicodeError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (IllegalArgumentException e) {
-                return raiseNative(errorMarker, PythonErrorType.LookupError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "%m", e);
             } catch (InteropException e) {
-                return raiseNative(errorMarker, PythonErrorType.TypeError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
             }
         }
 
@@ -1052,7 +1051,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return doBytes(frame, o, elementSize.longValueExact(), errorMarker, getByteArrayNode);
             } catch (ArithmeticException e) {
-                return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
+                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
         }
 
@@ -1078,9 +1077,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return decodeUTF8(getByteArrayNode.execute(frame, o, -1));
             } catch (CharacterCodingException e) {
-                return raiseNative(errorMarker, PythonErrorType.UnicodeError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (InteropException e) {
-                return raiseNative(errorMarker, PythonErrorType.TypeError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
             }
         }
 
@@ -1099,36 +1098,39 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(errors)")
-        Object doUnicode(PString s, @SuppressWarnings("unused") PNone errors, Object error_marker) {
-            return doUnicode(s, "strict", error_marker);
+        Object doUnicode(VirtualFrame frame, PString s, @SuppressWarnings("unused") PNone errors, Object error_marker) {
+            return doUnicode(frame, s, "strict", error_marker);
         }
 
         @Specialization
-        @TruffleBoundary
-        Object doUnicode(PString s, String errors, Object error_marker) {
+        Object doUnicode(VirtualFrame frame, PString s, String errors, Object error_marker) {
             try {
-                StringLenNode stringLenNode = StringLenNode.getUncached();
-                CharsetEncoder encoder = charset.newEncoder();
-                CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-                encoder.onMalformedInput(action).onUnmappableCharacter(action);
-                CharBuffer buf = CharBuffer.allocate(stringLenNode.execute(s));
-                buf.put(s.getValue());
-                buf.flip();
-                ByteBuffer encoded = encoder.encode(buf);
-                byte[] barr = new byte[encoded.remaining()];
-                encoded.get(barr);
-                return factory().createBytes(barr);
+                return factory().createBytes(doEncode(s, errors));
             } catch (PException e) {
-                transformToNative(e);
+                transformToNative(frame, e);
                 return error_marker;
             } catch (CharacterCodingException e) {
-                return raiseNative(error_marker, PythonErrorType.UnicodeEncodeError, "%m", e);
+                return raiseNative(frame, error_marker, PythonErrorType.UnicodeEncodeError, "%m", e);
             }
         }
 
         @Fallback
-        Object doUnicode(@SuppressWarnings("unused") Object s, @SuppressWarnings("unused") Object errors, Object errorMarker) {
-            return raiseBadArgument(errorMarker);
+        Object doUnicode(VirtualFrame frame, @SuppressWarnings("unused") Object s, @SuppressWarnings("unused") Object errors, Object errorMarker) {
+            return raiseBadArgument(frame, errorMarker);
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private byte[] doEncode(PString s, String errors) throws CharacterCodingException {
+            CharsetEncoder encoder = charset.newEncoder();
+            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
+            encoder.onMalformedInput(action).onUnmappableCharacter(action);
+            CharBuffer buf = CharBuffer.allocate(StringLenNode.getUncached().execute(s));
+            buf.put(s.getValue());
+            buf.flip();
+            ByteBuffer encoded = encoder.encode(buf);
+            byte[] barr = new byte[encoded.remaining()];
+            encoded.get(barr);
+            return barr;
         }
     }
 
@@ -1191,12 +1193,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return toSulongNode.execute(decodeUTF32(getByteArrayNode.execute(frame, o, size), (int) size, errors, byteorder));
             } catch (CharacterCodingException e) {
-                return raiseNative(errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
             } catch (IllegalArgumentException e) {
                 String csName = getUTF32Name(byteorder);
-                return raiseNative(errorMarker, PythonErrorType.LookupError, "unknown encoding: " + csName);
+                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "unknown encoding: " + csName);
             } catch (InteropException e) {
-                return raiseNative(errorMarker, PythonErrorType.TypeError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
             }
         }
 
@@ -1267,13 +1269,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child private UnicodeAsWideCharNode asWideCharNode;
 
         @Specialization
-        Object doUnicode(String s, long elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
-            return doUnicode(s, elementSize, -1, errorMarker);
+        Object doUnicode(VirtualFrame frame, String s, long elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
+            return doUnicode(frame, s, elementSize, -1, errorMarker);
         }
 
         @Specialization
-        @TruffleBoundary
-        Object doUnicode(String s, long elementSize, long elements, Object errorMarker) {
+        Object doUnicode(VirtualFrame frame, String s, long elementSize, long elements, Object errorMarker) {
             try {
                 if (asWideCharNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1284,29 +1285,29 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (wchars != null) {
                     return wchars;
                 } else {
-                    return raiseNative(errorMarker, PythonErrorType.ValueError, "unsupported wchar size; was: %d", elementSize);
+                    return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported wchar size; was: %d", elementSize);
                 }
             } catch (IllegalArgumentException e) {
                 // TODO
-                return raiseNative(errorMarker, PythonErrorType.LookupError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "%m", e);
             }
         }
 
         @Specialization
-        Object doUnicode(String s, PInt elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
+        Object doUnicode(VirtualFrame frame, String s, PInt elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
             try {
-                return doUnicode(s, elementSize.longValueExact(), -1, errorMarker);
+                return doUnicode(frame, s, elementSize.longValueExact(), -1, errorMarker);
             } catch (ArithmeticException e) {
-                return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
+                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
         }
 
         @Specialization
-        Object doUnicode(String s, PInt elementSize, PInt elements, Object errorMarker) {
+        Object doUnicode(VirtualFrame frame, String s, PInt elementSize, PInt elements, Object errorMarker) {
             try {
-                return doUnicode(s, elementSize.longValueExact(), elements.longValueExact(), errorMarker);
+                return doUnicode(frame, s, elementSize.longValueExact(), elements.longValueExact(), errorMarker);
             } catch (ArithmeticException e) {
-                return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
+                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
         }
     }
@@ -1325,8 +1326,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doUnicode(Object o, Object errorMarker) {
-            return raiseNative(errorMarker, PythonErrorType.TypeError, "expected bytes, %p found", o);
+        Object doUnicode(VirtualFrame frame, Object o, Object errorMarker) {
+            return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "expected bytes, %p found", o);
         }
     }
 
@@ -2150,12 +2151,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        long doGeneric(Object n) {
+        long doGeneric(VirtualFrame frame, Object n) {
             if (asPrimitiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 asPrimitiveNode = insert(TrufflePInt_AsPrimitiveFactory.create());
             }
-            return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
+            return asPrimitiveNode.executeLong(frame, n, 0, Long.BYTES);
         }
     }
 
@@ -2272,7 +2273,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return factory().createBytes(getByteArrayNode.execute(frame, object.getPtr(), size));
             } catch (InteropException e) {
-                return raiseNative(getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
             }
         }
     }
@@ -2305,7 +2306,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return doGeneric(frame, object, asPythonObjectNode, asDoubleNode);
             } catch (PException e) {
-                transformToNative(e);
+                transformToNative(frame, e);
                 return -1.0;
             }
         }
@@ -2347,7 +2348,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return doGeneric(frame, module, object, toSulongNode, asPythonObjectNode);
             } catch (PException e) {
-                transformToNative(e);
+                transformToNative(frame, e);
                 return getNativeNullNode.execute(module);
             }
         }
@@ -2363,15 +2364,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 setItemNode.execute(frame, self, o, PNone.NO_VALUE);
             } catch (PException e) {
-                NativeBuiltin.transformToNative(getContext(), e);
+                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
                 return -1;
             }
             return 0;
         }
 
         @Fallback
-        int add(Object self, @SuppressWarnings("unused") Object o) {
-            return NativeBuiltin.raiseNative(this, -1, SystemError, "expected a set object, not %p", self);
+        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o) {
+            return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), -1, SystemError, "expected a set object, not %p", self);
         }
 
     }
@@ -2399,8 +2400,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        int add(Object self, @SuppressWarnings("unused") Object o) {
-            return NativeBuiltin.raiseNative(this, -1, SystemError, "expected a set object, not %p", self);
+        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o) {
+            return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), -1, SystemError, "expected a set object, not %p", self);
         }
 
     }

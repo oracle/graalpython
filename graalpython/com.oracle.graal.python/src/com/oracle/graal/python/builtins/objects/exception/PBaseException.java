@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -48,11 +49,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleStackTrace;
 
 public final class PBaseException extends PythonObject {
 
@@ -66,6 +66,9 @@ public final class PBaseException extends PythonObject {
 
     private PException exception;
     private PTraceback traceback;
+
+    /** The frame info of the Python frame that first caught the exception. */
+    private PFrame.Reference frameInfo;
 
     public PBaseException(LazyPythonClass cls, PTuple args) {
         super(cls);
@@ -99,6 +102,10 @@ public final class PBaseException extends PythonObject {
 
     public void clearTraceback() {
         this.traceback = null;
+    }
+
+    public PFrame.Reference getFrameInfo() {
+        return frameInfo;
     }
 
     /**
@@ -146,13 +153,45 @@ public final class PBaseException extends PythonObject {
     }
 
     /**
-     * This function must be called before handing out exceptions into the Python value space,
-     * because otherwise the stack will not be correct if the exception object escapes the current
-     * function.
+     * Create the traceback for this exception using the provided {@link PFrame} instance (which
+     * usually is the frame of the function that caught the exception).
+     * <p>
+     * This function (of {@link #reifyException(PFrame.Reference)} must be called before handing out
+     * exceptions into the Python value space because otherwise the stack will not be correct if the
+     * exception object escapes the current function.
+     * </p>
      */
-    @TruffleBoundary
-    public void reifyException() {
-        // TODO: frames: get rid of this entirely
-        TruffleStackTrace.fillIn(exception);
+    public void reifyException(PFrame pyFrame, PythonObjectFactory factory) {
+        traceback = factory.createTraceback(pyFrame, exception);
+        frameInfo = pyFrame.getRef();
+
+        // TODO: frames: provide legacy stack walk method via Python option
+        // TruffleStackTrace.fillIn(exception);
+    }
+
+    /**
+     * Associate this exception with a frame info that represents the {@link PFrame} instance that
+     * caught the exception.<br>
+     * <p>
+     * In contrast to {@link #reifyException(PFrame, PythonObjectFactory)}, this method can be used
+     * if the {@link PFrame} instance isn't already available and if the Truffle frame is also not
+     * available to create the {@link PFrame} instance using the
+     * {@link com.oracle.graal.python.nodes.frame.MaterializeFrameNode}.
+     * </p>
+     * <p>
+     * The most common use case for calling this method is when an exception is thrown in some
+     * Python code but we catch the exception in some interop node (that is certainly adopted by
+     * some foreign language's root node). In this case, we do not want to eagerly create the
+     * {@link PFrame} instance when calling from Python to the foreign language since this could be
+     * expensive. The traceback can then be created lazily from the frame info.
+     * </p>
+     */
+    public void reifyException(PFrame.Reference curFrameInfo) {
+        traceback = null;
+        curFrameInfo.markAsEscaped();
+        this.frameInfo = curFrameInfo;
+
+        // TODO: frames: provide legacy stack walk method via Python option
+        // TruffleStackTrace.fillIn(exception);
     }
 }

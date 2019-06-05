@@ -99,8 +99,7 @@ public final class ReadCallerFrameNode extends Node {
                 if (callerInfo == null) {
                     Frame callerFrame = getCallerFrame(startFrameInfo, frameAccess, skipInternal, level);
                     if (callerFrame != null) {
-                        ensureMaterializeNode().execute(frame, false, true, callerFrame);
-                        return PArguments.getCurrentFrameInfo(callerFrame).getPyFrame();
+                        return ensureMaterializeNode().execute(frame, false, true, callerFrame);
                     }
                     return null;
                 } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {

@@ -250,6 +250,10 @@ public final class PythonContext {
         return ref;
     }
 
+    public PFrame.Reference peekTopFrameInfo() {
+        return topframeref;
+    }
+
     public boolean isInitialized() {
         return isInitialized;
     }

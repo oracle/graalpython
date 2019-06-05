@@ -356,7 +356,6 @@ public class PThreadState extends PythonNativeWrapper {
             try {
                 throw raiseNode.raise(exceptionObject);
             } catch (PException e) {
-                exceptionObject.reifyException();
                 context.setCurrentException(e);
             }
         }
@@ -365,8 +364,7 @@ public class PThreadState extends PythonNativeWrapper {
             try {
                 throw raiseNode.raise(exceptionObject);
             } catch (PException e) {
-                exceptionObject.reifyException();
-                context.setCurrentException(e);
+                context.setCaughtException(e);
             }
         }
 
