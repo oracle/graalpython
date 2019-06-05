@@ -376,6 +376,39 @@ index 2f01238..6c79eb5 100644
 
          dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
 
+diff --git a/pandas/io/msgpack/_packer.cpp b/pandas/io/msgpack/_packer.cpp
+index 8b5b382..7544707 100644
+--- a/pandas/io/msgpack/_packer.cpp
++++ b/pandas/io/msgpack/_packer.cpp
+@@ -477,10 +477,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+     (sizeof(type) == sizeof(Py_ssize_t) &&\\
+           (is_signed || likely(v < (type)PY_SSIZE_T_MAX ||\\
+                                v == (type)PY_SSIZE_T_MAX)))  )
+-#if defined (__cplusplus) && __cplusplus >= 201103L
+-    #include <cstdlib>
+-    #define __Pyx_sst_abs(value) std::abs(value)
+-#elif SIZEOF_INT >= SIZEOF_SIZE_T
++#if SIZEOF_INT >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) abs(value)
+ #elif SIZEOF_LONG >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) labs(value)
+diff --git a/pandas/io/msgpack/_unpacker.cpp b/pandas/io/msgpack/_unpacker.cpp
+index fa08f53..49f3bf3 100644
+--- a/pandas/io/msgpack/_unpacker.cpp
++++ b/pandas/io/msgpack/_unpacker.cpp
+@@ -477,10 +477,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+     (sizeof(type) == sizeof(Py_ssize_t) &&\\
+           (is_signed || likely(v < (type)PY_SSIZE_T_MAX ||\\
+                                v == (type)PY_SSIZE_T_MAX)))  )
+-#if defined (__cplusplus) && __cplusplus >= 201103L
+-    #include <cstdlib>
+-    #define __Pyx_sst_abs(value) std::abs(value)
+-#elif SIZEOF_INT >= SIZEOF_SIZE_T
++#if SIZEOF_INT >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) abs(value)
+ #elif SIZEOF_LONG >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) labs(value)
+
 """
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
         install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, add_cflags=cflags)
