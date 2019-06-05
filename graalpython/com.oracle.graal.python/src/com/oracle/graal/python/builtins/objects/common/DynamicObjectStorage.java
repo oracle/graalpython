@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Layout;

@@ -103,13 +103,13 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -1101,15 +1101,27 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization
+        static Object doPythonObjectString(PythonObjectDictStorage storage, String key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            return doDynamicObjectString(storage, key, readKey);
+        }
+
+        @Specialization
+        static Object doPythonObjectPString(PythonObjectDictStorage storage, PString key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            return doDynamicObjectPString(storage, key, readKey);
+        }
+
+        @Specialization
         static Object doDynamicObjectString(DynamicObjectStorage storage, String key,
-                        @Cached ReadAttributeFromDynamicObjectNode readKey) {
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
             Object result = readKey.execute(storage.getStore(), key);
             return result == PNone.NO_VALUE ? null : result;
         }
 
         @Specialization
         static Object doDynamicObjectPString(DynamicObjectStorage storage, PString key,
-                        @Cached ReadAttributeFromDynamicObjectNode readKey) {
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
             Object result = readKey.execute(storage.getStore(), key);
             return result == PNone.NO_VALUE ? null : result;
         }
