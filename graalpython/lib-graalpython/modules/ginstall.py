@@ -378,7 +378,7 @@ index 2f01238..6c79eb5 100644
 
 """
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
-        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, cflags=cflags)
+        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, add_cflags=cflags)
 
     return locals()
 
@@ -391,7 +391,7 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def install_from_url(url, patch=None, extra_opts=[], cflags=""):
+def install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
@@ -402,6 +402,10 @@ def install_from_url(url, patch=None, extra_opts=[], cflags=""):
         curl_opts += ["--proxy", env["HTTP_PROXY"]]
     elif url.startswith("https://") and "HTTPS_PROXY" in env:
         curl_opts += ["--proxy", env["HTTPS_PROXY"]]
+
+    # honor env var 'CFLAGS' and 'CPPFLAGS'
+    cppflags = os.environ.get("CPPFLAGS", "")
+    cflags = "-v " + os.environ.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
 
     system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url))
     if name.endswith(".tar.gz"):
@@ -420,7 +424,7 @@ def install_from_url(url, patch=None, extra_opts=[], cflags=""):
         user_arg = "--user"
     else:
         user_arg = ""
-    system("cd %s/%s; %s %s setup.py install %s %s" % (tempdir, bare_name, "CFLAGS=%s" % cflags if cflags else "", sys.executable, user_arg, " ".join(extra_opts)))
+    system("cd %s/%s; %s %s %s setup.py install %s %s" % (tempdir, bare_name, 'CFLAGS="%s"' % cflags if cflags else "", 'CPPFLAGS="%s"' % cppflags if cppflags else "", sys.executable, user_arg, " ".join(extra_opts)))
 
 
 def install_from_pypi(package, extra_opts=[]):
