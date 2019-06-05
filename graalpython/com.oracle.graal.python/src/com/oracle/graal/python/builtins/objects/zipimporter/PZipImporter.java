@@ -25,13 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.zipimporter;
 
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +33,13 @@ import java.io.InputStreamReader;
 import java.util.EnumSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PZipImporter extends PythonBuiltinObject {
 
@@ -197,9 +197,10 @@ public class PZipImporter extends PythonBuiltinObject {
      *
      * @param filenameAndSuffix
      * @return code
+     * @throws IOException
      */
     @CompilerDirectives.TruffleBoundary
-    private String getCode(String filenameAndSuffix) {
+    private String getCode(String filenameAndSuffix) throws IOException {
         ZipFile zip = null;
         try {
             zip = new ZipFile(archive);
@@ -221,7 +222,7 @@ public class PZipImporter extends PythonBuiltinObject {
             reader.close();
             return code.toString();
         } catch (IOException e) {
-            throw new RuntimeException("Can not read code from " + makePackagePath(filenameAndSuffix), e);
+            throw new IOException("Can not read code from " + makePackagePath(filenameAndSuffix), e);
         } finally {
             if (zip != null) {
                 try {
@@ -271,7 +272,7 @@ public class PZipImporter extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    protected final ModuleCodeData getModuleCode(String fullname) {
+    protected final ModuleCodeData getModuleCode(String fullname) throws IOException {
         String path = makeFilename(fullname);
         String fullPath = makePackagePath(fullname);
 
