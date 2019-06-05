@@ -1100,18 +1100,21 @@ public abstract class HashingStorageNodes {
             return null;
         }
 
+        // this is just a minor performance optimization
         @Specialization
         static Object doPythonObjectString(PythonObjectDictStorage storage, String key,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
             return doDynamicObjectString(storage, key, readKey);
         }
 
+        // this is just a minor performance optimization
         @Specialization
         static Object doPythonObjectPString(PythonObjectDictStorage storage, PString key,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
             return doDynamicObjectPString(storage, key, readKey);
         }
 
+        // this will read from the dynamic object
         @Specialization
         static Object doDynamicObjectString(DynamicObjectStorage storage, String key,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
@@ -1126,10 +1129,22 @@ public abstract class HashingStorageNodes {
             return result == PNone.NO_VALUE ? null : result;
         }
 
-        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)", "s.getClass() == cachedClass"}, limit = "MAX_DYNAMIC_STORAGES")
-        Object doDynamicStorage(@SuppressWarnings("unused") VirtualFrame frame, DynamicObjectStorage s, Object key,
-                        @Cached("s.getClass()") Class<? extends DynamicObjectStorage> cachedClass) {
-            return cachedClass.cast(s).getItem(key, getEquivalence());
+        // this must read from the non-dynamic object storage
+        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)"})
+        Object doDynamicStorage(@SuppressWarnings("unused") VirtualFrame frame, PythonObjectHybridDictStorage s, Object key) {
+            return s.getItem(key, getEquivalence());
+        }
+
+        protected static boolean isPythonObjectHybridStorage(DynamicObjectStorage s) {
+            return s instanceof PythonObjectHybridDictStorage;
+        }
+
+        // any dynamic object storage that isn't hybridized cannot store
+        // non-string keys
+        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)", "!isPythonObjectHybridStorage(s)"})
+        @SuppressWarnings("unused")
+        Object doDynamicStorage(VirtualFrame frame, DynamicObjectStorage s, Object key) {
+            return null;
         }
 
         @Specialization
