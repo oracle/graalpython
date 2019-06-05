@@ -98,8 +98,11 @@ public final class ReadCallerFrameNode extends Node {
                 PFrame.Reference callerInfo = curFrameInfo.getCallerInfo();
                 if (callerInfo == null) {
                     Frame callerFrame = getCallerFrame(startFrameInfo, frameAccess, skipInternal, level);
-                    ensureMaterializeNode().execute(frame, false, true, callerFrame);
-                    return PArguments.getCurrentFrameInfo(callerFrame).getPyFrame();
+                    if (callerFrame != null) {
+                        ensureMaterializeNode().execute(frame, false, true, callerFrame);
+                        return PArguments.getCurrentFrameInfo(callerFrame).getPyFrame();
+                    }
+                    return null;
                 } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {
                     i++;
                 }
@@ -117,11 +120,14 @@ public final class ReadCallerFrameNode extends Node {
             PFrame.Reference callerInfo = currentFrame.getCallerInfo();
             if (cachedCallerFrameProfile.profile(callerInfo == null)) {
                 Frame callerFrame = getCallerFrame(startFrameInfo, frameAccess, skipInternal, level);
-                // At this point, we must 'materialize' the frame. Actually, the Truffle frame is
-                // never materialized but we ensure that a corresponding PFrame is created and that
-                // the locals and arguments are synced.
-                ensureMaterializeNode().execute(frame, false, true, callerFrame);
-                return PArguments.getCurrentFrameInfo(callerFrame);
+                if (callerFrame != null) {
+                    // At this point, we must 'materialize' the frame. Actually, the Truffle frame
+                    // is never materialized but we ensure that a corresponding PFrame is created
+                    // and that the locals and arguments are synced.
+                    ensureMaterializeNode().execute(frame, false, true, callerFrame);
+                    return PArguments.getCurrentFrameInfo(callerFrame);
+                }
+                return PFrame.Reference.EMPTY;
             } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {
                 i++;
             }
