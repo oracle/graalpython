@@ -156,7 +156,7 @@ public class TestParserTranslator {
         }
 
         @Override
-        public boolean isInternal() {
+        public boolean isPythonInternal() {
             return false;
         }
 

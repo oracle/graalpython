@@ -178,7 +178,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     }
 
     @Override
-    public boolean isInternal() {
+    public boolean isPythonInternal() {
         return isRewritten;
     }
 }

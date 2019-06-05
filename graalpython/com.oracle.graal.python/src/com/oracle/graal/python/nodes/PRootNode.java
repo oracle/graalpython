@@ -122,8 +122,10 @@ public abstract class PRootNode extends RootNode {
         return dontNeedExceptionState;
     }
 
+    public abstract boolean isPythonInternal();
+
     public static boolean isPythonInternal(RootNode rootNode) {
-        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isInternal();
+        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
     }
 
     private static Assumption createCallerFrameAssumption() {
