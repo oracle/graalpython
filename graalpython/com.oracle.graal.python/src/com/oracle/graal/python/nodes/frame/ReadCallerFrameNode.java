@@ -85,7 +85,7 @@ public final class ReadCallerFrameNode extends Node {
     }
 
     public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, boolean skipInternal, int level) {
-        return executeWith(frame, startFrameInfo, FrameInstance.FrameAccess.MATERIALIZE, skipInternal, level);
+        return executeWith(frame, startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, skipInternal, level);
     }
 
     public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {

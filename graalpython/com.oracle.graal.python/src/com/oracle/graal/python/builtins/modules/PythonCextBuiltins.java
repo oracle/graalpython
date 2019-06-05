@@ -103,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -416,7 +417,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         public Object run(VirtualFrame frame, Object module,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
-                        @Cached MaterializeFrameNode materializeNode) {
+                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached GetTracebackNode getTracebackNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             Object result;
@@ -430,12 +432,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // could (since this is python_cext API) call this from Python
                 // instead of sys.exc_info() and then it should also work. So we
                 // do do it here if it hasn't been done already.
-                PTraceback storedTraceback = exception.getTraceback();
-                if (storedTraceback == null) {
+                if (!exception.hasTraceback()) {
                     PFrame escapedFrame = materializeNode.execute(frame, this, true, false);
-                    exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
+                    exception.reifyException(escapedFrame, factory());
                 }
-                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
+                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, getTracebackNode.execute(frame, exception)});
                 context.setCurrentException(null);
             }
             return result;

@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -279,7 +281,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         public Object run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached ReadCallerFrameNode readCallerFrameNode) {
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
@@ -289,8 +292,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
                 PFrame escapedFrame = readCallerFrameNode.executeWith(frame, currentFrameInfo, 0);
                 currentFrameInfo.markAsEscaped();
-                exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
-                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
+                PTraceback exceptionTraceback = getTracebackNode.execute(frame, exception);
+                // n.b. a call to 'sys.exc_info' always creates a new traceback with the current
+                // frame and links (via 'tb_next') to the traceback of the exception
+                PTraceback chainedTraceback = factory().createTraceback(escapedFrame, exceptionTraceback);
+                exception.setTraceback(chainedTraceback);
+                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, chainedTraceback});
             }
         }
 

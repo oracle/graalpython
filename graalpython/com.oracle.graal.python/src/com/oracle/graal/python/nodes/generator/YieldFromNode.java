@@ -42,6 +42,8 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -79,6 +81,8 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
 
     @Child private LookupAndCallBinaryNode getSendNode;
     @Child private CallNode callSendNode;
+
+    @Child private GetTracebackNode getTracebackNode;
 
     private final IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
     private final IsBuiltinClassProfile stopIterProfile2 = IsBuiltinClassProfile.create();
@@ -173,7 +177,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                             _y = getCallThrowNode().execute(frame, _m,
                                             new Object[]{_i, getExceptionClassNode().execute(((PException) _s).getExceptionObject()),
                                                             ((PException) _s).getExceptionObject(),
-                                                            ((PException) _s).getExceptionObject().getTraceback()},
+                                                            ensureGetTracebackNode().execute(frame, ((PException) _s).getExceptionObject())},
                                             PKeyword.EMPTY_KEYWORDS);
                         } catch (PException _e2) {
                             access.setIterator(frame, iteratorSlot, null);
@@ -272,6 +276,14 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             callSendNode = insert(CallNode.create());
         }
         return callSendNode;
+    }
+
+    private GetTracebackNode ensureGetTracebackNode() {
+        if (getTracebackNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getTracebackNode = insert(GetTracebackNodeGen.create());
+        }
+        return getTracebackNode;
     }
 
     public void setIteratorSlot(int slot) {

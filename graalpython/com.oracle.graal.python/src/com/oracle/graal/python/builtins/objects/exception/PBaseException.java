@@ -92,16 +92,31 @@ public final class PBaseException extends PythonObject {
         this.exception = exception;
     }
 
-    public PTraceback getTraceback() {
+    /**
+     * use {@link GetTracebackNode}
+     */
+    PTraceback getTraceback() {
         return traceback;
     }
 
     public void setTraceback(PTraceback traceback) {
         this.traceback = traceback;
+        // Explicitly setting the traceback also makes the frame info for creating a lazy traceback
+        // obsolete or even incorrect. So it is cleared.
+        this.frameInfo = null;
     }
 
     public void clearTraceback() {
         this.traceback = null;
+    }
+
+    /**
+     * It should usually not be necessary to use this method because that would mean that the
+     * exception wasn't correctly reified. But it can make sense to do reification at a later point
+     * for best-effort results.
+     */
+    public boolean hasTraceback() {
+        return this.traceback != null;
     }
 
     public PFrame.Reference getFrameInfo() {
