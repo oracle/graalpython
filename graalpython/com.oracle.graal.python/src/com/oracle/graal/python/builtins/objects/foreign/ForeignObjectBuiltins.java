@@ -581,6 +581,11 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
+        public final Object executeWithArgs(VirtualFrame frame, Object callee, Object[] arguments) {
+            return execute(frame, callee, arguments, PKeyword.EMPTY_KEYWORDS);
+        }
+
+        public abstract Object execute(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
 
         /**
          * A foreign function call specializes on the length of the passed arguments. Any
