@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
@@ -62,6 +63,7 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * This node makes sure that the current frame has a filled-in PFrame object with a backref
@@ -311,6 +313,7 @@ public abstract class MaterializeFrameNode extends Node {
         static void doGenericDictCached(VirtualFrame frame, PFrame pyFrame, Frame frameToSync,
                         @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots,
+                        @Cached(value = "getProfiles(cachedSlots.length)", dimensions = 1) ConditionProfile[] profiles,
                         @Cached SetItemNode setItemNode) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
             // then assigned to the dictionary. Assigning will switch the storage. But we still must
@@ -324,7 +327,11 @@ public abstract class MaterializeFrameNode extends Node {
                 if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
                     Object value = frameToSync.getValue(slot);
                     if (value != null) {
-                        setItemNode.execute(frame, localsDict, slot.getIdentifier(), value);
+                        if (profiles[i].profile(value instanceof PCell)) {
+                            setItemNode.execute(frame, localsDict, slot.getIdentifier(), ((PCell) value).getRef());
+                        } else {
+                            setItemNode.execute(frame, localsDict, slot.getIdentifier(), value);
+                        }
                     }
                 }
             }
@@ -346,7 +353,9 @@ public abstract class MaterializeFrameNode extends Node {
                 FrameSlot slot = slots[i];
                 if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
                     Object value = frameToSync.getValue(slot);
-                    if (value != null) {
+                    if (value instanceof PCell) {
+                        setItemNode.execute(frame, localsDict, slot.getIdentifier(), ((PCell) value).getRef());
+                    } else {
                         setItemNode.execute(frame, localsDict, slot.getIdentifier(), value);
                     }
                 }
@@ -361,6 +370,14 @@ public abstract class MaterializeFrameNode extends Node {
 
         protected static FrameSlot[] getSlots(FrameDescriptor fd) {
             return fd.getSlots().toArray(new FrameSlot[0]);
+        }
+
+        protected static ConditionProfile[] getProfiles(int n) {
+            ConditionProfile[] profiles = new ConditionProfile[n];
+            for (int i = 0; i < profiles.length; i++) {
+                profiles[i] = ConditionProfile.createBinaryProfile();
+            }
+            return profiles;
         }
 
         /**
