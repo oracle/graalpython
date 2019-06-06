@@ -202,6 +202,7 @@ public final class PBaseException extends PythonObject {
      * </p>
      */
     public void reifyException(PFrame.Reference curFrameInfo) {
+        assert curFrameInfo != PFrame.Reference.EMPTY;
         traceback = null;
         curFrameInfo.markAsEscaped();
         this.frameInfo = curFrameInfo;

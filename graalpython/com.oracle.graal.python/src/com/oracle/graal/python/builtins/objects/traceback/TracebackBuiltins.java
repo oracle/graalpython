@@ -43,6 +43,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
@@ -88,7 +89,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             PTraceback tb = self.getNext();
             if (profile.profile(tb == null)) {
-                tb = createTracebackChain(self, materializeNode);
+                self.setNext(createTracebackChain(self.getException(), materializeNode, factory()));
+                tb = self.getNext();
             }
             assert tb != null;
             // do never expose 'NO_TRACEBACK'; it's just a marker to avoid re-evaluation
@@ -96,10 +98,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private PTraceback createTracebackChain(PTraceback self, MaterializeFrameNode materializeNode) {
-            PTraceback tb;
+        public static PTraceback createTracebackChain(PException exception, MaterializeFrameNode materializeNode, PythonObjectFactory factory) {
             // recover the traceback from Truffle stack trace
-            PException exception = self.getException();
             PTraceback prev = PTraceback.NO_TRACEBACK;
             PTraceback cur = null;
             for (TruffleStackTraceElement element : TruffleStackTrace.getStackTrace(exception)) {
@@ -112,15 +112,13 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     if (location != null && !location.getRootNode().isInternal()) {
                         // create the PFrame and refresh frame values
                         PFrame escapedFrame = materializeNode.execute(null, location, false, true, frame);
-                        cur = factory().createTraceback(escapedFrame, exception);
+                        cur = factory.createTraceback(escapedFrame, exception);
                         cur.setNext(prev);
                         prev = cur;
                     }
                 }
             }
-            self.setNext(cur == null ? PTraceback.NO_TRACEBACK : cur);
-            tb = self.getNext();
-            return tb;
+            return cur == null ? PTraceback.NO_TRACEBACK : cur;
         }
     }
 

@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins.GetTracebackNextNode;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -91,8 +92,8 @@ public class TopLevelExceptionHandler extends RootNode {
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
     @Child private CallNode callNode = CallNode.create();
-    @Child private PythonObjectFactory factory;
     @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNodeGen.create();
+    @Child private PythonObjectFactory factory;
     @Child private GetTracebackNode getTracebackNode;
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
@@ -121,7 +122,11 @@ public class TopLevelExceptionHandler extends RootNode {
             try {
                 return run(frame);
             } catch (PException e) {
-                e.getExceptionObject().reifyException(materializeFrameNode.execute(frame, true), factory());
+                assert !PArguments.isPythonFrame(frame);
+                // we cannot reify at this point because we have no Python frame; so create the full
+                // traceback chain
+                PTraceback tbHead = GetTracebackNextNode.createTracebackChain(e, materializeFrameNode, factory());
+                e.getExceptionObject().setTraceback(tbHead);
                 printExc(frame, e);
                 if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
