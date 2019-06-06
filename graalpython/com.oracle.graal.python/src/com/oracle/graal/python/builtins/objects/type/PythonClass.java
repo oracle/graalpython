@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import com.oracle.truffle.api.object.Shape;
-
 /**
  * Mutable class.
  */
