@@ -42,6 +42,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectFactory;
+import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.object.dsl.Layout;
 import com.oracle.truffle.api.object.dsl.Nullable;
@@ -158,6 +159,8 @@ public class PythonObject extends PythonAbstractObject {
 
         LazyPythonClass getLazyPythonClass(DynamicObjectFactory factory);
 
+        LazyPythonClass getLazyPythonClass(ObjectType objectType);
+
         LazyPythonClass getLazyPythonClass(DynamicObject object);
 
         void setLazyPythonClass(DynamicObject object, LazyPythonClass value);
@@ -165,5 +168,9 @@ public class PythonObject extends PythonAbstractObject {
 
     public static Shape freshShape(LazyPythonClass klass) {
         return PythonObjectLayoutImpl.INSTANCE.createPythonObjectShape(klass).getShape();
+    }
+
+    public static LazyPythonClass getLazyPythonClass(ObjectType type) {
+        return PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(type);
     }
 }

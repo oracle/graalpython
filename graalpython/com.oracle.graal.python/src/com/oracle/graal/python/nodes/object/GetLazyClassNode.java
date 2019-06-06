@@ -158,15 +158,27 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
 
     // if object is constant here, storage will also be constant, so the shape
     // lookup is the only thing we need.
-    @Specialization(guards = "object.getStorage().getShape() == cachedShape", assumptions = {"singleContextAssumption"}, limit = "1")
-    protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
+    @Specialization(guards = "object.getStorage().getShape() == cachedShape", assumptions = {"singleContextAssumption"}, limit = "4")
+    protected static LazyPythonClass getPythonClassCachedSingle(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
         return klass;
     }
 
-    @Specialization(replaces = "getPythonClassCached")
+    protected static boolean isBuiltinType(Shape shape) {
+        return PythonObject.getLazyPythonClass(shape.getObjectType()) instanceof PythonBuiltinClassType;
+    }
+
+    // we can at least cache builtin types in the multi-context case
+    @Specialization(guards = {"object.getStorage().getShape() == cachedShape", "isBuiltinType(cachedShape)"}, limit = "4")
+    protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
+                    @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
+                    @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
+        return klass;
+    }
+
+    @Specialization(replaces = {"getPythonClassCached", "getPythonClassCachedSingle"})
     protected static LazyPythonClass getPythonClassGeneric(PythonObject object) {
         return object.getLazyPythonClass();
     }
