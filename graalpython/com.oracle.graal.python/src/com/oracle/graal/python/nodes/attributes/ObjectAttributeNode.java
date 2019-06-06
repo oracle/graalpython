@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMappingproxy;
+
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -68,9 +70,9 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         return object.getDict() == null;
     }
 
-    protected static boolean hasBuiltinDict(PythonObject object, IsBuiltinClassProfile profile) {
+    protected static boolean hasBuiltinDict(PythonObject object, IsBuiltinClassProfile profileDict, IsBuiltinClassProfile profileMapping) {
         PHashingCollection dict = object.getDict();
-        return dict != null && profile.profileObject(object.getDict(), PythonBuiltinClassType.PDict);
+        return dict != null && (profileDict.profileObject(dict, PDict) || profileMapping.profileObject(dict, PMappingproxy));
     }
 
     protected static Location getLocationOrNull(Property prop) {

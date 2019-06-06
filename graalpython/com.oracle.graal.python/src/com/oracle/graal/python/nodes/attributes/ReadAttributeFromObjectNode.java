@@ -100,20 +100,11 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
 
-    // special case for the very common module attribute read
-    @Specialization(guards = {
-                    "cachedObject == object",
-                    "cachedObject.getDict() == cachedDict",
-                    "hasBuiltinDict(cachedObject, isBuiltinDict)",
-    }, assumptions = "singleContextAssumption", limit = "1")
-    protected Object readFromBuiltinModuleDict(@SuppressWarnings("unused") PythonModule object, String key,
-                    @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,
-                    @SuppressWarnings("unused") @Cached("cachedObject.getDict()") PHashingCollection cachedDict,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @Cached HashingStorageNodes.GetItemNode getItemNode) {
-        Object value = getItemNode.execute(null, getDictStorage.execute(cachedDict), key);
+    private static Object readDirectlyFromBuiltinDict(PHashingCollection dict, String key,
+                    HashingCollectionNodes.GetDictStorageNode getDictStorage,
+                    HashingStorageNodes.GetItemNode getItemNode) {
+        // note that we don't need to pass the state here - string keys are hashable by definition
+        Object value = getItemNode.execute(null, getDictStorage.execute(dict), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -121,22 +112,31 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    // read from a builtin dict
+    // special case for the very common module attribute read
     @Specialization(guards = {
-                    "!isHiddenKey(key)",
-                    "hasBuiltinDict(object, isBuiltinDict)",
-    })
+                    "cachedObject == object",
+                    "cachedObject.getDict() == cachedDict",
+                    "hasBuiltinDict(cachedObject, isBuiltinDict, isBuiltinMappingproxy)",
+    }, assumptions = "singleContextAssumption", limit = "1")
+    protected Object readFromBuiltinModuleDict(@SuppressWarnings("unused") PythonModule object, String key,
+                    @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,
+                    @SuppressWarnings("unused") @Cached("cachedObject.getDict()") PHashingCollection cachedDict,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
+                    @Cached HashingStorageNodes.GetItemNode getItemNode) {
+        return readDirectlyFromBuiltinDict(cachedDict, key, getDictStorage, getItemNode);
+    }
+
+    // read from a builtin dict
+    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, isBuiltinDict, isBuiltinMappingproxy)"})
     protected Object readFromBuiltinDict(PythonObject object, String key,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-        // note that we don't need to pass the state here - string keys are hashable by definition
-        Object value = getItemNode.execute(null, getDictStorage.execute(object.getDict()), key);
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
+        return readDirectlyFromBuiltinDict(object.getDict(), key, getDictStorage, getItemNode);
     }
 
     // read from the Dict
