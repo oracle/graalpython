@@ -56,7 +56,7 @@ import threading
 import _thread
 result_lock = threading.RLock()
 if os.environ.get(b"ENABLE_THREADED_GRAALPYTEST") == b"true":
-    thread_count = os.cpu_count()
+    thread_count = max(os.cpu_count(), 16)
     thread_token = threading.Semaphore(thread_count)
     print("Running with %d threads" % thread_count)
 else:
