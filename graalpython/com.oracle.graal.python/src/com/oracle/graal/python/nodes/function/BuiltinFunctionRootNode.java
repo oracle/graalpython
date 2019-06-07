@@ -27,12 +27,11 @@ package com.oracle.graal.python.nodes.function;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -41,7 +40,6 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinWithFrameNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -86,21 +84,6 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.execute(arg.execute(frame));
-        }
-    }
-
-    private static final class BuiltinUnaryWithFrameCallNode extends BuiltinCallNode {
-        @Child private PythonUnaryBuiltinWithFrameNode node;
-        @Child private ReadArgumentNode arg;
-
-        public BuiltinUnaryWithFrameCallNode(PythonUnaryBuiltinWithFrameNode node, ReadArgumentNode argument) {
-            this.node = node;
-            this.arg = argument;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
             return node.execute(frame, arg.execute(frame));
         }
     }
@@ -118,7 +101,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.execute(arg1.execute(frame), arg2.execute(frame));
+            return node.execute(frame, arg1.execute(frame), arg2.execute(frame));
         }
     }
 
@@ -137,7 +120,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.execute(arg1.execute(frame), arg2.execute(frame), arg3.execute(frame));
+            return node.execute(frame, arg1.execute(frame), arg2.execute(frame), arg3.execute(frame));
         }
     }
 
@@ -197,7 +180,8 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         if (maxNumPosArgs > 0) {
             if (parameterNames.length == 0) {
-                PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin " + factory);
+                // PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin
+                // " + factory);
                 parameterNames = new String[maxNumPosArgs];
                 parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
                 for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
@@ -299,14 +283,6 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     } else {
                         assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
                         body = insert(new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]));
-                    }
-                } else if (node instanceof PythonUnaryBuiltinWithFrameNode) {
-                    if (!declaresExplicitSelf) {
-                        assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
-                        body = insert(new BuiltinUnaryWithFrameCallNode((PythonUnaryBuiltinWithFrameNode) node, argumentsList[1]));
-                    } else {
-                        assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
-                        body = insert(new BuiltinUnaryWithFrameCallNode((PythonUnaryBuiltinWithFrameNode) node, argumentsList[0]));
                     }
                 } else if (node instanceof PythonBinaryBuiltinNode) {
                     if (!declaresExplicitSelf) {

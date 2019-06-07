@@ -52,6 +52,7 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFrameNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -128,8 +129,8 @@ public class AsyncHandler {
     }
 
     private static class CallRootNode extends RootNode {
-        @Child CallNode callNode = CallNode.create();
-        @Child GetFrameNode getFrameNode = GetFrameNode.create();
+        @Child private CallNode callNode = CallNode.create();
+        @Child private GetFrameNode getFrameNode = GetFrameNode.create();
 
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);
@@ -138,11 +139,11 @@ public class AsyncHandler {
         @Override
         public Object execute(VirtualFrame frame) {
             Object[] frameArguments = frame.getArguments();
-            Object callable = frameArguments[0];
-            int frameIndex = (int) frameArguments[1];
-            Object[] arguments = Arrays.copyOfRange(frameArguments, 2, frameArguments.length);
+            Object callable = PArguments.getArgument(frameArguments, 0);
+            int frameIndex = (int) PArguments.getArgument(frameArguments, 1);
+            Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + 2, frameArguments.length);
             if (frameIndex >= 0) {
-                arguments[frameIndex] = getFrameNode.execute(1);
+                arguments[frameIndex] = getFrameNode.execute(frame, 1);
             }
             return callNode.execute(frame, callable, arguments);
         }
@@ -211,10 +212,10 @@ public class AsyncHandler {
                     Object callable = action.callable();
                     if (callable != null) {
                         Object[] arguments = action.arguments();
-                        Object[] args = new Object[arguments.length + 2];
-                        System.arraycopy(arguments, 0, args, 2, arguments.length);
-                        args[0] = callable;
-                        args[1] = action.frameIndex();
+                        Object[] args = PArguments.create(arguments.length + 2);
+                        System.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + 2, arguments.length);
+                        PArguments.setArgument(args, 0, callable);
+                        PArguments.setArgument(args, 1, action.frameIndex());
                         try {
                             callTarget.call(args);
                         } catch (RuntimeException e) {

@@ -41,6 +41,9 @@
 
 package com.oracle.graal.python.builtins.modules;
 
+import java.math.BigInteger;
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -59,8 +62,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import java.math.BigInteger;
-import java.util.List;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = OperatorModuleBuiltins.MODULE_NAME)
 public class OperatorModuleBuiltins extends PythonBuiltins {
@@ -112,12 +114,12 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         private @Child LookupAndCallUnaryNode lenNode;
 
         @Fallback
-        public boolean doObject(Object value) {
+        public boolean doObject(VirtualFrame frame, Object value) {
             if (boolNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 boolNode = insert((LookupAndCallUnaryNode.create(SpecialMethodNames.__BOOL__)));
             }
-            Object result = boolNode.executeObject(value);
+            Object result = boolNode.executeObject(frame, value);
             if (result != PNone.NO_VALUE) {
                 return (boolean) result;
             }
@@ -126,7 +128,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
                 lenNode = insert((LookupAndCallUnaryNode.create(SpecialMethodNames.__LEN__)));
             }
 
-            result = lenNode.executeObject(value);
+            result = lenNode.executeObject(frame, value);
             if (result == PNone.NO_VALUE) {
                 return false;
             }

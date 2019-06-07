@@ -97,7 +97,14 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
+        FunctionRootNode copy = new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots,
+                        getSignature());
+        // share assumptions; this is required due to splitting, otherwise the invoking nodes (i.e.
+        // InvokeNode) is testing for the wrong assumptions since it will see a different instance
+        // as actually executed.
+        copy.setDontNeedCallerFrame(getDontNeedCallerFrame());
+        copy.setDontNeedExceptionState(getDontNeedExceptionState());
+        return copy;
     }
 
     @ExplodeLoop

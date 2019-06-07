@@ -5,11 +5,11 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.211.0",
+    "mxversion": "5.219.2",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc18",
+    "version": "20.0.0-beta.02",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "d896b8318227159739233faffa443f7abdbe4c8c",
+                "version": "a45083c14682a6dbe82d41dba2cf758a996369c0",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "d896b8318227159739233faffa443f7abdbe4c8c",
+                "version": "a45083c14682a6dbe82d41dba2cf758a996369c0",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -104,19 +104,19 @@ suite = {
             "path": 'graalpython/lib-python',
             "source": [
                 "3"
-            ]
+            ],
         },
 
         "lib.graalpython": {
             "type": "python",
             "path": 'graalpython/lib-graalpython',
-            "source": []
+            "source": [],
         },
 
         "python.site-packages": {
             "type": "python",
             "path": 'graalpython/site-packages',
-            "source": []
+            "source": [],
         },
 
         "perf.benchmarks": {
@@ -124,13 +124,13 @@ suite = {
             "path": 'graalpython/benchmarks',
             "source": [
                 "src"
-            ]
+            ],
         },
 
         "util.scripts": {
             "type": "python",
             "path": 'scripts',
-            "source": []
+            "source": [],
         },
 
         "com.oracle.graal.python.cext": {
@@ -140,7 +140,13 @@ suite = {
                 "include",
                 "src",
                 "modules"
-            ]
+            ],
+        },
+
+        "ci": {
+            "type": "python",
+            "path": "ci_common",
+            "source": [],
         },
     },
 
@@ -366,8 +372,6 @@ suite = {
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],
-                "LICENSE_GRAALPYTHON": "file:LICENSE",
-                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
             },
             "maven": False,
         },
@@ -378,6 +382,17 @@ suite = {
             "layout": {
                 "README_GRAALPYTHON.md": "file:README.md",
                 "./": "file:doc",
+            },
+            "maven": False,
+        },
+
+        "GRAALPYTHON_GRAALVM_LICENSES": {
+            "native": True,
+            "platformDependent": True,
+            "description": "Graal.Python support distribution for the GraalVM license files",
+            "layout": {
+                "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
+                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
             },
             "maven": False,
         },

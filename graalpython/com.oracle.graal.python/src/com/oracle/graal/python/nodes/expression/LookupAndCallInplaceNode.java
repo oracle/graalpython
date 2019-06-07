@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild("arg")
 @NodeChild("arg2")
@@ -105,14 +106,14 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
     }
 
     @Specialization(guards = "!hasBinaryVersion()")
-    Object callObject(Object left, Object right,
+    Object callObject(VirtualFrame frame, Object left, Object right,
                     @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattr) {
         Object leftCallable = getattr.execute(left);
         Object result;
         if (leftCallable == PNone.NO_VALUE) {
             result = PNotImplemented.NOT_IMPLEMENTED;
         } else {
-            result = ensureDispatch().executeObject(leftCallable, left, right);
+            result = ensureDispatch().executeObject(frame, leftCallable, left, right);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
             if (handler == null) {
@@ -125,19 +126,19 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
     }
 
     @Specialization(guards = "hasBinaryVersion()")
-    Object callObject(Object left, Object right,
+    Object callObject(VirtualFrame frame, Object left, Object right,
                     @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattrInplace,
                     @Cached("create(binaryOpName, reverseBinaryOpName)") LookupAndCallBinaryNode binaryNode) {
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object inplaceCallable = getattrInplace.execute(left);
         if (inplaceCallable != PNone.NO_VALUE) {
-            result = ensureDispatch().executeObject(inplaceCallable, left, right);
+            result = ensureDispatch().executeObject(frame, inplaceCallable, left, right);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
         }
         if (binaryNode != null) {
-            result = binaryNode.executeObject(left, right);
+            result = binaryNode.executeObject(frame, left, right);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }

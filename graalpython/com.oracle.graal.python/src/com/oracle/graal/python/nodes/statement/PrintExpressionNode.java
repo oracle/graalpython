@@ -66,7 +66,7 @@ public class PrintExpressionNode extends ExpressionNode {
     public Object execute(VirtualFrame frame) {
         Object value = valueNode.execute(frame);
         PythonModule sysModule = contextRef.get().getCore().lookupBuiltinModule("sys");
-        Object displayhook = getAttribute.executeObject(sysModule);
+        Object displayhook = getAttribute.executeObject(frame, sysModule);
         callNode.execute(frame, displayhook, value);
         return PNone.NONE;
     }

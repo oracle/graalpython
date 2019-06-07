@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -142,8 +143,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(PMemoryView memoryView) {
-            byte[] bytes = doBytes(getToBytesNode().execute(memoryView));
+        Object run(VirtualFrame frame, PMemoryView memoryView) {
+            byte[] bytes = doBytes(getToBytesNode().execute(frame, memoryView));
             if (bytes != null) {
                 return factory().createByteArray(bytes);
             }

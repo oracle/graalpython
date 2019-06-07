@@ -125,8 +125,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
-                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-        Object value = getItemNode.execute(getDictStorage.execute(object.getDict()), key);
+                    @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
+        Object value = getItemNode.passState().execute(getDictStorage.execute(object.getDict()), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -140,8 +140,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }, replaces = "readFromDictCached")
     protected Object readFromDict(PythonObject object, Object key,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-        Object value = getItemNode.execute(getDictStorage.execute(object.getDict()), key);
+                    @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
+        Object value = getItemNode.passState().execute(getDictStorage.execute(object.getDict()), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -181,7 +181,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         protected Object readNativeObject(PythonNativeObject object, Object key,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached("create()") GetObjectDictNode getNativeDict,
-                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+                        @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
             return readNative(key, getNativeDict.execute(object), getItemNode, getDictStorage);
         }
 
@@ -197,7 +197,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         protected Object readNativeClass(PythonNativeClass object, Object key,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached GetTypeMemberNode getNativeDict,
-                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+                        @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
             return readNative(key, getNativeDict.execute(object, NativeMemberNames.TP_DICT), getItemNode, getDictStorage);
         }
 
@@ -207,9 +207,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    private static Object readNative(Object key, Object dict, HashingStorageNodes.GetItemNode getItemNode, HashingCollectionNodes.GetDictStorageNode getDictStorage) {
+    private static Object readNative(Object key, Object dict, HashingStorageNodes.GetItemInteropNode getItemNode, HashingCollectionNodes.GetDictStorageNode getDictStorage) {
         if (dict instanceof PHashingCollection) {
-            Object result = getItemNode.execute(getDictStorage.execute((PHashingCollection) dict), key);
+            Object result = getItemNode.passState().execute(getDictStorage.execute((PHashingCollection) dict), key);
             if (result != null) {
                 return result;
             }

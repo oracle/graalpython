@@ -50,7 +50,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinWithFrameNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -87,13 +86,6 @@ abstract class CallSpecialMethodNode extends Node {
     protected static PythonUnaryBuiltinNode getUnary(Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonUnaryBuiltinNode.class);
-        }
-        return null;
-    }
-
-    protected static PythonUnaryBuiltinWithFrameNode getUnaryWithFrame(Object func) {
-        if (func instanceof PBuiltinFunction) {
-            return getBuiltin((PBuiltinFunction) func, PythonUnaryBuiltinWithFrameNode.class);
         }
         return null;
     }

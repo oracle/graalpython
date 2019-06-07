@@ -117,12 +117,12 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             // ........_y = next(_i)
             // ....except StopIteration as _e:
             // ........_r = _e.value
-            _i = iter.executeWith(right.execute(frame));
+            _i = iter.executeWith(frame, right.execute(frame));
             try {
-                _y = next.execute(_i);
+                _y = next.execute(frame, _i);
             } catch (PException e) {
                 e.expectStopIteration(stopIterProfile1);
-                return getGetValue().executeObject(e.getExceptionObject());
+                return getGetValue().executeObject(frame, e.getExceptionObject());
             }
             access.setIterator(frame, iteratorSlot, _i);
         }
@@ -186,7 +186,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                         } catch (PException _e2) {
                             access.setIterator(frame, iteratorSlot, null);
                             _e2.expectStopIteration(stopIterProfile2);
-                            return getGetValue().executeObject(_e2.getExceptionObject());
+                            return getGetValue().executeObject(frame, _e2.getExceptionObject());
                         }
                     }
                 } else {
@@ -202,16 +202,16 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     try {
                         if (_s == null || _s == PNone.NONE) {
                             gotNothing.enter();
-                            _y = next.execute(_i);
+                            _y = next.execute(frame, _i);
                         } else {
-                            Object send = getGetSendNode().executeObject(_i, "send");
+                            Object send = getGetSendNode().executeObject(frame, _i, "send");
                             // send will be bound at this point
                             _y = getCallSendNode().execute(frame, send, new Object[]{_s}, PKeyword.EMPTY_KEYWORDS);
                         }
                     } catch (PException _e) {
                         access.setIterator(frame, iteratorSlot, null);
                         _e.expectStopIteration(stopIterProfile3);
-                        return getGetValue().executeObject(_e.getExceptionObject());
+                        return getGetValue().executeObject(frame, _e.getExceptionObject());
                     }
                 }
             }

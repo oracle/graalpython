@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.NodeChild;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @NodeChild(value = "leftNode", type = ExpressionNode.class)
@@ -38,13 +39,13 @@ public abstract class BinaryOpNode extends ExpressionNode {
 
     // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
     // the lengths we go to to avoid boxing :(
-    public abstract Object executeWith(Object left, Object right);
+    public abstract Object executeWith(VirtualFrame frame, Object left, Object right);
 
-    public int executeInt(int left, int right) throws UnexpectedResultException {
-        return PGuards.expectInteger(executeWith(left, right));
+    public int executeInt(VirtualFrame frame, int left, int right) throws UnexpectedResultException {
+        return PGuards.expectInteger(executeWith(frame, left, right));
     }
 
-    public double executeDouble(double left, double right) throws UnexpectedResultException {
-        return PGuards.expectDouble(executeWith(left, right));
+    public double executeDouble(VirtualFrame frame, double left, double right) throws UnexpectedResultException {
+        return PGuards.expectDouble(executeWith(frame, left, right));
     }
 }

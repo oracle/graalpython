@@ -296,7 +296,7 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "isCaughtExceptionMember(key)")
         PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            context.setCaughtException(null);
+            context.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
 

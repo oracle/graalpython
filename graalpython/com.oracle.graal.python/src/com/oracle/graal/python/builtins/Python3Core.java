@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
@@ -71,6 +70,7 @@ import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
@@ -96,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
@@ -167,6 +166,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -232,8 +232,10 @@ public final class Python3Core implements PythonCore {
                         "_ast",
                         "java",
                         "pyio_patches",
+                        "pwd",
                         "_contextvars"));
-
+        // must be last
+        coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
 
@@ -345,6 +347,7 @@ public final class Python3Core implements PythonCore {
                         new ThreadBuiltins(),
                         new LockBuiltins(),
                         new RLockBuiltins(),
+                        new PwdModuleBuiltins(),
                         new ContextvarsModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -433,8 +436,6 @@ public final class Python3Core implements PythonCore {
             for (PythonBuiltins builtin : builtins) {
                 builtin.postInitialize(this);
             }
-
-            loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
 
             initialized = true;
         }
@@ -590,21 +591,26 @@ public final class Python3Core implements PythonCore {
         Env env = ctxt.getEnv();
         String suffix = env.getFileNameSeparator() + basename + ".py";
         TruffleFile file = env.getTruffleFile(prefix + suffix);
+        String errorMessage;
         try {
-            if (file.exists()) {
-                return getLanguage().newSource(ctxt, file, basename);
-            }
-        } catch (SecurityException | IOException t) {
-            // fall through;
+            return PythonLanguage.newSource(ctxt, file, basename);
+        } catch (IOException e) {
+            errorMessage = "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
+        } catch (SecurityException e) {
+            errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
-        PythonLanguage.getLogger().log(Level.SEVERE, "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.");
-        throw new RuntimeException();
+        PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
+        PException e = new PException(null, null);
+        e.setMessage(errorMessage);
+        throw e;
     }
 
     private void loadFile(String s, String prefix) {
-        Source source = getSource(s, prefix);
-        Supplier<PCode> getCode = () -> objectFactory.createCode(Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null)));
-        RootCallTarget callTarget = getLanguage().cacheCode(source.getName(), getCode).getRootCallTarget();
+        Supplier<CallTarget> getCode = () -> {
+            Source source = getSource(s, prefix);
+            return Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null));
+        };
+        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects

@@ -3,6 +3,25 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 20.0.0 beta 1
+
+* Update Python standard library files to Python 3.7.3
+* Improve performance of exceptions that do not escape
+* Fix str(None) to print "None" instead of an empty string
+* Fix error messages on polyglot objects to not leak implementation class names of those objects
+* Fix erroneously frozen package paths in pre-initialized python modules
+* Fix caching of core sources in a native image with a preinitialized context for pre-built images and libpolyglot fast startup
+* Implement pwd.getpwuid
+* Implement os.exec, os.execv, and os.execl
+* Add some missing C API headers needed for tensorflow compilation
+
+## Version 19.0.0
+
+* Fix an issue preventing use of encodings in the installable binary
+* Fix return value of process when `os.exit` is called with a boolean
+* Fix interpretation of foreign objects to prefer interpreting them as integer over double
+* Fix performance regression when repeatedly creating a new function in a loop
+
 ## Version 1.0.0 RC16
 
 * No user-facing changes

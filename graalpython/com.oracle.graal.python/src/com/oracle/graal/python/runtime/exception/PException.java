@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ import com.oracle.truffle.api.nodes.Node;
 public final class PException extends RuntimeException implements TruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
 
-    public static final PException LAZY_FETCH_EXCEPTION = new PException(null, null);
+    /** A marker object indicating that there is for sure no exception. */
     public static final PException NO_EXCEPTION = new PException(null, null);
 
     private Node location;
@@ -91,6 +91,9 @@ public final class PException extends RuntimeException implements TruffleExcepti
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
+        if (this == PException.NO_EXCEPTION) {
+            return "NO_EXCEPTION";
+        }
         return getMessage();
     }
 

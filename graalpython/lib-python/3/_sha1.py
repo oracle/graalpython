@@ -21,6 +21,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+#!/usr/bin/env python
+# -*- coding: iso-8859-1 -*-
 
 # Note that PyPy contains also a built-in module 'sha' which will hide
 # this one if compiled in.

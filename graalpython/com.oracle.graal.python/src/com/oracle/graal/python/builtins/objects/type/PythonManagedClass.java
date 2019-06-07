@@ -217,8 +217,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
     }
 
-    @Override
-    public PythonClassNativeWrapper getNativeWrapper() {
+    public PythonClassNativeWrapper getClassNativeWrapper() {
         return (PythonClassNativeWrapper) super.getNativeWrapper();
     }
 

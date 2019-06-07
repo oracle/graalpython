@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,3 +37,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest
+
+
+class PwdTests(unittest.TestCase):
+    def test_getpwuid(self):
+        import pwd
+        passwd = pwd.getpwuid(1000)
+        self.assertIsNotNone(passwd.pw_name)
+        self.assertIsNotNone(passwd.pw_passwd)
+        assert passwd.pw_uid == 1000
+        self.assertIsNotNone(passwd.pw_gid)
+        self.assertIsNotNone(passwd.pw_gecos)
+        self.assertIsNotNone(passwd.pw_shell)

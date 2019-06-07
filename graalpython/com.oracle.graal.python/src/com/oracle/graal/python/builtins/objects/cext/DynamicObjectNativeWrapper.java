@@ -116,7 +116,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -191,7 +191,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     // READ
     @ExportMessage
-    boolean hasMembers() {
+    protected boolean hasMembers() {
         return true;
     }
 
@@ -301,7 +301,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_NAME, key)")
         Object doTpName(PythonManagedClass object, @SuppressWarnings("unused") String key) {
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
-            return object.getNativeWrapper().getNameWrapper();
+            return object.getClassNativeWrapper().getNameWrapper();
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")
@@ -337,7 +337,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         Object doTpAsBuffer(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached IsSubtypeNode isSubtype,
+                        @Cached IsSubtypeWithoutFrameNode isSubtype,
                         @Cached BranchProfile notBytes,
                         @Cached BranchProfile notBytearray,
                         @Cached BranchProfile notMemoryview,
@@ -345,27 +345,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached BranchProfile notMmap,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             PythonBuiltinClass pBytes = context.getCore().lookupType(PythonBuiltinClassType.PBytes);
-            if (isSubtype.execute(object, pBytes)) {
+            if (isSubtype.passState().execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
             }
             notBytes.enter();
             PythonBuiltinClass pBytearray = context.getCore().lookupType(PythonBuiltinClassType.PByteArray);
-            if (isSubtype.execute(object, pBytearray)) {
+            if (isSubtype.passState().execute(object, pBytearray)) {
                 return new PyBufferProcsWrapper(pBytearray);
             }
             notBytearray.enter();
             PythonBuiltinClass pMemoryview = context.getCore().lookupType(PythonBuiltinClassType.PMemoryView);
-            if (isSubtype.execute(object, pMemoryview)) {
+            if (isSubtype.passState().execute(object, pMemoryview)) {
                 return new PyBufferProcsWrapper(pMemoryview);
             }
             notMemoryview.enter();
             PythonBuiltinClass pBuffer = context.getCore().lookupType(PythonBuiltinClassType.PBuffer);
-            if (isSubtype.execute(object, pBuffer)) {
+            if (isSubtype.passState().execute(object, pBuffer)) {
                 return new PyBufferProcsWrapper(pBuffer);
             }
             notBuffer.enter();
             PythonBuiltinClass pMmap = context.getCore().lookupType(PythonBuiltinClassType.PMMap);
-            if (isSubtype.execute(object, pMmap)) {
+            if (isSubtype.passState().execute(object, pMmap)) {
                 return new PyBufferProcsWrapper(pMmap);
             }
             notMmap.enter();
@@ -513,7 +513,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(OB_SIZE, key)")
         long doObSize(Object object, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-            Object res = callLenNode.executeObject(object, SpecialMethodNames.__LEN__);
+            Object res = callLenNode.passState().executeObject(object, SpecialMethodNames.__LEN__);
             if (res instanceof Number) {
                 return ((Number) res).intValue();
             }
@@ -523,7 +523,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(MA_USED, key)")
         int doMaUsed(PDict object, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-            Object res = callLenNode.executeObject(object, SpecialMethodNames.__LEN__);
+            Object res = callLenNode.passState().executeObject(object, SpecialMethodNames.__LEN__);
             if (res instanceof Number) {
                 return ((Number) res).intValue();
             }
@@ -628,10 +628,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(MD_DEF, key)")
         Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key,
-                        @Shared("getItemNode") @Cached HashingStorageNodes.GetItemNode getItemNode) {
+                        @Shared("getItemNode") @Cached HashingStorageNodes.GetItemInteropNode getItemNode) {
             DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
-            return getItemNode.execute(nativeWrapper.getNativeMemberStore(), MD_DEF);
+            return getItemNode.passState().execute(nativeWrapper.getNativeMemberStore(), MD_DEF);
         }
 
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
@@ -790,7 +790,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         // TODO fallback guard
         @Specialization
         Object doGeneric(Object object, String key,
-                        @Shared("getItemNode") @Cached HashingStorageNodes.GetItemNode getItemNode) throws UnknownIdentifierException {
+                        @Shared("getItemNode") @Cached HashingStorageNodes.GetItemInteropNode getItemNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
@@ -798,7 +798,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
                 logGeneric(key);
-                return getItemNode.execute(nativeWrapper.getNativeMemberStore(), key);
+                return getItemNode.passState().execute(nativeWrapper.getNativeMemberStore(), key);
             }
             throw UnknownIdentifierException.create(key);
         }
@@ -857,14 +857,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Shared("setItemNode") @Cached HashingStorageNodes.DynamicObjectSetItemNode setItemNode) {
             DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
-            setItemNode.execute(nativeWrapper.createNativeMemberStore(object.getDictUnsetOrSameAsStorageAssumption()), MD_DEF, value);
+            setItemNode.passState().execute(nativeWrapper.createNativeMemberStore(object.getDictUnsetOrSameAsStorageAssumption()), MD_DEF, value);
             return value;
         }
 
         @Specialization(guards = "eq(TP_DICT, key)")
         Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key, Object nativeValue,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached HashingStorageNodes.GetItemNode getItem,
+                        @Cached HashingStorageNodes.GetItemInteropNode getItem,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached IsBuiltinClassProfile isPrimitiveDictProfile) {
             Object value = asPythonObjectNode.execute(nativeValue);
@@ -872,7 +872,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 for (Object k : d.keys()) {
-                    writeAttrNode.execute(object, k, getItem.execute(d.getDictStorage(), k));
+                    writeAttrNode.execute(object, k, getItem.passState().execute(d.getDictStorage(), k));
                 }
                 PHashingCollection existing = object.getDict();
                 if (existing != null) {
@@ -921,7 +921,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
                 logGeneric(key);
-                setItemNode.execute(nativeWrapper.createNativeMemberStore(), key, value);
+                setItemNode.passState().execute(nativeWrapper.createNativeMemberStore(), key, value);
                 return value;
             }
             throw UnknownIdentifierException.create(key);

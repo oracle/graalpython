@@ -44,7 +44,7 @@ import sys
 import test
 
 
-if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true":
+if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "__main__":
     TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
 else:
     TAGS_DIR = "null"

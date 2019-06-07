@@ -589,20 +589,18 @@ def test_locals_class():
 
     assert f(1).x == 12
 
-# TODO: see GR-8488
-# def test_locals_class2():
-#     def f(x):
-#         class C:
-#             y = x
-#
-#             def m(self):
-#                 return x
-#             z = list(locals())
-#         return C
-#
-#     varnames = f(1).z
-#     assert "x" not in varnames
-#     assert "y" in varnames
+    def f(x):
+        class C:
+            y = x
+
+            def m(self):
+                return x
+            z = list(locals())
+        return C
+
+    varnames = f(1).z
+    assert "x" not in varnames
+    assert "y" in varnames
 
 
 def test_bound_and_free():

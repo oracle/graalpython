@@ -60,7 +60,9 @@ PyAPI_FUNC(int) PyTraceMalloc_Untrack(
 PyAPI_FUNC(PyObject*) _PyTraceMalloc_GetTraceback(
     unsigned int domain,
     uintptr_t ptr);
-#endif   /* !Py_LIMITED_API */
+
+PyAPI_FUNC(int) _PyMem_IsFreed(void *ptr, size_t size);
+#endif   /* !defined(Py_LIMITED_API) */
 
 
 /* BEWARE:

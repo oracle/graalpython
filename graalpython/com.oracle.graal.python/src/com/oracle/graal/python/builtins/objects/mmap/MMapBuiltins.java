@@ -413,9 +413,9 @@ public class MMapBuiltins extends PythonBuiltins {
         protected static final String CLOSE = "close";
 
         @Specialization
-        Object size(PMMap self, @SuppressWarnings("unused") Object typ, @SuppressWarnings("unused") Object val, @SuppressWarnings("unused") Object tb,
+        Object size(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") Object typ, @SuppressWarnings("unused") Object val, @SuppressWarnings("unused") Object tb,
                         @Cached("create(CLOSE)") LookupAndCallUnaryNode callCloseNode) {
-            return callCloseNode.executeObject(self);
+            return callCloseNode.executeObject(frame, self);
         }
     }
 
@@ -570,10 +570,10 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int writeMemoryview(PMMap self, PMemoryView memoryView,
+        int writeMemoryview(VirtualFrame frame, PMMap self, PMemoryView memoryView,
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] data = toBytesNode.execute(memoryView);
+            byte[] data = toBytesNode.execute(frame, memoryView);
             return writeNode.execute(self.getChannel(), new ByteSequenceStorage(data), Integer.MAX_VALUE);
         }
     }

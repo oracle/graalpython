@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
 public class MethodBuiltins extends PythonBuiltins {
@@ -86,9 +87,9 @@ public class MethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PMethod self,
+        protected Object doIt(VirtualFrame frame, PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.getFunction(), __CODE__);
+            return getCode.executeObject(frame, self.getFunction(), __CODE__);
         }
     }
 
@@ -96,13 +97,22 @@ public class MethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object reprMethod(PMethod self,
+        Object reprMethod(VirtualFrame frame, PMethod self,
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameAttrNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
-            return String.format("<built-in method %s of %s object at 0x%x>", getNameAttrNode.executeObject(self.getFunction()), typeName, self.hashCode());
+            return strFormat("<built-in method %s of %s object at 0x%x>", getNameAttrNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static int hashCode(PMethod self) {
+            return self.hashCode();
+        }
+
+        @TruffleBoundary
+        private static String strFormat(String fmt, Object... objects) {
+            return String.format(fmt, objects);
         }
 
         protected static GetAttributeNode createGetAttributeNode() {

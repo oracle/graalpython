@@ -123,7 +123,7 @@ public abstract class HashingStorage {
         @Override
         public Object execute(VirtualFrame frame) {
             Object[] args = frame.getArguments();
-            return callHashNode.executeObject(args[0]);
+            return callHashNode.executeObject(frame, args[0]);
         }
 
         @Override
@@ -148,7 +148,7 @@ public abstract class HashingStorage {
         @Override
         public Object execute(VirtualFrame frame) {
             Object[] args = frame.getArguments();
-            return callEqNode.executeWith(args[0], args[1]);
+            return callEqNode.executeWith(frame, args[0], args[1]);
         }
 
         @Override
