@@ -64,10 +64,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @TruffleBoundary
     public PythonManagedClass(LazyPythonClass typeClass, String name, PythonAbstractClass... baseClasses) {
-        super(typeClass, PythonObject.freshShape(typeClass) /*
-                                                             * do not inherit layout from the
-                                                             * TypeClass
-                                                             */);
+        super(PythonObject.freshShape(typeClass) /* do not inherit layout from the */);
         this.className = name;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);

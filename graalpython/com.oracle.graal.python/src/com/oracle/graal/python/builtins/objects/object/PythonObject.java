@@ -38,7 +38,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectFactory;
@@ -56,11 +55,7 @@ public class PythonObject extends PythonAbstractObject {
         assert getLazyPythonClass() == pythonClass;
     }
 
-    public PythonObject(LazyPythonClass pythonClass, Shape instanceShape) {
-        if (pythonClass == null) {
-            assert false;
-            CompilerDirectives.transferToInterpreter();
-        }
+    public PythonObject(Shape instanceShape) {
         storage = instanceShape.newInstance();
     }
 

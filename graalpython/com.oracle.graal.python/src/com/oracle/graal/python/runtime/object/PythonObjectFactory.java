@@ -177,8 +177,20 @@ public abstract class PythonObjectFactory extends Node {
      * Python objects
      */
 
-    public PythonObject createPythonObject(LazyPythonClass cls, Shape instanceShape) {
-        return trace(new PythonObject(cls, instanceShape));
+    /**
+     * Creates a PythonObject for the given class. This is potentially slightly slower than if the
+     * shape had been cached, due to the additional shape lookup.
+     */
+    public PythonObject createPythonObject(LazyPythonClass cls) {
+        return trace(new PythonObject(cls));
+    }
+
+    /**
+     * Creates a Python object with the given shape. Python object shapes store the class in the
+     * ObjectType.
+     */
+    public PythonObject createPythonObject(Shape instanceShape) {
+        return trace(new PythonObject(instanceShape));
     }
 
     public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {
