@@ -52,6 +52,18 @@ BOLD = '\033[1m'
 verbose = False
 
 
+import threading
+import _thread
+result_lock = threading.RLock()
+if os.environ.get(b"ENABLE_THREADED_GRAALPYTEST") == b"true":
+    thread_count = os.cpu_count()
+    thread_token = threading.Semaphore(thread_count)
+    print("Running with %d threads" % thread_count)
+else:
+    thread_count = 0
+    thread_token = None
+
+
 def dump_truffle_ast(func):
     try:
         print(__dump_truffle_ast__(func))
@@ -72,7 +84,8 @@ class TestCase(object):
 
     def run_safely(self, func, print_immediately=False):
         if verbose:
-            print(u"\n\t\u21B3 ", func.__name__, " ", end="")
+            with result_lock:
+                print(u"\n\t\u21B3 ", func.__name__, " ", end="")
         try:
             func()
         except BaseException as e:
@@ -102,10 +115,19 @@ class TestCase(object):
             pass
         elif not hasattr(func, "__call__"):
             pass
-        elif self.run_safely(func):
-            self.success()
         else:
-            self.failure()
+            def do_run():
+                r = self.run_safely(func)
+                with result_lock:
+                    self.success() if r else self.failure()
+                if thread_token:
+                    thread_token.release()
+
+            if thread_token:
+                thread_token.acquire()
+                threading.Thread(target=do_run).start()
+            else:
+                do_run()
 
     def success(self):
         self.passed += 1
@@ -318,6 +340,11 @@ class TestRunner(object):
                 self.failed += testcase.failed
             if verbose:
                 print()
+        for i in range(thread_count):
+            print("waiting for %d tests to finish" % (thread_count - i))
+            thread_token.acquire() # waits until all threads are exited
+        for i in range(thread_count):
+            thread_token.release()
         print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
         for e in self.exceptions:
             print(e)
