@@ -185,7 +185,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -677,7 +676,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached ReadLocalsNode getLocalsNode) {
             PCode code = createAndCheckCode(frame, source);
-            PFrame callerFrame = readCallerFrameNode.executeWith(frame, PArguments.getCurrentFrameInfo(frame), 0);
+            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
@@ -707,7 +706,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
                         @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
             PCode code = createAndCheckCode(frame, source);
-            PFrame callerFrame = readCallerFrameNode.executeWith(frame, PArguments.getCallerFrameInfo(frame), FrameInstance.FrameAccess.READ_ONLY, 0);
+            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
