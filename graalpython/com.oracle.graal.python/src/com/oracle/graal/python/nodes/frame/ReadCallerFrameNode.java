@@ -167,7 +167,7 @@ public final class ReadCallerFrameNode extends Node {
                                 // avoid overriding the location if we don't know it
                                 if (callNode != null) {
                                     info.setCallNode(callNode);
-                                } else if (pRootNode.isPythonInternal()) {
+                                } else {
                                     // In some special cases we call without a Truffle call node; in
                                     // this case, we use the root node as location (e.g. see
                                     // AsyncHandler.processAsyncActions).
@@ -175,7 +175,7 @@ public final class ReadCallerFrameNode extends Node {
                                 }
                                 // We may never return a frame without location because then we
                                 // cannot materialize it.
-                                assert info.getCallNode() != null : "tried to read frame without location";
+                                assert info.getCallNode() != null : "tried to read frame without location (root: " + pRootNode + ")";
                                 return frame;
                             }
                             i += 1;
