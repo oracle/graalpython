@@ -41,8 +41,8 @@
 package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -86,16 +86,6 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public String getName() {
         return name;
-    }
-
-    @Override
-    public boolean isCaptureFramesForTrace() {
-        return false;
-    }
-
-    @Override
-    public boolean isInternal() {
-        return true;
     }
 
     @Override

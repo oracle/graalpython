@@ -165,16 +165,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     }
 
     @Override
-    public boolean isCaptureFramesForTrace() {
-        return !isRewritten;
-    }
-
-    @Override
-    public boolean isInternal() {
-        return isRewritten;
-    }
-
-    @Override
     public void initializeFrame(VirtualFrame frame) {
         initClosureAndCellVars(frame);
     }
