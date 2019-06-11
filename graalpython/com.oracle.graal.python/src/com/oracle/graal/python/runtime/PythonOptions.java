@@ -204,10 +204,6 @@ public final class PythonOptions {
         return getOption(PythonLanguage.getContextRef().get(), MinLazyStringLength);
     }
 
-    public static boolean isWithThread() {
-        return getOption(PythonLanguage.getContextRef().get(), WithThread);
-    }
-
     public static boolean isWithThread(Env env) {
         return getOption(env, WithThread);
     }
