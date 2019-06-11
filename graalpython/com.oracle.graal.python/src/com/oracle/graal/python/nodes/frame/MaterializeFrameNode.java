@@ -142,9 +142,10 @@ public abstract class MaterializeFrameNode extends Node {
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).hasFrame()"}, replaces = "freshPFrame")
     static PFrame alreadyEscapedFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
-                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
+                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
+                    @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
-        if (forceSync && !inClassBody(frameToMaterialize) && !inModuleRoot(location)) {
+        if (syncProfile.profile(forceSync && !inClassBody(frameToMaterialize) && !inModuleRoot(location))) {
             syncValuesNode.execute(frame, pyFrame, frameToMaterialize);
         }
         if (markAsEscaped) {
@@ -158,9 +159,10 @@ public abstract class MaterializeFrameNode extends Node {
     @Specialization(replaces = {"freshPFrame", "alreadyEscapedFrame"})
     static PFrame notInClassBody(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
+                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
+                    @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
         if (getPFrame(frameToMaterialize) != null) {
-            return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, syncValuesNode);
+            return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, syncValuesNode, syncProfile);
         } else {
             if (inClassBody(frameToMaterialize)) {
                 return freshPFrameInClassBody(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
