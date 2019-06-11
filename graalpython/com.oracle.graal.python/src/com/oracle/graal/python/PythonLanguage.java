@@ -128,9 +128,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
     /*
-     * We need to store this here, because the check is on the language and can
-     * come from a thread that has no context, but we enable or disable threads
-     * with a context option. So we store this here when a context is created.
+     * We need to store this here, because the check is on the language and can come from a thread
+     * that has no context, but we enable or disable threads with a context option. So we store this
+     * here when a context is created.
      */
     private Boolean isWithThread = null;
 
