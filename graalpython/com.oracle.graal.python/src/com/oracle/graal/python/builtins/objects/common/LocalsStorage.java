@@ -118,7 +118,9 @@ public class LocalsStorage extends HashingStorage {
         if (!FrameSlotIDs.isUserFrameSlot(key)) {
             return false;
         }
-        return frame.getFrameDescriptor().findFrameSlot(key) != null;
+        // Deleting variables from a frame means to write 'null' into the slot. So we also need to
+        // check the value.
+        return frame.getFrameDescriptor().findFrameSlot(key) != null && getItem(key, eq) != null;
     }
 
     @Override
