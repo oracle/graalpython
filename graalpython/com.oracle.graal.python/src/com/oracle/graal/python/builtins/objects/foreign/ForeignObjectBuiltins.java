@@ -64,6 +64,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -73,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -88,10 +88,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -578,7 +582,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
         public final Object executeWithArgs(VirtualFrame frame, Object callee, Object[] arguments) {
-            return this.execute(frame, callee, arguments, PKeyword.EMPTY_KEYWORDS);
+            return execute(frame, callee, arguments, PKeyword.EMPTY_KEYWORDS);
         }
 
         public abstract Object execute(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
@@ -587,27 +591,29 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
          */
-        @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
-        @SuppressWarnings("try")
+        @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "3")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached("create()") PTypeToForeignNode toForeignNode,
-                        @Cached("create()") PForeignToPTypeNode toPTypeNode) {
+                        @CachedLibrary("callee") InteropLibrary lib,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PTypeToForeignNode toForeignNode,
+                        @Cached PForeignToPTypeNode toPTypeNode) {
             try {
                 Object[] convertedArgs = new Object[arguments.length];
                 for (int i = 0; i < arguments.length; i++) {
                     convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
-                if (lib.isExecutable(callee)) {
-                    try (DefaultContextManager cm = withGlobalState(frame)) {
-                        Object res = lib.execute(callee, convertedArgs);
+                Object res = null;
+                PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+                try {
+                    if (lib.isExecutable(callee)) {
+                        res = lib.execute(callee, convertedArgs);
+                        return toPTypeNode.executeConvert(res);
+                    } else {
+                        res = lib.instantiate(callee, convertedArgs);
                         return toPTypeNode.executeConvert(res);
                     }
-                } else {
-                    try (DefaultContextManager cm = withGlobalState(frame)) {
-                        Object res = lib.instantiate(callee, convertedArgs);
-                        return toPTypeNode.executeConvert(res);
-                    }
+                } finally {
+                    IndirectCallContext.exit(context, savedExceptionState);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");

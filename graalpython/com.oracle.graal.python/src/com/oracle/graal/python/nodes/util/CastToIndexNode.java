@@ -59,13 +59,13 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode.CastToIndexContextManager;
 import com.oracle.graal.python.nodes.util.CastToIndexNodeFactory.CachedNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
@@ -86,22 +86,13 @@ public abstract class CastToIndexNode extends PNodeWithGlobalState<CastToIndexCo
     public abstract int execute(boolean x);
 
     @Override
-    public CastToIndexContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-        if (exceptionState != null) {
-            PythonContext context = contextRef.get();
-            PException cur = context.getCaughtException();
-            if (cur == null) {
-                context.setCaughtException(exceptionState);
-                return new CastToIndexContextManager(this, context);
-            }
-            assert cur == exceptionState;
-        }
-        return passState();
+    public CastToIndexContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+        return new CastToIndexContextManager(this, contextRef.get(), frame);
     }
 
     @Override
     public CastToIndexContextManager passState() {
-        return new CastToIndexContextManager(this, null);
+        return new CastToIndexContextManager(this, null, null);
     }
 
     abstract static class CachedNode extends CastToIndexNode {
@@ -265,8 +256,8 @@ public abstract class CastToIndexNode extends PNodeWithGlobalState<CastToIndexCo
 
         private final CastToIndexNode delegate;
 
-        public CastToIndexContextManager(CastToIndexNode delegate, PythonContext context) {
-            super(context);
+        private CastToIndexContextManager(CastToIndexNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

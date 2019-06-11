@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -131,14 +132,15 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class PythonObjectFactory extends Node {
@@ -471,8 +473,12 @@ public abstract class PythonObjectFactory extends Node {
         return createDict(new HashMapStorage(map));
     }
 
-    public PDict createDictLocals(Frame frame, boolean skipCells) {
-        return createDict(new LocalsStorage(frame, skipCells));
+    public PDict createDictLocals(MaterializedFrame frame) {
+        return createDict(new LocalsStorage(frame));
+    }
+
+    public PDict createDictLocals(FrameDescriptor fd) {
+        return createDict(new LocalsStorage(fd));
     }
 
     public PDict createDict(DynamicObject dynamicObject) {
@@ -506,7 +512,7 @@ public abstract class PythonObjectFactory extends Node {
     public PGenerator createGenerator(String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots, int numOfActiveFlags,
                     int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTarget, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode));
+                        numOfGeneratorForNode, this));
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,
@@ -542,32 +548,24 @@ public abstract class PythonObjectFactory extends Node {
      * Frames, traces and exceptions
      */
 
-    public PFrame createPFrame(Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, locals));
+    public PFrame createPFrame(PFrame.Reference frameInfo, Node location, boolean inClassBody) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frameInfo, location, inClassBody));
     }
 
-    public PFrame createPFrame(Frame frame) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame));
-    }
-
-    public PFrame createPFrame(Frame frame, Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, locals));
-    }
-
-    public PFrame createPFrame(PBaseException exception, int index) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index));
-    }
-
-    public PFrame createPFrame(PBaseException exception, int index, Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index, locals));
+    public PFrame createPFrame(PFrame.Reference frameInfo, Node location, Object locals, boolean inClassBody) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frameInfo, location, locals, inClassBody));
     }
 
     public PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, threadState, code, globals, locals));
     }
 
-    public PTraceback createTraceback(PBaseException exception, int index) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, exception, index));
+    public PTraceback createTraceback(PFrame frame, PException exception) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, exception));
+    }
+
+    public PTraceback createTraceback(PFrame frame, PTraceback next) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, next));
     }
 
     public PBaseException createBaseException(LazyPythonClass cls, PTuple args) {
@@ -683,9 +681,9 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSequenceReverseIterator(cls, sequence, lengthHint));
     }
 
-    public PIntegerIterator createRangeIterator(int start, int stop, int step) {
+    public PIntegerIterator createRangeIterator(int start, int stop, int step, ConditionProfile stepPositiveProfile) {
         PIntegerIterator object;
-        if (step > 0) {
+        if (stepPositiveProfile.profile(step > 0)) {
             object = new PRangeIterator(PythonBuiltinClassType.PIterator, start, stop, step);
         } else {
             object = new PRangeReverseIterator(PythonBuiltinClassType.PIterator, start, stop, -step);

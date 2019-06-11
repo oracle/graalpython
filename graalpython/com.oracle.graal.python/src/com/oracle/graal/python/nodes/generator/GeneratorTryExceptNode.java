@@ -137,7 +137,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
 
     private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, ExceptionState exceptionState) {
         try {
-            exceptNode.executeExcept(frame.materialize(), exception);
+            exceptNode.executeExcept(frame, exception);
         } catch (ExceptionHandledException e) {
             return;
         } catch (ControlFlowException e) {

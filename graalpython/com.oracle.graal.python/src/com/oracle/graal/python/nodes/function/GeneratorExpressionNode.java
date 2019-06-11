@@ -133,7 +133,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
 
         // The generator doesn't capture the currently handled exception at creation time.
-        PArguments.setCallerFrameOrException(arguments, PException.NO_EXCEPTION);
+        PArguments.setException(arguments, PException.NO_EXCEPTION);
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
         return factory.createGenerator(name, callTarget, frameDescriptor, arguments, closure, executionCellSlots,

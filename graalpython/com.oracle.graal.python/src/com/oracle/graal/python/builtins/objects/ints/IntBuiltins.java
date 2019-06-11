@@ -86,7 +86,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -2104,15 +2103,13 @@ public class IntBuiltins extends PythonBuiltins {
         // rest objects
         @Specialization
         public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            return fromObject(frame, cl, object, byteorder, false, ctxRef, passExceptionNode);
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
+            return fromObject(frame, cl, object, byteorder, false, ctxRef);
         }
 
         @Specialization
         public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, boolean signed,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
@@ -2129,7 +2126,7 @@ public class IntBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isIterableNode = insert(IsIterableNode.create());
             }
-            if (PDataModelEmulationNode.check(isIterableNode, ctxRef, passExceptionNode.execute(frame), object)) {
+            if (PDataModelEmulationNode.check(isIterableNode, ctxRef, frame, object)) {
                 byte[] bytes = getFromIteratorNode().execute(frame, getGetIteratorNode().executeWith(frame, object));
                 return compute(cl, bytes, byteorder, signed);
             }

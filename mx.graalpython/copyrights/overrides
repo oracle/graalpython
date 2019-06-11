@@ -218,9 +218,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_euler31.py,benchmarks.co
 graalpython/com.oracle.graal.python.test/src/tests/test_exception.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-accumulator.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-continue.py,zippy.copyright
-graalpython/com.oracle.graal.python.test/src/tests/test_generator-expression-next.py,zippy.copyright
-graalpython/com.oracle.graal.python.test/src/tests/test_generator-expression-sum-2.py,zippy.copyright
-graalpython/com.oracle.graal.python.test/src/tests/test_generator-expression-sum.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_generator-expressions.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-if-and-loop.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-inline-genexp-builtin.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-inline-genexp-localvar.py,zippy.copyright

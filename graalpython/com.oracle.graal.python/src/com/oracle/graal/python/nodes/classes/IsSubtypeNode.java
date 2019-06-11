@@ -50,7 +50,6 @@ import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -197,7 +196,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
             throw raise.raise(PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
         }
 
-        return abstractIsSubclassNode.execute(null, derived, cls);
+        return abstractIsSubclassNode.execute(frame, derived, cls);
     }
 
     protected MroSequenceStorage getMro(LazyPythonClass clazz) {
@@ -238,21 +237,13 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
 
         @Override
-        public IsSubtypeContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new IsSubtypeContextManager(this, context);
-                }
-            }
-            return passState();
+        public IsSubtypeContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new IsSubtypeContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public IsSubtypeContextManager passState() {
-            return new IsSubtypeContextManager(this, null);
+            return new IsSubtypeContextManager(this, null, null);
         }
     }
 
@@ -260,8 +251,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
         private final IsSubtypeWithoutFrameNode delegate;
 
-        public IsSubtypeContextManager(IsSubtypeWithoutFrameNode delegate, PythonContext context) {
-            super(context);
+        private IsSubtypeContextManager(IsSubtypeWithoutFrameNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

@@ -38,11 +38,22 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleStackTrace;
+import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTraceback)
 public final class TracebackBuiltins extends PythonBuiltins {
@@ -65,7 +76,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
         @Specialization
         Object get(PTraceback self) {
-            return self.getPFrame(factory());
+            return self.getPFrame();
         }
     }
 
@@ -73,9 +84,41 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackNextNode extends PythonBuiltinNode {
         @Specialization
-        Object get(PTraceback self) {
-            PTraceback traceback = self.getException().getTraceback(factory(), self.getIndex() - 1);
-            return traceback == null ? PNone.NONE : traceback;
+        Object get(PTraceback self,
+                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            PTraceback tb = self.getNext();
+            if (profile.profile(tb == null)) {
+                self.setNext(createTracebackChain(self.getException(), materializeNode, factory()));
+                tb = self.getNext();
+            }
+            assert tb != null;
+            // do never expose 'NO_TRACEBACK'; it's just a marker to avoid re-evaluation
+            return tb == PTraceback.NO_TRACEBACK ? PNone.NONE : tb;
+        }
+
+        @TruffleBoundary
+        public static PTraceback createTracebackChain(PException exception, MaterializeFrameNode materializeNode, PythonObjectFactory factory) {
+            // recover the traceback from Truffle stack trace
+            PTraceback prev = PTraceback.NO_TRACEBACK;
+            PTraceback cur = null;
+            for (TruffleStackTraceElement element : TruffleStackTrace.getStackTrace(exception)) {
+
+                Frame frame = element.getFrame();
+                // frames may have not been requested
+                if (frame != null) {
+                    Node location = element.getLocation();
+                    // only include frames of non-builtin functions
+                    if (location != null && !location.getRootNode().isInternal()) {
+                        // create the PFrame and refresh frame values
+                        PFrame escapedFrame = materializeNode.execute(null, location, false, true, frame);
+                        cur = factory.createTraceback(escapedFrame, exception);
+                        cur.setNext(prev);
+                        prev = cur;
+                    }
+                }
+            }
+            return cur == null ? PTraceback.NO_TRACEBACK : cur;
         }
     }
 
@@ -83,8 +126,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
-        Object get(@SuppressWarnings("unused") PTraceback self) {
-            return -1;
+        Object get(PTraceback self) {
+            return self.getLasti();
         }
     }
 
@@ -93,8 +136,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization
         int get(PTraceback self) {
-            // TODO: tb_lineno and tb_frame.f_lineno produce different results
-            return self.getPFrame(factory()).getLine();
+            return self.getLineno();
         }
     }
 }

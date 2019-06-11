@@ -35,6 +35,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNodeGen.GetCallAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -154,6 +155,23 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
+    private static class PythonCallQuaternary extends ExpressionNode {
+        @Child CallQuaternaryMethodNode callQuaternary = CallQuaternaryMethodNode.create();
+        @Child ExpressionNode getCallable;
+        @Children final ExpressionNode[] argumentNodes;
+
+        PythonCallQuaternary(ExpressionNode getCallable, ExpressionNode[] argumentNodes) {
+            this.getCallable = getCallable;
+            this.argumentNodes = argumentNodes;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return callQuaternary.execute(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame),
+                            argumentNodes[3].execute(frame));
+        }
+    }
+
     /**
      * If the argument length is fixed 1, 2, or 3 arguments, returns an expression node that uses
      * special call semantics, i.e., it can avoid creating a stack frame if the call target is a
@@ -170,6 +188,8 @@ public abstract class PythonCallNode extends ExpressionNode {
                     return new PythonCallBinary(getCalleeNode(), argumentNodes);
                 case 3:
                     return new PythonCallTernary(getCalleeNode(), argumentNodes);
+                case 4:
+                    return new PythonCallQuaternary(getCalleeNode(), argumentNodes);
                 default:
                     return this;
             }

@@ -40,25 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PExecuteNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -117,7 +108,6 @@ public abstract class ManagedMethodWrappers {
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(NativeTypeLibrary.class)
     static class MethKeywords extends MethodWrapper {
-        private static final FrameDescriptor EMPTY_FD = new FrameDescriptor();
 
         public MethKeywords(Object method) {
             super(method);
@@ -134,8 +124,7 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
-                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws ArityException {
+                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -150,10 +139,7 @@ public abstract class ManagedMethodWrappers {
             PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
 
             // execute
-            Object[] dummyCallerArgs = PArguments.create();
-            PExecuteNode.contextToFrame(contextRef, dummyCallerArgs);
-            VirtualFrame dummyCallerFrame = Truffle.getRuntime().createVirtualFrame(dummyCallerArgs, EMPTY_FD);
-            return toSulongNode.execute(callNode.execute(dummyCallerFrame, getDelegate(), pArgs, kwArgsArray));
+            return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
         }
     }
 
