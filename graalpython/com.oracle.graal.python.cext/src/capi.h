@@ -43,6 +43,7 @@
 
 #define MUST_INLINE __attribute__((always_inline)) inline
 
+#include "polyglot.h"
 #include "Python.h"
 
 #define SRC_CS "utf-8"

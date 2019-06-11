@@ -69,6 +69,7 @@ PyObject * PyExc_RuntimeWarning = NULL;
 PyObject * PyExc_FutureWarning = NULL;
 PyObject * PyExc_PendingDeprecationWarning = NULL;
 PyObject * PyExc_SyntaxWarning = NULL;
+PyObject * PyExc_SyntaxError = NULL;
 PyObject * PyExc_ImportWarning = NULL;
 PyObject * PyExc_UnicodeWarning = NULL;
 PyObject * PyExc_BytesWarning = NULL;
@@ -107,6 +108,7 @@ void initialize_exceptions() {
     PyExc_RuntimeError = PY_EXCEPTION("RuntimeError");
     PyExc_RuntimeWarning = PY_EXCEPTION("RuntimeWarning");
     PyExc_SyntaxWarning = PY_EXCEPTION("SyntaxWarning");
+    PyExc_SyntaxError = PY_EXCEPTION("SyntaxError");
     PyExc_SystemError = PY_EXCEPTION("SystemError");
     PyExc_TypeError = PY_EXCEPTION("TypeError");
     PyExc_UnicodeWarning = PY_EXCEPTION("UnicodeWarning");
