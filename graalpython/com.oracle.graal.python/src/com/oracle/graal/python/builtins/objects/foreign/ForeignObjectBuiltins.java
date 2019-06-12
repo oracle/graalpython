@@ -181,7 +181,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     }
 
     abstract static class ForeignBinaryNode extends PythonBinaryBuiltinNode {
-        @Child LookupAndCallBinaryNode op;
+        @Child private LookupAndCallBinaryNode op;
         protected final boolean reverse;
 
         protected ForeignBinaryNode(LookupAndCallBinaryNode op, boolean reverse) {
@@ -423,7 +423,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     }
 
     public abstract static class ForeignBinaryComparisonNode extends PythonBinaryBuiltinNode {
-        @Child BinaryComparisonNode comparisonNode;
+        @Child private BinaryComparisonNode comparisonNode;
 
         protected ForeignBinaryComparisonNode(BinaryComparisonNode genericOp) {
             this.comparisonNode = genericOp;
@@ -634,7 +634,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Child AccessForeignItemNodes.GetForeignItemNode getForeignItemNode = AccessForeignItemNodes.GetForeignItemNode.create();
+        @Child private AccessForeignItemNodes.GetForeignItemNode getForeignItemNode = AccessForeignItemNodes.GetForeignItemNode.create();
 
         @Specialization
         Object doit(Object object, Object key) {
@@ -645,7 +645,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetattrNode extends PythonBinaryBuiltinNode {
-        @Child PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
+        @Child private PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
 
         @Specialization
         protected Object doIt(Object object, String member,
@@ -705,7 +705,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelitemNode extends PythonBinaryBuiltinNode {
-        AccessForeignItemNodes.RemoveForeignItemNode delForeignItemNode = AccessForeignItemNodes.RemoveForeignItemNode.create();
+        @Child private AccessForeignItemNodes.RemoveForeignItemNode delForeignItemNode = AccessForeignItemNodes.RemoveForeignItemNode.create();
 
         @Specialization
         PNone doit(Object object, Object key) {
