@@ -51,12 +51,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -68,7 +67,6 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.Node.Child;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
@@ -158,14 +156,6 @@ public class AsyncHandler {
             int frameIndex = (int) PArguments.getArgument(frameArguments, 1);
             Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARGS, frameArguments.length);
 
-            // TODO: frames: This should eventually go away as soon as this root node is properly
-            // called using an invoke node.
-            PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
-            if (callerInfo != null) {
-                VirtualFrame callerFrame = (VirtualFrame) PArguments.getArgument(frameArguments, 3);
-                // the caller can't do, so it must be done here
-                materializeNode.execute(frame, true, true, callerFrame);
-            }
             if (frameIndex >= 0) {
                 arguments[frameIndex] = readCallerFrameNode.executeWith(frame, 0);
             }
@@ -261,16 +251,8 @@ public class AsyncHandler {
                         PArguments.setArgument(args, 2, location);
                         PArguments.setArgument(args, 3, frame);
 
-                        // TODO: frames: workaround because we can't use an invoke node here; this
-                        // should eventually be done properly
-                        RootNode rootNode = callTarget.getRootNode();
-                        if (rootNode instanceof PRootNode && ((PRootNode) rootNode).needsCallerFrame()) {
-                            Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
-                            currentFrameInfo.setCallNode(location);
-                            PArguments.setCallerFrameInfo(args, currentFrameInfo);
-                        }
                         try {
-                            callTarget.call(args);
+                            GenericInvokeNode.getUncached().execute(frame, callTarget, args);
                         } catch (RuntimeException e) {
                             // we cannot raise the exception here (well, we could, but CPython
                             // doesn't), so we do what they do and just print it
