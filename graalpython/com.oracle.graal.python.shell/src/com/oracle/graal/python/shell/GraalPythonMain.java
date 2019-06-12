@@ -151,22 +151,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "--show-version":
                     versionAction = VersionAction.PrintAndContinue;
                     break;
-                case "-CC":
-                    if (wantsExperimental) {
-                        GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
-                        System.exit(0);
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
-                case "-LD":
-                    if (wantsExperimental) {
-                        GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
-                        System.exit(0);
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
                 case "-LLI":
                     if (wantsExperimental) {
                         runLLI = true;
