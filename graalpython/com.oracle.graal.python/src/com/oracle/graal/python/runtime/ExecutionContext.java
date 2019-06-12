@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode.MaterializeFrameUnadoptibleNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -66,7 +67,16 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public abstract class ExecutionContext {
 
     public static final class CallContext extends Node {
+
+        private static final CallContext INSTANCE = new CallContext(false);
+
         @Child private MaterializeFrameNode materializeNode;
+
+        private final boolean adoptable;
+
+        private CallContext(boolean adoptable) {
+            this.adoptable = adoptable;
+        }
 
         /**
          * Prepare a call from a Python frame to a Python function.
@@ -87,7 +97,7 @@ public abstract class ExecutionContext {
                 // We are handing the PFrame of the current frame to the caller, i.e., it does not
                 // 'escape' since it is still on the stack.
                 // Also, force synchronization of values
-                PFrame pyFrame = ensureMaterializeNode().execute(frame, callNode, false, true);
+                PFrame pyFrame = materialize(frame, callNode, false, true);
                 assert thisInfo.getPyFrame() == pyFrame;
                 assert pyFrame.getRef() == thisInfo;
 
@@ -111,16 +121,28 @@ public abstract class ExecutionContext {
             }
         }
 
+        private PFrame materialize(VirtualFrame frame, Node callNode, boolean markAsEscaped, boolean forceSync) {
+            if (adoptable) {
+                return ensureMaterializeNode().execute(frame, callNode, markAsEscaped, forceSync);
+            }
+            return MaterializeFrameUnadoptibleNode.getUncached().execute(frame, callNode, markAsEscaped, forceSync);
+        }
+
         private MaterializeFrameNode ensureMaterializeNode() {
             if (materializeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeFrameNodeGen.create());
+                materializeNode = insert(MaterializeFrameNodeGen.create(adoptable));
             }
             return materializeNode;
+
         }
 
         public static CallContext create() {
-            return new CallContext();
+            return new CallContext(true);
+        }
+
+        public static CallContext getUncached() {
+            return INSTANCE;
         }
     }
 
