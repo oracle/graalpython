@@ -239,7 +239,7 @@ abstract class AccessForeignItemNodes {
         }
 
         private void writeForeignValue(Object object, int idx, Object value, InteropLibrary lib) throws UnsupportedMessageException, UnsupportedTypeException {
-            if (lib.isArrayElementModifiable(object, idx)) {
+            if (lib.isArrayElementWritable(object, idx)) {
                 try {
                     lib.writeArrayElement(object, idx, value);
                     return;
