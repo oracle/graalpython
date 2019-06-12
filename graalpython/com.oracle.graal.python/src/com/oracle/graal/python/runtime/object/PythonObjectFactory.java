@@ -179,8 +179,20 @@ public abstract class PythonObjectFactory extends Node {
      * Python objects
      */
 
-    public PythonObject createPythonObject(LazyPythonClass cls, Shape instanceShape) {
-        return trace(new PythonObject(cls, instanceShape));
+    /**
+     * Creates a PythonObject for the given class. This is potentially slightly slower than if the
+     * shape had been cached, due to the additional shape lookup.
+     */
+    public PythonObject createPythonObject(LazyPythonClass cls) {
+        return trace(new PythonObject(cls));
+    }
+
+    /**
+     * Creates a Python object with the given shape. Python object shapes store the class in the
+     * ObjectType.
+     */
+    public PythonObject createPythonObject(Shape instanceShape) {
+        return trace(new PythonObject(instanceShape));
     }
 
     public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {
@@ -327,7 +339,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PythonClass createPythonClass(LazyPythonClass metaclass, String name, PythonAbstractClass[] bases) {
-        return trace(new PythonClass(metaclass, name, PythonLanguage.freshShape(), bases));
+        return trace(new PythonClass(metaclass, name, bases));
     }
 
     public PythonNativeClass createNativeClassWrapper(TruffleObject ptr) {
@@ -486,7 +498,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PDict createDictFixedStorage(PythonObject pythonObject) {
-        return createDict(new PythonObjectDictStorage(pythonObject.getStorage(), pythonObject.getDictUnsetOrSameAsStorageAssumption()));
+        return createDict(new PythonObjectDictStorage(pythonObject.getStorage()));
     }
 
     public PDict createDict(HashingStorage storage) {
@@ -521,7 +533,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption())));
+        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(HashingStorage storage) {
@@ -529,7 +541,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption())));
+        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(LazyPythonClass cls, HashingStorage storage) {

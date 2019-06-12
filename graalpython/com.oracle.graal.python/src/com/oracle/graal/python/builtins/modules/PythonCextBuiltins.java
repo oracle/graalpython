@@ -126,7 +126,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -222,7 +221,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PythonClass errorHandlerClass = core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, "CErrorHandler",
                         new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
-        builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass, GetInstanceShape.doSlowPath(errorHandlerClass)));
+        builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
         builtinConstants.put(NATIVE_NULL, new PythonNativeNull());
     }
 

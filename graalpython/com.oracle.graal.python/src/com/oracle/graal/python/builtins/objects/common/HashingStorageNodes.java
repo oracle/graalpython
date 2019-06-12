@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -102,13 +103,13 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -309,10 +310,6 @@ public abstract class HashingStorageNodes {
         }
 
         protected static PythonObjectHybridDictStorage switchToHybridDictStorage(PythonObjectDictStorage dictStorage) {
-            Assumption dictUnsetOrSameAsStorage = dictStorage.getDictUnsetOrSameAsStorage();
-            if (dictUnsetOrSameAsStorage != null) {
-                dictUnsetOrSameAsStorage.invalidate();
-            }
             return new PythonObjectHybridDictStorage(dictStorage);
         }
 
@@ -1085,6 +1082,7 @@ public abstract class HashingStorageNodes {
     }
 
     public abstract static class GetItemNode extends DictStorageBaseNode {
+        protected static final int MAX_DYNAMIC_STORAGES = 3;
 
         public static GetItemNode create() {
             return GetItemNodeGen.create();
@@ -1098,73 +1096,50 @@ public abstract class HashingStorageNodes {
             return null;
         }
 
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "cachedName.equals(name)",
-                                        "shapeCheck(shape, storage.getStore())"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected static Object doDynamicObjectString(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
-                        @SuppressWarnings("unused") @Cached("name") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, name)") Location location) {
-
-            return location != null ? location.get(storage.getStore(), shape) : null;
+        // this is just a minor performance optimization
+        @Specialization
+        static Object doPythonObjectString(PythonObjectDictStorage storage, String key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            return doDynamicObjectString(storage, key, readKey);
         }
 
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectString"}, guards = "storage.getStore().getShape().isValid()")
-        protected Object doDynamicObjectUncached(DynamicObjectStorage storage, String name) {
-            return storage.getStore().get(name);
+        // this is just a minor performance optimization
+        @Specialization
+        static Object doPythonObjectPString(PythonObjectDictStorage storage, PString key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            return doDynamicObjectPString(storage, key, readKey);
         }
 
-        @Specialization(guards = "!storage.getStore().getShape().isValid()")
-        protected Object doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name) {
-            CompilerDirectives.transferToInterpreter();
-            storage.getStore().updateShape();
-            return doDynamicObjectUncached(storage, name);
+        // this will read from the dynamic object
+        @Specialization
+        static Object doDynamicObjectString(DynamicObjectStorage storage, String key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            Object result = readKey.execute(storage.getStore(), key);
+            return result == PNone.NO_VALUE ? null : result;
         }
 
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "wrappedString(name)",
-                                        "cachedName.equals(name.getValue())",
-                                        "shapeCheck(shape, storage.getStore())"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected static Object doDynamicObjectPString(DynamicObjectStorage storage, @SuppressWarnings("unused") PString name,
-                        @SuppressWarnings("unused") @Cached("name.getValue()") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, cachedName)") Location location) {
-
-            return location != null ? location.get(storage.getStore(), shape) : null;
+        @Specialization
+        static Object doDynamicObjectPString(DynamicObjectStorage storage, PString key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            Object result = readKey.execute(storage.getStore(), key);
+            return result == PNone.NO_VALUE ? null : result;
         }
 
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectPString"}, guards = {"wrappedString(name)", "storage.getStore().getShape().isValid()"})
-        protected Object doDynamicObjectUncachedPString(DynamicObjectStorage storage, PString name) {
-            return storage.getStore().get(name.getValue());
+        // this must read from the non-dynamic object storage
+        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)"})
+        Object doDynamicStorage(@SuppressWarnings("unused") VirtualFrame frame, PythonObjectHybridDictStorage s, Object key) {
+            return s.getItem(key, getEquivalence());
         }
 
-        @Specialization(guards = {"wrappedString(name)", "!storage.getStore().getShape().isValid()"})
-        protected Object doDynamicObjectUpdateShapePString(DynamicObjectStorage storage, PString name) {
-            CompilerDirectives.transferToInterpreter();
-            storage.getStore().updateShape();
-            return doDynamicObjectUncachedPString(storage, name);
+        protected static boolean isPythonObjectHybridStorage(DynamicObjectStorage s) {
+            return s instanceof PythonObjectHybridDictStorage;
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
-        Object doDynamicObject(@SuppressWarnings("unused") VirtualFrame frame, PythonObjectHybridDictStorage storage, Object key) {
-            return storage.getItem(key, getEquivalence());
-        }
-
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        // any dynamic object storage that isn't hybridized cannot store
+        // non-string keys
+        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)", "!isPythonObjectHybridStorage(s)"})
         @SuppressWarnings("unused")
-        Object doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, Object key) {
+        Object doDynamicStorage(VirtualFrame frame, DynamicObjectStorage s, Object key) {
             return null;
         }
 

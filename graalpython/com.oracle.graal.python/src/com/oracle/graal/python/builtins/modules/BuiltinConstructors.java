@@ -1487,12 +1487,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", //
                         guards = {"getInstanceShape(self) == cachedInstanceShape", "!self.needsNativeAllocation()"}, //
                         replaces = "doObjectDirect")
-        Object doObjectCachedInstanceShape(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+        Object doObjectCachedInstanceShape(@SuppressWarnings("unused") PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("getInstanceShape(self)") Shape cachedInstanceShape) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            return factory().createPythonObject(self, cachedInstanceShape);
+            return factory().createPythonObject(cachedInstanceShape);
         }
 
         @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectCachedInstanceShape")

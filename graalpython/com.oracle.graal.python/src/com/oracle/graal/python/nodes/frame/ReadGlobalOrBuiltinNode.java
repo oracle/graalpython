@@ -65,7 +65,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
-    private final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
 
     @CompilationFinal private boolean singleCoreInitialized;
     @CompilationFinal private ConditionProfile isCoreInitializedProfile;
@@ -83,15 +83,33 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return WriteGlobalNode.create(attributeId, rhs);
     }
 
-    @Specialization(guards = "isInModule(frame)")
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
+    protected Object readGlobalCached(@SuppressWarnings("unused") VirtualFrame frame,
+                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+        Object result = readFromModuleNode.execute(cachedGlobals, attributeId);
+        return returnGlobalOrBuiltin(contextRef, result);
+    }
+
+    @Specialization(guards = "isModule(getGlobals(frame))", replaces = "readGlobalCached")
     protected Object readGlobal(VirtualFrame frame,
                     @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         Object result = readFromModuleNode.execute(PArguments.getGlobals(frame), attributeId);
         return returnGlobalOrBuiltin(contextRef, result);
     }
 
-    @Specialization(guards = "isInBuiltinDict(frame, builtinProfile)")
-    protected Object readGlobalDict(VirtualFrame frame,
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", limit = "1")
+    protected Object readGlobalBuiltinDictCached(VirtualFrame frame,
+                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached HashingStorageNodes.GetItemNode getItemNode,
+                    @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile,
+                    @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+        Object result = getItemNode.execute(frame, ((PDict) cachedGlobals).getDictStorage(), attributeId);
+        return returnGlobalOrBuiltin(contextRef, result == null ? PNone.NO_VALUE : result);
+    }
+
+    @Specialization(guards = "isBuiltinDict(getGlobals(frame), builtinProfile)", replaces = "readGlobalBuiltinDictCached")
+    protected Object readGlobalBuiltinDict(VirtualFrame frame,
                     @Cached HashingStorageNodes.GetItemNode getItemNode,
                     @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile,
                     @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
@@ -100,14 +118,22 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(contextRef, result == null ? PNone.NO_VALUE : result);
     }
 
-    @Specialization(guards = "isInDict(frame)", rewriteOn = PException.class)
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, rewriteOn = PException.class, assumptions = "singleContextAssumption", limit = "1")
+    protected Object readGlobalDictCached(VirtualFrame frame,
+                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached GetItemNode getItemNode,
+                    @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+        return returnGlobalOrBuiltin(contextRef, getItemNode.execute(frame, cachedGlobals, attributeId));
+    }
+
+    @Specialization(guards = "isDict(getGlobals(frame))", rewriteOn = PException.class, replaces = "readGlobalDictCached")
     protected Object readGlobalDict(VirtualFrame frame,
                     @Cached GetItemNode getItemNode,
                     @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         return returnGlobalOrBuiltin(contextRef, getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId));
     }
 
-    @Specialization(guards = "isInDict(frame)")
+    @Specialization(guards = "isDict(getGlobals(frame))", replaces = {"readGlobalDict", "readGlobalDictCached"})
     protected Object readGlobalDictWithException(VirtualFrame frame,
                     @Cached GetItemNode getItemNode,
                     @Cached IsBuiltinClassProfile errorProfile,
