@@ -55,13 +55,13 @@ verbose = False
 import threading
 import _thread
 result_lock = threading.RLock()
+threads = []
 if os.environ.get(b"ENABLE_THREADED_GRAALPYTEST") == b"true":
-    thread_count = max(os.cpu_count(), 16)
-    thread_token = threading.Semaphore(thread_count)
+    thread_count = min(os.cpu_count(), 16)
     print("Running with %d threads" % thread_count)
 else:
-    thread_count = 0
-    thread_token = None
+    thread_count = 1
+thread_token = threading.Semaphore(thread_count)
 
 
 def dump_truffle_ast(func):
@@ -120,14 +120,12 @@ class TestCase(object):
                 r = self.run_safely(func)
                 with result_lock:
                     self.success() if r else self.failure()
-                if thread_token:
-                    thread_token.release()
+                thread_token.release()
 
-            if thread_token:
-                thread_token.acquire()
-                threading.Thread(target=do_run).start()
-            else:
-                do_run()
+            thread_token.acquire()
+            new_thread = threading.Thread(target=do_run)
+            threads.append(new_thread)
+            new_thread.start()
 
     def success(self):
         self.passed += 1
@@ -340,11 +338,9 @@ class TestRunner(object):
                 self.failed += testcase.failed
             if verbose:
                 print()
-        for i in range(thread_count):
-            print("waiting for %d tests to finish" % (thread_count - i))
-            thread_token.acquire() # waits until all threads are exited
-        for i in range(thread_count):
-            thread_token.release()
+        for i, t in enumerate(threads):
+            print("waiting for %d tests to finish" % (len(threads) - i))
+            t.join(timeout=0)
         print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
         for e in self.exceptions:
             print(e)
