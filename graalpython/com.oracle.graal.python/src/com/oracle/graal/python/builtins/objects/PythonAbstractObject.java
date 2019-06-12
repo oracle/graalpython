@@ -264,9 +264,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 // it's a sequence, so we assume the index is wrong
                 throw InvalidArrayIndexException.create(key);
             }
+        } else {
+            throw UnsupportedMessageException.create();
         }
-
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
@@ -281,9 +281,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 // it's a sequence, so we assume the index is wrong
                 throw InvalidArrayIndexException.create(key);
             }
+        } else {
+            throw UnsupportedMessageException.create();
         }
-
-        throw UnsupportedMessageException.create();
     }
 
     private static Object iterateToKey(LookupInheritedAttributeNode.Dynamic lookupNextNode, CallNode callNextNode, Object iter, long key) {
