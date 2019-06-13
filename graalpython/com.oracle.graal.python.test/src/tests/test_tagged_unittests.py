@@ -72,10 +72,14 @@ def working_tests():
     return working_tests
 
 
+class TestAllWorkingTests():
+    pass
+
+
 WORKING_TESTS = working_tests()
 for idx, working_test in enumerate(WORKING_TESTS):
     def make_test_func(working_test):
-        def fun():
+        def fun(self):
             cmd = [sys.executable, "-S", "-m", "unittest"]
             for testpattern in working_test[1]:
                 cmd.extend(["-k", testpattern])
@@ -88,7 +92,7 @@ for idx, working_test in enumerate(WORKING_TESTS):
         return fun
 
     test_f = make_test_func(working_test)
-    globals()[test_f.__name__] = test_f
+    setattr(TestAllWorkingTests, test_f.__name__, test_f)
     del test_f
 
 
