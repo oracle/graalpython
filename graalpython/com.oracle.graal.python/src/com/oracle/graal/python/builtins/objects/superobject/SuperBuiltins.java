@@ -50,6 +50,9 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -83,15 +86,12 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -160,6 +160,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private LookupAndCallBinaryNode getAttrNode;
         @Child private CellBuiltins.GetRefNode getRefNode;
         @Child private TypeNodes.IsTypeNode isTypeNode;
+        @Child private HashingStorageNodes.GetItemNode getItemNode;
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -245,45 +246,37 @@ public final class SuperBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Cached("create(0)") ReadCallerFrameNode readCaller) {
-            Frame target = readCaller.executeWith(frame);
+                        @Cached ReadCallerFrameNode readCaller) {
+            PFrame target = readCaller.executeWith(frame, 0);
             if (target == null) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no current frame");
             }
             Object[] arguments = target.getArguments();
-            if (arguments.length <= PArguments.USER_ARGUMENTS_OFFSET) {
+            if (PArguments.getUserArgumentLength(arguments) == 0) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }
-            Object obj = arguments[PArguments.USER_ARGUMENTS_OFFSET];
+            Object obj = PArguments.getArgument(arguments, 0);
             if (obj == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }
 
-            Object cls = getClassFromTarget(target);
-            if (cls == null) {
-                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
-            }
+            Object cls = getClassFromTarget(frame, target);
             return init(frame, self, cls, obj);
         }
 
-        @TruffleBoundary
-        private Object getClassFromTarget(Frame target) {
+        private Object getClassFromTarget(VirtualFrame frame, PFrame target) {
             // TODO: remove me
             // TODO: do it properly via the python API in super.__init__ :
             // sys._getframe(1).f_code.co_closure?
-            FrameSlot classSlot = target.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
-            Object cls = PNone.NONE;
-            if (classSlot != null) {
-                try {
-                    cls = target.getObject(classSlot);
-                    if (cls instanceof PCell) {
-                        cls = getGetRefNode().execute((PCell) cls);
-                    }
-                } catch (FrameSlotTypeException e) {
-                    // fallthrough
+            PDict locals = (PDict) target.getLocalsDict();
+            Object cls = getItemNode.execute(frame, locals.getDictStorage(), SpecialAttributeNames.__CLASS__);
+            if (cls instanceof PCell) {
+                cls = getGetRefNode().execute((PCell) cls);
+                if (cls == null) {
+                    throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
                 }
             }
-            return cls;
+            return cls != null ? cls : PNone.NONE;
         }
 
         private CellBuiltins.GetRefNode getGetRefNode() {

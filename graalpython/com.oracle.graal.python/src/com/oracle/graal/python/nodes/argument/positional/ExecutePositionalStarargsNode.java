@@ -210,21 +210,13 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         }
 
         @Override
-        public ExecutePositionalStarargsContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new ExecutePositionalStarargsContextManager(this, context);
-                }
-            }
-            return passState();
+        public ExecutePositionalStarargsContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new ExecutePositionalStarargsContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public ExecutePositionalStarargsContextManager passState() {
-            return new ExecutePositionalStarargsContextManager(this, null);
+            return new ExecutePositionalStarargsContextManager(this, null, null);
         }
 
     }
@@ -233,8 +225,8 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
         private final ExecutePositionalStarargsInteropNode delegate;
 
-        public ExecutePositionalStarargsContextManager(ExecutePositionalStarargsInteropNode delegate, PythonContext context) {
-            super(context);
+        private ExecutePositionalStarargsContextManager(ExecutePositionalStarargsInteropNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

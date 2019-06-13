@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -445,7 +446,12 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 compileNode = insert(CompileNode.create(false));
             }
-            ModuleCodeData md = self.getModuleCode(fullname);
+            ModuleCodeData md;
+            try {
+                md = self.getModuleCode(fullname);
+            } catch (IOException e) {
+                throw raiseOSError(frame, OSErrorEnum.EIO, e);
+            }
             if (canNotFind.profile(md == null)) {
                 throw raise(PythonErrorType.ZipImportError, " can't find module '%s'", fullname);
             }
@@ -529,13 +535,18 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     public abstract static class GetFileNameNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object doit(PZipImporter self, String fullname,
+        public Object doit(VirtualFrame frame, PZipImporter self, String fullname,
                         @Cached("createBinaryProfile()") ConditionProfile canNotFind,
                         @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
             }
-            ModuleCodeData moduleCodeData = self.getModuleCode(fullname);
+            ModuleCodeData moduleCodeData;
+            try {
+                moduleCodeData = self.getModuleCode(fullname);
+            } catch (IOException e) {
+                throw raiseOSError(frame, OSErrorEnum.EIO, e);
+            }
             if (canNotFind.profile(moduleCodeData == null)) {
                 throw raise(PythonErrorType.ZipImportError, " can't find module '%s'", fullname);
             }
@@ -550,13 +561,18 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     public abstract static class GetSourceNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public String doit(PZipImporter self, String fullname,
+        public String doit(VirtualFrame frame, PZipImporter self, String fullname,
                         @Cached("createBinaryProfile()") ConditionProfile canNotFind,
                         @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
             }
-            ModuleCodeData md = self.getModuleCode(fullname);
+            ModuleCodeData md;
+            try {
+                md = self.getModuleCode(fullname);
+            } catch (IOException e) {
+                throw raiseOSError(frame, OSErrorEnum.EIO, e);
+            }
             if (canNotFind.profile(md == null)) {
                 throw raise(PythonErrorType.ZipImportError, "can't find module '%s'", fullname);
             }

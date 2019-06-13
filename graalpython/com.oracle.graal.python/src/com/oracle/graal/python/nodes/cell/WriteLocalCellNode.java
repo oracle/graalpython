@@ -32,6 +32,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -93,7 +94,17 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
             doWriteGeneric(cachedCell, value);
         }
 
-        @Specialization(replaces = "doWriteCached")
+        @Specialization(guards = "cell.isEffectivelyFinalAssumption() == effectivelyFinalAssumption", limit = "1", assumptions = "effectivelyFinalAssumption")
+        void doWriteCachedAssumption(PCell cell, Object value,
+                        @SuppressWarnings("unused") @Cached("cell.isEffectivelyFinalAssumption()") Assumption effectivelyFinalAssumption) {
+            if (value == NO_VALUE) {
+                cell.clearRef();
+            } else {
+                cell.setRef(value, effectivelyFinalAssumption);
+            }
+        }
+
+        @Specialization(replaces = {"doWriteCached", "doWriteCachedAssumption"})
         void doWriteGeneric(PCell cell, Object value) {
             if (value == NO_VALUE) {
                 cell.clearRef();

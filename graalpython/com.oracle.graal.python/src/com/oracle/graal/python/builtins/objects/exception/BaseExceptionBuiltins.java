@@ -201,8 +201,9 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class TracebackNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(tb)")
-        public Object getTraceback(PBaseException self, @SuppressWarnings("unused") Object tb) {
-            PTraceback traceback = self.getTraceback(factory());
+        public Object getTraceback(VirtualFrame frame, PBaseException self, @SuppressWarnings("unused") Object tb,
+                        @Cached GetTracebackNode getTracebackNode) {
+            PTraceback traceback = getTracebackNode.execute(frame, self);
             return traceback == null ? PNone.NONE : traceback;
         }
 

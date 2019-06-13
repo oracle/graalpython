@@ -88,7 +88,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                 e.expect(PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, __GETATTR__);
                 if (customGetAttr.profile(getAttr != PNone.NO_VALUE)) {
-                    return callNode.execute(null, getAttr, key);
+                    return callNode.execute(frame, getAttr, key);
                 } else {
                     throw e;
                 }

@@ -103,7 +103,7 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -158,6 +158,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -185,9 +186,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -607,6 +608,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PythonObject reversed(@SuppressWarnings("unused") LazyPythonClass cls, PRange range,
+                        @Cached("createBinaryProfile()") ConditionProfile stepPositiveProfile,
                         @Cached("createBinaryProfile()") ConditionProfile stepOneProfile,
                         @Cached("createBinaryProfile()") ConditionProfile stepMinusOneProfile) {
             int stop;
@@ -627,7 +629,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 stop = range.getStart() - step;
                 step = -step;
             }
-            return factory().createRangeIterator(start, stop, step);
+            return factory().createRangeIterator(start, stop, step, stepPositiveProfile);
         }
 
         @Specialization
@@ -1485,12 +1487,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", //
                         guards = {"getInstanceShape(self) == cachedInstanceShape", "!self.needsNativeAllocation()"}, //
                         replaces = "doObjectDirect")
-        Object doObjectCachedInstanceShape(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+        Object doObjectCachedInstanceShape(@SuppressWarnings("unused") PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("getInstanceShape(self)") Shape cachedInstanceShape) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            return factory().createPythonObject(self, cachedInstanceShape);
+            return factory().createPythonObject(cachedInstanceShape);
         }
 
         @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectCachedInstanceShape")
@@ -1568,7 +1570,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class RangeNode extends PythonBuiltinNode {
+    public abstract static class RangeNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization(guards = "caseStop(start,step)")
         public PSequence rangeStop(Object cls, int stop, Object start, Object step) {
@@ -1900,6 +1902,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ReportPolymorphism
     public abstract static class TypeNode extends PythonBuiltinNode {
         private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
@@ -1924,13 +1927,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
-        public Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
+        Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(obj);
         }
 
         @Specialization
-        public Object type(VirtualFrame frame, PythonAbstractClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
+        Object type(VirtualFrame frame, PythonAbstractClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
@@ -1961,8 +1964,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // set '__module__' attribute
                 Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
-                    Frame callerFrame = getReadCallerFrameNode().executeWith(frame);
-                    PythonObject globals = PArguments.getGlobals(callerFrame);
+                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
+                    PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
                         String moduleName = getModuleNameFromGlobals(frame, globals);
                         if (moduleName != null) {
@@ -1973,7 +1976,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
                 return newType;
             } catch (PException e) {
-                e.getExceptionObject().reifyException();
                 throw e;
             }
         }
@@ -2299,7 +2301,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(dict)"})
-        public Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
+        Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
                         @Cached("create()") TypeNode nextTypeNode) {
             if (PGuards.isNoValue(bases) && !PGuards.isNoValue(dict) || !PGuards.isNoValue(bases) && PGuards.isNoValue(dict)) {
                 throw raise(TypeError, "type() takes 1 or 3 arguments");

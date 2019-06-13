@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -102,13 +103,13 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -292,7 +293,7 @@ public abstract class HashingStorageNodes {
         }
 
         protected final DefaultContextManager withGlobalState(VirtualFrame frame) {
-            return PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame));
+            return PNodeWithGlobalState.transferToContext(getContextRef(), frame, this);
         }
 
         protected static EconomicMapStorage switchToEconomicMap(HashingStorage storage, Equivalence equiv) {
@@ -309,10 +310,6 @@ public abstract class HashingStorageNodes {
         }
 
         protected static PythonObjectHybridDictStorage switchToHybridDictStorage(PythonObjectDictStorage dictStorage) {
-            Assumption dictUnsetOrSameAsStorage = dictStorage.getDictUnsetOrSameAsStorage();
-            if (dictUnsetOrSameAsStorage != null) {
-                dictUnsetOrSameAsStorage.invalidate();
-            }
             return new PythonObjectHybridDictStorage(dictStorage);
         }
 
@@ -752,7 +749,7 @@ public abstract class HashingStorageNodes {
         @Specialization
         protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, String key, Object value) {
             // immediately replace storage since empty storage is immutable
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), passException(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), frame)) {
                 return cm.execute(switchToFastDictStorage(storage), key, value);
             }
         }
@@ -760,7 +757,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "wrappedString(key)")
         protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, PString key, Object value) {
             // immediately replace storage since empty storage is immutable
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), passException(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), frame)) {
                 return cm.execute(switchToFastDictStorage(storage), cast(key), value);
             }
         }
@@ -778,14 +775,14 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         protected HashingStorage doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, String key, Object value) {
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), passException(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), frame)) {
                 return cm.execute(storage, key, value);
             }
         }
 
         @Specialization(guards = "wrappedString(key)")
         protected HashingStorage doDynamicObjectPString(VirtualFrame frame, DynamicObjectStorage storage, PString key, Object value) {
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), passException(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContextRef(), frame)) {
                 return cm.execute(storage, cast(key), value);
             }
         }
@@ -1061,16 +1058,12 @@ public abstract class HashingStorageNodes {
             return DynamicObjectSetItemUncachedNode.INSTANCE;
         }
 
-        public DynamicObjectSetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new DynamicObjectSetItemContextManager(this, contextRef.get());
-            }
-            return passState();
+        public DynamicObjectSetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new DynamicObjectSetItemContextManager(this, frame, contextRef.get());
         }
 
         public DynamicObjectSetItemContextManager passState() {
-            return new DynamicObjectSetItemContextManager(this, null);
+            return new DynamicObjectSetItemContextManager(this, null, null);
         }
     }
 
@@ -1078,8 +1071,8 @@ public abstract class HashingStorageNodes {
 
         private final DynamicObjectSetItemNode delegate;
 
-        public DynamicObjectSetItemContextManager(DynamicObjectSetItemNode delegate, PythonContext context) {
-            super(context);
+        public DynamicObjectSetItemContextManager(DynamicObjectSetItemNode delegate, VirtualFrame frame, PythonContext context) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 
@@ -1089,6 +1082,7 @@ public abstract class HashingStorageNodes {
     }
 
     public abstract static class GetItemNode extends DictStorageBaseNode {
+        protected static final int MAX_DYNAMIC_STORAGES = 3;
 
         public static GetItemNode create() {
             return GetItemNodeGen.create();
@@ -1102,73 +1096,50 @@ public abstract class HashingStorageNodes {
             return null;
         }
 
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "cachedName.equals(name)",
-                                        "shapeCheck(shape, storage.getStore())"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected static Object doDynamicObjectString(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
-                        @SuppressWarnings("unused") @Cached("name") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, name)") Location location) {
-
-            return location != null ? location.get(storage.getStore(), shape) : null;
+        // this is just a minor performance optimization
+        @Specialization
+        static Object doPythonObjectString(PythonObjectDictStorage storage, String key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            return doDynamicObjectString(storage, key, readKey);
         }
 
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectString"}, guards = "storage.getStore().getShape().isValid()")
-        protected Object doDynamicObjectUncached(DynamicObjectStorage storage, String name) {
-            return storage.getStore().get(name);
+        // this is just a minor performance optimization
+        @Specialization
+        static Object doPythonObjectPString(PythonObjectDictStorage storage, PString key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            return doDynamicObjectPString(storage, key, readKey);
         }
 
-        @Specialization(guards = "!storage.getStore().getShape().isValid()")
-        protected Object doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name) {
-            CompilerDirectives.transferToInterpreter();
-            storage.getStore().updateShape();
-            return doDynamicObjectUncached(storage, name);
+        // this will read from the dynamic object
+        @Specialization
+        static Object doDynamicObjectString(DynamicObjectStorage storage, String key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            Object result = readKey.execute(storage.getStore(), key);
+            return result == PNone.NO_VALUE ? null : result;
         }
 
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "wrappedString(name)",
-                                        "cachedName.equals(name.getValue())",
-                                        "shapeCheck(shape, storage.getStore())"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected static Object doDynamicObjectPString(DynamicObjectStorage storage, @SuppressWarnings("unused") PString name,
-                        @SuppressWarnings("unused") @Cached("name.getValue()") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, cachedName)") Location location) {
-
-            return location != null ? location.get(storage.getStore(), shape) : null;
+        @Specialization
+        static Object doDynamicObjectPString(DynamicObjectStorage storage, PString key,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            Object result = readKey.execute(storage.getStore(), key);
+            return result == PNone.NO_VALUE ? null : result;
         }
 
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectPString"}, guards = {"wrappedString(name)", "storage.getStore().getShape().isValid()"})
-        protected Object doDynamicObjectUncachedPString(DynamicObjectStorage storage, PString name) {
-            return storage.getStore().get(name.getValue());
+        // this must read from the non-dynamic object storage
+        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)"})
+        Object doDynamicStorage(@SuppressWarnings("unused") VirtualFrame frame, PythonObjectHybridDictStorage s, Object key) {
+            return s.getItem(key, getEquivalence());
         }
 
-        @Specialization(guards = {"wrappedString(name)", "!storage.getStore().getShape().isValid()"})
-        protected Object doDynamicObjectUpdateShapePString(DynamicObjectStorage storage, PString name) {
-            CompilerDirectives.transferToInterpreter();
-            storage.getStore().updateShape();
-            return doDynamicObjectUncachedPString(storage, name);
+        protected static boolean isPythonObjectHybridStorage(DynamicObjectStorage s) {
+            return s instanceof PythonObjectHybridDictStorage;
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
-        Object doDynamicObject(@SuppressWarnings("unused") VirtualFrame frame, PythonObjectHybridDictStorage storage, Object key) {
-            return storage.getItem(key, getEquivalence());
-        }
-
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        // any dynamic object storage that isn't hybridized cannot store
+        // non-string keys
+        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)", "!isPythonObjectHybridStorage(s)"})
         @SuppressWarnings("unused")
-        Object doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, Object key) {
+        Object doDynamicStorage(VirtualFrame frame, DynamicObjectStorage s, Object key) {
             return null;
         }
 
@@ -1264,21 +1235,13 @@ public abstract class HashingStorageNodes {
         }
 
         @Override
-        public GetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new GetItemContextManager(this, context);
-                }
-            }
-            return passState();
+        public GetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new GetItemContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public GetItemContextManager passState() {
-            return new GetItemContextManager(this, null);
+            return new GetItemContextManager(this, null, null);
         }
     }
 
@@ -1286,8 +1249,8 @@ public abstract class HashingStorageNodes {
 
         private final GetItemInteropNode delegate;
 
-        public GetItemContextManager(GetItemInteropNode delegate, PythonContext context) {
-            super(context);
+        public GetItemContextManager(GetItemInteropNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

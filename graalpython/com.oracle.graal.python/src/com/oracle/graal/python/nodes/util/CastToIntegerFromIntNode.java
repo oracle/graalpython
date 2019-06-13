@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupA
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNodeFactory.DynamicNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -65,6 +64,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
@@ -99,8 +99,8 @@ public class CastToIntegerFromIntNode extends Node {
 
         private final Dynamic delegate;
 
-        public CastToIntegerContextManager(Dynamic delegate, PythonContext context) {
-            super(context);
+        private CastToIntegerContextManager(Dynamic delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 
@@ -167,21 +167,13 @@ public class CastToIntegerFromIntNode extends Node {
         }
 
         @Override
-        public CastToIntegerContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new CastToIntegerContextManager(this, context);
-                }
-            }
-            return passState();
+        public CastToIntegerContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new CastToIntegerContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public CastToIntegerContextManager passState() {
-            return new CastToIntegerContextManager(this, null);
+            return new CastToIntegerContextManager(this, null, null);
         }
 
         public static Dynamic create() {

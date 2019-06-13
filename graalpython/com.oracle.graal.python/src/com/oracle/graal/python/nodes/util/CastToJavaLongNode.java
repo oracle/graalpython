@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongExactNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongLossyNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,6 +61,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
@@ -123,8 +123,8 @@ public abstract class CastToJavaLongNode extends PNodeWithGlobalState<NodeContex
 
         private final CastToJavaLongNode delegate;
 
-        public CastToJavaLongContextManager(CastToJavaLongNode delegate, PythonContext context) {
-            super(context);
+        private CastToJavaLongContextManager(CastToJavaLongNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 
@@ -134,21 +134,13 @@ public abstract class CastToJavaLongNode extends PNodeWithGlobalState<NodeContex
     }
 
     @Override
-    public CastToJavaLongContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-        if (exceptionState != null) {
-            PythonContext context = contextRef.get();
-            PException cur = context.getCaughtException();
-            if (cur == null) {
-                context.setCaughtException(exceptionState);
-                return new CastToJavaLongContextManager(this, context);
-            }
-        }
-        return passState();
+    public CastToJavaLongContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+        return new CastToJavaLongContextManager(this, contextRef.get(), frame);
     }
 
     @Override
     public CastToJavaLongContextManager passState() {
-        return new CastToJavaLongContextManager(this, null);
+        return new CastToJavaLongContextManager(this, null, null);
     }
 
     @GenerateUncached

@@ -61,7 +61,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -140,9 +139,8 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Specialization(rewriteOn = PException.class)
         protected PList starredIterable(VirtualFrame frame, PythonObject value,
                         @Cached ConstructListNode constructListNode,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Shared("passExceptionNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(contextRef, frame)) {
                 return ctxManager.execute(value);
             }
         }
@@ -152,9 +150,8 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinClassProfile attrProfile,
                         @Cached PRaiseNode raise,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Shared("passExceptionNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(contextRef, frame)) {
                 return ctxManager.execute(v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
@@ -197,21 +194,13 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         }
 
         @Override
-        public CastToListContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new CastToListContextManager(this, context);
-                }
-            }
-            return passState();
+        public CastToListContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new CastToListContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public CastToListContextManager passState() {
-            return new CastToListContextManager(this, null);
+            return new CastToListContextManager(this, null, null);
         }
     }
 
@@ -219,8 +208,8 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         private final CastToListInteropNode delegate;
 
-        public CastToListContextManager(CastToListInteropNode delegate, PythonContext context) {
-            super(context);
+        private CastToListContextManager(CastToListInteropNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

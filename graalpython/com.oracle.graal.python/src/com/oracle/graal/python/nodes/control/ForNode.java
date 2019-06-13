@@ -80,7 +80,7 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
             throw raise.raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
         }
         body.executeVoid(frame);
-        contextRef.get().triggerAsyncActions();
+        contextRef.get().triggerAsyncActions(frame, this);
         return true;
     }
 }

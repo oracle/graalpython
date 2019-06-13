@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -104,7 +105,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                     @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
                     @Cached CExtNodes.ToSulongNode toSulongNode,
                     @Cached BranchProfile errorProfile,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                     @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
         Object result;
         try {
@@ -120,8 +121,9 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
             }
         } catch (PException e) {
             errorProfile.enter();
+            PythonContext context = contextRef.get();
             context.setCurrentException(e);
-            e.getExceptionObject().reifyException();
+            e.getExceptionObject().reifyException(context.peekTopFrameInfo());
             result = getNativeNullNode.execute(null);
         }
         return result;

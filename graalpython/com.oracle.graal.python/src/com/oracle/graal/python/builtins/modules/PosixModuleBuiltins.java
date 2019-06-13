@@ -1021,10 +1021,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        Object lseek(VirtualFrame frame, int fd, long pos, int how,
+        Object lseek(VirtualFrame frame, long fd, long pos, int how,
                         @Cached PRaiseOSErrorNode raise,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            Channel channel = getResources().getFileChannel(fd, channelClassProfile);
+            Channel channel = getResources().getFileChannel((int) fd, channelClassProfile);
             if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {
                 throw raise.raiseOSError(frame, OSErrorEnum.ESPIPE);
             }
@@ -1062,8 +1062,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        Object close(int fd,
+        Object close(Object fdObject,
+                        @Cached CastToIndexNode castToIndex,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
+            int fd = castToIndex.execute(fdObject);
             PosixResources resources = getResources();
             Channel channel = resources.getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null)) {
@@ -1244,15 +1246,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IsATTYNode extends PythonBuiltinNode {
         @Specialization
-        boolean isATTY(int fd) {
-            switch (fd) {
-                case 0:
-                case 1:
-                case 2:
-                    return terminalIsInteractive(getContext());
-                default:
-                    return false;
+        boolean isATTY(long fd) {
+            if (fd >= 0 && fd <= 2) {
+                return terminalIsInteractive(getContext());
+            } else {
+                return false;
             }
+        }
+
+        @Fallback
+        boolean isATTY(@SuppressWarnings("unused") Object fd) {
+            return false;
         }
     }
 

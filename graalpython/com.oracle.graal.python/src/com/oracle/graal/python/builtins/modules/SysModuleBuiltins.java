@@ -55,16 +55,20 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsFactory.GetFrameNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -77,8 +81,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -86,15 +88,12 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.LanguageInfo;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "sys")
@@ -300,15 +299,31 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
+                        @Cached GetCaughtExceptionNode getCaughtExceptionNode,
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                exception.reifyException();
-                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
+                Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
+                PFrame escapedFrame = readCallerFrameNode.executeWith(frame, currentFrameInfo, 0);
+                currentFrameInfo.markAsEscaped();
+                PTraceback exceptionTraceback = getTracebackNode.execute(frame, exception);
+                // n.b. a call to 'sys.exc_info' always creates a new traceback with the current
+                // frame and links (via 'tb_next') to the traceback of the exception
+                PTraceback chainedTraceback;
+                if (exceptionTraceback != null) {
+                    chainedTraceback = factory().createTraceback(escapedFrame, exceptionTraceback);
+                } else {
+                    // it's still possible that there is no traceback if, for example, the exception
+                    // has been thrown and caught and did never escape
+                    chainedTraceback = factory().createTraceback(escapedFrame, currentException);
+                }
+                exception.setTraceback(chainedTraceback);
+                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, chainedTraceback});
             }
         }
 
@@ -316,102 +331,60 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class GetFrameNode extends PythonUnaryBuiltinNode {
-        public static GetFrameNode create() {
-            return GetFrameNodeFactory.create();
-        }
-
-        @Child private DirectCallNode call;
-
+    public abstract static class GetFrameNode extends PythonBuiltinNode {
         @Specialization
-        Object first(@SuppressWarnings("unused") PNone arg,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return counted(0, lang);
-        }
-
-        /*
-         * This is necessary for the time being to be compatible with the old TruffleException
-         * behavior. (it only captures the frames if a CallTarget boundary is crossed)
-         */
-        private static final class GetStackTraceRootNode extends RootNode {
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
-
-            protected GetStackTraceRootNode(PythonLanguage language) {
-                super(language);
-            }
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                throw raiseNode.raise(ValueError);
-            }
-
-            @Override
-            public boolean isCaptureFramesForTrace() {
-                return true;
-            }
+        PFrame first(VirtualFrame frame, @SuppressWarnings("unused") PNone arg,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return escapeFrame(frame, 0, readCallerNode);
         }
 
         @Specialization
-        @TruffleBoundary
-        Object counted(int num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            if (call == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                GetStackTraceRootNode rootNode = new GetStackTraceRootNode(lang);
-                call = insert(Truffle.getRuntime().createDirectCallNode(Truffle.getRuntime().createCallTarget(rootNode)));
-            }
-            int actual = num + 1; // skip dummy frame
-            try {
-                @SuppressWarnings("unused")
-                Object r = call.call(new Object[0]);
-                // r is just assigned to make spotbugs happy
-                throw raise(PythonErrorType.SystemError, "should not reach here");
-            } catch (PException e) {
-                PBaseException exception = e.getExceptionObject();
-                exception.reifyException();
-                if (actual >= exception.getStackTrace().size()) {
-                    throw raiseCallStackDepth();
-                }
-                return exception.getPFrame(factory(), Math.max(0, actual));
-            }
+        PFrame counted(VirtualFrame frame, int num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return escapeFrame(frame, num, readCallerNode);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedLong(long num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return counted(PInt.intValueExact(num), lang);
+        PFrame countedLong(VirtualFrame frame, long num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return counted(frame, PInt.intValueExact(num), readCallerNode);
         }
 
         @Specialization
-        Object countedLongOvf(long num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+        PFrame countedLongOvf(VirtualFrame frame, long num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
             try {
-                return counted(PInt.intValueExact(num), lang);
+                return counted(frame, PInt.intValueExact(num), readCallerNode);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedPInt(PInt num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return counted(num.intValueExact(), lang);
+        PFrame countedPInt(VirtualFrame frame, PInt num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return counted(frame, num.intValueExact(), readCallerNode);
         }
 
         @Specialization
-        Object countedPIntOvf(PInt num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+        PFrame countedPIntOvf(VirtualFrame frame, PInt num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
             try {
-                return counted(num.intValueExact(), lang);
+                return counted(frame, num.intValueExact(), readCallerNode);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
+        }
+
+        private static PFrame escapeFrame(VirtualFrame frame, int num, ReadCallerFrameNode readCallerNode) {
+            Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
+            currentFrameInfo.markAsEscaped();
+            return readCallerNode.executeWith(frame, currentFrameInfo, num);
         }
 
         private PException raiseCallStackDepth() {
             return raise(ValueError, "call stack is not deep enough");
         }
-
     }
 
     @Builtin(name = "getfilesystemencoding", minNumOfPositionalArgs = 0)

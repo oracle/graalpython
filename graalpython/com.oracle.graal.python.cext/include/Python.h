@@ -51,7 +51,6 @@
 #define PYPY_VERSION_NUM 0
 
 #include <truffle.h>
-#include <polyglot.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
