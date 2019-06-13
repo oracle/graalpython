@@ -100,10 +100,10 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
-    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(3);
+    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(5);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
-    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(3);
+    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(4);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);

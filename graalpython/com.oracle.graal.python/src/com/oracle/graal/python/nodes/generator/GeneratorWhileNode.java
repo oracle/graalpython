@@ -79,7 +79,7 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
-                context.triggerAsyncActions();
+                context.triggerAsyncActions(frame, this);
             } while (condition.executeBoolean(frame));
             return;
         } catch (YieldException e) {

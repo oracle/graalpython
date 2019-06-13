@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -100,6 +101,13 @@ abstract class CallSpecialMethodNode extends Node {
     protected static PythonTernaryBuiltinNode getTernary(Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonTernaryBuiltinNode.class);
+        }
+        return null;
+    }
+
+    protected static PythonQuaternaryBuiltinNode getQuaternary(Object func) {
+        if (func instanceof PBuiltinFunction) {
+            return getBuiltin((PBuiltinFunction) func, PythonQuaternaryBuiltinNode.class);
         }
         return null;
     }

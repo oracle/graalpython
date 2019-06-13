@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -43,6 +44,7 @@ import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -57,12 +59,15 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     private final SourceSection sourceSection;
     private final boolean isGenerator;
     private final ValueProfile generatorFrameProfile;
-    private boolean isRewritten = false;
+    private final BranchProfile customLocalsProfile = BranchProfile.create();
 
     @Child private ExpressionNode body;
-    private ExpressionNode uninitializedBody;
+    @Child private CalleeContext calleeContext = CalleeContext.create();
 
-    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
+    private ExpressionNode uninitializedBody;
+    private boolean isRewritten = false;
+
+    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots executionCellSlots, Signature signature) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.contextRef = language.getContextReference();
@@ -76,10 +81,11 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         this.body = new InnerRootNode(this, NodeUtil.cloneNode(body));
         this.uninitializedBody = NodeUtil.cloneNode(body);
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
+        this.isRewritten = isRewritten;
     }
 
     public FunctionRootNode copyWithNewSignature(Signature newSignature) {
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
     }
 
     @Override
@@ -97,14 +103,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public FunctionRootNode copy() {
-        FunctionRootNode copy = new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots,
-                        getSignature());
-        // share assumptions; this is required due to splitting, otherwise the invoking nodes (i.e.
-        // InvokeNode) is testing for the wrong assumptions since it will see a different instance
-        // as actually executed.
-        copy.setDontNeedCallerFrame(getDontNeedCallerFrame());
-        copy.setDontNeedExceptionState(getDontNeedExceptionState());
-        return copy;
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody,
+                        executionCellSlots, getSignature());
     }
 
     @ExplodeLoop
@@ -139,10 +139,15 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
+        CalleeContext.enter(frame, customLocalsProfile);
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
-            contextRef.get().triggerAsyncActions();
+            contextRef.get().triggerAsyncActions(frame, this);
         }
-        return body.execute(frame);
+        try {
+            return body.execute(frame);
+        } finally {
+            calleeContext.exit(frame, this);
+        }
     }
 
     @Override
@@ -162,10 +167,18 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     public void setRewritten() {
         this.isRewritten = true;
+
+        // we need to update the uninitialized body as well
+        this.uninitializedBody = NodeUtil.cloneNode(body);
     }
 
     @Override
     public void initializeFrame(VirtualFrame frame) {
         initClosureAndCellVars(frame);
+    }
+
+    @Override
+    public boolean isPythonInternal() {
+        return isRewritten;
     }
 }

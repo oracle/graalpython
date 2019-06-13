@@ -17,4 +17,27 @@
     // utility for array contains
     contains(array, value)::
         std.count(array, value) > 0,
+
+    // validation
+    isGraalVmVm(name)::
+        std.startsWith(name, "graalvm_"),
+
+    isGraalPythonVm(name)::
+        std.startsWith(name, "graalpython"),
+
+    isBaselineVm(name)::
+        std.startsWith(name, "cpython") || std.startsWith(name, "pypy"),
+
+    local isBuilder = function(builder)
+        std.objectHas(builder, "run"),
+    isBuilder:: isBuilder,
+
+    // make a builder run with a given primary suite
+    withPrimarySuite(suite, builder)::
+        if (std.type(builder) == 'array') then [
+                b + (if isBuilder(b) then {environment +: {'MX_PRIMARY_SUITE_PATH': suite}} else {})
+                for b in builder
+            ]
+        else
+            builder + (if (isBuilder(builder)) then {environment +: {'MX_PRIMARY_SUITE_PATH': suite}} else {}),
 }

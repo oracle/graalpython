@@ -70,6 +70,19 @@ public final class PCell extends PythonAbstractObject {
         this.ref = ref;
     }
 
+    /**
+     * Use this to pass in the effectivelyFinal assumption from a node that made it constant.
+     */
+    public void setRef(Object ref, Assumption constantAssumption) {
+        assert constantAssumption == effectivelyFinal;
+        if (constantAssumption.isValid()) {
+            if (this.ref != null) {
+                constantAssumption.invalidate();
+            }
+        }
+        this.ref = ref;
+    }
+
     public Assumption isEffectivelyFinalAssumption() {
         return effectivelyFinal;
     }

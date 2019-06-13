@@ -251,7 +251,7 @@ public class PythonProvider implements LanguageProvider {
                                                       "    try:\n" +
                                                       "        raise BaseException()\n" +
                                                       "        e = None\n" +
-                                                      "    except BaseException as e:\n" +
+                                                      "    except BaseException as ex:\n" +
                                                       "        e = True\n" +
                                                       "    else:\n" +
                                                       "        e = None\n" +
@@ -261,7 +261,7 @@ public class PythonProvider implements LanguageProvider {
                                                       "    e = None\n" +
                                                       "    try:\n" +
                                                       "        e = None\n" +
-                                                      "    except BaseException as e:\n" +
+                                                      "    except BaseException as ex:\n" +
                                                       "        e = None\n" +
                                                       "    else:\n" +
                                                       "        e = True\n" +

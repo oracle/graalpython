@@ -100,6 +100,8 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.CallUnaryContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -110,7 +112,6 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1328,12 +1329,11 @@ public abstract class CExtNodes {
         double runGeneric(VirtualFrame frame, PythonAbstractObject value,
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PassCaughtExceptionNode passExceptionNode,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
-            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
+            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(contextRef, frame)) {
                 Object result = ctxManager.executeObject(value, __FLOAT__);
                 if (PGuards.isPFloat(result)) {
                     return ((PFloat) result).getValue();
@@ -1488,6 +1488,8 @@ public abstract class CExtNodes {
     public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        @Child private MaterializeFrameNode materializeNode;
+
         private final PFunction func;
         private final Object errorResult;
 
@@ -1499,16 +1501,24 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doit(Object argument) {
+        Object doit(VirtualFrame frame, Object argument) {
             try {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{argument});
-                return invokeNode.execute(null, arguments);
+                return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
-                e.getExceptionObject().reifyException();
+                e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
                 return errorResult;
             }
+        }
+
+        private MaterializeFrameNode ensureMaterializeNode() {
+            if (materializeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeNode = insert(MaterializeFrameNodeGen.create());
+            }
+            return materializeNode;
         }
     }
 
@@ -1517,6 +1527,8 @@ public abstract class CExtNodes {
     public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        @Child private MaterializeFrameNode materializeNode;
+
         private final PFunction func;
         private final Object errorResult;
 
@@ -1528,16 +1540,24 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doit(Object arg1, Object arg2) {
+        Object doit(VirtualFrame frame, Object arg1, Object arg2) {
             try {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2});
-                return invokeNode.execute(null, arguments);
+                return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
-                e.getExceptionObject().reifyException();
+                e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
                 return errorResult;
             }
+        }
+
+        private MaterializeFrameNode ensureMaterializeNode() {
+            if (materializeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeNode = insert(MaterializeFrameNodeGen.create());
+            }
+            return materializeNode;
         }
     }
 
@@ -1546,6 +1566,8 @@ public abstract class CExtNodes {
     public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        @Child private MaterializeFrameNode materializeNode;
+
         private final PFunction func;
         private final Object errorResult;
 
@@ -1557,16 +1579,24 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doit(Object arg1, Object arg2, Object arg3) {
+        Object doit(VirtualFrame frame, Object arg1, Object arg2, Object arg3) {
             try {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2, arg3});
-                return invokeNode.execute(null, arguments);
+                return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
-                e.getExceptionObject().reifyException();
+                e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
                 return errorResult;
             }
+        }
+
+        private MaterializeFrameNode ensureMaterializeNode() {
+            if (materializeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeNode = insert(MaterializeFrameNodeGen.create());
+            }
+            return materializeNode;
         }
     }
 
@@ -1576,6 +1606,8 @@ public abstract class CExtNodes {
         @Child private InvokeNode invokeNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgumentsNode createArgsNode;
+        @Child private MaterializeFrameNode materializeNode;
+
         private final PFunction func;
         private final Object errorResult;
 
@@ -1592,13 +1624,21 @@ public abstract class CExtNodes {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             try {
                 Object[] arguments = createArgsNode.execute(func, args);
-                return invokeNode.execute(null, arguments);
+                return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
-                e.getExceptionObject().reifyException();
+                e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
                 return errorResult;
             }
+        }
+
+        private MaterializeFrameNode ensureMaterializeNode() {
+            if (materializeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeNode = insert(MaterializeFrameNodeGen.create());
+            }
+            return materializeNode;
         }
 
         @Override

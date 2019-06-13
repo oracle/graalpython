@@ -56,11 +56,11 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -82,8 +82,6 @@ public abstract class CodeNodes {
     public static class CreateCodeNode extends PNodeWithContext {
 
         @Child private HashingStorageNodes.GetItemNode getItemNode;
-        @Child private PassCaughtExceptionNode passExceptionNode;
-
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         @SuppressWarnings("try")
@@ -94,7 +92,7 @@ public abstract class CodeNodes {
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame))) {
+            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(getContextRef(), frame, this)) {
                 return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             }
         }
@@ -122,7 +120,7 @@ public abstract class CodeNodes {
                     Object[] args = PArguments.create();
                     PDict globals = factory.createDict();
                     PArguments.setGlobals(args, globals);
-                    Truffle.getRuntime().createCallTarget(rootNode).call(args);
+                    InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
                     Object function = ensureGetItemNode().execute(null, globals.getDictStorage(), name);
                     if (function instanceof PFunction) {
                         rootNode = ((PFunction) function).getFunctionRootNode();
@@ -146,10 +144,20 @@ public abstract class CodeNodes {
                 }
                 callTarget = Truffle.getRuntime().createCallTarget(rootNode);
             } else {
-                callTarget = Truffle.getRuntime().createCallTarget(new RootNode(PythonLanguage.getCurrent()) {
+                callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(PythonLanguage.getCurrent()) {
                     @Override
                     public Object execute(VirtualFrame frame) {
                         return PNone.NONE;
+                    }
+
+                    @Override
+                    public Signature getSignature() {
+                        return Signature.EMPTY;
+                    }
+
+                    @Override
+                    public boolean isPythonInternal() {
+                        return false;
                     }
                 });
             }
@@ -220,14 +228,6 @@ public abstract class CodeNodes {
                 getItemNode = insert(HashingStorageNodes.GetItemNode.create());
             }
             return getItemNode;
-        }
-
-        private PException passException(VirtualFrame frame) {
-            if (passExceptionNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                passExceptionNode = insert(PassCaughtExceptionNode.create());
-            }
-            return passExceptionNode.execute(frame);
         }
 
         private ContextReference<PythonContext> getContextRef() {

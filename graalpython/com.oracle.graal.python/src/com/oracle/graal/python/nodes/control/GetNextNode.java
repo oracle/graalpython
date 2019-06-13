@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -139,8 +138,8 @@ public final class GetNextNode extends PNodeWithContext {
 
             private final GetNextWithoutFrameNode delegate;
 
-            public GetNextContextManager(GetNextWithoutFrameNode delegate, PythonContext context) {
-                super(context);
+            private GetNextContextManager(GetNextWithoutFrameNode delegate, PythonContext context, VirtualFrame frame) {
+                super(context, frame, delegate);
                 this.delegate = delegate;
             }
 
@@ -150,21 +149,13 @@ public final class GetNextNode extends PNodeWithContext {
         }
 
         @Override
-        public GetNextContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new GetNextContextManager(this, context);
-                }
-            }
-            return passState();
+        public GetNextContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new GetNextContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public GetNextContextManager passState() {
-            return new GetNextContextManager(this, null);
+            return new GetNextContextManager(this, null, null);
         }
     }
 }

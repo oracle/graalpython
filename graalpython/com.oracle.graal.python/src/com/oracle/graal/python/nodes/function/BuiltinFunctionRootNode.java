@@ -38,14 +38,17 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public final class BuiltinFunctionRootNode extends PRootNode {
     private final Signature signature;
@@ -53,8 +56,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     private final String name;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final boolean declaresExplicitSelf;
-
+    private final BranchProfile customLocalsProfile = BranchProfile.create();
     @Child private BuiltinCallNode body;
+    @Child private CalleeContext calleeContext = CalleeContext.create();
 
     private abstract static class BuiltinCallNode extends Node {
         public abstract Object execute(VirtualFrame frame);
@@ -121,6 +125,27 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         @Override
         public Object execute(VirtualFrame frame) {
             return node.execute(frame, arg1.execute(frame), arg2.execute(frame), arg3.execute(frame));
+        }
+    }
+
+    private static final class BuiltinQuaternaryCallNode extends BuiltinCallNode {
+        @Child private PythonQuaternaryBuiltinNode node;
+        @Child private ReadArgumentNode arg1;
+        @Child private ReadArgumentNode arg2;
+        @Child private ReadArgumentNode arg3;
+        @Child private ReadArgumentNode arg4;
+
+        public BuiltinQuaternaryCallNode(PythonQuaternaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3, ReadArgumentNode arg4) {
+            this.node = node;
+            this.arg1 = arg1;
+            this.arg2 = arg2;
+            this.arg3 = arg3;
+            this.arg4 = arg4;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(frame, arg1.execute(frame), arg2.execute(frame), arg3.execute(frame), arg4.execute(frame));
         }
     }
 
@@ -300,6 +325,14 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                         assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
                         body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
                     }
+                } else if (node instanceof PythonQuaternaryBuiltinNode) {
+                    if (!declaresExplicitSelf) {
+                        assert argumentsList.length == 5 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[1], argumentsList[2], argumentsList[3], argumentsList[4]));
+                    } else {
+                        assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3]));
+                    }
                 } else if (node instanceof PythonVarargsBuiltinNode) {
                     if (!declaresExplicitSelf) {
                         assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
@@ -315,7 +348,12 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
         }
-        return body.execute(frame);
+        CalleeContext.enter(frame, customLocalsProfile);
+        try {
+            return body.execute(frame);
+        } finally {
+            calleeContext.exit(frame, this);
+        }
     }
 
     public String getFunctionName() {
@@ -344,5 +382,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     @Override
     public Signature getSignature() {
         return signature;
+    }
+
+    @Override
+    public boolean isPythonInternal() {
+        return true;
     }
 }

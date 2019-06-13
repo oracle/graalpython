@@ -102,13 +102,12 @@ import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -1602,9 +1601,14 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctx,
-                        @Cached PassCaughtExceptionNode passExceptionNode) {
-            return new StringFormatter(getCore(), left).format(frame, ctx, right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode, passExceptionNode);
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+
+            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+            try {
+                return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
+            } finally {
+                IndirectCallContext.exit(context, savedExceptionState);
+            }
         }
     }
 

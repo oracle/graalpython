@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.call;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -53,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -62,20 +60,14 @@ import com.oracle.graal.python.nodes.call.CallNodeFactory.CachedCallNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.nodes.RootNode;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -187,9 +179,7 @@ public abstract class CallNode extends PNodeWithContext {
 
     private static final class UncachedCallNode extends CallNode {
         private final CreateArgumentsNode createArgs = CreateArgumentsNode.getUncached();
-        private final IndirectCallNode callNode = IndirectCallNode.getUncached();
-
-        private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
+        private final GenericInvokeNode invokeNode = GenericInvokeNode.getUncached();
 
         @Override
         public Object execute(VirtualFrame frame, Object callableObject, Object[] args, PKeyword[] keywords) {
@@ -238,31 +228,11 @@ public abstract class CallNode extends PNodeWithContext {
             } else {
                 if (frame != null) {
                     PArguments.setCallerFrame(arguments, frame.materialize());
-                } else {
-                    // transfer exception state from context to frame; we need to do this here
-                    // because we don't use an InvokeNode
-                    contextToFrame(ct, arguments);
                 }
                 if (ct.getRootNode() instanceof ClassBodyRootNode) {
                     PArguments.setSpecialArgument(arguments, ct.getRootNode());
                 }
-
-                return callNode.call(ct, arguments);
-            }
-        }
-
-        private void contextToFrame(RootCallTarget callTarget, Object[] arguments) {
-            RootNode rootNode = callTarget.getRootNode();
-            if (rootNode instanceof PRootNode && ((PRootNode) rootNode).needsExceptionState()) {
-                PythonContext context = contextRef.get();
-                PException caughtException = context.getCaughtException();
-                if (caughtException == null) {
-                    CompilerDirectives.transferToInterpreter();
-                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                    caughtException = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                    context.setCaughtException(caughtException);
-                }
-                PArguments.setCaughtException(arguments, caughtException);
+                return invokeNode.execute(frame, ct, arguments);
             }
         }
 

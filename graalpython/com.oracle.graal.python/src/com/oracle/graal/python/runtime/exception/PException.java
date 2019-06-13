@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleException;
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class PException extends RuntimeException implements TruffleException {
@@ -81,11 +80,6 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     public void setMessage(Object object) {
         message = object.toString();
-    }
-
-    public TruffleStackTraceElement getTruffleStackTraceElement(int index) {
-        assert index >= 0 && index < getExceptionObject().getStackTrace().size() : "PException: stacktrace, index out of bounds";
-        return getExceptionObject().getStackTrace().get(index);
     }
 
     @Override

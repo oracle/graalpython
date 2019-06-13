@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -240,14 +241,9 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public boolean eq(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
-                        @Cached CExtNodes.PointerCompareNode nativeIsNode) {
-            return nativeIsNode.execute(__EQ__, self, other);
-        }
-
-        @Fallback
-        public Object eq(Object self, Object other) {
-            return self == other;
+        Object eq(Object self, Object other,
+                        @Cached IsNode isNode) {
+            return isNode.execute(self, other);
         }
     }
 
@@ -583,7 +579,6 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
         Object dict(PythonObject self, PDict dict) {
-            self.getDictUnsetOrSameAsStorageAssumption().invalidate();
             self.setDict(dict);
             return PNone.NONE;
         }

@@ -29,7 +29,7 @@ def fun4(test_obj):
         fun3(test_obj, ValueError)
 
 class ExceptionTests(unittest.TestCase):
-    
+
     def test_exc_info(self):
         typ, val, tb = (None,) * 3
         try:
@@ -115,7 +115,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertTrue(type(OSError(2)) is OSError)
         self.assertTrue(type(OSError(errno.EISDIR)) is OSError)
         self.assertTrue(type(OSError(2, "a message")) is FileNotFoundError)
-        
+
         self.assertTrue(type(OSError(errno.EISDIR, "a message")) is IsADirectoryError)
         self.assertTrue(type(OSError(errno.EAGAIN, "a message")) is BlockingIOError)
         self.assertTrue(type(OSError(errno.EALREADY, "a message")) is BlockingIOError)
@@ -163,3 +163,15 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(e.strerror, "message")
         self.assertEqual(e.filename, "file1")
         self.assertEqual(e.filename2, "file2")
+
+    def test_exception_cleared(self):
+        try:
+            raise ValueError
+        except ValueError as e:
+            pass
+        try:
+            e
+        except UnboundLocalError:
+            pass
+        else:
+            assert False, "named exception should be unbound after except block"

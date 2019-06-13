@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -175,8 +176,9 @@ public class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PIntegerIterator iter(PRange self) {
-            return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep());
+        PIntegerIterator iter(PRange self,
+                        @Cached("createBinaryProfile()") ConditionProfile stepPositiveProfile) {
+            return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep(), stepPositiveProfile);
         }
     }
 

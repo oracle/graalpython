@@ -31,13 +31,17 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
@@ -63,6 +67,7 @@ public class WithNode extends StatementNode {
     @Child private PythonObjectFactory factory;
     @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
+    @Child private MaterializeFrameNode materializeFrameNode;
 
     private final BranchProfile noEnter = BranchProfile.create();
     private final BranchProfile noExit = BranchProfile.create();
@@ -166,15 +171,20 @@ public class WithNode extends StatementNode {
      * Call __exit__ to handle the exception
      */
     protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e) {
-        e.getExceptionObject().reifyException();
+        if (materializeFrameNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            materializeFrameNode = insert(MaterializeFrameNodeGen.create());
+        }
+        PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false);
         PBaseException value = e.getExceptionObject();
         PythonAbstractClass type = getClassNode.execute(value);
         if (factory == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             factory = insert(PythonObjectFactory.create());
         }
-        Object trace = e.getExceptionObject().getTraceback(factory);
-        Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, trace}, PKeyword.EMPTY_KEYWORDS);
+        PTraceback tb = factory.createTraceback(escapedFrame, e);
+        value.setTraceback(tb);
+        Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, tb}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress
         if (toBooleanNode.executeBoolean(frame, returnValue)) {
             return;
