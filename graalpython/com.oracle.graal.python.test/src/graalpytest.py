@@ -339,7 +339,6 @@ class TestRunner(object):
             if verbose:
                 print()
         for i, t in enumerate(threads):
-            print("waiting for %d tests to finish" % (len(threads) - i))
             t.join(timeout=0)
         print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
         for e in self.exceptions:
