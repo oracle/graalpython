@@ -138,10 +138,14 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
     case 19: v19 = value; break;                \
     }
 
-    char* fmtcpy = strdup(fmt);
+    size_t fmt_size = strlen(fmt) + 1;
+    // n.b. avoid using 'strdup' for compatiblity with MUSL libc
+    char* fmtcpy = (char*) malloc(fmt_size*sizeof(char));
     char* c = fmtcpy;
     char* allocated;
     int cnt = 0;
+
+    memcpy(fmtcpy, fmt, fmt_size);
 
     while (c[0] && cnt < s) {
         if (c[0] == '%') {

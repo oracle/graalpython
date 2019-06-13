@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -60,6 +61,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
@@ -77,6 +80,11 @@ public final class PythonContext {
     private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
     @CompilationFinal private TruffleLanguage.Env env;
+
+    // TODO: frame: make these three ThreadLocal
+
+    /* the reference to the last top frame on the Python stack during interop calls */
+    private PFrame.Reference topframeref = null;
 
     /* corresponds to 'PyThreadState.curexc_*' */
     private PException currentException;
@@ -230,6 +238,20 @@ public final class PythonContext {
 
     public PException getCaughtException() {
         return caughtException;
+    }
+
+    public void setTopFrameInfo(PFrame.Reference topframeref) {
+        this.topframeref = topframeref;
+    }
+
+    public PFrame.Reference popTopFrameInfo() {
+        PFrame.Reference ref = topframeref;
+        topframeref = null;
+        return ref;
+    }
+
+    public PFrame.Reference peekTopFrameInfo() {
+        return topframeref;
     }
 
     public boolean isInitialized() {
@@ -399,8 +421,8 @@ public final class PythonContext {
     /**
      * Trigger any pending asynchronous actions
      */
-    public void triggerAsyncActions() {
-        handler.triggerAsyncActions();
+    public void triggerAsyncActions(VirtualFrame frame, Node location) {
+        handler.triggerAsyncActions(frame, location);
     }
 
     public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {

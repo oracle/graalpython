@@ -104,16 +104,110 @@ class ExceptionTest(unittest.TestCase):
     #         yield
     #         self.assertIsNone(sys.exc_info()[0])
     #         yield "done"
-
+ 
     #     g = gen()
     #     next(g)
     #     try:
     #         raise ValueError
     #     except Exception as exc:
     #         g.throw(exc)
-
+ 
     #     self.assertEqual(next(g), "done")
     #     self.assertEqual(sys.exc_info(), (None, None, None))
+
+    def test_throw_single_arg(self):
+        def gen(log):
+            log.append(1)
+            try:
+                yield
+                log.append(2)
+            except ValueError as e:
+                self.assertEqual(e.args[0], "hello")
+            yield
+            log.append(3)
+            return
+        
+        log = []
+        g = gen(log)
+        next(g)
+        g.throw(ValueError, "hello")
+        try:
+            next(g)
+        except StopIteration:
+            pass
+        self.assertEqual([1, 3], log)
+
+
+    def test_throw_multiple_args(self):
+        def gen(log):
+            log.append(1)
+            try:
+                yield
+                log.append(2)
+            except ValueError as e:
+                self.assertEqual(e.args, ("hello", "world", 42))
+            yield
+            log.append(3)
+            return
+        
+        log = []
+        g = gen(log)
+        next(g)
+        g.throw(ValueError, ("hello", "world", 42))
+        try:
+            next(g)
+        except StopIteration:
+            pass
+        self.assertEqual([1, 3], log)
+
+
+    def test_throw_exception_type(self):
+        def gen(log):
+            log.append(1)
+            try:
+                yield
+                log.append(2)
+            except ValueError as e:
+                self.assertEqual(len(e.args), 0)
+            yield
+            log.append(3)
+            return
+        
+        log = []
+        g = gen(log)
+        next(g)
+        g.throw(ValueError)
+        try:
+            next(g)
+        except StopIteration:
+            pass
+        self.assertEqual([1, 3], log)
+
+
+    def test_gen_from_except(self):
+        def gen():
+            self.assertEqual(sys.exc_info()[0], None)
+            yield
+            
+            try:
+                raise TypeError
+            except TypeError:
+                # we are called from "except ValueError:"
+                self.assertEqual(sys.exc_info()[0], TypeError)
+            self.assertIsNone(sys.exc_info()[0])
+            yield
+            self.assertIsNone(sys.exc_info()[0])
+            yield "done"
+            
+        try:
+            raise ValueError
+        except ValueError:
+            self.assertEqual(sys.exc_info()[0], ValueError)
+            g = gen()
+        next(g)
+        next(g)
+        self.assertEqual(next(g), "done")
+        
 
     def test_stopiteration_warning(self):
         # See also PEP 479.

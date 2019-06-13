@@ -437,21 +437,13 @@ public abstract class ListNodes {
         protected abstract SequenceStorage execute(Object iterator);
 
         @Override
-        public CreateStorageFromIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new CreateStorageFromIteratorContextManager(this, context);
-                }
-            }
-            return passState();
+        public CreateStorageFromIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new CreateStorageFromIteratorContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public CreateStorageFromIteratorContextManager passState() {
-            return new CreateStorageFromIteratorContextManager(this, null);
+            return new CreateStorageFromIteratorContextManager(this, null, null);
         }
 
         public static CreateStorageFromIteratorInteropNode create() {
@@ -467,8 +459,8 @@ public abstract class ListNodes {
 
         private final CreateStorageFromIteratorInteropNode delegate;
 
-        public CreateStorageFromIteratorContextManager(CreateStorageFromIteratorInteropNode delegate, PythonContext context) {
-            super(context);
+        private CreateStorageFromIteratorContextManager(CreateStorageFromIteratorInteropNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 
@@ -574,21 +566,13 @@ public abstract class ListNodes {
         }
 
         @Override
-        public ConstructListContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new ConstructListContextManager(this, context);
-                }
-            }
-            return passState();
+        public ConstructListContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new ConstructListContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public ConstructListContextManager passState() {
-            return new ConstructListContextManager(this, null);
+            return new ConstructListContextManager(this, null, null);
         }
     }
 
@@ -596,8 +580,8 @@ public abstract class ListNodes {
 
         private final ConstructListNode delegate;
 
-        public ConstructListContextManager(ConstructListNode delegate, PythonContext context) {
-            super(context);
+        private ConstructListContextManager(ConstructListNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

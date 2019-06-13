@@ -121,21 +121,13 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         }
 
         @Override
-        public GetIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new GetIteratorContextManager(this, context);
-                }
-            }
-            return passState();
+        public GetIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new GetIteratorContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public GetIteratorContextManager passState() {
-            return new GetIteratorContextManager(this, null);
+            return new GetIteratorContextManager(this, null, null);
         }
 
         public static GetIteratorWithoutFrameNode create() {
@@ -151,8 +143,8 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
         private final GetIteratorWithoutFrameNode delegate;
 
-        public GetIteratorContextManager(GetIteratorWithoutFrameNode delegate, PythonContext context) {
-            super(context);
+        private GetIteratorContextManager(GetIteratorWithoutFrameNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -21,7 +21,34 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-# generator expression testing __next__()
+# sum a generator expression
+
+def test_sum():
+    genexp = (x*2 for x in range(5))
+
+    def _sum(iterable):
+        sum = 0
+        for i in iterable:
+            sum += i
+        return sum
+
+    assert _sum(genexp) == 20
+    assert _sum(genexp) == 0
+
+
+def test_sum2():
+    genexp = (x*2 for x in range(5))
+
+    sum = 0
+    for i in genexp:
+        sum += i
+    assert sum == 20
+
+    sum = 0
+    for i in genexp:
+        sum += i
+    assert sum == 0
+
 
 def test_genexp():
     genexp = (x*2 for x in range(5))
@@ -31,3 +58,11 @@ def test_genexp():
     genexp.__next__()
     genexp.__next__()
     assert genexp.__next__() == 8
+    
+
+def test_list_comprehension():
+    def make_list(size):
+        return [i for i in range(size)]
+
+    ll = make_list(100000)
+    assert ll[-1] == 99999

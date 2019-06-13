@@ -40,14 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class PTraceback extends PythonBuiltinObject {
+
+    /** A marker object to indicate the end of a traceback chain. */
+    public static final PTraceback NO_TRACEBACK = new PTraceback(PythonBuiltinClassType.PTraceback, null, (PException) null);
 
     public static final String TB_FRAME = "tb_frame";
     public static final String TB_NEXT = "tb_next";
@@ -60,35 +64,60 @@ public final class PTraceback extends PythonBuiltinObject {
         return TB_DIR_FIELDS.clone();
     }
 
-    private final PBaseException exception;
-    private final int index;
-    private PFrame frame;
+    // we have to keep the exception around to lazily create the tb_next element
+    // if that isn't available and still stored in the TruffleStackTrace
+    private final PException exception;
 
-    public PTraceback(LazyPythonClass clazz, PBaseException exception, int index) {
+    private final PFrame frame;
+    private final int lasti;
+    private PTraceback next;
+
+    public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception) {
         super(clazz);
+        this.frame = frame;
         this.exception = exception;
-        this.index = index;
+        this.lasti = 0;
     }
 
-    public PBaseException getException() {
-        return exception;
+    public PTraceback(LazyPythonClass clazz, PFrame frame, PTraceback next) {
+        super(clazz);
+        this.frame = frame;
+        this.exception = next.exception;
+        this.next = next;
+        this.lasti = 0;
     }
 
-    public int getIndex() {
-        return index;
-    }
-
-    public PFrame getPFrame(PythonObjectFactory factory) {
-        if (frame == null) {
-            return frame = exception.getPFrame(factory, index);
-        }
+    public PFrame getPFrame() {
         return frame;
     }
 
-    public void setPFrame(PFrame frame) {
-        if (this.frame != null) {
-            throw new IllegalStateException("fabricating a frame for a traceback that already has one");
-        }
-        this.frame = frame;
+    public int getLasti() {
+        return lasti;
     }
+
+    public int getLineno() {
+        return frame.getLine();
+    }
+
+    public PTraceback getNext() {
+        return next;
+    }
+
+    public void setNext(PTraceback next) {
+        this.next = next;
+    }
+
+    public PException getException() {
+        return exception;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (this == NO_TRACEBACK) {
+            return "NO_TRACEBACK";
+        }
+        return super.toString();
+    }
+
 }

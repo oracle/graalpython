@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -246,21 +245,13 @@ public abstract class LookupAndCallUnaryNode extends Node {
         }
 
         @Override
-        public CallUnaryContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
-            if (exceptionState != null) {
-                PythonContext context = contextRef.get();
-                PException cur = context.getCaughtException();
-                if (cur == null) {
-                    context.setCaughtException(exceptionState);
-                    return new CallUnaryContextManager(this, context);
-                }
-            }
-            return new CallUnaryContextManager(this, null);
+        public CallUnaryContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new CallUnaryContextManager(this, contextRef.get(), frame);
         }
 
         @Override
         public CallUnaryContextManager passState() {
-            return new CallUnaryContextManager(this, null);
+            return new CallUnaryContextManager(this, null, null);
         }
 
         public static LookupAndCallUnaryDynamicNode create() {
@@ -276,8 +267,8 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
         private final LookupAndCallUnaryDynamicNode delegate;
 
-        public CallUnaryContextManager(LookupAndCallUnaryDynamicNode delegate, PythonContext context) {
-            super(context);
+        private CallUnaryContextManager(LookupAndCallUnaryDynamicNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
             this.delegate = delegate;
         }
 

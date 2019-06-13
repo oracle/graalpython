@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -60,12 +59,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private final FlagsContainer flags;
 
     /** {@code true} if the MRO contains a native class. */
-    private boolean needsNativeAllocation;
+    private final boolean needsNativeAllocation;
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    public PythonManagedClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonAbstractClass... baseClasses) {
-        super(typeClass, PythonLanguage.freshShape() /* do not inherit layout from the TypeClass */);
+    public PythonManagedClass(LazyPythonClass typeClass, String name, PythonAbstractClass... baseClasses) {
+        super(PythonObject.freshShape(typeClass) /* do not inherit layout from the */);
         this.className = name;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
@@ -80,13 +79,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         // Compute MRO
         this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
-        computeNeedsNativeAllocation();
+        this.needsNativeAllocation = computeNeedsNativeAllocation();
 
         setAttribute(__NAME__, getBaseName(name));
         setAttribute(__QUALNAME__, className);
         setAttribute(__DOC__, PNone.NONE);
         // provide our instances with a fresh shape tree
-        this.instanceShape = instanceShape;
+        this.instanceShape = PythonObject.freshShape(this);
     }
 
     private static String getBaseName(String qname) {
@@ -130,14 +129,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return className;
     }
 
-    private void computeNeedsNativeAllocation() {
+    private boolean computeNeedsNativeAllocation() {
         for (PythonAbstractClass cls : getMethodResolutionOrder().getInternalClassArray()) {
             if (PGuards.isNativeClass(cls)) {
-                needsNativeAllocation = true;
-                return;
+                return true;
             }
         }
-        needsNativeAllocation = false;
+        return false;
     }
 
     @Override

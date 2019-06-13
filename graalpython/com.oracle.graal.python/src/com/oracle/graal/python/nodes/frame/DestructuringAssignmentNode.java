@@ -190,9 +190,8 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                 if (lenNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
-                    raiseNode = insert(PRaiseNode.create());
                 }
-                throw raiseNode.raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(frame, rhsValue));
+                throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(frame, rhsValue));
             } else {
                 throw e;
             }
@@ -215,6 +214,14 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         }
 
         performAssignments(frame);
+    }
+
+    private PRaiseNode ensureRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
     }
 
     @ExplodeLoop

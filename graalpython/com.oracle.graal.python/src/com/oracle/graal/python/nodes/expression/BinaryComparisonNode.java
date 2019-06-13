@@ -32,6 +32,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -49,6 +51,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Child private LookupAndCallBinaryNode callNode;
     @Child private CastToBooleanNode castToBoolean;
     @Child private PRaiseNode raiseNode;
+    @Child private IsNode isNode;
 
     BinaryComparisonNode(String magicMethod, String magicReverseMethod, String operation) {
         this.magicMethod = magicMethod;
@@ -71,9 +74,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         // just like python, if no implementation is available, do something sensible for
         // == and !=
         if (magicMethod == __EQ__) {
-            return left == right;
+            return ensureIsNode().execute(left, right);
         } else if (magicMethod == __NE__) {
-            return left != right;
+            return !ensureIsNode().execute(left, right);
         } else {
             if (raiseNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -260,5 +263,13 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return handleNotImplemented(left, right);
         }
         return result;
+    }
+
+    private IsNode ensureIsNode() {
+        if (isNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isNode = insert(IsNodeGen.create());
+        }
+        return isNode;
     }
 }

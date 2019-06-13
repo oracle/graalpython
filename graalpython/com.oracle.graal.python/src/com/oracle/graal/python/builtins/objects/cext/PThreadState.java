@@ -48,18 +48,28 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -67,12 +77,14 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -136,6 +148,9 @@ public class PThreadState extends PythonNativeWrapper {
     @ImportStatic(PThreadState.class)
     @GenerateUncached
     abstract static class ThreadStateReadNode extends PNodeWithContext {
+
+        private static GetTracebackRootNode getTracebackRootNode;
+
         public abstract Object execute(Object key);
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
@@ -162,13 +177,16 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
-        PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object doCurExcTraceback(@SuppressWarnings("unused") String key,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("invokeNode") @Cached GenericInvokeNode invokeNode) {
             PException currentException = context.getCurrentException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject.getTraceback(factory);
+                // we use 'GetTracebackNode' via a call to have a frame
+                Object[] arguments = PArguments.create(1);
+                PArguments.setArgument(arguments, 0, exceptionObject);
+                return invokeNode.execute(null, ensureCallTarget(context.getLanguage()), arguments);
             }
             return null;
         }
@@ -197,20 +215,23 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
-        PTraceback doExcTraceback(@SuppressWarnings("unused") String key,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object doExcTraceback(@SuppressWarnings("unused") String key,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("invokeNode") @Cached GenericInvokeNode invokeNode) {
             PException currentException = context.getCaughtException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject.getTraceback(factory);
+                // we use 'GetTracebackNode' via a call to have a frame
+                Object[] arguments = PArguments.create(1);
+                PArguments.setArgument(arguments, 0, exceptionObject);
+                return invokeNode.execute(null, ensureCallTarget(context.getLanguage()), arguments);
             }
             return null;
         }
 
         @Specialization(guards = "eq(key, DICT)")
         PDict doDict(@SuppressWarnings("unused") String key,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Cached PythonObjectFactory factory,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PThreadState customThreadState = context.getCustomThreadState();
             PDict threadStateDict = customThreadState.getThreadStateDict();
@@ -229,6 +250,13 @@ public class PThreadState extends PythonNativeWrapper {
 
         protected static boolean eq(String key, String expected) {
             return expected.equals(key);
+        }
+
+        private static RootCallTarget ensureCallTarget(PythonLanguage language) {
+            if (getTracebackRootNode == null) {
+                getTracebackRootNode = new GetTracebackRootNode(language);
+            }
+            return getTracebackRootNode.getCallTarget();
         }
     }
 
@@ -319,9 +347,11 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
         PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCurrentException(raiseNode, context, value.getException());
+            PException e = context.getCurrentException();
+            if (e != null) {
+                e.getExceptionObject().setTraceback(value);
+            }
             return value;
         }
 
@@ -344,9 +374,11 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
         PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCaughtException(raiseNode, context, value.getException());
+            PException e = context.getCurrentException();
+            if (e != null) {
+                e.getExceptionObject().setTraceback(value);
+            }
             return value;
         }
 
@@ -354,7 +386,6 @@ public class PThreadState extends PythonNativeWrapper {
             try {
                 throw raiseNode.raise(exceptionObject);
             } catch (PException e) {
-                exceptionObject.reifyException();
                 context.setCurrentException(e);
             }
         }
@@ -363,8 +394,7 @@ public class PThreadState extends PythonNativeWrapper {
             try {
                 throw raiseNode.raise(exceptionObject);
             } catch (PException e) {
-                exceptionObject.reifyException();
-                context.setCurrentException(e);
+                context.setCaughtException(e);
             }
         }
 
@@ -440,5 +470,48 @@ public class PThreadState extends PythonNativeWrapper {
         protected static Assumption singleNativeContextAssumption() {
             return PythonContext.getSingleNativeContextAssumption();
         }
+    }
+
+    private static final class GetTracebackRootNode extends PRootNode {
+
+        protected GetTracebackRootNode(TruffleLanguage<?> language) {
+            super(language);
+        }
+
+        @Child private GetTracebackNode getTracebackNode;
+        @Child private CalleeContext calleeContext = CalleeContext.create();
+
+        private final BranchProfile profile = BranchProfile.create();
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            CalleeContext.enter(frame, profile);
+            try {
+                if (getTracebackNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getTracebackNode = insert(GetTracebackNodeGen.create());
+                }
+                PBaseException e = (PBaseException) PArguments.getArgument(frame, 0);
+                return getTracebackNode.execute(frame, e);
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+        }
+
+        @Override
+        public boolean isInternal() {
+            return true;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return Signature.EMPTY;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
+        }
+
     }
 }

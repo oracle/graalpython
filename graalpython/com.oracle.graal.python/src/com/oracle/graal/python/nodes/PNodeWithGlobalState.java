@@ -41,14 +41,16 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends PNodeWithContext {
 
     /**
-     * Transfers the exception state to the context and unprotects the node's execute method(s).<br>
-     * Use this method to make the exception state available to nodes that cannot take a virtual
+     * Transfers the execution context to the language context and unprotects the node's execute
+     * method(s).<br>
+     * Use this method to make the execution context available to nodes that cannot take a virtual
      * frame at the last location where the virtual frame is available. The recommended usage for
      * nodes implementing this interface is as follows:
      * <p>
@@ -57,15 +59,14 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
      * {@literal @}Specialization
      * Object doSomething(VirtualFrame frame,
      *                    {@literal @}Cached SomeNodeWithGlobalState node,
-     *                    {@literal @}Cached PassCaughtExceptionNode passExceptionNode,
      *                    {@literal @}CachedContext(PythonLanguage.class) ContextReference&lt;PythonContext&gt; contextRef) {
-     *     try (SomeContextManager cm = node.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
+     *     try (SomeContextManager cm = node.withGlobalState(contextRef, frame)) {
      *         cm.execute();
      *     }
      * </pre>
      * </p>
      */
-    public abstract T withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState);
+    public abstract T withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame);
 
     /**
      * Use this method to unprotect the node's execute method(s) if you are already sure that the
@@ -104,14 +105,14 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
     public abstract T passState();
 
     /**
-     * A convenience method that allows to transfer the exception state from the frame to the
+     * A convenience method that allows to transfer the execution context from the frame to the
      * context.
      *
      * This is mostly useful when using methods annotated with {@code @TruffleBoundary} that again
      * use nodes that would require a frame. Surround the usage of the callee node by a context
      * manager and then it is allowed to pass a {@code null} frame. For example:
      * <p>
-     * 
+     *
      * <pre>
      * public abstract class SomeNode extends Node {
      *     {@literal @}Child private OtherNode otherNode = OtherNode.create();
@@ -120,10 +121,9 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
      *
      *     {@literal @}Specialization
      *     Object doSomething(VirtualFrame frame, Object arg,
-     *                            {@literal @}Cached PassCaughtExceptionNode passExceptionNode,
      *                            {@literal @}CachedContext(PythonLanguage.class) ContextReference&lt;PythonContext&gt; contextRef) {
      *         // ...
-     *         try (DefaultContextManager cm = PNodeWithGlobalState.transfertToContext(contextRef, passExceptionNode.execute(frame))) {
+     *         try (DefaultContextManager cm = PNodeWithGlobalState.transfertToContext(contextRef, frame, this)) {
      *             truffleBoundaryMethod(arg);
      *         }
      *         // ...
@@ -133,26 +133,22 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
      *     private void truffleBoundaryMethod(Object arg) {
      *         otherNode.execute(null, arg);
      *     }
-     * 
+     *
      * </pre>
      * </p>
      */
-    public static DefaultContextManager transferToContext(ContextReference<PythonContext> contextRef, PException exceptionState) {
-        if (exceptionState != null) {
-            PythonContext context = contextRef.get();
-            PException cur = context.getCaughtException();
-            if (cur == null) {
-                context.setCaughtException(exceptionState);
-                return new DefaultContextManager(context);
-            }
+    public static DefaultContextManager transferToContext(ContextReference<PythonContext> contextRef, VirtualFrame frame, Node caller) {
+        if (frame != null) {
+            return new DefaultContextManager(contextRef.get(), frame, caller);
         }
-        return new DefaultContextManager(null);
+        return new DefaultContextManager(null, null, caller);
     }
 
     public static final class DefaultContextManager extends NodeContextManager {
 
-        public DefaultContextManager(PythonContext context) {
-            super(context);
+        public DefaultContextManager(PythonContext context, VirtualFrame frame, Node caller) {
+            super(context, frame, caller);
         }
+
     }
 }

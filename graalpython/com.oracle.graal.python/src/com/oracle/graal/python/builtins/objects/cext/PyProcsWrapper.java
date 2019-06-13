@@ -121,8 +121,15 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             } catch (PException e) {
                 // TODO move to node
                 e.expectAttributeError(errProfile);
+
+                // This node cannot have a frame so we cannot neither be sure if the PFrame is
+                // already available nor we can create it at this point. Furthermore, the last
+                // Python caller also won't eagerly create the PFrame since this could unnecessarily
+                // expensive. So, we just need to provide the frame info. This will be enough to
+                // re-create the current stack at a later point in time.
+                e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+
                 context.setCurrentException(e);
-                e.getExceptionObject().reifyException();
                 result = getNativeNullNode.execute();
             }
             return result;
@@ -165,8 +172,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             try {
                 result = toSulongNode.execute(executeNode.execute(object.getDelegate(), converted));
             } catch (PException e) {
+                e.getExceptionObject().reifyException(context.peekTopFrameInfo());
                 context.setCurrentException(e);
-                e.getExceptionObject().reifyException();
                 result = getNativeNullNode.execute();
             }
             return result;

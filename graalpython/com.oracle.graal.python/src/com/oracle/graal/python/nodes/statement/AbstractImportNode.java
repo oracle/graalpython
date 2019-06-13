@@ -49,17 +49,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -117,15 +113,6 @@ public abstract class AbstractImportNode extends StatementNode {
         return getDictNode;
     }
 
-    private PException passException(VirtualFrame frame) {
-        if (passExceptionNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            passExceptionNode = insert(PassCaughtExceptionNode.create());
-        }
-        return passExceptionNode.execute(frame);
-    }
-
-    @SuppressWarnings("try")
     protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         if (!getContext().getCore().isInitialized()) {
@@ -134,17 +121,14 @@ public abstract class AbstractImportNode extends StatementNode {
                 return builtinModule;
             }
         }
-        try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame))) {
-            return __import__(name, globals, fromList, level);
-        }
+        return __import__(frame, name, globals, fromList, level);
     }
 
-    @TruffleBoundary
-    Object __import__(String name, Object globals, String[] fromList, int level) {
+    Object __import__(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule("builtins").getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
-        return getCallNode().execute(null, builtinImport, new Object[]{name}, new PKeyword[]{
+        return getCallNode().execute(frame, builtinImport, new Object[]{name}, new PKeyword[]{
                         new PKeyword(GLOBALS, getGetDictNode().execute(globals)),
                         new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
                                                           // can always be None
