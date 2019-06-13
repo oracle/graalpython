@@ -86,8 +86,8 @@ extern unsigned init_upcall_n;
 
 /* upcall functions for calling into Python */
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
-extern PyObject*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
-extern PyObject*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
+extern uint64_t(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
+extern double(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
 extern PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
 extern uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
