@@ -364,7 +364,10 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
     return str;
 }
 
-const char* PyTruffle_CstrToString(const char* o) {
+void* PyTruffle_CstrToString(void* o) {
+    if (polyglot_fits_in_i64(o)) {
+        return polyglot_from_string((const char*)polyglot_as_i64(o), SRC_CS);
+    }
     return polyglot_from_string(o, SRC_CS);
 }
 
