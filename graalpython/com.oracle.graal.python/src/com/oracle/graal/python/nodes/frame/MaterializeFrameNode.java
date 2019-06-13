@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -77,14 +76,15 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  **/
 public abstract class MaterializeFrameNode extends Node {
 
-    private final boolean adoptible;
+    private final boolean adoptable;
+    private static final MaterializeFrameNode INSTANCE = MaterializeFrameNodeGen.create(false);
 
     public MaterializeFrameNode() {
-        this.adoptible = true;
+        this.adoptable = true;
     }
 
-    public MaterializeFrameNode(boolean adoptible) {
-        this.adoptible = adoptible;
+    protected MaterializeFrameNode(boolean adoptable) {
+        this.adoptable = adoptable;
     }
 
     public final PFrame execute(VirtualFrame frame, boolean markAsEscaped, Frame frameToMaterialize) {
@@ -234,15 +234,24 @@ public abstract class MaterializeFrameNode extends Node {
         return location.getRootNode() instanceof ModuleRootNode;
     }
 
-    protected SyncFrameValuesNode createSyncNode() {
-        return SyncFrameValuesNodeGen.create(adoptible);
+    protected final SyncFrameValuesNode createSyncNode() {
+        return SyncFrameValuesNodeGen.create(isAdoptable());
     }
 
-    protected PythonObjectFactory createFactory() {
-        if (adoptible) {
+    protected final PythonObjectFactory createFactory() {
+        if (isAdoptable()) {
             return PythonObjectFactory.create();
         }
         return PythonObjectFactory.getUncached();
+    }
+
+    @Override
+    public boolean isAdoptable() {
+        return adoptable;
+    }
+
+    public static MaterializeFrameNode getUnadoptable() {
+        return INSTANCE;
     }
 
     /**
@@ -492,55 +501,6 @@ public abstract class MaterializeFrameNode extends Node {
         public boolean isAdoptable() {
             return adoptable;
         }
-    }
-
-    public static final class MaterializeFrameUnadoptibleNode extends Node {
-
-        private static final MaterializeFrameUnadoptibleNode INSTANCE = new MaterializeFrameUnadoptibleNode();
-
-        // deliberately not annotated with '@Child'
-        private MaterializeFrameNode materializeFrameNode;
-
-        public final PFrame execute(VirtualFrame frame, boolean markAsEscaped, Frame frameToMaterialize) {
-            return execute(frame, markAsEscaped, false, frameToMaterialize);
-        }
-
-        public final PFrame execute(VirtualFrame frame, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
-            PFrame.Reference info = PArguments.getCurrentFrameInfo(frameToMaterialize);
-            assert info != null && info.getCallNode() != null : "cannot materialize a frame without location information";
-            Node callNode = info.getCallNode();
-            return execute(frame, callNode, markAsEscaped, forceSync, frameToMaterialize);
-        }
-
-        public final PFrame execute(VirtualFrame frame, boolean markAsEscaped) {
-            return execute(frame, markAsEscaped, frame);
-        }
-
-        public final PFrame execute(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync) {
-            return execute(frame, location, markAsEscaped, forceSync, frame);
-        }
-
-        public PFrame execute(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
-            return ensureMaterializeFrameNode().execute(frame, location, markAsEscaped, forceSync, frameToMaterialize);
-        }
-
-        public static MaterializeFrameUnadoptibleNode getUncached() {
-            return INSTANCE;
-        }
-
-        private MaterializeFrameNode ensureMaterializeFrameNode() {
-            if (materializeFrameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeFrameNode = insert(MaterializeFrameNodeGen.create(false));
-            }
-            return materializeFrameNode;
-        }
-
-        @Override
-        public boolean isAdoptable() {
-            return false;
-        }
-
     }
 
 }

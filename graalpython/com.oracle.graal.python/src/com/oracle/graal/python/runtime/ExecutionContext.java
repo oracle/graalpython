@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode.MaterializeFrameUnadoptibleNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -125,16 +124,21 @@ public abstract class ExecutionContext {
             if (adoptable) {
                 return ensureMaterializeNode().execute(frame, callNode, markAsEscaped, forceSync);
             }
-            return MaterializeFrameUnadoptibleNode.getUncached().execute(frame, callNode, markAsEscaped, forceSync);
+            return MaterializeFrameNode.getUnadoptable().execute(frame, callNode, markAsEscaped, forceSync);
         }
 
         private MaterializeFrameNode ensureMaterializeNode() {
             if (materializeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeFrameNodeGen.create(adoptable));
+                materializeNode = insert(MaterializeFrameNodeGen.create());
             }
             return materializeNode;
 
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return adoptable;
         }
 
         public static CallContext create() {
