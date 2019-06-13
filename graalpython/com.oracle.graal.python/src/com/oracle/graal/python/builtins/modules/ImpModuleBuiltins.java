@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -92,13 +91,13 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -106,11 +105,9 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -246,9 +243,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (!ctxt.capiWasLoaded()) {
                 Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-                Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-                TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), toolchain.getIdentifier(), "capi.so"));
+
+                // get C API home path from sys module
+                PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
+                String capiHome;
+                Object capiHomeAttr = sysModule.getAttribute(SysModuleBuiltins.GRAAL_PYTHON_CEXT_HOME);
+                if (capiHomeAttr instanceof String) {
+                    capiHome = (String) capiHomeAttr;
+                } else {
+                    throw raise(PythonErrorType.ImportError, "cannot load C api from " + capiHomeAttr);
+                }
+
+                TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), capiHome, "capi.so"));
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
@@ -257,7 +263,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     }
                     capi = ctxt.getEnv().parse(capiSrcBuilder.build()).call();
                 } catch (SecurityException | IOException e) {
-                    throw raise(PythonErrorType.ImportError, "cannot load capi from " + capiFile.getAbsoluteFile().getPath());
+                    throw raise(PythonErrorType.ImportError, "cannot load C api from " + capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());

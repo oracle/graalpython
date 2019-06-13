@@ -98,6 +98,7 @@ import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
+    public static final String GRAAL_PYTHON_CEXT_HOME = "graal_python_cext_home";
     private static final String LICENSE = "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.";
     private static final String COMPILE_TIME;
     static {
@@ -233,7 +234,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         path[pathIdx++] = cextModuleHome;
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
-        sys.setAttribute("graal_python_cext_home", cextHome);
+        sys.setAttribute(GRAAL_PYTHON_CEXT_HOME, cextHome);
         sys.setAttribute("graal_python_cext_module_home", cextModuleHome);
         sys.setAttribute("graal_python_cext_src", capiSrc);
         sys.setAttribute("graal_python_platform_id", toolchain.getIdentifier());
