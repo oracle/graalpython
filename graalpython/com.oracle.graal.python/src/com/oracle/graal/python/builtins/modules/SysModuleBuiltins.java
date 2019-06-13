@@ -210,9 +210,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-        String cextModuleHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "modules", toolchain.getIdentifier());
-        String cextHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), toolchain.getIdentifier());
-        String cextSrc = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "src");
+        String cextModuleHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "bin", toolchain.getIdentifier(), "modules");
+        String cextHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "bin", toolchain.getIdentifier());
+        String capiSrc = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env));
 
         Object[] path;
         int pathIdx = 0;
@@ -236,7 +236,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute("path", sysPaths);
         sys.setAttribute("graal_python_cext_home", cextHome);
         sys.setAttribute("graal_python_cext_module_home", cextModuleHome);
-        sys.setAttribute("graal_python_cext_src", cextSrc);
+        sys.setAttribute("graal_python_cext_src", capiSrc);
         sys.setAttribute("graal_python_platform_id", toolchain.getIdentifier());
     }
 
@@ -516,7 +516,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__graal_get_toolchain_path", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public static abstract class GetToolPathNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
         private static final String LLVM_LANGUAGE = "llvm";
 
         @Specialization

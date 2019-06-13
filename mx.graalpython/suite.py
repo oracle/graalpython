@@ -196,7 +196,7 @@ suite = {
             "javaCompliance" : "8+",
             "checkstyleVersion" : "8.8",
             "javaProperties": {
-                "graalpython.nativeModuleHome": "<path:GRAALPYTHON_GRAALVM_SUPPORT>/lib-graalpython",
+                "graalpython.nativeModuleHome": "<path:GRAALPYTHON_GRAALVM_SUPPORT>/capi",
             },
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
@@ -368,9 +368,13 @@ suite = {
             "layout": {
                 "./": [
                     "dependency:com.oracle.graal.python.cext/graalpython/lib-graalpython",
-                    "file:graalpython/com.oracle.graal.python.cext/include",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
+                ],
+                "./capi/": [
+                    "file:graalpython/com.oracle.graal.python.cext/src",
+                    "file:graalpython/com.oracle.graal.python.cext/modules",
+                    "file:graalpython/com.oracle.graal.python.cext/include",
                 ],
             },
             "maven": False,
