@@ -52,6 +52,11 @@ implementation = make_implementation_info()
 del make_implementation_info
 del __gmultiarch
 version_info = implementation.version
+hexversion = ((version_info.major << 24) |
+              (version_info.minor << 16) |
+              (version_info.micro << 8) |
+              (0 << 4) |
+              (version_info.serial << 0))
 
 
 def make_flags_class():
