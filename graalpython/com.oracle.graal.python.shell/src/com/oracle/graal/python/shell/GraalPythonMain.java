@@ -200,6 +200,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-dump":
                     if (wantsExperimental) {
                         subprocessArgs.add("Dgraal.Dump=");
+                        subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleTransferToInterpreter=true");
+                        subprocessArgs.add("Dgraal.TruffleBackgroundCompilation=false");
                         inputArgs.remove("-dump");
                     } else {
                         unrecognized.add(arg);
