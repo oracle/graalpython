@@ -122,7 +122,8 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                     }, //
                     assumptions = {
                                     "layoutAssumption"
-                    })
+                    }, //
+                    replaces = "readDirectFinal")
     protected Object readDirect(DynamicObject dynamicObject, Object key,
                     @Cached("key") Object cachedKey,
                     @Cached("attrKey(cachedKey)") Object attrKey,
