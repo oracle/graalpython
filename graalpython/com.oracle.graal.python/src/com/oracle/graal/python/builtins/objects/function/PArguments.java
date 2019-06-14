@@ -309,10 +309,6 @@ public final class PArguments {
         arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
     }
 
-    public static void setCallerFrame(Object[] arguments, Frame callerFrame) {
-        arguments[INDEX_CALLER_FRAME_INFO] = callerFrame;
-    }
-
     public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {
         MaterializedFrame generatorFrame = (MaterializedFrame) arguments[INDEX_GENERATOR_FRAME];
         generatorFrame.getArguments()[INDEX_GENERATOR_FRAME] = generatorArguments;
