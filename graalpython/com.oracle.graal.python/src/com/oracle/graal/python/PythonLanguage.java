@@ -121,6 +121,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
+    /*
+     * We need to store this here, because the check is on the language and can come from a thread
+     * that has no context, but we enable or disable threads with a context option. So we store this
+     * here when a context is created.
+     */
+    private Boolean isWithThread = null;
+
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
     }
@@ -153,14 +160,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
         // internal sources were marked during context initialization
         return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
+                        // we cache WithThread on the lanugage
+                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
                         // we cache CatchAllExceptions hard on TryExceptNode
                         firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)));
     }
 
     private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
         return (areOptionsCompatible(firstOptions, newOptions) &&
-                        // we cache WithThread in SysConfigModuleBuiltins
-                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
                         // disabling TRegex has an effect on the _sre Python functions that are
                         // dynamically created
                         firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
@@ -180,6 +187,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
+        assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
+        this.isWithThread = PythonOptions.isWithThread(env);
         ensureHomeInOptions(env);
         Python3Core newCore = new Python3Core(new PythonParserImpl());
         return new PythonContext(this, env, newCore);
@@ -604,7 +613,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (singleThreaded) {
             return super.isThreadAccessAllowed(thread, singleThreaded);
         }
-        return PythonOptions.isWithThread();
+        return isWithThread;
     }
 
     @Override

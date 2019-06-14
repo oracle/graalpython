@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptors;
@@ -163,6 +164,11 @@ public final class PythonOptions {
     }
 
     @TruffleBoundary
+    public static <T> T getOption(Env env, OptionKey<T> key) {
+        return env.getOptions().get(key);
+    }
+
+    @TruffleBoundary
     public static int getIntOption(PythonContext context, OptionKey<Integer> key) {
         if (context == null) {
             return key.getDefaultValue();
@@ -198,8 +204,8 @@ public final class PythonOptions {
         return getOption(PythonLanguage.getContextRef().get(), MinLazyStringLength);
     }
 
-    public static boolean isWithThread() {
-        return getOption(PythonLanguage.getContextRef().get(), WithThread);
+    public static boolean isWithThread(Env env) {
+        return getOption(env, WithThread);
     }
 
     public static boolean getEnableForcedSplits() {
