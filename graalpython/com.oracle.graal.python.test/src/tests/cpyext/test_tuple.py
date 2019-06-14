@@ -71,7 +71,7 @@ class TestPyTuple(CPyExtTestCase):
             ((1, 2, 3),),
             (("a", "b"),),
         ),
-        resultspec="i",
+        resultspec="n",
         argspec='O',
         arguments=["PyObject* tuple"],
     )
@@ -87,7 +87,7 @@ class TestPyTuple(CPyExtTestCase):
             ([1, 2, 3, 4],),
             ({"a": 1, "b":2},),
         ),
-        resultspec="i",
+        resultspec="n",
         argspec='O',
         arguments=["PyObject* tuple"],
     )
