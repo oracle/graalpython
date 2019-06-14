@@ -58,7 +58,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -179,7 +178,7 @@ public abstract class ExecutionContext {
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
-        public static void enter(VirtualFrame frame, BranchProfile profile) {
+        public static void enter(VirtualFrame frame, ConditionProfile profile) {
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
@@ -187,8 +186,7 @@ public abstract class ExecutionContext {
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
             // tfel: If there are custom locals, write them into an (incomplete)
             // PFrame here
-            if (customLocals != null && !(customLocals instanceof PFrame.Reference)) {
-                profile.enter();
+            if (profile.profile(customLocals != null && !(customLocals instanceof PFrame.Reference))) {
                 thisFrameRef.setCustomLocals(customLocals);
             }
         }

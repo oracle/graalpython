@@ -743,7 +743,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame,
-                        @Cached BranchProfile customLocalsProfile,
+                        @Cached("createCountingProfile()") ConditionProfile customLocalsProfile,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
@@ -1475,7 +1475,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child protected ReadIndexedArgumentNode readSelfNode;
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
-        private final BranchProfile customLocalsProfile = BranchProfile.create();
+        private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
         protected final PythonObjectFactory factory;
 
         @TruffleBoundary

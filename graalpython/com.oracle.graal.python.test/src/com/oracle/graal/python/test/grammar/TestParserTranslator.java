@@ -52,8 +52,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -119,8 +117,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
+
+import org.junit.Test;
 
 public class TestParserTranslator {
     PythonContext context;
@@ -131,7 +131,7 @@ public class TestParserTranslator {
     }
 
     private static class JUnitRootNode extends PRootNode {
-        private final BranchProfile profile = BranchProfile.create();
+        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
         @Child private ExpressionNode body;
         @Child private CalleeContext calleeContext = CalleeContext.create();
 

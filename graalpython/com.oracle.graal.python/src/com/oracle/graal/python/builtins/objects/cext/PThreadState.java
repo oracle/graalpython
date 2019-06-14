@@ -84,7 +84,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -481,7 +481,7 @@ public class PThreadState extends PythonNativeWrapper {
         @Child private GetTracebackNode getTracebackNode;
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
-        private final BranchProfile profile = BranchProfile.create();
+        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
 
         @Override
         public Object execute(VirtualFrame frame) {
