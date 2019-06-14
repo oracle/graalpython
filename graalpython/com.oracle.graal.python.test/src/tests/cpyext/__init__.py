@@ -72,6 +72,7 @@ class CPyExtTestCase():
 
 def ccompile(self, name):
     from distutils.core import setup, Extension
+    from distutils.sysconfig import get_config_var
     source_file = '%s/%s.c' % (__dir__, name)
     file_not_empty(source_file)
     module = Extension(name, sources=[source_file])
@@ -84,8 +85,10 @@ def ccompile(self, name):
         description='',
         ext_modules=[module]
     )
+    EXT_SUFFIX = get_config_var("EXT_SUFFIX")
     # ensure file was really written
-    binary_file_llvm = '%s/%s.bc' % (__dir__, name)
+    # note, the suffix is already a string like '.so'
+    binary_file_llvm = '%s/%s%s' % (__dir__, name, EXT_SUFFIX)
     if GRAALPYTHON:
         file_not_empty(binary_file_llvm)
     # IMPORTANT:
