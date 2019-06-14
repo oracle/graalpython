@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -58,6 +59,7 @@ import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * An ExecutionContext ensures proper entry and exit for Python calls on both sides of the call, and
@@ -72,6 +74,8 @@ public abstract class ExecutionContext {
         @Child private MaterializeFrameNode materializeNode;
 
         private final boolean adoptable;
+
+        @CompilationFinal private ConditionProfile isPythonFrameProfile;
 
         private CallContext(boolean adoptable) {
             this.adoptable = adoptable;
@@ -91,14 +95,20 @@ public abstract class ExecutionContext {
             // must only be used when calling from Python to Python
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             if (calleeRootNode.needsCallerFrame()) {
-                PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
+                PFrame.Reference thisInfo;
 
-                // We are handing the PFrame of the current frame to the caller, i.e., it does not
-                // 'escape' since it is still on the stack.
-                // Also, force synchronization of values
-                PFrame pyFrame = materialize(frame, callNode, false, true);
-                assert thisInfo.getPyFrame() == pyFrame;
-                assert pyFrame.getRef() == thisInfo;
+                if (isPythonFrame(frame, callNode)) {
+                    thisInfo = PArguments.getCurrentFrameInfo(frame);
+
+                    // We are handing the PFrame of the current frame to the caller, i.e., it does
+                    // not 'escape' since it is still on the stack.Also, force synchronization of
+                    // values
+                    PFrame pyFrame = materialize(frame, callNode, false, true);
+                    assert thisInfo.getPyFrame() == pyFrame;
+                    assert pyFrame.getRef() == thisInfo;
+                } else {
+                    thisInfo = PFrame.Reference.EMPTY;
+                }
 
                 thisInfo.setCallNode(callNode);
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
@@ -125,6 +135,16 @@ public abstract class ExecutionContext {
                 return ensureMaterializeNode().execute(frame, callNode, markAsEscaped, forceSync);
             }
             return MaterializeFrameNode.getUnadoptable().execute(frame, callNode, markAsEscaped, forceSync);
+        }
+
+        private boolean isPythonFrame(VirtualFrame frame, Node callNode) {
+            if (isPythonFrameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isPythonFrameProfile = ConditionProfile.createBinaryProfile();
+            }
+            boolean result = isPythonFrameProfile.profile(PArguments.isPythonFrame(frame));
+            assert result || callNode.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
+            return result;
         }
 
         private MaterializeFrameNode ensureMaterializeNode() {
