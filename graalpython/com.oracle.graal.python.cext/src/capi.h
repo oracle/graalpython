@@ -128,7 +128,7 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_CEXT_P(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_L(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'int'; no polyglot cast but error handling */
-#define UPCALL_CEXT_I(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_I(__name__, ...) ((int)UPCALL_CEXT_P(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'long'; no polyglot cast but error handling */
 #define UPCALL_CEXT_L(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)

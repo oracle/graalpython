@@ -78,7 +78,7 @@ int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {
         return -1;
     }
 
-    *s = as_char_pointer(result);
+    *s = (char *)as_char_pointer(result);
 
     if (len != NULL) {
         *len = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_LEN", native_to_java(obj)));

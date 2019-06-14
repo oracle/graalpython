@@ -64,7 +64,7 @@ void* PyThread_allocate_lock() {
 
 UPCALL_ID(PyThread_acquire_lock);
 int PyThread_acquire_lock(PyThread_type_lock aLock, int waitflag) {
-    return UPCALL_CEXT_O(_jls_PyThread_acquire_lock, native_to_java(aLock), waitflag ? -1 : 0);
+    return UPCALL_CEXT_I(_jls_PyThread_acquire_lock, native_to_java(aLock), waitflag ? -1 : 0);
 }
 
 UPCALL_ID(PyThread_release_lock);

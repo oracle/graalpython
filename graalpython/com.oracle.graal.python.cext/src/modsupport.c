@@ -307,7 +307,7 @@ UPCALL_ID(__bool__);
                 PyTruffle_WriteOut(output_idx, PyObject*, arg); \
             } else if (format[format_idx + 1] == '&') { \
                 format_idx++; \
-                void* (*converter)(PyObject*,void*) = PyTruffle_ArgN(output_idx); \
+                int (*converter)(PyObject*,void*) = PyTruffle_ArgN(output_idx); \
                 output_idx++; \
                 PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional); \
                 void* output = PyTruffle_ArgN(output_idx); \

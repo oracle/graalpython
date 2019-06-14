@@ -1323,7 +1323,7 @@ def PyThread_allocate_lock():
 
 @may_raise
 def PyThread_acquire_lock(lock, waitflag):
-    return lock.acquire(waitflag)
+    return 1 if lock.acquire(waitflag) else 0
 
 
 @may_raise
