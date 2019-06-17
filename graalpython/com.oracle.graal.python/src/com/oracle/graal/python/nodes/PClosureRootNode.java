@@ -78,7 +78,11 @@ public abstract class PClosureRootNode extends PRootNode {
             assert freeVarSlots != null : "closure root node: the free var slots cannot be null when the closure is not null";
             assert frameClosure.length == freeVarSlots.length : "closure root node: the closure must have the same length as the free var slots array";
             if (closure != null && closure != NO_CLOSURE) {
-                addClosureCellsToLocalsExploded(frame, closure);
+                if (freeVarSlots.length < 32) {
+                    addClosureCellsToLocalsExploded(frame, closure);
+                } else {
+                    addClosureCellsToLocalsLoop(frame, closure);
+                }
             } else {
                 if (freeVarSlots.length < 32) {
                     addClosureCellsToLocalsExploded(frame, frameClosure);
