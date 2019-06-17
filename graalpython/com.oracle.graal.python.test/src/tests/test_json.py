@@ -50,10 +50,11 @@ BIGINT_JSON_DATA = '''
     87,
     1521583201331000000,
     1521583201347000000,
-    10,
+    10
   ]
 }
 '''
+
 
 class JsonTest(unittest.TestCase):
     def test_dump(self):

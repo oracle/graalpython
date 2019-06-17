@@ -1125,7 +1125,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 Object value = stringToInt(arg, 10);
                 if (isPrimitiveInt(cls)) {
-                    return value;
+                    return value instanceof BigInteger ? factory().createInt(cls, (BigInteger) value) : value;
                 } else {
                     return value instanceof BigInteger ? factory().createInt(cls, (BigInteger) value) : factory().createInt(cls, (int) value);
                 }
