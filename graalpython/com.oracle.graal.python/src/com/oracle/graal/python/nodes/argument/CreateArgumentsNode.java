@@ -572,7 +572,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
 
             @Specialization(replaces = "cached")
-            @ExplodeLoop
             int uncached(String[] parameters, String name) {
                 for (int i = 0; i < parameters.length; i++) {
                     if (parameters[i].equals(name)) {
