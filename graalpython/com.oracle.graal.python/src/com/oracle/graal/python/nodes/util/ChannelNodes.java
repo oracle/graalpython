@@ -298,6 +298,8 @@ public abstract class ChannelNodes {
 
         @Specialization
         int writeSeekable(SeekableByteChannel channel, SequenceStorage s, int len,
+                        @Cached BranchProfile limitProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
                         @Cached PRaiseNode raise) {
             long availableSize;
             try {
@@ -306,19 +308,20 @@ public abstract class ChannelNodes {
                 gotException.enter();
                 throw raise.raise(OSError, e);
             }
-            if (availableSize > MAX_WRITE) {
+            if (maxSizeProfile.profile(availableSize > MAX_WRITE)) {
                 availableSize = MAX_WRITE;
             }
             int sz = (int) Math.min(availableSize, len);
-            return writeWritable(channel, s, sz, raise);
-
+            return writeWritable(channel, s, sz, limitProfile, raise);
         }
 
         @Specialization
         int writeWritable(WritableByteChannel channel, SequenceStorage s, int len,
+                        @Cached BranchProfile limitProfile,
                         @Cached PRaiseNode raise) {
             ByteBuffer src = allocateBuffer(getBytes(s));
             if (src.remaining() > len) {
+                limitProfile.enter();
                 src.limit(len);
             }
             return writeFromBuffer(channel, src, raise);
@@ -326,11 +329,13 @@ public abstract class ChannelNodes {
 
         @Specialization
         int writeGeneric(Channel channel, SequenceStorage s, int len,
+                        @Cached BranchProfile limitProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
                         @Cached PRaiseNode raise) {
             if (channel instanceof SeekableByteChannel) {
-                return writeSeekable((SeekableByteChannel) channel, s, len, raise);
+                return writeSeekable((SeekableByteChannel) channel, s, len, limitProfile, maxSizeProfile, raise);
             } else if (channel instanceof ReadableByteChannel) {
-                return writeWritable((WritableByteChannel) channel, s, len, raise);
+                return writeWritable((WritableByteChannel) channel, s, len, limitProfile, raise);
             } else {
                 throw raise.raise(OSError, "file not opened for reading");
             }
