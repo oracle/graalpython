@@ -111,7 +111,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "add_to_classpath", takesVarArgs = true)
+    @Builtin(name = "add_to_classpath", takesVarArgs = true, doc = "Add all arguments to the classpath.")
     @GenerateNodeFactory
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
