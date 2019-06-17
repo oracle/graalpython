@@ -118,6 +118,9 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         PNone add(VirtualFrame frame, Object[] args,
                   @Cached CastToStringNode castToString) {
             Env env = getContext().getEnv();
+            if (!env.isHostLookupAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "host access is not allowed");
+            }
             for (Object arg : args) {
                 String entry = castToString.execute(frame, arg);
                 try {

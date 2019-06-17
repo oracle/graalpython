@@ -119,7 +119,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object importSymbol(String name) {
-            Object object = getContext().getEnv().importSymbol(name);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            Object object = env.importSymbol(name);
             if (object == null) {
                 return PNone.NONE;
             }
@@ -134,6 +138,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object evalString(@SuppressWarnings("unused") PNone path, String value, String langOrMimeType) {
             Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
             try {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
@@ -159,6 +166,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object evalFile(String path, @SuppressWarnings("unused") PNone string, String langOrMimeType) {
             Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
             try {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
@@ -179,6 +189,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object evalFile(String path, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang) {
             Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
             try {
                 return getContext().getEnv().parse(Source.newBuilder(PythonLanguage.ID, env.getTruffleFile(path)).name(path).build()).call();
             } catch (IOException e) {
@@ -227,21 +240,33 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object exportSymbol(Object value, String name) {
-            getContext().getEnv().exportSymbol(name, value);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            env.exportSymbol(name, value);
             return value;
         }
 
         @Specialization
         @TruffleBoundary
         public Object exportSymbol(PFunction fun, @SuppressWarnings("unused") PNone name) {
-            getContext().getEnv().exportSymbol(fun.getName(), fun);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            env.exportSymbol(fun.getName(), fun);
             return fun;
         }
 
         @Specialization
         @TruffleBoundary
         public Object exportSymbol(PBuiltinFunction fun, @SuppressWarnings("unused") PNone name) {
-            getContext().getEnv().exportSymbol(fun.getName(), fun);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            env.exportSymbol(fun.getName(), fun);
             return fun;
         }
 
@@ -280,7 +305,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void export(String name, Object obj) {
-            getContext().getEnv().exportSymbol(name, obj);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            env.exportSymbol(name, obj);
         }
     }
 
