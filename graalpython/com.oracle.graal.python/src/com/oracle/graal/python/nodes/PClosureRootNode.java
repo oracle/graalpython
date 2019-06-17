@@ -71,7 +71,7 @@ public abstract class PClosureRootNode extends PRootNode {
             if (singleContextAssumption.isValid() && closure == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closure = frameClosure;
-            } else if ((!singleContextAssumption.isValid() && closure != null && closure != NO_CLOSURE) || closure != frameClosure) {
+            } else if (closure != NO_CLOSURE && ((!singleContextAssumption.isValid() && closure != null) || closure != frameClosure)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closure = NO_CLOSURE;
             }
