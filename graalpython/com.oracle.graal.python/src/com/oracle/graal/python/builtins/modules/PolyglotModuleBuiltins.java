@@ -66,7 +66,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -102,7 +101,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         PythonContext context = core.getContext();
         Env env = context.getEnv();
-        String coreHome = PythonOptions.getOption(context, PythonOptions.CoreHome);
+        String coreHome = context.getCoreHome();
         try {
             TruffleFile coreDir = env.getTruffleFile(coreHome);
             TruffleFile docDir = coreDir.resolveSibling("doc");

@@ -165,20 +165,20 @@ public class SysModuleBuiltins extends PythonBuiltins {
         String[] args = context.getEnv().getApplicationArguments();
         sys.setAttribute("argv", core.factory().createList(Arrays.copyOf(args, args.length, Object[].class)));
 
-        String prefix = PythonCore.getSysPrefix(context.getEnv());
+        String prefix = context.getSysPrefix();
         for (String name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
             sys.setAttribute(name, prefix);
         }
 
-        String base_prefix = PythonCore.getSysBasePrefix(context.getEnv());
+        String base_prefix = context.getSysBasePrefix();
         for (String name : SysModuleBuiltins.BASE_PREFIX_ATTRIBUTES) {
             sys.setAttribute(name, base_prefix);
         }
 
         sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
         sys.setAttribute("graal_python_home", context.getLanguage().getHome());
-        sys.setAttribute("graal_python_core_home", PythonOptions.getOption(context, PythonOptions.CoreHome));
-        sys.setAttribute("graal_python_stdlib_home", PythonOptions.getOption(context, PythonOptions.StdLibHome));
+        sys.setAttribute("graal_python_core_home", context.getCoreHome());
+        sys.setAttribute("graal_python_stdlib_home", context.getStdlibHome());
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
@@ -204,7 +204,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
         int defaultPaths = doIsolate ? 2 : 3;
         if (option.length() > 0) {
-            String[] split = option.split(PythonCore.PATH_SEPARATOR);
+            String[] split = option.split(context.getEnv().getPathSeparator());
             path = new Object[split.length + defaultPaths];
             System.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
@@ -214,8 +214,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         if (!doIsolate) {
             path[pathIdx++] = getScriptPath(env, args);
         }
-        path[pathIdx++] = PythonCore.getStdlibHome(env);
-        path[pathIdx++] = PythonCore.getCoreHome(env) + env.getFileNameSeparator() + "modules";
+        path[pathIdx++] = context.getStdlibHome();
+        path[pathIdx++] = context.getCoreHome() + env.getFileNameSeparator() + "modules";
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
     }
