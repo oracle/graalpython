@@ -501,6 +501,14 @@ public class JavaInteropTest {
                             "True <class 'bool'>\n" +
                             "c <class 'str'>\n", out.toString("UTF-8"));
         }
+
+        @Test
+        public void writableBindings() {
+            context.getBindings("python").putMember("javaObj", 42);
+            Value javaObj = context.eval("python", "javaObj");
+            assertTrue(javaObj.isNumber());
+            assertEquals(javaObj.asInt(), 42);
+        }
     }
 
     @RunWith(Parameterized.class)

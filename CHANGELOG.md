@@ -6,6 +6,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 ## Version 20.0.0 beta 2
 
 * Add `java.add_to_classpath` API to dynamically extend the host class path
+* Allow write access to main module bindings for embedder
 
 ## Version 20.0.0 beta 1
 
