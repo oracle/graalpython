@@ -44,10 +44,20 @@ package com.oracle.graal.python.parser;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 public class ScopeEnvironment implements CellFrameSlotSupplier {
@@ -56,6 +66,8 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     private ScopeInfo currentScope;
     private ScopeInfo globalScope;
+    
+    private final HashMap<String, List<ScopeInfo>> unresolvedVars = new HashMap<>();
 
     public ScopeEnvironment(NodeFactory factory) {
         this.factory = factory;
@@ -77,11 +89,69 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         }
         return currentScope;
     }
+    
+    public ScopeInfo pushScope(String name, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
+        ScopeInfo newScope = new ScopeInfo(name, kind, frameDescriptor, currentScope);
+        currentScope = newScope;
+        if (globalScope == null) {
+            globalScope = currentScope;
+        }
+        return currentScope;
+    }
 
     public ScopeInfo popScope() {
-        ScopeInfo old = currentScope;
+        ScopeInfo definingScope = currentScope;
+        Set<Object> identifiers = definingScope.getFrameDescriptor().getIdentifiers();
+        Set<String> localySeenVars = definingScope.getSeenVars();
+        if (localySeenVars != null || !unresolvedVars.isEmpty()) {
+            for (Object identifier : identifiers) {
+                String name = (String)identifier;
+                
+                if (localySeenVars != null) {
+                    // remove the localy declared variable
+                    localySeenVars.remove(name);
+                }
+
+                List<ScopeInfo> usedInScopes = unresolvedVars.remove(name);
+                // was the declared varibale seen before?
+                if (usedInScopes != null) { 
+                    // make the varible freevar and cellvar in scopes, where is used
+                    for (ScopeInfo scope : usedInScopes) {
+                        scope.addFreeVar(name, true);
+                        definingScope.addCellVar(name);
+                        scope = scope.getParent();
+                        while(scope != definingScope && scope.findFrameSlot(name) == null) {
+                            scope.addFreeVar(name, true);
+                            scope = scope.getParent();
+                        }
+                    }
+                }
+            }
+        }
+            
+        // are in current scope used variables that are not defined
+        if ((localySeenVars != null && !localySeenVars.isEmpty()) && definingScope.getScopeKind() != ScopeInfo.ScopeKind.Module) {
+            // note this scope in global unresolved vars
+            List<ScopeInfo> usedInScopes;
+            for (String varName: localySeenVars) {
+                if (!isGlobal(varName)) {
+                    usedInScopes = unresolvedVars.get(varName);
+                    if (usedInScopes == null) {
+                        usedInScopes = new ArrayList<>();
+                        unresolvedVars.put(varName, usedInScopes);
+                    }
+                    usedInScopes.add(definingScope);
+                }
+            }
+            // clean the variables
+            localySeenVars.clear();
+        }
         currentScope = currentScope.getParent();
-        return old;
+        return definingScope;
+    }
+    
+    public void addSeenVar(String name) {
+        currentScope.addSeenVar(name);
     }
 
     private void createGlobal(String name) {
@@ -127,12 +197,20 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return currentScope.isExplicitGlobalVariable(name);
     }
 
+    public boolean isGlobaScope(ScopeInfo scope) {
+        return globalScope == scope;
+    }
+    
+    public ScopeInfo getGlobalScope() {
+        return globalScope;
+    }
+    
     public boolean isNonlocal(String name) {
         assert name != null : "name is null!";
         return currentScope.isExplicitNonlocalVariable(name);
     }
 
-    private FrameSlot createAndReturnLocal(String name) {
+    public FrameSlot createAndReturnLocal(String name) {
         return currentScope.createSlotIfNotPresent(name);
     }
 
@@ -168,7 +246,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         createAndReturnLocal(name);
     }
 
-    private ReadNode findVariableNodeModule(String name) {
+    public ReadNode findVariableNodeModule(String name) {
         if (currentScope.isFreeVar(name)) {
             // this is covering the special eval case where free vars pass through to the eval
             // module scope
@@ -212,7 +290,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, currentScope.isFreeVar(name));
     }
 
-    private PNode getReadNode(String name, FrameSlot slot) {
+    public PNode getReadNode(String name, FrameSlot slot) {
         if (isCellInCurrentScope(name)) {
             return factory.createReadLocalCell(slot, currentScope.isFreeVar(name));
         }
@@ -241,6 +319,14 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                 throw new IllegalStateException("Unexpected scopeKind " + getScopeKind());
         }
     }
+    
+    public ReadNode findVariable(String name, ScopeInfo scope) {
+        ScopeInfo oldCurrent = currentScope;
+        currentScope = scope;
+        ReadNode result = findVariable(name);
+        currentScope = oldCurrent;
+        return result;
+    }
 
     @Override
     public FrameSlot[] getCellVarSlots() {
@@ -257,4 +343,35 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return currentScope.getFreeVarSlotsInParentScope();
     }
     
+    private StatementNode getWriteNode(String name, FrameSlot slot, ExpressionNode right) {
+        if (isCellInCurrentScope(name)) {
+            return factory.createWriteLocalCell(right, slot);
+        }
+        return factory.createWriteLocal(right, slot);
+    }
+    
+    private StatementNode getWriteNode(String name, ReadArgumentNode readNode) {
+        ExpressionNode right = readNode.asExpression();
+        return getWriteNode(name, currentScope.findFrameSlot(name), right);
+    }
+
+    public StatementNode getWriteArgumentToLocal(String name, int index) {
+        return getWriteNode(name, ReadIndexedArgumentNode.create(index));
+    }
+    
+    public StatementNode getWriteVarArgsToLocal(String name, int index) {
+        return getWriteNode(name, ReadVarArgsNode.create(index));
+    }
+    
+    public StatementNode getWriteKwArgsToLocal(String name, String[] names) {
+        return getWriteNode(name, ReadVarKeywordsNode.createForUserFunction(names));
+    }
+    
+    public void setCurrentScope(ScopeInfo info) {
+        currentScope = info;
+    } 
+    
+    public void setToGeneratorScope() {
+        currentScope.setAsGenerator();
+    }
 }

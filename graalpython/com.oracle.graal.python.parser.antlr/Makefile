@@ -35,52 +35,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 QUIETLY$(MX_VERBOSE) = @
 
 # during clean, this isn't set
 PARSER_PATH ?= ../com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr
 
-TARGETS=${PARSER_PATH}/Python3BaseVisitor.java \
-	${PARSER_PATH}/Python3Listener.java \
-	${PARSER_PATH}/Python3BaseListener.java \
-	${PARSER_PATH}/Python3Visitor.java \
-	${PARSER_PATH}/Python3Parser.java \
-	${PARSER_PATH}/Python3Lexer.java
+TARGETS=${PARSER_PATH}/Python3NewParser.java \
+	${PARSER_PATH}/Python3NewLexer.java
 
-TARGETS_NEW=${PARSER_PATH}/Python3NewParser.java \
-	${PARSER_PATH}/Python3NewLexer.java 
-
-SOURCE=${PARSER_PATH}/Python3.g4
-STAMP=${SOURCE}.stamp
-
-SOURCE_NEW=${PARSER_PATH}/Python3New.g4
-STAMP_NEW=${SOURCE_NEW}.stamp
+SOURCE=${PARSER_PATH}/Python3New.g4
+STAMP=${PARSER_PATH}/Python3New.g4.stamp
 
 .PHONY: default clean
-default: ${TARGETS_NEW} ${TARGETS}
-
-${STAMP_NEW}: ${SOURCE_NEW} ${POSTPROCESSOR}
-	$(QUIETLY) touch $@
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE_NEW}
-
-${STAMP}: ${SOURCE} ${POSTPROCESSOR}
-	$(QUIETLY) touch $@
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
 
 # postprocessing to make source compile without warnings
-${PARSER_PATH}/%.java: ${STAMP_NEW}
-	$(QUIETLY) python ${POSTPROCESSOR} $@
-${PARSER_PATH}/%.java: ${STAMP}
-	$(QUIETLY) python ${POSTPROCESSOR} $@
+define postprocess_file
+	python ${POSTPROCESSOR} $(1)
+endef
+
+${STAMP}: ${SOURCE}
+	echo ${PARSER_PATH}
+	${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
+	$(foreach var,$(TARGETS),$(call postprocess_file,$(var));)
+	touch $@
 
 clean:
-ifeq ($(wildcard ${SOURCE_NEW}),)
-	$(error ${SOURCE_NEW} is not in the location I expected it to be, not cleaning antlr parser)
-endif
-ifeq ($(wildcard ${SOURCE}),)
-	$(error ${SOURCE} is not in the location I expected it to be, not cleaning antlr parser)
-endif
-	$(QUIETLY) rm -f ${TARGETS_NEW}
-	$(QUIETLY) rm -f ${STAMP_NEW}
-	$(QUIETLY) rm -f ${TARGETS}
-	$(QUIETLY) rm -f ${STAMP}
+	rm -f ${TARGETS}
+

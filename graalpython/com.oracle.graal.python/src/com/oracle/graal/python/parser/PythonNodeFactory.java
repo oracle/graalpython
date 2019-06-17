@@ -76,15 +76,30 @@ import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
+import com.oracle.graal.python.parser.sst.AssignmentNode;
+import com.oracle.graal.python.parser.sst.ClassSSTNode;
+import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.ForSSTNode;
+import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
+import com.oracle.graal.python.parser.sst.ImportSSTNode;
+import com.oracle.graal.python.parser.sst.NumberLiteralNode;
+import com.oracle.graal.python.parser.sst.SSTNode;
+import com.oracle.graal.python.parser.sst.SimpleSSTNode;
+import com.oracle.graal.python.parser.sst.VarLookupNode;
+import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 final class ExplicitVar {
     private final boolean global;
@@ -124,31 +139,34 @@ public final class PythonNodeFactory {
     private final NodeFactory nodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
+    private final HashMap<String, List<ParserTmpVariableNode>> namesToTmpNodes;
     
     public PythonNodeFactory(PythonLanguage language, Source source) {
         this.language = language;
         this.nodeFactory = NodeFactory.create(language);
         this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
         this.source = source;
+        this.namesToTmpNodes = new HashMap<>();
     }
     
     
-    void log(Object... args) {
-//        for (int i = 0; i < scopes.size(); i++) {
-//            System.out.print("    ");
-//        }
+    private void logIndent() {
         ScopeInfo currentScope = scopeEnvironment.getCurrentScope();
         while (currentScope != null && currentScope.getParent() != null) {
             System.out.print("    ");
             currentScope = currentScope.getParent();
         }
-        StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
-        System.out.print(stackTrace[1].getMethodName());
-        for (Object o : args) {
-            System.out.print(' ');
-            print(o);
-        }
-        System.out.println();
+    }
+    
+    void log(Object... args) {
+//        logIndent();
+//        StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
+//        System.out.print(stackTrace[1].getMethodName());
+//        for (Object o : args) {
+//            System.out.print(' ');
+//            print(o);
+//        }
+//        System.out.println();
     }
 
     private static void print(Object o) {
@@ -170,6 +188,10 @@ public final class PythonNodeFactory {
             System.out.print(o);
         }
     }
+
+    public ScopeEnvironment getScopeEnvironment() {
+        return scopeEnvironment;
+    }
     
 //    private final ArrayList<Scope> scopes = new ArrayList<>();
 //    private Scope generatorScope;
@@ -180,13 +202,142 @@ public final class PythonNodeFactory {
 
     public final class ArgDefListBuilder {
 
+        private abstract class Parameter {
+            protected final String name;
+            protected final ExpressionNode type;
+
+            public Parameter(String name, ExpressionNode type) {
+                this.name = name;
+                this.type = type;
+            }
+
+            public String getName() {
+                return name;
+            }
+
+            public ExpressionNode getType() {
+                return type;
+            }
+            
+            public abstract StatementNode getArgumentReadNode(int index);
+        }
+        
+        private class DefParameter extends Parameter {
+            
+            private final ExpressionNode defValue;
+            
+            public DefParameter(String name, ExpressionNode type, ExpressionNode defValue) {
+                super(name, type);
+                this.defValue = defValue;
+            }
+
+            public ExpressionNode getDefValue() {
+                return defValue;
+            }
+            
+            @Override
+            public StatementNode getArgumentReadNode(int index) {
+                StatementNode argumentReadNode = null;
+                
+                scopeEnvironment.createLocal(name);
+                if (type == null) {
+                    argumentReadNode = scopeEnvironment.getWriteArgumentToLocal(name, index);
+                }
+                return argumentReadNode;
+            }
+        } 
+        
+        private class SplatParameter extends Parameter {
+
+            public SplatParameter(String name, ExpressionNode type) {
+                super(name, type);
+            }
+
+            @Override
+            public StatementNode getArgumentReadNode(int index) {
+                StatementNode argumentReadNode = null;
+                scopeEnvironment.createLocal(name);
+                if (type == null) {
+                    argumentReadNode = scopeEnvironment.getWriteVarArgsToLocal(name, index);
+                }
+                return argumentReadNode;
+            }
+            
+        }
+        
+        private List<Parameter> parameters = new ArrayList<>();
+        private StatementNode[] parameterNodes;
+        private ExpressionNode[] defaultParameterValues;
+        private Signature signature;
+        private int kwargsParameterCount = 0;
+        private int defaultParameterCount = 0;
+        private int positionalParameterCount = 0;
+        
+        public boolean hasDefaultParameter() {
+            return defaultParameterCount > 0;
+        }
+        
+        public void build() {
+            parameterNodes = new StatementNode[parameters.size()];
+            defaultParameterValues = defaultParameterCount > 0 ? new ExpressionNode[defaultParameterCount] : null;
+            String[] parametersId = new String[positionalParameterCount];
+            String[] keyWordNames = new String[kwargsParameterCount];
+            boolean takesVarKeywordArgs = false;
+            int takesVarArgs = -1;
+            boolean varArgsMarker = false;
+            int index = 0;
+            int defaultParameterValueIndex = 0;
+            int kwargsIndex = 0;
+            
+            for (Parameter param : parameters) {
+                parameterNodes[index] = param.getArgumentReadNode(index);
+                if (param instanceof DefParameter) {
+                    parametersId[index] = param.getName();
+                }
+                if (param instanceof SplatParameter) {
+                    takesVarArgs = index;
+                }
+                if (param instanceof DefParameter && ((DefParameter)param).getDefValue() != null) {
+                    defaultParameterValues[defaultParameterValueIndex++] = ((DefParameter)param).getDefValue();
+                }
+                index++;
+            }
+            signature = new Signature(takesVarKeywordArgs, takesVarArgs, varArgsMarker, parametersId, keyWordNames);
+        }
+        
+        public StatementNode[] getArgumentNodes() {
+            if (parameterNodes == null) {
+                build();
+            }
+            return parameterNodes;
+        }
+        
+        public ExpressionNode[] getDefaultParameterValues() {
+            if (parameterNodes == null) {
+                build();
+            }
+            return defaultParameterValues;
+        }
+        
+        public Signature getSignature() {
+            if (parameterNodes == null) {
+                build();
+            }
+            return signature;
+        }
         
         public void param(String name, ExpressionNode type, ExpressionNode defValue) {
             log(name, type, defValue);
+            if (defValue != null) {
+                defaultParameterCount++;
+            }
+            positionalParameterCount++;
+            parameters.add(new DefParameter(name, type, defValue));
         }
 
         public void splat(String name, ExpressionNode type) {
             log(name, type);
+            parameters.add(new SplatParameter(name, type));
         }
 
         public void kwargs(String name, ExpressionNode type) {
@@ -318,6 +469,11 @@ public final class PythonNodeFactory {
         return BlockNode.create(statements);
     }
 
+    public SSTNode createImport(String name, int level, String asName, int startOffset, int endOffset) {
+        scopeEnvironment.createLocal(asName == null ? name : asName);
+        return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
+    }
+    
     public StatementNode createImport(String name, int level, String asName) {
         log(name, asName);
 
@@ -353,10 +509,14 @@ public final class PythonNodeFactory {
         return null;
     }
 
-    public StatementNode createImportFrom(String name, Object[] asNames) {
-        log(name, asNames);
-// return ImportFromNode.create(importee, fromlist, readNodes, level);
-        return null;
+    public SSTNode createImportFrom(String from, String[][] asNames, int startOffset, int endOffset) {
+        if (asNames != null) {
+            for (String[] asName : asNames) {
+                scopeEnvironment.createLocal(asName[1] == null ? asName[0] : asName[1]);
+            }
+        }
+    
+        return new ImportFromSSTNode(scopeEnvironment.getCurrentScope(), from, asNames, startOffset, endOffset);
     }
 
     public StatementNode createRaise(ExpressionNode value, ExpressionNode from) {
@@ -403,9 +563,9 @@ public final class PythonNodeFactory {
         return null;
     }
 
-    public ExpressionNode createFunction(String name, String enclosingClassName, StatementNode body, int startIndex, int stopIndex) {
-        Signature signature = Signature.EMPTY;
-        StatementNode argumentLoads = BlockNode.create();
+    private ExpressionNode createFunctionDef (String name, String enclosingClassName, ArgDefListBuilder argBuilder, StatementNode body, int startIndex, int stopIndex) {
+        Signature signature = argBuilder.getSignature();        
+        StatementNode argumentNodes = nodeFactory.createBlock(argBuilder.getArgumentNodes());
         
         ExpressionNode doc = null;
         doc = (new DocExtractor()).extract(body);
@@ -422,12 +582,16 @@ public final class PythonNodeFactory {
         }
         ExpressionNode funcDef;
         
-        body = nodeFactory.createBlock(argumentLoads, body);
+        body = nodeFactory.createBlock(argumentNodes, body);
         ReturnTargetNode returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
         SourceSection sourceSection = createSourceSection(startIndex, stopIndex);
         returnTarget.assignSourceSection(sourceSection);
         
-        ExpressionNode[] defaults = null;
+        ExpressionNode[] defaults = argBuilder.getDefaultParameterValues();
+//        List<ExpressionNode> defaultParameters = scopeEnvironment.getCurrentScope().getDefaultArgumentNodes();
+//        if (defaultParameters != null && !defaultParameters.isEmpty()) {
+//            defaults = defaultParameters.toArray(new ExpressionNode[defaultParameters.size()]);
+//        }
         KwDefaultExpressionNode[] kwDefaults = null;
         
         /**
@@ -446,6 +610,9 @@ public final class PythonNodeFactory {
     }
     
     public StatementNode createReadNodeForFuncDef(ExpressionNode funcDef, String name) {
+        if (funcDef instanceof ParserFunctionDefinitionNode) {
+            return new ParserReadNodeForFuncDef(scopeEnvironment.getCurrentScope(), name, funcDef);
+        }
         ReadNode funcVar = scopeEnvironment.findVariable(name);
         StatementNode result = funcVar.makeWriteNode(funcDef);
         // TODO I'm not sure, whether this assingning of sourcesection is right. 
@@ -544,20 +711,23 @@ public final class PythonNodeFactory {
     public ExpressionNode createArithmetic(BinaryArithmetic operation, ExpressionNode left, ExpressionNode right, int start, int stop) {
         log(operation, left, right);
         ExpressionNode result = operation.create(left, right);
+        // TODO the old parser assing ss only for the first. See parser test assignment03
         result.assignSourceSection(createSourceSection(start, stop));
         return result;
     }
 
     public ExpressionNode createArithmetic(UnaryArithmetic arithmetic, ExpressionNode operand) {
         log(arithmetic, operand);
-        return arithmetic.create(operand);
+//        return arithmetic.create(operand);
+        return null;
     }
 
-    public ExpressionNode createPow(ExpressionNode left, ExpressionNode right, int start, int stop) {
+    public SSTNode createPow(ExpressionNode left, ExpressionNode right, int start, int stop) {
         log(left, right);
-        ExpressionNode result = TernaryArithmetic.Pow.create(left, right);
-        result.assignSourceSection(createSourceSection(start, stop));
-        return result;
+//        ExpressionNode result = TernaryArithmetic.Pow.create(left, right);
+//        result.assignSourceSection(createSourceSection(start, stop));
+//        return result;
+        return null;
     }
 
     public ExpressionNode createCall(ExpressionNode target, ArgListBuilder parameters, int start, int stop) {
@@ -571,11 +741,23 @@ public final class PythonNodeFactory {
 //            // super call without arguments
 //            environment.registerSpecialClassCellVar();
 //        }
-        PythonCallNode callNode = PythonCallNode.create(target, parameters.getArgs(), parameters.getNameArgs(), parameters.getStarArgs(), parameters.getKwArgs());
+        ExpressionNode callNode;
+        if (target instanceof ParserTmpVariableNode) {
+            ScopeInfo currentScope = scopeEnvironment.getCurrentScope();
+            callNode = new ParserCallNode(currentScope, target, parameters.getArgs(), parameters.getNameArgs(), parameters.getStarArgs(), parameters.getKwArgs());
+//            List<ParserTmpVariableNode> tmpNodes = namesToTmpNodes.get((Parser));
+//            if (tmpNodes == null) {
+//                tmpNodes = new ArrayList<>();
+//                namesToTmpNodes.put(name, tmpNodes);
+//            }
+//            tmpNodes.add(tmpNode);
+        } else {
+            callNode = PythonCallNode.create(target, parameters.getArgs(), parameters.getNameArgs(), parameters.getStarArgs(), parameters.getKwArgs());
+            // remove source section for the taget to be comaptiable with old parser behavior
+            // TODO check, whether we really need to delete the source sections
+            target.assignSourceSection(null);
+        }
         callNode.assignSourceSection(createSourceSection(start, stop));
-        // remove source section for the taget to be comaptiable with old parser behavior
-        // TODO check, whether we really need to delete the source sections
-        target.assignSourceSection(null);
         return callNode;
     }
 
@@ -619,7 +801,11 @@ public final class PythonNodeFactory {
         return result;
     }
 
-    public ExpressionNode createNumberLiteral(String value, int start, int base, int startIndex, int stopIndex) {
+    public SSTNode createNumberLiteral(String value, int start, int base, int startIndex, int stopIndex) {
+        return new NumberLiteralNode(value, start, base, startIndex, stopIndex);
+    }
+    
+    /*public ExpressionNode createNumberLiteral(String value, int start, int base, int startIndex, int stopIndex) {
         log(value, start, base);
 
         int i = start;
@@ -645,7 +831,7 @@ public final class PythonNodeFactory {
         ExpressionNode intLiteral = result <= Integer.MAX_VALUE ? new IntegerLiteralNode((int) result) : new LongLiteralNode(result);
         intLiteral.assignSourceSection(createSourceSection(startIndex, stopIndex));
         return intLiteral;
-    }
+    }*/
 
     private static int digitValue(char ch) {
         if (ch >= '0' && ch <= '9') {
@@ -671,39 +857,37 @@ public final class PythonNodeFactory {
         return result;
     }
 
-    public ExpressionNode createVariableLookup(ParserCtxInfo parserInfo, String name, int start, int stop) {
-        log(name);
-        if (parserInfo.isVarDefinition) {
-            scopeEnvironment.createLocal(name);
-        }
-        ExpressionNode result = (ExpressionNode)scopeEnvironment.findVariable(name);
-        result.assignSourceSection(createSourceSection(start, stop));
-        return result;
+    public VarLookupNode createVariableLookup(String name, int start, int stop) {
+        scopeEnvironment.addSeenVar(name);
+        return new VarLookupNode(name, scopeEnvironment.getCurrentScope(), start, stop);
     }
 
     public StatementNode createClassDefinition(String name, ExpressionNode[] baseClasses, StatementNode body) {
         log(name, baseClasses, body);
         return null;
     }
-
-    public void registerGlobal(String[] names) {
-        log((Object) names);
-//        Scope scope = currentScope();
-//        for (String name : names) {
-//            scope.explicitVars = new ExplicitVar(true, name, scope.explicitVars);
-//        }
-        ScopeInfo scopeInfo = scopeEnvironment.getCurrentScope();
-        for (String name : names) {
-            scopeInfo.addExplicitGlobalVariable(name);
-        }
+    
+    public SSTNode createClassDefinition(String name, SSTNode[] baseClasses, SSTNode body, int start, int stop) {
+//        scopeEnvironment.createLocal(name);
+        return new ClassSSTNode(scopeEnvironment.getCurrentScope(), name, baseClasses, body, start, stop);
     }
 
-    public void registerNonLocal(String[] names) {
-        log((Object) names);
+    public SSTNode registerGlobal(String[] names, int startOffset, int endOffset) {
+        ScopeInfo scopeInfo = scopeEnvironment.getCurrentScope();
+        ScopeInfo globalScope = scopeEnvironment.getGlobalScope();
+        for (String name : names) {
+            scopeInfo.addExplicitGlobalVariable(name);
+            globalScope.createSlotIfNotPresent(name);
+        }
+        return new SimpleSSTNode(SimpleSSTNode.Type.EMPTY, startOffset, endOffset);
+    }
+
+    public SSTNode registerNonLocal(String[] names, int startOffset, int endOffset) {
         ScopeInfo scopeInfo = scopeEnvironment.getCurrentScope();
         for (String name : names) {
             scopeInfo.addExplicitNonlocalVariable(name);
         }
+        return new SimpleSSTNode(SimpleSSTNode.Type.EMPTY, startOffset, endOffset);
     }
 
     public Object createAssert(ExpressionNode test, ExpressionNode message) {
@@ -711,6 +895,16 @@ public final class PythonNodeFactory {
         return new AssertNode(CastToBooleanNode.createIfTrueNode(test), message);
     }
 
+    public WithSSTNode createWith(SSTNode expression, SSTNode target, SSTNode body, int start, int end) {
+        String name;
+        if (target instanceof VarLookupNode) {
+            name = ((VarLookupNode)target).getName();
+            scopeEnvironment.createLocal(name);
+        }
+        
+        return new WithSSTNode(expression, target, body, start, end);
+    }
+    
     public StatementNode createWith(ExpressionNode expression, ExpressionNode target, StatementNode body) {
         log(expression, target, body);
         return null;
@@ -721,7 +915,7 @@ public final class PythonNodeFactory {
         return null;
     }
 
-    public ExpressionNode createSubscript(ExpressionNode receiver, ExpressionNode subscript) {
+    public SSTNode createSubscript(ExpressionNode receiver, ExpressionNode subscript) {
         log(receiver, subscript);
         return null;
     }
@@ -760,19 +954,81 @@ public final class PythonNodeFactory {
         return (ReadNode) nodeFactory.createReadLocal(tempSlot);
     }
     
+    private void defineVariableInCurrentScope(String name) {
+        ScopeInfo definingScope = scopeEnvironment.getCurrentScope();
+        List<ParserTmpVariableNode> tmpNodes = namesToTmpNodes.get(name);
+        scopeEnvironment.createLocal(name);
+        for (ParserTmpVariableNode node : tmpNodes) {
+            ScopeInfo scope = node.getScope();
+            if (scope != definingScope) {
+                scope.addFreeVar(name, true);
+                definingScope.addCellVar(name);
+                scope = scope.getParent();
+                while(scope != definingScope && scope.findFrameSlot(name) == null) {
+                    scope.addFreeVar(name, true);
+                }
+            }
+        }
+    }
+    
+    public SSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int start, int stop) {
+        for(SSTNode variable : lhs) {
+            declareVar(variable);
+        }
+        return new AssignmentNode(lhs, rhs, start, stop);
+    }
+    
+    private void declareVar(SSTNode value) {
+        if (value instanceof VarLookupNode) {
+            String name = ((VarLookupNode)value).getName();
+            if (!scopeEnvironment.isNonlocal(name)) {
+                scopeEnvironment.createLocal(name);
+            }
+        } else if (value instanceof CollectionSSTNode) {
+            CollectionSSTNode collection = (CollectionSSTNode) value;
+            for (SSTNode variable : collection.getValues()) {
+                declareVar(variable);
+            }
+        } else {
+            throw new RuntimeException("unhandled case in assignment");
+        }
+    }
+    
+    public ForSSTNode createForSSTNode(SSTNode[] targets, SSTNode iterator, SSTNode body, boolean containsContinue, int startOffset, int endOffset) {
+        for(SSTNode target : targets) {
+            if (target instanceof VarLookupNode) {
+                scopeEnvironment.createLocal(((VarLookupNode)target).getName());
+            }
+        }
+        return new ForSSTNode(targets, iterator, body, containsContinue, startOffset, endOffset);
+    }
+    
     public StatementNode createAssignment(ExpressionNode[] lhs, ExpressionNode rhs, int start, int stop) {
         log(lhs, rhs);
         int len = lhs.length;
         StatementNode result;
         if (len == 1) {
-            result = ((ReadNode) lhs[0]).makeWriteNode(rhs);
+            if (lhs[0] instanceof ParserTmpVariableNode) {
+                ParserTmpVariableNode tmpNode = (ParserTmpVariableNode)lhs[0];
+                List<ParserTmpVariableNode> tmpNodes = namesToTmpNodes.get(tmpNode.getName());
+                tmpNodes.remove(tmpNode);
+                defineVariableInCurrentScope(tmpNode.getName());
+//                scopeEnvironment.createLocal(tmpNode.getName());
+                ScopeInfo currentScope = scopeEnvironment.getCurrentScope();
+                ReadNode readNode =  scopeEnvironment.findVariable(tmpNode.getName());
+                ((ExpressionNode)readNode).assignSourceSection(tmpNode.getSourceSection());
+                result = readNode.makeWriteNode(rhs);
+//                currentScope.tmpNodeCount--;
+            } else {
+                result = ((ReadNode) lhs[0]).makeWriteNode(rhs);
+            }
         } else {
             StatementNode [] assignments = new StatementNode[len + 1];
             ReadNode tmp = makeTempLocalVariable();
             StatementNode tmpWrite = tmp.makeWriteNode(rhs);
             assignments[0] = tmpWrite;
-            for (int i = lhs.length - 1; i >= 0; i--) {
-                assignments[len - i] = ((ReadNode) lhs[i]).makeWriteNode((ExpressionNode) tmp);
+            for (int i = 0; i < lhs.length; i++) {
+                assignments[i + 1] = ((ReadNode) lhs[i]).makeWriteNode((ExpressionNode) tmp);
             }
             result = nodeFactory.createBlock(assignments);
         }
@@ -823,6 +1079,14 @@ public final class PythonNodeFactory {
     public ScopeInfo createScope(ParserRuleContext ctx, ScopeKind kind) {
         return createScope(ctx, kind, null);
     }
+    
+    public ScopeInfo createScope(String name, ScopeKind kind) {
+        log(kind, null);
+        if (kind == ScopeKind.Function && !name.equals("lambda")) {
+            scopeEnvironment.createLocal(name);
+        }
+        return scopeEnvironment.pushScope(name, kind, null);
+    }
 
     public ScopeInfo createScope(ParserRuleContext ctx, ScopeKind kind, FrameDescriptor locals) {
         log(kind, locals);
@@ -831,18 +1095,63 @@ public final class PythonNodeFactory {
 
     public void leaveScope() {
         log();
+//        if (!namesToTmpNodes.isEmpty()) {
+//            ScopeInfo definingScope = scopeEnvironment.getCurrentScope();
+//            Set<Object> identifiers = definingScope.getFrameDescriptor().getIdentifiers();
+//            for (Object identifier : identifiers) {
+//                String name = (String)identifier;
+//                List<ParserTmpVariableNode> tmpNodes = namesToTmpNodes.get(name);
+//                if (tmpNodes != null) {
+//                    for (ParserTmpVariableNode node : tmpNodes) {
+//                        ScopeInfo scope = node.getScope();
+//                        if (scope != definingScope) {
+//                            scope.addFreeVar(name, true);
+//                            definingScope.addCellVar(name);
+//                            scope = scope.getParent();
+//                            while(scope != definingScope && scope.findFrameSlot(name) == null) {
+//                                scope.addFreeVar(name, true);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        for(ParserTmpVariableNode node : scopeEnvironment.getCurrentScope().tmpVariableNodes.values()) {
+//            ReadNode readNode = scopeEnvironment.findVariable(node.getName());
+//            //((Node)node).replace((Node)readNode);
+//        }
         scopeEnvironment.popScope();
+        
+    }
+    
+    private void replaceTmpNodes(String name, ScopeInfo definitinScope) {
+        if (!scopeEnvironment.isGlobaScope(definitinScope)) {
+            List<ParserTmpVariableNode> tmpNodes = namesToTmpNodes.get(name);
+            if (tmpNodes != null && !tmpNodes.isEmpty()) {
+                for (ParserTmpVariableNode node : tmpNodes) {
+                    ScopeInfo scope = node.getScope();
+                    while(scope.findFrameSlot(name) == null) {
+                        scope.addFreeVar(name, true);
+                    }
+                    FrameSlot slot = node.getScope().findFrameSlot(name);
+                    ReadNode readNode = (ReadNode) scopeEnvironment.getReadNode(name, slot);
+                    node.replace((Node)readNode);
+                }
+                tmpNodes.clear();
+            }
+            namesToTmpNodes.remove(name);
+        }
     }
     
     public ScopeInfo getCurrentScope() {
         return scopeEnvironment.getCurrentScope();
     }
     
-    public boolean createGeneratorScope(ExpressionNode target, ExpressionNode name) {
+    public boolean createGeneratorScope(SSTNode target, SSTNode name) {
         log(target, name);
 
         // we're still within the transparent arguments scope
-//
+
 //        if (generatorScope == null) {
 //            generatorScope = scopeEnvironment.get(scopeEnvironment.size() - 1);
 //            generatorScope.setKind(ScopeKind.Generator);
@@ -872,7 +1181,7 @@ public final class PythonNodeFactory {
         node.assignSourceSection(createSourceSection(start, stop));
     }
     
-    private static class DocExtractor {
+    public static class DocExtractor {
         
         private boolean firstStatement = true;
         

@@ -1,0 +1,35 @@
+ModuleRootNode Name: <module 'assignment04'> SourceSection: [0,17]`a = b = c = d = e`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,17]`a = b = c = d = e`
+    ExpressionWithSideEffects SourceSection: [0,17]`a = b = c = d = e`
+      WriteLocalVariableNodeGen SourceSection: None
+        Identifier: <>temp0
+        WriteLocalFrameSlotNodeGen SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+        ReadNameNodeGen SourceSection: [16,17]`e`
+          Identifier: e
+      WriteNameNodeGen SourceSection: None
+        Identifier: a
+        ReadLocalVariableNode SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+          ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: None
+        Identifier: b
+        ReadLocalVariableNode SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+          ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: None
+        Identifier: c
+        ReadLocalVariableNode SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+          ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: None
+        Identifier: d
+        ReadLocalVariableNode SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+          ReadVariableFromFrameNodeGen SourceSection: None
+      EmptyNode SourceSection: None

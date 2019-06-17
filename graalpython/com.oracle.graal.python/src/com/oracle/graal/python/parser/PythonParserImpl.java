@@ -27,15 +27,21 @@ package com.oracle.graal.python.parser;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.oracle.graal.python.parser.antlr.Builder;
+import static com.oracle.graal.python.parser.antlr.Builder.ERROR_LISTENER;
+import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3NewLexer;
 import com.oracle.graal.python.parser.antlr.Python3NewParser;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
+import com.oracle.graal.python.parser.sst.BlockSSTNode;
+import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
+import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -122,27 +128,37 @@ public final class PythonParserImpl implements PythonParser {
     public Node parseWithNew(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         // ANTLR parsing
-        long start = System.currentTimeMillis();
+//        long start = System.currentTimeMillis();
         Python3NewParser newParser = getPython3NewParser(source, errors);
         ParserRuleContext input;
         ScopeInfo topScope;
-        Node parserResult;
+        SSTNode parserResult;
+        Python3Parser parser = getPython3Parser(source.getCharacters().toString());
         try {
             switch (mode) {
                 case Eval:
-                    parserResult = newParser.eval_input().result;
+//                    parserResult = newParser.eval_input().result;
                     break;
                 case File:
             // System.out.println("===\n" + source.getCharacters() + "\n---\n");
+
                     Python3NewParser.File_inputContext file_input = newParser.file_input();
                     parserResult = file_input.result;
                     PythonLanguage lang = errors.getLanguage();
                     PythonNodeFactory factory = newParser.factory;
-                    return factory.createModuleRoot(source.getName(), file_input.result, file_input.scope.getFrameDescriptor());
+                    lastGlobalScope = factory.getScopeEnvironment().getGlobalScope();
+                    FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, factory.getScopeEnvironment(), lang.getNodeFactory(), source);
+                    ModuleRootNode mrn = factory.createModuleRoot(source.getName(), factoryVisitor.asExpression((BlockSSTNode)parserResult), file_input.scope.getFrameDescriptor());
+                    
+//                    long start = System.currentTimeMillis();
+//                    parser.file_input();
+//                    long end = System.currentTimeMillis();
+//                    System.out.println("parsing wiht new tooks: " + (end - start));
+                    return mrn;
                 case InteractiveStatement:
                 case InlineEvaluation:
                 case Statement:
-                    parserResult = newParser.single_input(source.isInteractive(), inlineLocals).result;
+//                    parserResult = newParser.single_input(source.isInteractive(), inlineLocals).result;
                     break;
                 default:
                     throw new RuntimeException("unexpected mode: " + mode);
@@ -206,6 +222,12 @@ public final class PythonParserImpl implements PythonParser {
         return lastTree;
     }
     
+    private ScopeInfo lastGlobalScope;
+    
+    public ScopeInfo getLastGlobaScope() {
+        return lastGlobalScope;
+    }
+    
     @Override
     @TruffleBoundary
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
@@ -222,7 +244,10 @@ public final class PythonParserImpl implements PythonParser {
                     input = parser.eval_input();
                     break;
                 case File:
+//                    start = System.currentTimeMillis();
                     input = parser.file_input();
+//                    long end = System.currentTimeMillis();
+//                    System.out.println("old just antlr parsing took: " + (end - start));
                     // System.out.println("===\n" + source.getCharacters() + "\n---\n");
                     // newParser.file_input();
                     break;
@@ -262,7 +287,7 @@ public final class PythonParserImpl implements PythonParser {
         // create Truffle ASTs
         Node translate = PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode);
         long end = System.currentTimeMillis();
-        
+        lastGlobalScope = environment.getGlobalScope();
         parsedCount++;
         parsedTime += (end - start);
         translateTime += (end - startTranslate);

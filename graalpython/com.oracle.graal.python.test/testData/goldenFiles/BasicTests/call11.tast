@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module 'foo'> SourceSection: [0,13]`foo(**mydict)`
+ModuleRootNode Name: <module 'call11'> SourceSection: [0,13]`foo(**mydict)`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
@@ -13,4 +13,6 @@ ModuleRootNode Name: <module 'foo'> SourceSection: [0,13]`foo(**mydict)`
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [6,12]`mydict`
+            Identifier: mydict
       ReadNameNodeGen SourceSection: None
+        Identifier: foo

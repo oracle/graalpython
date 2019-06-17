@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module 'foo'> SourceSection: [0,14]`'ahoj'; 2; 1.0`
+ModuleRootNode Name: <module 'simpleExpression03'> SourceSection: [0,14]`'ahoj'; 2; 1.0`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False

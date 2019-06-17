@@ -1,0 +1,261 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package com.oracle.graal.python.parser.sst;
+
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.ScopeEnvironment;
+import com.oracle.graal.python.parser.ScopeInfo;
+import java.util.ArrayList;
+import java.util.List;
+
+public final class ArgDefListBuilder {
+    
+    private static String SPLAT_MARKER_NAME = "*";
+
+    private class Parameter {
+
+        protected final String name;
+        protected final SSTNode type;
+
+        public Parameter(String name, SSTNode type) {
+            this.name = name;
+            this.type = type;
+        }
+        
+    }
+    
+    private class ParameterWithDefValue extends Parameter {
+        
+        protected final SSTNode value;
+
+        public ParameterWithDefValue(String name, SSTNode type, SSTNode value) {
+            super(name, type);
+            this.value = value;
+        }
+        
+    }
+    
+    private final ScopeEnvironment scopeEnvironment;
+    
+    private ExpressionNode[] EMPTY = new ExpressionNode[0];
+    private List<Parameter> args;
+    private List<ParameterWithDefValue> argsWithDefValue;
+    private List<Parameter> kwargs;
+    private List<ParameterWithDefValue> kwargsWithDefValue;
+    private int splatIndex = -1;
+    private int kwarIndex = -1;
+    
+    
+    private int firstDefaultValueParam = -1;
+    private int defaultParameterCount = 0;
+
+    public ArgDefListBuilder(ScopeEnvironment scopeEnvironment) {
+        this.scopeEnvironment = scopeEnvironment;
+    }
+    
+    
+    public void addParam(String name, SSTNode type, SSTNode defValue) {
+//        System.out.println("Param: " + name);
+        Parameter arg = defValue == null ? new Parameter(name, type) : new ParameterWithDefValue(name, type, defValue);
+        if (splatIndex == -1) {
+            if (defValue != null) {
+                if (argsWithDefValue == null) {
+                    argsWithDefValue = new ArrayList<>(5);
+                }
+                argsWithDefValue.add((ParameterWithDefValue)arg);
+            }
+            if (args == null) {
+                args = new ArrayList<>();
+            }
+            args.add(arg);
+        } else {
+            if (defValue != null) {
+                if (kwargsWithDefValue == null) {
+                    kwargsWithDefValue = new ArrayList<>(4);
+                }
+                kwargsWithDefValue.add((ParameterWithDefValue)arg);
+            }
+            if (kwargs == null) {
+                kwargs = new ArrayList<>(4);
+            }
+            kwargs.add(arg);
+        }
+    }
+
+    public void addSplat(String name, SSTNode type) {
+//        System.out.println("Splat: " + name);
+        if (args == null) {
+            args = new ArrayList<>();
+        }
+        args.add(new Parameter(name, type));
+        splatIndex = args.size() - 1;
+    }
+
+    public void addKwargs(String name, SSTNode type) {
+//        System.out.println("KwArg: " + name);
+        if (kwargs == null) {
+            kwargs = new ArrayList<>();
+        }
+        kwargs.add(new Parameter(name, type));
+        kwarIndex = kwargs.size() - 1;
+    }
+
+    private StatementNode[] parameterNodes;
+    private ExpressionNode[] defaultParameterValues;
+    private Signature signature;
+    private int kwargsParameterCount = 0;
+    
+    private int positionalParameterCount = 0;
+
+    public boolean hasDefaultParameter() {
+        return argsWithDefValue != null;
+    }
+
+    public void defineParamsInScope(ScopeInfo functionScope) {
+        if (args != null) {
+            for(Parameter param: args) {
+                if (param.name != null) {
+                    // don't put splat marker
+                    functionScope.createSlotIfNotPresent(param.name);
+                } else {
+                    functionScope.createSlotIfNotPresent(SPLAT_MARKER_NAME);
+                }
+            }
+        }
+        if (kwargs != null) {
+            for(Parameter param: kwargs) {
+                functionScope.createSlotIfNotPresent(param.name);
+            }
+        }
+    }
+    
+    private void build(FactorySSTVisitor visitor) {
+//        parameterNodes = new StatementNode[parameters.size()];
+//        defaultParameterValues = defaultParameterCount > 0 ? new ExpressionNode[defaultParameterCount] : null;
+//        String[] parametersId = new String[positionalParameterCount];
+//        String[] keyWordNames = new String[kwargsParameterCount];
+//        boolean takesVarKeywordArgs = false;
+//        int takesVarArgs = -1;
+//        boolean varArgsMarker = false;
+//        int index = 0;
+//        int defaultParameterValueIndex = 0;
+//        int kwargsIndex = 0;
+//
+//        for (Parameter param : parameters) {
+//            parameterNodes[index] = param.getArgumentReadNode(index);
+//            if (param instanceof ParameterWithDefValue) {
+//                parametersId[index] = param.getName();
+//            }
+//            if (param instanceof SplatParameter) {
+//                takesVarArgs = index;
+//            }
+//            if (param instanceof ParameterWithDefValue && ((ParameterWithDefValue) param).getDefValue() != null) {
+//                defaultParameterValues[defaultParameterValueIndex++] = ((ParameterWithDefValue) param).getDefValue();
+//            }
+//            index++;
+//        }
+//        signature = new Signature(takesVarKeywordArgs, takesVarArgs, varArgsMarker, parametersId, keyWordNames);
+    }
+
+    private boolean hasSplatStarMarker() {
+        return splatIndex > -1 && args != null && args.get(splatIndex).name == null;
+    }
+    
+    public StatementNode[] getArgumentNodes(FactorySSTVisitor visitor) {
+        if (args == null && kwargs == null) {
+            return new StatementNode[0];
+        }
+        boolean starMarker = hasSplatStarMarker();
+        int delta = starMarker ? 1 : 0;
+        int argsLen = args == null ? 0 : args.size();
+        int kwargsLen = kwargs == null ? 0 : kwargs.size();
+        StatementNode[] nodes = new StatementNode[argsLen + kwargsLen - delta];
+        
+        for(int i = 0; i < argsLen - delta ; i++) {
+            if (splatIndex == i) {
+                if (!starMarker) {
+                    nodes[i] = scopeEnvironment.getWriteVarArgsToLocal(args.get(i).name, i);
+                }
+            } else {
+                nodes[i] = scopeEnvironment.getWriteArgumentToLocal(args.get(i).name, i);
+            }
+        }
+        
+        String[] kwId = kwarIndex == -1 ? new String[0] : new String[kwargsLen - (kwarIndex == -1 ? 0 : 1)];
+        delta = argsLen - delta;
+        for (int i = 0; i < kwargsLen; i++) {
+            if (i != kwarIndex) {
+                nodes[i + delta] = scopeEnvironment.getWriteArgumentToLocal(kwargs.get(i).name, i + delta);
+                if (kwarIndex != -1) {
+                    kwId[i] = kwargs.get(i).name;
+                }
+            } else {
+                nodes[i + delta] = scopeEnvironment.getWriteKwArgsToLocal(kwargs.get(i).name, kwId);
+            }
+        }
+        return nodes;
+    }
+
+    public ExpressionNode[] getDefaultParameterValues(FactorySSTVisitor visitor) {
+        if (argsWithDefValue == null) {
+            return EMPTY;
+        }
+        ExpressionNode[] nodes = new ExpressionNode[argsWithDefValue.size()];
+        for(int i = 0; i < argsWithDefValue.size(); i++) {
+            nodes[i] = (ExpressionNode)argsWithDefValue.get(i).value.accept(visitor);
+        }
+        return nodes;
+    }
+    
+    public FunctionDefinitionNode.KwDefaultExpressionNode[] getKwDefaultParameterValues(FactorySSTVisitor visitor) {
+        if (kwargsWithDefValue == null) {
+            return null;
+        }
+        FunctionDefinitionNode.KwDefaultExpressionNode[] nodes = new FunctionDefinitionNode.KwDefaultExpressionNode[kwargsWithDefValue.size()];
+        for(int i = 0; i < kwargsWithDefValue.size(); i++) {
+            nodes[i] = FunctionDefinitionNode.KwDefaultExpressionNode.create(kwargsWithDefValue.get(i).name, (ExpressionNode)kwargsWithDefValue.get(i).value.accept(visitor));
+        }
+        return nodes;
+    }
+
+    public Signature getSignature() {
+        if (args == null && kwargs == null) {
+            return Signature.EMPTY;
+        }
+        int i;
+        String[] ids = null;
+        String[] kwids = null;
+        boolean splatMarker = hasSplatStarMarker();
+        if (args != null) {
+            ids = new String[args.size() - (splatIndex == -1 ? 0 : 1)];
+            i = 0;
+            if (ids.length > 0) {
+                for (Parameter param : args) {
+                    if (i != splatIndex) {
+                        ids[i++] = param.name;
+                    }
+                }
+            }
+        }
+        if (kwargs != null) {
+            kwids = new String[kwargs.size() - (kwarIndex == -1 ? 0 : 1)];
+            i = 0;
+            if (kwids.length > 0) {
+                for (Parameter param : kwargs) {
+                    if (i != kwarIndex) {
+                        kwids[i++] = param.name;
+                    }
+                }
+            }
+        }
+        return new Signature(kwarIndex > -1, splatMarker ? -1 : splatIndex , splatMarker, ids, kwids);
+    }
+
+    
+}

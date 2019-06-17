@@ -150,13 +150,15 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.PythonNodeFactory;
-import com.oracle.graal.python.parser.PythonNodeFactory.ArgDefListBuilder;
-import com.oracle.graal.python.parser.PythonNodeFactory.ArgListBuilder;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.parser.ParserCtxInfo;
+import com.oracle.graal.python.parser.PosParsingVisitor;
+import com.oracle.graal.python.parser.sst.*;
+
+import com.oracle.graal.python.parser.sst.SSTNode;
 
 import com.oracle.truffle.api.frame.FrameDescriptor;
 
@@ -293,6 +295,21 @@ import java.util.Arrays;
         // add 1 to fit truffle source sections
         return stopIndex + 1;
     }
+
+    /** Get the last offset of the context */
+    private int getLastIndex(ParserRuleContext ctx) {
+        if (ctx.getStop() != null) {
+            return getStopIndex(ctx);
+        }
+        ParseTree pt = ctx.getChild(ctx.getChildCount() - 1);
+        if (pt instanceof TerminalNode) {
+	    return getStopIndex(((TerminalNode) pt).getSymbol());
+        }
+        if (pt instanceof RuleNode) {
+            return getStopIndex((RuleNode) pt);
+        }
+        return -1;
+    }
  
     private final ParserCtxInfo parserInfo = new ParserCtxInfo();
 }
@@ -301,7 +318,7 @@ import java.util.Arrays;
  * parser rules
  */
 
-single_input [boolean interactive, FrameDescriptor curInlineLocals] returns [ StatementNode result ]
+single_input [boolean interactive, FrameDescriptor curInlineLocals] returns [ SSTNode result ]
 locals
 [ com.oracle.graal.python.parser.ScopeInfo scope, ArrayList<StatementNode> list ]
 :
@@ -318,7 +335,7 @@ locals
 		| simple_stmt
 		| compound_stmt NEWLINE
 	)
-	{ $result = factory.createBlock(getArray(start, StatementNode[].class)); }
+	{ /*$result = factory.createBlock(getArray(start, StatementNode[].class)); */}
 	{
             if ($interactive || $curInlineLocals != null) {
                 factory.leaveScope();
@@ -326,7 +343,7 @@ locals
 	}
 ;
 
-file_input returns [ ExpressionNode result ]
+file_input returns [ SSTNode result ]
 locals
 [ com.oracle.graal.python.parser.ScopeInfo scope, ArrayList<StatementNode> list ]
 :
@@ -336,11 +353,14 @@ locals
 		NEWLINE
 		| stmt
 	)* EOF
-	{ $result = factory.asExpression(getArray(start, StatementNode[].class), getStartIndex($ctx), getStopIndex($stmt.stop)); }
-	{ factory.leaveScope(); }
+	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), getStopIndex($stmt.stop)); }
+	{ 
+            factory.leaveScope(); 
+            /*$result.accept(new PosParsingVisitor(factory))*/;   
+        }
 ;
 
-eval_input returns [ExpressionNode result]
+eval_input returns [SSTNode result]
 locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
 :
 	{ factory.createScope(_localctx, ScopeInfo.ScopeKind.Module); }
@@ -361,93 +381,83 @@ funcdef
 		'->' test
 	)? ':' 
 	{ 
-            String name = _localctx.NAME().getText();
+            String name = _localctx.NAME().getText(); 
             ScopeInfo enclosingScope = factory.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
-            factory.createScope(_localctx, ScopeInfo.ScopeKind.Function); 
+            ScopeInfo functionScope = factory.createScope(name, ScopeInfo.ScopeKind.Function); 
+            $parameters.result.defineParamsInScope(functionScope); 
         }
 	s = suite
 	{ 
-            ExpressionNode funcDef = factory.createFunction(name, enclosingClassName, $s.result, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
+            SSTNode funcDef = new FunctionDefSSTNode(factory.getCurrentScope(), name, enclosingClassName, $parameters.result, $s.result, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
             factory.leaveScope();
-            push(factory.createReadNodeForFuncDef(funcDef, name));
+            push(funcDef);
         }
 ;
 
 parameters returns [ArgDefListBuilder result]
-:       { ArgDefListBuilder args = factory.argDefListBuilder(); }
+:       { ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); }
 	'(' typedargslist[args]? ')'
         { $result = args; }
 ;
 
 typedargslist [ArgDefListBuilder args]
 :
-	(
-		defparameter[args]
-		(
-			',' defparameter[args]
-		)*
-		(
-			','
-			(
-				splatparameter[args]
-				(
-					',' defparameter[args]
-				)*
-				(
-					','
-					(
-						kwargsparameter[args] ','?
-					)?
-				)?
-				| kwargsparameter[args] ','?
-			)?
+    (
+	defparameter[args] ( ',' defparameter[args] )*
+            ( ',' 
+                ( splatparameter[args]	
+                    ( ',' defparameter[args])*
+                    ( ',' ( kwargsparameter[args] ','? )?
+		    )?
+                    | kwargsparameter[args] ','?
 		)?
-		| splatparameter[args]
-		(
-			',' defparameter[args]
-		)*
-		(
-			','
-			(
-				kwargsparameter[args] ','?
-			)?
-		)?
-		| kwargsparameter[args] ','?
-	)
+            )?
+	| splatparameter[args]
+            ( ',' defparameter[args])*
+            ( ',' ( kwargsparameter[args] ','? )?
+            )?
+	| kwargsparameter[args] ','?
+    )
 ;
   
 defparameter [ArgDefListBuilder args]
 :
 	NAME
-	{ ExpressionNode type = null; ExpressionNode defValue = null; }
+	{ SSTNode type = null; SSTNode defValue = null; }
 	( ':' test { type = $test.result; } )?
 	( '=' test { defValue = $test.result; } )?
-	{ args.param($NAME.text, type, defValue); }
+	{ 
+            if (defValue == null && args.hasDefaultParameter()) {
+                throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());
+            }
+            args.addParam($NAME.text, type, defValue); 
+            
+        }
 ;
 
 splatparameter [ArgDefListBuilder args]
 :
 	'*'
-	{ String name = null; ExpressionNode type = null; }
+	{ String name = null; SSTNode type = null; }
 	(
 		NAME { name = $NAME.text; }
 		( ':' test { type = $test.result; } )?
 	)?
-	{ args.splat(name, type); }
+	{ args.addSplat(name, type); }
 ;
 
 kwargsparameter [ArgDefListBuilder args]
 :
 	'**' NAME
-	{ ExpressionNode type = null; }
+	{ SSTNode type = null; }
 	( ':' test { type = $test.result; } )?
-	{ args.kwargs($NAME.text, type); }
+	{ args.addKwargs($NAME.text, type); }
 ;
 
 varargslist returns [ArgDefListBuilder result]
 :
-	{ ArgDefListBuilder args = factory.argDefListBuilder(); }
+	{ ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); }
 	(
 		vdefparameter[args]
 		(
@@ -487,9 +497,9 @@ varargslist returns [ArgDefListBuilder result]
 vdefparameter [ArgDefListBuilder args]
 :
 	NAME
-	{ ExpressionNode defValue = null; }
+	{ SSTNode defValue = null; }
 	( '=' test { defValue = $test.result; } )?
-	{ args.param($NAME.text, null, defValue); }
+	{ args.addParam($NAME.text, null, defValue);}
 ;
 
 vsplatparameter [ArgDefListBuilder args]
@@ -497,13 +507,13 @@ vsplatparameter [ArgDefListBuilder args]
 	'*'
 	{ String name = null; }
 	( NAME { name = $NAME.text; } )?
-	{ args.splat(name, null); }
+	{ args.addSplat(name, null);}
 ;
 
 vkwargsparameter [ArgDefListBuilder args]
 :
 	'**' NAME
-	{ args.kwargs($NAME.text, null); }
+	{args.addKwargs($NAME.text, null);}
 ;
 
 stmt
@@ -531,7 +541,7 @@ small_stmt
 expr_stmt
 :       { parserInfo.isVarDefinition = true;}
 	lhs=testlist_star_expr
-	{ ExpressionNode rhs = null; 
+	{ SSTNode rhs = null; 
           int rhsStopIndex = 0;
           parserInfo.isVarDefinition = false;
         }
@@ -540,7 +550,7 @@ expr_stmt
 		(
 			'=' test { rhs = $test.result; rhsStopIndex = getStopIndex($test.stop);}
 		)?
-		{ push(factory.createTestAssign($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); }
+		{ push(new AnnAssignmentSSTNode($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); }
 		|
 		augassign
 		(
@@ -548,10 +558,10 @@ expr_stmt
 			|
 			testlist { rhs = $testlist.result; rhsStopIndex = getStopIndex($testlist.stop);}
 		)
-		{ push(factory.createAugmentedAssignment($lhs.result, $augassign.text, rhs, getStartIndex($ctx), rhsStopIndex)); }
+		{ push(new AugAssignmentSSTNode($lhs.result, $augassign.text, rhs, getStartIndex($ctx), rhsStopIndex));}
 		|
 		{ int start = start(); }
-		{ ExpressionNode value = $lhs.result; }
+		{ SSTNode value = $lhs.result; }
 		(
 			'='
 			{ push(value); }
@@ -561,11 +571,11 @@ expr_stmt
 				testlist_star_expr { value = $testlist_star_expr.result; rhsStopIndex = getStopIndex($testlist_star_expr.stop);}
 			)
 		)*
-		{ push(start == start() ? factory.createExpressionStatement(value) : factory.createAssignment(getArray(start, ExpressionNode[].class), value, getStartIndex($ctx), rhsStopIndex)); }
+		{ push(start == start() ? new ExpressionStatementNode(value) : factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex($ctx), rhsStopIndex)); }
 	)
 ;
 
-testlist_star_expr returns [ExpressionNode result]
+testlist_star_expr returns [SSTNode result]
 :
 	
 	(
@@ -573,8 +583,11 @@ testlist_star_expr returns [ExpressionNode result]
 		| star_expr {  $result = $star_expr.result; }
 	)
 	(
+                { 
+                    int start = start(); 
+                    push($result);
+                }
 		','
-		{ int start = start(); push($result); }
 		(
 			(
 				test { push($test.result); }
@@ -589,7 +602,7 @@ testlist_star_expr returns [ExpressionNode result]
 			)*
 			','?
 		)?
-		{ $result = factory.createCollection(getArray(start, ExpressionNode[].class), PythonBuiltinClassType.PTuple); }
+		{ $result = new CollectionSSTNode(getArray(start, SSTNode[].class), PythonBuiltinClassType.PTuple, getStartIndex($ctx), getLastIndex($ctx)); }
 	)?
 ;
 
@@ -599,22 +612,26 @@ augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<='
 del_stmt
 :
 	'del' exprlist
-	{ push(factory.createDel($exprlist.result)); }
+	{ push(new DelSSTNode($exprlist.result, getStartIndex($ctx), getStopIndex($exprlist.stop))); }
 ;
 
 pass_stmt: 
         p='pass'
-        {push(factory.createPass(getStartIndex($p), getStopIndex($p)));}
+        {push(new SimpleSSTNode(SimpleSSTNode.Type.PASS, getStartIndex($p), getStopIndex($p)));}
 ;
 
 flow_stmt
 :
-	'break' 
-	{ push(factory.createBreak()); }
-	{ containsBreak = true; }
-	| 'continue'
-	{ push(factory.createContinue()); }
-	{ containsContinue = true; }
+	b='break' 
+	{ 
+            push(new SimpleSSTNode(SimpleSSTNode.Type.BREAK, getStartIndex($b), getStopIndex($b)));
+            containsBreak = true; 
+        }
+	| c='continue'
+	{ 
+            push(new SimpleSSTNode(SimpleSSTNode.Type.CONTINUE, getStartIndex($c), getStopIndex($c)));
+            containsContinue = true; 
+        }
 	| return_stmt
 	| raise_stmt
 	| yield_stmt
@@ -623,27 +640,27 @@ flow_stmt
 return_stmt
 :
 	'return'
-	{ ExpressionNode value = null; }
+	{ SSTNode value = null; }
 	( testlist { value = $testlist.result; } )?
-	{ push(factory.createReturn(value, getStartIndex($ctx), getStopIndex($testlist.stop))); }
+	{ push(new ReturnSSTNode(value, getStartIndex($ctx), getStopIndex($testlist.stop)));}
 ;
 
 yield_stmt
 :
 	yield_expr
-	{ push(factory.createExpressionStatement($yield_expr.result)); }
+	{ push(new ExpressionStatementNode($yield_expr.result)); }
 ;
 
 raise_stmt
 :
-	{ ExpressionNode value = null; ExpressionNode from = null; }
+	{ SSTNode value = null; SSTNode from = null; }
 	'raise'
 	(
 		test
 		{ value = $test.result; }
 		( 'from' test { from = $test.result; } )?
 	)?
-	{ push(factory.createRaise(value, from)); }
+	{ push(new RaiseSSTNode(value, from, getStartIndex($ctx), getLastIndex($ctx))); }
 ; 
 
 import_stmt
@@ -668,42 +685,42 @@ import_from
 		( '.' { name += '.'; } | '...' { name += "..."; } )+
 	)
 	'import'
-	{ Object[] asNames = null; }
+	{ String[][] asNames = null; }
 	(
 		'*'
 		| '(' import_as_names { asNames = $import_as_names.result; } ')'
 		| import_as_names { asNames = $import_as_names.result; } 
 	)
-	{ push(factory.createImportFrom(name, asNames)); }
+	{ push(factory.createImportFrom(name, asNames, getStartIndex($ctx), getLastIndex($ctx))); }
 ;
               
-import_as_name returns [Object result] /* String or String[] (in case of "as") */
+import_as_name returns [String[] result] /* the first is name, the second as name */
 :
 	n=NAME
 	{ String asName = null; }
 	( 'as' NAME { asName = $NAME.text; } )?
-	{ $result = asName == null ? $n.text : new String[]{$n.text, asName}; }
+	{ $result = new String[]{$n.text, asName}; }
 ;
 
-import_as_names returns [Object[] result]
+import_as_names returns [String[][] result]
 :
 	{ int start = start(); }
 	import_as_name { push($import_as_name.result); } ( ',' import_as_name { push($import_as_name.result); } )* ','?
-	{ $result = getArray(start); }
+	{ $result = getArray(start, String[][].class); }
 ;
 
 dotted_name returns [String result]
 :
 	NAME { $result = $NAME.text; } ( '.' NAME { $result = $result + "." + $NAME.text; } )*
 ;
-dotted_as_name returns [Object result] /* String or String[] (in case of "as") */
+dotted_as_name
 :
 	dotted_name
 	(
 		'as' NAME 
-		{ push(factory.createImport($dotted_name.result, 0, $NAME.text)); }
+		{ push(factory.createImport($dotted_name.result, 0, $NAME.text, getStartIndex($ctx), getLastIndex($ctx)));}
 		|
-		{ push(factory.createImport($dotted_name.result, 0, null)); }
+		{ push(factory.createImport($dotted_name.result,0, null, getStartIndex($ctx), getLastIndex($ctx)));}
 	)
 ;
 dotted_as_names
@@ -723,7 +740,7 @@ global_stmt
 		',' NAME
 		{ pushString($NAME.text); }
 	)*
-	{ factory.registerGlobal(getStringArray(start)); }
+	{ push(factory.registerGlobal(getStringArray(start), getStartIndex($ctx), getLastIndex($ctx))); }
 ;
 
 nonlocal_stmt
@@ -735,18 +752,18 @@ nonlocal_stmt
 		',' NAME
 		{ pushString($NAME.text); }
 	)*
-	{ factory.registerNonLocal(getStringArray(start)); }
+	{ push(factory.registerNonLocal(getStringArray(start), getStartIndex($ctx), getLastIndex($ctx))); }
 ;
 
 assert_stmt
 :
 	'assert' e=test
-	{ ExpressionNode message = null; }
+	{ SSTNode message = null; }
 	(
 		',' test
 		{ message = $test.result; }
 	)?
-	{ push(factory.createAssert($e.result, message)); }
+	{ push(new AssertSSTNode($e.result, message, getStartIndex($ctx), getLastIndex($ctx))); }
 ;
 
 compound_stmt
@@ -766,14 +783,14 @@ async_stmt: ASYNC (funcdef | with_stmt | for_stmt);
 if_stmt
 :
 	'if' if_test=test ':' if_suite=suite elif_stmt
-	{ push(factory.createIf($if_test.result, $if_suite.result, $elif_stmt.result, getStartIndex($ctx), getStopIndex($elif_stmt.stop))); }
+	{ push(new IfSSTNode($if_test.result, $if_suite.result, $elif_stmt.result, getStartIndex($ctx), getStopIndex($elif_stmt.stop)));}
 	
 ;
-elif_stmt returns [StatementNode result]
+elif_stmt returns [SSTNode result]
 :
 	'elif' test ':' suite
 	elif_stmt
-	{ $result = factory.createIf($test.result, $suite.result, $elif_stmt.result, getStartIndex($ctx), getStopIndex($elif_stmt.stop)); }
+	{ $result = new IfSSTNode($test.result, $suite.result, $elif_stmt.result, -1, -1); }
 	|
 	'else' ':' suite
 	{ $result = $suite.result; }
@@ -786,11 +803,22 @@ while_stmt
 	'while' test ':' 
 	{ boolean bFlag = startLoopBreak(); boolean cFlag = startLoopContinue(); }
 	suite
-	{ StatementNode result = factory.createWhile($test.result, wrapContinue($suite.result, cFlag)); }
+	{ 
+            WhileSSTNode result = new WhileSSTNode($test.result, $suite.result, containsContinue, getStartIndex($ctx),getStopIndex($suite.stop)); 
+            containsContinue = cFlag;
+        }
 	(
-		'else' ':' suite { result = factory.createLoopElse(result, $suite.result); }
+		'else' ':' suite 
+                { 
+                    result.setElse($suite.result); 
+                    result.setEndOffset(getStopIndex($suite.stop));
+                }
 	)?
-	{ push(wrapBreak(result, bFlag)); }
+	{ 
+            result.setContainsBreak(containsBreak);
+            push(result);
+            containsBreak = bFlag;
+        }
 ;
 
 for_stmt
@@ -798,159 +826,193 @@ for_stmt
 	'for' exprlist 'in' testlist ':'
 	{ boolean bFlag = startLoopBreak(); boolean cFlag = startLoopContinue(); }
 	suite
-	{ StatementNode result = factory.createFor($exprlist.result, $testlist.result, wrapContinue($suite.result, cFlag)); }
+	{ 
+            ForSSTNode result = factory.createForSSTNode($exprlist.result, $testlist.result, $suite.result, containsContinue, getStartIndex($ctx),getStopIndex($suite.stop));
+            containsContinue = cFlag;
+        }
 	(
-		'else' ':' suite { result = factory.createLoopElse(result, $suite.result); }
+		'else' ':' suite 
+                { 
+                    result.setElse($suite.result); 
+                    result.setEndOffset(getStopIndex($suite.stop));
+                }
 	)?
-	{ push(wrapBreak(result, bFlag)); }
+	{  
+            result.setContainsBreak(containsBreak);
+            push(result);
+            containsBreak = bFlag;
+        }
 ;
 
 try_stmt
 :
 	'try' ':' body=suite
 	{ int start = start(); }
-	{ StatementNode elseStatement = null; StatementNode finallyStatement = null; }
+	{ 
+            SSTNode elseStatement = null; 
+            SSTNode finallyStatement = null; 
+        }
 	(
-		( except_clause { push($except_clause.result); } )+
+		( except_clause 
+                    { push($except_clause.result); } )+
 		( 'else' ':' suite { elseStatement = $suite.result; } )?
 	)?
 	( 'finally' ':' suite { finallyStatement = $suite.result; } )?
-	{ push(factory.createTry($body.result, getArray(start, ExceptNode[].class), elseStatement, finallyStatement)); }
+	{ push(new TrySSTNode($body.result, getArray(start, ExceptSSTNode[].class), elseStatement, finallyStatement, getStartIndex($ctx), getLastIndex($ctx))); }
 ;
 
-except_clause returns [ExceptNode result]
+except_clause returns [SSTNode result]
 :
 	'except'
-	{ ExpressionNode testNode = null; String asName = null; }
+	{ SSTNode testNode = null; String asName = null; }
 	(
 		test { testNode = $test.result; }
-		( 'as' NAME { asName = $NAME.text; } )?
+		( 'as' NAME 
+                    { 
+                        asName = $NAME.text; 
+                        factory.getScopeEnvironment().createLocal(asName);
+                    } 
+                )?
 	)?
 	':'
 	suite
-	{ $result = factory.createExcept(testNode, asName, $suite.result); }
+	{ $result = new ExceptSSTNode(testNode, asName, $suite.result, getStartIndex($ctx), getStopIndex($suite.stop)); }
 ;
 
 with_stmt
 :
 	'with' with_item
-	{ push($with_item.result); }
+	{ 
+            $with_item.result.setStartOffset(getStartIndex($ctx));
+            push($with_item.result); 
+        }
 ;
 
-with_item returns [StatementNode result]
+with_item returns [SSTNode result]
 :
 	test
-	{ ExpressionNode asName = null; }
+	{ SSTNode asName = null; }
 	( 'as' expr { asName = $expr.result; } )?
-	{ StatementNode sub; }
+	{ SSTNode sub; }
 	(
 		',' with_item
 		{ sub = $with_item.result; }
 		| ':' suite
 		{ sub = $suite.result; }
 	)
-	{ $result = factory.createWith($test.result, asName, sub); }
+	{ $result = factory.createWith($test.result, asName, sub, -1, getLastIndex($ctx)); }
 ;
 
 // NB compile.c makes sure that the default except clause is last
 
-suite returns [StatementNode result] locals [ArrayList<StatementNode> list]
+suite returns [SSTNode result] locals [ArrayList<SSTNode> list]
 :
 	{ int start = start(); }
 	(
 		simple_stmt
 		| NEWLINE INDENT stmt+ DEDENT
 	)
-	{ $result = factory.createBlock(getArray(start, StatementNode[].class)); }
+	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class));}
 ;
 
-test returns [ExpressionNode result]
+test returns [SSTNode result]
 :
 	or_test { $result = $or_test.result; }
 	(
 		'if' or_test 'else' test
-		{ $result = factory.createIfExpression($or_test.result, $result, $test.result, getStartIndex($ctx), getStopIndex($test.stop)); }
+		{ $result = new IfSSTNode($or_test.result, $result, $test.result, getStartIndex($ctx), getStopIndex($test.stop));}
 	)?
 	| lambdef { $result = $lambdef.result; }
 ;
 
-test_nocond returns [ExpressionNode result]
+test_nocond returns [SSTNode result]
 :
 	or_test { $result = $or_test.result; }
 	| lambdef_nocond { $result = $lambdef_nocond.result; }
 ;
 
-lambdef returns [ExpressionNode result]
+lambdef returns [SSTNode result]
 :
-	{ factory.createScope(_localctx, ScopeInfo.ScopeKind.Function); }
+	
 	'lambda'
 	{ ArgDefListBuilder args = null; }
 	(
 		varargslist { args = $varargslist.result; }
 	)? 
+        {
+            ScopeInfo functionScope = factory.createScope("lambda", ScopeInfo.ScopeKind.Function); 
+            if (args != null) {
+                args.defineParamsInScope(functionScope);
+            }
+        }
 	':'
 	test
 	{ factory.leaveScope(); }
-	{ $result = factory.createLambda(args, $test.result); }
+	{ $result = new LambdaSSTNode(functionScope, args, $test.result, getStartIndex($ctx), getLastIndex($ctx)); }
 ;
 
-lambdef_nocond returns [ExpressionNode result]
+lambdef_nocond returns [SSTNode result]
 :
-	{ factory.createScope(_localctx, ScopeInfo.ScopeKind.Function); }
 	'lambda'
 	{ ArgDefListBuilder args = null; }
 	(
-		varargslist { args = $varargslist.result; }
+		varargslist { args = $varargslist.result;}
 	)?
+        {
+            ScopeInfo functionScope = factory.createScope("lambda", ScopeInfo.ScopeKind.Function); 
+            if (args != null) {
+                args.defineParamsInScope(functionScope);
+            }
+        }
 	':'
 	test_nocond
 	{ factory.leaveScope(); }
-	{ $result = factory.createLambda(args, $test_nocond.result); }
+	{ $result = new LambdaSSTNode(functionScope, args, $test_nocond.result, getStartIndex($ctx), getLastIndex($ctx)); }
 ;
 
-or_test returns [ExpressionNode result]
+or_test returns [SSTNode result]
 :
 	first=and_test
 	(
 		{ int start = start(); }
 		{ push($first.result); }
 		( 'or' and_test { push($and_test.result); } )+
-		{ $result = factory.createOr(getArray(start, ExpressionNode[].class)); }
+		{ $result = new OrSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), getLastIndex($ctx)); }
 		|
 		{ $result = $first.result; }
 	)
 ;
 
-and_test returns [ExpressionNode result]
+and_test returns [SSTNode result]
 :
 	first=not_test
 	(
 		{ int start = start(); }
 		{ push($first.result); }
 		( 'and' not_test { push($not_test.result); } )+
-		{ $result = factory.createOr(getArray(start, ExpressionNode[].class)); }
+		{ $result = new AndSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), getLastIndex($ctx)); }
 		|
 		{ $result = $first.result; }
 	)
 ;
 
-not_test returns [ExpressionNode result]
+not_test returns [SSTNode result]
 :
 	'not' not_test
-	{ $result = factory.createNot($not_test.result); }
+	{ $result = new NotSSTNode($not_test.result, getStartIndex($ctx), getLastIndex($ctx)); }
 	| comparison
 	{ $result = $comparison.result; }
 ;
 
-comparison returns [ExpressionNode result]
+comparison returns [SSTNode result]
 :
 	first=expr
 	(
-		{ int start = start(); int stringStart = stringStart(); }
-		( comp_op expr { pushString($comp_op.result); push($expr.result); } )+
-		{ $result = factory.createComparison($first.result, getStringArray(stringStart), getArray(start, ExpressionNode[].class), getStartIndex($ctx), getStopIndex($expr.stop)); }
-		|
-		{ $result = $first.result; }
+            { int start = start(); int stringStart = stringStart(); }
+            ( comp_op expr { pushString($comp_op.result); push($expr.result); } )+
+            { $result = new ComparisonNode($first.result, getStringArray(stringStart), getArray(start, SSTNode[].class), getStartIndex($ctx), getStopIndex($expr.stop)); }
+            |
+            { $result = $first.result; }
 	)
 ;
 
@@ -971,92 +1033,92 @@ comp_op returns [String result]
 	| 'is' 'not' { $result = "isnot"; }
 ;
 
-star_expr returns [ExpressionNode result]: '*' expr { $result = factory.createStar($expr.result); };
+star_expr returns [SSTNode result]: '*' expr { $result = new StarSSTNode($expr.result, getStartIndex($ctx), getLastIndex($ctx));};
 
-expr returns [ExpressionNode result]
+expr returns [SSTNode result]
 :
 	xor_expr { $result = $xor_expr.result; }
 	(
-		'|' xor_expr { $result = factory.createArithmetic(BinaryArithmetic.Or, $result, $xor_expr.result, getStartIndex($ctx), getStopIndex($xor_expr.stop)); }
+		'|' xor_expr { $result = new BinaryArithmeticSSTNode(BinaryArithmetic.Or, $result, $xor_expr.result, getStartIndex($ctx), getStopIndex($xor_expr.stop));}
 	)*
 ;
 
-xor_expr returns [ExpressionNode result]
+xor_expr returns [SSTNode result]
 :
 	and_expr { $result = $and_expr.result; }
 	(
-		'^' and_expr { $result = factory.createArithmetic(BinaryArithmetic.Xor, $result, $and_expr.result, getStartIndex($ctx), getStopIndex($and_expr.stop)); }
+		'^' and_expr { $result = new BinaryArithmeticSSTNode(BinaryArithmetic.Xor, $result, $and_expr.result, getStartIndex($ctx), getStopIndex($and_expr.stop)); }
 	)*
 ;
 
-and_expr returns [ExpressionNode result]
+and_expr returns [SSTNode result]
 :
 	shift_expr { $result = $shift_expr.result; }
 	(
-		'&' shift_expr { $result = factory.createArithmetic(BinaryArithmetic.And, $result, $shift_expr.result, getStartIndex($ctx), getStopIndex($shift_expr.stop)); }
+		'&' shift_expr { $result = new BinaryArithmeticSSTNode(BinaryArithmetic.And, $result, $shift_expr.result, getStartIndex($ctx), getStopIndex($shift_expr.stop)); }
 	)*
 ;
 
-shift_expr returns [ExpressionNode result]
+shift_expr returns [SSTNode result]
 :
 	arith_expr { $result = $arith_expr.result; }
 	(
 		{ BinaryArithmetic arithmetic; }
 		( '<<' { arithmetic = BinaryArithmetic.LShift; } | '>>' { arithmetic = BinaryArithmetic.RShift; } )
-		arith_expr { $result = factory.createArithmetic(arithmetic, $result, $arith_expr.result, getStartIndex($ctx), getStopIndex($arith_expr.stop)); }
+		arith_expr { $result = new BinaryArithmeticSSTNode(arithmetic, $result, $arith_expr.result, getStartIndex($ctx), getStopIndex($arith_expr.stop));}
 	)*
 ;
 
-arith_expr returns [ExpressionNode result]
+arith_expr returns [SSTNode result]
 :
 	term { $result = $term.result; }
 	(
 		{ BinaryArithmetic arithmetic; }
 		( '+' { arithmetic = BinaryArithmetic.Add; } | '-' { arithmetic = BinaryArithmetic.Sub; } )
-		term { $result = factory.createArithmetic(arithmetic, $result, $term.result, getStartIndex($ctx), getStopIndex($term.stop)); }
+		term { $result = new BinaryArithmeticSSTNode(arithmetic, $result, $term.result, getStartIndex($ctx), getStopIndex($term.stop)); }
 	)*
 ;
 
-term returns [ExpressionNode result]
+term returns [SSTNode result]
 :
 	factor { $result = $factor.result; }
 	(
 		{ BinaryArithmetic arithmetic; }
 		( '*' { arithmetic = BinaryArithmetic.Mul; } | '@' { arithmetic = BinaryArithmetic.MatMul; } | '/' { arithmetic = BinaryArithmetic.TrueDiv; } 
 			| '%' { arithmetic = BinaryArithmetic.Mod; } | '//' { arithmetic = BinaryArithmetic.FloorDiv; } )
-		factor { $result = factory.createArithmetic(arithmetic, $result, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
+		factor { $result = new BinaryArithmeticSSTNode(arithmetic, $result, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
 	)*
 ;
 
-factor returns [ExpressionNode result]
+factor returns [SSTNode result]
 :
 	{ UnaryArithmetic arithmetic; }
 	( '+' { arithmetic = UnaryArithmetic.Pos; } | '-' { arithmetic = UnaryArithmetic.Neg; } | '~' { arithmetic = UnaryArithmetic.Invert; } )
-	factor { $result = factory.createArithmetic(arithmetic, $factor.result); }
+	factor { $result = new UnarySSTNode(arithmetic, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
 	| power { $result = $power.result; }
 ;
 
-power returns [ExpressionNode result]
+power returns [SSTNode result]
 :
 	atom_expr { $result = $atom_expr.result; }
 	(
-		'**' factor { $result = factory.createPow($result, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
+		'**' factor { $result = new TernaryArithmeticSSTNode($result, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
 	)?
 ;
 
-atom_expr returns [ExpressionNode result]
+atom_expr returns [SSTNode result]
 :
 	( AWAIT )? // 'await' is ignored for now 
 	atom
 	{ $result = $atom.result; }
 	(
-		'(' arglist CloseB=')' { $result = factory.createCall($result, $arglist.result, getStartIndex($ctx), getStopIndex($CloseB)); }
-		| '[' subscriptlist ']' { $result = factory.createSubscript($result, $subscriptlist.result); }
-		| '.' NAME { $result = factory.createGetAttribute($result, $NAME.text); }
+		'(' arglist CloseB=')' { $result = new CallSSTNode($result, $arglist.result, getStartIndex($ctx), getStopIndex($CloseB));}
+		| '[' subscriptlist c=']' { $result = new SubscriptSSTNode($result, $subscriptlist.result, getStartIndex($ctx), getStopIndex($c));}
+		| '.' NAME { $result = new GetAttributeSSTNode($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));}
 	)*
 ;
 
-atom returns [ExpressionNode result]
+atom returns [SSTNode result]
 :
 	'('
 	(
@@ -1066,20 +1128,31 @@ atom returns [ExpressionNode result]
 		setlisttuplemaker[PythonBuiltinClassType.PTuple, PythonBuiltinClassType.PGenerator]
 		{ $result = $setlisttuplemaker.result; }
 		|
-		{ $result = factory.createCollection(ExpressionNode.EMPTY_ARRAY, PythonBuiltinClassType.PTuple); }
+		{ $result = new CollectionSSTNode(new SSTNode[0], PythonBuiltinClassType.PTuple, -1, -1); }
 	)
-	')'
+	cp = ')' 
+        {   
+            if ($result instanceof CollectionSSTNode) {
+                $result.setStartOffset(getStartIndex($ctx)); 
+                $result.setEndOffset(getStopIndex($cp)); 
+            }
+        }
 	|
-	'['
+	startIndex = '['
+        
 	(
 		setlisttuplemaker[PythonBuiltinClassType.PList, PythonBuiltinClassType.PList]
 		{ $result = $setlisttuplemaker.result; }
 		|
-		{ $result = factory.createCollection(ExpressionNode.EMPTY_ARRAY, PythonBuiltinClassType.PList); }
+		{ $result = new CollectionSSTNode(new SSTNode[0], PythonBuiltinClassType.PList, -1, -1);}
 	)
-	']'
+	endIndex = ']' 
+        {
+            $result.setStartOffset(getStartIndex($startIndex));
+            $result.setEndOffset(getStopIndex($endIndex));
+        }
 	|
-	'{'
+	startIndex = '{'
 	(
 		dictmaker // dictmaker cannot be empty
 		{ $result = $dictmaker.result; }
@@ -1087,25 +1160,29 @@ atom returns [ExpressionNode result]
 		setlisttuplemaker[PythonBuiltinClassType.PSet, PythonBuiltinClassType.PSet]
 		{ $result = $setlisttuplemaker.result; }
 		|
-		{ $result = factory.createCollection(ExpressionNode.EMPTY_ARRAY, PythonBuiltinClassType.PDict); }
+		{ $result =  new CollectionSSTNode(new SSTNode[0], PythonBuiltinClassType.PDict, -1, -1);}
 	)
-	'}'
-	| NAME { $result = factory.createVariableLookup(parserInfo, $NAME.text, getStartIndex($NAME), getStopIndex($NAME)); }
-	| DECIMAL_INTEGER { $result = factory.createNumberLiteral($DECIMAL_INTEGER.text, 0, 10, getStartIndex($DECIMAL_INTEGER), getStopIndex($DECIMAL_INTEGER)); }
-	| OCT_INTEGER { $result = factory.createNumberLiteral($OCT_INTEGER.text, 2, 8, getStartIndex($OCT_INTEGER), getStopIndex($OCT_INTEGER)); }
-	| HEX_INTEGER { $result = factory.createNumberLiteral($HEX_INTEGER.text, 2, 16, getStartIndex($HEX_INTEGER), getStopIndex($HEX_INTEGER)); }
-	| BIN_INTEGER { $result = factory.createNumberLiteral($BIN_INTEGER.text, 2, 1, getStartIndex($BIN_INTEGER), getStopIndex($BIN_INTEGER)); }
-	| FLOAT_NUMBER { $result = factory.createFloatNumberLiteral($FLOAT_NUMBER.text, false, getStartIndex($FLOAT_NUMBER), getStopIndex($FLOAT_NUMBER)); }
-	| IMAG_NUMBER { $result = factory.createFloatNumberLiteral($IMAG_NUMBER.text, true, getStartIndex($IMAG_NUMBER), getStopIndex($IMAG_NUMBER)); }
-	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = factory.createStringLiteral(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
-	| t='...' { $result = factory.createObjectLiteral(PEllipsis.INSTANCE, getStartIndex($t), getStopIndex($t)); }
-	| t='None' { $result = factory.createObjectLiteral(PNone.NONE, getStartIndex($t), getStopIndex($t)); }
-	| t='True' { $result = factory.createBooleanLiteral(true, getStartIndex($t), getStopIndex($t)); }
-	| t='False' { $result = factory.createBooleanLiteral(false, getStartIndex($t), getStopIndex($t)); }
+	endIndex = '}' 
+        {
+            $result.setStartOffset(getStartIndex($startIndex));
+            $result.setEndOffset(getStopIndex($endIndex));
+        }
+	| NAME { $result = factory.createVariableLookup($NAME.text, getStartIndex($NAME), getStopIndex($NAME)); }
+	| DECIMAL_INTEGER { $result = new NumberLiteralNode($DECIMAL_INTEGER.text, 0, 10, getStartIndex($DECIMAL_INTEGER), getStopIndex($DECIMAL_INTEGER)); }
+	| OCT_INTEGER { $result = new NumberLiteralNode($OCT_INTEGER.text, 2, 8, getStartIndex($OCT_INTEGER), getStopIndex($OCT_INTEGER)); }
+	| HEX_INTEGER { $result = new NumberLiteralNode($HEX_INTEGER.text, 2, 16, getStartIndex($HEX_INTEGER), getStopIndex($HEX_INTEGER)); }
+	| BIN_INTEGER { $result = new NumberLiteralNode($BIN_INTEGER.text, 2, 1, getStartIndex($BIN_INTEGER), getStopIndex($BIN_INTEGER)); }
+	| FLOAT_NUMBER { $result = new FloatLiteralNode($FLOAT_NUMBER.text, false, getStartIndex($FLOAT_NUMBER), getStopIndex($FLOAT_NUMBER)); }
+	| IMAG_NUMBER { $result = new FloatLiteralNode($IMAG_NUMBER.text, true, getStartIndex($IMAG_NUMBER), getStopIndex($IMAG_NUMBER)); }
+	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = new StringLiteralNode(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
+	| t='...' { $result = new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS, getStartIndex($t), getStopIndex($t));}
+	| t='None' { $result = new SimpleSSTNode(SimpleSSTNode.Type.NONE, getStartIndex($t), getStopIndex($t));}
+	| t='True' { $result = new BooleanLiteralNode(true, getStartIndex($t), getStopIndex($t)); }
+	| t='False' { $result = new BooleanLiteralNode(false, getStartIndex($t), getStopIndex($t)); }
 ;
 
 
-subscriptlist returns [ExpressionNode result]
+subscriptlist returns [SSTNode result]
 :
 	subscript
 	{ $result = $subscript.result; }
@@ -1118,16 +1195,16 @@ subscriptlist returns [ExpressionNode result]
 			( ',' subscript { push($subscript.result); } )*
 			','?
 		)?
-		{ $result = factory.createCollection(getArray(start, ExpressionNode[].class), PythonBuiltinClassType.PTuple); }
+		{ $result = new CollectionSSTNode(getArray(start, SSTNode[].class), PythonBuiltinClassType.PTuple, getStartIndex($ctx), getLastIndex($ctx));}
 	)?
 ;
 
-subscript returns [ExpressionNode result]
+subscript returns [SSTNode result]
 :
 	test
 	{ $result = $test.result; }
 	|
-	{ ExpressionNode sliceStart = null; ExpressionNode sliceEnd = null; ExpressionNode sliceStep = null; }
+	{ SSTNode sliceStart = null; SSTNode sliceEnd = null; SSTNode sliceStep = null; }
 	( test { sliceStart = $test.result; } )?
 	':'
 	( test { sliceEnd = $test.result; } )?
@@ -1135,10 +1212,10 @@ subscript returns [ExpressionNode result]
 		':'
 		( test { sliceStep = $test.result; } )?
 	)?
-	{ $result = factory.createSlice(sliceStart, sliceEnd, sliceStep); }
+	{ $result = new SliceSSTNode(sliceStart, sliceEnd, sliceStep, getStartIndex($ctx), getLastIndex($ctx)); }
 ;
 
-exprlist returns [ExpressionNode[] result]
+exprlist returns [SSTNode[] result]
 :
 	{ int start = start(); }
 	(
@@ -1155,10 +1232,10 @@ exprlist returns [ExpressionNode[] result]
 	(
 		','
 	)?
-	{ $result = getArray(start, ExpressionNode[].class); }
+	{ $result = getArray(start, SSTNode[].class); }
 ;
 
-testlist returns [ExpressionNode result]
+testlist returns [SSTNode result]
 :
 	test
 	{ $result = $test.result; }
@@ -1171,14 +1248,14 @@ testlist returns [ExpressionNode result]
 			( ',' test { push($test.result); } )*
 			','?
 		)?
-		{ $result = factory.createCollection(getArray(start, ExpressionNode[].class), PythonBuiltinClassType.PTuple); }
+		{ $result = new CollectionSSTNode(getArray(start, SSTNode[].class), PythonBuiltinClassType.PTuple, getStartIndex($ctx), getLastIndex($ctx));}
 	)?
 ;
 
-dictmaker returns [ExpressionNode result]
+dictmaker returns [SSTNode result]
 :
-	{ ExpressionNode name; ExpressionNode value; }
-	{ factory.createScope(_localctx, ScopeInfo.ScopeKind.Transparent); }
+	{ SSTNode name; SSTNode value; }
+	{ /*factory.createScope(_localctx, ScopeInfo.ScopeKind.Transparent); */}
 	(
 		n=test ':' v=test
 		{ name = $n.result; value = $v.result; }
@@ -1188,7 +1265,7 @@ dictmaker returns [ExpressionNode result]
 	(
 		comp_for[value, name, PythonBuiltinClassType.PDict]
 		|
-		{ factory.leaveScope(); }
+		{ /*factory.leaveScope(); */}
 		{ int start = start(); push(name); push(value); }
 		(
 			','
@@ -1200,14 +1277,14 @@ dictmaker returns [ExpressionNode result]
 			)
 		)*
 		','?
-		{ $result = factory.createCollection(getArray(start, ExpressionNode[].class), PythonBuiltinClassType.PDict); }
+		{ $result = new CollectionSSTNode(getArray(start, SSTNode[].class), PythonBuiltinClassType.PDict, -1, -1); }
 	)
 ;
 
-setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType] returns [ExpressionNode result]
+setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType] returns [SSTNode result]
 :
-	{ ExpressionNode value; }
-	{ factory.createScope(_localctx, ScopeInfo.ScopeKind.Transparent); }
+	{ SSTNode value; }
+	{ /*factory.createScope(_localctx, ScopeInfo.ScopeKind.Transparent); */}
 	(
 		test { value = $test.result; }
 		|
@@ -1217,7 +1294,7 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
 		comp_for[value, null, $compType]
 		{ $result = $comp_for.result; }
 		|
-		{ factory.leaveScope(); }
+		{ /*factory.leaveScope(); */}
 		{ int start = start(); push(value); }
 		(
 			','
@@ -1228,25 +1305,36 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
 			)
 		)*
 		','?
-		{ $result = factory.createCollection(getArray(start, ExpressionNode[].class), $type); }
+		{ 
+                    SSTNode[] items = getArray(start, SSTNode[].class);
+                    if ($type == PythonBuiltinClassType.PTuple && items.length == 1 && !$ctx.getText().endsWith(",")) {
+                        $result = items[0];
+                    } else {
+                        $result = new CollectionSSTNode(items, $type, -1, -1); 
+                    }
+                }
 	)
 ;
 
 classdef
 locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
 :
-	{ factory.createScope(_localctx, ScopeInfo.ScopeKind.Class); }
+	
 	'class' NAME
-	{ ExpressionNode[] baseClasses = ExpressionNode.EMPTY_ARRAY; }
+	{ 
+            factory.getScopeEnvironment().createLocal($NAME.text);
+            ScopeInfo classScope = factory.createScope($NAME.text, ScopeInfo.ScopeKind.Class); 
+            SSTNode[] baseClasses = new SSTNode[0]; 
+        }
 	( '(' arglist ')' { baseClasses = $arglist.result.getArgs(); } )?
 	':' suite
-	{ push(factory.createClassDefinition($NAME.text, baseClasses, $suite.result)); }
+	{ push(factory.createClassDefinition($NAME.text, baseClasses, $suite.result, getStartIndex($ctx), getStopIndex($suite.stop))); }
 	{ factory.leaveScope(); }
 ;
 
 arglist returns [ArgListBuilder result]
 :
-	{ ArgListBuilder args = factory.argListBuilder(); }
+	{ ArgListBuilder args = new ArgListBuilder(); }
 	(
 		argument[args]
 		(
@@ -1269,7 +1357,7 @@ arglist returns [ArgListBuilder result]
 // multiple (test comp_for) arguments are blocked; keyword unpackings
 // that precede iterable unpackings are blocked; etc.
 
-argument [ArgListBuilder args] returns [ExpressionNode result]
+argument [ArgListBuilder args] returns [SSTNode result]
 :               
 		{ factory.createScope(_localctx, ScopeInfo.ScopeKind.Transparent); }
 		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator]
@@ -1280,17 +1368,17 @@ argument [ArgListBuilder args] returns [ExpressionNode result]
                     throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                   }
                 }
-		n=test {if (!((((ArgumentContext)_localctx).n).result instanceof ReadNode)) {
+		n=test {if (!((((ArgumentContext)_localctx).n).result instanceof VarLookupNode)) {
                                     throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                                 }} '=' test { 
                                 args.addNamedArg(name, $test.result); 
                         }
 	|
 		test {  
-                        if (args.existNameArg()) {
+                        if (args.hasNameArg()) {
                             throw new PythonRecognitionException("positional argument follows keyword argument", this, _input, _localctx, getCurrentToken());
                         }
-                        if (args.getKwArgs() != null) {
+                        if (args.hasKwArg()) {
                             throw new PythonRecognitionException("positional argument follows keyword argument unpacking", this, _input, _localctx, getCurrentToken());
                         }
                         args.addArg($test.result); 
@@ -1299,7 +1387,7 @@ argument [ArgListBuilder args] returns [ExpressionNode result]
 		'**' test { args.addKwArg($test.result); }
 	|
 		'*' test { 
-                        if (args.getKwArgs() != null) {
+                        if (args.hasKwArg()) {
                             throw new PythonRecognitionException("iterable argument unpacking follows keyword argument unpacking", this, _input, _localctx, getCurrentToken());
                         }
                         args.addStarArg($test.result); 
@@ -1307,15 +1395,15 @@ argument [ArgListBuilder args] returns [ExpressionNode result]
 ;
 
 comp_for
-[ExpressionNode target, ExpressionNode name, PythonBuiltinClassType resultType]
-returns [ExpressionNode result]
+[SSTNode target, SSTNode name, PythonBuiltinClassType resultType]
+returns [SSTNode result]
 :
-	{ boolean scopeCreated = factory.createGeneratorScope($target, $name); }
+	{ boolean scopeCreated = true; factory.createGeneratorScope($target, $name); }
 	{ boolean async = false; }
 	(
 		ASYNC { async = true; }
 	)?
-	{ ExpressionNode value; }
+	{ SSTNode value; }
 	'for' exprlist 'in' or_test
 	{ value = $or_test.result; }
 	
@@ -1323,21 +1411,21 @@ returns [ExpressionNode result]
 	(
 		'if' test_nocond { push($test_nocond.result); }
 	) *
-	{ ExpressionNode[] conditions = getArray(start, ExpressionNode[].class); }
+	{ SSTNode[] conditions = getArray(start, SSTNode[].class); }
 	
 	(
 		comp_for [value, null, PythonBuiltinClassType.PGenerator]
 		{ value = $comp_for.result; }
 	)?
-	{ $result = factory.createForComprehension(async, $target, $name, value, conditions, $resultType); }
+	{ $result = new ForComprehensionSSTNode(async, $target, $name, value, conditions, $resultType, getStartIndex($ctx), getStopIndex($comp_for.stop)); }
 	{ factory.leaveGeneratorScope(scopeCreated); }
 ;
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler
 encoding_decl: NAME;
 
-yield_expr returns [ExpressionNode result] locals [ExpressionNode value]: 'yield' (yield_arg { $value = $yield_arg.result; })? { $result = factory.createYield($value); };
-yield_arg returns [ExpressionNode result]: 'from' test | testlist;
+yield_expr returns [SSTNode result] locals [SSTNode value]: 'yield' (yield_arg { $value = $yield_arg.result; })? { $result = new YieldExpressionSSTNode($value, getStartIndex($ctx), $value.getEndOffset()); };
+yield_arg returns [SSTNode result]: 'from' test | testlist;
 
 /*
  * lexer rules

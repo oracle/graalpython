@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module 'foo'> SourceSection: [0,12]`foo(*mylist)`
+ModuleRootNode Name: <module 'call09'> SourceSection: [0,12]`foo(*mylist)`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
@@ -11,5 +11,7 @@ ModuleRootNode Name: <module 'foo'> SourceSection: [0,12]`foo(*mylist)`
         CallDispatchNodeGen SourceSection: None
       PositionalArgumentsNode SourceSection: None
         ReadNameNodeGen SourceSection: [5,11]`mylist`
+          Identifier: mylist
         ExecutePositionalStarargsNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: None
+        Identifier: foo

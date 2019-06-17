@@ -47,13 +47,25 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.frame.AccessNameNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotNode;
+import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
+import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
+import com.oracle.graal.python.nodes.statement.ImportFromNode;
+import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.parser.ParserTmpVariableNode;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
@@ -119,8 +131,9 @@ public class ParserTreePrinter implements NodeVisitor {
             level++;
             indent(level); sb.append("Arguments:"); 
             if(node.getDefaults() == null || node.getDefaults().length == 0) {
-                sb.append(" None\n");
+                sb.append(" None"); newLine();
             } else {
+                newLine();
                 level++;
                 for (ExpressionNode arg : node.getDefaults()) {
                     visit(arg);
@@ -165,6 +178,14 @@ public class ParserTreePrinter implements NodeVisitor {
             return true;
         }
         
+        public boolean visit (ReadGlobalOrBuiltinNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Identifier: ").append(node.getAttributeId()); newLine();
+            level--;
+            return true;
+        }
+               
         public boolean visit (ExpressionNode.ExpressionWithSideEffect node) {
             nodeHeader(node);
             level += 2;
@@ -185,6 +206,40 @@ public class ParserTreePrinter implements NodeVisitor {
             visit(node.getReturn());
             level--;
             return false;
+        }
+        
+        public boolean visit (ImportNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Module: ").append(node.getModuleName()); newLine();
+            level--;
+            return true;
+        }
+        
+        public boolean visit (ImportFromNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Importee: ").append(node.getImportee()); newLine();
+            indent(level); sb.append("Level: ").append(node.getLevel()); newLine();
+            indent(level); sb.append("FromList: "); add(node.getFromlist()); newLine();
+            level--;
+            return true;
+        }
+        
+        public boolean visit(LookupAndCallBinaryNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Op: ").append(node.getName()); newLine();
+            level--;
+            return true;
+        }
+        
+        public boolean visit(LookupAndCallUnaryNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Op: ").append(node.getMethodName()); newLine();
+            level--;
+            return true;
         }
         
         private boolean visitChildren(Node node) {
@@ -230,7 +285,7 @@ public class ParserTreePrinter implements NodeVisitor {
             sb.append(", requiresKeywordArgs=");add(signature.takesRequiredKeywordArgs());
             newLine();
             level++;
-            if (signature.takesVarArgs()) {
+            if (signature.getParameterIds() != null && signature.getParameterIds().length > 0) {
                 indent(level); sb.append("Param Names: ");
                 add(signature.getParameterIds());
                 newLine();
@@ -340,8 +395,35 @@ public class ParserTreePrinter implements NodeVisitor {
                 visitChildren = visit((ReturnTargetNode) node);
             } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
                 visitChildren = visit((ExpressionNode.ExpressionWithSideEffect)node);
+            } else if (node instanceof ReadGlobalOrBuiltinNode) {
+                visitChildren = visit((ReadGlobalOrBuiltinNode)node);
+            } else if (node instanceof ImportNode) {
+                visitChildren = visit((ImportNode)node); 
+            } else if (node instanceof ImportFromNode) {
+                visitChildren = visit((ImportFromNode)node); 
+            } else if (node instanceof LookupAndCallBinaryNode) {
+                visitChildren = visit((LookupAndCallBinaryNode)node); 
+            } else if (node instanceof LookupAndCallUnaryNode) {
+                visitChildren = visit((LookupAndCallUnaryNode)node); 
             } else {
                 nodeHeader(node);
+                level++;
+                if (node instanceof WriteIdentifierNode) {
+                    indent(level); sb.append("Identifier: ").append(((WriteIdentifierNode)node).getIdentifier()); newLine();
+                }
+                if (node instanceof AccessNameNode) {
+                    indent(level); sb.append("Identifier: ").append(((AccessNameNode)node).getAttributeId()); newLine();
+                }
+                if (node instanceof FrameSlotNode) {
+                    indent(level); sb.append("Frame: ").append(((FrameSlotNode)node).getSlot().toString()); newLine();
+                }
+                if (node instanceof ParserTmpVariableNode) {
+                    indent(level); sb.append("Identifier: ").append(((ParserTmpVariableNode)node).getName()); newLine();
+                }
+                if (node instanceof WriteGlobalNode) {
+                    indent(level); sb.append("Identifier: ").append(((WriteGlobalNode)node).getAttributeId()); newLine();
+                }
+                level--;
             }
             if (visitChildren) {
                 level++;

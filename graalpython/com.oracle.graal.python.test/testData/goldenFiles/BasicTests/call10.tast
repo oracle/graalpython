@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module 'foo'> SourceSection: [0,23]`foo(*mylist1, *mylis...`
+ModuleRootNode Name: <module 'call10'> SourceSection: [0,23]`foo(*mylist1, *mylis...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
@@ -12,7 +12,11 @@ ModuleRootNode Name: <module 'foo'> SourceSection: [0,23]`foo(*mylist1, *mylis..
       PositionalArgumentsNode SourceSection: None
         BinaryArithmeticExpression SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __add__
           ReadNameNodeGen SourceSection: [5,12]`mylist1`
+            Identifier: mylist1
           ReadNameNodeGen SourceSection: [15,22]`mylist2`
+            Identifier: mylist2
         ExecutePositionalStarargsNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: None
+        Identifier: foo

@@ -328,4 +328,14 @@ public abstract class LookupAndCallBinaryNode extends Node {
         }
         return handler.execute(left, right);
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getRname() {
+        return rname;
+    }
+    
+    
 }

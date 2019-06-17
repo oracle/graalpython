@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module 'foo'> SourceSection: [0,6]`foo(1)`
+ModuleRootNode Name: <module 'call02'> SourceSection: [0,6]`foo(1)`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
@@ -11,3 +11,4 @@ ModuleRootNode Name: <module 'foo'> SourceSection: [0,6]`foo(1)`
         CallDispatchNodeGen SourceSection: None
       IntegerLiteralNode SourceSection: [4,5]`1`
       ReadNameNodeGen SourceSection: None
+        Identifier: foo

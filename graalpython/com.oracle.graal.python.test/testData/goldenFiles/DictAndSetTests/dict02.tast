@@ -1,0 +1,13 @@
+ModuleRootNode Name: <module 'dict02'> SourceSection: [0,5]`{a:b}`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,5]`{a:b}`
+    DictLiteralNode SourceSection: [0,5]`{a:b}`
+      PythonObjectFactoryNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [1,2]`a`
+        Identifier: a
+      ReadNameNodeGen SourceSection: [3,4]`b`
+        Identifier: b

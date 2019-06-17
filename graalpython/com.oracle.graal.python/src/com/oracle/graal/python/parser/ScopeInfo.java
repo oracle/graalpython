@@ -37,6 +37,7 @@ import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultEx
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import java.util.HashMap;
 
 public final class ScopeInfo {
 
@@ -90,7 +91,9 @@ public final class ScopeInfo {
      * function has default arguments.
      */
     private List<KwDefaultExpressionNode> kwDefaultArgumentNodes;
-
+    
+    private TreeSet<String> seenVars;
+    
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
         this.scopeKind = kind;
@@ -138,7 +141,7 @@ public final class ScopeInfo {
         return this.getFrameDescriptor().findFrameSlot(identifier);
     }
 
-    FrameSlot createSlotIfNotPresent(String identifier) {
+    public FrameSlot createSlotIfNotPresent(String identifier) {
         assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
@@ -149,6 +152,17 @@ public final class ScopeInfo {
         }
     }
 
+    public void addSeenVar(String name) {
+        if (seenVars == null) {
+            seenVars = new TreeSet<>();
+        }
+        seenVars.add(name);
+    }
+    
+    public Set<String> getSeenVars() {
+        return seenVars;
+    }
+    
     public void addExplicitGlobalVariable(String identifier) {
         if (explicitGlobalVariables == null) {
             explicitGlobalVariables = new HashSet<>();
@@ -189,7 +203,7 @@ public final class ScopeInfo {
         addFreeVar(identifier, false);
     }
 
-    protected void addFreeVar(String identifier, boolean createFrameSlot) {
+    public void addFreeVar(String identifier, boolean createFrameSlot) {
         if (freeVars == null) {
             freeVars = new TreeSet<>();
         }
@@ -284,4 +298,45 @@ public final class ScopeInfo {
         throw new IllegalStateException("Cannot find argument for name " + name + " in scope " + getScopeId());
     }
 
+    public void debugPrint(StringBuilder sb, int indent) {
+        indent(sb, indent);sb.append("Scope: ").append(scopeId).append("\n");
+        indent(sb, indent + 1); sb.append("Kind: ").append(scopeKind).append("\n");
+        Set<String> names = new HashSet();
+        for (Object id : frameDescriptor.getIdentifiers()) {
+            names.add((String)id);
+        }
+        indent(sb, indent + 1); sb.append("FrameDescriptor: ");printSet(sb, names); sb.append("\n");
+        indent(sb, indent + 1); sb.append("CellVars: "); printSet(sb, cellVars); sb.append("\n");
+        indent(sb, indent + 1); sb.append("FreeVars: "); printSet(sb, freeVars); sb.append("\n");
+        ScopeInfo child = firstChildScope;
+        while (child != null) {
+            child.debugPrint(sb, indent + 1);
+            child = child.nextChildScope;
+        }
+    }
+    
+    private void indent(StringBuilder sb, int indent) {
+        for (int i = 0; i < indent; i++) {
+            sb.append("    ");
+        }
+    }
+    
+    private void printSet(StringBuilder sb, Set<String> set) {
+        if (set == null || set.isEmpty()) {
+            sb.append("Empty");
+        } else {
+            sb.append("[");
+            boolean first = true;
+            for (String name : set) {
+                if (first) {
+                    sb.append(name);
+                    first = false;
+                } else {
+                    sb.append(", ").append(name);
+                }
+            }
+            sb.append("]");
+        }
+    }
+    
 }

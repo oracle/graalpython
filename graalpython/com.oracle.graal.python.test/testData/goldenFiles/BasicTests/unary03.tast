@@ -1,0 +1,12 @@
+ModuleRootNode Name: <module 'unary03'> SourceSection: [0,2]`~u`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,2]`~u`
+    UnaryArithmeticExpression SourceSection: [0,2]`~u`
+      LookupAndCallUnaryNodeGen SourceSection: None
+        Op: __invert__
+      ReadNameNodeGen SourceSection: [1,2]`u`
+        Identifier: u

@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module 'foo'> SourceSection: [0,10]`'''ahoj'''`
+ModuleRootNode Name: <module 'longString01'> SourceSection: [0,10]`'''ahoj'''`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False

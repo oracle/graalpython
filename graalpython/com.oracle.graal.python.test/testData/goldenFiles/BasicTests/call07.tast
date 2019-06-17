@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module 'foo'> SourceSection: [0,31]`foo('ahoj', arg1 = 1...`
+ModuleRootNode Name: <module 'call07'> SourceSection: [0,31]`foo('ahoj', arg1 = 1...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
@@ -19,3 +19,4 @@ ModuleRootNode Name: <module 'foo'> SourceSection: [0,31]`foo('ahoj', arg1 = 1..
         ExecuteKeywordStarargsNodeGen SourceSection: None
           EmptyNode SourceSection: None
       ReadNameNodeGen SourceSection: None
+        Identifier: foo

@@ -1,0 +1,16 @@
+ModuleRootNode Name: <module 'basic01'> SourceSection: [0,10]`import sys`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,10]`import sys`
+    ExpressionWithSideEffect SourceSection: [0,10]`import sys`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [7,10]`sys`
+          Identifier: sys
+          ImportExpression SourceSection: None
+            ImportNode SourceSection: None
+              Module: sys

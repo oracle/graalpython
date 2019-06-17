@@ -1,4 +1,4 @@
-ModuleRootNode Name: <module 'foo'> SourceSection: [0,15]`def foo(): pass`
+ModuleRootNode Name: <module 'functionDef01'> SourceSection: [0,15]`def foo(): pass`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
@@ -10,6 +10,7 @@ ModuleRootNode Name: <module 'foo'> SourceSection: [0,15]`def foo(): pass`
         EmptyNode SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,15]`def foo(): pass`
+          Identifier: foo
           FunctionDefinitionNode Name: foo SourceSection: None
             Arguments: None
             KwArguments: None
@@ -34,4 +35,5 @@ ModuleRootNode Name: <module 'foo'> SourceSection: [0,15]`def foo(): pass`
                     ExpressionStatementNode SourceSection: [11,15]`pass`
                       EmptyNode SourceSection: [11,15]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

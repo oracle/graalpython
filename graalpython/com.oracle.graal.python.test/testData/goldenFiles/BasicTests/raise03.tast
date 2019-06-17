@@ -1,0 +1,20 @@
+ModuleRootNode Name: <module 'raise03'> SourceSection: [0,24]`raise NameError('Pav...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,24]`raise NameError('Pav...`
+    ExpressionWithSideEffect SourceSection: [0,24]`raise NameError('Pav...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        RaiseNodeGen SourceSection: [0,24]`raise NameError('Pav...`
+          PythonCallNodeGen SourceSection: [6,24]`NameError('Pavel')`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            StringLiteralNode SourceSection: [16,23]`'Pavel'`
+            ReadNameNodeGen SourceSection: None
+              Identifier: NameError
+          EmptyNode SourceSection: None

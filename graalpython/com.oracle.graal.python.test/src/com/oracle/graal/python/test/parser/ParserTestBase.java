@@ -42,6 +42,7 @@ package com.oracle.graal.python.test.parser;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -64,33 +65,44 @@ public class ParserTestBase {
     private PythonContext context;
 //    private ParserRuleContext lastAntrlTree;
     private final static String GOLDEN_FILE_EXT = ".tast";
+    private final static String SCOPE_FILE_EXT = ".scope";
     
     @Rule public TestName name = new TestName();
 
+    private ScopeInfo lastGlobalScope;
+    
     public ParserTestBase() {
         PythonTests.enterContext();
         context = PythonLanguage.getContextRef().get();
     }
     
     
-    private RootNode parseOld(String src) {
-        Source source = Source.newBuilder(PythonLanguage.ID, src, "foo").build();
+    protected RootNode parseOld(String src, String moduleName) {
+        Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
         PythonParser parser = context.getCore().getParser();
         RootNode result = (RootNode) parser.parse(PythonParser.ParserMode.File, context.getCore(), source, null);
+        lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
 //        lastAntrlTree = ((PythonParserImpl)parser).getLastAntlrTree();
         return result;
     }
     
-    private Node parseNew(String src) {
-        Source source = Source.newBuilder(PythonLanguage.ID, src, "foo").build();
-        return ((PythonParserImpl)context.getCore().getParser()).parseWithNew(PythonParser.ParserMode.File, context.getCore(), source, null);
+    protected Node parseNew(String src, String moduleName) {
+        Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
+        PythonParser parser = context.getCore().getParser();
+        Node result = ((PythonParserImpl)parser).parseWithNew(PythonParser.ParserMode.File, context.getCore(), source, null);
+        lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
+        return result;
         //return (RootNode) ((PythonParserImpl)context.getCore().getParser()).getParsergetPython3NewParser(PythonParser.ParserMode.File, context.getCore(), source, null);
+    }
+    
+    protected ScopeInfo getLastGlobalScope() {
+        return lastGlobalScope;
     }
     
     public void checkSyntaxError(String source) throws Exception {
         boolean thrown = false;
         try {
-            Node resultNew = parseNew(source);
+            Node resultNew = parseNew(source, name.getMethodName());
         } catch (PException e) {
             thrown = e.isSyntaxError();
         }
@@ -101,36 +113,15 @@ public class ParserTestBase {
     public void checkTreeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         String source = readFile(testFile);
-        Node resultNew = parseNew(source);
+        Node resultNew = parseNew(source, getFileName(testFile));
         String tree = printTreeToString(resultNew);
         File goldenFile = goldenFileNextToTestFile 
-                ? new File(testFile.getParentFile(), testFile.getName() + GOLDEN_FILE_EXT)
+                ? new File(testFile.getParentFile(), getFileName(testFile) + GOLDEN_FILE_EXT)
                 : getGoldenFile(GOLDEN_FILE_EXT);
         if (!goldenFile.exists()) {
             // parse it with old parser and create golden file with this result
             // TODO, when the new parser will work, it has to be removed
-            RootNode resultOld = parseOld(source);
-            String oldTree = printTreeToString(resultOld);
-            FileWriter fw = new FileWriter(goldenFile);
-            try {
-                fw.write(oldTree);
-            }
-            finally{
-                fw.close();
-            }
-            
-        }
-        assertDescriptionMatches(tree, goldenFile);        
-    }
-    
-    public void checkTreeResult(String source) throws Exception {
-        Node resultNew = parseNew(source);
-        String tree = printTreeToString(resultNew);
-        File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
-        if (!goldenFile.exists()) {
-            // parse it with old parser and create golden file with this result
-            // TODO, when the new parser will work, it has to be removed
-            RootNode resultOld = parseOld(source);
+            RootNode resultOld = parseOld(source, getFileName(testFile));
             String oldTree = printTreeToString(resultOld);
             FileWriter fw = new FileWriter(goldenFile);
             try {
@@ -142,6 +133,75 @@ public class ParserTestBase {
             
         }
         assertDescriptionMatches(tree, goldenFile);
+    }
+    
+    public void checkScopeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
+        assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
+        String source = readFile(testFile);
+        parseNew(source, getFileName(testFile));
+        ScopeInfo scopeNew = getLastGlobalScope();
+        StringBuilder scopes = new StringBuilder();
+        scopeNew.debugPrint(scopes, 0);
+        File goldenScopeFile = goldenFileNextToTestFile 
+                ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
+                : getGoldenFile(SCOPE_FILE_EXT);
+        if (!goldenScopeFile.exists()) {
+            parseOld(source, getFileName(testFile));
+            StringBuilder oldScope = new StringBuilder();
+            getLastGlobalScope().debugPrint(oldScope, 0);
+            FileWriter fw = new FileWriter(goldenScopeFile);
+            try {
+                fw.write(oldScope.toString());
+            }
+            finally{
+                fw.close();
+            }
+            
+        }
+        assertDescriptionMatches(scopes.toString(), goldenScopeFile);
+    }
+    
+    public void checkTreeResult(String source) throws Exception {
+        Node resultNew = parseNew(source, name.getMethodName());
+        String tree = printTreeToString(resultNew);
+        File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
+        if (!goldenFile.exists()) {
+            // parse it with old parser and create golden file with this result
+            // TODO, when the new parser will work, it has to be removed
+            RootNode resultOld = parseOld(source, name.getMethodName());
+            String oldTree = printTreeToString(resultOld);
+            FileWriter fw = new FileWriter(goldenFile);
+            try {
+                fw.write(oldTree);
+            }
+            finally{
+                fw.close();
+            }
+            
+        }
+        assertDescriptionMatches(tree, goldenFile);
+    }
+    
+    public void checkScopeResult(String source) throws Exception {
+        parseNew(source, name.getMethodName());
+        ScopeInfo scopeNew = getLastGlobalScope();
+        StringBuilder scopes = new StringBuilder();
+        scopeNew.debugPrint(scopes, 0);
+        File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
+        if (!goldenScopeFile.exists()) {
+            parseOld(source, name.getMethodName());
+            StringBuilder oldScope = new StringBuilder();
+            getLastGlobalScope().debugPrint(oldScope, 0);
+            FileWriter fw = new FileWriter(goldenScopeFile);
+            try {
+                fw.write(oldScope.toString());
+            }
+            finally{
+                fw.close();
+            }
+            
+        }
+        assertDescriptionMatches(scopes.toString(), goldenScopeFile);
     }
     
     private String printTreeToString(Node node) {
@@ -232,6 +292,10 @@ public class ParserTestBase {
         return goldenFile;
     }
     
+    private String getFileName(File file) {
+        return file.getName().substring(0, file.getName().lastIndexOf('.'));
+    }
+    
     private String getContentDifferences(String expected, String actual) {
         StringBuilder sb = new StringBuilder();
         sb.append("Expected content is:").
@@ -314,5 +378,15 @@ public class ParserTestBase {
             return sb.toString();
         }
         return lineSeparator;
+    }
+    
+    public void checkScopeAndTree(String source) throws Exception{
+        checkScopeResult(source);
+        checkTreeResult(source);
+    }
+    
+    public void checkScopeAndTreeFromFile(File testFile) throws Exception{
+        checkScopeFromFile(testFile, true);
+        checkTreeFromFile(testFile, true);
     }
 }

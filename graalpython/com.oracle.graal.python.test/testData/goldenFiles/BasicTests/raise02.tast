@@ -1,0 +1,15 @@
+ModuleRootNode Name: <module 'raise02'> SourceSection: [0,15]`raise NameError`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,15]`raise NameError`
+    ExpressionWithSideEffect SourceSection: [0,15]`raise NameError`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        RaiseNodeGen SourceSection: [0,15]`raise NameError`
+          ReadNameNodeGen SourceSection: [6,15]`NameError`
+            Identifier: NameError
+          EmptyNode SourceSection: None
