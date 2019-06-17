@@ -7,6 +7,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 * Add `java.add_to_classpath` API to dynamically extend the host class path
 * Allow write access to main module bindings for embedder
+* Swap arguments for `polyglot.export_value` to use the more natural (name, value) order and deprecate the previous argument order.
 
 ## Version 20.0.0 beta 1
 
