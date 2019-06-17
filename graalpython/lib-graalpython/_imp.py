@@ -43,7 +43,10 @@ _py_package_context = None
 
 @__builtin__
 def extension_suffixes():
-    return [".so", ".bc", ".dylib", ".su"]
+    # Do the same as we do in 'distutils.sysconfig_graalpython.py'
+    import sys
+    so_abi = "." + sys.implementation.cache_tag + "-" + sys.implementation._multiarch + ".so"
+    return [so_abi, ".so", ".bc", ".dylib", ".su"]
 
 
 @__builtin__

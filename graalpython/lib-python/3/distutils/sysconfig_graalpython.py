@@ -62,7 +62,8 @@ _config_vars = None
 
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
-    so_ext = _imp.extension_suffixes()[0]
+    so_ext = ".so"
+    so_abi = sys.implementation.cache_tag + "-" + sys.implementation._multiarch
 
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
@@ -71,9 +72,10 @@ def _init_posix():
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
-    g['EXT_SUFFIX'] = so_ext
+    g['SOABI'] = so_abi
+    g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
-    g['SO'] = so_ext  # deprecated in Python 3, for backward compatibility
+    g['SO'] = "." + so_abi + so_ext # deprecated in Python 3, for backward compatibility
     g['AR'] = "ar"
     g['ARFLAGS'] = "rc"
     g['EXE'] = ""
@@ -87,6 +89,7 @@ def _init_posix():
 def _init_nt():
     """Initialize the module as appropriate for NT"""
     g = {}
+    g['EXT_SUFFIX'] = _imp.extension_suffixes()[0]
     g['EXE'] = ".exe"
     g['SO'] = ".pyd"
     g['SOABI'] = g['SO'].rsplit('.')[0]   # xxx?
