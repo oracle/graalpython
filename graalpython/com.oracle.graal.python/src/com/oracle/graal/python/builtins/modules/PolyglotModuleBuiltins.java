@@ -119,7 +119,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object importSymbol(String name) {
-            Object object = getContext().getEnv().importSymbol(name);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            Object object = env.importSymbol(name);
             if (object == null) {
                 return PNone.NONE;
             }
@@ -134,6 +138,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object evalString(@SuppressWarnings("unused") PNone path, String value, String langOrMimeType) {
             Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
             try {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
@@ -159,6 +166,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object evalFile(String path, @SuppressWarnings("unused") PNone string, String langOrMimeType) {
             Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
             try {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
@@ -179,6 +189,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object evalFile(String path, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang) {
             Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
             try {
                 return getContext().getEnv().parse(Source.newBuilder(PythonLanguage.ID, env.getTruffleFile(path)).name(path).build()).call();
             } catch (IOException e) {
@@ -218,30 +231,59 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "export_value", minNumOfPositionalArgs = 1, parameterNames = {"value", "name"})
+    @Builtin(name = "export_value", minNumOfPositionalArgs = 1, parameterNames = {"name", "value"})
     @GenerateNodeFactory
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
         @Child private GetAttributeNode getNameAttributeNode;
         @Child private CastToStringNode castToStringNode;
 
-        @Specialization
+        @Specialization(guards = "!isString(value)")
         @TruffleBoundary
-        public Object exportSymbol(Object value, String name) {
-            getContext().getEnv().exportSymbol(name, value);
+        public Object exportSymbolKeyValue(String name, Object value) {
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            env.exportSymbol(name, value);
             return value;
+        }
+
+        @Specialization(guards = "!isString(value)")
+        @TruffleBoundary
+        public Object exportSymbolValueKey(Object value, String name) {
+            PythonLanguage.getLogger().warning("[deprecation] polyglot.export_value(value, name) is deprecated " +
+                            "and will be removed. Please swap the arguments.");
+            return exportSymbolKeyValue(name, value);
+        }
+
+        @Specialization(guards = "isString(arg1)")
+        @TruffleBoundary
+        public Object exportSymbolAmbiguous(Object arg1, String arg2) {
+            PythonLanguage.getLogger().warning("[deprecation] polyglot.export_value(str, str) is ambiguous. In the future, this will " +
+                            "default to using the first argument as the name and the second as value, but now it " +
+                            "uses the first argument as value and the second as the name.");
+            return exportSymbolValueKey(arg1, arg2);
         }
 
         @Specialization
         @TruffleBoundary
         public Object exportSymbol(PFunction fun, @SuppressWarnings("unused") PNone name) {
-            getContext().getEnv().exportSymbol(fun.getName(), fun);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            env.exportSymbol(fun.getName(), fun);
             return fun;
         }
 
         @Specialization
         @TruffleBoundary
         public Object exportSymbol(PBuiltinFunction fun, @SuppressWarnings("unused") PNone name) {
-            getContext().getEnv().exportSymbol(fun.getName(), fun);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            env.exportSymbol(fun.getName(), fun);
             return fun;
         }
 
@@ -280,7 +322,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void export(String name, Object obj) {
-            getContext().getEnv().exportSymbol(name, obj);
+            Env env = getContext().getEnv();
+            if (!env.isPolyglotAccessAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
+            }
+            env.exportSymbol(name, obj);
         }
     }
 

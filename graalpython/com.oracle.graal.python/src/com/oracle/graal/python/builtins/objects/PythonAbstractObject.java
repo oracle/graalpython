@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -678,7 +679,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             // 'type'
             if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
                 return true;
-            } else if (object instanceof PythonClass) {
+            } else if (object instanceof PythonClass || object instanceof PythonModule) {
                 return false;
             } else {
                 LazyPythonClass klass = getClass.execute(object);

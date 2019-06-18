@@ -458,7 +458,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         ArrayList<Scope> scopes = new ArrayList<>();
         if (context.getBuiltins() != null) {
             // false during initialization
-            scopes.add(Scope.newBuilder("__main__", scopeFromObject(context.getMainModule())).build());
+            scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
             scopes.add(Scope.newBuilder("builtins", scopeFromObject(context.getBuiltins())).build());
         }
         return scopes;
