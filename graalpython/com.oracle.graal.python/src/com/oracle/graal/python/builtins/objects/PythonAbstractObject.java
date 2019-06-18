@@ -567,7 +567,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         @Specialization
         int access(Object object, String fieldName,
-                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
+                        @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @Cached IsCallableNode isCallableNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
@@ -596,7 +597,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
 
             for (PythonAbstractClass c : getMroNode.execute(klass)) {
-                attr = readNode.execute(c, attrKeyName);
+                // n.b. we need to use a different node because it makes a difference if the type is
+                // native
+                attr = readTypeAttrNode.execute(c, attrKeyName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
                     break;
@@ -604,7 +607,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
 
             if (attr == PNone.NO_VALUE) {
-                attr = readNode.execute(owner, attrKeyName);
+                attr = readObjectAttrNode.execute(owner, attrKeyName);
             }
 
             if (attr != PNone.NO_VALUE) {
