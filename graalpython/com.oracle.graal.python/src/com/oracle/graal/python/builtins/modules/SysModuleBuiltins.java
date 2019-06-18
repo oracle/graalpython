@@ -98,6 +98,7 @@ import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
+    public static final String LLVM_LANGUAGE = "llvm";
     public static final String GRAAL_PYTHON_CEXT_HOME = "graal_python_cext_home";
     private static final String LICENSE = "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.";
     private static final String COMPILE_TIME;
@@ -162,8 +163,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         // we need these during core initialization, they are re-set in postInitialize
         postInitialize(core);
     }
-
-    private static final String LLVM_LANGUAGE = "llvm";
 
     @Override
     public void postInitialize(PythonCore core) {
@@ -491,7 +490,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
-        private static final String LLVM_LANGUAGE = "llvm";
 
         @Specialization
         @TruffleBoundary
@@ -504,6 +502,23 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             return toolPath.toString();
+        }
+    }
+
+    @Builtin(name = "__graal_get_toolchain_identifier", minNumOfPositionalArgs = 0)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class GetToolIdentifierNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        protected String getToolPath() {
+            Env env = getContext().getEnv();
+            LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            String toolchainId = toolchain.getIdentifier();
+            assert toolchainId != null;
+            return toolchainId;
         }
     }
 

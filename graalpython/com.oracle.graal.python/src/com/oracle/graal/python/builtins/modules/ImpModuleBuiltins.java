@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
@@ -106,8 +107,10 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -254,7 +257,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     throw raise(PythonErrorType.ImportError, "cannot load C api from " + capiHomeAttr);
                 }
 
-                TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), capiHome, "capi.so"));
+                // TODO(fa): should we try all extension suffixes?
+                String extSuffix = ExtensionSuffixesNode.getSoAbi(ctxt);
+
+                TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), capiHome, "capi" + extSuffix));
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
@@ -536,6 +542,34 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } else {
                 return factory().createCode((RootCallTarget) ct);
             }
+        }
+    }
+
+    @Builtin(name = "extension_suffixes", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
+        @Specialization
+        Object run(
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            String soAbi = getSoAbi(ctxt);
+            return factory().createList(new Object[]{soAbi, ".so", ".bc", ".dylib", ".su"});
+        }
+
+        @TruffleBoundary
+        static String getSoAbi(PythonContext ctxt) {
+            PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
+            Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
+            // sys.implementation.cache_tag
+            String cacheTag = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "cache_tag");
+            // sys.implementation._multiarch
+            String multiArch = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "_multiarch");
+
+            Env env = ctxt.getEnv();
+            LanguageInfo llvmInfo = env.getLanguages().get(SysModuleBuiltins.LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            String toolchainId = toolchain.getIdentifier();
+
+            return "." + cacheTag + "-" + toolchainId + "-" + multiArch + ".so";
         }
     }
 

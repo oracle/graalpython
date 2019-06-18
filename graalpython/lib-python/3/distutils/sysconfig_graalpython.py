@@ -63,7 +63,7 @@ _config_vars = None
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
     so_ext = ".so"
-    so_abi = sys.implementation.cache_tag + "-" + sys.implementation._multiarch
+    so_abi = sys.implementation.cache_tag + "-" + sys.__graal_get_toolchain_identifier() + "-" + sys.implementation._multiarch
 
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
