@@ -148,7 +148,9 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
 def punittest(args):
     if '--regex' not in args:
         args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
-    args += ["-Dgraal.TraceTruffleCompilation=true", "-Dgraal.TruffleCompilationExceptionsAreFatal=false", "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
+    args += ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
+             "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
+             "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
     mx_unittest.unittest(args)
 
 
