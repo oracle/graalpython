@@ -1321,12 +1321,13 @@ locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
 :
 	
 	'class' NAME
-	{ 
+	{ SSTNode[] baseClasses = new SSTNode[0]; }
+	( '(' arglist ')' { baseClasses = $arglist.result.getArgs(); } )?
+        {
+            // we need to create the scope here to resolve base classes in the outer scope
             factory.getScopeEnvironment().createLocal($NAME.text);
             ScopeInfo classScope = factory.createScope($NAME.text, ScopeInfo.ScopeKind.Class); 
-            SSTNode[] baseClasses = new SSTNode[0]; 
         }
-	( '(' arglist ')' { baseClasses = $arglist.result.getArgs(); } )?
 	':' suite
 	{ push(factory.createClassDefinition($NAME.text, baseClasses, $suite.result, getStartIndex($ctx), getStopIndex($suite.stop))); }
 	{ factory.leaveScope(); }

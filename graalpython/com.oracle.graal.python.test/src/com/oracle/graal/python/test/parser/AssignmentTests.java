@@ -46,6 +46,16 @@ public class AssignmentTests extends ParserTestBase{
     }
     
     @Test
+    public void assignment08() throws Exception {
+        checkTreeResult("a.b = 1");
+    }
+    
+    @Test
+    public void assignment09() throws Exception {
+        checkTreeResult("f().b = 1");
+    }
+    
+    @Test
     public void augassign01() throws Exception {
         checkTreeResult("a += b");
     }
@@ -104,4 +114,5 @@ public class AssignmentTests extends ParserTestBase{
     public void augassign12() throws Exception {
         checkTreeResult("a **= b");
     }
+    
 }

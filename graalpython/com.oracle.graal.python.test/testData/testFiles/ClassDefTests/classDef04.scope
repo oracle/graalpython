@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: Complex
+        Kind: Class
+        FrameDescriptor: [__init__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [imagpart, realpart, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]

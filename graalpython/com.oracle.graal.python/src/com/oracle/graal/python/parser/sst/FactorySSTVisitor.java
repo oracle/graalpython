@@ -248,10 +248,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     public PNode visit(ClassSSTNode node) {
         ScopeInfo classScope = node.classScope;
         scopeEnvironment.setCurrentScope(classScope);
-        ExpressionNode[] baseClasses = node.baseClasses == null ? new ExpressionNode[0] : new ExpressionNode[node.baseClasses.length];
-        for (int i =  0; i < baseClasses.length; i++) {
-            baseClasses[i] = (ExpressionNode)node.baseClasses[i].accept(this);
-        }
         StringBuilder qualifiedName = new StringBuilder(node.name);
         ScopeInfo scope = node.classScope.getParent();
         while (scope != null) {
@@ -281,17 +277,16 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         }
         
         SSTNode[] bodyNodes = ((BlockSSTNode)node.body).statements;
-        boolean hasDoc = bodyNodes.length > 0 && bodyNodes[0] instanceof StringLiteralNode;
-        int delta = hasDoc ? 2 : 1;
-        StatementNode[] bodyStatements = new StatementNode[bodyNodes.length + delta];
+        
+        StatementNode[] bodyStatements = new StatementNode[bodyNodes.length + 1];
         bodyStatements[0] = new ClassDefinitionPrologueNode(qualifiedName.toString());
         for (int i = 0; i < bodyNodes.length; i++) {
-            bodyStatements[i+delta] = (StatementNode)bodyNodes[i].accept(this);
+            bodyStatements[i+1] = (StatementNode)bodyNodes[i].accept(this);
         }
-        if (hasDoc) {
+        ExpressionNode doc = (new PythonNodeFactory.DocExtractor()).extract(bodyStatements[1]);
+        if (doc != null) {
             scopeEnvironment.createLocal(__DOC__);
-            bodyStatements[2] = (StatementNode)bodyNodes[0].accept(this);
-           // bodyStatements[1] = scopeEnvironment.findVariable(__DOC__).makeWriteNode((StringLiteralNode)bodyStatements[2]);
+            bodyStatements[1] = scopeEnvironment.findVariable(__DOC__).makeWriteNode(doc);
         }
         
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
@@ -301,9 +296,15 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots());
         scopeEnvironment.setCurrentScope(node.classScope.getParent());
-        ExpressionNode[] args = new ExpressionNode[2];
-        args[1] = nodeFactory.createStringLiteral(node.name);
+        
+        ExpressionNode[] args = node.baseClasses == null ? new ExpressionNode[2] : new ExpressionNode[node.baseClasses.length + 2];
         args[0] = funcDef;
+        args[1] = nodeFactory.createStringLiteral(node.name);
+        for (int i =  0; i < node.baseClasses.length; i++) {
+            args[i + 2] = (ExpressionNode)node.baseClasses[i].accept(this);
+        }
+        
+        
         ExpressionNode owner = nodeFactory.createGetAttribute(nodeFactory.createBuiltinsLiteral(), __BUILD_CLASS__);
         ExpressionNode classDef = PythonCallNode.create(owner, args, new ExpressionNode[0], null, null);
         classDef.assignSourceSection(nodeSourceSection);
@@ -592,7 +593,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     @Override
     public PNode visit(GetAttributeSSTNode node) {
-        PNode result = nodeFactory.createGetAttribute((ExpressionNode)node.receiver.accept(this), node.name);
+        ExpressionNode receiver = (ExpressionNode)node.receiver.accept(this);
+        PNode result = nodeFactory.createGetAttribute(receiver, node.name);
+        // TODO: the old parser doesn't assing source section to the reciever and the node as well. 
+        // Is this ok?
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }

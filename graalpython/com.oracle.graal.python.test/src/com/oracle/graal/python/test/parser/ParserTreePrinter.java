@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
@@ -242,6 +243,14 @@ public class ParserTreePrinter implements NodeVisitor {
             return true;
         }
         
+        public boolean visit(SetAttributeNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Attribute: ").append(node.getAttributeId()); newLine();
+            level--;
+            return true;
+        }
+        
         private boolean visitChildren(Node node) {
             for (Node child : node.getChildren()) {
                 visit(child);
@@ -405,6 +414,8 @@ public class ParserTreePrinter implements NodeVisitor {
                 visitChildren = visit((LookupAndCallBinaryNode)node); 
             } else if (node instanceof LookupAndCallUnaryNode) {
                 visitChildren = visit((LookupAndCallUnaryNode)node); 
+            } else if (node instanceof SetAttributeNode) {
+                visitChildren = visit((SetAttributeNode)node); 
             } else {
                 nodeHeader(node);
                 level++;
@@ -423,6 +434,7 @@ public class ParserTreePrinter implements NodeVisitor {
                 if (node instanceof WriteGlobalNode) {
                     indent(level); sb.append("Identifier: ").append(((WriteGlobalNode)node).getAttributeId()); newLine();
                 }
+                
                 level--;
             }
             if (visitChildren) {

@@ -989,9 +989,7 @@ public final class PythonNodeFactory {
             for (SSTNode variable : collection.getValues()) {
                 declareVar(variable);
             }
-        } else {
-            throw new RuntimeException("unhandled case in assignment");
-        }
+        } 
     }
     
     public ForSSTNode createForSSTNode(SSTNode[] targets, SSTNode iterator, SSTNode body, boolean containsContinue, int startOffset, int endOffset) {
