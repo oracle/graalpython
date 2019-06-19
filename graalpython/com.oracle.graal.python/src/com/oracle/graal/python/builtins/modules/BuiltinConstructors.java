@@ -932,7 +932,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object keywordArg);
 
         @TruffleBoundary(transferToInterpreterOnException = false)
-        private Object stringToInt(String num, int base) {
+        private Object stringToIntInternal(String num, int base) {
             String s = num.replace("_", "");
             if ((base >= 2 && base <= 32) || base == 0) {
                 BigInteger bi = asciiToBigInteger(s, base, false);
@@ -946,34 +946,61 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private Object toInt(Object arg) {
-            if (arg instanceof Integer || arg instanceof BigInteger) {
-                return arg;
-            } else if (arg instanceof Boolean) {
-                return (boolean) arg ? 1 : 0;
-            } else if (arg instanceof Double) {
-                return doubleToInt((Double) arg);
-            } else if (arg instanceof String) {
-                return stringToInt((String) arg, 10);
-            }
-            return null;
-        }
-
-        private Object toInt(Object arg1, Object arg2) {
-            if (arg1 instanceof String && arg2 instanceof Integer) {
-                return stringToInt((String) arg1, (Integer) arg2);
+        private Object convertToIntInternal(LazyPythonClass cls, Object value, Object number, int base) {
+            if (value == null) {
+                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
+            } else if (value instanceof BigInteger) {
+                return factory().createInt(cls, (BigInteger) value);
+            } else if (isPrimitiveInt(cls)) {
+                return value;
             } else {
-                throw raise(ValueError, "invalid base or val for int()");
+                return factory().createInt(cls, (int) value);
             }
         }
 
-        private static Object doubleToInt(double num) {
+        private Object stringToInt(LazyPythonClass cls, String number, int base) {
+            Object value = stringToIntInternal(number, base);
+            return convertToIntInternal(cls, value, number, base);
+        }
+
+        private static Object doubleToIntInternal(double num) {
             if (num > Integer.MAX_VALUE || num < Integer.MIN_VALUE) {
                 return BigInteger.valueOf((long) num);
             } else {
                 return (int) num;
             }
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private Object toIntInternal(Object number) {
+            if (number instanceof Integer || number instanceof BigInteger) {
+                return number;
+            } else if (number instanceof Boolean) {
+                return (boolean) number ? 1 : 0;
+            } else if (number instanceof Double) {
+                return doubleToIntInternal((Double) number);
+            } else if (number instanceof String) {
+                return stringToIntInternal((String) number, 10);
+            }
+            return null;
+        }
+
+        private Object toIntInternal(Object number, Object base) {
+            if (number instanceof String && base instanceof Integer) {
+                return stringToIntInternal((String) number, (Integer) base);
+            } else {
+                throw raise(ValueError, "invalid base or val for int()");
+            }
+        }
+
+        private Object toInt(LazyPythonClass cls, Object number) {
+            Object value = toIntInternal(number);
+            return convertToIntInternal(cls, value, number, 10);
+        }
+
+        private Object toInt(LazyPythonClass cls, Object number, int base) {
+            Object value = toIntInternal(number, base);
+            return convertToIntInternal(cls, value, number, base);
         }
 
         // Copied directly from Jython
@@ -1123,12 +1150,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(keywordArg)")
         public Object createInt(LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone keywordArg) {
             try {
-                Object value = stringToInt(arg, 10);
-                if (isPrimitiveInt(cls)) {
-                    return value;
-                } else {
-                    return value instanceof BigInteger ? factory().createInt(cls, (BigInteger) value) : factory().createInt(cls, (int) value);
-                }
+                return stringToInt(cls, arg, 10);
             } catch (NumberFormatException e) {
                 throw raise(ValueError, "invalid literal for int() with base 10: %s", arg);
             }
@@ -1195,40 +1217,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = NumberFormatException.class)
-        Object parsePInt(LazyPythonClass cls, String arg, int base) {
-            Object int2 = toInt(arg, base);
-            if (int2 instanceof BigInteger) {
-                return factory().createInt(cls, (BigInteger) int2);
-            } else if (isPrimitiveInt(cls)) {
-                return int2;
-            } else {
-                assert int2 instanceof Integer;
-                return factory().createInt(cls, (int) int2);
-            }
+        Object parsePInt(LazyPythonClass cls, String number, int base) {
+            return toInt(cls, number, base);
         }
 
         @Specialization(replaces = "parsePInt")
-        Object parsePIntError(LazyPythonClass cls, String arg, int base) {
+        Object parsePIntError(LazyPythonClass cls, String number, int base) {
             try {
-                return parsePInt(cls, arg, base);
+                return parsePInt(cls, number, base);
             } catch (NumberFormatException e) {
-                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
+                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
             }
         }
 
         @Specialization
-        public Object createInt(LazyPythonClass cls, String arg, Object keywordArg) {
+        public Object createInt(LazyPythonClass cls, String number, Object keywordArg) {
             if (keywordArg instanceof PNone) {
-                Object value = toInt(arg);
-                if (value == null) {
-                    throw raise(ValueError, "invalid literal for int() with base 10: %s", arg);
-                } else if (value instanceof BigInteger) {
-                    return factory().createInt(cls, (BigInteger) value);
-                } else if (isPrimitiveInt(cls)) {
-                    return value;
-                } else {
-                    return factory().createInt(cls, (int) value);
-                }
+                return toInt(cls, number);
             } else {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException("Not implemented integer with base: " + keywordArg);
