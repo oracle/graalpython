@@ -81,9 +81,6 @@ public final class WhileNode extends LoopNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        if (((WhileRepeatingNode) loopNode.getRepeatingNode()).executeRepeating(frame)) {
-            // manually peel the first iteration
-            loopNode.executeLoop(frame);
-        }
+        loopNode.executeLoop(frame);
     }
 }

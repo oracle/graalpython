@@ -185,10 +185,7 @@ public final class ForNode extends LoopNode {
         }
         frame.setObject(iteratorSlot, iterator.execute(frame));
         try {
-            if (((ForRepeatingNode) loopNode.getRepeatingNode()).executeRepeating(frame)) {
-                // manually peel the first iteration
-                loopNode.executeLoop(frame);
-            }
+            loopNode.executeLoop(frame);
         } finally {
             frame.setObject(iteratorSlot, null);
         }
