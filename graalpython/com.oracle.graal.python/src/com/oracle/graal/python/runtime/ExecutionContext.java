@@ -288,6 +288,9 @@ public abstract class ExecutionContext {
          * </p>
          */
         public static PException enter(VirtualFrame frame, PythonContext context, Node callNode) {
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.acquireInteropLock();
+            }
             PFrame.Reference prev = context.popTopFrameInfo();
             assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                             "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
@@ -303,6 +306,9 @@ public abstract class ExecutionContext {
             if (context != null) {
                 context.popTopFrameInfo();
                 ExceptionContext.exit(context, savedExceptionState);
+                if (!context.getSingleThreadedAssumption().isValid()) {
+                    context.releaseInteropLock();
+                }
             }
         }
     }

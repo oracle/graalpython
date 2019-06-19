@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
@@ -102,8 +103,12 @@ public final class PythonContext {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
+    private final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
-    private static final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+
+    /* A lock for interop calls when this context is used by multiple threads. */
+    private Lock interopLock;
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
@@ -402,7 +407,7 @@ public final class PythonContext {
         return singleNativeContext;
     }
 
-    public static Assumption getSingleThreadedAssumption() {
+    public Assumption getSingleThreadedAssumption() {
         return singleThreaded;
     }
 
@@ -451,5 +456,20 @@ public final class PythonContext {
             return singletonNativePtrs[singletonNativePtrIdx];
         }
         return null;
+    }
+
+    @TruffleBoundary
+    public void acquireInteropLock() {
+        interopLock.lock();
+    }
+
+    @TruffleBoundary
+    public void releaseInteropLock() {
+        interopLock.unlock();
+    }
+
+    @TruffleBoundary
+    public void createInteropLock() {
+        interopLock = new ReentrantLock();
     }
 }
