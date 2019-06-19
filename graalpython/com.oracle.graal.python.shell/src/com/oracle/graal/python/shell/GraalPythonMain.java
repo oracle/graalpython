@@ -270,7 +270,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private String[] getExecutableList() {
         if (ImageInfo.inImageCode()) {
-            return new String[]{getExecutable()};
+            ArrayList<String> exec_list = new ArrayList<>();
+            exec_list.add(ProcessProperties.getExecutableName());
+            if (relaunchArgs != null) {
+                exec_list.addAll(relaunchArgs);
+            }
+            return exec_list.toArray(new String[exec_list.size()]);
         } else {
             StringBuilder sb = new StringBuilder();
             ArrayList<String> exec_list = new ArrayList<>();
@@ -293,9 +298,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private String getExecutable() {
-        if (ImageInfo.inImageRuntimeCode()) {
-            return ProcessProperties.getExecutableName();
-        } else if (ImageInfo.inImageBuildtimeCode()) {
+        if (ImageInfo.inImageBuildtimeCode()) {
             return "";
         } else {
             String[] executableList = getExecutableList();

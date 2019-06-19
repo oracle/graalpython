@@ -200,6 +200,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         String basePrefix = env.getOptions().get(PythonOptions.SysBasePrefix);
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
+        String capiHome = env.getOptions().get(PythonOptions.CAPI);
 
         PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
@@ -263,6 +264,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 } catch (SecurityException | IOException e) {
                 }
                 env.getOptions().set(PythonOptions.StdLibHome, stdLibHome);
+            }
+            if (capiHome.isEmpty()) {
+                try {
+                    for (TruffleFile f : env.getTruffleFile(coreHome).list()) {
+                        if (f.getName().equals("capi") && f.isDirectory()) {
+                            capiHome = f.getPath();
+                            break;
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+                env.getOptions().set(PythonOptions.CAPI, capiHome);
             }
 
             PythonCore.writeInfo((MessageFormat.format("Updated locations:" +

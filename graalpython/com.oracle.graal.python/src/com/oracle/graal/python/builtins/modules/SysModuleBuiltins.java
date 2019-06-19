@@ -209,9 +209,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-        String cextModuleHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "bin", toolchain.getIdentifier(), "modules");
-        String cextHome = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env), "bin", toolchain.getIdentifier());
-        String capiSrc = String.join(env.getFileNameSeparator(), PythonCore.getNativeModuleHome(env));
+        String cextModuleHome = String.join(env.getFileNameSeparator(), PythonCore.getCoreHome(env), "modules", toolchain.getIdentifier());
+        String cextHome = String.join(env.getFileNameSeparator(), PythonCore.getCoreHome(env), toolchain.getIdentifier());
+        String capiSrc = String.join(env.getFileNameSeparator(), PythonCore.getCAPIHome(env));
 
         Object[] path;
         int pathIdx = 0;
@@ -502,23 +502,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             return toolPath.toString();
-        }
-    }
-
-    @Builtin(name = "__graal_get_toolchain_identifier", minNumOfPositionalArgs = 0)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    public abstract static class GetToolIdentifierNode extends PythonBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        protected String getToolPath() {
-            Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            String toolchainId = toolchain.getIdentifier();
-            assert toolchainId != null;
-            return toolchainId;
         }
     }
 

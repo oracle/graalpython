@@ -195,9 +195,6 @@ suite = {
             "jacoco": "include",
             "javaCompliance" : "8+",
             "checkstyleVersion" : "8.8",
-            "javaProperties": {
-                "graalpython.nativeModuleHome": "<path:GRAALPYTHON_GRAALVM_SUPPORT>/capi",
-            },
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated" : True,
@@ -249,6 +246,7 @@ suite = {
                 "POLYGLOT_INC": "<path:SULONG_HOME>/include",
                 "CLANG": "<toolchainGetToolPath:native,CC>",
                 "PLATFORM": "<toolchainGetIdentifier:native>",
+                "ARCH": "<arch>",
                 "OS": "<os>",
             },
         },
@@ -371,7 +369,7 @@ suite = {
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],
-                "./capi/": [
+                "./lib-graalpython/capi/": [
                     "file:graalpython/com.oracle.graal.python.cext/src",
                     "file:graalpython/com.oracle.graal.python.cext/modules",
                     "file:graalpython/com.oracle.graal.python.cext/include",

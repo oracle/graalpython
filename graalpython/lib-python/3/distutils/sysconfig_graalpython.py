@@ -63,12 +63,14 @@ _config_vars = None
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
     so_ext = ".so"
-    so_abi = sys.implementation.cache_tag + "-" + sys.__graal_get_toolchain_identifier() + "-" + sys.implementation._multiarch
+    so_abi = sys.implementation.cache_tag + "-" + sys.graal_python_platform_id + "-" + sys.implementation._multiarch
 
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
     g['CXX'] = sys.__graal_get_toolchain_path('CXX')
     g['OPT'] = "-DNDEBUG -O1"
+    g['CONFINCLUDEPY'] = os.path.join(sys.graal_python_cext_src, "include")
+    g['CPPFLAGS'] = '-I. -I%s' % str(os.path.join(sys.graal_python_cext_src, "include"))
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')

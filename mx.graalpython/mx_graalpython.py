@@ -92,6 +92,10 @@ def python(args):
     """run a Python program or shell"""
     if '--python.WithJavaStacktrace' not in args:
         args.insert(0, '--python.WithJavaStacktrace')
+
+    if not any([x.startswith("--python.CAPI") for x in args]):
+        args.insert(1, mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"))
+
     do_run_python(args)
 
 

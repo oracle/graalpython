@@ -46,11 +46,11 @@ public interface PythonCore extends ParserErrorCallback {
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";
     static final String LIB_GRAALPYTHON = "/lib-graalpython";
+    static final String CAPI_HOME = "/capi";
     static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
-    static final String NATIVE_MODULE_HOME = System.getProperty("graalpython.nativeModuleHome");
 
     /**
      * Load the core library and prepare all builtin classes and modules.
@@ -151,11 +151,14 @@ public interface PythonCore extends ParserErrorCallback {
     }
 
     @TruffleBoundary
-    public static String getNativeModuleHome(TruffleLanguage.Env env) {
-        if (NATIVE_MODULE_HOME != null) {
-            return NATIVE_MODULE_HOME;
+    public static String getCAPIHome(TruffleLanguage.Env env) {
+        String capiHome = env.getOptions().get(PythonOptions.CAPI);
+        if (capiHome.isEmpty()) {
+            String coreHome = getCoreHome(env);
+            env.getOptions().set(PythonOptions.CAPI, coreHome + CAPI_HOME);
+            return CAPI_HOME;
         }
-        return getCoreHome(env);
+        return capiHome;
     }
 
     @TruffleBoundary

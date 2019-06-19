@@ -41,10 +41,21 @@ ifndef PLATFORM
   $(error PLATFORM is undefined)
 endif
 
+ifndef ARCH
+  $(error ARCH is undefined)
+endif
+
+# to comply with CPython's designation
+ifeq ($(ARCH), amd64)
+ARCH=x86_64
+endif
+
+SO_ABI=.graalpython-${PLATFORM}-${ARCH}-${OS}
+
 ifeq ($(OS), darwin)
-SO_EXT=.dylib
+SO_EXT=${SO_ABI}.dylib
 else
-SO_EXT=.so
+SO_EXT=${SO_ABI}.so
 endif
 
 LIBDIR=../lib-graalpython
@@ -104,8 +115,8 @@ clean:
 	$(QUIETLY) rm -f ${MODULE_OBJ_FILES}
 	$(QUIETLY) rm -f ${HEADER_TARGETS}
 	$(QUIETLY) rm -f compile_flags.txt
-ifeq ($(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc),)
-	rm -f $(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc)
+ifeq ($(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.so),)
+	rm -f $(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.so)
 endif
 
 # compile_flags.txt is useful with clangd as language server

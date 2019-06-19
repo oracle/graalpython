@@ -135,7 +135,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             // TODO: fix this better? sys.executable is often used in subprocess tests, but on Java
             // that actually gives you a whole cmdline, which we need to split up for process
             // builder
-            if (!ImageInfo.inImageCode() && !argStrings.isEmpty()) {
+            if (!argStrings.isEmpty()) {
                 if (argStrings.get(0).equals(PythonOptions.getOption(context, PythonOptions.Executable))) {
                     String[] executableList = PythonOptions.getExecutableList();
                     argStrings.remove(0);

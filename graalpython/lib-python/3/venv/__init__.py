@@ -138,12 +138,13 @@ class EnvBuilder:
             if sys.platform != "win32":
                 f.write("#!/bin/sh\n")
             f.write(sys.executable)
-            f.write(" --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s'" % (
+            f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'" % (
                 sys.graal_python_core_home,
                 sys.graal_python_stdlib_home,
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
+                sys.graal_python_cext_src,
             ))
             if sys.platform == "win32":
                 f.write(" %*")
@@ -294,6 +295,7 @@ class EnvBuilder:
                         break
 
         # Truffle change: we need to set some extra options for the launcher to work
+        from distutils import sysconfig
         def create_if_needed(d):
             if not os.path.exists(d):
                 os.makedirs(d)
@@ -305,9 +307,7 @@ class EnvBuilder:
 
         cext_module_src_path = os.path.join(sys.graal_python_cext_src, "modules")
         files = [os.path.join(cext_module_src_path, f) for f in os.listdir(cext_module_src_path) if f.endswith(".c")]
-        import _imp
-        # TODO platform-specific extension
-        so_ext = _imp.extension_suffixes()[0]
+        so_ext = sysconfig.get_config_var("EXT_SUFFIX")
         for f in files:
             f_basename = os.path.splitext(os.path.basename(f))[0]
             module = os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext)
