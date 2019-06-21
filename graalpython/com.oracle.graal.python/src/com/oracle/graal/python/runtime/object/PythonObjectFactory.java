@@ -764,8 +764,8 @@ public abstract class PythonObjectFactory extends Node {
                         filename, name, firstlineno, lnotab));
     }
 
-    public PZipImporter createZipImporter(LazyPythonClass cls, PDict zipDirectoryCache) {
-        return trace(new PZipImporter(cls, zipDirectoryCache));
+    public PZipImporter createZipImporter(LazyPythonClass cls, PDict zipDirectoryCache, String separator) {
+        return trace(new PZipImporter(cls, zipDirectoryCache, separator));
     }
 
     /*

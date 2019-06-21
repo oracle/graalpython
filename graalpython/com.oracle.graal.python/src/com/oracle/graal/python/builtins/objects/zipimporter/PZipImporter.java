@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.zipimporter;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -42,9 +41,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PZipImporter extends PythonBuiltinObject {
-
-    public static final String SEPARATOR = File.separator;
-
     /**
      * pathname of the Zip archive
      */
@@ -73,6 +69,11 @@ public class PZipImporter extends PythonBuiltinObject {
         IS_PACKAGE
     }
 
+    /**
+     * The separatorChar used in the context for this importer
+     */
+    private final String separator;
+
     private static class SearchOrderEntry {
 
         String suffix;
@@ -100,7 +101,7 @@ public class PZipImporter extends PythonBuiltinObject {
     /**
      * Defines how the source and module will be searched in archive.
      */
-    private static SearchOrderEntry[] searchOrder;
+    private final SearchOrderEntry[] searchOrder;
 
     /**
      * Module information
@@ -112,23 +113,26 @@ public class PZipImporter extends PythonBuiltinObject {
         PACKAGE
     }
 
-    public PZipImporter(LazyPythonClass cls, PDict zipDirectoryCache) {
+    public PZipImporter(LazyPythonClass cls, PDict zipDirectoryCache, String separator) {
         super(cls);
         this.archive = null;
         this.prefix = null;
+        this.separator = separator;
         this.moduleZipDirectoryCache = zipDirectoryCache;
-        if (searchOrder == null) { // define the order once
-            searchOrder = defineSearchOrder();
-        }
+        this.searchOrder = defineSearchOrder();
     }
 
-    @CompilerDirectives.TruffleBoundary
-    private static SearchOrderEntry[] defineSearchOrder() {
+    private SearchOrderEntry[] defineSearchOrder() {
         return new SearchOrderEntry[]{
-                        new SearchOrderEntry(SEPARATOR + "__init__.py",
+                        new SearchOrderEntry(joinStrings(separator, "__init__.py"),
                                         EnumSet.of(EntryType.IS_PACKAGE, EntryType.IS_SOURCE)),
                         new SearchOrderEntry(".py", EnumSet.of(EntryType.IS_SOURCE))
         };
+    }
+
+    @TruffleBoundary
+    private static String joinStrings(String a, String b) {
+        return a + b;
     }
 
     public PDict getZipDirectoryCache() {
@@ -181,7 +185,7 @@ public class PZipImporter extends PythonBuiltinObject {
 
     @TruffleBoundary
     protected String makeFilename(String fullname) {
-        return prefix + getSubname(fullname).replace('.', File.separatorChar);
+        return prefix + getSubname(fullname).replace(".", separator);
     }
 
     protected PTuple getEntry(String filenameAndSuffix) {
@@ -190,7 +194,7 @@ public class PZipImporter extends PythonBuiltinObject {
 
     @TruffleBoundary
     protected String makePackagePath(String fullname) {
-        return archive + SEPARATOR + prefix + getSubname(fullname);
+        return archive + separator + prefix + getSubname(fullname);
     }
 
     /**

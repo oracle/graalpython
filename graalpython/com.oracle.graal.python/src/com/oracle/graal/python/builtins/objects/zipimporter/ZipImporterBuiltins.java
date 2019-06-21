@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.StandardOpenOption;
@@ -221,7 +220,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 if (parentFile == null) {
                     break;
                 }
-                prefix = tfile.getName() + PZipImporter.SEPARATOR + prefix;
+                prefix = tfile.getName() + getContext().getEnv().getFileNameSeparator() + prefix;
                 tfile = parentFile;
             }
 
@@ -270,7 +269,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                             }
 
                             PTuple tuple = factory().createTuple(new Object[]{
-                                            tfile.getPath() + PZipImporter.SEPARATOR + entry.getName(),
+                                            tfile.getPath() + getContext().getEnv().getFileNameSeparator() + entry.getName(),
                                             // for our implementation currently we don't need these
                                             // these properties to store there. Keeping them for
                                             // compatibility.
@@ -388,7 +387,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 sb.append("???");
             } else if (prefix != null && !prefix.isEmpty()) {
                 sb.append(archive);
-                sb.append(File.pathSeparator);
+                sb.append(getContext().getEnv().getPathSeparator());
                 sb.append(prefix);
             } else {
                 sb.append(archive);
@@ -478,7 +477,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             String archive = self.getArchive();
             int len = archive.length();
             int index = 0;
-            if (pathname.startsWith(archive) && pathname.charAt(len) == File.separatorChar) {
+            if (pathname.startsWith(archive) && pathname.substring(len).startsWith(getContext().getEnv().getFileNameSeparator())) {
                 index = len + 1;
             }
             String key = pathname.substring(index, pathname.length());
