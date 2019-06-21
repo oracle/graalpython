@@ -408,7 +408,7 @@ public final class Python3Core implements PythonCore {
     public void initialize(PythonContext context) {
         singletonContext = context;
         initializeJavaCore();
-        initializePythonCore();
+        initializePythonCore(context.getCoreHomeOrFail());
         initialized = true;
     }
 
@@ -419,8 +419,7 @@ public final class Python3Core implements PythonCore {
         builtinsModule = builtinModules.get("builtins");
     }
 
-    private void initializePythonCore() {
-        String coreHome = PythonCore.getCoreHomeOrFail();
+    private void initializePythonCore(String coreHome) {
         loadFile("builtins", coreHome);
         for (String s : coreFiles) {
             loadFile(s, coreHome);

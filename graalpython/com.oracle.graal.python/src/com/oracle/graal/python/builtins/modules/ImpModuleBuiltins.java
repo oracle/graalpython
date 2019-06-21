@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -244,7 +243,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (!ctxt.capiWasLoaded()) {
                 Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + env.getFileNameSeparator() + "capi.bc");
+                TruffleFile capiFile = env.getTruffleFile(getContext().getCoreHome() + env.getFileNameSeparator() + "capi.bc");
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);

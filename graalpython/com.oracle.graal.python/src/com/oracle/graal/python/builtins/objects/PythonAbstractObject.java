@@ -636,10 +636,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 if (!isImmutable.execute(owner)) {
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
-                } else if (check(isMapping, object)) {
-                    // Even if the attribute's owner is immutable, if the object is a mapping, it
-                    // may be inserted.
-                    info |= INSERTABLE;
                 }
             } else if (!isImmutable.execute(object) || check(isMapping, object)) {
                 // If the member does not exist yet, it is insertable if this object is mutable,
