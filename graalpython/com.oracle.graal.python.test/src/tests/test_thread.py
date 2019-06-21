@@ -301,7 +301,8 @@ if syscfg.get_config_var('WITH_THREAD'):
 
         def tearDown(self):
             support.threading_cleanup(*self._threads)
-            support.reap_children()
+            # TODO: revert patch when os.waitpid(-1, ...) is implemented
+            # support.reap_children()
 
         def assertLess(self, a, b, msg=None):
             if not a < b:
