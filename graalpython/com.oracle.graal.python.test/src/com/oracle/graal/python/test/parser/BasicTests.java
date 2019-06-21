@@ -271,6 +271,11 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void call16() throws Exception {
+        checkTreeResult("a.b.c.foo()");
+    }
+    
+    @Test
     public void del01() throws Exception {
         checkTreeResult("del x");
     }

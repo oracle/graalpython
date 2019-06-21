@@ -1,17 +1,17 @@
-ModuleRootNode Name: <module 'staticFn01'> SourceSection: [0,27]`@staticmethod↵def f(...`
+ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()↵def f()...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [0,27]`@staticmethod↵def f(...`
-    ExpressionWithSideEffect SourceSection: [0,27]`@staticmethod↵def f(...`
+  InnerRootNode SourceSection: [0,26]`@funcattrs()↵def f()...`
+    ExpressionWithSideEffect SourceSection: [0,26]`@funcattrs()↵def f()...`
       Expression:
         EmptyNode SourceSection: None
       SideEffect:
-        WriteNameNodeGen SourceSection: [0,27]`@staticmethod↵def f(...`
+        WriteNameNodeGen SourceSection: [0,26]`@funcattrs()↵def f()...`
           Identifier: f
-          PythonCallNodeGen SourceSection: [0,14]`@staticmethod↵`
+          PythonCallNodeGen SourceSection: [0,12]`@funcattrs()`
             CachedCallNodeGen SourceSection: None
               CreateArgumentsNodeGen SourceSection: None
               CallDispatchNodeGen SourceSection: None
@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'staticFn01'> SourceSection: [0,27]`@staticmethod�
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              FunctionRootNode SourceSection: [14,27]`def f(): pass`
+              FunctionRootNode SourceSection: [13,26]`def f(): pass`
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
@@ -32,14 +32,18 @@ ModuleRootNode Name: <module 'staticFn01'> SourceSection: [0,27]`@staticmethod�
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: None
-                InnerRootNode SourceSection: [14,27]`def f(): pass`
-                  ReturnTargetNode SourceSection: [14,27]`def f(): pass`
+                InnerRootNode SourceSection: [13,26]`def f(): pass`
+                  ReturnTargetNode SourceSection: [13,26]`def f(): pass`
                     Body: BlockNode SourceSection: None
                       BlockNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [23,27]`pass`
-                        EmptyNode SourceSection: [23,27]`pass`
+                      ExpressionStatementNode SourceSection: [22,26]`pass`
+                        EmptyNode SourceSection: [22,26]`pass`
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: [0,14]`@staticmethod↵`
-              Identifier: staticmethod
+            PythonCallNodeGen SourceSection: [0,12]`@funcattrs()`
+              CachedCallNodeGen SourceSection: None
+                CreateArgumentsNodeGen SourceSection: None
+                CallDispatchNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: None
+                Identifier: funcattrs

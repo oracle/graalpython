@@ -135,17 +135,25 @@ public class FunctionDefFromCPTests extends ParserTestBase {
         checkScopeAndTree("def f(a, b, foo=bar, **kw): pass");
     }
  
-//    @Test
-//    public void staticFn01() throws Exception {
-//        checkScopeAndTree("@staticmethod\n" +
-//                "def f(): pass");
-//    }
+    @Test
+    public void decoratedFn01() throws Exception {
+        checkScopeAndTree(
+                "@staticmethod\n"  +
+                "def f(): pass");
+    }
     
-//    "@staticmethod\n"
-//                         "def f(): pass")
-//        self.check_suite("@staticmethod\n"
-//                         "@funcattrs(x, y)\n"
-//                         "def f(): pass")
-//        self.check_suite("@funcattrs()\n"
-//                         "def f(): pass")
+    @Test
+    public void decoratedFn02() throws Exception {
+        checkScopeAndTree(
+                "@staticmethod\n" +
+                "@funcattrs(x, y)\n" +
+                "def f(): pass");
+    }
+    
+    @Test
+    public void decoratedFn03() throws Exception {
+        checkScopeAndTree(
+                "@funcattrs()\n" +
+                "def f(): pass");
+    }
 }

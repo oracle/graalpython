@@ -97,6 +97,40 @@ public class FuncDefTests extends ParserTestBase{
 //        checkScopeAndTree();
 //    }
     
+    @Test
+    public void decorator01() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void decorator02() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void decorator03() throws Exception {
+        checkScopeAndTree("@some.path.to.decorator\n"
+                + "def fn(): pass");
+    }
+    
+    @Test
+    public void decorator04() throws Exception {
+        checkScopeAndTree(
+                "def outer():\n" +
+                "  @decorator1\n" +
+                "  def inner(): pass");
+    }
+    
+    @Test
+    public void decorator05() throws Exception {
+        checkScopeAndTree(
+                "def outer():\n" +
+                "  def decorator1(fn):\n" +
+                "    pass\n" +
+                "  @decorator1\n" +
+                "  def inner(): pass");
+    }
+    
     private void checkScopeAndTree()  throws Exception{
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);

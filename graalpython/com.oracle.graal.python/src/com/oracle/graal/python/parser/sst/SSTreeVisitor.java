@@ -19,6 +19,8 @@ public interface SSTreeVisitor<T> {
     T visit(ClassSSTNode node);
     T visit(CollectionSSTNode node);
     T visit(ComparisonNode node);
+    T visit(DecoratedSSTNode node);
+    T visit(DecoratorSSTNode node);
     T visit(DelSSTNode node);
     T visit(ExceptSSTNode node);
     T visit(ExpressionStatementNode node);

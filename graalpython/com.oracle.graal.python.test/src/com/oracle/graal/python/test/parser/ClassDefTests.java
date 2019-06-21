@@ -42,14 +42,19 @@ public class ClassDefTests extends ParserTestBase {
         checkScopeAndTree("class DerivedClassName(Base1, Base2, Base3): pass");
     }
 
-//        self.check_suite("@class_decorator\n"
-//                         "class foo():pass")
-//        self.check_suite("@class_decorator(arg)\n"
-//                         "class foo():pass")
-//        self.check_suite("@decorator1\n"
-//                         "@decorator2\n"
-//                         "class foo():pass")
-//    
+    @Test
+    public void decorator01() throws Exception {
+        checkScopeAndTree("@class_decorator\n" +
+                         "class foo():pass");
+    }
+    
+    @Test
+    public void decorator02() throws Exception {
+        checkScopeAndTree("@decorator1\n" +
+                        "@decorator1\n" +
+                        "class foo():pass");
+    }
+
     private void checkScopeAndTree()  throws Exception{
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);

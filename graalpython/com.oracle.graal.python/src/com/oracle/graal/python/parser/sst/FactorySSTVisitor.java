@@ -81,6 +81,8 @@ import java.util.List;
  * @author petr
  */
 public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
+    
+    private static final ExpressionNode EMPTY_DOC = new com.oracle.graal.python.nodes.literal.StringLiteralNode("");
 
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
@@ -410,6 +412,61 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     }
 
     @Override
+    public PNode visit(DecoratedSSTNode node) {
+        String definitionName;
+        if (node.decorated instanceof ClassSSTNode) {
+            definitionName = ((ClassSSTNode)node.decorated).name;
+            scopeEnvironment.setCurrentScope(((ClassSSTNode)node.decorated).classScope.getParent());
+        } else {
+            definitionName = ((FunctionDefSSTNode)node.decorated).name;
+            scopeEnvironment.setCurrentScope(((FunctionDefSSTNode)node.decorated).functionScope.getParent());
+        }
+        PNode[] decorators = new PNode[node.decorators.length];
+        for (int i = 0; i < decorators.length; i++ ) {
+            // the list has to be reverted
+            decorators[i] = node.decorators[decorators.length - i - 1].accept(this);
+        }
+        PNode decorated = node.decorated.accept(this);
+        ExpressionNode definition = null;
+        if (decorated instanceof WriteNode) {
+            // TODO: should we split creating FunctionDefinitionNode and WriteNode for the function?
+            definition = ((WriteNode)decorated).getRhs();
+        } else if (decorated instanceof ExpressionNode) {
+            definition = (ExpressionNode)decorated;
+        }
+        
+        for(PNode decorator : decorators) {
+            definition = PythonCallNode.create((ExpressionNode)decorator, new ExpressionNode[]{definition}, new ExpressionNode[]{}, null, null);
+            definition.assignSourceSection(decorator.getSourceSection());
+        }
+        PNode result = scopeEnvironment.findVariable(definitionName).makeWriteNode(definition);
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
+    }
+
+    @Override
+    public PNode visit(DecoratorSSTNode node) {
+        String dottedName = node.name;
+        ExpressionNode decoratorFn;
+        if (dottedName.contains(".")) {
+            String[] nameParts = dottedName.split("\\.");
+            decoratorFn = (ExpressionNode)scopeEnvironment.findVariable(nameParts[0]);
+            for (int i = 1; i < nameParts.length; i++) {
+                decoratorFn = nodeFactory.createGetAttribute(decoratorFn, nameParts[i]);
+            }
+        } else {
+            decoratorFn = (ExpressionNode)scopeEnvironment.findVariable(dottedName);
+        }
+        
+        if (node.arg != null) {
+            decoratorFn = PythonCallNode.create(decoratorFn, node.arg.getArgs(this), node.arg.getNameArgs(this), node.arg.getStarArgs(this), node.arg.getKwArgs(this));
+        }
+        decoratorFn.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return decoratorFn;
+    }
+
+    
+    @Override
     public PNode visit(DelSSTNode node) {
         List<StatementNode> blockList = new ArrayList<>();
         for(int i = 0; i < node.expressions.length; i++) {
@@ -555,7 +612,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             }
         }
         if (doc == null) {
-            doc = nodeFactory.createStringLiteral("");
+            doc = EMPTY_DOC;
         }
         ExpressionNode funcDef;
         

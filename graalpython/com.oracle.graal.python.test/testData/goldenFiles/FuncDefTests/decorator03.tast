@@ -1,0 +1,54 @@
+ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.decora...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,38]`@some.path.to.decora...`
+    ExpressionWithSideEffect SourceSection: [0,38]`@some.path.to.decora...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,38]`@some.path.to.decora...`
+          Identifier: fn
+          PythonCallNodeGen SourceSection: [0,23]`@some.path.to.decora...`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            FunctionDefinitionNode Name: fn SourceSection: None
+              Arguments: None
+              KwArguments: None
+              Documentation: StringLiteralNode: Empty
+              FreeVarSlots: None
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              FunctionRootNode SourceSection: [24,38]`def fn(): pass`
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                CelVars: None
+                FreeVars: None
+                NeedsCellFrame: False
+                FrameDescriptor: 1 slots [<return_val>]
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: None
+                InnerRootNode SourceSection: [24,38]`def fn(): pass`
+                  ReturnTargetNode SourceSection: [24,38]`def fn(): pass`
+                    Body: BlockNode SourceSection: None
+                      BlockNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [34,38]`pass`
+                        EmptyNode SourceSection: [34,38]`pass`
+                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                      Frame: [0,<return_val>,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              GetAttributeNodeGen SourceSection: None
+                GetFixedAttributeNodeGen SourceSection: None
+                  LookupAndCallBinaryNodeGen SourceSection: None
+                    Op: __getattribute__
+                GetAttributeNodeGen SourceSection: None
+                  GetFixedAttributeNodeGen SourceSection: None
+                    LookupAndCallBinaryNodeGen SourceSection: None
+                      Op: __getattribute__
+                  ReadNameNodeGen SourceSection: None
+                    Identifier: some

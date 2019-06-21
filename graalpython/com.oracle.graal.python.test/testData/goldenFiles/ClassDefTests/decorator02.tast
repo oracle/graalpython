@@ -1,0 +1,75 @@
+ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵@decorat...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,40]`@decorator1↵@decorat...`
+    ExpressionWithSideEffect SourceSection: [0,40]`@decorator1↵@decorat...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,40]`@decorator1↵@decorat...`
+          Identifier: foo
+          PythonCallNodeGen SourceSection: [0,11]`@decorator1`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            PythonCallNodeGen SourceSection: [12,23]`@decorator1`
+              CachedCallNodeGen SourceSection: None
+                CreateArgumentsNodeGen SourceSection: None
+                CallDispatchNodeGen SourceSection: None
+              ExpressionWithSideEffects SourceSection: None
+                WriteLocalVariableNodeGen SourceSection: None
+                  Identifier: <>temp0
+                  WriteLocalFrameSlotNodeGen SourceSection: None
+                    Frame: [0,<>temp0,Illegal]
+                  PythonCallNodeGen SourceSection: [24,40]`class foo():pass`
+                    CachedCallNodeGen SourceSection: None
+                      CreateArgumentsNodeGen SourceSection: None
+                      CallDispatchNodeGen SourceSection: None
+                    FunctionDefinitionNode Name: foo SourceSection: None
+                      Arguments: None
+                      KwArguments: None
+                      Documentation: None
+                      FreeVarSlots: None
+                      ExecutionSlots:
+                        FreeVarsSlots: None
+                        CellVarsSlots: __class__, 
+                      ClassBodyRootNode SourceSection: [24,40]`class foo():pass`
+                        Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                          Param Names: namespace
+                        CelVars: __class__
+                        FreeVars: None
+                        NeedsCellFrame: False
+                        FrameDescriptor: 1 slots [__class__]
+                        ExecutionSlots:
+                          FreeVarsSlots: None
+                          CellVarsSlots: __class__, 
+                        InnerRootNode SourceSection: None
+                          ReturnTargetNode SourceSection: None
+                            Body: BlockNode SourceSection: None
+                              ClassDefinitionPrologueNode SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: __name__
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                SetItemIfNotPresentNodeGen SourceSection: None
+                                  SetItemNodeGen SourceSection: None
+                              ExpressionStatementNode SourceSection: [36,40]`pass`
+                                EmptyNode SourceSection: [36,40]`pass`
+                            Return Expresssion: ObjectLiteralNode SourceSection: None
+                    StringLiteralNode SourceSection: None
+                    GetCallAttributeNodeGen SourceSection: None
+                      BuiltinsLiteralNode SourceSection: None
+                WriteCellVarNodeGen SourceSection: None
+                  ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<>temp0,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                ReadLocalVariableNode SourceSection: None
+                  Frame: [0,<>temp0,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [12,23]`@decorator1`
+                Identifier: decorator1
+            ReadNameNodeGen SourceSection: [0,11]`@decorator1`
+              Identifier: decorator1

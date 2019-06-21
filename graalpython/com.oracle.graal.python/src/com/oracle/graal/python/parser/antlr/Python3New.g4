@@ -369,9 +369,36 @@ locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
 	{ factory.leaveScope(); }
 ;
 
-decorator: '@' dotted_name ( '(' arglist ')' )? NEWLINE;
-decorators: decorator+;
-decorated : decorators (classdef | funcdef | async_funcdef);
+decorator:
+    { ArgListBuilder args = null ;}
+    '@' dotted_name ( '(' arglist ')' {args = $arglist.result; })? NEWLINE
+    {   
+        String dottedName = $dotted_name.result;
+        if (dottedName.contains(".")) {
+            factory.getScopeEnvironment().addSeenVar(dottedName.split("\\.")[0]);
+        } else {
+            factory.getScopeEnvironment().addSeenVar(dottedName);
+        }
+        push( new DecoratorSSTNode(dottedName, args, getStartIndex($ctx), getLastIndex($ctx))); 
+    }
+;
+
+decorators returns [DecoratorSSTNode[] result]: 
+    {int start = start();}
+    decorator+
+    {$result = getArray(start, DecoratorSSTNode[].class);}
+;
+
+decorated: 
+    { SSTNode decor; }
+    decorators 
+        (
+            classdef | 
+            funcdef | 
+            async_funcdef 
+        )
+    { stack[stackIndex-1] = new DecoratedSSTNode($decorators.result, (SSTNode)stack[stackIndex-1], getStartIndex($ctx), getLastIndex($ctx)); }
+;
 
 async_funcdef: ASYNC funcdef;
 funcdef

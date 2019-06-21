@@ -5,25 +5,20 @@
  */
 package com.oracle.graal.python.parser.sst;
 
-import com.oracle.graal.python.parser.ScopeInfo;
+public class DecoratorSSTNode extends SSTNode {
 
-public class ClassSSTNode extends SSTNode {
     protected final String name;
-    protected final SSTNode[] baseClasses;
-    protected final SSTNode body;
-    protected final ScopeInfo classScope;
+    protected final ArgListBuilder arg;
 
-    public ClassSSTNode(ScopeInfo classScope, String name, SSTNode[] baseClasses, SSTNode body, int startOffset, int endOffset) {
+    public DecoratorSSTNode(String name, ArgListBuilder arg, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.name = name;
-        this.baseClasses = baseClasses;
-        this.body = body;
-        this.classScope = classScope;
+        this.arg = arg;
     }
     
     @Override
     public <T>T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
+    
 }
