@@ -462,6 +462,18 @@ def test_endswith():
     assert not b.endswith(b"no")
 
 
+def test_ord():
+    b = b"123"
+    assert ord(b[0:1]) == 49
+    assert ord(bytearray(b)[0:1]) == 49
+    try:
+        ord(b)
+    except TypeError as e:
+        assert "expected a character" in str(e), str(e)
+    else:
+        assert False
+
+
 def test_find():
     b = b'mississippi'
     i = 105
@@ -538,7 +550,7 @@ def test_strip_bytes():
     assert b'abc'.rstrip(b'ac') == b'ab'
 
 class BaseTestSplit:
-    
+
     def test_string_error(self):
         self.assertRaises(TypeError, self.type2test(b'a b').split, ' ')
         self.assertRaises(TypeError, self.type2test(b'a b').rsplit, ' ')
@@ -601,10 +613,10 @@ class BaseTestSplit:
                 self.value = value
             def __index__(self):
                 return self.value
-        
+
         self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=MyIndexable(1)), [b'ahoj', b'jak\tse\nmas'])
         self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=MyIndexable(1)), [b'ahoj jak\tse', b'mas'])
-        
+
 class BytesSplitTest(BaseTestSplit, unittest.TestCase):
     type2test = bytes
 
