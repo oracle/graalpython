@@ -1034,21 +1034,26 @@ def python_build_watch(args):
     args = parser.parse_args(args)
     if sum([args.full, args.graalvm, args.no_java]) > 1:
         mx.abort("Only one of --full, --graalvm, --no-java can be specified")
+    if args.full:
+        suffixes = [".c", ".h", ".class", ".jar", ".java"]
+        excludes = [".*\\.py$"]
+    elif args.graalvm:
+        suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
+        excludes = ["mx_.*\\.py$"]
+    else:
+        suffixes = [".c", ".h", ".class", ".jar"]
+        excludes = [".*\\.py$", ".*\\.java$"]
+
+    cmd = ["inotifywait", "-q", "-e", "close_write,moved_to", "-r", "--format=%f"]
+    for e in excludes:
+        cmd += ["--exclude", e]
+    cmd += ["@%s" % os.path.join(SUITE.dir, ".git"), SUITE.dir]
+
     while True:
         out = mx.OutputCapture()
-        mx.run([
-            "inotifywait", "-q", "-e", "close_write,moved_to", "-r", "--format=%f",
-            "--exclude", ".*\\.py$",
-            "@%s" % os.path.join(SUITE.dir, ".git"),
-            SUITE.dir
-        ], out=out)
+        mx.run(cmd, out=out)
         changed_file = out.data.strip()
         mx.logv(changed_file)
-        suffixes = [".c", ".h", ".class", ".jar"]
-        if args.full:
-            suffixes.append(".java")
-        elif args.graalvm:
-            suffixes.extend([".java", ".py"])
         if any(changed_file.endswith(ext) for ext in [".c", ".h", ".class", ".jar"]):
             mx.log("Build needed ...")
             time.sleep(2)
@@ -1058,7 +1063,7 @@ def python_build_watch(args):
                 mx.log(python_gvm())
             else:
                 nativebuild([])
-            break
+        mx.log("Build done.")
 
 
 # ----------------------------------------------------------------------------------------------------------------------
