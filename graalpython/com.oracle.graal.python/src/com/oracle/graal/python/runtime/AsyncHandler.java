@@ -52,9 +52,14 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -62,7 +67,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.Node.Child;
-import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -129,11 +134,15 @@ public class AsyncHandler {
         }
     }
 
-    private static class CallRootNode extends RootNode {
+    private static class CallRootNode extends PRootNode {
         static final int ASYNC_ARGS = 4;
 
         @Child private CallNode callNode = CallNode.create();
         @Child private MaterializeFrameNode materializeNode = MaterializeFrameNodeGen.create();
+        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        @Child private CalleeContext calleeContext = CalleeContext.create();
+
+        private final BranchProfile profile = BranchProfile.create();
 
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);
@@ -141,16 +150,35 @@ public class AsyncHandler {
 
         @Override
         public Object execute(VirtualFrame frame) {
+            CalleeContext.enter(frame, profile);
             Object[] frameArguments = frame.getArguments();
             Object callable = PArguments.getArgument(frameArguments, 0);
             int frameIndex = (int) PArguments.getArgument(frameArguments, 1);
-            VirtualFrame callerFrame = (VirtualFrame) PArguments.getArgument(frameArguments, 3);
             Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARGS, frameArguments.length);
+
             if (frameIndex >= 0) {
-                Node location = (Node) PArguments.getArgument(frameArguments, 2);
-                arguments[frameIndex] = materializeNode.execute(frame, location, true, false, callerFrame);
+                arguments[frameIndex] = readCallerFrameNode.executeWith(frame, 0);
             }
-            return callNode.execute(callerFrame, callable, arguments);
+            try {
+                return callNode.execute(frame, callable, arguments);
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+        }
+
+        @Override
+        public Signature getSignature() {
+            return Signature.EMPTY;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
+        }
+
+        @Override
+        public boolean isInternal() {
+            return true;
         }
     }
 
@@ -222,8 +250,9 @@ public class AsyncHandler {
                         PArguments.setArgument(args, 1, action.frameIndex());
                         PArguments.setArgument(args, 2, location);
                         PArguments.setArgument(args, 3, frame);
+
                         try {
-                            callTarget.call(args);
+                            GenericInvokeNode.getUncached().execute(frame, callTarget, args);
                         } catch (RuntimeException e) {
                             // we cannot raise the exception here (well, we could, but CPython
                             // doesn't), so we do what they do and just print it

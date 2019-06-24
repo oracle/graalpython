@@ -30,13 +30,17 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+import com.oracle.truffle.api.TruffleFile;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionValues;
 
@@ -66,6 +70,15 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
+
+    static final String PREFIX = "/";
+    static final String LIB_PYTHON_3 = "/lib-python/3";
+    static final String LIB_GRAALPYTHON = "/lib-graalpython";
+    static final String CAPI_HOME = "/capi";
+    static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
+    static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
+    static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
+    static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
 
     private final PythonLanguage language;
     private PythonModule mainModule;
@@ -102,8 +115,12 @@ public final class PythonContext {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
+    private final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
-    private static final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+
+    /* A lock for interop calls when this context is used by multiple threads. */
+    private Lock interopLock;
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
@@ -329,19 +346,168 @@ public final class PythonContext {
         sysModules.setItem(__MAIN__, mainModule);
 
         final String stdLibPlaceholder = "!stdLibHome!";
-        final String stdLibHome = PythonCore.getStdlibHome(getEnv());
         if (ImageInfo.inImageBuildtimeCode()) {
             // Patch any pre-loaded packages' paths if we're running
             // pre-initialization
-            patchPackagePaths(stdLibHome, stdLibPlaceholder);
+            patchPackagePaths(getStdlibHome(), stdLibPlaceholder);
         } else if (isPatching && ImageInfo.inImageRuntimeCode()) {
             // Patch any pre-loaded packages' paths to the new stdlib home if
             // we're patching a pre-initialized context
-            patchPackagePaths(stdLibPlaceholder, stdLibHome);
+            patchPackagePaths(stdLibPlaceholder, getStdlibHome());
         }
 
         currentException = null;
         isInitialized = true;
+    }
+
+    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;
+
+    public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
+        sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
+        basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
+        coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
+        stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
+        capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
+
+        PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
+                        "\n\tLanguage home: {0}" +
+                        "\n\tSysPrefix: {1}" +
+                        "\n\tBaseSysPrefix: {2}" +
+                        "\n\tCoreHome: {3}" +
+                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
+
+        TruffleFile home = null;
+        if (languageHome != null) {
+            home = newEnv.getTruffleFile(languageHome);
+        }
+
+        try {
+            String envHome = System.getenv("GRAAL_PYTHONHOME");
+            if (envHome != null) {
+                TruffleFile envHomeFile = newEnv.getTruffleFile(envHome);
+                if (envHomeFile.isDirectory()) {
+                    home = envHomeFile;
+                }
+            }
+        } catch (SecurityException e) {
+        }
+
+        if (home != null) {
+            if (sysPrefix.isEmpty()) {
+                sysPrefix = home.getAbsoluteFile().getPath();
+            }
+
+            if (basePrefix.isEmpty()) {
+                basePrefix = home.getAbsoluteFile().getPath();
+            }
+
+            if (coreHome.isEmpty()) {
+                try {
+                    for (TruffleFile f : home.list()) {
+                        if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
+                            coreHome = f.getPath();
+                            break;
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+            }
+
+            if (stdLibHome.isEmpty()) {
+                try {
+                    outer: for (TruffleFile f : home.list()) {
+                        if (f.getName().equals("lib-python") && f.isDirectory()) {
+                            for (TruffleFile f2 : f.list()) {
+                                if (f2.getName().equals("3") && f.isDirectory()) {
+                                    stdLibHome = f2.getPath();
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+            }
+
+            if (capiHome.isEmpty()) {
+                try {
+                    for (TruffleFile f : newEnv.getTruffleFile(coreHome).list()) {
+                        if (f.getName().equals("capi") && f.isDirectory()) {
+                            capiHome = f.getPath();
+                            break;
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+            }
+
+            PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
+                            "\n\tLanguage home: {0}" +
+                            "\n\tSysPrefix: {1}" +
+                            "\n\tSysBasePrefix: {2}" +
+                            "\n\tCoreHome: {3}" +
+                            "\n\tStdLibHome: {4}" +
+                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
+        }
+    }
+
+    @TruffleBoundary
+    public String getSysPrefix() {
+        if (sysPrefix.isEmpty()) {
+            writeWarning(NO_PREFIX_WARNING);
+            sysPrefix = PREFIX;
+        }
+        return sysPrefix;
+    }
+
+    @TruffleBoundary
+    public String getSysBasePrefix() {
+        if (basePrefix.isEmpty()) {
+            String homePrefix = language.getHome();
+            if (homePrefix == null || homePrefix.isEmpty()) {
+                homePrefix = PREFIX;
+            }
+            basePrefix = homePrefix;
+        }
+        return basePrefix;
+    }
+
+    @TruffleBoundary
+    public String getCoreHome() {
+        if (coreHome.isEmpty()) {
+            writeWarning(NO_CORE_WARNING);
+            coreHome = LIB_GRAALPYTHON;
+        }
+        return coreHome;
+    }
+
+    @TruffleBoundary
+    public String getStdlibHome() {
+        if (stdLibHome.isEmpty()) {
+            writeWarning(NO_STDLIB);
+            stdLibHome = LIB_PYTHON_3;
+        }
+        return stdLibHome;
+    }
+
+    @TruffleBoundary
+    public String getCAPIHome() {
+        if (capiHome.isEmpty()) {
+            capiHome = getCoreHome() + CAPI_HOME;
+        }
+        return capiHome;
+    }
+
+    @TruffleBoundary
+    public String getCoreHomeOrFail() {
+        if (coreHome.isEmpty()) {
+            throw new RuntimeException(NO_CORE_FATAL);
+        }
+        return coreHome;
+    }
+
+    private static void writeWarning(String warning) {
+        PythonLanguage.getLogger().warning(warning);
     }
 
     public boolean capiWasLoaded() {
@@ -402,7 +568,7 @@ public final class PythonContext {
         return singleNativeContext;
     }
 
-    public static Assumption getSingleThreadedAssumption() {
+    public Assumption getSingleThreadedAssumption() {
         return singleThreaded;
     }
 
@@ -451,5 +617,20 @@ public final class PythonContext {
             return singletonNativePtrs[singletonNativePtrIdx];
         }
         return null;
+    }
+
+    @TruffleBoundary
+    public void acquireInteropLock() {
+        interopLock.lock();
+    }
+
+    @TruffleBoundary
+    public void releaseInteropLock() {
+        interopLock.unlock();
+    }
+
+    @TruffleBoundary
+    public void createInteropLock() {
+        interopLock = new ReentrantLock();
     }
 }

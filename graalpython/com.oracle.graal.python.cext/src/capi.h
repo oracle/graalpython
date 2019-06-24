@@ -84,6 +84,27 @@ extern void *Py_NoValue;
 extern init_upcall upcalls[];
 extern unsigned init_upcall_n;
 
+/* upcall helpers */
+MUST_INLINE
+PyObject* polyglot_ensure_ptr(void *obj) {
+	return polyglot_fits_in_i64(obj) ? (PyObject*) polyglot_as_i64(obj) : (PyObject*) obj;
+}
+
+MUST_INLINE
+int32_t polyglot_ensure_i32(void *obj) {
+	return polyglot_fits_in_i32(obj) ? polyglot_as_i32(obj) : (int32_t) obj;
+}
+
+MUST_INLINE
+int64_t polyglot_ensure_i64(void *obj) {
+	return polyglot_fits_in_i64(obj) ? polyglot_as_i64(obj) : (int64_t) obj;
+}
+
+MUST_INLINE
+double polyglot_ensure_double(void *obj) {
+	return polyglot_fits_in_double(obj) ? polyglot_as_double(obj) : (double) ((int64_t)obj);
+}
+
 /* upcall functions for calling into Python */
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
 extern uint64_t(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
@@ -101,16 +122,16 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), __name__, ##__VA_ARGS__))
 
 /* Call function with return type 'int'; no polyglot cast but error handling */
-#define UPCALL_I(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+#define UPCALL_I(__recv__, __name__, ...) (polyglot_ensure_i32(UPCALL_P(__recv__, __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'long'; no polyglot cast but error handling */
-#define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+#define UPCALL_L(__recv__, __name__, ...) (polyglot_ensure_i64(UPCALL_P(__recv__, __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_D(__recv__, __name__, ...) PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__)
+#define UPCALL_D(__recv__, __name__, ...) (polyglot_ensure_double(PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'void*'; no polyglot cast and no error handling */
-#define UPCALL_PTR(__name__, ...) (PY_TRUFFLE_LANDING_PTR(__name__, ##__VA_ARGS__))
+#define UPCALL_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_LANDING_PTR(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
 #define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
@@ -122,19 +143,19 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_CEXT_NOCAST(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
 
 /* Call function of 'python_cext' module with return type 'void*'; no polyglot cast and no error handling */
-#define UPCALL_CEXT_PTR(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with a primitive return; no polyglot cast but error handling */
 #define UPCALL_CEXT_P(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_L(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'int'; no polyglot cast but error handling */
-#define UPCALL_CEXT_I(__name__, ...) ((int)UPCALL_CEXT_P(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_I(__name__, ...) (polyglot_ensure_i32(UPCALL_CEXT_P(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'long'; no polyglot cast but error handling */
-#define UPCALL_CEXT_L(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_L(__name__, ...) (polyglot_ensure_i64(UPCALL_CEXT_P(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_CEXT_D(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_D(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_D(__name__, ...) (polyglot_ensure_double(PY_TRUFFLE_CEXT_LANDING_D(__name__, ##__VA_ARGS__)))
 
 #define UPCALL_ID(name)                                                 \
     static void* _jls_ ## name;                                         \

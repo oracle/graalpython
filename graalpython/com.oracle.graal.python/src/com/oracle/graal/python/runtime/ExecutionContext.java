@@ -68,9 +68,18 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class ExecutionContext {
 
     public static final class CallContext extends Node {
+
+        private static final CallContext INSTANCE = new CallContext(false);
+
         @Child private MaterializeFrameNode materializeNode;
 
+        private final boolean adoptable;
+
         @CompilationFinal private ConditionProfile isPythonFrameProfile;
+
+        private CallContext(boolean adoptable) {
+            this.adoptable = adoptable;
+        }
 
         /**
          * Prepare a call from a Python frame to a Python function.
@@ -94,7 +103,7 @@ public abstract class ExecutionContext {
                     // We are handing the PFrame of the current frame to the caller, i.e., it does
                     // not 'escape' since it is still on the stack.Also, force synchronization of
                     // values
-                    PFrame pyFrame = ensureMaterializeNode().execute(frame, callNode, false, true);
+                    PFrame pyFrame = materialize(frame, callNode, false, true);
                     assert thisInfo.getPyFrame() == pyFrame;
                     assert pyFrame.getRef() == thisInfo;
                 } else {
@@ -121,6 +130,13 @@ public abstract class ExecutionContext {
             }
         }
 
+        private PFrame materialize(VirtualFrame frame, Node callNode, boolean markAsEscaped, boolean forceSync) {
+            if (adoptable) {
+                return ensureMaterializeNode().execute(frame, callNode, markAsEscaped, forceSync);
+            }
+            return MaterializeFrameNode.getUnadoptable().execute(frame, callNode, markAsEscaped, forceSync);
+        }
+
         private boolean isPythonFrame(VirtualFrame frame, Node callNode) {
             if (isPythonFrameProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -137,10 +153,20 @@ public abstract class ExecutionContext {
                 materializeNode = insert(MaterializeFrameNodeGen.create());
             }
             return materializeNode;
+
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return adoptable;
         }
 
         public static CallContext create() {
-            return new CallContext();
+            return new CallContext(true);
+        }
+
+        public static CallContext getUncached() {
+            return INSTANCE;
         }
     }
 
@@ -266,6 +292,9 @@ public abstract class ExecutionContext {
          * </p>
          */
         public static PException enter(VirtualFrame frame, PythonContext context, Node callNode) {
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.acquireInteropLock();
+            }
             PFrame.Reference prev = context.popTopFrameInfo();
             assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                             "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
@@ -285,6 +314,9 @@ public abstract class ExecutionContext {
             if (context != null) {
                 context.popTopFrameInfo();
                 ExceptionContext.exit(context, savedExceptionState);
+                if (!context.getSingleThreadedAssumption().isValid()) {
+                    context.releaseInteropLock();
+                }
             }
         }
     }

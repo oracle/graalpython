@@ -61,7 +61,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -199,10 +201,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class TRegexCallCompile extends PythonTernaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object call(Object callable, Object arg1, Object arg2,
+        Object call(VirtualFrame frame, Object callable, Object arg1, Object arg2,
                         @Cached("create()") BranchProfile syntaxError,
                         @Cached("create()") BranchProfile typeError,
-                        @CachedLibrary("callable") InteropLibrary interop) {
+                        @CachedLibrary("callable") InteropLibrary interop,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
             try {
                 return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
@@ -215,6 +219,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 }
                 // just re-throw
                 throw e;
+            } finally {
+                IndirectCallContext.exit(context, savedExceptionState);
             }
         }
     }
@@ -225,14 +231,18 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class TRegexCallExec extends PythonTernaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object call(Object callable, Object arg1, Number arg2,
+        Object call(VirtualFrame frame, Object callable, Object arg1, Number arg2,
                         @Cached("create()") BranchProfile typeError,
-                        @CachedLibrary("callable") InteropLibrary interop) {
+                        @CachedLibrary("callable") InteropLibrary interop,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
             try {
                 return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
+            } finally {
+                IndirectCallContext.exit(context, savedExceptionState);
             }
         }
     }
