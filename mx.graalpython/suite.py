@@ -244,6 +244,7 @@ suite = {
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_HOME>/include",
+                "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                 "CLANG": "<toolchainGetToolPath:native,CC>",
                 "PLATFORM": "<toolchainGetIdentifier:native>",
                 "ARCH": "<arch>",
