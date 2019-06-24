@@ -67,7 +67,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.Node.Child;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -142,7 +142,7 @@ public class AsyncHandler {
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
-        private final BranchProfile profile = BranchProfile.create();
+        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
 
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);

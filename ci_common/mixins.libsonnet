@@ -26,7 +26,7 @@ local const = import 'constants.libsonnet';
     linux:: linux,
 
     local linuxBench = linux + {
-        capabilities +: ["no_frequency_scaling", "tmpfs25g", "x62"],
+        capabilities +: ["no_frequency_scaling", "tmpfs25g", "x52"],
     },
     linuxBench:: linuxBench,
 
