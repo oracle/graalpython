@@ -101,7 +101,8 @@ def ccompile(self, name):
     # manually deleted the shared library file.
     if available_checksum != cur_checksum or not os.path.exists(binary_file_llvm):
         module = Extension(name, sources=[source_file])
-        args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
+        verbosity = '--verbose' if sys.flags.verbose else '--quiet'
+        args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__, 'clean']
         setup(
             script_name='setup',
             script_args=args,
