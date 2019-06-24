@@ -328,11 +328,10 @@ class EnvBuilder:
         from distutils import sysconfig
         ld = sysconfig.get_config_vars()["LDSHARED"]
         cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + f)
-        # TOOD logging
+        logging.debug(cmd_line)
         res = os.system(cmd_line)
         if res:
-            # TOOD logging
-            print("compilation failed: '%s' returned with %r" % (cmd_line, res))
+            logging.fatal("compilation failed: '%s' returned with %r" % (cmd_line, res))
             raise BaseException
             
     
