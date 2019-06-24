@@ -366,13 +366,13 @@ suite = {
             "layout": {
                 "./": [
                     "dependency:com.oracle.graal.python.cext/graalpython/lib-graalpython",
+                    "file:graalpython/com.oracle.graal.python.cext/include",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],
                 "./lib-graalpython/capi/": [
                     "file:graalpython/com.oracle.graal.python.cext/src",
                     "file:graalpython/com.oracle.graal.python.cext/modules",
-                    "file:graalpython/com.oracle.graal.python.cext/include",
                 ],
             },
             "maven": False,

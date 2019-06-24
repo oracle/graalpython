@@ -69,8 +69,8 @@ def _init_posix():
     g['CC'] = sys.__graal_get_toolchain_path('CC')
     g['CXX'] = sys.__graal_get_toolchain_path('CXX')
     g['OPT'] = "-DNDEBUG -O1"
-    g['CONFINCLUDEPY'] = os.path.join(sys.graal_python_cext_src, "include")
-    g['CPPFLAGS'] = '-I. -I%s' % str(os.path.join(sys.graal_python_cext_src, "include"))
+    g['CONFINCLUDEPY'] = get_python_inc()
+    g['CPPFLAGS'] = '-I. -I%s' % get_python_inc()
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
