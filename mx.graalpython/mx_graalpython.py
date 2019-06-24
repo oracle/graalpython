@@ -359,7 +359,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.sandboxed"])
+            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -373,7 +373,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_svm(["sandboxed"]), args=["--llvm.sandboxed"])
+            run_python_unittests(python_svm(["sandboxed"]), args=["--llvm.managed"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -522,7 +522,7 @@ def run_shared_lib_test(args=None):
                 return status;
             }
         #if %s
-            status = poly_context_builder_option(isolate_thread, builder, "llvm.sandboxed", "true");
+            status = poly_context_builder_option(isolate_thread, builder, "llvm.managed", "true");
             if (status != poly_ok) {
                 return status;
             }
@@ -998,10 +998,10 @@ def _register_vms(namespace):
         '-Dgraal.TruffleExperimentalSplittingAllowForcedSplits=false'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=[
-        '--llvm.sandboxed',
+        '--llvm.managed',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
-        "--llvm.sandboxed=false"
+        "--llvm.managed=false"
     ]), SUITE, 10)
 
 
