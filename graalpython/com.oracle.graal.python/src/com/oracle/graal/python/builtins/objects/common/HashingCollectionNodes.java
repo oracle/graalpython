@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class HashingCollectionNodes {
 
@@ -84,27 +86,19 @@ public abstract class HashingCollectionNodes {
 
     @ImportStatic(PGuards.class)
     public abstract static class SetItemNode extends PNodeWithContext {
-        private @Child HashingStorageNodes.SetItemNode setItemNode;
-
-        public HashingStorageNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
-            return setItemNode;
-        }
-
-        public abstract void execute(PHashingCollection c, Object key, Object value);
+        public abstract void execute(VirtualFrame frame, PHashingCollection c, Object key, Object value);
 
         @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        void doSetItemCached(PHashingCollection c, Object key, Object value,
+        void doSetItemCached(VirtualFrame frame, PHashingCollection c, Object key, Object value,
+                        @Cached HashingStorageNodes.SetItemNode setItemNode,
                         @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            cachedClass.cast(c).setDictStorage(getSetItemNode().execute(cachedClass.cast(c).getDictStorage(), key, value));
+            cachedClass.cast(c).setDictStorage(setItemNode.execute(frame, cachedClass.cast(c).getDictStorage(), key, value));
         }
 
         @Specialization(replaces = "doSetItemCached")
-        void doSetItemGeneric(PHashingCollection c, Object key, Object value) {
-            c.setDictStorage(getSetItemNode().execute(c.getDictStorage(), key, value));
+        void doSetItemGeneric(VirtualFrame frame, PHashingCollection c, Object key, Object value,
+                        @Cached HashingStorageNodes.SetItemNode setItemNode) {
+            c.setDictStorage(setItemNode.execute(frame, c.getDictStorage(), key, value));
         }
 
         public static SetItemNode create() {
@@ -113,6 +107,7 @@ public abstract class HashingCollectionNodes {
     }
 
     @ImportStatic({PGuards.class})
+    @GenerateUncached
     public abstract static class GetDictStorageNode extends PNodeWithContext {
 
         public abstract HashingStorage execute(PHashingCollection c);
@@ -124,12 +119,16 @@ public abstract class HashingCollectionNodes {
         }
 
         @Specialization(replaces = "getStorageCached")
-        HashingStorage getStorageGeneric(PHashingCollection c) {
+        static HashingStorage getStorageGeneric(PHashingCollection c) {
             return c.getDictStorage();
         }
 
         public static GetDictStorageNode create() {
             return GetDictStorageNodeGen.create();
+        }
+
+        public static GetDictStorageNode getUncached() {
+            return GetDictStorageNodeGen.getUncached();
         }
     }
 }

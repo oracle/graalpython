@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -51,15 +51,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public final class DictConcatNode extends ExpressionNode {
 
     @Children final ExpressionNode[] mappables;
-    @Child private Equivalence equivalenceNode;
-
-    protected Equivalence getEquivalence() {
-        if (equivalenceNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            equivalenceNode = insert(new PythonEquivalence());
-        }
-        return equivalenceNode;
-    }
+    @Child private HashingStorageNodes.SetItemNode setItemNode;
+    @Child private HashingStorageNodes.GetItemNode getItemNode;
 
     private DictConcatNode(ExpressionNode... mappablesNodes) {
         this.mappables = mappablesNodes;
@@ -75,10 +68,22 @@ public final class DictConcatNode extends ExpressionNode {
                 first = expectDict(n.execute(frame));
             } else {
                 other = expectDict(n.execute(frame));
-                first.getDictStorage().addAll(other.getDictStorage(), getEquivalence());
+                addAllToDict(frame, first, other);
             }
         }
         return first;
+    }
+
+    private void addAllToDict(VirtualFrame frame, PDict dict, PDict other) {
+        if (setItemNode == null || getItemNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setItemNode = insert(HashingStorageNodes.SetItemNode.create());
+            getItemNode = insert(HashingStorageNodes.GetItemNode.create());
+        }
+        HashingStorage dictStorage = dict.getDictStorage();
+        for (Object key : other.keys()) {
+            setItemNode.execute(frame, dictStorage, key, getItemNode.execute(frame, other.getDictStorage(), key));
+        }
     }
 
     private static PDict expectDict(Object first) {

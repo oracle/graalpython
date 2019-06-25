@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,13 @@ def test_relative_import():
         import package
     except Exception as e:
         raise e
+
+
+def test_module_docstring():
+    import package
+    assert package.__doc__ == "PACKAGE DOC"
+    from package import moduleA
+    assert moduleA.__doc__ == "MODULE A DOC"
 
 
 def test_dotted_import():
@@ -127,3 +134,16 @@ def test_recursive_import_from():
     if sys.version_info.minor >= 6:
         import package.recpkg
         assert package.recpkg.context is package.recpkg.reduction.context
+
+
+if sys.implementation.name == "graalpython":
+    def test_imp_cached_imports():
+        import _imp
+
+        finder = _imp.CachedImportFinder
+
+        spec = finder.find_spec("encodings", None)
+        assert spec.submodule_search_locations
+
+        spec = finder.find_spec("encodings.utf_8", None)
+        assert not spec.submodule_search_locations

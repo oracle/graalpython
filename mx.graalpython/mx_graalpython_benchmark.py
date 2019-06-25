@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -50,11 +50,15 @@ ENV_PYPY_HOME = "PYPY_HOME"
 VM_NAME_GRAALPYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
 VM_NAME_PYPY = "pypy"
+VM_NAME_GRAALPYTHON_SVM = "graalpython-svm"
 GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
-CONFIGURATION_EXPERIMENTAL_SPLITTING = "experimental_splitting"
+CONFIGURATION_NATIVE = "native"
+CONFIG_EXPERIMENTAL_SPLITTING = "experimental_splitting"
+CONFIGURATION_SANDBOXED = "sandboxed"
+CONFIGURATION_DUMP = "dump"
 
 DEFAULT_ITERATIONS = 10
 
@@ -79,6 +83,7 @@ class AbstractPythonVm(Vm):
     __metaclass__ = ABCMeta
 
     def __init__(self, config_name, options=None):
+        super(AbstractPythonVm, self).__init__()
         self._config_name = config_name
         self._options = options
 
@@ -130,7 +135,7 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
         super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
         try:
             self._iterations = int(iterations)
-        except Exception:
+        except:
             self._iterations = None
 
     def _override_iterations_args(self, args):
@@ -154,7 +159,7 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
 class CPythonVm(AbstractPythonIterationsControlVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None, iterations=None):
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=0):
         super(CPythonVm, self).__init__(config_name, options=options, iterations=iterations)
         self._virtualenv = virtualenv
 
@@ -187,13 +192,14 @@ class PyPyVm(AbstractPythonIterationsControlVm):
 
 class GraalPythonVm(GuestVm):
     def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
-                 host_vm=None, extra_vm_args=None):
+                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None):
         super(GraalPythonVm, self).__init__(host_vm=host_vm)
         self._config_name = config_name
         self._distributions = distributions
         self._cp_suffix = cp_suffix
         self._cp_prefix = cp_prefix
         self._extra_vm_args = extra_vm_args
+        self._extra_polyglot_args = extra_polyglot_args
 
     def hosting_registry(self):
         return java_vm_registry
@@ -205,16 +211,20 @@ class GraalPythonVm(GuestVm):
             # '-Dgraal.TruffleCompilationExceptionsAreFatal=true'
         ]
 
-        dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
+        dists = ["GRAALPYTHON", "TRUFFLE_NFI", "GRAALPYTHON-LAUNCHER"]
         # add configuration specified distributions
         if self._distributions:
             assert isinstance(self._distributions, list), "distributions must be either None or a list"
             dists += self._distributions
 
+        extra_polyglot_args = self._extra_polyglot_args if isinstance(self._extra_polyglot_args, list) else []
         if mx.suite("sulong", fatalIfMissing=False):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
+                extra_polyglot_args += ["--experimental-options"]
+            else:
+                extra_polyglot_args += ["--experimental-options"]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
@@ -223,8 +233,13 @@ class GraalPythonVm(GuestVm):
             "-Dpython.home=%s" % join(SUITE.dir, "graalpython"),
             "com.oracle.graal.python.shell.GraalPythonMain"
         ]
-        cmd = truffle_options + vm_args + args
-        return self.host_vm().run(cwd, cmd)
+        cmd = truffle_options + vm_args + extra_polyglot_args + args
+
+        host_vm = self.host_vm()
+        if hasattr(host_vm, 'run_lang'):
+            return host_vm.run_lang('graalpython', extra_polyglot_args + args, cwd)
+        else:
+            return host_vm.run(cwd, cmd)
 
     def name(self):
         return VM_NAME_GRAALPYTHON
@@ -234,7 +249,8 @@ class GraalPythonVm(GuestVm):
 
     def with_host_vm(self, host_vm):
         return self.__class__(config_name=self._config_name, distributions=self._distributions,
-                              cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix, host_vm=host_vm)
+                              cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix, host_vm=host_vm,
+                              extra_vm_args=self._extra_vm_args, extra_polyglot_args=self._extra_polyglot_args)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -247,6 +263,7 @@ python_vm_registry = mx_benchmark.VmRegistry(PYTHON_VM_REGISTRY_NAME, known_host
 
 class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, bench_path, benchmarks, python_path=None):
+        super(PythonBenchmarkSuite, self).__init__()
         self._name = name
         self._python_path = python_path
         self._harness_path = HARNESS_PATH
@@ -260,6 +277,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = os.path.basename(os.path.splitext(benchmarks[0])[0])
         arg = " ".join(self._benchmarks[bench_name])
+
         return [
             # warmup curves
             StdOutRule(
@@ -292,6 +310,21 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                 }
             ),
         ]
+
+    def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
+        # host-vm rewrite rules
+        ret_code, out, dims = super(PythonBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
+
+        def _replace_host_vm(key):
+            host_vm = dims.get("host-vm")
+            if host_vm and host_vm.startswith(key):
+                dims['host-vm'] = key
+                mx.logv("[DEBUG] replace 'host-vm': '{key}-python' -> '{key}'".format(key=key))
+
+        _replace_host_vm('graalvm-ce')
+        _replace_host_vm('graalvm-ee')
+
+        return ret_code, out, dims
 
     def run(self, benchmarks, bm_suite_args):
         results = super(PythonBenchmarkSuite, self).run(benchmarks, bm_suite_args)

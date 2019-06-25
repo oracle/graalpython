@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,22 +30,32 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
+import com.oracle.truffle.api.TruffleFile;
 import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -55,13 +65,25 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
+
+    static final String PREFIX = "/";
+    static final String LIB_PYTHON_3 = "/lib-python/3";
+    static final String LIB_GRAALPYTHON = "/lib-graalpython";
+    static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
+    static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
+    static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
+    static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
 
     private final PythonLanguage language;
     private PythonModule mainModule;
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
+    private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
 
@@ -70,6 +92,11 @@ public final class PythonContext {
     private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
     @CompilationFinal private TruffleLanguage.Env env;
+
+    // TODO: frame: make these three ThreadLocal
+
+    /* the reference to the last top frame on the Python stack during interop calls */
+    private PFrame.Reference topframeref = null;
 
     /* corresponds to 'PyThreadState.curexc_*' */
     private PException currentException;
@@ -87,20 +114,31 @@ public final class PythonContext {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
-    private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
-    private final static Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+    private final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+
+    private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
+
+    /* A lock for interop calls when this context is used by multiple threads. */
+    private Lock interopLock;
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
+
+    /* native pointers for context-insensitive singletons like PNone.NONE */
+    private final Object[] singletonNativePtrs = new Object[PythonLanguage.getNumberOfSpecialSingletons()];
+
+    // The context-local resources
     private final PosixResources resources;
+    private final AsyncHandler handler;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
+        this.handler = new AsyncHandler(language);
         if (env == null) {
             this.in = System.in;
             this.out = System.out;
@@ -218,36 +256,236 @@ public final class PythonContext {
         return caughtException;
     }
 
+    public void setTopFrameInfo(PFrame.Reference topframeref) {
+        this.topframeref = topframeref;
+    }
+
+    public PFrame.Reference popTopFrameInfo() {
+        PFrame.Reference ref = topframeref;
+        topframeref = null;
+        return ref;
+    }
+
+    public PFrame.Reference peekTopFrameInfo() {
+        return topframeref;
+    }
+
     public boolean isInitialized() {
         return isInitialized;
     }
 
     public void initialize() {
         core.initialize(this);
-        setupRuntimeInformation();
+        setupRuntimeInformation(false);
         core.postInitialize();
     }
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
-        setupRuntimeInformation();
+        setupRuntimeInformation(true);
         core.postInitialize();
     }
 
-    private void setupRuntimeInformation() {
-        PythonModule sysModule = core.initializeSysModule();
-        if (ImageInfo.inImageRuntimeCode() && isExecutableAccessAllowed()) {
-            sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
+    /**
+     * During pre-initialization, we're also loading code from the Python standard library. Since
+     * some of those modules may be packages, they will have their __path__ attribute set to the
+     * absolute path of the package on the build system. We use this function to patch the paths
+     * during build time and after starting up from a pre-initialized context so they point to the
+     * run-time package paths.
+     */
+    private void patchPackagePaths(String from, String to) {
+        for (Object v : sysModules.getDictStorage().values()) {
+            if (v instanceof PythonModule) {
+                // Update module.__path__
+                Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);
+                if (path instanceof PList) {
+                    Object[] paths = ((PList) path).getSequenceStorage().getCopyOfInternalArray();
+                    for (int i = 0; i < paths.length; i++) {
+                        Object pathElement = paths[i];
+                        String strPath;
+                        if (pathElement instanceof PString) {
+                            strPath = ((PString) pathElement).getValue();
+                        } else if (pathElement instanceof String) {
+                            strPath = (String) pathElement;
+                        } else {
+                            continue;
+                        }
+                        if (strPath.startsWith(from)) {
+                            paths[i] = strPath.replace(from, to);
+                        }
+                    }
+                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__PATH__, core.factory().createList(paths));
+                }
+
+                // Update module.__file__
+                Object file = ((PythonModule) v).getAttribute(SpecialAttributeNames.__FILE__);
+                String strFile = null;
+                if (file instanceof PString) {
+                    strFile = ((PString) file).getValue();
+                } else if (file instanceof String) {
+                    strFile = (String) file;
+                }
+                if (strFile != null) {
+                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__FILE__, strFile.replace(from, to));
+                }
+            }
         }
+    }
+
+    private void setupRuntimeInformation(boolean isPatching) {
+        PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
-        builtinsModule = (PythonModule) sysModules.getItem("builtins");
+
+        builtinsModule = core.lookupBuiltinModule("builtins");
+
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         mainModule.setDict(core.factory().createDictFixedStorage(mainModule));
+
         sysModules.setItem(__MAIN__, mainModule);
-        OpaqueBytes.initializeForNewContext(this);
+
+        final String stdLibPlaceholder = "!stdLibHome!";
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Patch any pre-loaded packages' paths if we're running
+            // pre-initialization
+            patchPackagePaths(getStdlibHome(), stdLibPlaceholder);
+        } else if (isPatching && ImageInfo.inImageRuntimeCode()) {
+            // Patch any pre-loaded packages' paths to the new stdlib home if
+            // we're patching a pre-initialized context
+            patchPackagePaths(stdLibPlaceholder, getStdlibHome());
+        }
+
         currentException = null;
         isInitialized = true;
+    }
+
+    private String sysPrefix, basePrefix, coreHome, stdLibHome;
+
+    public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
+        sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
+        basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
+        coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
+        stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
+
+        PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
+                        "\n\tLanguage home: {0}" +
+                        "\n\tSysPrefix: {1}" +
+                        "\n\tBaseSysPrefix: {2}" +
+                        "\n\tCoreHome: {3}" +
+                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
+
+        TruffleFile home = null;
+        if (languageHome != null) {
+            home = newEnv.getTruffleFile(languageHome);
+        }
+
+        try {
+            String envHome = System.getenv("GRAAL_PYTHONHOME");
+            if (envHome != null) {
+                TruffleFile envHomeFile = newEnv.getTruffleFile(envHome);
+                if (envHomeFile.isDirectory()) {
+                    home = envHomeFile;
+                }
+            }
+        } catch (SecurityException e) {
+        }
+
+        if (home != null) {
+            if (sysPrefix.isEmpty()) {
+                sysPrefix = home.getAbsoluteFile().getPath();
+            }
+
+            if (basePrefix.isEmpty()) {
+                basePrefix = home.getAbsoluteFile().getPath();
+            }
+
+            if (coreHome.isEmpty()) {
+                try {
+                    for (TruffleFile f : home.list()) {
+                        if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
+                            coreHome = f.getPath();
+                            break;
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+            }
+
+            if (stdLibHome.isEmpty()) {
+                try {
+                    outer: for (TruffleFile f : home.list()) {
+                        if (f.getName().equals("lib-python") && f.isDirectory()) {
+                            for (TruffleFile f2 : f.list()) {
+                                if (f2.getName().equals("3") && f.isDirectory()) {
+                                    stdLibHome = f2.getPath();
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+            }
+
+            PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
+                            "\n\tLanguage home: {0}" +
+                            "\n\tSysPrefix: {1}" +
+                            "\n\tSysBasePrefix: {2}" +
+                            "\n\tCoreHome: {3}" +
+                            "\n\tStdLibHome: {4}" +
+                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
+        }
+    }
+
+    @TruffleBoundary
+    public String getSysPrefix() {
+        if (sysPrefix.isEmpty()) {
+            writeWarning(NO_PREFIX_WARNING);
+            sysPrefix = PREFIX;
+        }
+        return sysPrefix;
+    }
+
+    @TruffleBoundary
+    public String getSysBasePrefix() {
+        if (basePrefix.isEmpty()) {
+            String homePrefix = language.getHome();
+            if (homePrefix == null || homePrefix.isEmpty()) {
+                homePrefix = PREFIX;
+            }
+            basePrefix = homePrefix;
+        }
+        return basePrefix;
+    }
+
+    @TruffleBoundary
+    public String getCoreHome() {
+        if (coreHome.isEmpty()) {
+            writeWarning(NO_CORE_WARNING);
+            coreHome = LIB_GRAALPYTHON;
+        }
+        return coreHome;
+    }
+
+    @TruffleBoundary
+    public String getStdlibHome() {
+        if (stdLibHome.isEmpty()) {
+            writeWarning(NO_STDLIB);
+            stdLibHome = LIB_PYTHON_3;
+        }
+        return stdLibHome;
+    }
+
+    @TruffleBoundary
+    public String getCoreHomeOrFail() {
+        if (coreHome.isEmpty()) {
+            throw new RuntimeException(NO_CORE_FATAL);
+        }
+        return coreHome;
+    }
+
+    private static void writeWarning(String warning) {
+        PythonLanguage.getLogger().warning(warning);
     }
 
     public boolean capiWasLoaded() {
@@ -282,6 +520,7 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void runShutdownHooks() {
+        handler.shutdown();
         for (CallTarget f : atExitHooks.values()) {
             f.call();
         }
@@ -307,7 +546,7 @@ public final class PythonContext {
         return singleNativeContext;
     }
 
-    public static Assumption getSingleThreadedAssumption() {
+    public Assumption getSingleThreadedAssumption() {
         return singleThreaded;
     }
 
@@ -321,5 +560,55 @@ public final class PythonContext {
 
     public PosixResources getResources() {
         return resources;
+    }
+
+    /**
+     * Trigger any pending asynchronous actions
+     */
+    public void triggerAsyncActions(VirtualFrame frame, Node location) {
+        handler.triggerAsyncActions(frame, location);
+    }
+
+    public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {
+        handler.registerAction(actionSupplier);
+    }
+
+    @TruffleBoundary
+    public CyclicAssumption getNativeClassStableAssumption(PythonNativeClass cls, boolean createOnDemand) {
+        CyclicAssumption assumption = nativeClassStableAssumptions.get(cls);
+        if (assumption == null && createOnDemand) {
+            assumption = new CyclicAssumption("Native class " + cls + " stable");
+            nativeClassStableAssumptions.put(cls, assumption);
+        }
+        return assumption;
+    }
+
+    public void setSingletonNativePtr(PythonAbstractObject obj, Object nativePtr) {
+        assert PythonLanguage.getSingletonNativePtrIdx(obj) != -1 : "invalid special singleton object";
+        assert singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] == null;
+        singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] = nativePtr;
+    }
+
+    public Object getSingletonNativePtr(PythonAbstractObject obj) {
+        int singletonNativePtrIdx = PythonLanguage.getSingletonNativePtrIdx(obj);
+        if (singletonNativePtrIdx != -1) {
+            return singletonNativePtrs[singletonNativePtrIdx];
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    public void acquireInteropLock() {
+        interopLock.lock();
+    }
+
+    @TruffleBoundary
+    public void releaseInteropLock() {
+        interopLock.unlock();
+    }
+
+    @TruffleBoundary
+    public void createInteropLock() {
+        interopLock = new ReentrantLock();
     }
 }

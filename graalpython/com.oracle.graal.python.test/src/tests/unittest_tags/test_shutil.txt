@@ -1,0 +1,11 @@
+*TestShutil.test_copy
+*TestShutil.test_copy2
+*TestShutil.test_copy_return_value
+*TestShutil.test_copyfile_return_value
+*TestShutil.test_copyfile_same_file
+*TestShutil.test_copytree_retains_permissions
+*TestShutil.test_copytree_return_value
+*TestShutil.test_copytree_simple
+*TestShutil.test_copytree_special_func
+*TestShutil.test_copytree_with_exclude
+*TestShutil.test_make_archive

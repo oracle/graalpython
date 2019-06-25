@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         return ScandirIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IterNode extends PythonUnaryBuiltinNode {
@@ -76,7 +76,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NEXT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -90,7 +90,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ENTER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__ENTER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
@@ -100,7 +100,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EXIT__, fixedNumOfPositionalArgs = 4)
+    @Builtin(name = SpecialMethodNames.__EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization
@@ -110,7 +110,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "path", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "path", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class PathNode extends PythonUnaryBuiltinNode {
         @Specialization

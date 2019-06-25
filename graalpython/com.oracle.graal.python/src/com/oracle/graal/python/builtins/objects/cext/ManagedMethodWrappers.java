@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,42 +40,134 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wrappers for methods used by native code.
  */
 public abstract class ManagedMethodWrappers {
 
+    @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public abstract static class MethodWrapper extends PythonNativeWrapper {
 
         public MethodWrapper(Object method) {
             super(method);
         }
 
-        static boolean isInstance(TruffleObject o) {
-            return o instanceof MethodWrapper;
+        @ExportMessage
+        public boolean isPointer(
+                        @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+            return pIsPointerNode.execute(this);
         }
 
-        @Override
-        public ForeignAccess getForeignAccess() {
-            return ManagedMethodWrappersMRForeign.ACCESS;
+        @ExportMessage
+        public long asPointer(
+                        @Exclusive @Cached PAsPointerNode pAsPointerNode) {
+            return pAsPointerNode.execute(this);
+        }
+
+        @ExportMessage
+        public void toNative(
+                        @Exclusive @Cached ToPyObjectNode toPyObjectNode,
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            setNativePointer(toPyObjectNode.execute(this));
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        public boolean hasNativeType() {
+            // TODO implement native type
+            return false;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        public Object getNativeType() {
+            // TODO implement native type
+            return null;
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     static class MethKeywords extends MethodWrapper {
 
         public MethKeywords(Object method) {
             super(method);
         }
+
+        @ExportMessage
+        protected boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage
+        public Object execute(Object[] arguments,
+                        @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Exclusive @Cached CallNode callNode,
+                        @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
+                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode) throws ArityException {
+            if (arguments.length != 3) {
+                throw ArityException.create(3, arguments.length);
+            }
+
+            // convert args
+            Object receiver = toJavaNode.execute(arguments[0]);
+            Object starArgs = toJavaNode.execute(arguments[1]);
+            Object kwArgs = toJavaNode.execute(arguments[2]);
+
+            Object[] starArgsArray = posStarargsNode.passState().executeWith(starArgs);
+            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+            PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
+
+            // execute
+            return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
+        }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     static class MethVarargs extends MethodWrapper {
 
         public MethVarargs(Object method) {
             super(method);
+        }
+
+        @ExportMessage
+        protected boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage
+        public Object execute(Object[] arguments,
+                        @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode) throws ArityException, UnsupportedMessageException {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, arguments.length);
+            }
+
+            // convert args
+            Object varArgs = toJavaNode.execute(arguments[0]);
+            return toSulongNode.execute(executeNode.execute(getDelegate(), new Object[]{varArgs}));
         }
     }
 

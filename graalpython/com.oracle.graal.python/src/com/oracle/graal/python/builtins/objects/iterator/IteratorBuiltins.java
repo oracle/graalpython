@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator})
@@ -68,7 +69,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         return IteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
@@ -174,11 +175,11 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isPSequence()")
-        public Object next(PSequenceIterator self,
+        public Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
                         @Cached("create()") IsBuiltinClassProfile profile) {
             try {
-                return callGetItem.executeObject(self.getObject(), self.index++);
+                return callGetItem.executeObject(frame, self.getObject(), self.index++);
             } catch (PException e) {
                 e.expectIndexError(profile);
                 throw raise(StopIteration);
@@ -186,7 +187,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -196,7 +197,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LENGTH_HINT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -246,10 +247,10 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isPSequence()")
-        public Object lengthHint(PSequenceIterator self,
+        public Object lengthHint(VirtualFrame frame, PSequenceIterator self,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__SUB__, __RSUB__)") LookupAndCallBinaryNode callSub) {
-            return callSub.executeObject(callLen.executeObject(self.getObject()), self.index);
+            return callSub.executeObject(frame, callLen.executeObject(frame, self.getObject()), self.index);
         }
     }
 }

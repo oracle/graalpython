@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,15 +59,15 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
  *
  * When the hash table needs to be constructed, the field {@link #hashArray} becomes a new hash
  * array where an entry of 0 means no hit and otherwise denotes the entry number in the
- * {@link #entries} array. The hash array is interpreted as an actual byte array if the indices fit
- * within 8 bit, or as an array of short values if the indices fit within 16 bit, or as an array of
- * integer values in other cases.
+ * {@link #entriesArr} array. The hash array is interpreted as an actual byte array if the indices
+ * fit within 8 bit, or as an array of short values if the indices fit within 16 bit, or as an array
+ * of integer values in other cases.
  *
  * Hash collisions are handled by chaining a linked list of {@link CollisionLink} objects that take
- * the place of the values in the {@link #entries} array.
+ * the place of the values in the {@link #entriesArr} array.
  *
- * Removing entries will put {@code null} into the {@link #entries} array. If the occupation of the
- * map falls below a specific threshold, the map will be compressed via the
+ * Removing entries will put {@code null} into the {@link #entriesArr} array. If the occupation of
+ * the map falls below a specific threshold, the map will be compressed via the
  * {@link #maybeCompress(int, Equivalence)} method.
  */
 public class EconomicMapStorage extends HashingStorage implements Iterable<Object> {
@@ -120,7 +120,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     /**
      * Entries array with even indices storing keys and odd indices storing values.
      */
-    private Object[] entries;
+    private Object[] entriesArr;
 
     /**
      * Hash array that is interpreted either as byte or short or int array depending on number of
@@ -164,8 +164,8 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
             // We are only allowed to directly copy if the strategies of the two maps are the same.
             totalEntries = otherMap.totalEntries;
             deletedEntries = otherMap.deletedEntries;
-            if (otherMap.entries != null) {
-                entries = otherMap.entries.clone();
+            if (otherMap.entriesArr != null) {
+                entriesArr = otherMap.entriesArr.clone();
             }
             if (otherMap.hashArray != null) {
                 hashArray = otherMap.hashArray.clone();
@@ -177,7 +177,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
 
     private void init(int size) {
         if (size > INITIAL_CAPACITY) {
-            entries = new Object[size << 1];
+            entriesArr = new Object[size << 1];
         }
     }
 
@@ -221,7 +221,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
 
     private int findLinear(Object key, Equivalence eq) {
         for (int i = 0; i < totalEntries; i++) {
-            Object entryKey = entries[i << 1];
+            Object entryKey = entriesArr[i << 1];
             if (entryKey != null && compareKeys(key, entryKey, eq)) {
                 return i;
             }
@@ -278,9 +278,9 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     private int getHashArray(int index) {
-        if (entries.length < LARGE_HASH_THRESHOLD) {
+        if (entriesArr.length < LARGE_HASH_THRESHOLD) {
             return (hashArray[index] & 0xFF);
-        } else if (entries.length < VERY_LARGE_HASH_THRESHOLD) {
+        } else if (entriesArr.length < VERY_LARGE_HASH_THRESHOLD) {
             int adjustedIndex = index << 1;
             return (hashArray[adjustedIndex] & 0xFF) | ((hashArray[adjustedIndex + 1] & 0xFF) << 8);
         } else {
@@ -290,9 +290,9 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     private void setHashArray(int index, int value) {
-        if (entries.length < LARGE_HASH_THRESHOLD) {
+        if (entriesArr.length < LARGE_HASH_THRESHOLD) {
             hashArray[index] = (byte) value;
-        } else if (entries.length < VERY_LARGE_HASH_THRESHOLD) {
+        } else if (entriesArr.length < VERY_LARGE_HASH_THRESHOLD) {
             int adjustedIndex = index << 1;
             hashArray[adjustedIndex] = (byte) value;
             hashArray[adjustedIndex + 1] = (byte) (value >> 8);
@@ -394,12 +394,12 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         }
 
         int nextEntryIndex = totalEntries;
-        if (entries == null) {
-            entries = new Object[INITIAL_CAPACITY << 1];
-        } else if (entries.length == nextEntryIndex << 1) {
+        if (entriesArr == null) {
+            entriesArr = new Object[INITIAL_CAPACITY << 1];
+        } else if (entriesArr.length == nextEntryIndex << 1) {
             grow(eq);
 
-            assert entries.length > totalEntries << 1;
+            assert entriesArr.length > totalEntries << 1;
             // Can change if grow is actually compressing.
             nextEntryIndex = totalEntries;
         }
@@ -426,14 +426,14 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     private void grow(Equivalence eq) {
-        int entriesLength = entries.length;
+        int entriesLength = entriesArr.length;
         int newSize = (entriesLength >> 1) + Math.max(MIN_CAPACITY_INCREASE, entriesLength >> 2);
         if (newSize > MAX_ELEMENT_COUNT) {
             throw new UnsupportedOperationException("map grown too large!");
         }
         Object[] newEntries = new Object[newSize << 1];
-        System.arraycopy(entries, 0, newEntries, 0, entriesLength);
-        entries = newEntries;
+        System.arraycopy(entriesArr, 0, newEntries, 0, entriesLength);
+        entriesArr = newEntries;
         if ((entriesLength < LARGE_HASH_THRESHOLD && newEntries.length >= LARGE_HASH_THRESHOLD) ||
                         (entriesLength < VERY_LARGE_HASH_THRESHOLD && newEntries.length > VERY_LARGE_HASH_THRESHOLD)) {
             // Rehash in order to change number of bits reserved for hash indices.
@@ -446,7 +446,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
      * new next index.
      */
     private int maybeCompress(int nextIndex, Equivalence eq) {
-        if (entries.length != INITIAL_CAPACITY << 1 && deletedEntries >= (totalEntries >> 1) + (totalEntries >> 2)) {
+        if (entriesArr.length != INITIAL_CAPACITY << 1 && deletedEntries >= (totalEntries >> 1) + (totalEntries >> 2)) {
             return compressLarge(nextIndex, eq);
         }
         return nextIndex;
@@ -478,7 +478,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
             }
         }
 
-        this.entries = newEntries;
+        this.entriesArr = newEntries;
         totalEntries = z;
         deletedEntries = 0;
         if (z <= getHashThreshold()) {
@@ -490,9 +490,9 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     private int getHashTableSize() {
-        if (entries.length < LARGE_HASH_THRESHOLD) {
+        if (entriesArr.length < LARGE_HASH_THRESHOLD) {
             return hashArray.length;
-        } else if (entries.length < VERY_LARGE_HASH_THRESHOLD) {
+        } else if (entriesArr.length < VERY_LARGE_HASH_THRESHOLD) {
             return hashArray.length >> 1;
         } else {
             return hashArray.length >> 2;
@@ -511,10 +511,10 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         // Give extra size to avoid collisions.
         size <<= 1;
 
-        if (this.entries.length >= VERY_LARGE_HASH_THRESHOLD) {
+        if (this.entriesArr.length >= VERY_LARGE_HASH_THRESHOLD) {
             // Every entry has 4 bytes.
             size <<= 2;
-        } else if (this.entries.length >= LARGE_HASH_THRESHOLD) {
+        } else if (this.entriesArr.length >= LARGE_HASH_THRESHOLD) {
             // Every entry has 2 bytes.
             size <<= 1;
         } else {
@@ -563,7 +563,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
 
     @Override
     public void clear() {
-        entries = null;
+        entriesArr = null;
         hashArray = null;
         totalEntries = deletedEntries = 0;
     }
@@ -619,11 +619,11 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     private Object getKey(int index) {
-        return entries[index << 1];
+        return entriesArr[index << 1];
     }
 
     private void setKey(int index, Object newValue) {
-        entries[index << 1] = newValue;
+        entriesArr[index << 1] = newValue;
     }
 
     private void setValue(int index, Object newValue) {
@@ -637,11 +637,11 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     private void setRawValue(int index, Object newValue) {
-        entries[(index << 1) + 1] = newValue;
+        entriesArr[(index << 1) + 1] = newValue;
     }
 
     private Object getRawValue(int index) {
-        return entries[(index << 1) + 1];
+        return entriesArr[(index << 1) + 1];
     }
 
     private Object getValue(int index) {

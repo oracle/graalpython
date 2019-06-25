@@ -1,0 +1,9 @@
+test_read_all
+test_read_eager
+test_read_lazy
+test_read_some
+test_read_until
+test_write
+test_IAC_commands
+test_SB_commands
+test_debug_accepts_str_port

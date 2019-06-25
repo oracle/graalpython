@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import java.lang.reflect.Field;
+
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+
 public abstract class NativeCAPISymbols {
 
     public static final String FUN_NATIVE_POINTER_TO_JAVA = "native_pointer_to_java";
@@ -52,8 +58,16 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
     public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
     public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
-    public static final String FUN_PY_FLOAT_AS_DOUBLE = "PyFloat_AsDouble";
+    public static final String FUN_PY_FLOAT_AS_DOUBLE = "truffle_read_ob_fval";
     public static final String FUN_GET_OB_TYPE = "get_ob_type";
+    public static final String FUN_GET_TP_DICT = "get_tp_dict";
+    public static final String FUN_GET_TP_BASES = "get_tp_bases";
+    public static final String FUN_GET_TP_NAME = "get_tp_name";
+    public static final String FUN_GET_TP_MRO = "get_tp_mro";
+    public static final String FUN_GET_TP_SUBCLASSES = "get_tp_subclasses";
+    public static final String FUN_GET_TP_DICTOFFSET = "get_tp_dictoffset";
+    public static final String FUN_GET_TP_BASICSIZE = "get_tp_basicsize";
+    public static final String FUN_GET_TP_ITEMSIZE = "get_tp_itemsize";
     public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
     public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
     public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";
@@ -68,4 +82,28 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_THREAD_STATE_TYPE_ID = "get_thread_state_typeid";
     public static final String FUN_ADD_NATIVE_SLOTS = "PyTruffle_Type_AddSlots";
 
+    @CompilationFinal(dimensions = 1) private static final String[] values;
+    static {
+        Field[] declaredFields = NativeCAPISymbols.class.getDeclaredFields();
+        values = new String[declaredFields.length - 1]; // omit the values field
+        for (int i = 0; i < declaredFields.length; i++) {
+            Field s = declaredFields[i];
+            if (s.getType() == String.class) {
+                try {
+                    values[i] = (String) s.get(NativeMemberNames.class);
+                } catch (IllegalArgumentException | IllegalAccessException e) {
+                }
+            }
+        }
+    }
+
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
+    public static boolean isValid(String name) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

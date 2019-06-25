@@ -489,27 +489,66 @@ class groupby(object):
            uniquekeys.append(k)
     """
     def __init__(self, iterable, key=None):
-        if key is None:
-            key = lambda x: x
+        self._iterator = iter(iterable)
         self._keyfunc = key
-        self._iter = iter(iterable)
-        self._tgtkey = self._currkey = self._currvalue = xrange(0)
+        self._tgtkey = self._currkey = self._currvalue = None
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        while self._currkey == self._tgtkey:
-            self._currvalue = next(self._iter) # Exit on StopIteration
-            self._currkey = self._keyfunc(self._currvalue)
-        self._tgtkey = self._currkey
-        return (self._currkey, self._grouper(self._tgtkey))
+        self._skip_to_next_iteration_group()
+        key = self._tgtkey = self._currkey
+        grouper = _groupby(self, key)
+        return (key, grouper)
 
-    def _grouper(self, tgtkey):
-        while self._currkey == tgtkey:
-            yield self._currvalue
-            self._currvalue = next(self._iter) # Exit on StopIteration
-            self._currkey = self._keyfunc(self._currvalue)
+    def _skip_to_next_iteration_group(self):
+        while True:
+            if self._currkey is None:
+                pass
+            elif self._tgtkey is None:
+                break
+            else:
+                if not self._tgtkey == self._currkey:
+                    break
+
+            newvalue = next(self._iterator)
+            if self._keyfunc is None:
+                newkey = newvalue
+            else:
+                newkey = self._keyfunc(newvalue)
+
+            self._currkey = newkey
+            self._currvalue = newvalue
+
+
+class _groupby():
+    def __init__(self, groupby, tgtkey):
+        self.groupby = groupby
+        self.tgtkey = tgtkey
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        groupby = self.groupby
+        if groupby._currvalue is None:
+            newvalue = next(groupby._iterator)
+            if groupby._keyfunc is None:
+                newkey = newvalue
+            else:
+                newkey = groupby._keyfunc(newvalue)
+            assert groupby._currvalue is None
+            groupby._currkey = newkey
+            groupby._currvalue = newvalue
+
+        assert groupby._currkey is not None
+        if not self.tgtkey == groupby._currkey:
+            raise StopIteration(None)
+        result = groupby._currvalue
+        groupby._currvalue = None
+        groupby._currkey = None
+        return result
 
 
 class combinations():
@@ -523,7 +562,7 @@ class combinations():
 
     def __init__(self, pool, indices, r):
         self.pool = pool
-        self.indices = range(indices)
+        self.indices = indices
         if r < 0:
             raise ValueError("r must be non-negative")
         self.r = r
@@ -593,7 +632,7 @@ class combinations_with_replacement(combinations):
         if r < 0:
             raise ValueError("r must be non-negative")
         indices = [0] * r
-        combinations.__init__(pool, indices, r)
+        super().__init__(pool, indices, r)
         self.stopped = len(pool) == 0 and r > 0
 
     def get_maximum(self, i):
@@ -637,11 +676,63 @@ class zip_longest():
         nb = len(self.iterators)
         if nb == 0:
             raise StopIteration
-        return tuple(self._fetch(index) for index in range(nb))
+        result = []
+        for index in range(nb):
+            result.append(self._fetch(index))
+        return tuple(result)
 
     def __new__(subtype, iter1, *args, fillvalue=None):
         self = object.__new__(subtype)
         self.fillvalue = fillvalue
         self.active = len(args) + 1
-        self.iterators = [iter1] + args
+        self.iterators = [iter(iter1)] + [iter(arg) for arg in args]
         return self
+
+
+class cycle():
+    """
+    Make an iterator returning elements from the iterable and
+    saving a copy of each. When the iterable is exhausted, return
+    elements from the saved copy. Repeats indefinitely.
+
+    Equivalent to :
+
+    def cycle(iterable):
+        saved = []
+        for element in iterable:
+            yield element
+            saved.append(element)
+        while saved:
+            for element in saved:
+                yield element
+    """
+
+    def __init__(self, iterable):
+        self.saved = []
+        self.iterable = iter(iterable)
+        self.index = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index > 0:
+            if not self.saved:
+                raise StopIteration
+            if len(self.saved) > self.index:
+                obj = self.saved[self.index]
+                self.index += 1
+            else:
+                obj = self.saved[0]
+                self.index = 1
+        else:
+            try:
+                obj = next(self.iterable)
+            except StopIteration:
+                if not self.saved:
+                    raise
+                obj = self.saved[0]
+                self.index = 1
+            else:
+                self.saved.append(obj)
+        return obj

@@ -41,20 +41,31 @@
 
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltinsFactory.BytesLikeNoGeneralizationNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -62,15 +73,13 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PBytes})
 public class AbstractBytesBuiltins extends PythonBuiltins {
@@ -80,7 +89,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         return AbstractBytesBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "lower", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "lower", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LowerNode extends PythonUnaryBuiltinNode {
         @Node.Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -97,17 +106,17 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PByteArray replace(PByteArray self) {
-            return factory().createByteArray(lower(toBytes.execute(self)));
+        PByteArray replace(VirtualFrame frame, PByteArray self) {
+            return factory().createByteArray(lower(toBytes.execute(frame, self)));
         }
 
         @Specialization
-        PBytes replace(PBytes self) {
-            return factory().createBytes(lower(toBytes.execute(self)));
+        PBytes replace(VirtualFrame frame, PBytes self) {
+            return factory().createBytes(lower(toBytes.execute(frame, self)));
         }
     }
 
-    @Builtin(name = "upper", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "upper", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UpperNode extends PythonUnaryBuiltinNode {
         @Node.Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -124,13 +133,13 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PByteArray replace(PByteArray self) {
-            return factory().createByteArray(upper(toBytes.execute(self)));
+        PByteArray replace(VirtualFrame frame, PByteArray self) {
+            return factory().createByteArray(upper(toBytes.execute(frame, self)));
         }
 
         @Specialization
-        PBytes replace(PBytes self) {
-            return factory().createBytes(upper(toBytes.execute(self)));
+        PBytes replace(VirtualFrame frame, PBytes self) {
+            return factory().createBytes(upper(toBytes.execute(frame, self)));
         }
     }
 
@@ -167,16 +176,16 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PByteArray strip(PByteArray self, @SuppressWarnings("unused") PNone bytes,
+        PByteArray strip(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bs = toBytesNode.execute(self);
+            byte[] bs = toBytesNode.execute(frame, self);
             return newByteArrayFrom(bs, findIndex(bs));
         }
 
         @Specialization
-        PBytes strip(PBytes self, @SuppressWarnings("unused") PNone bytes,
+        PBytes strip(VirtualFrame frame, PBytes self, @SuppressWarnings("unused") PNone bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bs = toBytesNode.execute(self);
+            byte[] bs = toBytesNode.execute(frame, self);
             return newBytesFrom(bs, findIndex(bs));
         }
 
@@ -200,26 +209,26 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PByteArray strip(PByteArray self, PBytes bytes,
+        PByteArray strip(VirtualFrame frame, PByteArray self, PBytes bytes,
                         @Cached("create()") BytesNodes.ToBytesNode selfToBytesNode,
                         @Cached("create()") BytesNodes.ToBytesNode otherToBytesNode) {
-            byte[] stripBs = selfToBytesNode.execute(bytes);
-            byte[] bs = otherToBytesNode.execute(self);
+            byte[] stripBs = selfToBytesNode.execute(frame, bytes);
+            byte[] bs = otherToBytesNode.execute(frame, self);
             return newByteArrayFrom(bs, findIndex(bs, stripBs));
         }
 
         @Specialization
-        PBytes strip(PBytes self, PBytes bytes,
+        PBytes strip(VirtualFrame frame, PBytes self, PBytes bytes,
                         @Cached("create()") BytesNodes.ToBytesNode selfToBytesNode,
                         @Cached("create()") BytesNodes.ToBytesNode otherToBytesNode) {
-            byte[] stripBs = selfToBytesNode.execute(bytes);
-            byte[] bs = otherToBytesNode.execute(self);
+            byte[] stripBs = selfToBytesNode.execute(frame, bytes);
+            byte[] bs = otherToBytesNode.execute(frame, self);
             return newBytesFrom(bs, findIndex(bs, stripBs));
         }
 
     }
 
-    @Builtin(name = "lstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
+    @Builtin(name = "lstrip", minNumOfPositionalArgs = 1, parameterNames = {"self", "bytes"})
     @GenerateNodeFactory
     abstract static class LStripNode extends AStripNode {
 
@@ -261,7 +270,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
+    @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, parameterNames = {"self", "bytes"})
     @GenerateNodeFactory
     abstract static class RStripNode extends AStripNode {
 
@@ -307,7 +316,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
 
     abstract static class AbstractSplitNode extends PythonBuiltinNode {
 
-        abstract PList execute(Object bytes, Object sep, Object maxsplit);
+        abstract PList execute(VirtualFrame frame, Object bytes, Object sep, Object maxsplit);
 
         @SuppressWarnings("unused")
         protected List<byte[]> splitWhitespace(byte[] bytes, int maxsplit) {
@@ -328,7 +337,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
 
         @Child private BytesNodes.ToBytesNode selfToBytesNode;
         @Child private BytesNodes.ToBytesNode sepToBytesNode;
-        @Child private ListAppendNode appendNode;
+        @Child private AppendNode appendNode;
         @Child private CastToIntegerFromIndexNode castIntNode;
         @Child private AbstractSplitNode recursiveNode;
 
@@ -385,10 +394,10 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             return sepToBytesNode;
         }
 
-        protected ListAppendNode getAppendNode() {
+        protected AppendNode getAppendNode() {
             if (appendNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(ListAppendNode.create());
+                appendNode = insert(AppendNode.create());
             }
             return appendNode;
         }
@@ -452,128 +461,128 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         // split()
         // rsplit()
         @Specialization
-        PList split(PBytes bytes, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone maxsplit) {
-            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+        PList split(VirtualFrame frame, PBytes bytes, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone maxsplit) {
+            byte[] splitBs = getSelfToBytesNode().execute(frame, bytes);
             return getBytesResult(splitWhitespace(splitBs, -1));
         }
 
         @Specialization
-        PList split(PByteArray bytes, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone maxsplit) {
-            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+        PList split(VirtualFrame frame, PByteArray bytes, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone maxsplit) {
+            byte[] splitBs = getSelfToBytesNode().execute(frame, bytes);
             return getByteArrayResult(splitWhitespace(splitBs, -1));
         }
 
         // split(sep=...)
         // rsplit(sep=...)
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PBytes bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
-            return split(bytes, sep, -1);
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return split(frame, bytes, sep, -1);
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PByteArray bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
-            return split(bytes, sep, -1);
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return split(frame, bytes, sep, -1);
         }
 
         // split(sep=..., maxsplit=...)
         // rsplit(sep=..., maxsplit=...)
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PBytes bytes, Object sep, int maxsplit) {
-            byte[] sepBs = getSepToBytesNode().execute(sep);
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, int maxsplit) {
+            byte[] sepBs = getSepToBytesNode().execute(frame, sep);
             if (getIsEmptyProfile().profile(sepBs.length == 0)) {
                 throw raise(PythonErrorType.ValueError, "empty separator");
             }
-            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+            byte[] splitBs = getSelfToBytesNode().execute(frame, bytes);
             return getBytesResult(splitDelimiter(splitBs, sepBs, maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PBytes bytes, Object sep, long maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, long maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PBytes bytes, Object sep, PInt maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, PInt maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PBytes bytes, Object sep, Object maxsplit) {
-            return getRecursiveNode().execute(bytes, sep, getCastIntNode().execute(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, Object maxsplit) {
+            return getRecursiveNode().execute(frame, bytes, sep, getCastIntNode().execute(frame, maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PByteArray bytes, Object sep, int maxsplit) {
-            byte[] sepBs = getSepToBytesNode().execute(sep);
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, int maxsplit) {
+            byte[] sepBs = getSepToBytesNode().execute(frame, sep);
             if (getIsEmptyProfile().profile(sepBs.length == 0)) {
                 throw raise(PythonErrorType.ValueError, "empty separator");
             }
-            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+            byte[] splitBs = getSelfToBytesNode().execute(frame, bytes);
             return getByteArrayResult(splitDelimiter(splitBs, sepBs, maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PByteArray bytes, Object sep, long maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, long maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PByteArray bytes, Object sep, PInt maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, PInt maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PByteArray bytes, Object sep, Object maxsplit) {
-            return getRecursiveNode().execute(bytes, sep, getCastIntNode().execute(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, Object maxsplit) {
+            return getRecursiveNode().execute(frame, bytes, sep, getCastIntNode().execute(frame, maxsplit));
         }
 
         // split(maxsplit=...)
         // rsplit(maxsplit=...)
         @Specialization
-        PList split(PBytes bytes, @SuppressWarnings("unused") PNone sep, int maxsplit) {
-            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+        PList split(VirtualFrame frame, PBytes bytes, @SuppressWarnings("unused") PNone sep, int maxsplit) {
+            byte[] splitBs = getSelfToBytesNode().execute(frame, bytes);
             return getBytesResult(splitWhitespace(splitBs, maxsplit));
         }
 
         @Specialization
-        PList split(PBytes bytes, PNone sep, long maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, PNone sep, long maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization
-        PList split(PBytes bytes, PNone sep, PInt maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, PNone sep, PInt maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization
-        PList split(PBytes bytes, PNone sep, Object maxsplit) {
-            return getRecursiveNode().execute(bytes, sep, getCastIntNode().execute(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, PNone sep, Object maxsplit) {
+            return getRecursiveNode().execute(frame, bytes, sep, getCastIntNode().execute(frame, maxsplit));
         }
 
         @Specialization
-        PList split(PByteArray bytes, @SuppressWarnings("unused") PNone sep, int maxsplit) {
-            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+        PList split(VirtualFrame frame, PByteArray bytes, @SuppressWarnings("unused") PNone sep, int maxsplit) {
+            byte[] splitBs = getSelfToBytesNode().execute(frame, bytes);
             return getByteArrayResult(splitWhitespace(splitBs, maxsplit));
         }
 
         @Specialization
-        PList split(PByteArray bytes, PNone sep, long maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, PNone sep, long maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization
-        PList split(PByteArray bytes, PNone sep, PInt maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, PNone sep, PInt maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization
-        PList split(PByteArray bytes, PNone sep, Object maxsplit) {
-            return getRecursiveNode().execute(bytes, sep, getCastIntNode().execute(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, PNone sep, Object maxsplit) {
+            return getRecursiveNode().execute(frame, bytes, sep, getCastIntNode().execute(frame, maxsplit));
         }
 
     }
 
-    @Builtin(name = "split", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"sep", "maxsplit"})
+    @Builtin(name = "split", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SplitNode extends AbstractSplitNode {
@@ -669,7 +678,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"sep", "maxsplit"})
+    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RSplitNode extends AbstractSplitNode {
@@ -774,5 +783,245 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         protected AbstractSplitNode createRecursiveNode() {
             return AbstractBytesBuiltinsFactory.RSplitNodeFactory.create(new ReadArgumentNode[]{});
         }
+    }
+
+    // static bytes.maketrans()
+    // static bytearray.maketrans()
+    @Builtin(name = "maketrans", minNumOfPositionalArgs = 3, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class MakeTransNode extends PythonBuiltinNode {
+
+        @Specialization
+        PBytes maketrans(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object from, Object to,
+                        @Cached("create()") BytesNodes.ToBytesNode toByteNode) {
+            byte[] fromB = toByteNode.execute(frame, from);
+            byte[] toB = toByteNode.execute(frame, to);
+            if (fromB.length != toB.length) {
+                throw raise(PythonErrorType.ValueError, "maketrans arguments must have same length");
+            }
+
+            byte[] table = new byte[256];
+            for (int i = 0; i < 256; i++) {
+                table[i] = (byte) i;
+            }
+
+            for (int i = 0; i < fromB.length; i++) {
+                byte value = fromB[i];
+                table[value < 0 ? value + 256 : value] = toB[i];
+            }
+
+            return factory().createBytes(table);
+        }
+
+    }
+
+    // bytes.translate(table, delete=b'')
+    // bytearray.translate(table, delete=b'')
+    @Builtin(name = "translate", minNumOfPositionalArgs = 2, parameterNames = {"self", "table", "delete"})
+    @GenerateNodeFactory
+    public abstract static class TranslateNode extends PythonBuiltinNode {
+
+        @Child BytesNodes.ToBytesNode toBytesNode;
+
+        @CompilationFinal private ConditionProfile isLenTable256Profile;
+
+        private BytesNodes.ToBytesNode getToBytesNode() {
+            if (toBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toBytesNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return toBytesNode;
+        }
+
+        private void checkLengthOfTable(byte[] table) {
+            if (isLenTable256Profile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isLenTable256Profile = ConditionProfile.createBinaryProfile();
+            }
+
+            if (isLenTable256Profile.profile(table.length != 256)) {
+                throw raise(PythonErrorType.ValueError, "translation table must be 256 characters long");
+            }
+        }
+
+        private static class Result {
+            byte[] array;
+            // we have to know, whether the result array was changed ->
+            // if not in bytes case it has to return the input bytes
+            // in bytearray case it has to return always new bytearray
+            boolean changed;
+
+            public Result(byte[] array, boolean changed) {
+                this.array = array;
+                this.changed = changed;
+            }
+        }
+
+        private static boolean[] createDeleteTable(byte[] delete) {
+            boolean[] result = new boolean[256];
+            for (int i = 0; i < 256; i++) {
+                result[i] = false;
+            }
+            for (int i = 0; i < delete.length; i++) {
+                result[delete[i]] = true;
+            }
+            return result;
+        }
+
+        private static Result delete(byte[] self, byte[] table) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            int resultLen = 0;
+            boolean[] toDelete = createDeleteTable(table);
+
+            for (int i = 0; i < length; i++) {
+                if (!toDelete[self[i] & 0xFF]) {
+                    result[resultLen] = self[i];
+                    resultLen++;
+                }
+            }
+            if (resultLen == length) {
+                return new Result(result, false);
+            }
+            return new Result(Arrays.copyOf(result, resultLen), true);
+        }
+
+        private static Result translate(byte[] self, byte[] table) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            boolean changed = false;
+            for (int i = 0; i < length; i++) {
+                byte b = table[self[i]];
+                if (!changed && b != self[i]) {
+                    changed = true;
+                }
+                result[i] = b;
+            }
+            return new Result(result, changed);
+        }
+
+        private static Result translateAndDelete(byte[] self, byte[] table, byte[] delete) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            int resultLen = 0;
+            boolean changed = false;
+            boolean[] toDelete = createDeleteTable(delete);
+
+            for (int i = 0; i < length; i++) {
+                if (!toDelete[self[i]]) {
+                    byte b = table[self[i]];
+                    if (!changed && b != self[i]) {
+                        changed = true;
+                    }
+                    result[resultLen] = b;
+                    resultLen++;
+                }
+            }
+            if (resultLen == length) {
+                return new Result(result, changed);
+            }
+            return new Result(Arrays.copyOf(result, resultLen), true);
+        }
+
+        @Specialization(guards = "isNoValue(delete)")
+        public PBytes translate(PBytes self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete) {
+            return self;
+        }
+
+        @Specialization(guards = "isNoValue(delete)")
+        public PByteArray translate(PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete) {
+            return factory().createByteArray(self.getSequenceStorage().copy());
+        }
+
+        @Specialization(guards = "!isNone(table)")
+        PBytes translate(VirtualFrame frame, PBytes self, Object table, @SuppressWarnings("unused") PNone delete) {
+            byte[] bTable = getToBytesNode().execute(frame, table);
+            checkLengthOfTable(bTable);
+            byte[] bSelf = getToBytesNode().execute(frame, self);
+
+            Result result = translate(bSelf, bTable);
+            if (result.changed) {
+                return factory().createBytes(result.array);
+            }
+            return self;
+        }
+
+        @Specialization(guards = "!isNone(table)")
+        PByteArray translate(VirtualFrame frame, PByteArray self, Object table, @SuppressWarnings("unused") PNone delete) {
+            byte[] bTable = getToBytesNode().execute(frame, table);
+            checkLengthOfTable(bTable);
+            byte[] bSelf = getToBytesNode().execute(frame, self);
+
+            Result result = translate(bSelf, bTable);
+            return factory().createByteArray(result.array);
+        }
+
+        @Specialization(guards = "isNone(table)")
+        PBytes delete(VirtualFrame frame, PBytes self, @SuppressWarnings("unused") PNone table, Object delete) {
+            byte[] bSelf = getToBytesNode().execute(frame, self);
+            byte[] bDelete = getToBytesNode().execute(frame, delete);
+
+            Result result = delete(bSelf, bDelete);
+            if (result.changed) {
+                return factory().createBytes(result.array);
+            }
+            return self;
+        }
+
+        @Specialization(guards = "isNone(table)")
+        PByteArray delete(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone table, Object delete) {
+            byte[] bSelf = getToBytesNode().execute(frame, self);
+            byte[] bDelete = getToBytesNode().execute(frame, delete);
+
+            Result result = delete(bSelf, bDelete);
+            return factory().createByteArray(result.array);
+        }
+
+        @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
+        PBytes translateAndDelete(VirtualFrame frame, PBytes self, Object table, Object delete) {
+            byte[] bTable = getToBytesNode().execute(frame, table);
+            checkLengthOfTable(bTable);
+            byte[] bDelete = getToBytesNode().execute(frame, delete);
+            byte[] bSelf = getToBytesNode().execute(frame, self);
+
+            Result result = translateAndDelete(bSelf, bTable, bDelete);
+            if (result.changed) {
+                return factory().createBytes(result.array);
+            }
+            return self;
+        }
+
+        @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
+        PByteArray translateAndDelete(VirtualFrame frame, PByteArray self, Object table, Object delete) {
+            byte[] bTable = getToBytesNode().execute(frame, table);
+            checkLengthOfTable(bTable);
+            byte[] bDelete = getToBytesNode().execute(frame, delete);
+            byte[] bSelf = getToBytesNode().execute(frame, self);
+
+            Result result = translateAndDelete(bSelf, bTable, bDelete);
+            return factory().createByteArray(result.array);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class BytesLikeNoGeneralizationNode extends SequenceStorageNodes.NoGeneralizationNode {
+
+        public static final GenNodeSupplier SUPPLIER = new GenNodeSupplier() {
+
+            public GeneralizationNode create() {
+                return BytesLikeNoGeneralizationNodeGen.create();
+            }
+
+            public GeneralizationNode getUncached() {
+                return BytesLikeNoGeneralizationNodeGen.getUncached();
+            }
+
+        };
+
+        @Override
+        protected final String getErrorMessage() {
+            return CastToByteNode.INVALID_BYTE_VALUE;
+        }
+
     }
 }

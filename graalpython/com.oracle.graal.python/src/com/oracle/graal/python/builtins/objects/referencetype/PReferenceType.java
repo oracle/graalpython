@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,51 +40,31 @@
  */
 package com.oracle.graal.python.builtins.objects.referencetype;
 
+import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PReferenceType extends PythonBuiltinObject {
-    private class WeakRefStorage extends WeakReference<PythonObject> {
-        private final CallTarget callback;
+    public static class WeakRefStorage extends WeakReference<Object> {
+        private final Object callback;
         private final PReferenceType ref;
-        private final PythonObject globals;
 
-        public WeakRefStorage(PReferenceType ref, PythonObject referent, PFunction callback) {
-            super(referent);
-            if (callback != null) {
-                this.callback = callback.getCallTarget();
-                this.globals = callback.getGlobals();
-            } else {
-                this.callback = null;
-                this.globals = null;
-            }
+        public WeakRefStorage(PReferenceType ref, Object referent, Object callback, ReferenceQueue<Object> queue) {
+            super(referent, queue);
+            this.callback = callback;
             this.ref = ref;
         }
 
-        @Override
-        protected void finalize() throws Throwable {
-            super.finalize();
-            if (callback != null) {
-                // TODO: Exceptions raised by the callback will be noted on the
-                // standard error output, but cannot be propagated; they are
-                // handled in exactly the same way as exceptions raised TODO:
-                // from an object’s __del__() method.
-                // TODO: check: the referent must no longer be available at this
-                // point
-                Object[] arguments = PArguments.create(1);
-                PArguments.setArgument(arguments, 0, this.ref);
-                PArguments.setGlobals(arguments, globals);
-                callback.call(arguments);
-            }
+        public Object getCallback() {
+            return callback;
+        }
+
+        public PReferenceType getRef() {
+            return ref;
         }
     }
 
@@ -92,9 +72,9 @@ public class PReferenceType extends PythonBuiltinObject {
     private int hash = -1;
 
     @TruffleBoundary
-    public PReferenceType(LazyPythonClass cls, PythonObject pythonObject, PFunction callback) {
+    public PReferenceType(LazyPythonClass cls, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
         super(cls);
-        this.store = new WeakRefStorage(this, pythonObject, callback);
+        this.store = new WeakRefStorage(this, pythonObject, callback, queue);
     }
 
     public Object getCallback() {
@@ -105,12 +85,12 @@ public class PReferenceType extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public PythonObject getObject() {
+    public Object getObject() {
         return this.store.get();
     }
 
-    public PythonAbstractObject getPyObject() {
-        PythonObject object = getObject();
+    public Object getPyObject() {
+        Object object = getObject();
         return (object == null) ? PNone.NONE : object;
     }
 
@@ -118,12 +98,13 @@ public class PReferenceType extends PythonBuiltinObject {
         return (this.getObject() == null) ? 0 : 1;
     }
 
+    @TruffleBoundary
     public int getHash() {
         if (this.hash != -1) {
             return this.hash;
         }
 
-        PythonObject object = getObject();
+        Object object = getObject();
         if (object != null) {
             this.hash = object.hashCode();
         }

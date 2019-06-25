@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
@@ -40,6 +41,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
@@ -52,25 +54,29 @@ public abstract class DeleteItemNode extends StatementNode {
 
     public abstract ExpressionNode getRightNode();
 
+    public abstract Object executeWith(VirtualFrame frame, PythonObject globals, String attributeId);
+
     // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
     // the lengths we go to to avoid boxing :(
-    public abstract Object executeWith(Object left, Object right);
+    public abstract Object executeWith(VirtualFrame frame, Object left, Object right);
 
-    public int executeInt(int left, int right) throws UnexpectedResultException {
-        return PGuards.expectInteger(executeWith(left, right));
+    public int executeInt(VirtualFrame frame, int left, int right) throws UnexpectedResultException {
+        return PGuards.expectInteger(executeWith(frame, left, right));
     }
 
-    public double executeDouble(double left, double right) throws UnexpectedResultException {
-        return PGuards.expectDouble(executeWith(left, right));
+    public double executeDouble(VirtualFrame frame, double left, double right) throws UnexpectedResultException {
+        return PGuards.expectDouble(executeWith(frame, left, right));
     }
 
     private final Supplier<NotImplementedHandler> notImplementedHandler;
 
     public DeleteItemNode() {
         this.notImplementedHandler = () -> new NotImplementedHandler() {
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
             @Override
             public Object execute(Object arg, Object arg2) {
-                throw raise(TypeError, "'%p' object doesn't support item deletion", arg);
+                throw raiseNode.raise(TypeError, "'%p' object doesn't support item deletion", arg);
             }
         };
     }
@@ -84,9 +90,9 @@ public abstract class DeleteItemNode extends StatementNode {
     }
 
     @Specialization
-    public Object doObject(Object primary, Object slice,
+    Object doObject(VirtualFrame frame, Object primary, Object slice,
                     @Cached("createDelItemNode()") LookupAndCallBinaryNode callDelitemNode) {
-        return callDelitemNode.executeObject(primary, slice);
+        return callDelitemNode.executeObject(frame, primary, slice);
     }
 
     protected LookupAndCallBinaryNode createDelItemNode() {
@@ -102,5 +108,4 @@ public abstract class DeleteItemNode extends StatementNode {
         return DeleteItemNodeGen.create(primary, slice);
     }
 
-    public abstract Object executeWith(PythonObject globals, String attributeId);
 }

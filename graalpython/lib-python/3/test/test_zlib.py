@@ -72,7 +72,7 @@ class ChecksumTestCase(unittest.TestCase):
         self.assertEqual(binascii.crc32(b'spam'), zlib.crc32(b'spam'))
 
 
-# Issue #10276 - check that inputs >=4GB are handled correctly.
+# Issue #10276 - check that inputs >=4 GiB are handled correctly.
 class ChecksumBigBufferTestCase(unittest.TestCase):
 
     @bigmemtest(size=_4G + 4, memuse=1, dry_run=False)
@@ -130,7 +130,7 @@ class ExceptionTestCase(unittest.TestCase):
 class BaseCompressTestCase(object):
     def check_big_compress_buffer(self, size, compress_func):
         _1M = 1024 * 1024
-        # Generate 10MB worth of random, and expand it by repeating it.
+        # Generate 10 MiB worth of random, and expand it by repeating it.
         # The assumption is that zlib's memory is not big enough to exploit
         # such spread out redundancy.
         data = b''.join([random.getrandbits(8 * _1M).to_bytes(_1M, 'little')
@@ -435,18 +435,29 @@ class CompressObjectTestCase(BaseCompressTestCase, unittest.TestCase):
         # Test flush() with the various options, using all the
         # different levels in order to provide more variations.
         sync_opt = ['Z_NO_FLUSH', 'Z_SYNC_FLUSH', 'Z_FULL_FLUSH',
-                    'Z_PARTIAL_FLUSH', 'Z_BLOCK']
+                    'Z_PARTIAL_FLUSH']
+
+        ver = tuple(int(v) for v in zlib.ZLIB_RUNTIME_VERSION.split('.'))
+        # Z_BLOCK has a known failure prior to 1.2.5.3
+        if ver >= (1, 2, 5, 3):
+            sync_opt.append('Z_BLOCK')
+
         sync_opt = [getattr(zlib, opt) for opt in sync_opt
                     if hasattr(zlib, opt)]
         data = HAMLET_SCENE * 8
 
         for sync in sync_opt:
             for level in range(10):
-                obj = zlib.compressobj( level )
-                a = obj.compress( data[:3000] )
-                b = obj.flush( sync )
-                c = obj.compress( data[3000:] )
-                d = obj.flush()
+                try:
+                    obj = zlib.compressobj( level )
+                    a = obj.compress( data[:3000] )
+                    b = obj.flush( sync )
+                    c = obj.compress( data[3000:] )
+                    d = obj.flush()
+                except:
+                    print("Error for flush mode={}, level={}"
+                          .format(sync, level))
+                    raise
                 self.assertEqual(zlib.decompress(b''.join([a,b,c,d])),
                                  data, ("Decompress failed: flush "
                                         "mode=%i, level=%i") % (sync, level))

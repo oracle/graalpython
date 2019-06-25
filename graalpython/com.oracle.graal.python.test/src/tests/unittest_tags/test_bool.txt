@@ -1,0 +1,6 @@
+*BoolTest.test_blocked
+*BoolTest.test_callable
+*BoolTest.test_contains
+*BoolTest.test_convert
+*BoolTest.test_fileclosed
+*BoolTest.test_float

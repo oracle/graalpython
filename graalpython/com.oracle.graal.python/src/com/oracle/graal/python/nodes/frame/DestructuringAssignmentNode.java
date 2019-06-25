@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,8 +32,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -41,13 +43,20 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public final class DestructuringAssignmentNode extends StatementNode implements WriteNode {
+    @Child private PythonObjectFactory factory;
+    @Child private PRaiseNode raiseNode;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     @Child private ExpressionNode rhs;
     @Children private final WriteNode[] slots;
@@ -85,7 +94,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
     @ExplodeLoop
     private void fillSlots(VirtualFrame frame, Object rhsValue, int stop) {
         for (int i = 0; i < stop; i++) {
-            Object value = getItem.execute(rhsValue, i);
+            Object value = getItem.execute(frame, rhsValue, i);
             slots[i].doWrite(frame, value);
         }
     }
@@ -94,7 +103,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
     private int fillRest(VirtualFrame frame, Object rhsValue, int pos) {
         int current = pos;
         for (int i = starredIndex + 1; i < slots.length; i++) {
-            Object value = getItem.execute(rhsValue, current++);
+            Object value = getItem.execute(frame, rhsValue, current++);
             slots[i].doWrite(frame, value);
         }
         return current;
@@ -111,16 +120,20 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
 
     private int fillStarred(VirtualFrame frame, Object rhsValue) {
         int pos = starredIndex;
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
         try {
             // TODO(ls): proper cast to int
             // TODO(ls): the result of the len call doesn't seem to be used in Python
-            int length = (int) lenNode.executeWith(rhsValue);
+            int length = (int) lenNode.executeWith(frame, rhsValue);
             int starredLength = length - (slots.length - 1);
             Object[] array = new Object[starredLength];
             for (int i = 0; i < starredLength; i++) {
-                array[i] = getItem.execute(rhsValue, pos++);
+                array[i] = getItem.execute(frame, rhsValue, pos++);
             }
-            slots[starredIndex].doWrite(frame, factory().createList(array));
+            slots[starredIndex].doWrite(frame, factory.createList(array));
             return fillRest(frame, rhsValue, pos);
         } catch (PException e) {
             e.expectAttributeError(errorProfile1);
@@ -132,7 +145,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                     if (length + 1 > array.length) {
                         array = Arrays.copyOf(array, array.length << 1);
                     }
-                    array[length] = getItem.execute(rhsValue, pos);
+                    array[length] = getItem.execute(frame, rhsValue, pos);
                     length++;
                     pos++;
                 } catch (PException e2) {
@@ -143,7 +156,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
             }
             int rest = slots.length - starredIndex - 1;
             fillFromArray(frame, array, length - rest);
-            slots[starredIndex].doWrite(frame, factory().createList(Arrays.copyOf(array, length - rest)));
+            slots[starredIndex].doWrite(frame, factory.createList(Arrays.copyOf(array, length - rest)));
         }
         return pos;
     }
@@ -153,7 +166,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         Object rhsValue = rhs.execute(frame);
         Object getItemAttribute = lookupGetItemNode.execute(rhsValue);
         if (getItemAttribute == NO_VALUE) {
-            rhsValue = constructTupleNode.execute(rhsValue);
+            rhsValue = constructTupleNode.execute(frame, rhsValue);
         }
         doWrite(frame, rhsValue);
     }
@@ -178,15 +191,20 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
                 }
-                throw raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(rhsValue));
+                throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(frame, rhsValue));
             } else {
                 throw e;
             }
         }
         try {
-            getNonExistingItem.execute(rhsValue, nonExistingItem);
+            getNonExistingItem.execute(frame, rhsValue, nonExistingItem);
             tooManyValuesProfile.enter();
-            throw getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)", nonExistingItem);
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = PythonLanguage.getContextRef();
+            }
+            throw contextRef.get().getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)",
+                            nonExistingItem);
         } catch (PException e) {
             if (tooManyValuesErrorProfile.profileException(e, IndexError)) {
                 // expected, fall through
@@ -196,6 +214,14 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         }
 
         performAssignments(frame);
+    }
+
+    private PRaiseNode ensureRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
     }
 
     @ExplodeLoop

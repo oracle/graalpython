@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,39 +44,29 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.object.Shape;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
+@GenerateUncached
 public abstract class GetLazyClassNode extends PNodeWithContext {
-    private final ValueProfile classProfile = ValueProfile.createClassProfile();
-
-    /*
-     * =============== Changes in this class must be mirrored in GetClassNode ===============
-     */
-
-    public static GetLazyClassNode create() {
-        return GetLazyClassNodeGen.create();
-    }
 
     public abstract LazyPythonClass execute(boolean object);
 
@@ -86,15 +76,28 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
 
     public abstract LazyPythonClass execute(double object);
 
-    public final LazyPythonClass execute(Object object) {
-        return executeGetClass(classProfile.profile(object));
+    public abstract LazyPythonClass execute(Object object);
+
+    public static GetLazyClassNode create() {
+        return GetLazyClassNodeGen.create();
     }
 
-    protected abstract LazyPythonClass executeGetClass(Object object);
+    public static GetLazyClassNode getUncached() {
+        return GetLazyClassNodeGen.getUncached();
+    }
+
+    /*
+     * =============== Changes in this class must be mirrored in GetClassNode ===============
+     */
 
     @Specialization
     protected static LazyPythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
         return PythonBuiltinClassType.GetSetDescriptor;
+    }
+
+    @Specialization
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PCell object) {
+        return PythonBuiltinClassType.PCell;
     }
 
     @Specialization
@@ -138,7 +141,12 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected static PythonClass getIt(PythonNativeObject object,
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        return PythonBuiltinClassType.PythonClass;
+    }
+
+    @Specialization
+    protected static LazyPythonClass getIt(PythonAbstractNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
@@ -148,61 +156,35 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PInt;
     }
 
-    @Specialization(guards = "object == cachedObject", assumptions = {"classStable", "singleContextAssumption"}, limit = "1")
-    protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
-                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+    // if object is constant here, storage will also be constant, so the shape
+    // lookup is the only thing we need.
+    @Specialization(guards = "object.getStorage().getShape() == cachedShape", assumptions = {"singleContextAssumption"}, limit = "4")
+    protected static LazyPythonClass getPythonClassCachedSingle(@SuppressWarnings("unused") PythonObject object,
+                    @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @SuppressWarnings("unused") @Cached("cachedObject.getClassStableAssumption()") Assumption classStable,
                     @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
         return klass;
     }
 
-    @Specialization(replaces = "getPythonClassCached")
+    protected static boolean isBuiltinType(Shape shape) {
+        return PythonObject.getLazyPythonClass(shape.getObjectType()) instanceof PythonBuiltinClassType;
+    }
+
+    // we can at least cache builtin types in the multi-context case
+    @Specialization(guards = {"object.getStorage().getShape() == cachedShape", "isBuiltinType(cachedShape)"}, limit = "4")
+    protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
+                    @SuppressWarnings("unused") @Cached("object.getStorage().getShape()") Shape cachedShape,
+                    @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
+        return klass;
+    }
+
+    @Specialization(replaces = {"getPythonClassCached", "getPythonClassCachedSingle"})
     protected static LazyPythonClass getPythonClassGeneric(PythonObject object) {
         return object.getLazyPythonClass();
     }
 
     @Specialization(guards = "isForeignObject(object)")
     protected static LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object) {
-        return PythonBuiltinClassType.TruffleObject;
-    }
-
-    @TruffleBoundary
-    public static LazyPythonClass getItSlowPath(Object o) {
-        if (PGuards.isForeignObject(o)) {
-            return PythonBuiltinClassType.TruffleObject;
-        } else if (o instanceof String) {
-            return PythonBuiltinClassType.PString;
-        } else if (o instanceof Boolean) {
-            return PythonBuiltinClassType.Boolean;
-        } else if (o instanceof Double || o instanceof Float) {
-            return PythonBuiltinClassType.PFloat;
-        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte) {
-            return PythonBuiltinClassType.PInt;
-        } else if (o instanceof PythonObject) {
-            return ((PythonObject) o).getLazyPythonClass();
-        } else if (o instanceof PEllipsis) {
-            return PythonBuiltinClassType.PEllipsis;
-        } else if (o instanceof PNotImplemented) {
-            return PythonBuiltinClassType.PNotImplemented;
-        } else if (o instanceof PNone) {
-            return PythonBuiltinClassType.PNone;
-        } else {
-            return null;
-        }
-    }
-
-    @TruffleBoundary
-    public static String getNameSlowPath(Object o) {
-        if (PGuards.isForeignObject(o)) {
-            return BuiltinNames.FOREIGN;
-        }
-        LazyPythonClass lazyClass = getItSlowPath(o);
-        if (lazyClass != null) {
-            return lazyClass.getName();
-        } else {
-            CompilerDirectives.transferToInterpreter();
-            return o.toString();
-        }
+        return PythonBuiltinClassType.ForeignObject;
     }
 }

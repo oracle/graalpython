@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,15 +27,15 @@ package com.oracle.graal.python.builtins;
 
 import java.util.HashSet;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.Shape;
 
 public enum PythonBuiltinClassType implements LazyPythonClass {
 
-    TruffleObject("truffle_object"),
+    ForeignObject(BuiltinNames.FOREIGN),
     Boolean("bool", "builtins"),
     GetSetDescriptor("get_set_desc"),
     PArray("array", "array"),
@@ -66,6 +66,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PMappingproxy("mappingproxy"),
     PMemoryView("memoryview", "builtins"),
     PMethod("method"),
+    PMMap("mmap", "mmap"),
     PNone("NoneType"),
     PNotImplemented("NotImplementedType"),
     PRandom("Random", "_random"),
@@ -122,7 +123,6 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     NameError("NameError", "builtins"),
     UnboundLocalError("UnboundLocalError", "builtins"),
     OSError("OSError", "builtins"),
-    IOError("IOError", "builtins"),
     BlockingIOError("BlockingIOError", "builtins"),
     ChildProcessError("ChildProcessError", "builtins"),
     ConnectionError("ConnectionError", "builtins"),
@@ -181,7 +181,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PythonBuiltinClassType(String name, String publicInModule) {
         this.name = name;
         this.publicInModule = publicInModule;
-        this.instanceShape = PythonLanguage.freshShape();
+        this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
     }
 
     PythonBuiltinClassType(String name) {
@@ -253,7 +253,6 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         NameError.base = Exception;
         UnboundLocalError.base = NameError;
         OSError.base = Exception;
-        IOError.base = Exception;
         BlockingIOError.base = OSError;
         ChildProcessError.base = OSError;
         ConnectionError.base = OSError;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,8 +45,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxEr
 import java.util.ArrayList;
 import java.util.List;
 
-import org.antlr.v4.runtime.ParserRuleContext;
-
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser.DefparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.KwargsparameterContext;
@@ -56,8 +54,10 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.VkwargsparameterContex
 import com.oracle.graal.python.parser.antlr.Python3Parser.VsplatparameterContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 
+import org.antlr.v4.runtime.ParserRuleContext;
+
 public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
-    public boolean arglist, keywordlist;
+    private boolean arglist;
     public final List<String> names;
     public final List<String> fpnames;
     public final List<ParserRuleContext> init_code;
@@ -65,7 +65,7 @@ public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
 
     public ArgListCompiler(ParserErrorCallback errors) {
         this.errors = errors;
-        arglist = keywordlist = false;
+        arglist = false;
         // defaults = null;
         names = new ArrayList<>();
         fpnames = new ArrayList<>();
@@ -73,7 +73,7 @@ public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
     }
 
     public void reset() {
-        arglist = keywordlist = false;
+        arglist = false;
         names.clear();
         init_code.clear();
     }
@@ -110,7 +110,6 @@ public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
 
     @Override
     public T visitVkwargsparameter(VkwargsparameterContext ctx) {
-        keywordlist = true;
         if (ctx.vfpdef() != null) {
             addName(ctx.vfpdef().NAME().getText());
         } else {
@@ -147,7 +146,6 @@ public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
 
     @Override
     public T visitKwargsparameter(KwargsparameterContext ctx) {
-        keywordlist = true;
         if (ctx.tfpdef() != null) {
             addName(ctx.tfpdef().NAME().getText());
         } else {

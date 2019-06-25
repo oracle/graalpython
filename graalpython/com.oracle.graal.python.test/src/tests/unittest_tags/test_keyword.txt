@@ -1,0 +1,6 @@
+test_changing_the_kwlist_does_not_affect_iskeyword
+test_none_value_is_not_a_keyword
+test_true_is_a_keyword
+test_uppercase_true_is_not_a_keyword
+test_grammar
+test_keywords_py_without_markers_produces_error

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,4 +72,5 @@ public abstract class SpecialAttributeNames {
     public static final String __DICTOFFSET__ = "__dictoffset__";
     public static final String __ITEMSIZE__ = "__itemsize__";
     public static final String __WEAKREF__ = "__weakref__";
+    public static final String __WEAKLISTOFFSET__ = "__weaklistoffset__";
 }

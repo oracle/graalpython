@@ -113,7 +113,10 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
 }
 
 MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc) {
-    char* fmtcpy = strdup(fmt);
+    size_t fmt_size = strlen(fmt) + 1;
+    // n.b. avoid using 'strdup' for compatiblity with MUSL libc
+    char* fmtcpy = (char*) malloc(fmt_size*sizeof(char));
+    memcpy(fmtcpy, fmt, fmt_size);
     char* c = fmtcpy;
 
     int remaining_space = 2047;
@@ -258,11 +261,11 @@ PyObject * PyUnicode_InternFromString(const char *cp) {
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
-char* PyUnicode_AsUTF8(PyObject *unicode) {
+const char* PyUnicode_AsUTF8(PyObject *unicode) {
     return PyUnicode_AsUTF8AndSize(unicode, NULL);
 }
 
-char* PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize) {
+const char* PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize) {
     PyObject *result;
     result = _PyUnicode_AsUTF8String(unicode, NULL);
     if (psize) {

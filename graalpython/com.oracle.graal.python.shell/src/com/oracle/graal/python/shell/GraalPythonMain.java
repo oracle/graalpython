@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.polyglot.Context;
@@ -62,6 +63,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private ArrayList<String> programArgs = null;
     private String commandString = null;
     private String inputFile = null;
+    private boolean isolateFlag = false;
     private boolean ignoreEnv = false;
     private boolean inspectFlag = false;
     private boolean verboseFlag = false;
@@ -70,23 +72,30 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean noSite = false;
     private boolean stdinIsInteractive = System.console() != null;
     private boolean runLLI = false;
+    private boolean unbufferedIO = false;
     private VersionAction versionAction = VersionAction.None;
     private String sulongLibraryPath = null;
+    private List<String> givenArguments;
+    private boolean wantsExperimental = false;
 
     @Override
-    protected List<String> preprocessArguments(List<String> arguments, Map<String, String> polyglotOptions) {
+    protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
+
         ArrayList<String> unrecognized = new ArrayList<>();
-        List<String> inputArgs = new ArrayList<>(arguments);
+        ArrayList<String> inputArgs = new ArrayList<>();
+        inputArgs.addAll(givenArgs);
+        givenArguments = new ArrayList<>(inputArgs);
+        List<String> arguments = new ArrayList<>(inputArgs);
         List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
         for (int i = 0; i < arguments.size(); i++) {
             String arg = arguments.get(i);
             switch (arg) {
                 case "-B":
-                    System.out.println("Warning: " + arg + " does nothing on GraalPython.");
                     break;
                 case "-c":
                     i += 1;
+                    programArgs.add(arg);
                     if (i < arguments.size()) {
                         commandString = arguments.get(i);
                     } else {
@@ -115,10 +124,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "-O":
                 case "-OO":
-                    System.out.println("Warning: " + arg + " does nothing on GraalPython.");
+                case "-R":
                     break;
                 case "-q":
                     quietFlag = true;
+                    break;
+                case "-I":
+                    noUserSite = true;
+                    ignoreEnv = true;
+                    isolateFlag = true;
                     break;
                 case "-s":
                     noUserSite = true;
@@ -137,45 +151,97 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     versionAction = VersionAction.PrintAndContinue;
                     break;
                 case "-CC":
-                    if (i != 0) {
-                        throw new IllegalArgumentException("-CC must be the first argument");
+                    if (wantsExperimental) {
+                        GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
+                        System.exit(0);
+                    } else {
+                        unrecognized.add(arg);
                     }
-                    GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
-                    System.exit(0);
                     break;
                 case "-LD":
-                    if (i != 0) {
-                        throw new IllegalArgumentException("-LD must be the first argument");
+                    if (wantsExperimental) {
+                        GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
+                        System.exit(0);
+                    } else {
+                        unrecognized.add(arg);
                     }
-                    GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
-                    System.exit(0);
                     break;
                 case "-LLI":
-                    runLLI = true;
+                    if (wantsExperimental) {
+                        runLLI = true;
+                    } else {
+                        unrecognized.add(arg);
+                    }
+                    break;
+                case "-debug-java":
+                    if (wantsExperimental) {
+                        if (!isAOT()) {
+                            subprocessArgs.add("Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y");
+                            inputArgs.remove("-debug-java");
+                        }
+                    } else {
+                        unrecognized.add(arg);
+                    }
                     break;
                 case "-debug-perf":
-                    subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
-                    subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
-                    subprocessArgs.add("Dgraal.TruffleCompilationExceptionsArePrinted=true");
-                    subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
-                    subprocessArgs.add("Dgraal.TruffleTraceSplittingSummary=true");
-                    inputArgs.remove("-debug-perf");
+                    if (wantsExperimental) {
+                        subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
+                        subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
+                        subprocessArgs.add("Dgraal.TruffleCompilationExceptionsArePrinted=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
+                        subprocessArgs.add("Dgraal.TruffleTraceSplittingSummary=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleTransferToInterpreter=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleAssumptions=true");
+                        inputArgs.remove("-debug-perf");
+                    } else {
+                        unrecognized.add(arg);
+                    }
                     break;
                 case "-dump":
-                    subprocessArgs.add("Dgraal.Dump=");
-                    inputArgs.remove("-dump");
+                    if (wantsExperimental) {
+                        subprocessArgs.add("Dgraal.Dump=");
+                        subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleTransferToInterpreter=true");
+                        subprocessArgs.add("Dgraal.TruffleBackgroundCompilation=false");
+                        inputArgs.remove("-dump");
+                    } else {
+                        unrecognized.add(arg);
+                    }
                     break;
                 case "-compile-truffle-immediately":
-                    subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
-                    subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
-                    inputArgs.remove("-compile-truffle-immediately");
+                    if (wantsExperimental) {
+                        subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
+                        subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
+                        inputArgs.remove("-compile-truffle-immediately");
+                    } else {
+                        unrecognized.add(arg);
+                    }
+                    break;
+                case "-u":
+                    unbufferedIO = true;
+                    break;
+                case "--experimental-options":
+                case "--experimental-options=true":
+                    // this is the default Truffle experimental option flag. We also use it for
+                    // our custom launcher options
+                    wantsExperimental = true;
+                    unrecognized.add(arg);
                     break;
                 default:
                     if (!arg.startsWith("-")) {
                         inputFile = arg;
                         programArgs.add(inputFile);
                         break;
+                    } else if (!arg.startsWith("--") && arg.length() > 2) {
+                        // short arguments can be given together
+                        String[] split = arg.substring(1).split("");
+                        for (int j = 0; j < split.length; j++) {
+                            String optionChar = split[j];
+                            arguments.add(i + 1 + j, "-" + optionChar);
+                        }
                     } else {
+                        // possibly a polyglot argument
                         unrecognized.add(arg);
                     }
             }
@@ -210,6 +276,43 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.out.println(string);
     }
 
+    private static String[] getExecutableList() {
+        if (ImageInfo.inImageCode()) {
+            return new String[]{getExecutable()};
+        } else {
+            StringBuilder sb = new StringBuilder();
+            ArrayList<String> exec_list = new ArrayList<>();
+            sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
+            exec_list.add(sb.toString());
+            for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
+                    arg = arg.replace("suspend=y", "suspend=n");
+                }
+                exec_list.add(arg);
+            }
+            exec_list.add("-classpath");
+            exec_list.add(System.getProperty("java.class.path"));
+            exec_list.add(GraalPythonMain.class.getName());
+            return exec_list.toArray(new String[exec_list.size()]);
+        }
+    }
+
+    private static String getExecutable() {
+        if (ImageInfo.inImageRuntimeCode()) {
+            return ProcessProperties.getExecutableName();
+        } else if (ImageInfo.inImageBuildtimeCode()) {
+            return "";
+        } else {
+            String[] executableList = getExecutableList();
+            for (int i = 0; i < executableList.length; i++) {
+                if (executableList[i].matches("\\s")) {
+                    executableList[i] = "'" + executableList[i].replace("'", "\\'") + "'";
+                }
+            }
+            return String.join(" ", executableList);
+        }
+    }
+
     @Override
     protected void launch(Builder contextBuilder) {
         if (runLLI) {
@@ -232,20 +335,35 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             inspectFlag = inspectFlag || System.getenv("PYTHONINSPECT") != null;
             noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
+            unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
         }
-        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
+
+        String executable = getContextOptionIfSetViaCommandLine("python.Executable");
+        if (executable != null) {
+            contextBuilder.option("python.ExecutableList", executable);
+        } else {
+            contextBuilder.option("python.Executable", getExecutable());
+            // The unlikely separator is used because options need to be
+            // strings. See PythonOptions.getExecutableList()
+            contextBuilder.option("python.ExecutableList", String.join("🏆", getExecutableList()));
+        }
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
         contextBuilder.option("python.AlwaysRunExcepthook", "true");
         contextBuilder.option("python.InspectFlag", Boolean.toString(inspectFlag));
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
+        contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
         }
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
+        contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
+        contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
+
+        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
         if (sulongLibraryPath != null) {
             contextBuilder.option("llvm.libraryPath", sulongLibraryPath);
         }
@@ -300,6 +418,23 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             consoleHandler.setContext(null);
         }
         System.exit(rc);
+    }
+
+    private String getContextOptionIfSetViaCommandLine(String key) {
+        if (System.getProperty("polyglot." + key) != null) {
+            return System.getProperty("polyglot." + key);
+        }
+        for (String f : givenArguments) {
+            if (f.startsWith("--" + key)) {
+                String[] splits = f.split("=", 2);
+                if (splits.length > 1) {
+                    return splits[1];
+                } else {
+                    return "true";
+                }
+            }
+        }
+        return null;
     }
 
     private static void printFileNotFoundException(NoSuchFileException e) {
@@ -365,7 +500,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     protected void printHelp(OptionCategory maxCategory) {
         print("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
-                        "-B     : don't write .py[co] files on import; also PYTHONDONTWRITEBYTECODE=x\n" +
+                        "-B     : on CPython, this disables writing .py[co] files on import;\n" +
+                        "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
                         "-c cmd : program passed in as string (terminates option list)\n" +
                         // "-d : debug output from parser; also PYTHONDEBUG=x\n" +
                         "-E     : ignore PYTHON* environment variables (such as PYTHONPATH)\n" +
@@ -373,21 +509,23 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "-i     : inspect interactively after running script; forces a prompt even\n" +
                         "         if stdin does not appear to be a terminal; also PYTHONINSPECT=x\n" +
                         "-m mod : run library module as a script (terminates option list)\n" +
-                        "-O     : optimize generated bytecode slightly; also PYTHONOPTIMIZE=x\n" +
-                        "-OO    : remove doc-strings in addition to the -O optimizations\n" +
-                        // "-R : use a pseudo-random salt to make hash() values of various types
-                        // be\n" +
-                        // " unpredictable between separate invocations of the interpreter, as\n" +
-                        // " a defense against denial-of-service attacks\n" +
+                        "-O     : on CPython, this optimizes generated bytecode slightly;\n" +
+                        "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
+                        "-OO    : remove doc-strings in addition to the -O optimizations;\n" +
+                        "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
+                        "-R     : on CPython, this enables the use of a pseudo-random salt to make\n" +
+                        "         hash()values of various types be unpredictable between separate\n" +
+                        "         invocations of the interpreter, as a defense against denial-of-service\n" +
+                        "         attacks; GraalPython always enables this and the flag has no effect.\n" +
                         // "-Q arg : division options: -Qold (default), -Qwarn, -Qwarnall, -Qnew\n"
                         // +
                         "-q     : don't print version and copyright messages on interactive startup\n" +
+                        "-I     : don't add user site and script directory to sys.path; also PYTHONNOUSERSITE\n" +
                         "-s     : don't add user site directory to sys.path; also PYTHONNOUSERSITE\n" +
                         "-S     : don't imply 'import site' on initialization\n" +
                         // "-t : issue warnings about inconsistent tab usage (-tt: issue errors)\n"
                         // +
-                        // "-u : unbuffered binary stdout and stderr; also PYTHONUNBUFFERED=x\n" +
-                        // " see man page for details on internal buffering relating to '-u'\n" +
+                        "-u     : unbuffered binary stdout and stderr; also PYTHONUNBUFFERED=x\n" +
                         "-v     : verbose (trace import statements); also PYTHONVERBOSE=x\n" +
                         "         can be supplied multiple times to increase verbosity\n" +
                         "-V     : print the Python version number and exit (also --version)\n" +
@@ -400,15 +538,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         // "-3 : warn about Python 3.x incompatibilities that 2to3 cannot trivially
                         // fix\n" +
                         "file   : program read from script file\n" +
-                        // "- : program read from stdin (default; interactive mode if a tty)\n" +
+                        "-      : program read from stdin\n" +
                         "arg ...: arguments passed to program in sys.argv[1:]\n" +
-                        "\n" +
-                        "Arguments specific to GraalPython:\n" +
-                        "--show-version : print the Python version number and continue.\n" +
-                        "-CC            : run the C compiler used for generating GraalPython C extensions.\n" +
-                        "                 All following arguments are passed to the compiler.\n" +
-                        "-LD            : run the linker used for generating GraalPython C extensions.\n" +
-                        "                 All following arguments are passed to the linker.\n" +
                         "\n" +
                         "Other environment variables:\n" +
                         "PYTHONSTARTUP: file executed on interactive startup (no default)\n" +
@@ -422,14 +553,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   as specifying the -R option: a random value is used to seed the hashes of\n" +
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
-                        "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
-                        "   This is required when starting subprocesses of python.");
-        if (maxCategory.compareTo(OptionCategory.DEBUG) >= 0) {
-            print("\nGraalPython performance debugging options:\n" +
-                            "-debug-perf                  : Enable tracing of Truffle compilations and its warnings\n" +
-                            "-dump                        : Enable dumping of compilation graphs to IGV\n" +
-                            "-compile-truffle-immediately : Start compiling on first invocation and throw compilation exceptions");
-        }
+                        (wantsExperimental ? "\nArguments specific to the Graal Python launcher:\n" +
+                                        "--show-version : print the Python version number and continue.\n" +
+                                        "-CC            : run the C compiler used for generating GraalPython C extensions.\n" +
+                                        "                 All following arguments are passed to the compiler.\n" +
+                                        "-LD            : run the linker used for generating GraalPython C extensions.\n" +
+                                        "                 All following arguments are passed to the linker.\n" +
+                                        "\nEnvironment variables specific to the Graal Python launcher:\n" +
+                                        "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
+                                        "   This is required when starting subprocesses of python.\n" : ""));
     }
 
     @Override
@@ -590,6 +722,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         try {
             System.exit(new ProcessBuilder(cmd.toArray(new String[0])).inheritIO().start().waitFor());
         } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
             System.err.println(e.getMessage());
             System.exit(-1);
         }
@@ -621,7 +754,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             cmd.add("-cp");
             cmd.add(ManagementFactory.getRuntimeMXBean().getClassPath());
             for (String subProcArg : subProcessDefs) {
-                assert subProcArg.startsWith("D");
+                assert subProcArg.startsWith("D") || subProcArg.startsWith("X");
                 cmd.add("-" + subProcArg);
             }
             cmd.add(GraalPythonMain.class.getName());

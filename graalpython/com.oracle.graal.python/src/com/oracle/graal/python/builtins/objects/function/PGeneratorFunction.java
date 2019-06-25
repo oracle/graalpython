@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,12 +32,14 @@ import com.oracle.truffle.api.RootCallTarget;
 
 public final class PGeneratorFunction extends PFunction {
 
-    public static PGeneratorFunction create(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        return new PGeneratorFunction(clazz, name, enclosingClassName, arity, callTarget, globals, closure);
+    public static PGeneratorFunction create(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure,
+                    Object[] defaultValues, PKeyword[] kwDefaultValues) {
+        return new PGeneratorFunction(clazz, name, enclosingClassName, callTarget, globals, closure, defaultValues, kwDefaultValues);
     }
 
-    public PGeneratorFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        super(clazz, name, enclosingClassName, arity, callTarget, globals, closure);
+    public PGeneratorFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,
+                    PKeyword[] kwDefaultValues) {
+        super(clazz, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure);
     }
 
     @Override

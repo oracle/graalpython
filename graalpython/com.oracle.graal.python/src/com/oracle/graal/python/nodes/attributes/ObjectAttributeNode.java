@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,16 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMappingproxy;
+
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -58,9 +58,7 @@ import com.oracle.truffle.api.object.Property;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ObjectAttributeNode extends PNodeWithContext {
-    @Child private GetDictStorageNode getStorageNode;
-
-    protected Object attrKey(Object key) {
+    protected static Object attrKey(Object key) {
         if (key instanceof PString) {
             return ((PString) key).getValue();
         } else {
@@ -68,19 +66,16 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         }
     }
 
-    protected HashingStorage getDictStorage(PHashingCollection c) {
-        if (getStorageNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getStorageNode = insert(HashingCollectionNodes.GetDictStorageNode.create());
-        }
-        return getStorageNode.execute(c);
-    }
-
-    protected boolean isDictUnsetOrSameAsStorage(PythonObject object) {
+    protected static boolean isDictUnsetOrSameAsStorage(PythonObject object) {
         return object.getDict() == null;
     }
 
-    protected Location getLocationOrNull(Property prop) {
+    protected static boolean hasBuiltinDict(PythonObject object, IsBuiltinClassProfile profileDict, IsBuiltinClassProfile profileMapping) {
+        PHashingCollection dict = object.getDict();
+        return dict != null && (profileDict.profileObject(dict, PDict) || profileMapping.profileObject(dict, PMappingproxy));
+    }
+
+    protected static Location getLocationOrNull(Property prop) {
         return prop == null ? null : prop.getLocation();
     }
 

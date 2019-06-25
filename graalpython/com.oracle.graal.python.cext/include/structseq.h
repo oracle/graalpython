@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,13 +13,13 @@ extern "C" {
 #endif
 
 typedef struct PyStructSequence_Field {
-    char *name;
-    char *doc;
+    const char *name;
+    const char *doc;
 } PyStructSequence_Field;
 
 typedef struct PyStructSequence_Desc {
-    char *name;
-    char *doc;
+    const char *name;
+    const char *doc;
     struct PyStructSequence_Field *fields;
     int n_in_sequence;
 } PyStructSequence_Desc;

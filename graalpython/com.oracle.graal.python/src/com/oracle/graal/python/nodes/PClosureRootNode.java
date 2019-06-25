@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,48 +40,69 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
+    private static final PCell[] NO_CLOSURE = new PCell[0];
+    private final Assumption singleContextAssumption;
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
+    @CompilerDirectives.CompilationFinal(dimensions = 1) protected PCell[] closure;
     private final int length;
 
-    protected PClosureRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, FrameSlot[] freeVarSlots) {
+    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, FrameSlot[] freeVarSlots) {
         super(language, frameDescriptor);
+        this.singleContextAssumption = language.singleContextAssumption;
         this.freeVarSlots = freeVarSlots;
         this.length = freeVarSlots != null ? freeVarSlots.length : 0;
     }
 
     protected void addClosureCellsToLocals(Frame frame) {
-        PCell[] closure = PArguments.getClosure(frame);
-        if (closure != null) {
+        PCell[] frameClosure = PArguments.getClosure(frame);
+        if (frameClosure != null) {
+            if (singleContextAssumption.isValid() && closure == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                closure = frameClosure;
+            } else if (closure != NO_CLOSURE && ((!singleContextAssumption.isValid() && closure != null) || closure != frameClosure)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                closure = NO_CLOSURE;
+            }
             assert freeVarSlots != null : "closure root node: the free var slots cannot be null when the closure is not null";
-            assert closure.length == freeVarSlots.length : "closure root node: the closure must have the same length as the free var slots array";
-            if (freeVarSlots.length < 32) {
-                addClosureCellsToLocalsExploded(frame, closure);
+            assert frameClosure.length == freeVarSlots.length : "closure root node: the closure must have the same length as the free var slots array";
+            if (closure != null && closure != NO_CLOSURE) {
+                if (freeVarSlots.length < 32) {
+                    addClosureCellsToLocalsExploded(frame, closure);
+                } else {
+                    addClosureCellsToLocalsLoop(frame, closure);
+                }
             } else {
-                addClosureCellsToLocalsLoop(frame, closure);
+                if (freeVarSlots.length < 32) {
+                    addClosureCellsToLocalsExploded(frame, frameClosure);
+                } else {
+                    addClosureCellsToLocalsLoop(frame, frameClosure);
+                }
             }
         }
     }
 
-    protected void addClosureCellsToLocalsLoop(Frame frame, PCell[] closure) {
+    protected void addClosureCellsToLocalsLoop(Frame frame, PCell[] frameClosure) {
         for (int i = 0; i < length; i++) {
-            frame.setObject(freeVarSlots[i], closure[i]);
+            frame.setObject(freeVarSlots[i], frameClosure[i]);
         }
     }
 
     @ExplodeLoop
-    protected void addClosureCellsToLocalsExploded(Frame frame, PCell[] closure) {
+    protected void addClosureCellsToLocalsExploded(Frame frame, PCell[] frameClosure) {
         for (int i = 0; i < length; i++) {
-            frame.setObject(freeVarSlots[i], closure[i]);
+            frame.setObject(freeVarSlots[i], frameClosure[i]);
         }
     }
 
@@ -89,11 +110,16 @@ public abstract class PClosureRootNode extends PRootNode {
         return freeVarSlots != null && freeVarSlots.length > 0;
     }
 
+    public abstract void initializeFrame(VirtualFrame frame);
+
     public String[] getFreeVars() {
-        String[] freeVars = new String[freeVarSlots.length];
-        for (int i = 0; i < freeVarSlots.length; i++) {
-            freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+        if (freeVarSlots != null) {
+            String[] freeVars = new String[freeVarSlots.length];
+            for (int i = 0; i < freeVarSlots.length; i++) {
+                freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+            }
+            return freeVars;
         }
-        return freeVars;
+        return new String[0];
     }
 }

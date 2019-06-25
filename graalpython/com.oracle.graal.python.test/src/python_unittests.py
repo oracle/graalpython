@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -74,6 +74,11 @@ PTRN_OK = re.compile(
 PTRN_JAVA_EXCEPTION = re.compile(r'^(?P<exception>com\.oracle\.[^:]*):(?P<message>.*)')
 PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', re.DOTALL)
 PTRN_IMPORT_ERROR = re.compile(r".*cannot import name \'(?P<module>.*)\'.*", re.DOTALL)
+PTRN_REMOTE_HOST = re.compile(r"(?P<user>\w+)@(?P<host>[\w.]+):(?P<path>.+)")
+PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
+PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
+PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -192,6 +197,34 @@ def get_unittests(base_tests_path, limit=None, sort=True, skip_tests=None):
     return unittests[:limit] if limit else unittests
 
 
+def get_remote_host(scp_path):
+    match = re.match(PTRN_REMOTE_HOST, scp_path)
+    return match.group('user'), match.group('host'), match.group('path')
+
+
+def ssh_ls(scp_path):
+    user, host, path = get_remote_host(scp_path)
+    cmd = ['ssh', '{}@{}'.format(user, host), 'ls', '-l', path]
+    return map(lambda l: l.split()[-1], _run_cmd(cmd)[1].splitlines())
+
+
+def read_csv(path):
+    rows = []
+    with open(path, "r") as CSV_FILE:
+        reader = csv.reader(CSV_FILE)
+        headers = next(reader)[1:]
+        for row in reader:
+            rows.append(row)
+    return rows
+
+
+class TestStatus(object):
+    ERROR = 'error'
+    FAIL = 'fail'
+    SKIPPED = 'skipped'
+    OK = 'ok'
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # result (output processing)
@@ -200,20 +233,69 @@ def get_unittests(base_tests_path, limit=None, sort=True, skip_tests=None):
 class StatEntry(object):
     def __init__(self):
         self.num_tests = -1
-        self.num_errors = -1
-        self.num_fails = -1
-        self.num_skipped = -1
+        # reported stats
+        self._num_errors = -1
+        self._num_fails = -1
+        self._num_skipped = -1
+        # tracked stats
+        self._tracked = False
+
+    def _reset(self):
+        self._num_fails = 0
+        self._num_errors = 0
+        self._num_skipped = 0
 
     def all_ok(self):
-        self.num_fails = 0
-        self.num_errors = 0
-        self.num_skipped = 0
+        self._reset()
+
+    @property
+    def num_errors(self):
+        return self._num_errors
+
+    @num_errors.setter
+    def num_errors(self, value):
+        if not self._tracked:
+            self._num_errors = value
+
+    @property
+    def num_fails(self):
+        return self._num_fails
+
+    @num_fails.setter
+    def num_fails(self, value):
+        if not self._tracked:
+            self._num_fails = value
+
+    @property
+    def num_skipped(self):
+        return self._num_skipped
+
+    @num_skipped.setter
+    def num_skipped(self, value):
+        if not self._tracked:
+            self._num_skipped = value
 
     @property
     def num_passes(self):
         if self.num_tests > 0:
-            return self.num_tests - (self.num_fails + self.num_errors + self.num_skipped)
+            return self.num_tests - (self._num_fails + self._num_errors + self._num_skipped)
         return -1
+
+    def update(self, test_detailed_stats):
+        if len(test_detailed_stats) > 0:
+            self._tracked = True
+            self._reset()
+            for test, stats in test_detailed_stats.items():
+                stats = {s.lower() for s in stats}
+                if TestStatus.ERROR in stats:
+                    self._num_errors += 1
+                elif TestStatus.FAIL in stats:
+                    self._num_fails += 1
+                else:
+                    for s in stats:
+                        if s.startswith(TestStatus.SKIPPED):
+                            self._num_skipped += 1
+                            break
 
 
 def process_output(output_lines):
@@ -221,6 +303,8 @@ def process_output(output_lines):
         output_lines = output_lines.split("\n")
 
     unittests = []
+    # stats tracked per unittest
+    unittest_tests = defaultdict(list)
     error_messages = defaultdict(set)
     java_exceptions = defaultdict(set)
     stats = defaultdict(StatEntry)
@@ -228,7 +312,9 @@ def process_output(output_lines):
     for line in output_lines:
         match = re.match(PTRN_UNITTEST, line)
         if match:
-            unittests.append(match.group('unittest'))
+            unittest = match.group('unittest')
+            unittests.append(unittest)
+            unittest_tests.clear()
             continue
 
         # extract python reported python error messages
@@ -244,6 +330,16 @@ def process_output(output_lines):
             continue
 
         # stats
+        # tracking stats
+        match = re.match(PTRN_TEST_STATUS_INDIVIDUAL, line)
+        if not match:
+            match = re.match(PTRN_TEST_STATUS_ERROR, line)
+        if match:
+            name = match.group('name')
+            status = match.group('status')
+            unittest_tests[name].append(status)
+            continue
+
         if line.strip() == 'OK':
             stats[unittests[-1]].all_ok()
             continue
@@ -262,6 +358,8 @@ def process_output(output_lines):
         match = re.match(PTRN_NUM_TESTS, line)
         if match:
             stats[unittests[-1]].num_tests = int(match.group('num_tests'))
+            stats[unittests[-1]].update(unittest_tests)
+            unittest_tests.clear()
             continue
 
         match = re.match(PTRN_FAILED, line)
@@ -275,6 +373,7 @@ def process_output(output_lines):
             stats[unittests[-1]].num_fails = int(fails) if fails else 0
             stats[unittests[-1]].num_errors = int(errs) if errs else 0
             stats[unittests[-1]].num_skipped = int(skipped) if skipped else 0
+            continue
 
     return unittests, error_messages, java_exceptions, stats
 
@@ -597,7 +696,7 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
             elif k == Col.NUM_TESTS:
                 _class = "text-dark"
             else:
-                _class = "text-danger" if value < 0 else "text-muted"
+                _class = "text-danger" if value and value < 0 else "text-muted"
             return '<span class="{} h6"><b>{}</b></span>'.format(_class, value)
 
         _tbody = '\n'.join([
@@ -688,12 +787,18 @@ def main(prog, args):
     parser = argparse.ArgumentParser(prog=prog,
                                      description="Run the standard python unittests.")
     parser.add_argument("-v", "--verbose", help="Verbose output.", action="store_true")
+    parser.add_argument("-n", "--no_cpython", help="Do not run the tests with cpython (for comparison).",
+                        action="store_true")
     parser.add_argument("-l", "--limit", help="Limit the number of unittests to run.", default=None, type=int)
     parser.add_argument("-t", "--tests_path", help="Unittests path.", default=PATH_UNITTESTS)
     parser.add_argument("-T", "--timeout", help="Timeout per unittest run.", default=TIMEOUT, type=int)
     parser.add_argument("-o", "--only_tests", help="Run only these unittests (comma sep values).", default=None)
     parser.add_argument("-s", "--skip_tests", help="Run all unittests except (comma sep values)."
                                                    "the only_tets option takes precedence", default=None)
+    parser.add_argument("-r", "--regression_running_tests", help="Regression threshold for running tests.", type=float,
+                        default=None)
+    parser.add_argument("-g", "--gate", help="Run in gate mode (Skip cpython runs; Do not upload results; "
+                                             "Detect regressions).", action="store_true")
     parser.add_argument("path", help="Path to store the csv output and logs to.", nargs='?', default=None)
 
     global flags
@@ -708,6 +813,12 @@ def main(prog, args):
     else:
         log("[INFO] results will not be saved remotely")
 
+    if flags.gate:
+        log("[INFO] running in gate mode")
+        if not flags.regression_running_tests:
+            log("[WARNING] --regression_running_tests not set while in gate mode. "
+                "Regression detection will not be performed")
+
     def _fmt(t):
         t = t.strip()
         return os.path.join(flags.tests_path, t if t.endswith(".py") else t + ".py")
@@ -720,15 +831,22 @@ def main(prog, args):
         unittests = get_unittests(flags.tests_path, limit=flags.limit, skip_tests=skip_tests)
 
     # get cpython stats
-    log(HR)
-    log("[INFO] get cpython stats")
-    cpy_results = run_unittests(unittests, 60 * 5, with_cpython=True)
-    cpy_stats = process_output('\n'.join(cpy_results))[-1]
+    if not flags.gate and not flags.no_cpython:
+        log(HR)
+        log("[INFO] get cpython stats")
+        cpy_results = run_unittests(unittests, 60 * 5, with_cpython=True)
+        cpy_stats = process_output('\n'.join(cpy_results))[-1]
+        # handle the timeout
+        timeout = flags.timeout if flags.timeout else None
+    else:
+        cpy_stats = None
+        # handle the timeout
+        timeout = flags.timeout if flags.timeout else 60 * 5  # 5 minutes if no value specified (in gate mode only)
 
     # get graalpython stats
     log(HR)
     log("[INFO] get graalpython stats")
-    results = run_unittests(unittests, flags.timeout, with_cpython=False)
+    results = run_unittests(unittests, timeout, with_cpython=False)
     txt_report_path = file_name(TXT_RESULTS_NAME, current_date)
     output = save_as_txt(txt_report_path, results)
 
@@ -749,15 +867,44 @@ def main(prog, args):
     log("[JAVA ISSUES] \n{}", pformat(dict(java_issues)))
 
     html_report_path = file_name(HTML_RESULTS_NAME, current_date)
-    save_as_html(html_report_path, rows, totals, missing_modules, cannot_import_modules, java_issues, current_date)
+    if not flags.gate:
+        save_as_html(html_report_path, rows, totals, missing_modules, cannot_import_modules, java_issues, current_date)
 
-    if flags.path:
+    if not flags.gate and flags.path:
         log("[SAVE] saving results to {} ... ", flags.path)
         scp(txt_report_path, flags.path)
         scp(csv_report_path, flags.path)
         scp(html_report_path, flags.path)
 
+    gate_failed = False
+    if flags.gate and flags.regression_running_tests:
+        log("[REGRESSION] detecting regression, acceptance threshold = {}%".format(
+            flags.regression_running_tests * 100))
+        csv_files = list(filter(lambda entry: True if PTRN_VALID_CSV_NAME.match(entry) else False, ssh_ls(flags.path)))
+        last_csv = csv_files[-1]
+        # log('\n'.join(csv_files))
+        # read the remote csv and extract stats
+        log("[REGRESSION] comparing against: {}".format(last_csv))
+        scp('{}/{}'.format(flags.path, last_csv), '.', destination_name=last_csv)
+        rows = read_csv(last_csv)
+        prev_totals = {
+            Col.NUM_TESTS: int(rows[-1][1]),
+            Col.NUM_FAILS: int(rows[-1][2]),
+            Col.NUM_ERRORS: int(rows[-1][3]),
+            Col.NUM_SKIPPED: int(rows[-1][4]),
+            Col.NUM_PASSES: int(rows[-1][5]),
+        }
+        print(prev_totals)
+        if float(totals[Col.NUM_TESTS]) < float(prev_totals[Col.NUM_TESTS]) * (1.0 - flags.regression_running_tests):
+            log("[REGRESSION] REGRESSION DETECTED, passed {} tests vs {} from {}".format(
+                totals[Col.NUM_TESTS], prev_totals[Col.NUM_TESTS], last_csv))
+            gate_failed = True
+        else:
+            log("[REGRESSION] no regression detected")
+
     log("[DONE]")
+    if flags.gate and gate_failed:
+        exit(1)
 
 
 if __name__ == "__main__":

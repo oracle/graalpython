@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import static org.graalvm.polyglot.tck.TypeDescriptor.NULL;
 import static org.graalvm.polyglot.tck.TypeDescriptor.NUMBER;
 import static org.graalvm.polyglot.tck.TypeDescriptor.OBJECT;
 import static org.graalvm.polyglot.tck.TypeDescriptor.STRING;
+import static org.graalvm.polyglot.tck.TypeDescriptor.INSTANTIABLE;
 import static org.graalvm.polyglot.tck.TypeDescriptor.array;
 import static org.graalvm.polyglot.tck.TypeDescriptor.executable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.intersection;
@@ -80,6 +81,9 @@ public class PythonProvider implements LanguageProvider {
     private static final TypeDescriptor PNUMBER = TypeDescriptor.union(NUMBER, BOOLEAN);
     private static final TypeDescriptor NUMBER_OBJECT = TypeDescriptor.union(NUMBER, BOOLEAN, OBJECT, array(ANY));
     private static final TypeDescriptor PSEQUENCE_OBJECT = TypeDescriptor.union(array(ANY), STRING);
+
+    // Python types are just objects
+    private static final TypeDescriptor PYTHON_TYPE = TypeDescriptor.union(OBJECT, INSTANTIABLE);
 
     public String getId() {
         return ID;
@@ -130,8 +134,8 @@ public class PythonProvider implements LanguageProvider {
         addValueSnippet(context, snippets, "DictType:KeyNumber",   OBJECT,     "lambda: {1: 'Bacon', 0: 'Ham'}");
 
         // TODO remove '*args' from following value constructors once this is fixed in Truffle TCK
-        addValueSnippet(context, snippets, "LambdaType:Id",     executable(ANY, ANY),     "lambda: lambda x, *args: x");
-        addValueSnippet(context, snippets, "LambdaType:+1",     executable(NUMBER, NUMBER),     "lambda: lambda x, *args: x + 1");
+        addValueSnippet(context, snippets, "LambdaType:Id",     intersection(OBJECT, executable(ANY, ANY)),     "lambda: lambda x, *args: x");
+        addValueSnippet(context, snippets, "LambdaType:+1",     intersection(OBJECT, executable(NUMBER, NUMBER)),     "lambda: lambda x, *args: x + 1");
 
         // @formatter:on
         return snippets;
@@ -247,7 +251,7 @@ public class PythonProvider implements LanguageProvider {
                                                       "    try:\n" +
                                                       "        raise BaseException()\n" +
                                                       "        e = None\n" +
-                                                      "    except BaseException as e:\n" +
+                                                      "    except BaseException as ex:\n" +
                                                       "        e = True\n" +
                                                       "    else:\n" +
                                                       "        e = None\n" +
@@ -257,7 +261,7 @@ public class PythonProvider implements LanguageProvider {
                                                       "    e = None\n" +
                                                       "    try:\n" +
                                                       "        e = None\n" +
-                                                      "    except BaseException as e:\n" +
+                                                      "    except BaseException as ex:\n" +
                                                       "        e = None\n" +
                                                       "    else:\n" +
                                                       "        e = True\n" +
@@ -268,7 +272,7 @@ public class PythonProvider implements LanguageProvider {
         addStatementSnippet(context, snippets, "class", "class Custom0:\n" +
                                                       "    def __init__(self, val):\n" +
                                                       "        self.val = val\n" +
-                                                      "Custom0", OBJECT, ANY);
+                                                      "Custom0", PYTHON_TYPE, ANY);
         addStatementSnippet(context, snippets, "class", "class Custom1:\n" +
                                                       "    def __call__(self, val):\n" +
                                                       "        return val\n" +
@@ -314,10 +318,16 @@ public class PythonProvider implements LanguageProvider {
         int slashIndex = resourceName.lastIndexOf('/');
         String scriptName = slashIndex >= 0 ? resourceName.substring(slashIndex + 1) : resourceName;
         Reader in = new InputStreamReader(PythonProvider.class.getResourceAsStream(resourceName), "UTF-8");
-        return Source.newBuilder(ID, in, scriptName).build();
+        try {
+            return Source.newBuilder(ID, in, scriptName).build();
+        } finally {
+            if (in != null) {
+                in.close();
+            }
+        }
     }
 
-    private static abstract class PResultVerifier implements ResultVerifier {
+    private abstract static class PResultVerifier implements ResultVerifier {
     }
 
     private static class PSequenceMultiplicationVerifier extends PResultVerifier {

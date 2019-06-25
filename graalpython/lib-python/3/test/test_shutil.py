@@ -12,7 +12,6 @@ import errno
 import functools
 import pathlib
 import subprocess
-from contextlib import ExitStack
 from shutil import (make_archive,
                     register_archive_format, unregister_archive_format,
                     get_archive_formats, Error, unpack_archive,
@@ -21,8 +20,6 @@ from shutil import (make_archive,
                     SameFileError)
 import tarfile
 import zipfile
-import warnings
-import pathlib
 
 from test import support
 from test.support import TESTFN, FakePath
@@ -186,7 +183,7 @@ class TestShutil(unittest.TestCase):
             errors.append(args)
         shutil.rmtree(filename, onerror=onerror)
         self.assertEqual(len(errors), 2)
-        self.assertIs(errors[0][0], os.listdir)
+        self.assertIs(errors[0][0], os.scandir)
         self.assertEqual(errors[0][1], filename)
         self.assertIsInstance(errors[0][2][1], NotADirectoryError)
         self.assertIn(errors[0][2][1].filename, possible_args)
@@ -1127,6 +1124,8 @@ class TestShutil(unittest.TestCase):
                 subprocess.check_output(zip_cmd, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as exc:
                 details = exc.output.decode(errors="replace")
+                if 'unrecognized option: t' in details:
+                    self.skipTest("unzip doesn't support -t")
                 msg = "{}\n\n**Unzip Output**\n{}"
                 self.fail(msg.format(exc, details))
 
@@ -1247,16 +1246,16 @@ class TestShutil(unittest.TestCase):
 
         # let's try to unpack it now
         tmpdir2 = self.mkdtemp()
-        unpack_archive(filename, tmpdir2)
+        unpack_archive(converter(filename), converter(tmpdir2))
         self.assertEqual(rlistdir(tmpdir2), expected)
 
         # and again, this time with the format specified
         tmpdir3 = self.mkdtemp()
-        unpack_archive(filename, tmpdir3, format=format)
+        unpack_archive(converter(filename), converter(tmpdir3), format=format)
         self.assertEqual(rlistdir(tmpdir3), expected)
 
-        self.assertRaises(shutil.ReadError, unpack_archive, TESTFN)
-        self.assertRaises(ValueError, unpack_archive, TESTFN, format='xxx')
+        self.assertRaises(shutil.ReadError, unpack_archive, converter(TESTFN))
+        self.assertRaises(ValueError, unpack_archive, converter(TESTFN), format='xxx')
 
     def test_unpack_archive_tar(self):
         self.check_unpack_archive('tar')

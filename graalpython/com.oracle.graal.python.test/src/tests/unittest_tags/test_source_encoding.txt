@@ -1,0 +1,4 @@
+test_20731
+test_compilestring
+test_issue4626
+test_issue7820

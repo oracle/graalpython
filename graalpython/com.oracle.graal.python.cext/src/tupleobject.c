@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,9 +73,9 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     if (result == NULL) {
         return NULL;
     }
-    for (int i = 1; i < polyglot_get_arg_count(); i++) {
-        PyObject *o = polyglot_get_arg(i);
-        PyTuple_SetItem(result, i - 1, o);
+    for (int i = 0; i < n; i++) {
+        PyObject *o = polyglot_get_arg(i+1);
+        PyTuple_SetItem(result, i, o);
     }
     return result;
 }

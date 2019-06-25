@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,7 +33,7 @@ import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -67,19 +67,19 @@ public class PRangeTests {
 
     @Test
     public void loopWithOnlyStop() throws UnexpectedResultException {
-        PRange range = PythonObjectFactory.create().createRange(10);
+        PRange range = PythonObjectFactory.getUncached().createRange(10);
         int index = 0;
         TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
         GetIteratorNode getIter = GetIteratorNode.create();
         testRoot.doInsert(getIter);
-        Object iter = getIter.executeWith(range);
+        Object iter = getIter.executeWith(null, range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
         IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         while (true) {
             try {
-                int item = next.executeInt(iter);
+                int item = next.executeInt(null, iter);
                 assertEquals(index, item);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
@@ -91,19 +91,19 @@ public class PRangeTests {
 
     @Test
     public void loopWithStep() throws UnexpectedResultException {
-        PRange range = PythonObjectFactory.create().createRange(0, 10, 2);
+        PRange range = PythonObjectFactory.getUncached().createRange(0, 10, 2);
         int index = 0;
         TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
         GetIteratorNode getIter = GetIteratorNode.create();
         testRoot.doInsert(getIter);
-        Object iter = getIter.executeWith(range);
+        Object iter = getIter.executeWith(null, range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
         IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         while (true) {
             try {
-                int item = next.executeInt(iter);
+                int item = next.executeInt(null, iter);
                 assertEquals(index, item);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
@@ -115,7 +115,7 @@ public class PRangeTests {
 
     @Test
     public void getItem() {
-        PRange range = PythonObjectFactory.create().createRange(10);
+        PRange range = PythonObjectFactory.getUncached().createRange(10);
         assertEquals(3, range.getItemNormalized(3));
     }
 

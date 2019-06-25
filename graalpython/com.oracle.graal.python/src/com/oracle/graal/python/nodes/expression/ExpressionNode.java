@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * Base class for all expressions. Expressions always return a value.
@@ -176,7 +178,11 @@ public abstract class ExpressionNode extends PNode {
         private ExpressionWithSideEffects(ExpressionNode node, StatementNode[] sideEffects) {
             this.node = node;
             this.sideEffects = sideEffects;
-            this.assignSourceSection(node.getSourceSection());
+            SourceSection sourceSection = node.getSourceSection();
+            if (sourceSection != null) {
+                Source source = sourceSection.getSource();
+                this.assignSourceSection(source.createSection(0, source.getLength()));
+            }
         }
 
         @Override

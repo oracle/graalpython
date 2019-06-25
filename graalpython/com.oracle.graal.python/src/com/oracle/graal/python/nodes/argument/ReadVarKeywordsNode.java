@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,9 +27,11 @@ package com.oracle.graal.python.nodes.argument;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -40,10 +42,15 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "**kwargs")
 public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
+    private static final String[] EMPTY = new String[0];
     @CompilationFinal(dimensions = 1) private final String[] keywordNames;
-    private final boolean doWrap;
+    @Child private PythonObjectFactory factory;
 
     public abstract PKeyword[] executePKeyword(VirtualFrame frame);
+
+    public static ReadVarKeywordsNode create() {
+        return ReadVarKeywordsNodeGen.create(EMPTY, false);
+    }
 
     public static ReadVarKeywordsNode create(String[] keywordNames) {
         return ReadVarKeywordsNodeGen.create(keywordNames, false);
@@ -55,7 +62,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
 
     ReadVarKeywordsNode(String[] keywordNames, boolean doWrap) {
         this.keywordNames = keywordNames;
-        this.doWrap = doWrap;
+        this.factory = doWrap ? PythonObjectFactory.create() : null;
     }
 
     protected int getLimit() {
@@ -63,8 +70,9 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     }
 
     protected int getAndCheckKwargLen(VirtualFrame frame) {
+        CompilerAsserts.neverPartOfCompilation("caching the kwarg len should never be compiled");
         int length = getKwargLen(frame);
-        if (length >= PythonOptions.getIntOption(getContext(), PythonOptions.VariableArgumentReadUnrollingLimit)) {
+        if (length >= PythonOptions.getIntOption(PythonLanguage.getContextRef().get(), PythonOptions.VariableArgumentReadUnrollingLimit)) {
             return -1;
         }
         return length;
@@ -75,8 +83,8 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     }
 
     private Object returnValue(PKeyword[] keywords) {
-        if (doWrap) {
-            return factory().createDict(keywords);
+        if (factory != null) {
+            return factory.createDict(keywords);
         } else {
             return keywords;
         }

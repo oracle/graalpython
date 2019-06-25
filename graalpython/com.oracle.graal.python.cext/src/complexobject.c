@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7,7 +7,6 @@
 
 PyTypeObject PyComplex_Type = PY_TRUFFLE_TYPE("complex", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyComplexObject));
 
-static Py_complex c_1 = {1., 0.};
 static Py_complex c_error = {-1., 0.};
 
 UPCALL_ID(PyComplex_AsCComplex);
@@ -21,6 +20,21 @@ Py_complex PyComplex_AsCComplex(PyObject *op) {
 	}
 	return c_error;
 }
+
+// Below is taken from CPython
+
+/* Complex object implementation */
+
+/* Borrows heavily from floatobject.c */
+
+/* Submitted by Jim Hugunin */
+
+#include "Python.h"
+#include "structmember.h"
+
+/* elementary operations on complex numbers */
+
+static Py_complex c_1 = {1., 0.};
 
 Py_complex
 _Py_c_sum(Py_complex a, Py_complex b)

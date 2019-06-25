@@ -34,6 +34,12 @@ language
 /*.py
 *.o
 *.so
+*.rej
+.checkstyle
+/graalpython/com.oracle.graal.python.cext/compile_flags.txt
+/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/*.interp
+/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/*.tokens
+/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3*.java
 /graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4.stamp
 /mx.imports
 .pydevproject

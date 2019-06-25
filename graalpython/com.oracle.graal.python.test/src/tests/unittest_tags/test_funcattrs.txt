@@ -1,0 +1,3 @@
+test___closure__
+test___code__
+test___globals__

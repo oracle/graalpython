@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,60 +40,83 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.util.function.Function;
+
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
+    @Child private LookupAndCallUnaryNode callIndexNode;
 
-    @Node.Child private LookupAndCallUnaryNode callIndexNode;
+    private final Function<Object, Byte> typeErrorHandler;
 
-    public abstract Object execute(Object x);
+    public abstract Object execute(VirtualFrame frame, Object x);
 
     public static CastToIntegerFromIndexNode create() {
-        return CastToIntegerFromIndexNodeGen.create();
+        return CastToIntegerFromIndexNodeGen.create(null);
+    }
+
+    public static CastToIntegerFromIndexNode create(Function<Object, Byte> typeErrorHandler) {
+        return CastToIntegerFromIndexNodeGen.create(typeErrorHandler);
+    }
+
+    public CastToIntegerFromIndexNode(Function<Object, Byte> typeErrorHandler) {
+        super();
+        this.typeErrorHandler = typeErrorHandler;
     }
 
     @Specialization
-    public long toInt(long x) {
+    long toInt(long x) {
         return x;
     }
 
     @Specialization
-    public PInt toInt(PInt x) {
+    PInt toInt(PInt x) {
         return x;
     }
 
     @Specialization
-    public long toInt(double x) {
-        throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+    long toInt(double x,
+                    @Cached PRaiseNode raise) {
+        if (typeErrorHandler != null) {
+            return typeErrorHandler.apply(x);
+        }
+        throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
     }
 
     @Specialization(guards = "!isNumber(x)")
-    public Object toInt(Object x) {
+    Object toInt(VirtualFrame frame, Object x,
+                    @Cached PRaiseNode raise) {
         if (callIndexNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
         }
-        Object result = callIndexNode.executeObject(x);
+        Object result = callIndexNode.executeObject(frame, x);
         if (result == PNone.NONE) {
-            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+            if (typeErrorHandler != null) {
+                return typeErrorHandler.apply(x);
+            }
+            throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
         }
         if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-            throw raise(TypeError, " __index__ returned non-int (type %p)", result);
+            throw raise.raise(TypeError, " __index__ returned non-int (type %p)", result);
         }
         return result;
     }

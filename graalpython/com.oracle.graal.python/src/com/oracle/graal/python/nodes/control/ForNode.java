@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,21 +25,25 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongIterator;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -53,9 +57,10 @@ import com.oracle.truffle.api.nodes.RepeatingNode;
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
     @CompilationFinal FrameSlot iteratorSlot;
-
+    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
+    @Child PRaiseNode raise;
 
     public ForRepeatingNode(StatementNode target, StatementNode body) {
         this.nextElement = ForNextElementNodeGen.create(target);
@@ -68,9 +73,14 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
                 return false;
             }
         } catch (FrameSlotTypeException e) {
-            throw raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
+            if (raise == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raise = insert(PRaiseNode.create());
+            }
+            throw raise.raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
         }
         body.executeVoid(frame);
+        contextRef.get().triggerAsyncActions(frame, this);
         return true;
     }
 }
@@ -131,7 +141,7 @@ abstract class ForNextElementNode extends PNodeWithContext {
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile) {
         try {
-            ((WriteNode) target).doWrite(frame, next.execute(object));
+            ((WriteNode) target).doWrite(frame, next.execute(frame, object));
             return true;
         } catch (PException e) {
             e.expectStopIteration(errorProfile);

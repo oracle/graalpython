@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -36,10 +36,11 @@ public abstract class PythonErrorType {
     public static final PythonBuiltinClassType DeprecationWarning = PythonBuiltinClassType.DeprecationWarning;
     public static final PythonBuiltinClassType Exception = PythonBuiltinClassType.Exception;
     public static final PythonBuiltinClassType FloatingPointError = PythonBuiltinClassType.FloatingPointError;
-    public static final PythonBuiltinClassType IOError = PythonBuiltinClassType.IOError;
+    public static final PythonBuiltinClassType IOError = PythonBuiltinClassType.OSError;
     public static final PythonBuiltinClassType ImportError = PythonBuiltinClassType.ImportError;
     public static final PythonBuiltinClassType ImportWarning = PythonBuiltinClassType.ImportWarning;
     public static final PythonBuiltinClassType IndexError = PythonBuiltinClassType.IndexError;
+    public static final PythonBuiltinClassType KeyboardInterrupt = PythonBuiltinClassType.KeyboardInterrupt;
     public static final PythonBuiltinClassType KeyError = PythonBuiltinClassType.KeyError;
     public static final PythonBuiltinClassType LookupError = PythonBuiltinClassType.LookupError;
     public static final PythonBuiltinClassType MemoryError = PythonBuiltinClassType.MemoryError;

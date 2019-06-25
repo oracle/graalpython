@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,12 @@ package com.oracle.graal.python.builtins.objects.str;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public final class PString extends PImmutableSequence {
 
     private final CharSequence value;
@@ -75,5 +80,31 @@ public final class PString extends PImmutableSequence {
 
     public boolean isNative() {
         return getNativeWrapper() != null && getNativeWrapper().isNative();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isString() {
+        return true;
+    }
+
+    @ExportMessage
+    String asString() {
+        return getValue();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int length(String s) {
+        return s.length();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String valueOf(char c) {
+        return String.valueOf(c);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static char charAt(String s, int i) {
+        return s.charAt(i);
     }
 }

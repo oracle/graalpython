@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class ByteSequenceStorage extends TypedSequenceStorage {
@@ -38,9 +39,13 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     private byte[] values;
 
     public ByteSequenceStorage(byte[] elements) {
+        this(elements, elements.length);
+    }
+
+    public ByteSequenceStorage(byte[] elements, int length) {
         this.values = elements;
         this.capacity = values.length;
-        this.length = elements.length;
+        this.length = length;
     }
 
     public ByteSequenceStorage(int capacity) {
@@ -113,7 +118,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             setByteItemNormalized(idx, (byte) value);
         } else if (value instanceof Integer) {
             if ((int) value < 0 || (int) value >= 256) {
-                throw PythonLanguage.getCore().raise(ValueError, "byte must be in range(0, 256)");
+                throw PythonLanguage.getCore().raise(ValueError, CastToByteNode.INVALID_BYTE_VALUE);
             }
             setByteItemNormalized(idx, ((Integer) value).byteValue());
         } else {
@@ -190,7 +195,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         int i = start;
         for (int j = 0; j < otherLength; i += step, j++) {
             if (seqValues[j] < Byte.MIN_VALUE || seqValues[j] > Byte.MAX_VALUE) {
-                throw PythonLanguage.getCore().raise(ValueError, "byte must be in range(0, 256)");
+                throw PythonLanguage.getCore().raise(ValueError, CastToByteNode.INVALID_BYTE_VALUE);
             }
             values[i] = (byte) seqValues[j];
         }

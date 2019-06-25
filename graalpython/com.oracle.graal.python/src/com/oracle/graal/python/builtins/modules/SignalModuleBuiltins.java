@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,33 +40,45 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.Hashtable;
+import static java.lang.StrictMath.toIntExact;
+
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
-    private static Hashtable<Integer, Object> signalHandlers = new Hashtable<>();
+    private static ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
+
+    private static final HiddenKey signalQueueKey = new HiddenKey("signalQueue");
+    private final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
+    private static final HiddenKey signalSemaKey = new HiddenKey("signalQueue");
+    private final Semaphore signalSema = new Semaphore(0);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -86,7 +98,51 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", fixedNumOfPositionalArgs = 1)
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+
+        PythonModule signalModule = core.lookupBuiltinModule("_signal");
+        signalModule.setAttribute(signalQueueKey, signalQueue);
+        signalModule.setAttribute(signalSemaKey, signalSema);
+
+        core.getContext().registerAsyncAction(() -> {
+            SignalTriggerAction poll = signalQueue.poll();
+            try {
+                while (poll == null) {
+                    signalSema.acquire();
+                    poll = signalQueue.poll();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return poll;
+        });
+    }
+
+    private static class SignalTriggerAction implements AsyncHandler.AsyncAction {
+        private final Object callableObject;
+        private final int signum;
+
+        SignalTriggerAction(Object callable, int signum) {
+            this.callableObject = callable;
+            this.signum = signum;
+        }
+
+        public Object callable() {
+            return callableObject;
+        }
+
+        public Object[] arguments() {
+            return new Object[]{signum, null};
+        }
+
+        public int frameIndex() {
+            return 1;
+        }
+    }
+
+    @Builtin(name = "alarm", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AlarmNode extends PythonUnaryBuiltinNode {
@@ -113,7 +169,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -132,14 +188,32 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "signal", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "default_int_handler", minNumOfPositionalArgs = 0, takesVarArgs = true, takesVarKeywordArgs = false)
     @GenerateNodeFactory
-    abstract static class SignalNode extends PythonBinaryBuiltinNode {
-        @Child CreateArgumentsNode createArgs = CreateArgumentsNode.create();
+    abstract static class DefaultIntHandlerNode extends PythonBuiltinNode {
+        @Specialization
+        Object defaultIntHandler(@SuppressWarnings("unused") Object[] args) {
+            // TODO should be implemented properly.
+            throw raise(PythonErrorType.KeyboardInterrupt);
+        }
+    }
+
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "signal", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class SignalNode extends PythonTernaryBuiltinNode {
+        private int getSignum(long signum) {
+            try {
+                return toIntExact(signum);
+            } catch (ArithmeticException ae) {
+                throw raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
+            }
+        }
 
         @Specialization
         @TruffleBoundary
-        Object signal(int signum, int id) {
+        Object signal(@SuppressWarnings("unused") PythonModule self, long signalNumber, int id) {
+            int signum = getSignum(signalNumber);
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, id);
@@ -157,11 +231,20 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
-        private Object installSignalHandler(int signum, Object handler, RootCallTarget callTarget, Object[] arguments) {
+        @Specialization
+        @TruffleBoundary
+        Object signal(PythonModule self, long signalNumber, Object handler,
+                        @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
+                        @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
+            int signum = getSignum(signalNumber);
+            ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readQueueNode);
+            Semaphore semaphore = getSemaphore(self, readSemaNode);
             Object retval;
+            SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
             try {
                 retval = Signals.setSignalHandler(signum, () -> {
-                    callTarget.call(arguments);
+                    queue.add(signalTrigger);
+                    semaphore.release();
                 });
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.ValueError, e);
@@ -176,21 +259,25 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             signalHandlers.put(signum, handler);
             return retval;
         }
-        // TODO: This needs to be fixed, any object with a "__call__" should work
 
-        // TODO: the second argument should be the interrupted, currently executing frame
-        // we'll get that when we switch to executing these handlers (just like finalizers)
-        // on the main thread
-        @Specialization
-        @TruffleBoundary
-        Object signal(int signum, PBuiltinFunction handler) {
-            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+        private static ConcurrentLinkedDeque<SignalTriggerAction> getQueue(PythonModule self, ReadAttributeFromObjectNode readNode) {
+            Object queueObject = readNode.execute(self, signalQueueKey);
+            if (queueObject instanceof ConcurrentLinkedDeque) {
+                @SuppressWarnings("unchecked")
+                ConcurrentLinkedDeque<SignalTriggerAction> queue = (ConcurrentLinkedDeque<SignalTriggerAction>) queueObject;
+                return queue;
+            } else {
+                throw new IllegalStateException("the signal trigger queue was modified!");
+            }
         }
 
-        @Specialization
-        @TruffleBoundary
-        Object signal(int signum, PFunction handler) {
-            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+        private static Semaphore getSemaphore(PythonModule self, ReadAttributeFromObjectNode readNode) {
+            Object semaphore = readNode.execute(self, signalSemaKey);
+            if (semaphore instanceof Semaphore) {
+                return (Semaphore) semaphore;
+            } else {
+                throw new IllegalStateException("the signal trigger semaphore was modified!");
+            }
         }
     }
 }
@@ -220,18 +307,29 @@ final class Signals {
         }
     }
 
-    @TruffleBoundary
-    synchronized static void scheduleAlarm(long seconds) {
-        new Thread(() -> {
+    private static class Alarm implements Runnable {
+        private final long seconds;
+
+        Alarm(long seconds) {
+            this.seconds = seconds;
+        }
+
+        public void run() {
             long t0 = System.currentTimeMillis();
             while ((System.currentTimeMillis() - t0) < seconds * 1000) {
                 try {
                     Thread.sleep(seconds * 1000);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
             }
             sun.misc.Signal.raise(new sun.misc.Signal("ALRM"));
-        }).start();
+        }
+    }
+
+    @TruffleBoundary
+    synchronized static void scheduleAlarm(long seconds) {
+        new Thread(new Alarm(seconds)).start();
     }
 
     private static class PythonSignalHandler implements sun.misc.SignalHandler {

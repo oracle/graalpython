@@ -39,7 +39,6 @@
 
 from _descriptor import make_named_tuple_class
 from sys import graal_python_is_native
-from sys import executable as graal_python_executable
 
 stat_result = make_named_tuple_class("stat_result", [
     "st_mode", "st_ino", "st_dev", "st_nlink",
@@ -59,8 +58,10 @@ def stat(filename, follow_symlinks=True):
 
 @__builtin__
 def lstat(filename):
-    if not graal_python_is_native and filename == graal_python_executable:
-        return stat_result((0,0,0,0,0,0,0,0,0,0))
+    if not graal_python_is_native:
+        from sys import executable as graal_python_executable
+        if filename == graal_python_executable:
+            return stat_result((0,0,0,0,0,0,0,0,0,0))
     return stat_result(old_stat(filename, False))
 
 
@@ -142,3 +143,9 @@ old_get_terminal_size = get_terminal_size
 @__builtin__
 def get_terminal_size(fd = None):
     return terminal_size(old_get_terminal_size(fd))
+
+def execl(file, *args):
+    """execl(file, *args)
+    Execute the executable file with argument list args, replacing the
+    current process. """
+    execv(file, args)

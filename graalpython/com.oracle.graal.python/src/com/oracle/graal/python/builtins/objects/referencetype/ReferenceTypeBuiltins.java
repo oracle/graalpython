@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReferenceType)
 public class ReferenceTypeBuiltins extends PythonBuiltins {
@@ -74,7 +75,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__callback__
-    @Builtin(name = __CALLBACK__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __CALLBACK__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeCallbackPropertyNode extends PythonBuiltinNode {
         @Specialization
@@ -84,7 +85,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__call__()
-    @Builtin(name = __CALL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeCallNode extends PythonBuiltinNode {
         @Specialization
@@ -94,7 +95,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__hash__
-    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeHashNode extends PythonBuiltinNode {
         @Specialization(guards = "self.getObject() != null")
@@ -102,14 +103,19 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
             return self.getHash();
         }
 
-        @Fallback
-        public int hash(@SuppressWarnings("unused") Object self) {
+        @Specialization(guards = "self.getObject() == null")
+        public int hashGone(@SuppressWarnings("unused") PReferenceType self) {
             throw raise(PythonErrorType.TypeError, "weak object has gone away");
+        }
+
+        @Fallback
+        public int hashWrong(@SuppressWarnings("unused") Object self) {
+            throw raise(PythonErrorType.TypeError, "descriptor '__hash__' requires a 'weakref' object but received a '%p'", self);
         }
     }
 
     // ref.__repr__
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeReprNode extends PythonBuiltinNode {
         @Specialization(guards = "self.getObject() == null")
@@ -133,33 +139,33 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__eq__
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RefTypeEqNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
-        public boolean eq(PReferenceType self, PReferenceType other,
+        boolean eq(VirtualFrame frame, PReferenceType self, PReferenceType other,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return eqNode.executeBool(self.getObject(), other.getObject());
+            return eqNode.executeBool(frame, self.getObject(), other.getObject());
         }
 
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")
-        public boolean eq(PReferenceType self, PReferenceType other) {
+        boolean eq(PReferenceType self, PReferenceType other) {
             return self == other;
         }
     }
 
     // ref.__ne__
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RefTypeNeNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
-        public boolean ne(PReferenceType self, PReferenceType other,
+        boolean ne(VirtualFrame frame, PReferenceType self, PReferenceType other,
                         @Cached("create(__NE__, __NE__, __NE__)") BinaryComparisonNode neNode) {
-            return neNode.executeBool(self.getObject(), other.getObject());
+            return neNode.executeBool(frame, self.getObject(), other.getObject());
         }
 
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")
-        public boolean ne(PReferenceType self, PReferenceType other) {
+        boolean ne(PReferenceType self, PReferenceType other) {
             return self != other;
         }
     }

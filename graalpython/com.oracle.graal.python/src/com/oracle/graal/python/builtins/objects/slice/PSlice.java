@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import java.util.Objects;
 
 public class PSlice extends PythonBuiltinObject {
 
@@ -84,6 +85,23 @@ public class PSlice extends PythonBuiltinObject {
 
     public final int getStep() {
         return step;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof PSlice)) {
+            return false;
+        }
+        if (this == obj) {
+            return true;
+        }
+        PSlice other = (PSlice) obj;
+        return (this.start == other.start && this.stop == other.stop && this.step == other.step);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.start, this.stop, this.step);
     }
 
     @ValueType

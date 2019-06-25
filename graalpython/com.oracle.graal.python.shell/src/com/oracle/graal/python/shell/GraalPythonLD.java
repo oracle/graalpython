@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,12 @@ package com.oracle.graal.python.shell;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,8 +61,10 @@ import java.util.Set;
 import jline.internal.InputStreamReader;
 
 public class GraalPythonLD extends GraalPythonCompiler {
-    private static final String LLVM_IR_BITCODE = "llvm-ir-bitcode";
     private static final String LLVM_NM = "llvm-nm";
+    private static final long BC_MAGIC_WORD = 0xdec04342L; // 'BC' c0de
+    private static final long WRAPPER_MAGIC_WORD = 0x0B17C0DEL;
+
     private static List<String> linkPrefix = Arrays.asList(new String[]{
                     "llvm-link",
                     "-o",
@@ -107,15 +113,11 @@ public class GraalPythonLD extends GraalPythonCompiler {
                     } else if (arg.startsWith("-l")) {
                         List<String> bcFiles = searchLib(libraryDirs, arg.substring(2));
                         for (String bcFile : bcFiles) {
-                            try {
-                                if (Files.probeContentType(Paths.get(bcFile)).contains(LLVM_IR_BITCODE)) {
-                                    logV("library input:", bcFile);
-                                    addFile(bcFile);
-                                } else {
-                                    droppedArgs.add(bcFile + "(dropped as library input)");
-                                }
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
+                            if (probeContentType(Paths.get(bcFile))) {
+                                logV("library input:", bcFile);
+                                addFile(bcFile);
+                            } else {
+                                droppedArgs.add(bcFile + "(dropped as library input)");
                             }
                         }
                     } else {
@@ -174,6 +176,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
             }
             nmProc.waitFor();
         } catch (InterruptedException | IOException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
     }
@@ -194,6 +197,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
                             try {
                                 bcFiles.addAll(arMembers(pathString));
                             } catch (IOException | InterruptedException e) {
+                                Thread.currentThread().interrupt();
                                 throw new RuntimeException(e);
                             }
                         } else {
@@ -210,16 +214,13 @@ public class GraalPythonLD extends GraalPythonCompiler {
 
     private Collection<? extends String> arMembers(String path) throws IOException, InterruptedException {
         List<String> members = new ArrayList<>();
-        File temp = File.createTempFile(path, Long.toString(System.nanoTime()));
-        temp.delete();
-        temp.mkdir();
-        temp.deleteOnExit();
+        Path temp = Files.createTempDirectory(Long.toString(System.nanoTime()));
 
         ProcessBuilder extractAr = new ProcessBuilder();
         extractAr.redirectInput(Redirect.INHERIT);
         extractAr.redirectError(Redirect.INHERIT);
         extractAr.redirectOutput(Redirect.PIPE);
-        extractAr.directory(temp);
+        extractAr.directory(temp.toFile());
         logV("ar", path);
         // "ar t" lists the members one per line
         extractAr.command("ar", "t", path);
@@ -227,7 +228,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(start.getInputStream()))) {
             String line = null;
             while ((line = buffer.readLine()) != null) {
-                members.add(temp.getAbsolutePath() + File.separator + line);
+                members.add(temp.toFile().getAbsolutePath() + File.separator + line);
             }
         }
         start.waitFor();
@@ -245,7 +246,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
         // seems ok to emulate this at least for the very common case of ar archives with symbol
         // definitions that overlap what's defined in explicitly include .o files
         outer: for (String f : members) {
-            if (Files.probeContentType(Paths.get(f)).contains(LLVM_IR_BITCODE)) {
+            if (probeContentType(Paths.get(f))) {
                 HashSet<String> definedFuncs = new HashSet<>();
                 HashSet<String> definedGlobals = new HashSet<>();
 
@@ -307,5 +308,25 @@ public class GraalPythonLD extends GraalPythonCompiler {
         ldArgs.add(outputFilename);
         ldArgs.addAll(fileInputs);
         exec(ldArgs);
+    }
+
+    private static boolean probeContentType(Path path) {
+        long magicWord = readMagicWord(path);
+        if (magicWord == BC_MAGIC_WORD || magicWord == WRAPPER_MAGIC_WORD) {
+            return true;
+        }
+        return false;
+    }
+
+    private static long readMagicWord(Path path) {
+        try (InputStream is = new FileInputStream(path.toString())) {
+            byte[] buffer = new byte[4];
+            if (is.read(buffer) != buffer.length) {
+                return 0;
+            }
+            return Integer.toUnsignedLong(ByteBuffer.wrap(buffer).order(ByteOrder.nativeOrder()).getInt());
+        } catch (IOException e) {
+            return 0;
+        }
     }
 }

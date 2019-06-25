@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,11 @@
 package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
@@ -56,18 +59,18 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final int numOfActiveFlags;
     private final int numOfGeneratorBlockNode;
     private final int numOfGeneratorForNode;
-    private final PCell[] closure;
     private final ExecutionCellSlots cellSlots;
     private final String name;
-    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+    @Child private MaterializeFrameNode materializeNode;
+
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        super(language, frameDescriptor, executionCellSlots);
+        super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
         this.name = name;
         this.frameDescriptor = frameDescriptor;
-        this.closure = closure;
         this.cellSlots = executionCellSlots;
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
@@ -76,7 +79,9 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+        // TODO 'materialize' generator frame and create locals dict eagerly
+        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
+                        numOfGeneratorForNode);
     }
 
     public RootNode getFunctionRootNode() {
@@ -86,5 +91,16 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public String getName() {
         return name;
+    }
+
+    @Override
+    public void initializeFrame(VirtualFrame frame) {
+        // nothing to do
+    }
+
+    @Override
+    public boolean isPythonInternal() {
+        RootNode rootNode = callTarget.getRootNode();
+        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
     }
 }

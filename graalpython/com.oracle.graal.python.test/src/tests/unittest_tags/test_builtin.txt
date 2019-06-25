@@ -1,0 +1,3 @@
+test_all
+test_any
+test_bin

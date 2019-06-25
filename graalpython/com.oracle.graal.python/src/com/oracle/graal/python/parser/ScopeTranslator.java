@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
+import com.oracle.graal.python.parser.antlr.Python3Parser.Except_clauseContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Single_inputContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.frame.Frame;
@@ -76,17 +77,15 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     @Override
     public T visitSingle_input(Single_inputContext ctx) {
-        if (interactive) {
-            ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Module);
-        } else if (curInlineLocals != null) {
+        if (!interactive && curInlineLocals != null) {
             ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Function, curInlineLocals);
+        } else {
+            ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Module);
         }
         try {
             return super.visitSingle_input(ctx);
         } finally {
-            if (interactive || curInlineLocals != null) {
-                environment.popScope();
-            }
+            environment.popScope();
         }
     }
 
@@ -442,5 +441,15 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             registerPossibleCell(identifier);
         }
         return super.visitAtom(ctx);
+    }
+
+    @Override
+    public T visitExcept_clause(Except_clauseContext ctx) {
+        TerminalNode name = ctx.NAME();
+        if (name != null) {
+            String identifier = name.getText();
+            environment.createLocal(identifier);
+        }
+        return super.visitExcept_clause(ctx);
     }
 }

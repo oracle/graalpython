@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,28 +44,57 @@ import static com.oracle.graal.python.nodes.BuiltinNames.GLOBALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
 public abstract class AbstractImportNode extends StatementNode {
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @Child PythonObjectFactory objectFactory;
 
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
+    @Child private PassCaughtExceptionNode passExceptionNode;
 
     public AbstractImportNode() {
         super();
     }
 
-    protected Object importModule(String name) {
-        return importModule(name, PNone.NONE, new String[0], 0);
+    private ContextReference<PythonContext> getContextRef() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
+        return contextRef;
+    }
+
+    protected PythonContext getContext() {
+        return getContextRef().get();
+    }
+
+    protected PythonObjectFactory factory() {
+        if (objectFactory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            objectFactory = insert(PythonObjectFactory.create());
+        }
+        return objectFactory;
+    }
+
+    protected Object importModule(VirtualFrame frame, String name) {
+        return importModule(frame, name, PNone.NONE, new String[0], 0);
     }
 
     CallNode getCallNode() {
@@ -84,23 +113,22 @@ public abstract class AbstractImportNode extends StatementNode {
         return getDictNode;
     }
 
-    @TruffleBoundary
-    protected Object importModule(String name, Object globals, String[] fromList, int level) {
+    protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
-        if (!getCore().isInitialized()) {
-            PythonModule builtinModule = getCore().lookupBuiltinModule(name);
+        if (!getContext().getCore().isInitialized()) {
+            PythonModule builtinModule = getContext().getCore().lookupBuiltinModule(name);
             if (builtinModule != null) {
                 return builtinModule;
             }
         }
-        return __import__(name, globals, fromList, level);
+        return __import__(frame, name, globals, fromList, level);
     }
 
-    Object __import__(String name, Object globals, String[] fromList, int level) {
-        PMethod builtinImport = (PMethod) getContext().getBuiltins().getAttribute(__IMPORT__);
+    Object __import__(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
+        PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule("builtins").getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
-        return getCallNode().execute(null, builtinImport, new Object[]{name}, new PKeyword[]{
+        return getCallNode().execute(frame, builtinImport, new Object[]{name}, new PKeyword[]{
                         new PKeyword(GLOBALS, getGetDictNode().execute(globals)),
                         new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
                                                           // can always be None

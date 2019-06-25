@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -49,19 +49,12 @@ PROT_READ=0x1
 PROT_WRITE=0x2
 PROT_EXEC=0x4
 
-ACCESS_DEFAULT=0
-ACCESS_READ=1
-ACCESS_WRITE=2
-ACCESS_COPY=3
+PAGESIZE = 4096
 
+from python_cext import register_capi_hook
 
-class mmap:
-    def __init__(self, fileno, length, flags=MAP_SHARED, prot=PROT_WRITE|PROT_READ, access=ACCESS_DEFAULT):
-        pass
+def __register_buffer():
+    import _mmap
+    _mmap.init_bufferprotocol(mmap)
     
-    def readline(self):
-        # TODO(fa): implement
-        raise NotImplementedError
-
-
-
+register_capi_hook(__register_buffer)

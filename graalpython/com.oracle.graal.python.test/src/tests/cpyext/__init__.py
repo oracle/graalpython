@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -71,12 +71,6 @@ class CPyExtTestCase():
 
 
 def ccompile(self, name):
-    if getattr(sys, "graal_python_opaque_filesystem", False):
-        # distutils won't fully work with an opaque filesystem,
-        # because we cannot read bytes from files and manipulate
-        # them. We hope the code was already compiled.
-        return
-
     from distutils.core import setup, Extension
     source_file = '%s/%s.c' % (__dir__, name)
     file_not_empty(source_file)
@@ -422,7 +416,7 @@ class UnseenFormatter(Formatter):
 def CPyExtType(name, code, **kwargs):
     template = """
     #include "Python.h"
-    
+
     {includes}
 
     typedef struct {{
@@ -498,7 +492,7 @@ def CPyExtType(name, code, **kwargs):
         {tp_getattro},
         {tp_setattro},
         {tp_as_buffer},
-        Py_TPFLAGS_DEFAULT,
+        Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
         "",
         {tp_traverse},              /* tp_traverse */
         {tp_clear},                 /* tp_clear */

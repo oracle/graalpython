@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -35,13 +35,13 @@ PyAPI_FUNC(PyObject *) PyMethod_Self(PyObject *);
 #define PyMethod_GET_FUNCTION(meth) \
         (((PyMethodObject *)meth) -> im_func)
 #define PyMethod_GET_SELF(meth) \
-	(((PyMethodObject *)meth) -> im_self)
+        (((PyMethodObject *)meth) -> im_self)
 
 PyAPI_FUNC(int) PyMethod_ClearFreeList(void);
 
 typedef struct {
-	PyObject_HEAD
-	PyObject *func;
+    PyObject_HEAD
+    PyObject *func;
 } PyInstanceMethodObject;
 
 PyAPI_DATA(PyTypeObject) PyInstanceMethod_Type;

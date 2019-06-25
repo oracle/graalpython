@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,36 +40,42 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+
+import java.util.function.Function;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.NodeContextManager;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode.CastToIndexContextManager;
+import com.oracle.graal.python.nodes.util.CastToIndexNodeFactory.CachedNodeGen;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
  */
-public abstract class CastToIndexNode extends PNodeWithContext {
+@TypeSystemReference(PythonArithmeticTypes.class)
+public abstract class CastToIndexNode extends PNodeWithGlobalState<CastToIndexContextManager> {
+
+    private static final UncachedNode UNCACHED = new UncachedNode();
 
     private static final String ERROR_MESSAGE = "cannot fit 'int' into an index-sized integer";
-
-    @Child private LookupAndCallUnaryNode callIndexNode;
-    @Child private CastToIndexNode recursiveNode;
-
-    private final PythonBuiltinClassType errorType;
-    private final boolean recursive;
-
-    protected CastToIndexNode(PythonBuiltinClassType errorType, boolean recursive) {
-        this.errorType = errorType;
-        this.recursive = recursive;
-    }
 
     public abstract int execute(Object x);
 
@@ -79,65 +85,197 @@ public abstract class CastToIndexNode extends PNodeWithContext {
 
     public abstract int execute(boolean x);
 
-    @Specialization
-    int doBoolean(boolean x) {
-        return PInt.intValue(x);
+    @Override
+    public CastToIndexContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+        return new CastToIndexContextManager(this, contextRef.get(), frame);
     }
 
-    @Specialization
-    int doInt(int x) {
-        return x;
+    @Override
+    public CastToIndexContextManager passState() {
+        return new CastToIndexContextManager(this, null, null);
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    int doLong(long x) {
-        return PInt.intValueExact(x);
-    }
+    abstract static class CachedNode extends CastToIndexNode {
 
-    @Specialization(replaces = "doLong")
-    int doLongOvf(long x) {
-        try {
+        @Child private LookupAndCallUnaryNode callIndexNode;
+        @Child private CastToIndexNode recursiveNode;
+        @Child private PRaiseNode raiseNode;
+
+        private final PythonBuiltinClassType errorType;
+        private final boolean recursive;
+        private final Function<Object, Integer> typeErrorHandler;
+
+        protected CachedNode(PythonBuiltinClassType errorType, boolean recursive, Function<Object, Integer> typeErrorHandler) {
+            this.errorType = errorType;
+            this.recursive = recursive;
+            this.typeErrorHandler = typeErrorHandler;
+        }
+
+        private PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
+        @Specialization
+        int doBoolean(boolean x) {
+            return PInt.intValue(x);
+        }
+
+        @Specialization
+        int doInt(int x) {
+            return x;
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        int doLong(long x) {
             return PInt.intValueExact(x);
-        } catch (ArithmeticException e) {
-            throw raise(errorType, ERROR_MESSAGE);
         }
-    }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    int doPInt(PInt x) {
-        return x.intValueExact();
-    }
+        @Specialization(replaces = "doLong")
+        int doLongOvf(long x) {
+            try {
+                return PInt.intValueExact(x);
+            } catch (ArithmeticException e) {
+                throw getRaiseNode().raise(errorType, ERROR_MESSAGE);
+            }
+        }
 
-    @Specialization(replaces = "doLong")
-    int doPIntOvf(PInt x) {
-        try {
+        @Specialization(rewriteOn = ArithmeticException.class)
+        int doPInt(PInt x) {
             return x.intValueExact();
-        } catch (ArithmeticException e) {
-            throw raise(errorType, ERROR_MESSAGE);
+        }
+
+        @Specialization(replaces = "doLong")
+        int doPIntOvf(PInt x) {
+            try {
+                return x.intValueExact();
+            } catch (ArithmeticException e) {
+                throw getRaiseNode().raise(errorType, ERROR_MESSAGE);
+            }
+        }
+
+        @Specialization
+        public int toInt(double x) {
+            return handleError("'%p' object cannot be interpreted as an integer", x);
+        }
+
+        @Fallback
+        int doGeneric(Object x) {
+            if (recursive) {
+                if (callIndexNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
+                }
+                // note: it's fine to pass 'null' because this node has an uncached version an so
+                // the caller must already take care of the global state
+                Object result = callIndexNode.executeObject(null, x);
+                if (result == PNone.NO_VALUE) {
+                    return handleError("'%p' object cannot be interpreted as an integer", x);
+                }
+                if (recursiveNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    recursiveNode = insert(CachedNodeGen.create(errorType, false, typeErrorHandler));
+                }
+                return recursiveNode.execute(result);
+            }
+            return handleError("__index__ returned non-int (type %p)", x);
+        }
+
+        private int handleError(String fmt, Object x) {
+            if (typeErrorHandler != null) {
+                return typeErrorHandler.apply(x);
+            }
+            throw getRaiseNode().raise(TypeError, fmt, x);
         }
     }
 
-    @Fallback
-    int doGeneric(Object x) {
-        if (recursive) {
-            if (callIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
+    private static final class UncachedNode extends CastToIndexNode {
+
+        @Override
+        @TruffleBoundary
+        public int execute(Object x) {
+            if (x instanceof Integer) {
+                return execute((int) x);
+            } else if (x instanceof Long) {
+                return execute((long) x);
+            } else if (x instanceof Boolean) {
+                return execute((boolean) x);
+            } else {
+                // NOTE: since this is an uncached node, any of the callers must already have taken
+                // care of the exception state
+                Object result = LookupAndCallUnaryDynamicNode.getUncached().passState().executeObject(x, __INDEX__);
+                if (result == PNone.NO_VALUE) {
+                    throw PRaiseNode.getUncached().raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+                }
+                return execute(result);
             }
-            if (recursiveNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveNode = insert(CastToIndexNodeGen.create(errorType, false));
-            }
-            return recursiveNode.execute(callIndexNode.executeObject(x));
         }
-        throw raise(TypeError, "__index__ returned non-int (type %p)", x);
+
+        @Override
+        public int execute(int x) {
+            return x;
+        }
+
+        @Override
+        @TruffleBoundary
+        public int execute(long x) {
+            try {
+                return PInt.intValueExact(x);
+            } catch (ArithmeticException e) {
+                throw PRaiseNode.getUncached().raise(TypeError, ERROR_MESSAGE);
+            }
+        }
+
+        @Override
+        public int execute(boolean x) {
+            return PInt.intValue(x);
+        }
+
     }
 
     public static CastToIndexNode create() {
-        return CastToIndexNodeGen.create(IndexError, true);
+        return CachedNodeGen.create(IndexError, true, null);
     }
 
     public static CastToIndexNode createOverflow() {
-        return CastToIndexNodeGen.create(OverflowError, true);
+        return CachedNodeGen.create(OverflowError, true, null);
+    }
+
+    public static CastToIndexNode create(PythonBuiltinClassType errorType, Function<Object, Integer> typeErrorHandler) {
+        return CachedNodeGen.create(errorType, true, typeErrorHandler);
+    }
+
+    public static CastToIndexNode getUncached() {
+        return UNCACHED;
+    }
+
+    public static final class CastToIndexContextManager extends NodeContextManager {
+
+        private final CastToIndexNode delegate;
+
+        private CastToIndexContextManager(CastToIndexNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
+            this.delegate = delegate;
+        }
+
+        public int execute(Object x) {
+            return delegate.execute(x);
+        }
+
+        public int execute(int x) {
+            return delegate.execute(x);
+        }
+
+        public int execute(long x) {
+            return delegate.execute(x);
+        }
+
+        public int execute(boolean x) {
+            return delegate.execute(x);
+
+        }
     }
 }

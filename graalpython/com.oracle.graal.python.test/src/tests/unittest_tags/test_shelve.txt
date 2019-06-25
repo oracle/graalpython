@@ -1,0 +1,10 @@
+*TestCase.test_ascii_file_shelf
+*TestCase.test_binary_file_shelf
+*TestCase.test_close
+*TestCase.test_default_protocol
+*TestCase.test_in_memory_shelf
+*TestCase.test_keyencoding
+*TestCase.test_mutable_entry
+*TestCase.test_proto2_file_shelf
+*TestCase.test_with
+*TestCase.test_writeback_also_writes_immediately

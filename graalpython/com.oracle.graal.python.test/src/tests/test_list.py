@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -138,6 +138,16 @@ class ListTest(list_tests.CommonTest):
     def test_getitem(self):
         l = [1, 2, 3]
         self.assertEqual(1, l[False])
+        
+        class IdxObj:
+            __cnt = 0
+            def __index__(self):
+                cur = self.__cnt
+                self.__cnt += 1
+                return cur
+        idxObj = IdxObj()
+        cpy = [l[idxObj], l[idxObj], l[idxObj]]
+        self.assertEqual(cpy, l)
 
     def pop_all_list(self, list):
         size = len(list)

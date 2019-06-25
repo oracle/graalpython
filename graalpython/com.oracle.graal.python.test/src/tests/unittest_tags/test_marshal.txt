@@ -1,0 +1,5 @@
+test_exceptions
+test_different_filenames
+test_many_codeobjects
+test_same_filename_used
+test_bug_5888452

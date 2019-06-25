@@ -28,14 +28,16 @@ package com.oracle.graal.python.nodes.call;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNodeGen.GetCallAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
@@ -50,13 +52,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @NodeChild("calleeNode")
@@ -117,7 +118,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callUnary.executeObject(getCallable.execute(frame), argumentNode.execute(frame));
+            return callUnary.executeObject(frame, getCallable.execute(frame), argumentNode.execute(frame));
         }
     }
 
@@ -134,7 +135,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         @Override
         public Object execute(VirtualFrame frame) {
             Object[] evaluatedArguments = PositionalArgumentsNode.evaluateArguments(frame, argumentNodes);
-            return callBinary.executeObject(getCallable.execute(frame), evaluatedArguments[0], evaluatedArguments[1]);
+            return callBinary.executeObject(frame, getCallable.execute(frame), evaluatedArguments[0], evaluatedArguments[1]);
         }
     }
 
@@ -150,7 +151,24 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callTernary.execute(getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
+            return callTernary.execute(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
+        }
+    }
+
+    private static class PythonCallQuaternary extends ExpressionNode {
+        @Child CallQuaternaryMethodNode callQuaternary = CallQuaternaryMethodNode.create();
+        @Child ExpressionNode getCallable;
+        @Children final ExpressionNode[] argumentNodes;
+
+        PythonCallQuaternary(ExpressionNode getCallable, ExpressionNode[] argumentNodes) {
+            this.getCallable = getCallable;
+            this.argumentNodes = argumentNodes;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return callQuaternary.execute(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame),
+                            argumentNodes[3].execute(frame));
         }
     }
 
@@ -170,6 +188,8 @@ public abstract class PythonCallNode extends ExpressionNode {
                     return new PythonCallBinary(getCalleeNode(), argumentNodes);
                 case 3:
                     return new PythonCallTernary(getCalleeNode(), argumentNodes);
+                case 4:
+                    return new PythonCallQuaternary(getCalleeNode(), argumentNodes);
                 default:
                     return this;
             }
@@ -191,9 +211,9 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
 
         @Specialization(guards = "!isForeignObject(object)")
-        Object getCallAttribute(Object object,
+        Object getCallAttribute(VirtualFrame frame, Object object,
                         @Cached("create(key)") GetAttributeNode getAttributeNode) {
-            return getAttributeNode.executeObject(object);
+            return getAttributeNode.executeObject(frame, object);
         }
     }
 
@@ -224,37 +244,30 @@ public abstract class PythonCallNode extends ExpressionNode {
         return keywordArguments == null ? PKeyword.EMPTY_KEYWORDS : keywordArguments.execute(frame);
     }
 
-    protected static Node createInvoke() {
-        return Message.INVOKE.createNode();
-    }
-
     @Specialization
     Object call(VirtualFrame frame, ForeignInvoke callable,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") PForeignToPTypeNode fromForeign,
                     @Cached("create()") BranchProfile keywordsError,
-                    @Cached("create()") BranchProfile nameError,
                     @Cached("create()") BranchProfile typeError,
                     @Cached("create()") BranchProfile invokeError,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode,
-                    @Cached("createInvoke()") Node invokeNode) {
+                    @Cached("create()") GetAnyAttributeNode getAttrNode,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame);
         if (keywords.length != 0) {
             keywordsError.enter();
-            throw raise(PythonErrorType.TypeError, "foreign invocation does not support keyword arguments");
+            throw raise.raise(PythonErrorType.TypeError, "foreign invocation does not support keyword arguments");
         }
         try {
-            return fromForeign.executeConvert(ForeignAccess.sendInvoke(invokeNode, callable.receiver, callable.identifier, arguments));
-        } catch (UnknownIdentifierException e) {
-            nameError.enter();
-            throw raise(PythonErrorType.NameError, e);
+            return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.identifier, arguments));
         } catch (ArityException | UnsupportedTypeException e) {
             typeError.enter();
-            throw raise(PythonErrorType.TypeError, e);
-        } catch (UnsupportedMessageException e) {
+            throw raise.raise(PythonErrorType.TypeError, e);
+        } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             invokeError.enter();
-            // the interop contract is to revert to READ and then EXECUTE
-            Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);
+            // the interop contract is to revert to readMember and then execute
+            Object member = getAttrNode.executeObject(frame, callable.receiver, callable.identifier);
             return callNode.execute(frame, member, arguments, keywords);
         }
     }
@@ -276,6 +289,6 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     private boolean isBreakpoint(Class<?> tag) {
-        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equals(BuiltinNames.__BREAKPOINT__);
+        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equals(BuiltinNames.BREAKPOINT);
     }
 }

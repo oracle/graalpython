@@ -1,0 +1,15 @@
+*TestLowLevelInternals.test_infer_return_type_multiples
+*TestLowLevelInternals.test_infer_return_type_multiples_and_none
+*TestLowLevelInternals.test_infer_return_type_singles
+*TestExports.test_exports
+*TestRandomNameSequence.test_get_six_char_str
+*TestCandidateTempdirList.test_wanted_dirs
+*TestGetDefaultTempdir.test_no_files_left_behind
+*TestGetCandidateNames.test_retval
+*TestGetCandidateNames.test_same_thing
+*TestGetTempPrefix.test_sane_template
+*TestGetTempPrefix.test_usable_template
+*TestGetTempDir.test_case_sensitive
+*TestGetTempDir.test_directory_exists
+*TestGetTempDir.test_directory_writable
+*TestGetTempDir.test_same_thing

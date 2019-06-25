@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -69,7 +69,7 @@ typedef struct {
     PyObject *weakreflist;      /* List of weak references */
 } PySetObject;
 
-#define PySet_GET_SIZE(so) (((PySetObject *)(so))->used)
+#define PySet_GET_SIZE(so) (assert(PyAnySet_Check(so)),(((PySetObject *)(so))->used))
 
 PyAPI_DATA(PyObject *) _PySet_Dummy;
 

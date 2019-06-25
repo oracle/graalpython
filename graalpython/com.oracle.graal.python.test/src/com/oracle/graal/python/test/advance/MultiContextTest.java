@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,7 @@ import com.oracle.graal.python.test.PythonTests;
 
 public class MultiContextTest extends PythonTests {
     @Test
-    public void testContextReuse() {
+    public void testSharingWithMemoryview() {
         Engine engine = Engine.newBuilder().build();
         for (int i = 0; i < 10; i++) {
             try (Context context = newContext(engine)) {
@@ -57,7 +57,35 @@ public class MultiContextTest extends PythonTests {
         }
     }
 
+    @Test
+    public void testSharingWithStruct() {
+        Engine engine = Engine.newBuilder().build();
+        for (int i = 0; i < 10; i++) {
+            try (Context context = newContext(engine)) {
+                context.eval("python", "import struct\n" +
+                                "n = struct.unpack('<q', struct.pack('<d', 1.1))[0]\n");
+            }
+        }
+    }
+
+    @Test
+    public void testTryCatch() {
+        Engine engine = Engine.newBuilder().build();
+        for (int i = 0; i < 10; i++) {
+            try (Context context = newContext(engine)) {
+                context.eval("python", "last_val = -1\n" +
+                                "try:\n" +
+                                "    riter = iter(range(1000000))\n" +
+                                "    while True:\n" +
+                                "        last_val = next(riter)\n" +
+                                "except StopIteration:\n" +
+                                "    pass\n" +
+                                "last_val");
+            }
+        }
+    }
+
     private static Context newContext(Engine engine) {
-        return Context.newBuilder().allowAllAccess(true).engine(engine).build();
+        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
     }
 }

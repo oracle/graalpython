@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
 
 import java.util.List;
-import java.util.function.Function;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 
@@ -38,13 +37,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -209,33 +207,21 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return factory.createWriteLocal(right, slot);
     }
 
-    private StatementNode getWriteNode(String name, Function<Integer, ReadArgumentNode> getReadNode) {
-        ExpressionNode right = getReadNode.apply(currentScope.getVariableIndex(name)).asExpression();
+    private StatementNode getWriteNode(String name, ReadArgumentNode readNode) {
+        ExpressionNode right = readNode.asExpression();
         return getWriteNode(name, currentScope.findFrameSlot(name), right);
     }
 
-    public StatementNode getWriteArgumentToLocal(String name) {
-        return getWriteNode(name, index -> ReadIndexedArgumentNode.create(index));
+    public StatementNode getWriteArgumentToLocal(String name, int index) {
+        return getWriteNode(name, ReadIndexedArgumentNode.create(index));
     }
 
-    public StatementNode getWriteKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name, index, readDefaultArgumentNode));
-    }
-
-    public StatementNode getWriteRequiredKeywordArgumentToLocal(String name) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name));
-    }
-
-    public StatementNode getWriteRequiredKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name, readDefaultArgumentNode));
-    }
-
-    public StatementNode getWriteVarArgsToLocal(String name) {
-        return getWriteNode(name, index -> ReadVarArgsNode.create(index));
+    public StatementNode getWriteVarArgsToLocal(String name, int index) {
+        return getWriteNode(name, ReadVarArgsNode.create(index));
     }
 
     public StatementNode getWriteKwArgsToLocal(String name, String[] names) {
-        return getWriteNode(name, index -> ReadVarKeywordsNode.createForUserFunction(names));
+        return getWriteNode(name, ReadVarKeywordsNode.createForUserFunction(names));
     }
 
     static ScopeInfo findVariableScope(ScopeInfo enclosingScope, String identifier) {
@@ -280,6 +266,9 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         FrameSlot cellSlot = null;
         if (isCellInCurrentScope(name)) {
             cellSlot = currentScope.findFrameSlot(name);
+        }
+        if (name.equals(__CLASS__)) {
+            return (ReadNode) factory.createReadClassAttributeNode(name, null, currentScope.isFreeVar(name));
         }
         return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, currentScope.isFreeVar(name));
     }
@@ -366,21 +355,24 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         currentScope.setDefaultArgumentNodes(defaultArgs);
     }
 
+    protected void setDefaultKwArgumentNodes(List<KwDefaultExpressionNode> defaultArgs) {
+        currentScope.setDefaultKwArgumentNodes(defaultArgs);
+    }
+
     protected List<ExpressionNode> getDefaultArgumentNodes() {
-        List<ExpressionNode> defaultArgs = currentScope.getDefaultArgumentNodes();
-        return defaultArgs;
+        return currentScope.getDefaultArgumentNodes();
+    }
+
+    protected List<KwDefaultExpressionNode> getDefaultKwArgumentNodes() {
+        return currentScope.getDefaultKwArgumentNodes();
     }
 
     protected boolean hasDefaultArguments() {
         return currentScope.getDefaultArgumentNodes() != null && currentScope.getDefaultArgumentNodes().size() > 0;
     }
 
-    protected void setDefaultArgumentReads(ReadDefaultArgumentNode[] defaultReads) {
-        currentScope.setDefaultArgumentReads(defaultReads);
-    }
-
-    protected ReadDefaultArgumentNode[] getDefaultArgumentReads() {
-        return currentScope.getDefaultArgumentReads();
+    protected boolean hasDefaultKwArguments() {
+        return currentScope.getDefaultKwArgumentNodes() != null && currentScope.getDefaultKwArgumentNodes().size() > 0;
     }
 
     public FrameSlot getReturnSlot() {

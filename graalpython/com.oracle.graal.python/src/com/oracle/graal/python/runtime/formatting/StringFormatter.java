@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -35,7 +35,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class StringFormatter {
     int index;
-    String format;
+    String formatText;
     StringBuilder buffer;
     int argIndex;
     Object args;
@@ -43,14 +43,14 @@ public class StringFormatter {
 
     final char pop() {
         try {
-            return format.charAt(index++);
+            return formatText.charAt(index++);
         } catch (StringIndexOutOfBoundsException e) {
             throw core.raise(ValueError, "incomplete format");
         }
     }
 
     final char peek() {
-        return format.charAt(index);
+        return formatText.charAt(index);
     }
 
     final void push() {
@@ -60,7 +60,7 @@ public class StringFormatter {
     public StringFormatter(PythonCore core, String format) {
         this.core = core;
         index = 0;
-        this.format = format;
+        this.formatText = format;
         buffer = new StringBuilder(format.length() + 100);
     }
 
@@ -75,7 +75,8 @@ public class StringFormatter {
                 argIndex = -2;
                 return args;
             default:
-                ret = getItemNode.executeObject(args, argIndex++);
+                // NOTE: passing 'null' frame means we already took care of the global state earlier
+                ret = getItemNode.executeObject(null, args, argIndex++);
                 break;
         }
         if (ret == null) {
@@ -104,9 +105,10 @@ public class StringFormatter {
             if (Character.isDigit(c)) {
                 int numStart = index - 1;
                 while (Character.isDigit(c = pop())) {
+                    // empty
                 }
                 index -= 1;
-                Integer i = Integer.valueOf(format.substring(numStart, index));
+                Integer i = Integer.valueOf(formatText.substring(numStart, index));
                 return i.intValue();
             }
             index -= 1;
@@ -155,9 +157,6 @@ public class StringFormatter {
     /**
      * Main service of this class: format one or more arguments with the format string supplied at
      * construction.
-     *
-     * @param args1 tuple or map containing objects, or a single object, to convert
-     * @return result of formatting
      */
     @TruffleBoundary
     public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
@@ -181,7 +180,7 @@ public class StringFormatter {
             }
         }
 
-        while (index < format.length()) {
+        while (index < formatText.length()) {
             // Read one character from the format string
             char c = pop();
             if (c != '%') {
@@ -226,7 +225,7 @@ public class StringFormatter {
                     }
                 }
                 // Last c=pop() is the closing ')' while indexKey is just after the opening '('
-                String tmp = format.substring(keyStart, index - 1);
+                String tmp = formatText.substring(keyStart, index - 1);
                 // Look it up using this extent as the (right type of) key.
                 this.args = dict.getItem(tmp);
             } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,27 +27,31 @@ package com.oracle.graal.python.builtins.objects.type;
 
 class MROMergeState {
 
+    MROMergeState(PythonAbstractClass[] mro) {
+        this.mro = mro;
+    }
+
     /** The mro of the base type we're representing. */
-    public PythonClass[] mro;
+    private final PythonAbstractClass[] mro;
 
     /**
      * The index of the next item to be merged from mro, or mro.length if this base has been
      * completely merged.
      */
-    public int next;
+    private int next;
 
     public boolean isMerged() {
         return mro.length == next;
     }
 
-    public PythonClass getCandidate() {
+    public PythonAbstractClass getCandidate() {
         return mro[next];
     }
 
     /**
      * Marks candidate as merged for this base if it's the next item to be merged.
      */
-    public void noteMerged(PythonClass candidate) {
+    public void noteMerged(PythonAbstractClass candidate) {
         if (!isMerged() && getCandidate() == candidate) {
             next++;
         }
@@ -56,7 +60,7 @@ class MROMergeState {
     /**
      * Returns true if candidate is in the items past this state's next item to be merged.
      */
-    public boolean pastnextContains(PythonClass candidate) {
+    public boolean pastnextContains(PythonAbstractClass candidate) {
         for (int i = next + 1; i < mro.length; i++) {
             if (mro[i] == candidate) {
                 return true;
@@ -64,5 +68,4 @@ class MROMergeState {
         }
         return false;
     }
-
 }

@@ -1,0 +1,13 @@
+test_argforms
+test_dbcheck
+test_dotted
+test_double
+test_errors
+test_eval_order
+test_memoize
+test_order
+test_single
+test_staticmethod_function
+test_double
+test_order
+test_simple

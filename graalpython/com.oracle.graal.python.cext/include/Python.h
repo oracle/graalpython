@@ -51,7 +51,6 @@
 #define PYPY_VERSION_NUM 0
 
 #include <truffle.h>
-#include <polyglot.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -75,8 +74,8 @@
 #include "unicodeobject.h"
 #include "pystate.h"
 #include "pyarena.h"
-#include "pythonrun.h"
 #include "compile.h"
+#include "pythonrun.h"
 #include "ceval.h"
 #include "pyerrors.h"
 #include "modsupport.h"
@@ -120,6 +119,10 @@
 #include "funcobject.h"
 #include "iterobject.h"
 #include "datetime.h"
+#include "typeslots.h"
+#include "weakrefobject.h"
+#include "sysmodule.h"
+#include "fileutils.h"
 
 // TODO: we must extend the refcounting behavior to support handles to managed objects
 #undef Py_DECREF

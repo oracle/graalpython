@@ -1,0 +1,2 @@
+test_raises_on_empty_input
+test_trims_trailing_newline

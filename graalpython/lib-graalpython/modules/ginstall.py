@@ -60,7 +60,7 @@ def known_packages():
         install_from_pypi("six==1.12.0", args)
 
     def Cython(*args):
-        install_from_pypi("Cython==0.29.2", ['--no-cython-compile'] + args)
+        install_from_pypi("Cython==0.29.2", ('--no-cython-compile',) + args)
 
     def setuptools(*args):
         install_from_pypi("setuptools==40.6.3", args)
@@ -331,19 +331,19 @@ index e450a66..ed538b4 100644
             numpy(*args)
 
 
-        try: 
+        try:
             import pytz as _dummy_pytz
         except ImportError:
             print("Installing required dependency: pytz")
             pytz(*args)
 
-        try: 
+        try:
             import six as _dummy_six
         except ImportError:
             print("Installing required dependency: six")
             six(*args)
 
-        try: 
+        try:
             import dateutil as __dummy_dateutil
         except ImportError:
             print("Installing required dependency: dateutil")
@@ -360,7 +360,7 @@ index 19f810e..2f01238 100644
                       PyExc_ValueError,
 -                     "abstime out of range (0.0 - 86400.0): %f", abstime);
 +                     "abstime out of range (0.0 - 86400.0): %f", (long long)abstime);
- 
+
      /* Calculate the date */
      if (dInfoCalc_SetFromAbsDate(dinfo, absdate, calendar)) goto onError;
 diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
@@ -373,12 +373,45 @@ index 2f01238..6c79eb5 100644
              PyExc_ValueError,
 -            "second out of range (0.0 - <60.0; <61.0 for 23:59): %f", second);
 +            "second out of range (0.0 - <60.0; <61.0 for 23:59): %f", (long long)second);
- 
+
          dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
- 
+
+diff --git a/pandas/io/msgpack/_packer.cpp b/pandas/io/msgpack/_packer.cpp
+index 8b5b382..7544707 100644
+--- a/pandas/io/msgpack/_packer.cpp
++++ b/pandas/io/msgpack/_packer.cpp
+@@ -477,10 +477,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+     (sizeof(type) == sizeof(Py_ssize_t) &&\\
+           (is_signed || likely(v < (type)PY_SSIZE_T_MAX ||\\
+                                v == (type)PY_SSIZE_T_MAX)))  )
+-#if defined (__cplusplus) && __cplusplus >= 201103L
+-    #include <cstdlib>
+-    #define __Pyx_sst_abs(value) std::abs(value)
+-#elif SIZEOF_INT >= SIZEOF_SIZE_T
++#if SIZEOF_INT >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) abs(value)
+ #elif SIZEOF_LONG >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) labs(value)
+diff --git a/pandas/io/msgpack/_unpacker.cpp b/pandas/io/msgpack/_unpacker.cpp
+index fa08f53..49f3bf3 100644
+--- a/pandas/io/msgpack/_unpacker.cpp
++++ b/pandas/io/msgpack/_unpacker.cpp
+@@ -477,10 +477,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+     (sizeof(type) == sizeof(Py_ssize_t) &&\\
+           (is_signed || likely(v < (type)PY_SSIZE_T_MAX ||\\
+                                v == (type)PY_SSIZE_T_MAX)))  )
+-#if defined (__cplusplus) && __cplusplus >= 201103L
+-    #include <cstdlib>
+-    #define __Pyx_sst_abs(value) std::abs(value)
+-#elif SIZEOF_INT >= SIZEOF_SIZE_T
++#if SIZEOF_INT >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) abs(value)
+ #elif SIZEOF_LONG >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) labs(value)
+
 """
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
-        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, cflags=cflags)
+        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, add_cflags=cflags)
 
     return locals()
 
@@ -391,7 +424,7 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def install_from_url(url, patch=None, extra_opts=[], cflags=""):
+def install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
@@ -403,6 +436,10 @@ def install_from_url(url, patch=None, extra_opts=[], cflags=""):
     elif url.startswith("https://") and "HTTPS_PROXY" in env:
         curl_opts += ["--proxy", env["HTTPS_PROXY"]]
 
+    # honor env var 'CFLAGS' and 'CPPFLAGS'
+    cppflags = os.environ.get("CPPFLAGS", "")
+    cflags = "-v " + os.environ.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
+
     system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url))
     if name.endswith(".tar.gz"):
         system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir))
@@ -410,14 +447,17 @@ def install_from_url(url, patch=None, extra_opts=[], cflags=""):
     elif name.endswith(".zip"):
         system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir))
         bare_name = name[:-len(".zip")]
-        
+
     if patch:
         with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
             f.write(patch)
         system("patch -d %s/%s/ -p1 < %s/%s.patch" % ((tempdir, bare_name)*2))
 
-    user_arg = "--user" if "--prefix" not in extra_opts else ""
-    system("cd %s/%s; %s %s setup.py install %s %s" % (tempdir, bare_name, "CFLAGS=%s" % cflags if cflags else "", sys.executable, user_arg, " ".join(extra_opts)))
+    if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
+        user_arg = "--user"
+    else:
+        user_arg = ""
+    system("cd %s/%s; %s %s %s setup.py install %s %s" % (tempdir, bare_name, 'CFLAGS="%s"' % cflags if cflags else "", 'CPPFLAGS="%s"' % cppflags if cppflags else "", sys.executable, user_arg, " ".join(extra_opts)))
 
 
 def install_from_pypi(package, extra_opts=[]):
@@ -455,7 +495,10 @@ def install_from_pypi(package, extra_opts=[]):
         else:
             xit("Unknown file type: %s" % filename)
 
-        user_arg = "--user" if "--prefix" not in extra_opts else ""
+        if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
+            user_arg = "--user"
+        else:
+            user_arg = ""
         status = os.system("cd %s/%s; %s setup.py install %s %s" % (tempdir, dirname, sys.executable, user_arg, " ".join(extra_opts)))
         if status != 0:
             xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
@@ -507,7 +550,13 @@ def main(argv):
     args = parser.parse_args(argv)
 
     if args.command == "list":
-        user_site = site.getusersitepackages()
+        if site.ENABLE_USER_SITE:
+            user_site = site.getusersitepackages()
+        else:
+            for s in site.getsitepackages():
+                if s.endswith("site-packages"):
+                    user_site = s
+                    break
         print("Installed packages:")
         for p in sys.path:
             if p.startswith(user_site):

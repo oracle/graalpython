@@ -98,3 +98,26 @@ def test_decorator_cell():
             pass
         return func
     assert run_me() == "just a string, not func", run_me()
+
+
+def test_single_input_non_interactive():
+    import sys
+    oldhook = sys.displayhook
+    got_value = None
+    def newhook(value):
+        nonlocal got_value
+        got_value = value
+    sys.displayhook = newhook
+    try:
+        code = compile('sum([1, 2, 3])', '', 'single')
+        assert exec(code) == None
+        assert got_value == 6
+    finally:
+        sys.displayhook = oldhook
+
+
+def test_underscore_in_numbers():
+    assert eval('1_0') == 10
+    assert eval('0b1_1') == 0b11
+    assert eval('0o1_7') == 0o17
+    assert eval('0x1_f') == 0x1f

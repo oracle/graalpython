@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +36,6 @@ import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -54,6 +52,10 @@ public abstract class PythonBuiltins {
 
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
 
+    /**
+     * Initialize everything that is truly independent of commandline arguments and that can be
+     * initialized and frozen into an SVM image.
+     */
     public void initialize(PythonCore core) {
         if (builtinFunctions.size() > 0) {
             return;
@@ -75,14 +77,14 @@ public abstract class PythonBuiltins {
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (builtin.constructsClass().length > 0) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
-                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin, declaresExplicitSelf), callTarget);
+                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, numDefaults(builtin), callTarget);
                 for (PythonBuiltinClassType type : builtin.constructsClass()) {
                     PythonBuiltinClass builtinClass = core.lookupType(type);
                     builtinClass.setAttributeUnsafe(__NEW__, newFunc);
                     builtinClass.setAttribute(__DOC__, builtinDoc);
                 }
             } else {
-                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, createArity(builtin, declaresExplicitSelf), callTarget);
+                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, numDefaults(builtin), callTarget);
                 function.setAttribute(__DOC__, builtinDoc);
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
@@ -101,6 +103,14 @@ public abstract class PythonBuiltins {
         });
     }
 
+    /**
+     * Run any actions that can only be run in the post-initialization step, that is, if we're
+     * actually going to start running rather than just pre-initializing.
+     */
+    public void postInitialize(@SuppressWarnings("unused") PythonCore core) {
+        // nothing to do by default
+    }
+
     private void initializeEachFactoryWith(BiConsumer<NodeFactory<? extends PythonBuiltinBaseNode>, Builtin> func) {
         List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> factories = getNodeFactories();
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
@@ -110,27 +120,14 @@ public abstract class PythonBuiltins {
         }
     }
 
-    private static Arity createArity(Builtin builtin, boolean declaresExplicitSelf) {
-        int minNumPosArgs = builtin.minNumOfPositionalArgs();
-        int maxNumPosArgs = Math.max(minNumPosArgs, builtin.maxNumOfPositionalArgs());
-        if (builtin.fixedNumOfPositionalArgs() > 0) {
-            minNumPosArgs = maxNumPosArgs = builtin.fixedNumOfPositionalArgs();
+    private static int numDefaults(Builtin builtin) {
+        String[] parameterNames = builtin.parameterNames();
+        int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
+        if (builtin.maxNumOfPositionalArgs() >= 0) {
+            maxNumPosArgs = builtin.maxNumOfPositionalArgs();
+            assert parameterNames.length == 0 : "either give all parameter names explicitly, or define the max number: " + builtin.name();
         }
-        if (!declaresExplicitSelf) {
-            // if we don't take the explicit self, we still need to accept it by arity
-            minNumPosArgs++;
-            maxNumPosArgs++;
-        }
-
-        List<Arity.KeywordName> keywordNames = new ArrayList<>();
-        for (String keywordArgument : builtin.keywordArguments()) {
-            keywordNames.add(new Arity.KeywordName(keywordArgument));
-            // the assumption here is that out Builtins do not take required keyword args,
-            // all supplied keyword args are before *args, **kwargs
-            maxNumPosArgs++;
-        }
-
-        return new Arity(builtin.name(), minNumPosArgs, maxNumPosArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs(), builtin.parameterNames(), keywordNames.toArray(new Arity.KeywordName[0]));
+        return maxNumPosArgs - builtin.minNumOfPositionalArgs();
     }
 
     private void setBuiltinFunction(String name, BoundBuiltinCallable<?> function) {
@@ -150,5 +147,4 @@ public abstract class PythonBuiltins {
     protected Map<String, Object> getBuiltinConstants() {
         return builtinConstants;
     }
-
 }

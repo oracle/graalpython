@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,9 +56,12 @@ public final class NativeMemberNames {
     public static final String TP_FLAGS = "tp_flags";
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
+    public static final String TP_BASES = "tp_bases";
+    public static final String TP_MRO = "tp_mro";
     public static final String TP_BASICSIZE = "tp_basicsize";
     public static final String TP_ITEMSIZE = "tp_itemsize";
     public static final String TP_DICTOFFSET = "tp_dictoffset";
+    public static final String TP_WEAKLISTOFFSET = "tp_weaklistoffset";
     public static final String TP_DOC = "tp_doc";
     public static final String TP_ALLOC = "tp_alloc";
     public static final String TP_AS_NUMBER = "tp_as_number";
@@ -124,8 +127,9 @@ public final class NativeMemberNames {
     public static final String M_ML = "m_ml";
     public static final String DATETIME_DATA = "data";
     public static final String SET_USED = "used";
+    public static final String MMAP_DATA = "data";
 
-    @CompilationFinal(dimensions = 1) public static final String[] values;
+    @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
         Field[] declaredFields = NativeMemberNames.class.getDeclaredFields();
         values = new String[declaredFields.length - 1]; // omit the values field
@@ -143,7 +147,7 @@ public final class NativeMemberNames {
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
     public static boolean isValid(String name) {
         for (int i = 0; i < values.length; i++) {
-            if (values[i].equals(name)) {
+            if (name.equals(values[i])) {
                 return true;
             }
         }

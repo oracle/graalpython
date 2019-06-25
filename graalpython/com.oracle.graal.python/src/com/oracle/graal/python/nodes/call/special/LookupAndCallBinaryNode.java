@@ -45,16 +45,19 @@ import java.util.function.Supplier;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -73,29 +76,29 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Child private CallBinaryMethodNode reverseDispatchNode;
     @Child private NotImplementedHandler handler;
 
-    public abstract boolean executeBool(boolean arg, boolean arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, boolean arg, boolean arg2) throws UnexpectedResultException;
 
-    public abstract int executeInt(int arg, int arg2) throws UnexpectedResultException;
+    public abstract int executeInt(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
 
-    public abstract int executeInt(Object arg, Object arg2) throws UnexpectedResultException;
+    public abstract int executeInt(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
 
-    public abstract long executeLong(int arg, int arg2) throws UnexpectedResultException;
+    public abstract long executeLong(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
 
-    public abstract long executeLong(long arg, long arg2) throws UnexpectedResultException;
+    public abstract long executeLong(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException;
 
-    public abstract long executeLong(Object arg, Object arg2) throws UnexpectedResultException;
+    public abstract long executeLong(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
 
-    public abstract double executeDouble(double arg, double arg2) throws UnexpectedResultException;
+    public abstract double executeDouble(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
 
-    public abstract boolean executeBool(int arg, int arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
 
-    public abstract boolean executeBool(long arg, long arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException;
 
-    public abstract boolean executeBool(double arg, double arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
 
-    public abstract boolean executeBool(Object arg, Object arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
 
-    public abstract Object executeObject(Object arg1, Object arg2);
+    public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
     LookupAndCallBinaryNode(String name, String rname, Supplier<NotImplementedHandler> handlerFactory) {
         this.name = name;
@@ -121,7 +124,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return LookupAttributeInMRONode.lookupSlow(GetClassNode.getItSlowPath(receiver), methodName);
+        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName);
     }
 
     protected boolean isReversible() {
@@ -146,9 +149,9 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return reverseDispatchNode;
     }
 
-    private UnexpectedResultException handleLeftURE(Object left, Object right, UnexpectedResultException e) throws UnexpectedResultException {
+    private UnexpectedResultException handleLeftURE(VirtualFrame frame, Object left, Object right, UnexpectedResultException e) throws UnexpectedResultException {
         if (isReversible() && e.getResult() == PNotImplemented.NOT_IMPLEMENTED) {
-            throw new UnexpectedResultException(ensureReverseDispatch().executeObject(getMethod(right, rname), right, left));
+            throw new UnexpectedResultException(ensureReverseDispatch().executeObject(frame, getMethod(right, rname), right, left));
         } else {
             throw e;
         }
@@ -156,7 +159,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     protected PythonBinaryBuiltinNode getBuiltin(Object receiver) {
         assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String;
-        Object attribute = LookupAttributeInMRONode.lookupSlow(GetClassNode.getItSlowPath(receiver), name);
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonBinaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
@@ -169,162 +172,161 @@ public abstract class LookupAndCallBinaryNode extends Node {
     // bool, bool
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    boolean callBoolean(boolean left, boolean right,
+    boolean callBoolean(VirtualFrame frame, boolean left, boolean right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeBool(left, right);
+            return function.executeBool(frame, left, right);
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    int callInt(boolean left, boolean right,
+    int callInt(VirtualFrame frame, boolean left, boolean right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeInt(left, right);
+            return function.executeInt(frame, left, right);
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     // int, int
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    int callInt(int left, int right,
+    int callInt(VirtualFrame frame, int left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeInt(left, right);
+            return function.executeInt(frame, left, right);
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    boolean callBoolean(int left, int right,
+    boolean callBoolean(VirtualFrame frame, int left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeBool(left, right);
+            return function.executeBool(frame, left, right);
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    long callLong(int left, int right,
+    long callLong(VirtualFrame frame, int left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeLong(left, right); // implicit conversion to long
+            return function.executeLong(frame, left, right); // implicit conversion to long
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     // long, long
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    long callLong(long left, long right,
+    long callLong(VirtualFrame frame, long left, long right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeLong(left, right);
+            return function.executeLong(frame, left, right);
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    boolean callBoolean(long left, long right,
+    boolean callBoolean(VirtualFrame frame, long left, long right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeBool(left, right);
+            return function.executeBool(frame, left, right);
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     // double, double
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    double callDouble(double left, double right,
+    double callDouble(VirtualFrame frame, double left, double right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeDouble(left, right);
+            return function.executeDouble(frame, left, right);
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    boolean callBoolean(double left, double right,
+    boolean callBoolean(VirtualFrame frame, double left, double right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeBool(left, right);
+            return function.executeBool(frame, left, right);
         } catch (UnexpectedResultException e) {
-            throw handleLeftURE(left, right, e);
+            throw handleLeftURE(frame, left, right, e);
         }
     }
 
     // Object, Object
 
     @Specialization(guards = "!isReversible()")
-    Object callObject(Object left, Object right,
+    Object callObject(VirtualFrame frame, Object left, Object right,
                     @Cached("create(name)") LookupInheritedAttributeNode getattr) {
         Object leftCallable = getattr.execute(left);
-        Object result;
         if (leftCallable == PNone.NO_VALUE) {
-            result = PNotImplemented.NOT_IMPLEMENTED;
-        } else {
-            result = ensureDispatch().executeObject(leftCallable, left, right);
-        }
-        if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            if (handler == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handler = insert(handlerFactory.get());
+            if (handlerFactory != null) {
+                return runErrorHandler(left, right);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return handler.execute(left, right);
         }
-        return result;
+        return ensureDispatch().executeObject(frame, leftCallable, left, right);
     }
 
     @Specialization(guards = "isReversible()")
-    Object callObject(Object left, Object right,
+    Object callObject(VirtualFrame frame, Object left, Object right,
                     @Cached("create(name)") LookupAttributeInMRONode getattr,
                     @Cached("create(rname)") LookupAttributeInMRONode getattrR,
-                    @Cached("create()") GetClassNode getClass,
-                    @Cached("create()") GetClassNode getClassR,
+                    @Cached("create()") GetLazyClassNode getClass,
+                    @Cached("create()") GetLazyClassNode getClassR,
+                    @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        PythonClass leftClass = getClass.execute(left);
+        LazyPythonClass leftClass = getClass.execute(left);
         Object leftCallable = getattr.execute(leftClass);
-        PythonClass rightClass = getClassR.execute(right);
+        LazyPythonClass rightClass = getClassR.execute(right);
         Object rightCallable = getattrR.execute(rightClass);
         if (leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }
         if (leftCallable != PNone.NO_VALUE) {
-            if (rightCallable != PNone.NO_VALUE && leftClass != rightClass && isSubtype.execute(rightClass, leftClass)) {
-                result = ensureReverseDispatch().executeObject(rightCallable, right, left);
+            if (rightCallable != PNone.NO_VALUE && !isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass)) {
+                result = ensureReverseDispatch().executeObject(frame, rightCallable, right, left);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
                 }
                 rightCallable = PNone.NO_VALUE;
             }
-            result = ensureDispatch().executeObject(leftCallable, left, right);
+            result = ensureDispatch().executeObject(frame, leftCallable, left, right);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
         }
         if (notImplementedBranch.profile(rightCallable != PNone.NO_VALUE)) {
-            result = ensureReverseDispatch().executeObject(rightCallable, right, left);
+            result = ensureReverseDispatch().executeObject(frame, rightCallable, right, left);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            if (handler == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handler = insert(handlerFactory.get());
-            }
-            return handler.execute(left, right);
+            return runErrorHandler(left, right);
         }
         return result;
+    }
+
+    private Object runErrorHandler(Object left, Object right) {
+        if (handler == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            handler = insert(handlerFactory.get());
+        }
+        return handler.execute(left, right);
     }
 }

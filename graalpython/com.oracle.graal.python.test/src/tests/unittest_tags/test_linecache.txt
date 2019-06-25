@@ -1,0 +1,12 @@
+*GetLineTestsBadData.test_getline
+*GetLineTestsBadData.test_getlines
+*LineCacheTests.test_checkcache
+*LineCacheTests.test_clearcache
+*LineCacheTests.test_getline
+*LineCacheTests.test_lazycache_bad_filename
+*LineCacheTests.test_lazycache_check
+*LineCacheTests.test_lazycache_no_globals
+*LineCacheTests.test_lazycache_provide_after_failed_lookup
+*LineCacheTests.test_lazycache_smoke
+*LineCacheTests.test_memoryerror
+*LineCacheTests.test_no_ending_newline

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -46,8 +46,9 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "math")
@@ -109,7 +111,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     public abstract static class MathDoubleUnaryBuiltinNode extends MathUnaryBuiltinNode {
 
-        public abstract double executeObject(Object value);
+        public abstract double executeObject(VirtualFrame frame, Object value);
 
         public double count(@SuppressWarnings("unused") double value) {
             throw raise(NotImplementedError, "count function in Math");
@@ -131,14 +133,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double doGeneral(Object value,
+        public double doGeneral(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return count(convertToFloat.execute(value));
+            return count(convertToFloat.execute(frame, value));
         }
     }
 
     // math.sqrt
-    @Builtin(name = "sqrt", fixedNumOfPositionalArgs = 1, doc = "Return the square root of x.")
+    @Builtin(name = "sqrt", minNumOfPositionalArgs = 1, doc = "Return the square root of x.")
     @GenerateNodeFactory
     public abstract static class SqrtNode extends MathDoubleUnaryBuiltinNode {
 
@@ -174,7 +176,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Override
         public double doPI(PInt value) {
             BigInteger bValue = value.getValue();
-            checkMathDomainError(bValue.compareTo(BigInteger.ZERO) == -1);
+            checkMathDomainError(bValue.compareTo(BigInteger.ZERO) < 0);
             return sqrtBigNumber(bValue).doubleValue();
         }
 
@@ -186,7 +188,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "exp", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "exp", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ExpNode extends MathDoubleUnaryBuiltinNode {
 
@@ -199,7 +201,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "expm1", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "expm1", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class Expm1Node extends MathDoubleUnaryBuiltinNode {
 
@@ -212,7 +214,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ceil", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "ceil", minNumOfPositionalArgs = 1)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class CeilNode extends MathUnaryBuiltinNode {
@@ -244,11 +246,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public Object ceil(PFloat value,
+        public Object ceil(VirtualFrame frame, PFloat value,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
-            Object result = dispatchCeil.executeObject(value);
-            if (PNone.NO_VALUE.equals(result)) {
+            Object result = dispatchCeil.executeObject(frame, value);
+            if (PNone.NO_VALUE == result) {
                 if (MathGuards.fitLong(value.getValue())) {
                     return ceilLong(value.getValue());
                 } else {
@@ -259,25 +260,25 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object ceil(PInt value,
+        public Object ceil(VirtualFrame frame, PInt value,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
-            return dispatchCeil.executeObject(value);
+            return dispatchCeil.executeObject(frame, value);
         }
 
         @Specialization(guards = {"!isNumber(value)"})
-        public Object ceil(Object value,
+        public Object ceil(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
-            Object result = dispatchCeil.executeObject(value);
+            Object result = dispatchCeil.executeObject(frame, value);
             if (result == PNone.NO_VALUE) {
-                return ceil(convertToFloat.execute(value));
+                return ceil(convertToFloat.execute(frame, value));
             }
             return result;
         }
 
     }
 
-    @Builtin(name = "copysign", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "copysign", minNumOfPositionalArgs = 2)
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -329,19 +330,19 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(magnitude) || !isNumber(sign)")
-        public double copySignOO(Object magnitude, Object sign,
+        public double copySignOO(VirtualFrame frame, Object magnitude, Object sign,
                         @Cached("create()") CastToDoubleNode castMagnitudeNode,
                         @Cached("create()") CastToDoubleNode castSignNode) {
-            return copySignDD(castMagnitudeNode.execute(magnitude), castSignNode.execute(sign));
+            return copySignDD(castMagnitudeNode.execute(frame, magnitude), castSignNode.execute(frame, sign));
         }
     }
 
-    @Builtin(name = "factorial", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "factorial", minNumOfPositionalArgs = 1)
     @ImportStatic({Double.class, MathGuards.class})
     @GenerateNodeFactory
     public abstract static class FactorialNode extends PythonUnaryBuiltinNode {
 
-        @CompilationFinal(dimensions = 1) protected final static long[] SMALL_FACTORIALS = new long[]{
+        @CompilationFinal(dimensions = 1) protected static final long[] SMALL_FACTORIALS = new long[]{
                         1, 1, 2, 6, 24, 120, 720, 5040, 40320,
                         362880, 3628800, 39916800, 479001600,
                         6227020800L, 87178291200L, 1307674368000L,
@@ -490,10 +491,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public Object factorialObject(Object value,
+        public Object factorialObject(VirtualFrame frame, Object value,
                         @Cached("create()") CastToIntegerFromIntNode castNode,
                         @Cached("create()") FactorialNode recursiveNode) {
-            return recursiveNode.execute(castNode.execute(value));
+            return recursiveNode.execute(frame, castNode.execute(value));
         }
 
         protected boolean isInteger(double value) {
@@ -521,7 +522,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "floor", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "floor", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class FloorNode extends PythonUnaryBuiltinNode {
@@ -556,34 +557,43 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public Object floorPF(PFloat value,
+        public Object floorPF(VirtualFrame frame, PFloat value,
                         @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor) {
-            Object result = dispatchFloor.executeObject(value);
+            Object result = dispatchFloor.executeObject(frame, value);
             if (result == PNone.NO_VALUE) {
                 if (value.getValue() <= Long.MAX_VALUE) {
-                    result = Math.floor(value.getValue());
+                    result = floor(value.getValue());
                 } else {
-                    result = factory().createInt(BigDecimal.valueOf(Math.floor(value.getValue())).toBigInteger());
+                    result = factory().createInt(createBigInteger(value));
                 }
             }
             return result;
         }
 
+        @TruffleBoundary
+        private static BigInteger createBigInteger(PFloat value) {
+            return BigDecimal.valueOf(Math.floor(value.getValue())).toBigInteger();
+        }
+
+        @TruffleBoundary
+        private static double floor(double value) {
+            return Math.floor(value);
+        }
+
         @Specialization
-        public Object floorPI(PInt value,
+        public Object floorPI(VirtualFrame frame, PInt value,
                         @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor) {
-            return dispatchFloor.executeObject(value);
+            return dispatchFloor.executeObject(frame, value);
         }
 
         @Specialization(guards = {"!isNumber(value)"})
-        public Object floor(Object value,
+        public Object floor(VirtualFrame frame, Object value,
                         @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor,
                         @Cached("create()") CastToDoubleNode castNode,
                         @Cached("create()") FloorNode recursiveNode) {
-            Object result = dispatchFloor.executeObject(value);
-            if (PNone.NO_VALUE.equals(result)) {
-                return recursiveNode.execute(castNode.execute(value));
+            Object result = dispatchFloor.executeObject(frame, value);
+            if (PNone.NO_VALUE == result) {
+                return recursiveNode.execute(frame, castNode.execute(frame, value));
             }
             return result;
         }
@@ -593,7 +603,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fmod", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "fmod", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -673,12 +683,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(left) || !isNumber(right)"})
-        public double fmodLO(Object left, Object right,
+        public double fmodLO(VirtualFrame frame, Object left, Object right,
                         @Cached("create()") CastToDoubleNode castLeftNode,
                         @Cached("create()") CastToDoubleNode castRightNode,
                         @Cached("createBinaryProfile()") ConditionProfile infProfile,
                         @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
-            return fmodDD(castLeftNode.execute(left), castRightNode.execute(right), infProfile, zeroProfile);
+            return fmodDD(castLeftNode.execute(frame, left), castRightNode.execute(frame, right), infProfile, zeroProfile);
         }
 
         protected void raiseMathDomainError(boolean con) {
@@ -689,7 +699,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "frexp", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "frexp", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -757,13 +767,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public PTuple frexpO(Object value,
+        public PTuple frexpO(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return frexpD(convertToFloat.execute(value));
+            return frexpD(convertToFloat.execute(frame, value));
         }
     }
 
-    @Builtin(name = "isnan", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "isnan", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -784,19 +794,19 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(Object value,
+        public boolean isinf(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return isNan(convertToFloat.execute(value));
+            return isNan(convertToFloat.execute(frame, value));
         }
     }
 
-    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, keywordArguments = {"rel_tol", "abs_tol"})
+    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, parameterNames = {"a", "b", "rel_tol", "abs_tol"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class IsCloseNode extends PythonBuiltinNode {
-        private static double DEFAULT_REL = 1e-09;
-        private static double DEFAULT_ABS = 0.0;
+        private static final double DEFAULT_REL = 1e-09;
+        private static final double DEFAULT_ABS = 0.0;
 
         @Child private CastToDoubleNode castANode;
         @Child private CastToDoubleNode castBNode;
@@ -870,7 +880,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public boolean isClose(Object a, Object b, Object rel_tol, Object abs_tol) {
+        public boolean isClose(VirtualFrame frame, Object a, Object b, Object rel_tol, Object abs_tol) {
             if (castANode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castANode = insert(CastToDoubleNode.create());
@@ -878,23 +888,23 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 castRelNode = insert(CastToDoubleNode.create());
                 castAbsNode = insert(CastToDoubleNode.create());
             }
-            double a_value = castANode.execute(a);
-            double b_value = castBNode.execute(b);
-            double rel_tol_value = PGuards.isNoValue(rel_tol) ? DEFAULT_REL : castRelNode.execute(rel_tol);
-            double abs_tol_value = PGuards.isNoValue(abs_tol) ? DEFAULT_ABS : castAbsNode.execute(abs_tol);
+            double a_value = castANode.execute(frame, a);
+            double b_value = castBNode.execute(frame, b);
+            double rel_tol_value = PGuards.isNoValue(rel_tol) ? DEFAULT_REL : castRelNode.execute(frame, rel_tol);
+            double abs_tol_value = PGuards.isNoValue(abs_tol) ? DEFAULT_ABS : castAbsNode.execute(frame, abs_tol);
             return isCloseDouble(a_value, b_value, rel_tol_value, abs_tol_value);
         }
 
     }
 
-    @Builtin(name = "ldexp", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "ldexp", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class LdexpNode extends PythonBinaryBuiltinNode {
 
         private static final String EXPECTED_INT_MESSAGE = "Expected an int as second argument to ldexp.";
 
-        abstract double execute(double mantissa, Object exp);
+        abstract double execute(VirtualFrame frame, double mantissa, Object exp);
 
         private static int makeInt(long x) {
             long result = x;
@@ -981,14 +991,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Child private LdexpNode recursiveNode;
 
         @Fallback
-        public double ldexpOO(Object mantissa, Object exp) {
+        public double ldexpOO(VirtualFrame frame, Object mantissa, Object exp) {
             if (PGuards.isInteger(exp) || PGuards.isPInt(exp) || (exp instanceof Boolean)) {
                 if (castNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castNode = insert(CastToDoubleNode.create());
                     recursiveNode = insert(LdexpNode.create());
                 }
-                return recursiveNode.execute(castNode.execute(mantissa), exp);
+                return recursiveNode.execute(frame, castNode.execute(frame, mantissa), exp);
             }
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
@@ -999,14 +1009,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "modf", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "modf", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class ModfNode extends MathUnaryBuiltinNode {
 
         @Specialization
-        public PTuple modfD(double value) {
+        PTuple modfD(double value) {
             if (!Double.isFinite(value)) {
                 if (Double.isInfinite(value)) {
                     return factory().createTuple(new Object[]{Math.copySign(0., value), value});
@@ -1020,26 +1030,39 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PTuple modfL(long value) {
+        PTuple modfL(long value) {
             return modfD(value);
         }
 
         @Specialization
-        public PTuple modfPI(PInt value) {
+        PTuple modfPI(PInt value) {
             return modfD(value.doubleValue());
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public PTuple modfO(Object value,
+        PTuple modfO(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloatNode) {
-            return modfD(convertToFloatNode.execute(value));
+            return modfD(convertToFloatNode.execute(frame, value));
         }
     }
 
-    @Builtin(name = "fsum", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "fsum", minNumOfPositionalArgs = 1)
     @ImportStatic(PGuards.class)
     @GenerateNodeFactory
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @SuppressWarnings("try")
+        double doIt(VirtualFrame frame, Object iterable,
+                        @Cached GetIteratorNode getIterator,
+                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
+                        @Cached CastToDoubleNode toFloat,
+                        @Cached IsBuiltinClassProfile stopProfile) {
+            Object iterator = getIterator.executeWith(frame, iterable);
+            try (DefaultContextManager cm = withGlobalState(frame)) {
+                return fsum(iterator, next, toFloat, stopProfile);
+            }
+        }
 
         /*
          * This implementation is taken from CPython. The performance is not good. Should be faster.
@@ -1051,21 +1074,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
          */
-        @Specialization
         @TruffleBoundary
-        public double doIt(Object iterable,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
-                        @Cached("create()") CastToDoubleNode toFloat,
-                        @Cached("create()") IsBuiltinClassProfile stopProfile) {
-            Object iterator = getIterator.executeWith(iterable);
+        private double fsum(Object iterator, LookupAndCallUnaryNode next, CastToDoubleNode toFloat, IsBuiltinClassProfile stopProfile) {
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
             int i, j, n = 0, arayLength = 32;
             double[] p = new double[arayLength];
             while (true) {
                 try {
-                    x = toFloat.execute(next.executeObject(iterator));
+                    // NOTE: passing 'null' frame is fine because we take care of the global state
+                    // in the caller
+                    x = toFloat.execute(null, next.executeObject(null, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(stopProfile);
                     break;
@@ -1134,8 +1153,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     hi = x + y;
                     yr = hi - x;
                     lo = y - yr;
-                    if (lo != 0.0)
+                    if (lo != 0.0) {
                         break;
+                    }
                 }
                 /*
                  * Make half-even rounding work across multiple partials. Needed so that sum([1e-16,
@@ -1157,7 +1177,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gcd", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "gcd", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
@@ -1216,13 +1236,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
-        Object gcd(Object x, Object y,
+        Object gcd(VirtualFrame frame, Object x, Object y,
                         @Cached("create()") CastToIntegerFromIndexNode xCast,
                         @Cached("create()") CastToIntegerFromIndexNode yCast,
                         @Cached("create()") GcdNode recursiveNode) {
-            Object xValue = xCast.execute(x);
-            Object yValue = yCast.execute(y);
-            return recursiveNode.execute(xValue, yValue);
+            Object xValue = xCast.execute(frame, x);
+            Object yValue = yCast.execute(frame, y);
+            return recursiveNode.execute(frame, xValue, yValue);
         }
 
         public static GcdNode create() {
@@ -1230,7 +1250,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "acos", fixedNumOfPositionalArgs = 1, doc = "Return the arc cosine (measured in radians) of x.")
+    @Builtin(name = "acos", minNumOfPositionalArgs = 1, doc = "Return the arc cosine (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AcosNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1242,7 +1262,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "acosh", fixedNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic cosine of x.")
+    @Builtin(name = "acosh", minNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic cosine of x.")
     @GenerateNodeFactory
     public abstract static class AcoshNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1251,7 +1271,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Override
         public double doPI(PInt value) {
             BigInteger bValue = value.getValue();
-            checkMathDomainError(bValue.compareTo(BigInteger.ONE) == -1);
+            checkMathDomainError(bValue.compareTo(BigInteger.ONE) < 0);
 
             BigDecimal sqrt = SqrtNode.sqrtBigNumber(bValue.multiply(bValue).subtract(BigInteger.ONE));
             BigDecimal bd = new BigDecimal(bValue);
@@ -1266,7 +1286,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "asin", fixedNumOfPositionalArgs = 1, doc = "Return the arc sine (measured in radians) of x.")
+    @Builtin(name = "asin", minNumOfPositionalArgs = 1, doc = "Return the arc sine (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AsinNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1278,7 +1298,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cos", fixedNumOfPositionalArgs = 1, doc = "Return the cosine of x (measured in radians).")
+    @Builtin(name = "cos", minNumOfPositionalArgs = 1, doc = "Return the cosine of x (measured in radians).")
     @GenerateNodeFactory
     public abstract static class CosNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1289,7 +1309,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cosh", fixedNumOfPositionalArgs = 1, doc = "Return the hyperbolic cosine of x.")
+    @Builtin(name = "cosh", minNumOfPositionalArgs = 1, doc = "Return the hyperbolic cosine of x.")
     @GenerateNodeFactory
     public abstract static class CoshNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1302,7 +1322,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sin", fixedNumOfPositionalArgs = 1, doc = "Return the sine of x (measured in radians).")
+    @Builtin(name = "sin", minNumOfPositionalArgs = 1, doc = "Return the sine of x (measured in radians).")
     @GenerateNodeFactory
     public abstract static class SinNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1313,7 +1333,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sinh", fixedNumOfPositionalArgs = 1, doc = "Return the hyperbolic sine of x.")
+    @Builtin(name = "sinh", minNumOfPositionalArgs = 1, doc = "Return the hyperbolic sine of x.")
     @GenerateNodeFactory
     public abstract static class SinhNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1326,7 +1346,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tan", fixedNumOfPositionalArgs = 1, doc = "Return the tangent of x (measured in radians).")
+    @Builtin(name = "tan", minNumOfPositionalArgs = 1, doc = "Return the tangent of x (measured in radians).")
     @GenerateNodeFactory
     public abstract static class TanNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1337,7 +1357,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tanh", fixedNumOfPositionalArgs = 1, doc = "Return the hyperbolic tangent of x.")
+    @Builtin(name = "tanh", minNumOfPositionalArgs = 1, doc = "Return the hyperbolic tangent of x.")
     @GenerateNodeFactory
     public abstract static class TanhNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1348,7 +1368,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "atan", fixedNumOfPositionalArgs = 1, doc = "Return the arc tangent (measured in radians) of x.")
+    @Builtin(name = "atan", minNumOfPositionalArgs = 1, doc = "Return the arc tangent (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AtanNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1359,7 +1379,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "atanh", fixedNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic tangent of x.")
+    @Builtin(name = "atanh", minNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic tangent of x.")
     @GenerateNodeFactory
     public abstract static class AtanhNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1374,7 +1394,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "asinh", fixedNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic sine of x.")
+    @Builtin(name = "asinh", minNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic sine of x.")
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1390,7 +1410,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isfinite", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "isfinite", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1412,13 +1432,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(Object value,
+        public boolean isinf(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return isfinite(convertToFloat.execute(value));
+            return isfinite(convertToFloat.execute(frame, value));
         }
     }
 
-    @Builtin(name = "isinf", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "isinf", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1440,9 +1460,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(Object value,
+        public boolean isinf(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return isinf(convertToFloat.execute(value));
+            return isinf(convertToFloat.execute(frame, value));
         }
     }
 
@@ -1472,15 +1492,15 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return baseCastNode;
         }
 
-        private double executeRecursiveLogNode(Object value, Object base) {
+        private double executeRecursiveLogNode(VirtualFrame frame, Object value, Object base) {
             if (recLogNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recLogNode = insert(LogNode.create());
             }
-            return recLogNode.executeObject(value, base);
+            return recLogNode.executeObject(frame, value, base);
         }
 
-        public abstract double executeObject(Object value, Object base);
+        public abstract double executeObject(VirtualFrame frame, Object value, Object base);
 
         private static final double LOG2 = Math.log(2.0);
 
@@ -1525,7 +1545,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
             BigInteger bValue = value.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1);
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0);
             return logBigInteger(bValue);
         }
 
@@ -1583,7 +1603,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit,
                         @Cached("createBinaryProfile()") ConditionProfile divByZero) {
             BigInteger bValue = value.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1 || base <= 0);
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || base <= 0);
             double logBase = countBase(base, divByZero);
             return logBigInteger(bValue) / logBase;
         }
@@ -1606,34 +1626,34 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile divByZero) {
             BigInteger bValue = value.getValue();
             BigInteger bBase = base.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1 || bBase.compareTo(BigInteger.ZERO) <= 0);
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
             double logBase = countBase(bBase, divByZero);
             return logBigInteger(bValue) / logBase;
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double logO(Object value, PNone novalue) {
-            return executeRecursiveLogNode(getValueCastNode().execute(value), novalue);
+        public double logO(VirtualFrame frame, Object value, PNone novalue) {
+            return executeRecursiveLogNode(frame, getValueCastNode().execute(frame, value), novalue);
         }
 
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
-        public double logOO(Object value, Object base) {
-            return executeRecursiveLogNode(getValueCastNode().execute(value), getBaseCastNode().execute(base));
+        public double logOO(VirtualFrame frame, Object value, Object base) {
+            return executeRecursiveLogNode(frame, getValueCastNode().execute(frame, value), getBaseCastNode().execute(frame, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logLO(long value, Object base) {
-            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
+        public double logLO(VirtualFrame frame, long value, Object base) {
+            return executeRecursiveLogNode(frame, value, getBaseCastNode().execute(frame, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logDO(double value, Object base) {
-            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
+        public double logDO(VirtualFrame frame, double value, Object base) {
+            return executeRecursiveLogNode(frame, value, getBaseCastNode().execute(frame, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logPIO(PInt value, Object base) {
-            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
+        public double logPIO(VirtualFrame frame, PInt value, Object base) {
+            return executeRecursiveLogNode(frame, value, getBaseCastNode().execute(frame, base));
         }
 
         private void raiseMathError(ConditionProfile doNotFit, boolean con) {
@@ -1647,7 +1667,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "log1p", fixedNumOfPositionalArgs = 1, doc = "Return the natural logarithm of 1+x (base e).\n\nThe result is computed in a way which is accurate for x near zero.")
+    @Builtin(name = "log1p", minNumOfPositionalArgs = 1, doc = "Return the natural logarithm of 1+x (base e).\n\nThe result is computed in a way which is accurate for x near zero.")
     @GenerateNodeFactory
     public abstract static class Log1pNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1663,7 +1683,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "log2", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "log2", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class Log2Node extends MathDoubleUnaryBuiltinNode {
 
@@ -1709,7 +1729,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "log10", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "log10", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class Log10Node extends MathDoubleUnaryBuiltinNode {
 
@@ -1745,7 +1765,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fabs", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "fabs", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1769,13 +1789,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double fabs(Object value,
+        public double fabs(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode castValueNode) {
-            return fabs(castValueNode.execute(value));
+            return fabs(castValueNode.execute(frame, value));
         }
     }
 
-    @Builtin(name = "pow", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "pow", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1871,21 +1891,21 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(left)||!isNumber(right)"})
-        double pow(Object left, Object right,
+        double pow(VirtualFrame frame, Object left, Object right,
                         @Cached("create()") CastToDoubleNode convertLeftFloat,
                         @Cached("create()") CastToDoubleNode convertRightFloat) {
-            return pow(convertLeftFloat.execute(left), convertRightFloat.execute(right));
+            return pow(convertLeftFloat.execute(frame, left), convertRightFloat.execute(frame, right));
         }
     }
 
-    @Builtin(name = "trunc", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "trunc", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class TruncNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object trunc(Object obj,
+        Object trunc(VirtualFrame frame, Object obj,
                         @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTrunc) {
-            Object result = callTrunc.executeObject(obj);
+            Object result = callTrunc.executeObject(frame, obj);
             if (result == PNone.NO_VALUE) {
                 raise(TypeError, "type %p doesn't define __trunc__ method", obj);
             }
@@ -1893,7 +1913,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "atan2", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "atan2", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1945,14 +1965,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(left) || !isNumber(right)")
-        double atan2(Object left, Object right,
+        double atan2(VirtualFrame frame, Object left, Object right,
                         @Cached("create()") CastToDoubleNode convertLeftFloat,
                         @Cached("create()") CastToDoubleNode convertRightFloat) {
-            return atan2DD(convertLeftFloat.execute(left), convertRightFloat.execute(right));
+            return atan2DD(convertLeftFloat.execute(frame, left), convertRightFloat.execute(frame, right));
         }
     }
 
-    @Builtin(name = "degrees", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "degrees", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DegreesNode extends MathDoubleUnaryBuiltinNode {
         private static final double RAD_TO_DEG = 180.0 / Math.PI;
@@ -1964,7 +1984,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "radians", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "radians", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RadiansNode extends MathDoubleUnaryBuiltinNode {
         private static final double DEG_TO_RAD = Math.PI / 180.0;
@@ -1976,7 +1996,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "hypot", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "hypot", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
@@ -2033,14 +2053,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(objectX) || !isNumber(objectY)")
-        public double hypotOO(Object objectX, Object objectY,
+        public double hypotOO(VirtualFrame frame, Object objectX, Object objectY,
                         @Cached("create()") CastToDoubleNode xCastNode,
                         @Cached("create()") CastToDoubleNode yCastNode) {
-            return hypotDD(xCastNode.execute(objectX), yCastNode.execute(objectY));
+            return hypotDD(xCastNode.execute(frame, objectX), yCastNode.execute(frame, objectY));
         }
     }
 
-    @Builtin(name = "erf", fixedNumOfPositionalArgs = 1, doc = "Error function at x.")
+    @Builtin(name = "erf", minNumOfPositionalArgs = 1, doc = "Error function at x.")
     @GenerateNodeFactory
     public abstract static class ErfNode extends MathDoubleUnaryBuiltinNode {
         // Adapted implementation from CPython
@@ -2105,16 +2125,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return x;
             }
             absx = Math.abs(x);
-            if (absx < ERF_SERIES_CUTOFF)
+            if (absx < ERF_SERIES_CUTOFF) {
                 return m_erf_series(x);
-            else {
+            } else {
                 cf = m_erfc_contfrac(absx);
                 return x > 0.0 ? 1.0 - cf : cf - 1.0;
             }
         }
     }
 
-    @Builtin(name = "erfc", fixedNumOfPositionalArgs = 1, doc = "Error function at x.")
+    @Builtin(name = "erfc", minNumOfPositionalArgs = 1, doc = "Error function at x.")
     @GenerateNodeFactory
     public abstract static class ErfcNode extends ErfNode {
         // Adapted implementation from CPython
@@ -2127,16 +2147,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return x;
             }
             absx = Math.abs(x);
-            if (absx < ErfNode.ERF_SERIES_CUTOFF)
+            if (absx < ErfNode.ERF_SERIES_CUTOFF) {
                 return 1.0 - m_erf_series(x);
-            else {
+            } else {
                 cf = m_erfc_contfrac(absx);
                 return x > 0.0 ? cf : 2.0 - cf;
             }
         }
     }
 
-    @Builtin(name = "gamma", fixedNumOfPositionalArgs = 1, doc = "Gamma function at x")
+    @Builtin(name = "gamma", minNumOfPositionalArgs = 1, doc = "Gamma function at x")
     @GenerateNodeFactory
     public abstract static class GammaNode extends MathDoubleUnaryBuiltinNode {
         // Adapted implementation from CPython
@@ -2144,7 +2164,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final int LANCZOS_N = 13;
         protected static final double LANCZOS_G = 6.024680040776729583740234375;
         private static final double LANZOS_G_MINUS_HALF = 5.524680040776729583740234375;
-        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_NUM_COEFFS = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] LANCZOS_NUM_COEFFS = new double[]{
                         23531376880.410759688572007674451636754734846804940,
                         42919803642.649098768957899047001988850926355848959,
                         35711959237.355668049440185451547166705960488635843,
@@ -2160,11 +2180,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         2.5066282746310002701649081771338373386264310793408
         };
 
-        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_DEN_COEFFS = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] LANCZOS_DEN_COEFFS = new double[]{
                         0.0, 39916800.0, 120543840.0, 150917976.0, 105258076.0, 45995730.0,
                         13339535.0, 2637558.0, 357423.0, 32670.0, 1925.0, 66.0, 1.0};
 
-        @CompilationFinal(dimensions = 1) protected final static double[] GAMMA_INTEGRAL = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] GAMMA_INTEGRAL = new double[]{
                         1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0, 5040.0, 40320.0, 362880.0,
                         3628800.0, 39916800.0, 479001600.0, 6227020800.0, 87178291200.0,
                         1307674368000.0, 20922789888000.0, 355687428096000.0,
@@ -2229,6 +2249,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     den = den / x + LANCZOS_DEN_COEFFS[i];
                 }
             }
+            assert den > 0.0 : "den cannot be zero, because LANCZOS_DEN_COEFFS are added";
             return num / den;
         }
 
@@ -2239,9 +2260,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
             /* special cases */
             if (!Double.isFinite(x)) {
-                if (Double.isNaN(x) || x > 0.0)
+                if (Double.isNaN(x) || x > 0.0) {
                     return x; /* tgamma(nan) = nan, tgamma(inf) = inf */
-                else {
+                } else {
                     checkMathDomainError(false);
                 }
             }
@@ -2250,8 +2271,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
             /* integer arguments */
             if (x == Math.floor(x)) {
                 checkMathDomainError(x < 0.0);
-                if (x <= NGAMMA_INTEGRAL)
+                if (x <= NGAMMA_INTEGRAL) {
                     return GAMMA_INTEGRAL[(int) x - 1];
+                }
             }
             absx = Math.abs(x);
 
@@ -2313,7 +2335,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "lgamma", fixedNumOfPositionalArgs = 1, doc = "Natural logarithm of absolute value of Gamma function at x.")
+    @Builtin(name = "lgamma", minNumOfPositionalArgs = 1, doc = "Natural logarithm of absolute value of Gamma function at x.")
     @GenerateNodeFactory
     public abstract static class LgammaNode extends GammaNode {
         // Adapted implementation from CPython

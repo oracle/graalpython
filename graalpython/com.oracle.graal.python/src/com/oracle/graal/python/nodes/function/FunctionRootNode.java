@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,11 +28,15 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
-import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -40,28 +44,33 @@ import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
-public class FunctionRootNode extends PClosureFunctionRootNode implements CellSupplier {
-
+public class FunctionRootNode extends PClosureFunctionRootNode {
+    private final ContextReference<PythonContext> contextRef;
     private final PCell[] cells;
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
     private final SourceSection sourceSection;
     private final boolean isGenerator;
     private final ValueProfile generatorFrameProfile;
-    private boolean isRewritten = false;
+    private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
 
     @Child private ExpressionNode body;
-    private ExpressionNode uninitializedBody;
+    @Child private CalleeContext calleeContext = CalleeContext.create();
 
-    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots executionCellSlots) {
-        super(language, frameDescriptor, executionCellSlots);
+    private ExpressionNode uninitializedBody;
+    private boolean isRewritten = false;
+
+    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor, ExpressionNode body,
+                    ExecutionCellSlots executionCellSlots, Signature signature) {
+        super(language, frameDescriptor, executionCellSlots, signature);
+        this.contextRef = language.getContextReference();
         this.executionCellSlots = executionCellSlots;
         this.cells = new PCell[this.cellVarSlots.length];
 
@@ -69,21 +78,14 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         assert sourceSection != null;
         this.functionName = functionName;
         this.isGenerator = isGenerator;
-        this.body = NodeUtil.cloneNode(body);
+        this.body = new InnerRootNode(this, NodeUtil.cloneNode(body));
         this.uninitializedBody = NodeUtil.cloneNode(body);
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
+        this.isRewritten = isRewritten;
     }
 
-    public String getFunctionName() {
-        return functionName;
-    }
-
-    public ExpressionNode getBody() {
-        return body;
-    }
-
-    public ExpressionNode getUninitializedBody() {
-        return uninitializedBody;
+    public FunctionRootNode copyWithNewSignature(Signature newSignature) {
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
     }
 
     @Override
@@ -91,19 +93,18 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         return functionName;
     }
 
-    @Override
     public PCell[] getCells() {
         return cells;
     }
 
-    @Override
     public FrameSlot[] getCellVarSlots() {
         return cellVarSlots;
     }
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots);
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isRewritten, getFrameDescriptor(), uninitializedBody,
+                        executionCellSlots, getSignature());
     }
 
     @ExplodeLoop
@@ -117,7 +118,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
                 cell = (PCell) FrameUtil.getObjectSafe(frame, frameSlot);
             }
             if (cell == null) {
-                cell = new PCell();
+                cell = new PCell(cellEffectivelyFinalAssumptions[i]);
             }
 
             // store the cell as a local var
@@ -138,8 +139,15 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public Object execute(VirtualFrame frame) {
-        initClosureAndCellVars(frame);
-        return body.execute(frame);
+        CalleeContext.enter(frame, customLocalsProfile);
+        if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
+            contextRef.get().triggerAsyncActions(frame, this);
+        }
+        try {
+            return body.execute(frame);
+        } finally {
+            calleeContext.exit(frame, this);
+        }
     }
 
     @Override
@@ -159,5 +167,18 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     public void setRewritten() {
         this.isRewritten = true;
+
+        // we need to update the uninitialized body as well
+        this.uninitializedBody = NodeUtil.cloneNode(body);
+    }
+
+    @Override
+    public void initializeFrame(VirtualFrame frame) {
+        initClosureAndCellVars(frame);
+    }
+
+    @Override
+    public boolean isPythonInternal() {
+        return isRewritten;
     }
 }

@@ -1,0 +1,10 @@
+test_cmp
+test_concat
+test_constructor
+test_contains
+test_eviltuple
+test_extended_getslice
+test_hash
+test_reduce
+test_repeat
+test_tuple

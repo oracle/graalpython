@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import unittest
+import sys
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -461,6 +462,18 @@ def test_endswith():
     assert not b.endswith(b"no")
 
 
+def test_ord():
+    b = b"123"
+    assert ord(b[0:1]) == 49
+    assert ord(bytearray(b)[0:1]) == 49
+    try:
+        ord(b)
+    except TypeError as e:
+        assert "expected a character" in str(e), str(e)
+    else:
+        assert False
+
+
 def test_find():
     b = b'mississippi'
     i = 105
@@ -537,7 +550,7 @@ def test_strip_bytes():
     assert b'abc'.rstrip(b'ac') == b'ab'
 
 class BaseTestSplit:
-    
+
     def test_string_error(self):
         self.assertRaises(TypeError, self.type2test(b'a b').split, ' ')
         self.assertRaises(TypeError, self.type2test(b'a b').rsplit, ' ')
@@ -600,10 +613,10 @@ class BaseTestSplit:
                 self.value = value
             def __index__(self):
                 return self.value
-        
+
         self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=MyIndexable(1)), [b'ahoj', b'jak\tse\nmas'])
         self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=MyIndexable(1)), [b'ahoj jak\tse', b'mas'])
-        
+
 class BytesSplitTest(BaseTestSplit, unittest.TestCase):
     type2test = bytes
 
@@ -629,3 +642,70 @@ def test_add_mv_to_bytearray():
     mv = memoryview(b'world')
     ba += mv
     assert ba == b'hello world'
+
+class BaseLikeBytes:
+
+    def test_maketrans(self):
+        transtable = b'\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037 !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`xyzdefghijklmnopqrstuvwxyz{|}~\177\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357\360\361\362\363\364\365\366\367\370\371\372\373\374\375\376\377'
+        self.assertEqual(self.type2test.maketrans(b'abc', b'xyz'), transtable)
+        transtable = b'\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037 !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\177\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357\360\361\362\363\364\365\366\367\370\371\372\373\374xyz'
+        self.assertEqual(self.type2test.maketrans(b'\375\376\377', b'xyz'), transtable)
+        self.assertRaises(ValueError, self.type2test.maketrans, b'abc', b'xyzq')
+        self.assertRaises(TypeError, self.type2test.maketrans, 'abc', 'def')
+
+    def test_translate(self):
+        b = self.type2test(b'hello')
+        rosetta = bytearray(range(256))
+        rosetta[ord('o')] = ord('e')
+
+        self.assertRaises(TypeError, b.translate)
+        self.assertRaises(TypeError, b.translate, None, None)
+        self.assertRaises(ValueError, b.translate, bytes(range(255)))
+
+        c = b.translate(rosetta, b'hello')
+        self.assertEqual(b, b'hello')
+        self.assertIsInstance(c, self.type2test)
+
+        c = b.translate(rosetta)
+        d = b.translate(rosetta, b'')
+        self.assertEqual(c, d)
+        self.assertEqual(c, b'helle')
+
+        c = b.translate(rosetta, b'l')
+        self.assertEqual(c, b'hee')
+
+        c = b.translate(None, b'e')
+        self.assertEqual(c, b'hllo')
+
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            # test delete as a keyword argument
+            c = b.translate(rosetta, delete=b'')
+            self.assertEqual(c, b'helle')
+            c = b.translate(rosetta, delete=b'l')
+            self.assertEqual(c, b'hee')
+            c = b.translate(None, delete=b'e')
+            self.assertEqual(c, b'hllo')
+
+class BytesTest(BaseLikeBytes, unittest.TestCase):
+    type2test = bytes
+
+    def test_translate_no_change(self):
+        b = b'ahoj'
+        self.assertIs(b, b.translate(None))
+        self.assertIs(b, b.translate(None, b''))
+        table = bytearray(range(256))
+        self.assertIs(b, b.translate(table))
+        self.assertIs(b, b.translate(table), b'')
+        self.assertIs(b, b.translate(table), b'klp')
+
+class ByteArrayTest(BaseLikeBytes, unittest.TestCase):
+    type2test = bytearray
+
+    def test_translate_no_change2(self):
+        b = bytearray(b'ahoj')
+        self.assertIsNot(b, b.translate(None))
+        self.assertIsNot(b, b.translate(None, b''))
+        table = bytearray(range(256))
+        self.assertIsNot(b, b.translate(table))
+        self.assertIsNot(b, b.translate(table), b'')
+        self.assertIsNot(b, b.translate(table), b'klp')

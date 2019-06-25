@@ -1,13 +1,17 @@
+import contextlib
+import errno
 import importlib
-import shutil
-import stat
-import sys
+import io
 import os
-import unittest
+import shutil
 import socket
+import stat
+import subprocess
+import sys
 import tempfile
 import textwrap
-import errno
+import time
+import unittest
 from test import support
 from test.support import script_helper
 
@@ -157,8 +161,11 @@ class TestSupport(unittest.TestCase):
         finally:
             shutil.rmtree(path)
 
-        expected = ['tests may fail, unable to create temp dir: ' + path]
-        self.assertEqual(warnings, expected)
+        self.assertEqual(len(warnings), 1, warnings)
+        warn = warnings[0]
+        self.assertTrue(warn.startswith(f'tests may fail, unable to create '
+                                        f'temporary directory {path!r}: '),
+                        warn)
 
     @unittest.skipUnless(hasattr(os, "fork"), "test requires os.fork")
     def test_temp_dir__forked_child(self):
@@ -226,8 +233,12 @@ class TestSupport(unittest.TestCase):
                     self.assertEqual(os.getcwd(), new_cwd)
                 warnings = [str(w.message) for w in recorder.warnings]
 
-        expected = ['tests may fail, unable to change CWD to: ' + bad_dir]
-        self.assertEqual(warnings, expected)
+        self.assertEqual(len(warnings), 1, warnings)
+        warn = warnings[0]
+        self.assertTrue(warn.startswith(f'tests may fail, unable to change '
+                                        f'the current working directory '
+                                        f'to {bad_dir!r}: '),
+                        warn)
 
     # Tests for change_cwd()
 
@@ -238,7 +249,13 @@ class TestSupport(unittest.TestCase):
             with support.change_cwd(path=path, quiet=True):
                 pass
             messages = [str(w.message) for w in recorder.warnings]
-        self.assertEqual(messages, ['tests may fail, unable to change CWD to: ' + path])
+
+        self.assertEqual(len(messages), 1, messages)
+        msg = messages[0]
+        self.assertTrue(msg.startswith(f'tests may fail, unable to change '
+                                       f'the current working directory '
+                                       f'to {path!r}: '),
+                        msg)
 
     # Tests for temp_cwd()
 
@@ -247,7 +264,7 @@ class TestSupport(unittest.TestCase):
         with support.temp_cwd(name=TESTFN):
             self.assertEqual(os.path.basename(os.getcwd()), TESTFN)
         self.assertFalse(os.path.exists(TESTFN))
-        self.assertTrue(os.path.basename(os.getcwd()), here)
+        self.assertEqual(os.getcwd(), here)
 
 
     def test_temp_cwd__name_none(self):
@@ -394,6 +411,113 @@ class TestSupport(unittest.TestCase):
 
         self.assertRaises(AssertionError, support.check__all__, self, unittest)
 
+    @unittest.skipUnless(hasattr(os, 'waitpid') and hasattr(os, 'WNOHANG'),
+                         'need os.waitpid() and os.WNOHANG')
+    def test_reap_children(self):
+        # Make sure that there is no other pending child process
+        support.reap_children()
+
+        # Create a child process
+        pid = os.fork()
+        if pid == 0:
+            # child process: do nothing, just exit
+            os._exit(0)
+
+        t0 = time.monotonic()
+        deadline = time.monotonic() + 60.0
+
+        was_altered = support.environment_altered
+        try:
+            support.environment_altered = False
+            stderr = io.StringIO()
+
+            while True:
+                if time.monotonic() > deadline:
+                    self.fail("timeout")
+
+                with contextlib.redirect_stderr(stderr):
+                    support.reap_children()
+
+                # Use environment_altered to check if reap_children() found
+                # the child process
+                if support.environment_altered:
+                    break
+
+                # loop until the child process completed
+                time.sleep(0.100)
+
+            msg = "Warning -- reap_children() reaped child process %s" % pid
+            self.assertIn(msg, stderr.getvalue())
+            self.assertTrue(support.environment_altered)
+        finally:
+            support.environment_altered = was_altered
+
+        # Just in case, check again that there is no other
+        # pending child process
+        support.reap_children()
+
+    def check_options(self, args, func, expected=None):
+        code = f'from test.support import {func}; print(repr({func}()))'
+        cmd = [sys.executable, *args, '-c', code]
+        env = {key: value for key, value in os.environ.items()
+               if not key.startswith('PYTHON')}
+        proc = subprocess.run(cmd,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.DEVNULL,
+                              universal_newlines=True,
+                              env=env)
+        if expected is None:
+            expected = args
+        self.assertEqual(proc.stdout.rstrip(), repr(expected))
+        self.assertEqual(proc.returncode, 0)
+
+    def test_args_from_interpreter_flags(self):
+        # Test test.support.args_from_interpreter_flags()
+        for opts in (
+            # no option
+            [],
+            # single option
+            ['-B'],
+            ['-s'],
+            ['-S'],
+            ['-E'],
+            ['-v'],
+            ['-b'],
+            ['-q'],
+            ['-I'],
+            # same option multiple times
+            ['-bb'],
+            ['-vvv'],
+            # -W options
+            ['-Wignore'],
+            # -X options
+            ['-X', 'dev'],
+            ['-Wignore', '-X', 'dev'],
+            ['-X', 'faulthandler'],
+            ['-X', 'importtime'],
+            ['-X', 'showalloccount'],
+            ['-X', 'showrefcount'],
+            ['-X', 'tracemalloc'],
+            ['-X', 'tracemalloc=3'],
+        ):
+            with self.subTest(opts=opts):
+                self.check_options(opts, 'args_from_interpreter_flags')
+
+        self.check_options(['-I', '-E', '-s'], 'args_from_interpreter_flags',
+                           ['-I'])
+
+    def test_optim_args_from_interpreter_flags(self):
+        # Test test.support.optim_args_from_interpreter_flags()
+        for opts in (
+            # no option
+            [],
+            ['-O'],
+            ['-OO'],
+            ['-OOOO'],
+        ):
+            with self.subTest(opts=opts):
+                self.check_options(opts, 'optim_args_from_interpreter_flags')
+
     def test_match_test(self):
         class Test:
             def __init__(self, test_id):
@@ -451,6 +575,17 @@ class TestSupport(unittest.TestCase):
             self.assertTrue(support.match_test(test_access))
             self.assertFalse(support.match_test(test_chdir))
 
+    def test_fd_count(self):
+        # We cannot test the absolute value of fd_count(): on old Linux
+        # kernel or glibc versions, os.urandom() keeps a FD open on
+        # /dev/urandom device and Python has 4 FD opens instead of 3.
+        start = support.fd_count()
+        fd = os.open(__file__, os.O_RDONLY)
+        try:
+            more = support.fd_count()
+        finally:
+            os.close(fd)
+        self.assertEqual(more - start, 1)
 
     # XXX -follows a list of untested API
     # make_legacy_pyc
@@ -472,9 +607,7 @@ class TestSupport(unittest.TestCase):
     # run_doctest
     # threading_cleanup
     # reap_threads
-    # reap_children
     # strip_python_stderr
-    # args_from_interpreter_flags
     # can_symlink
     # skip_unless_symlink
     # SuppressCrashReport

@@ -27,23 +27,34 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 
+import java.io.PrintStream;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class AssertNode extends StatementNode {
-
+    @Child private PRaiseNode raise;
     @Child private CastToBooleanNode condition;
     @Child private ExpressionNode message;
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
-    @CompilationFinal private boolean javaExceptionsFailAsssertions;
+    @CompilationFinal private boolean javaExceptionsFailAssertions;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+    private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
     public AssertNode(CastToBooleanNode condition, ExpressionNode message) {
         this.condition = condition;
@@ -54,19 +65,20 @@ public class AssertNode extends StatementNode {
     public void executeVoid(VirtualFrame frame) {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            assertionsEnabled = !PythonOptions.getOption(getContext(), PythonOptions.PythonOptimizeFlag);
-            javaExceptionsFailAsssertions = PythonOptions.getOption(getContext(), PythonOptions.CatchAllExceptions);
+            PythonContext context = PythonLanguage.getContextRef().get();
+            assertionsEnabled = !PythonOptions.getOption(context, PythonOptions.PythonOptimizeFlag);
+            javaExceptionsFailAssertions = PythonOptions.getOption(context, PythonOptions.CatchAllExceptions);
         }
         if (assertionsEnabled) {
             try {
-                if (!condition.executeBoolean(frame)) {
+                if (profile.profile(!condition.executeBoolean(frame))) {
                     throw assertionFailed(frame);
                 }
             } catch (PException e) {
                 // Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
-                if (javaExceptionsFailAsssertions) {
+                if (javaExceptionsFailAssertions) {
                     // catch any other exception and convert to Python exception
                     throw assertionFailed(frame);
                 } else {
@@ -85,15 +97,23 @@ public class AssertNode extends StatementNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     callNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__STR__));
                 }
-                assertionMessage = (String) callNode.executeObject(messageObj);
+                assertionMessage = (String) callNode.executeObject(frame, messageObj);
             } catch (PException e) {
                 // again, Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
                 assertionMessage = "internal exception occurred";
+                PythonContext context = getContext();
+                if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
+                    printStackTrace(context, e);
+                }
             }
         }
-        return raise(AssertionError, assertionMessage);
+        if (raise == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raise = insert(PRaiseNode.create());
+        }
+        return raise.raise(AssertionError, assertionMessage);
     }
 
     public CastToBooleanNode getCondition() {
@@ -102,5 +122,18 @@ public class AssertNode extends StatementNode {
 
     public ExpressionNode getMessage() {
         return message;
+    }
+
+    @TruffleBoundary
+    private static void printStackTrace(PythonContext context, Exception e) {
+        e.printStackTrace(new PrintStream(context.getStandardErr()));
+    }
+
+    private PythonContext getContext() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
+        return contextRef.get();
     }
 }

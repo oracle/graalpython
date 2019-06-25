@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
         polyglot_invoke(PY_TRUFFLE_CEXT,
                        "AddFunction",
                        native_to_java(mod),
+					   NULL,
                        polyglot_from_string((const char*)(def.ml_name), SRC_CS),
                        def.ml_meth,
                        get_method_flags_cwrapper(def.ml_flags),

@@ -5,6 +5,7 @@ import locale
 import sys
 import unittest
 import encodings
+from unittest import mock
 
 from test import support
 
@@ -3180,16 +3181,27 @@ class CodePageTest(unittest.TestCase):
     def test_mbcs_alias(self):
         # Check that looking up our 'default' codepage will return
         # mbcs when we don't have a more specific one available
-        import _bootlocale
-        def _get_fake_codepage(*a):
-            return 'cp123'
-        old_getpreferredencoding = _bootlocale.getpreferredencoding
-        _bootlocale.getpreferredencoding = _get_fake_codepage
-        try:
+        with mock.patch('_winapi.GetACP', return_value=123):
             codec = codecs.lookup('cp123')
             self.assertEqual(codec.name, 'mbcs')
-        finally:
-            _bootlocale.getpreferredencoding = old_getpreferredencoding
+
+    @support.bigmemtest(size=2**31, memuse=7, dry_run=False)
+    def test_large_input(self):
+        # Test input longer than INT_MAX.
+        # Input should contain undecodable bytes before and after
+        # the INT_MAX limit.
+        encoded = (b'01234567' * (2**28-1) +
+                   b'\x85\x86\xea\xeb\xec\xef\xfc\xfd\xfe\xff')
+        self.assertEqual(len(encoded), 2**31+2)
+        decoded = codecs.code_page_decode(932, encoded, 'surrogateescape', True)
+        self.assertEqual(decoded[1], len(encoded))
+        del encoded
+        self.assertEqual(len(decoded[0]), decoded[1])
+        self.assertEqual(decoded[0][:10], '0123456701')
+        self.assertEqual(decoded[0][-20:],
+                         '6701234567'
+                         '\udc85\udc86\udcea\udceb\udcec'
+                         '\udcef\udcfc\udcfd\udcfe\udcff')
 
 
 class ASCIITest(unittest.TestCase):

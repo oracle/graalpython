@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -47,6 +48,7 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -69,7 +71,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
         this.identifier = identifier;
         this.isFreeVar = isFreeVar;
 
-        NodeFactory factory = getNodeFactory();
+        NodeFactory factory = PythonLanguage.getCurrent().getNodeFactory();
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
 
         if (cellSlot != null) {
@@ -94,14 +96,12 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
 
     @Override
     public StatementNode makeWriteNode(ExpressionNode rhs) {
-        ExpressionNode right = rhs;
         // freevars pass through the special Class scope
         if (readCellLocal != null && !isFreeVar) {
-            // TODO (tfel): Is this what's intended?
-            return ((ReadNode) readCellLocal).makeWriteNode(rhs);
+            return new WriteClassAttributeCellNode((ReadNode) readCellLocal, (ReadNode) getNsItem, rhs);
         } else {
             // assignments always got to the innermost scope
-            return ((ReadNode) getNsItem).makeWriteNode(right);
+            return ((ReadNode) getNsItem).makeWriteNode(rhs);
         }
     }
 
@@ -112,12 +112,12 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
             return getNsItem.execute(frame);
         } catch (PException pe) {
             // class namespace overrides closure
-            PFrame pFrame = PArguments.getPFrame(frame);
+            PFrame pFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
             if (pFrame != null) {
                 Object localsDict = pFrame.getLocalsDict();
                 if (localsDict != null) {
                     try {
-                        return getItemNode.execute(localsDict, identifier);
+                        return getItemNode.execute(frame, localsDict, identifier);
                     } catch (PException e) {
                     }
                 }
@@ -130,6 +130,33 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
 
             // read global or builtin
             return readGlobal.execute(frame);
+        }
+    }
+
+    private static class WriteClassAttributeCellNode extends StatementNode implements WriteNode {
+        @Child private WriteNode writeCellLocal;
+        @Child private WriteNode writeNsItem;
+        @Child private ExpressionNode right;
+
+        WriteClassAttributeCellNode(ReadNode readCellLocal, ReadNode getNsItem, ExpressionNode rhs) {
+            writeCellLocal = (WriteNode) readCellLocal.makeWriteNode(null);
+            writeNsItem = (WriteNode) getNsItem.makeWriteNode(null);
+            right = rhs;
+        }
+
+        public ExpressionNode getRhs() {
+            return right;
+        }
+
+        public void doWrite(VirtualFrame frame, Object value) {
+            writeCellLocal.doWrite(frame, value);
+            writeNsItem.doWrite(frame, value);
+        }
+
+        @Override
+        public void executeVoid(VirtualFrame frame) {
+            Object value = right.execute(frame);
+            doWrite(frame, value);
         }
     }
 }

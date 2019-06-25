@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,7 +30,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 
 // Corresponds to PyCFunction, but that name is just confusing
-public class PBuiltinMethod extends PythonBuiltinObject {
+public final class PBuiltinMethod extends PythonBuiltinObject {
 
     private final Object function;
     private final Object self;

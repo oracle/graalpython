@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,10 +45,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -57,33 +56,40 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -99,7 +105,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         COMPILE_TIME = compile_time;
     }
 
-    public static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix", "base_prefix", "base_exec_prefix"};
+    private static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix"};
+    private static final String[] BASE_PREFIX_ATTRIBUTES = new String[]{"base_prefix", "base_exec_prefix"};
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -112,34 +119,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
         builtinConstants.put("dont_write_bytecode", true);
-        if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
-            // cannot set the path at this time since the binary is not yet known; will be patched
-            // in the context
-            builtinConstants.put("executable", PNone.NONE);
-        } else {
-            StringBuilder sb = new StringBuilder();
-            ArrayList<String> exec_list = new ArrayList<>();
-            sb.append(System.getProperty("java.home")).append(PythonCore.FILE_SEPARATOR).append("bin").append(PythonCore.FILE_SEPARATOR).append("java");
-            exec_list.add(sb.toString());
-            sb.append(' ');
-            for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
-                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
-                    arg = arg.replace("suspend=y", "suspend=n");
-                }
-                sb.append(arg).append(' ');
-                exec_list.add(arg);
-            }
-            sb.append("-classpath ");
-            exec_list.add("-classpath");
-            sb.append(System.getProperty("java.class.path")).append(' ');
-            exec_list.add(System.getProperty("java.class.path"));
-            // we really don't care what the main class or its arguments were - this should
-            // always help us launch Graal.Python
-            sb.append("com.oracle.graal.python.shell.GraalPythonMain");
-            exec_list.add("com.oracle.graal.python.shell.GraalPythonMain");
-            builtinConstants.put("executable", sb.toString());
-            builtinConstants.put("executable_list", core.factory().createList(exec_list.toArray()));
-        }
         builtinConstants.put("modules", core.factory().createDict());
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
@@ -148,24 +127,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
                         "\n[" + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
-        builtinConstants.put("flags", core.factory().createTuple(new Object[]{
-                        false, // bytes_warning
-                        false, // debug
-                        true,  // dont_write_bytecode
-                        false, // hash_randomization
-                        false, // ignore_environment
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.InspectFlag), // inspect
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.InspectFlag), // interactive
-                        false, // isolated
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.NoSiteFlag), // no_site
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.NoUserSiteFlag), // no_user_site
-                        false, // optimize
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.QuietFlag), // quiet
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.VerboseFlag), // verbose
-        }));
-        builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
-        builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
-        builtinConstants.put("graal_python_opaque_filesystem", PythonOptions.getOption(core.getContext(), PythonOptions.OpaqueFilesystem));
         builtinConstants.put("graal_python_is_native", TruffleOptions.AOT);
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
@@ -185,9 +146,101 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         String os = getPythonOSName();
         builtinConstants.put("platform", os);
+        if (os.equals("darwin")) {
+            builtinConstants.put("_framework", PNone.NONE);
+        }
         builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
 
         super.initialize(core);
+
+        // we need these during core initialization, they are re-set in postInitialize
+        postInitialize(core);
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonModule sys = core.lookupBuiltinModule("sys");
+        PythonContext context = core.getContext();
+        String[] args = context.getEnv().getApplicationArguments();
+        sys.setAttribute("argv", core.factory().createList(Arrays.copyOf(args, args.length, Object[].class)));
+
+        String prefix = context.getSysPrefix();
+        for (String name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
+            sys.setAttribute(name, prefix);
+        }
+
+        String base_prefix = context.getSysBasePrefix();
+        for (String name : SysModuleBuiltins.BASE_PREFIX_ATTRIBUTES) {
+            sys.setAttribute(name, base_prefix);
+        }
+
+        sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+        sys.setAttribute("graal_python_home", context.getLanguage().getHome());
+        sys.setAttribute("graal_python_core_home", context.getCoreHome());
+        sys.setAttribute("graal_python_stdlib_home", context.getStdlibHome());
+        sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
+                        false, // bytes_warning
+                        !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
+                        true,  // dont_write_bytecode
+                        false, // hash_randomization
+                        PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
+                        PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
+                        PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
+                        PythonOptions.getFlag(context, PythonOptions.IsolateFlag), // isolated
+                        PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
+                        PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
+                        PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
+                        PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
+                        PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
+                        false, // dev_mode
+                        0, // utf8_mode
+        }));
+
+        Env env = context.getEnv();
+        String option = PythonOptions.getOption(context, PythonOptions.PythonPath);
+        Object[] path;
+        int pathIdx = 0;
+        boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
+        int defaultPaths = doIsolate ? 2 : 3;
+        if (option.length() > 0) {
+            String[] split = option.split(context.getEnv().getPathSeparator());
+            path = new Object[split.length + defaultPaths];
+            System.arraycopy(split, 0, path, 0, split.length);
+            pathIdx = split.length;
+        } else {
+            path = new Object[defaultPaths];
+        }
+        if (!doIsolate) {
+            path[pathIdx++] = getScriptPath(env, args);
+        }
+        path[pathIdx++] = context.getStdlibHome();
+        path[pathIdx++] = context.getCoreHome() + env.getFileNameSeparator() + "modules";
+        PList sysPaths = core.factory().createList(path);
+        sys.setAttribute("path", sysPaths);
+    }
+
+    private static String getScriptPath(Env env, String[] args) {
+        String scriptPath;
+        if (args.length > 0) {
+            String argv0 = args[0];
+            if (argv0 != null && !argv0.startsWith("-") && !argv0.isEmpty()) {
+                TruffleFile scriptFile = env.getTruffleFile(argv0);
+                try {
+                    scriptPath = scriptFile.getAbsoluteFile().getParent().getPath();
+                } catch (SecurityException e) {
+                    scriptPath = scriptFile.getParent().getPath();
+                }
+                if (scriptPath == null) {
+                    scriptPath = ".";
+                }
+            } else {
+                scriptPath = "";
+            }
+        } else {
+            scriptPath = "";
+        }
+        return scriptPath;
     }
 
     static String getPythonArch() {
@@ -202,150 +255,139 @@ public class SysModuleBuiltins extends PythonBuiltins {
     static String getPythonOSName() {
         String property = System.getProperty("os.name");
         String os = "java";
-        if (property.toLowerCase().contains("cygwin")) {
-            os = "cygwin";
-        } else if (property.toLowerCase().contains("linux")) {
-            os = "linux";
-        } else if (property.toLowerCase().contains("mac")) {
-            os = "darwin";
-        } else if (property.toLowerCase().contains("windows")) {
-            os = "win32";
-        } else if (property.toLowerCase().contains("sunos")) {
-            os = "sunos";
-        } else if (property.toLowerCase().contains("freebsd")) {
-            os = "freebsd";
+        if (property != null) {
+            if (property.toLowerCase().contains("cygwin")) {
+                os = "cygwin";
+            } else if (property.toLowerCase().contains("linux")) {
+                os = "linux";
+            } else if (property.toLowerCase().contains("mac")) {
+                os = "darwin";
+            } else if (property.toLowerCase().contains("windows")) {
+                os = "win32";
+            } else if (property.toLowerCase().contains("sunos")) {
+                os = "sunos";
+            } else if (property.toLowerCase().contains("freebsd")) {
+                os = "freebsd";
+            }
         }
         return os;
     }
 
-    @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "exc_info")
     @GenerateNodeFactory
-    public static abstract class ExcInfoNode extends PythonBuiltinNode {
+    public abstract static class ExcInfoNode extends PythonBuiltinNode {
+
         @Specialization
-        public Object run(
-                        @Cached("create()") GetClassNode getClassNode) {
-            PythonContext context = getContext();
-            PException currentException = context.getCaughtException();
+        public Object run(VirtualFrame frame,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetCaughtExceptionNode getCaughtExceptionNode,
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached GetTracebackNode getTracebackNode) {
+            PException currentException = getCaughtExceptionNode.execute(frame);
+            assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                exception.reifyException();
-                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
+                Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
+                PFrame escapedFrame = readCallerFrameNode.executeWith(frame, currentFrameInfo, 0);
+                currentFrameInfo.markAsEscaped();
+                PTraceback exceptionTraceback = getTracebackNode.execute(frame, exception);
+                // n.b. a call to 'sys.exc_info' always creates a new traceback with the current
+                // frame and links (via 'tb_next') to the traceback of the exception
+                PTraceback chainedTraceback;
+                if (exceptionTraceback != null) {
+                    chainedTraceback = factory().createTraceback(escapedFrame, exceptionTraceback);
+                } else {
+                    // it's still possible that there is no traceback if, for example, the exception
+                    // has been thrown and caught and did never escape
+                    chainedTraceback = factory().createTraceback(escapedFrame, currentException);
+                }
+                exception.setTraceback(chainedTraceback);
+                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, chainedTraceback});
             }
         }
+
     }
 
     @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class GetFrameNode extends PythonBuiltinNode {
-
-        @Child private DirectCallNode call;
-
+    public abstract static class GetFrameNode extends PythonBuiltinNode {
         @Specialization
-        Object first(@SuppressWarnings("unused") PNone arg) {
-            return counted(0);
-        }
-
-        /*
-         * This is necessary for the time being to be compatible with the old TruffleException
-         * behavior. (it only captures the frames if a CallTarget boundary is crossed)
-         */
-        private static final class GetStackTraceRootNode extends RootNode {
-            private final ContextReference<PythonContext> contextRef;
-
-            protected GetStackTraceRootNode(PythonLanguage language) {
-                super(language);
-                this.contextRef = language.getContextReference();
-            }
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                CompilerDirectives.transferToInterpreter();
-                throw contextRef.get().getCore().raise(ValueError, null);
-            }
-
-            @Override
-            public boolean isCaptureFramesForTrace() {
-                return true;
-            }
+        PFrame first(VirtualFrame frame, @SuppressWarnings("unused") PNone arg,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return escapeFrame(frame, 0, readCallerNode);
         }
 
         @Specialization
-        @TruffleBoundary
-        Object counted(int num) {
-            if (call == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                GetStackTraceRootNode rootNode = new GetStackTraceRootNode(getRootNode().getLanguage(PythonLanguage.class));
-                call = insert(Truffle.getRuntime().createDirectCallNode(Truffle.getRuntime().createCallTarget(rootNode)));
-            }
-            int actual = num + 1; // skip dummy frame
-            try {
-                call.call(new Object[0]);
-                throw raise(PythonErrorType.SystemError, "should not reach here");
-            } catch (PException e) {
-                PBaseException exception = e.getExceptionObject();
-                exception.reifyException();
-                if (actual >= exception.getStackTrace().size()) {
-                    throw raiseCallStackDepth();
-                }
-                return exception.getPFrame(factory(), Math.max(0, actual));
-            }
+        PFrame counted(VirtualFrame frame, int num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return escapeFrame(frame, num, readCallerNode);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedLong(long num) {
-            return counted(PInt.intValueExact(num));
+        PFrame countedLong(VirtualFrame frame, long num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return counted(frame, PInt.intValueExact(num), readCallerNode);
         }
 
         @Specialization
-        Object countedLongOvf(long num) {
+        PFrame countedLongOvf(VirtualFrame frame, long num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
             try {
-                return counted(PInt.intValueExact(num));
+                return counted(frame, PInt.intValueExact(num), readCallerNode);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedPInt(PInt num) {
-            return counted(num.intValueExact());
+        PFrame countedPInt(VirtualFrame frame, PInt num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+            return counted(frame, num.intValueExact(), readCallerNode);
         }
 
         @Specialization
-        Object countedPIntOvf(PInt num) {
+        PFrame countedPIntOvf(VirtualFrame frame, PInt num,
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
             try {
-                return counted(num.intValueExact());
+                return counted(frame, num.intValueExact(), readCallerNode);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
+        }
+
+        private static PFrame escapeFrame(VirtualFrame frame, int num, ReadCallerFrameNode readCallerNode) {
+            Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
+            currentFrameInfo.markAsEscaped();
+            return readCallerNode.executeWith(frame, currentFrameInfo, num);
         }
 
         private PException raiseCallStackDepth() {
             return raise(ValueError, "call stack is not deep enough");
         }
-
     }
 
-    @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetFileSystemEncodingNode extends PythonBuiltinNode {
+    public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         protected String getFileSystemEncoding() {
             return System.getProperty("file.encoding");
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencodeerrors", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
+    public abstract static class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
         protected String getFileSystemEncoding() {
             return "surrogateescape";
         }
     }
 
-    @Builtin(name = "intern", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization
@@ -362,9 +404,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getdefaultencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getdefaultencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetDefaultEncodingNode extends PythonBuiltinNode {
+    public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
         protected String getFileSystemEncoding() {
@@ -374,20 +416,20 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getsizeof", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public static abstract class GetsizeofNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
         @Child private CastToIntegerFromIntNode castToIntNode = CastToIntegerFromIntNode.create();
 
         @Specialization(guards = "isNoValue(dflt)")
-        protected Object doGeneric(Object object, @SuppressWarnings("unused") PNone dflt,
+        protected Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
                         @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode) {
-            Object result = castToIntNode.execute(callSizeofNode.executeObject(object));
+            Object result = castToIntNode.execute(callSizeofNode.executeObject(frame, object));
             return checkResult(result);
         }
 
         @Specialization(guards = "!isNoValue(dflt)")
-        protected Object doGeneric(Object object, Object dflt,
+        protected Object doGeneric(VirtualFrame frame, Object object, Object dflt,
                         @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode) {
-            Object result = castToIntNode.execute(callSizeofNode.executeObject(object));
+            Object result = castToIntNode.execute(callSizeofNode.executeObject(frame, object));
             if (result == PNone.NO_VALUE) {
                 return dflt;
             }

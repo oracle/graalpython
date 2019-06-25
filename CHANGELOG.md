@@ -3,6 +3,77 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 19.1.0
+
+* Add `java.add_to_classpath` API to dynamically extend the host class path
+* Allow write access to main module bindings for embedder
+* Swap arguments for `polyglot.export_value` to use the more natural (name, value) order and deprecate the previous argument order.
+* Update Python standard library files to Python 3.7.3
+* Improve performance of exceptions that do not escape
+* Fix str(None) to print "None" instead of an empty string
+* Fix error messages on polyglot objects to not leak implementation class names of those objects
+* Fix erroneously frozen package paths in pre-initialized python modules
+* Fix caching of core sources in a native image with a preinitialized context for pre-built images and libpolyglot fast startup
+* Implement pwd.getpwuid
+* Implement os.exec, os.execv, and os.execl
+* Add some missing C API headers needed for tensorflow compilation
+
+## Version 19.0.0
+
+* Fix an issue preventing use of encodings in the installable binary
+* Fix return value of process when `os.exit` is called with a boolean
+* Fix interpretation of foreign objects to prefer interpreting them as integer over double
+* Fix performance regression when repeatedly creating a new function in a loop
+
+## Version 1.0.0 RC16
+
+* No user-facing changes
+
+## Version 1.0.0 RC15
+
+* Implement PEP 487 `__init_subclass__`
+* Implement PEP 560 `__class_getitem__` and `__mro_entries__`
+* Migrate to Truffle libraries for interop
+* Support the buffer protocol for mmap
+* Support importing java classes using normal Python import syntax
+* Improve performance of literal dictionary creation when the first but not all keys are strings
+* Improve performance of getting the length of a string
+* Improve performance of accessing defaults, keyword-defaults, and code of a function
+* Fix getting file separator from the Truffle filesystem rather than the operating system
+* Fix constructing and calling methods with non-function callables
+* Fix execution of subprocesses with non-default python homes on JVM
+
+## Version 1.0.0 RC14
+
+* Mark a subset of the Graal Python launcher options as "stable". All other options are subject to change and need to be unlocked explicitly on the commandline.
+* Automatically install pip when creating a venv. The socket and ssl libraries are still not functional, so pip can only install from local sources or wheels.
+* Update the standard library to Python 3.7.0 from 3.6.5.
+* Support the `-I` flag to ignore the user environment and not add the working directory to `sys.path`
+* Fix an error preventing usage of the memtracer tool. If an object raised an exception in it's `__repr__` method, it would abort the execution.
+* Fix issues around not being able to modify function defaults, keyword defaults, or re-defining a function with a different closure.
+* Fix continuation prompt in the interactive Python shell when an incomplete statement was typed. Before it raised and ignored a SyntaxError.
+* Fix frame restarting of Python functions in the Chrome debugger. Before, functions with closures would have their cells accidentally cleared.
+
+## Version 1.0.0 RC13
+
+* Support marshal.dumps and marshal.loads for code objects and some other built-in objects
+* Fix installation of NumPy in a venv
+* Initial support for module mmap
+* Support debugging with workspace files in the Chrome debugger
+* Support the PEP 553 breakpoint() message
+* Support running weak reference callbacks and signals on the main thread
+
+## Version 1.0.0 RC12
+
+* Support the `__class__` variable in the class scope
+* Support module-level docstrings
+* Initial support for the `venv` standard-library tool
+* Initial support for the built-in `_bz2` module
+* Initial support for the `pandas` package
+* Initial support for OSError subclasses based on the `errno` of the exception
+* Fix bytearray inplace add to return the same object
+* Fix access to standard Python methods (`__repr__`, `__str__`, `__len__` and the like) for foreign objects
+
 ## Version 1.0.0 RC11
 
 * Support running setuptools to build and install various packages

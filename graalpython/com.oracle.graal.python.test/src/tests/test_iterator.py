@@ -122,3 +122,22 @@ def test_iterator_in():
     assert 1 in (i for i in range(2))
     assert 1 in iter(range(2))
     assert 1 not in iter(range(1))
+
+
+def test_itertools_zip_longest():
+    from itertools import zip_longest
+    x = [1,2,3]
+    y = [4,5,6,7]
+    assert list(zip_longest(x,y)) == [(1, 4), (2, 5), (3, 6), (None, 7)], list(zip_longest(x,y))
+
+
+def test_itertools_cycle():
+    from itertools import cycle
+    x = [1,2,3]
+    r = []
+    for i in cycle(x):
+        r.append(i)
+        if len(r) > 10:
+            break
+    assert r == [1,2,3,1,2,3,1,2,3,1,2], r
+    assert [x for x in cycle([])] == []

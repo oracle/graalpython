@@ -1,0 +1,7 @@
+test_data_urls
+test_default_data
+test_encoding
+test_file_parsing
+test_guess_all_types
+test_non_standard_types
+test__all__

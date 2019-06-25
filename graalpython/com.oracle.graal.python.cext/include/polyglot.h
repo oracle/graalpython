@@ -354,6 +354,15 @@ void *polyglot_new_instance(const void *object, ...);
 bool polyglot_has_members(const void *value);
 
 /**
+ * Check whether a polyglot value contains a given named member.
+ *
+ * @param object the polyglot value to test
+ * @param name the name of the member to be checked for existance
+ * @return true if the member exists, false otherwise
+ */
+bool polyglot_has_member(const void *value, const char *name);
+
+/**
  * Read a named member from a polyglot object.
  *
  * The result is also a polyglot value. Use the {@link unbox primitive conversion
@@ -676,37 +685,37 @@ __POLYGLOT_DECLARE_GENERIC_ARRAY(double, double)
 /**
  * Get a polyglot typeid for the primitive bool type.
  */
-static void *polyglot_boolean_typeid();
+static polyglot_typeid polyglot_boolean_typeid();
 
 /**
  * Get a polyglot typeid for the primitive int8_t type.
  */
-static void *polyglot_int8_typeid();
+static polyglot_typeid polyglot_int8_typeid();
 
 /**
  * Get a polyglot typeid for the primitive int16_t type.
  */
-static void *polyglot_int16_typeid();
+static polyglot_typeid polyglot_int16_typeid();
 
 /**
  * Get a polyglot typeid for the primitive int32_t type.
  */
-static void *polyglot_int32_typeid();
+static polyglot_typeid polyglot_int32_typeid();
 
 /**
  * Get a polyglot typeid for the primitive int64_t type.
  */
-static void *polyglot_int64_typeid();
+static polyglot_typeid polyglot_int64_typeid();
 
 /**
  * Get a polyglot typeid for the primitive float type.
  */
-static void *polyglot_float_typeid();
+static polyglot_typeid polyglot_float_typeid();
 
 /**
  * Get a polyglot typeid for the primitive double type.
  */
-static void *polyglot_double_typeid();
+static polyglot_typeid polyglot_double_typeid();
 
 /**
  * Converts a polyglot value to an integer array.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "gc")
 public final class GcModuleBuiltins extends PythonBuiltins {
@@ -49,18 +50,24 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         return GcModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "collect", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "collect", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        int collect() {
-            System.gc();
+        int collect(VirtualFrame frame) {
+            doGc();
+            // collect some weak references now
+            getContext().triggerAsyncActions(frame, this);
             return 0;
+        }
+
+        @TruffleBoundary
+        private static void doGc() {
+            System.gc();
         }
     }
 
-    @Builtin(name = "get_count", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "get_count", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GcCountNode extends PythonBuiltinNode {
         @Specialization
@@ -78,7 +85,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_tracked", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_tracked", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GcIsTrackedNode extends PythonBuiltinNode {
         @Specialization

@@ -1,0 +1,8 @@
+test_explicit_relative_import
+test_invalid_names
+test_library_module
+test_main_relative_import
+test_package_imported_no_warning
+test_pkgutil_walk_packages
+test_run_package_init_exceptions
+test_submodule_imported_warning

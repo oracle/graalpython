@@ -42,6 +42,19 @@
 
 #include <stdio.h>
 
+static int getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg) {
+    if (PyObject_GetBuffer(arg, view, PyBUF_SIMPLE) != 0) {
+        *errmsg = "bytes-like object";
+        return -1;
+    }
+//    if (!PyBuffer_IsContiguous(view, 'C')) {
+//        PyBuffer_Release(view);
+//        *errmsg = "contiguous buffer";
+//        return -1;
+//    }
+    return 0;
+}
+
 typedef struct _positional_argstack {
     PyObject* argv;
     int argnum;
@@ -67,6 +80,10 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
     return out;
 }
 
+#define PyTruffleVaArgI8(poly_args, offset, va) (poly_args == NULL ? va_arg(va, int8_t) : polyglot_as_i8((poly_args[offset++])))
+#define PyTruffleVaArgI32(poly_args, offset, va) (poly_args == NULL ? va_arg(va, int32_t) : polyglot_as_i32((poly_args[offset++])))
+#define PyTruffleVaArgI64(poly_args, offset, va, T) (poly_args == NULL ? va_arg(va, T) : ((T)polyglot_as_i64((poly_args[offset++]))))
+#define PyTruffleVaArgDouble(poly_args, offset, va) (poly_args == NULL ? va_arg(va, double) : polyglot_as_double((poly_args[offset++])))
 #define PyTruffleVaArg(poly_args, offset, va, T) (poly_args == NULL ? va_arg(va, T) : (T)(poly_args[offset++]))
 
 #define PyTruffle_WriteOut(poly_args, offset, va, T, arg) {             \
@@ -368,24 +385,34 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
     return result;
 }
 
-int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, PyObject *kwds, struct _PyArg_Parser *parser, ...) {
+MUST_INLINE PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs) {
     PyObject* argv = PyTuple_New(nargs);
     Py_ssize_t i;
     for (i=0; i < nargs; i++) {
         PyTuple_SetItem(argv, i, args[i]);
     }
-    CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, argv, kwds, parser->format, parser->keywords);
+    return argv;
+}
+
+int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, PyObject *kwds, struct _PyArg_Parser *parser, ...) {
+    CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwds, parser->format, parser->keywords);
     return result;
 }
 
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, PyObject *kwds, struct _PyArg_Parser *parser, ...) {
-    PyObject* argv = PyTuple_New(nargs);
-    Py_ssize_t i;
-    for (i=0; i < nargs; i++) {
-        PyTuple_SetItem(argv, i, args[i]);
-    }
+    CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwds, parser->format, parser->keywords);
+    return result;
+}
 
-    CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, argv, kwds, parser->format, parser->keywords);
+int _PyArg_ParseStackAndKeywords(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
+	// TODO(fa) That's not very fast and we should refactor these functions.
+    CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwnames, parser->format, parser->keywords);
+    return result;
+}
+
+int _PyArg_ParseStackAndKeywords_SizeT(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
+	// TODO(fa) That's not very fast and we should refactor these functions.
+    CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwnames, parser->format, parser->keywords);
     return result;
 }
 
@@ -461,7 +488,7 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
         case 'U':
             char_arg = PyTruffleVaArg(poly_args, offset, va, char*);
             if (format[format_idx + 1] == '#') {
-                int size = PyTruffleVaArg(poly_args, offset, va, int);
+                int size = PyTruffleVaArgI64(poly_args, offset, va, int);
                 if (char_arg == NULL) {
                     PyList_Append(list, Py_None);
                 } else {
@@ -479,7 +506,7 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
         case 'y':
             char_arg = PyTruffleVaArg(poly_args, offset, va, char*);
             if (format[format_idx + 1] == '#') {
-                int size = PyTruffleVaArg(poly_args, offset, va, int);
+                int size = PyTruffleVaArgI64(poly_args, offset, va, int);
                 if (char_arg == NULL) {
                     PyList_Append(list, Py_None);
                 } else {
@@ -500,41 +527,41 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
         case 'i':
         case 'b':
         case 'h':
-            PyList_Append(list, PyLong_FromLong(PyTruffleVaArg(poly_args, offset, va, int)));
+            PyList_Append(list, PyLong_FromLong(PyTruffleVaArgI64(poly_args, offset, va, int)));
             break;
         case 'l':
-            PyList_Append(list, PyLong_FromLong(PyTruffleVaArg(poly_args, offset, va, long)));
+            PyList_Append(list, PyLong_FromLong(PyTruffleVaArgI64(poly_args, offset, va, long)));
             break;
         case 'B':
         case 'H':
         case 'I':
-            PyList_Append(list, PyLong_FromUnsignedLong(PyTruffleVaArg(poly_args, offset, va, unsigned int)));
+            PyList_Append(list, PyLong_FromUnsignedLong(PyTruffleVaArgI64(poly_args, offset, va, unsigned int)));
             break;
         case 'k':
-            PyList_Append(list, PyLong_FromUnsignedLong(PyTruffleVaArg(poly_args, offset, va, unsigned long)));
+            PyList_Append(list, PyLong_FromUnsignedLong(PyTruffleVaArgI64(poly_args, offset, va, unsigned long)));
             break;
         case 'L':
-            PyList_Append(list, PyLong_FromLongLong(PyTruffleVaArg(poly_args, offset, va, long long)));
+            PyList_Append(list, PyLong_FromLongLong(PyTruffleVaArgI64(poly_args, offset, va, long long)));
             break;
         case 'K':
-            PyList_Append(list, PyLong_FromLongLong(PyTruffleVaArg(poly_args, offset, va, unsigned long long)));
+            PyList_Append(list, PyLong_FromLongLong(PyTruffleVaArgI64(poly_args, offset, va, unsigned long long)));
             break;
         case 'n':
-            PyList_Append(list, PyLong_FromSsize_t(PyTruffleVaArg(poly_args, offset, va, Py_ssize_t)));
+            PyList_Append(list, PyLong_FromSsize_t(PyTruffleVaArgI64(poly_args, offset, va, Py_ssize_t)));
             break;
         case 'c':
             // note: a vararg char is promoted to int according to the C standard
-            argchar[0] = PyTruffleVaArg(poly_args, offset, va, int);
+            argchar[0] = PyTruffleVaArgI64(poly_args, offset, va, int);
             PyList_Append(list, PyBytes_FromStringAndSize(argchar, 1));
             break;
         case 'C':
             // note: a vararg char is promoted to int according to the C standard
-            argchar[0] = PyTruffleVaArg(poly_args, offset, va, int);
+            argchar[0] = PyTruffleVaArgI64(poly_args, offset, va, int);
             PyList_Append(list, polyglot_from_string(argchar, "ascii"));
             break;
         case 'd':
         case 'f':
-            PyList_Append(list, PyFloat_FromDouble((double)PyTruffleVaArg(poly_args, offset, va, unsigned long)));
+            PyList_Append(list, PyFloat_FromDouble(PyTruffleVaArgDouble(poly_args, offset, va)));
             break;
         case 'D':
             fprintf(stderr, "error: unsupported format 'D'\n");

@@ -1,0 +1,13 @@
+testStressfully
+test_baddecorator
+test_decorated
+test_key_with_exception
+test_key_with_mutation
+test_reverse
+test_reverse_stability
+test_stability
+test_safe_object_compare
+test_unsafe_float_compare
+test_unsafe_latin_compare
+test_unsafe_long_compare
+test_unsafe_object_compare

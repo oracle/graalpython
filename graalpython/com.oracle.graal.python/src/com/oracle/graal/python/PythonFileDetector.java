@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,15 +41,22 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.spi.FileTypeDetector;
+import com.oracle.truffle.api.TruffleFile;
+import java.nio.charset.Charset;
 
-public final class PythonFileDetector extends FileTypeDetector {
+public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
+
     @Override
-    public String probeContentType(Path path) throws IOException {
-        if (path.getFileName().toString().endsWith(".py")) {
+    public String findMimeType(TruffleFile file) throws IOException {
+        String fileName = file.getName();
+        if (fileName != null && fileName.endsWith(".py")) {
             return PythonLanguage.MIME_TYPE;
         }
+        return null;
+    }
+
+    @Override
+    public Charset findEncoding(TruffleFile file) throws IOException {
         return null;
     }
 }

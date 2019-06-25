@@ -5,36 +5,13 @@ import sys
 import warnings
 from inspect import isabstract
 from test import support
-
-
 try:
-    MAXFD = os.sysconf("SC_OPEN_MAX")
-except Exception:
-    MAXFD = 256
-
-
-def fd_count():
-    """Count the number of open file descriptors"""
-    if sys.platform.startswith(('linux', 'freebsd')):
-        try:
-            names = os.listdir("/proc/self/fd")
-            return len(names)
-        except FileNotFoundError:
-            pass
-
-    count = 0
-    for fd in range(MAXFD):
-        try:
-            # Prefer dup() over fstat(). fstat() can require input/output
-            # whereas dup() doesn't.
-            fd2 = os.dup(fd)
-        except OSError as e:
-            if e.errno != errno.EBADF:
-                raise
-        else:
-            os.close(fd2)
-            count += 1
-    return count
+    from _abc import _get_dump
+except ImportError:
+    def _get_dump(cls):
+        # For legacy Python version
+        return (cls._abc_registry, cls._abc_cache,
+                cls._abc_negative_cache, cls._abc_negative_cache_version)
 
 
 def dash_R(the_module, test, indirect_test, huntrleaks):
@@ -66,7 +43,7 @@ def dash_R(the_module, test, indirect_test, huntrleaks):
         if not isabstract(abc):
             continue
         for obj in abc.__subclasses__() + [abc]:
-            abcs[obj] = obj._abc_registry.copy()
+            abcs[obj] = _get_dump(obj)[0]
 
     # bpo-31217: Integer pool to get a single integer object for the same
     # value. The pool is used to prevent false alarm when checking for memory
@@ -143,7 +120,6 @@ def dash_R(the_module, test, indirect_test, huntrleaks):
 def dash_R_cleanup(fs, ps, pic, zdc, abcs):
     import gc, copyreg
     import collections.abc
-    from weakref import WeakSet
 
     # Restore some original values.
     warnings.filters[:] = fs
@@ -165,16 +141,12 @@ def dash_R_cleanup(fs, ps, pic, zdc, abcs):
     # Clear ABC registries, restoring previously saved ABC registries.
     abs_classes = [getattr(collections.abc, a) for a in collections.abc.__all__]
     abs_classes = filter(isabstract, abs_classes)
-    if 'typing' in sys.modules:
-        t = sys.modules['typing']
-        # These classes require special treatment because they do not appear
-        # in direct subclasses of collections.abc classes
-        abs_classes = list(abs_classes) + [t.ChainMap, t.Counter, t.DefaultDict]
     for abc in abs_classes:
         for obj in abc.__subclasses__() + [abc]:
-            obj._abc_registry = abcs.get(obj, WeakSet()).copy()
-            obj._abc_cache.clear()
-            obj._abc_negative_cache.clear()
+            for ref in abcs.get(obj, set()):
+                if ref() is not None:
+                    obj.register(ref())
+            obj._abc_caches_clear()
 
     clear_caches()
 
@@ -182,7 +154,7 @@ def dash_R_cleanup(fs, ps, pic, zdc, abcs):
     func1 = sys.getallocatedblocks
     func2 = sys.gettotalrefcount
     gc.collect()
-    return func1(), func2(), fd_count()
+    return func1(), func2(), support.fd_count()
 
 
 def clear_caches():

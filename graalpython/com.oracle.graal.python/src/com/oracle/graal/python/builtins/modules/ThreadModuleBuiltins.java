@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,8 +54,8 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -78,7 +78,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         return ThreadModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "__truffle_get_timeout_max__", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "__truffle_get_timeout_max__", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GetTimeoutMaxConstNode extends PythonBuiltinNode {
         @Specialization
@@ -87,25 +87,25 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "LockType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
+    @Builtin(name = "LockType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
     @GenerateNodeFactory
     abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PLock construct(PythonClass cls) {
+        PLock construct(LazyPythonClass cls) {
             return factory().createLock(cls);
         }
     }
 
-    @Builtin(name = "RLock", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PRLock)
+    @Builtin(name = "RLock", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PRLock)
     @GenerateNodeFactory
     abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PRLock construct(PythonClass cls) {
+        PRLock construct(LazyPythonClass cls) {
             return factory().createRLock(cls);
         }
     }
 
-    @Builtin(name = "get_ident", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "get_ident", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GetCurrentThreadIdNode extends PythonBuiltinNode {
         @Specialization
@@ -115,7 +115,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_count", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "_count", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GetThreadCountNode extends PythonBuiltinNode {
         @Specialization
@@ -157,17 +157,17 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
         @Specialization
-        long start(VirtualFrame frame, PythonClass cls, Object callable, Object args, Object kwargs,
+        long start(VirtualFrame frame, LazyPythonClass cls, Object callable, Object args, Object kwargs,
                         @Cached("create()") CallNode callNode,
                         @Cached("create()") ExecutePositionalStarargsNode getArgsNode,
-                        @Cached("create()") ExecuteKeywordStarargsNode getKwArgsNode) {
+                        @Cached("create()") ExpandKeywordStarargsNode getKwArgsNode) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
             Thread thread = env.createThread(() -> {
-                Object[] arguments = getArgsNode.executeWith(args);
+                Object[] arguments = getArgsNode.executeWith(frame, args);
                 PKeyword[] keywords = getKwArgsNode.executeWith(kwargs);
                 callNode.execute(frame, callable, arguments, keywords);
             }, env.getContext(), context.getThreadGroup());

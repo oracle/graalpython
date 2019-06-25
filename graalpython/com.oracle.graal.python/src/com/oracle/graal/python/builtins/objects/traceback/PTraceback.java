@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,51 +40,84 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class PTraceback extends PythonBuiltinObject {
+
+    /** A marker object to indicate the end of a traceback chain. */
+    public static final PTraceback NO_TRACEBACK = new PTraceback(PythonBuiltinClassType.PTraceback, null, (PException) null);
 
     public static final String TB_FRAME = "tb_frame";
     public static final String TB_NEXT = "tb_next";
     public static final String TB_LASTI = "tb_lasti";
     public static final String TB_LINENO = "tb_lineno";
 
-    @CompilationFinal(dimensions = 1) public static final Object[] TB_DIR_FIELDS = new Object[]{TB_FRAME, TB_NEXT, TB_LASTI, TB_LINENO};
+    @CompilationFinal(dimensions = 1) private static final Object[] TB_DIR_FIELDS = new Object[]{TB_FRAME, TB_NEXT, TB_LASTI, TB_LINENO};
 
-    private final PBaseException exception;
-    private final int index;
-    private PFrame frame;
+    static Object[] getTbFieldNames() {
+        return TB_DIR_FIELDS.clone();
+    }
 
-    public PTraceback(LazyPythonClass clazz, PBaseException exception, int index) {
+    // we have to keep the exception around to lazily create the tb_next element
+    // if that isn't available and still stored in the TruffleStackTrace
+    private final PException exception;
+
+    private final PFrame frame;
+    private final int lasti;
+    private PTraceback next;
+
+    public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception) {
         super(clazz);
+        this.frame = frame;
         this.exception = exception;
-        this.index = index;
+        this.lasti = 0;
     }
 
-    public PBaseException getException() {
-        return exception;
+    public PTraceback(LazyPythonClass clazz, PFrame frame, PTraceback next) {
+        super(clazz);
+        this.frame = frame;
+        this.exception = next.exception;
+        this.next = next;
+        this.lasti = 0;
     }
 
-    public int getIndex() {
-        return index;
-    }
-
-    public PFrame getPFrame(PythonObjectFactory factory) {
-        if (frame == null) {
-            return frame = exception.getPFrame(factory, index);
-        }
+    public PFrame getPFrame() {
         return frame;
     }
 
-    public void setPFrame(PFrame frame) {
-        if (this.frame != null) {
-            throw new IllegalStateException("fabricating a frame for a traceback that already has one");
-        }
-        this.frame = frame;
+    public int getLasti() {
+        return lasti;
     }
+
+    public int getLineno() {
+        return frame.getLine();
+    }
+
+    public PTraceback getNext() {
+        return next;
+    }
+
+    public void setNext(PTraceback next) {
+        this.next = next;
+    }
+
+    public PException getException() {
+        return exception;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (this == NO_TRACEBACK) {
+            return "NO_TRACEBACK";
+        }
+        return super.toString();
+    }
+
 }

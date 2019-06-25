@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ PyObject * PyExc_RuntimeWarning = NULL;
 PyObject * PyExc_FutureWarning = NULL;
 PyObject * PyExc_PendingDeprecationWarning = NULL;
 PyObject * PyExc_SyntaxWarning = NULL;
+PyObject * PyExc_SyntaxError = NULL;
 PyObject * PyExc_ImportWarning = NULL;
 PyObject * PyExc_UnicodeWarning = NULL;
 PyObject * PyExc_BytesWarning = NULL;
@@ -83,6 +84,7 @@ PyObject * PyExc_NotImplementedError = NULL;
 PyObject * PyExc_RecursionError = NULL;
 PyObject * PyExc_UnicodeEncodeError = NULL;
 PyObject * PyExc_GeneratorExit = NULL;
+PyObject * PyExc_EOFError = NULL;
 
 void initialize_exceptions() {
     PyExc_AttributeError = PY_EXCEPTION("AttributeError");
@@ -106,6 +108,7 @@ void initialize_exceptions() {
     PyExc_RuntimeError = PY_EXCEPTION("RuntimeError");
     PyExc_RuntimeWarning = PY_EXCEPTION("RuntimeWarning");
     PyExc_SyntaxWarning = PY_EXCEPTION("SyntaxWarning");
+    PyExc_SyntaxError = PY_EXCEPTION("SyntaxError");
     PyExc_SystemError = PY_EXCEPTION("SystemError");
     PyExc_TypeError = PY_EXCEPTION("TypeError");
     PyExc_UnicodeWarning = PY_EXCEPTION("UnicodeWarning");
@@ -122,6 +125,7 @@ void initialize_exceptions() {
     PyExc_NotImplementedError = PY_EXCEPTION("NotImplementedError");
     PyExc_UnicodeEncodeError = PY_EXCEPTION("UnicodeEncodeError");
     PyExc_GeneratorExit = PY_EXCEPTION("GeneratorExit");
+    PyExc_EOFError = PY_EXCEPTION("EOFError");
 }
 
 

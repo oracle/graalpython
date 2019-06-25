@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,15 +25,18 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -50,6 +53,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
+    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
 
     private final int iteratorSlot;
 
@@ -82,7 +86,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
             iterator = getIterator.execute(frame);
             Object value;
             try {
-                value = getNext.execute(iterator);
+                value = getNext.execute(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 return;
@@ -93,13 +97,14 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
         }
 
         Object nextIterator = null;
+        PythonContext context = contextRef.get();
         int count = 0;
         try {
             while (true) {
                 body.executeVoid(frame);
                 Object value;
                 try {
-                    value = getNext.execute(iterator);
+                    value = getNext.execute(frame, iterator);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
@@ -108,6 +113,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
+                context.triggerAsyncActions(frame, this);
             }
             return;
         } catch (YieldException e) {

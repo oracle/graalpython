@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,8 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -51,6 +53,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @CompilationFinal private boolean isEnclosingFrameGenerator;
     @CompilationFinal private boolean isOptimized;
     @Child private ExpressionNode getIterator;
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public GeneratorExpressionNode(String name, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
                     ExecutionCellSlots executionCellSlots,
@@ -129,8 +132,11 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         }
         PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
 
+        // The generator doesn't capture the currently handled exception at creation time.
+        PArguments.setException(arguments, PException.NO_EXCEPTION);
+
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return factory().createGenerator(name, callTarget, frameDescriptor, arguments, closure, executionCellSlots,
+        return factory.createGenerator(name, callTarget, frameDescriptor, arguments, closure, executionCellSlots,
                         numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
     }
 

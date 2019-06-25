@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,19 +44,22 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.ArrayList;
 
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -67,6 +70,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -74,20 +78,20 @@ public abstract class BytesNodes {
 
     public abstract static class BytesJoinNode extends PNodeWithContext {
 
-        public abstract byte[] execute(byte[] sep, Object iterable);
+        public abstract byte[] execute(VirtualFrame frame, byte[] sep, Object iterable);
 
         @Specialization
-        public byte[] join(byte[] sep, Object iterable,
+        byte[] join(VirtualFrame frame, byte[] sep, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") ToBytesNode toBytesNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
-            Object iterator = getIteratorNode.executeWith(iterable);
+            Object iterator = getIteratorNode.executeWith(frame, iterable);
             while (true) {
                 try {
-                    partsTotalSize += append(parts, toBytesNode.execute(getNextNode.execute(iterator)));
+                    partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
@@ -127,6 +131,7 @@ public abstract class BytesNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ToBytesNode extends PNodeWithContext {
+        @Child private PRaiseNode raise = PRaiseNode.create();
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         protected final boolean allowRecursive;
@@ -135,7 +140,7 @@ public abstract class BytesNodes {
             this.allowRecursive = allowRecursive;
         }
 
-        public abstract byte[] execute(Object obj);
+        public abstract byte[] execute(VirtualFrame frame, Object obj);
 
         @Specialization
         byte[] doBytes(PBytes bytes,
@@ -159,15 +164,15 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = "allowRecursive")
-        byte[] doMemoryView(PMemoryView memoryView,
+        byte[] doMemoryView(VirtualFrame frame, PMemoryView memoryView,
                         @Cached("createRecursive()") ToBytesNode recursive,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytesNode) {
-            return recursive.execute(callToBytesNode.executeObject(memoryView));
+            return recursive.execute(frame, callToBytesNode.executeObject(frame, memoryView));
         }
 
         @Fallback
         byte[] doError(Object obj) {
-            throw raise(TypeError, "expected a bytes-like object, %p found", obj);
+            throw raise.raise(TypeError, "expected a bytes-like object, %p found", obj);
         }
 
         private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
@@ -192,7 +197,7 @@ public abstract class BytesNodes {
     }
 
     public abstract static class FindNode extends PNodeWithContext {
-
+        @Child private PRaiseNode raise = PRaiseNode.create();
         @Child private NormalizeIndexNode normalizeIndexNode;
         @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
         @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
@@ -251,7 +256,7 @@ public abstract class BytesNodes {
 
         @Fallback
         int doError(@SuppressWarnings("unused") PIBytesLike bytes, Object sub, @SuppressWarnings("unused") Object starting, @SuppressWarnings("unused") Object ending) {
-            throw raise(TypeError, "expected a bytes-like object, %p found", sub);
+            throw raise.raise(TypeError, "expected a bytes-like object, %p found", sub);
         }
 
         private NormalizeIndexNode getNormalizeIndexNode() {
@@ -286,7 +291,7 @@ public abstract class BytesNodes {
     public static class FromSequenceStorageNode extends Node {
 
         @Node.Child private SequenceStorageNodes.GetItemNode getItemNode;
-        @Node.Child private SequenceStorageNodes.CastToByteNode castToByteNode;
+        @Node.Child private CastToByteNode castToByteNode;
         @Node.Child private SequenceStorageNodes.LenNode lenNode;
 
         public byte[] execute(SequenceStorage storage) {
@@ -307,10 +312,10 @@ public abstract class BytesNodes {
             return getItemNode;
         }
 
-        private SequenceStorageNodes.CastToByteNode getCastToByteNode() {
+        private CastToByteNode getCastToByteNode() {
             if (castToByteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToByteNode = insert(SequenceStorageNodes.CastToByteNode.create());
+                castToByteNode = insert(CastToByteNode.create());
             }
             return castToByteNode;
         }
@@ -350,24 +355,24 @@ public abstract class BytesNodes {
 
         @Child private SequenceStorageNodes.AppendNode appendByteNode;
 
-        public abstract byte[] execute(Object iterator);
+        public abstract byte[] execute(VirtualFrame frame, Object iterator);
 
         public SequenceStorageNodes.AppendNode getAppendByteNode() {
             if (appendByteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendByteNode = insert(SequenceStorageNodes.AppendNode.create(() -> SequenceStorageNodes.NoGeneralizationNode.create("byte must be in range(0, 256)")));
+                appendByteNode = insert(SequenceStorageNodes.AppendNode.create());
             }
             return appendByteNode;
         }
 
         @Specialization
-        public byte[] doIt(Object iterObject,
+        byte[] doIt(VirtualFrame frame, Object iterObject,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             ByteSequenceStorage bss = new ByteSequenceStorage(16);
             while (true) {
                 try {
-                    getAppendByteNode().execute(bss, getNextNode.execute(iterObject));
+                    getAppendByteNode().execute(bss, getNextNode.execute(frame, iterObject), BytesLikeNoGeneralizationNode.SUPPLIER);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return bss.getInternalByteArray();

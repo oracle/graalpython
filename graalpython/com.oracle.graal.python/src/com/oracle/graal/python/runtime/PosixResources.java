@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,12 +46,15 @@ import java.nio.channels.Channels;
 import java.nio.channels.Pipe;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import java.util.Locale;
 
 /**
  * This class manages the set of file descriptors and child PIDs of a context. File descriptors are
@@ -65,12 +68,15 @@ public class PosixResources {
     private final List<Channel> files;
     private final List<String> filePaths;
     private final List<Process> children;
+    private final Map<String, Integer> inodes;
+    private int inodeCnt = 0;
 
     public PosixResources() {
         files = Collections.synchronizedList(new ArrayList<>());
         filePaths = Collections.synchronizedList(new ArrayList<>());
         children = Collections.synchronizedList(new ArrayList<>());
-        if (System.getProperty("os.name").contains("win")) {
+        String osProperty = System.getProperty("os.name");
+        if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).contains("win")) {
             filePaths.add("STDIN");
             filePaths.add("STDOUT");
             filePaths.add("STDERR");
@@ -82,6 +88,7 @@ public class PosixResources {
         files.add(null);
         files.add(null);
         files.add(null);
+        inodes = new HashMap<>();
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -100,7 +107,7 @@ public class PosixResources {
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public String getFilePath(int fd) {
         if (filePaths.size() > fd) {
             return filePaths.get(fd);
@@ -197,5 +204,19 @@ public class PosixResources {
         int exitStatus = process.waitFor();
         children.set(pid, null);
         return exitStatus;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public int getInodeId(String canonical) {
+        synchronized (inodes) {
+            int inodeId;
+            if (!inodes.containsKey(canonical)) {
+                inodeId = inodeCnt++;
+                inodes.put(canonical, inodeId);
+            } else {
+                inodeId = inodes.get(canonical);
+            }
+            return inodeId;
+        }
     }
 }

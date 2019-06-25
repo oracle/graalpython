@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -42,14 +43,17 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionDefaultsNodeFactory;
-import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionKeywordDefaultsNodeFactory;
+import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionDefaultsNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -63,8 +67,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFunction)
 public class FunctionBuiltins extends PythonBuiltins {
@@ -74,7 +76,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         return FunctionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -94,16 +96,14 @@ public class FunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonBinaryBuiltinNode {
-        @Child WriteAttributeToObjectNode writeNode;
-
         @Specialization(guards = "isNoValue(noValue)")
         Object getName(PFunction self, @SuppressWarnings("unused") PNone noValue,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            Object storedName = readNode.execute(self, __NAME__);
-            if (storedName == PNone.NO_VALUE) {
+                        @Cached("create()") ReadAttributeFromObjectNode readName) {
+            Object name = readName.execute(self, __NAME__);
+            if (name == PNone.NO_VALUE) {
                 return self.getName();
             } else {
-                return storedName;
+                return name;
             }
         }
 
@@ -113,121 +113,87 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object setName(PFunction self, String value) {
-            if (writeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNode = insert(WriteAttributeToObjectNode.create());
-            }
-            writeNode.execute(self, __NAME__, value);
-            self.getArity().setFunctionName(value);
+        Object setName(PFunction self, String value,
+                        @Cached("create()") WriteAttributeToObjectNode writeName) {
+            writeName.execute(self, __NAME__, value);
             return PNone.NONE;
         }
 
         @Specialization
-        Object setName(PFunction self, PString value) {
-            return setName(self, value.getValue());
+        Object setName(PFunction self, PString value,
+                        @Cached("create()") WriteAttributeToObjectNode writeName) {
+            writeName.execute(self, __NAME__, value.getValue());
+            return PNone.NONE;
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        Object setName(PBuiltinFunction self, Object value) {
+        Object setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.AttributeError, "attribute '__name__' of builtin function is not writable");
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        Object setName(Object self, Object value) {
+        Object setName(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.TypeError, "__name__ must be set to a string object");
         }
     }
 
     @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class GetFunctionDefaultsNode extends PythonBinaryBuiltinNode {
-        private final ConditionProfile nullDefaultsProfile = ConditionProfile.createBinaryProfile();
-
-        @TruffleBoundary
-        private static Object[] extractDefaults(PFunction function) {
-            List<Object> defaultValues = new ArrayList<>();
-            List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(function.getFunctionRootNode(), ReadKeywordNode.class);
-            for (ReadKeywordNode readKeywordNode : readKeywordNodes) {
-                Object defaultValue = readKeywordNode.getDefaultValue();
-                if (defaultValue != null) {
-                    defaultValues.add(defaultValue);
-                }
-            }
-            return defaultValues.toArray();
-        }
-
-        private Object getDefaults(PFunction function) {
-            Object[] defaults = function.getDefaults();
-            if (nullDefaultsProfile.profile(defaults == null)) {
-                defaults = extractDefaults(function);
-            }
-
-            assert defaults != null;
-            return (defaults.length == 0) ? PNone.NONE : factory().createTuple(defaults);
+    public abstract static class GetDefaultsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(defaults)")
+        Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults,
+                        @Cached("create()") GetFunctionDefaultsNode getFunctionDefaultsNode) {
+            Object[] argDefaults = getFunctionDefaultsNode.execute(self);
+            assert argDefaults != null;
+            return (argDefaults.length == 0) ? PNone.NONE : factory().createTuple(argDefaults);
         }
 
         @Specialization
-        Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
-            return getDefaults(self);
-        }
-
-        @Specialization
-        Object defaults(PFunction self, PTuple defaults) {
+        Object setDefaults(PFunction self, PTuple defaults) {
             self.setDefaults(defaults.getArray());
             return PNone.NONE;
         }
 
-        public static GetFunctionDefaultsNode create() {
-            return GetFunctionDefaultsNodeFactory.create();
+        @Specialization(guards = "!isNoValue(defaults)")
+        Object setDefaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
+            self.setDefaults(new Object[0]);
+            return PNone.NONE;
         }
     }
 
-    @Builtin(name = __KWDEFAULTS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __KWDEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class GetFunctionKeywordDefaultsNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetKeywordDefaultsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(arg)")
+        Object get(PFunction self, @SuppressWarnings("unused") PNone arg,
+                        @Cached("create()") GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode) {
+            PKeyword[] kwdefaults = getFunctionKeywordDefaultsNode.execute(self);
+            return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(arg)")
+        Object set(PFunction self, @SuppressWarnings("unused") PNone arg) {
+            self.setKwDefaults(PKeyword.EMPTY_KEYWORDS);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(arg)")
         @TruffleBoundary
-        private static PKeyword[] extractDefaults(PFunction function) {
-            ArrayList<PKeyword> kwdefaults = new ArrayList<>();
-            List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(function.getFunctionRootNode(), ReadKeywordNode.class);
-            for (ReadKeywordNode readKeywordNode : readKeywordNodes) {
-                if (!readKeywordNode.canBePositional()) {
-                    Object defaultValue = readKeywordNode.getDefaultValue();
-                    if (defaultValue != null) {
-                        kwdefaults.add(new PKeyword(readKeywordNode.getName(), defaultValue));
-                    }
+        Object set(PFunction self, PDict arg) {
+            CompilerDirectives.transferToInterpreter();
+            ArrayList<PKeyword> keywords = new ArrayList<>();
+            for (Object k : arg.getDictStorage().keys()) {
+                if (!(k instanceof String)) {
+                    throw raise(PythonBuiltinClassType.TypeError, "keyword names must be str, get %p", k);
                 }
+                keywords.add(new PKeyword((String) k, arg.getDictStorage().getItem(k, HashingStorage.getSlowPathEquivalence(k))));
             }
-
-            return kwdefaults.toArray(new PKeyword[0]);
-        }
-
-        @Specialization(guards = "!takesVarargs(self)")
-        Object doNoKeywordOnlyArgs(@SuppressWarnings("unused") PFunction self) {
+            self.setKwDefaults(keywords.toArray(new PKeyword[keywords.size()]));
             return PNone.NONE;
-        }
-
-        @Specialization(guards = "takesVarargs(self)")
-        Object doGeneric(PFunction self) {
-            PKeyword[] kwdefaults = extractDefaults(self);
-            if (kwdefaults.length > 0) {
-                return factory().createDict(kwdefaults);
-            }
-            return PNone.NONE;
-        }
-
-        protected static boolean takesVarargs(PFunction self) {
-            return self.getArity().takesVarArgs();
-        }
-
-        public static GetFunctionKeywordDefaultsNode create() {
-            return GetFunctionKeywordDefaultsNodeFactory.create();
         }
     }
 
-    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Fallback
@@ -236,7 +202,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TRUFFLE_SOURCE, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = TRUFFLE_SOURCE, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetFunctionSourceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -266,4 +232,25 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"isNoValue(none)"})
+        Object getCodeU(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") GetFunctionCodeNode getFunctionCodeNode) {
+            return getFunctionCodeNode.execute(self);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        Object setCode(PFunction self, PCode code) {
+            int closureLength = self.getClosure() == null ? 0 : self.getClosure().length;
+            int freeVarsLength = code.getFreeVars().length;
+            if (closureLength != freeVarsLength) {
+                throw raise(PythonBuiltinClassType.ValueError, "%s() requires a code object with %d free vars, not %d", self.getName(), closureLength, freeVarsLength);
+            }
+            self.setCode(code);
+            return PNone.NONE;
+        }
+    }
 }

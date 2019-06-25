@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -46,3 +46,5 @@ def test_eq():
 
     # empty ranges are always equal
     assert range(10, 20, -30) == range(20, 30, -40)
+
+    assert range(True) == range(1)

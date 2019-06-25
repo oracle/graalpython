@@ -1,0 +1,14 @@
+*UncompressedZipImportTestCase.testBadMTime
+*UncompressedZipImportTestCase.testBadMagic
+*UncompressedZipImportTestCase.testBadMagic2
+*UncompressedZipImportTestCase.testDefaultOptimizationLevel
+*UncompressedZipImportTestCase.testEmptyPy
+*UncompressedZipImportTestCase.testGetData
+*UncompressedZipImportTestCase.testGetSource
+*UncompressedZipImportTestCase.testImport_WithStuff
+*UncompressedZipImportTestCase.testPy
+*UncompressedZipImportTestCase.test_issue31291
+*BadFileZipImportTestCase.testBadArgs
+*BadFileZipImportTestCase.testEmptyFilename
+*BadFileZipImportTestCase.testFilenameTooLong
+*BadFileZipImportTestCase.testNoFile

@@ -1,13 +1,15 @@
 import unittest
 import unittest.mock
 import random
+import os
 import time
 import pickle
 import warnings
 from functools import partial
-from math import log, exp, pi, fsum, sin
+from math import log, exp, pi, fsum, sin, factorial
 from test import support
 from fractions import Fraction
+
 
 class TestBasicOps:
     # Superclass with tests common to all generators.
@@ -50,7 +52,7 @@ class TestBasicOps:
     @unittest.mock.patch('random._urandom') # os.urandom
     def test_seed_when_randomness_source_not_found(self, urandom_mock):
         # Random.seed() uses time.time() when an operating system specific
-        # randomness source is not found. To test this on machines were it
+        # randomness source is not found. To test this on machines where it
         # exists, run the above test, test_seedargs(), again after mocking
         # os.urandom() so that it raises the exception expected when the
         # randomness source is not available.
@@ -88,6 +90,15 @@ class TestBasicOps:
         self.assertTrue(lst != shuffled_lst)
         shuffle(lst)
         self.assertTrue(lst != shuffled_lst)
+        self.assertRaises(TypeError, shuffle, (1, 2, 3))
+
+    def test_shuffle_random_argument(self):
+        # Test random argument to shuffle.
+        shuffle = self.gen.shuffle
+        mock_random = unittest.mock.Mock(return_value=0.5)
+        seq = bytearray(b'abcdefghijk')
+        shuffle(seq, mock_random)
+        mock_random.assert_called_with()
 
     def test_choice(self):
         choice = self.gen.choice
@@ -118,10 +129,6 @@ class TestBasicOps:
         n = 5
         pop = range(n)
         trials = 10000  # large num prevents false negatives without slowing normal case
-        def factorial(n):
-            if n == 0:
-                return 1
-            return n * factorial(n - 1)
         for k in range(n):
             expected = factorial(n) // factorial(n-k)
             perms = {}
@@ -219,6 +226,14 @@ class TestBasicOps:
             choices([], weights=[], k=1)
         with self.assertRaises(IndexError):
             choices([], cum_weights=[], k=5)
+
+    def test_choices_subnormal(self):
+        # Subnormal weights would occassionally trigger an IndexError
+        # in choices() when the value returned by random() was large
+        # enough to make `random() * total` round up to the total.
+        # See https://bugs.python.org/msg275594 for more detail.
+        choices = self.gen.choices
+        choices(population=[1, 2], weights=[1e-323, 1e-323], k=5000)
 
     def test_gauss(self):
         # Ensure that the seed() method initializes all the hidden state.  In
@@ -644,7 +659,10 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
             # Population range too large (n >= maxsize)
             self.gen._randbelow(maxsize+1, maxsize = maxsize)
         self.gen._randbelow(5640, maxsize = maxsize)
-
+        # issue 33203: test that _randbelow raises ValueError on
+        # n == 0 also in its getrandbits-independent branch.
+        with self.assertRaises(ValueError):
+            self.gen._randbelow(0, maxsize=maxsize)
         # This might be going too far to test a single line, but because of our
         # noble aim of achieving 100% test coverage we need to write a case in
         # which the following line in Random._randbelow() gets executed:
@@ -933,6 +951,30 @@ class TestModule(unittest.TestCase):
             def __init__(self, newarg=None):
                 random.Random.__init__(self)
         Subclass(newarg=1)
+
+    @unittest.skipUnless(hasattr(os, "fork"), "fork() required")
+    def test_after_fork(self):
+        # Test the global Random instance gets reseeded in child
+        r, w = os.pipe()
+        pid = os.fork()
+        if pid == 0:
+            # child process
+            try:
+                val = random.getrandbits(128)
+                with open(w, "w") as f:
+                    f.write(str(val))
+            finally:
+                os._exit(0)
+        else:
+            # parent process
+            os.close(w)
+            val = random.getrandbits(128)
+            with open(r, "r") as f:
+                child_val = eval(f.read())
+            self.assertNotEqual(val, child_val)
+
+            pid, status = os.waitpid(pid, 0)
+            self.assertEqual(status, 0)
 
 
 if __name__ == "__main__":

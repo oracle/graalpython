@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@
 
 #define MUST_INLINE __attribute__((always_inline)) inline
 
+#include "polyglot.h"
 #include "Python.h"
 
 #define SRC_CS "utf-8"
@@ -83,10 +84,31 @@ extern void *Py_NoValue;
 extern init_upcall upcalls[];
 extern unsigned init_upcall_n;
 
+/* upcall helpers */
+MUST_INLINE
+PyObject* polyglot_ensure_ptr(void *obj) {
+	return polyglot_fits_in_i64(obj) ? (PyObject*) polyglot_as_i64(obj) : (PyObject*) obj;
+}
+
+MUST_INLINE
+int32_t polyglot_ensure_i32(void *obj) {
+	return polyglot_fits_in_i32(obj) ? polyglot_as_i32(obj) : (int32_t) obj;
+}
+
+MUST_INLINE
+int64_t polyglot_ensure_i64(void *obj) {
+	return polyglot_fits_in_i64(obj) ? polyglot_as_i64(obj) : (int64_t) obj;
+}
+
+MUST_INLINE
+double polyglot_ensure_double(void *obj) {
+	return polyglot_fits_in_double(obj) ? polyglot_as_double(obj) : (double) ((int64_t)obj);
+}
+
 /* upcall functions for calling into Python */
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
-extern PyObject*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
-extern PyObject*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
+extern uint64_t(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
+extern double(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
 extern PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
 extern uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
@@ -100,16 +122,16 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), __name__, ##__VA_ARGS__))
 
 /* Call function with return type 'int'; no polyglot cast but error handling */
-#define UPCALL_I(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+#define UPCALL_I(__recv__, __name__, ...) (polyglot_ensure_i32(UPCALL_P(__recv__, __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'long'; no polyglot cast but error handling */
-#define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+#define UPCALL_L(__recv__, __name__, ...) (polyglot_ensure_i64(UPCALL_P(__recv__, __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_D(__recv__, __name__, ...) PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__)
+#define UPCALL_D(__recv__, __name__, ...) (polyglot_ensure_double(PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'void*'; no polyglot cast and no error handling */
-#define UPCALL_PTR(__name__, ...) (PY_TRUFFLE_LANDING_PTR(__name__, ##__VA_ARGS__))
+#define UPCALL_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_LANDING_PTR(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
 #define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
@@ -121,19 +143,19 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_CEXT_NOCAST(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
 
 /* Call function of 'python_cext' module with return type 'void*'; no polyglot cast and no error handling */
-#define UPCALL_CEXT_PTR(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with a primitive return; no polyglot cast but error handling */
 #define UPCALL_CEXT_P(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_L(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'int'; no polyglot cast but error handling */
-#define UPCALL_CEXT_I(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_I(__name__, ...) (polyglot_ensure_i32(UPCALL_CEXT_P(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'long'; no polyglot cast but error handling */
-#define UPCALL_CEXT_L(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_L(__name__, ...) (polyglot_ensure_i64(UPCALL_CEXT_P(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_CEXT_D(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_D(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_D(__name__, ...) (polyglot_ensure_double(PY_TRUFFLE_CEXT_LANDING_D(__name__, ##__VA_ARGS__)))
 
 #define UPCALL_ID(name)                                                 \
     static void* _jls_ ## name;                                         \
@@ -175,25 +197,16 @@ inline void* native_to_java(PyObject* obj) {
         return obj;
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
-    } else {
-        void* refcnt = obj->ob_refcnt;
-        if (!truffle_cannot_be_handle(refcnt)) {
-            return resolve_handle(cache, refcnt);
-        } else if (IS_POINTER(refcnt)) {
-            return refcnt;
-        }
-        return obj;
     }
+    return obj;
 }
 
 __attribute__((always_inline))
 inline void* native_type_to_java(PyTypeObject* type) {
-	if (IS_POINTER(((PyObject*)type)->ob_refcnt)) {
-		return (void*)((PyObject*)type)->ob_refcnt;
-	} else if (!truffle_cannot_be_handle(((PyObject*)type)->ob_refcnt)) {
-		return resolve_handle(cache, ((PyObject*)type)->ob_refcnt);
-	}
-	return (void*)type;
+	if (!truffle_cannot_be_handle(type)) {
+        return (void *)resolve_handle(cache, (uint64_t)type);
+    }
+    return (void *)type;
 }
 
 extern void* to_java(PyObject* obj);
@@ -211,39 +224,44 @@ int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, void *closure)
 void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
 void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
 void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
-void* wrap_fastcall(_PyCFunctionFast        fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *  self, PyObject   **args, PyObject  *nargs);
+void* wrap_fastcall_with_keywords(_PyCFunctionFastWithKeywords fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
 void* wrap_unsupported(void *fun, ...);
 
 #define TDEBUG __builtin_debugtrap()
-#define get_method_flags_wrapper(flags)                                 \
-    (((flags) < 0) ?                                                    \
-     truffle_read(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \
-     (((flags) & METH_FASTCALL) ?                                       \
-      truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                  \
-      (((flags) & METH_KEYWORDS) ?                                       \
-       truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
-       (((flags) & METH_VARARGS) ?                                       \
-        truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
-        (((flags) & METH_NOARGS) ?                                           \
-         truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                      \
-         (((flags) & METH_O) ?                                   \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_O") :              \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
+#define get_method_flags_wrapper(flags)                                                  \
+    (((flags) < 0) ?                                                                     \
+     polyglot_get_member(PY_TRUFFLE_CEXT, "METH_DIRECT") :                               \
+     ((((flags) & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS)) ? \
+      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL_WITH_KEYWORDS") :              \
+     (((flags) & METH_FASTCALL) ?                                                        \
+      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                            \
+      (((flags) & METH_KEYWORDS) ?                                                       \
+       polyglot_get_member(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                           \
+       (((flags) & METH_VARARGS) ?                                                       \
+        polyglot_get_member(PY_TRUFFLE_CEXT, "METH_VARARGS") :                           \
+        (((flags) & METH_NOARGS) ?                                                       \
+         polyglot_get_member(PY_TRUFFLE_CEXT, "METH_NOARGS") :                           \
+         (((flags) & METH_O) ?                                                           \
+          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_O") :                               \
+          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED"))))))))
 
-#define get_method_flags_cwrapper(flags)                                \
-    (void*)((((flags) < 0) ?                                            \
-     wrap_direct :                                                      \
-     (((flags) & METH_FASTCALL) ?                                       \
-      wrap_fastcall :                                                   \
-      (((flags) & METH_KEYWORDS) ?                                      \
-       wrap_keywords :                                                   \
-       (((flags) & METH_VARARGS) ?                                       \
-        wrap_varargs :                                                   \
-        (((flags) & METH_NOARGS) ?                                           \
-         wrap_noargs :                                                  \
-         (((flags) & METH_O) ?                                   \
-          wrap_direct :                                               \
-          wrap_unsupported)))))))
+#define get_method_flags_cwrapper(flags)                                                 \
+    (void*)((((flags) < 0) ?                                                             \
+     wrap_direct :                                                                       \
+     ((((flags) & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS)) ? \
+      wrap_fastcall_with_keywords :                                                      \
+      (((flags) & METH_FASTCALL) ?                                                       \
+       wrap_fastcall :                                                                   \
+       (((flags) & METH_KEYWORDS) ?                                                      \
+        wrap_keywords :                                                                  \
+        (((flags) & METH_VARARGS) ?                                                      \
+         wrap_varargs :                                                                  \
+         (((flags) & METH_NOARGS) ?                                                      \
+          wrap_noargs :                                                                  \
+          (((flags) & METH_O) ?                                                          \
+           wrap_direct :                                                                 \
+           wrap_unsupported))))))))
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
@@ -323,7 +341,7 @@ int bytes_copy2mem(char* target, char* source, size_t nbytes);
 /* MEMORYVIEW, BUFFERDECORATOR */
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
 
-#if 0
+#if 1
 /*
  * (tfel): On native Sulong, using va_list will force all arguments to native
  * memory, which hinders escape analysis and PE in a big way. To avoid this,

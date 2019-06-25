@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,11 @@
  */
 package com.oracle.graal.python.nodes.truffle;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.truffle.api.dsl.ImplicitCast;
+import com.oracle.truffle.api.dsl.TypeCast;
+import com.oracle.truffle.api.dsl.TypeCheck;
 import com.oracle.truffle.api.dsl.TypeSystem;
 
 @TypeSystem
@@ -33,5 +37,25 @@ public abstract class PythonTypes {
     @ImplicitCast
     public static long intToLong(int value) {
         return value;
+    }
+
+    @TypeCheck(PythonNativeObject.class)
+    public static boolean isNativeObject(Object object) {
+        return PythonNativeObject.isInstance(object);
+    }
+
+    @TypeCast(PythonNativeObject.class)
+    public static PythonNativeObject asNativeObject(Object object) {
+        return PythonNativeObject.cast(object);
+    }
+
+    @TypeCheck(PythonNativeClass.class)
+    public static boolean isNativeClass(Object object) {
+        return PythonNativeClass.isInstance(object);
+    }
+
+    @TypeCast(PythonNativeClass.class)
+    public static PythonNativeClass asNativeClass(Object object) {
+        return PythonNativeClass.cast(object);
     }
 }

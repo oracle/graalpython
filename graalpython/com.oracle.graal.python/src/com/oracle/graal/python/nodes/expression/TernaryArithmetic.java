@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode.NotImplementedHandler;
@@ -62,12 +63,14 @@ public enum TernaryArithmetic {
         this.methodName = methodName;
         this.operator = operator;
         this.notImplementedHandler = () -> new NotImplementedHandler() {
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
             @Override
             public Object execute(Object arg, Object arg2, Object arg3) {
                 if (arg3 instanceof PNone) {
-                    throw raise(TypeError, "unsupported operand type(s) for %s or %s(): '%p' and '%p'", operator, operatorFunction, arg, arg2);
+                    throw raiseNode.raise(TypeError, "unsupported operand type(s) for %s or %s(): '%p' and '%p'", operator, operatorFunction, arg, arg2);
                 } else {
-                    throw raise(TypeError, "unsupported operand type(s) for %s(): '%p', '%p', '%p'", operatorFunction, arg, arg2, arg3);
+                    throw raiseNode.raise(TypeError, "unsupported operand type(s) for %s(): '%p', '%p', '%p'", operatorFunction, arg, arg2, arg3);
                 }
             }
         };
@@ -94,7 +97,7 @@ public enum TernaryArithmetic {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callNode.execute(left.execute(frame), right.execute(frame), PNone.NONE);
+            return callNode.execute(frame, left.execute(frame), right.execute(frame), PNone.NONE);
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -48,6 +48,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
@@ -58,7 +59,7 @@ public final class SetBuiltins extends PythonBuiltins {
         return SetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "clear", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
@@ -70,19 +71,19 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "add", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "add", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object add(PSet self, Object o,
+        public Object add(VirtualFrame frame, PSet self, Object o,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-            setItemNode.execute(self, o, PNone.NO_VALUE);
+            setItemNode.execute(frame, self, o, PNone.NO_VALUE);
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -91,59 +92,59 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __OR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doSet(PBaseSet self, PBaseSet other,
+        Object doSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
-            return factory().createSet(unionNode.execute(self.getDictStorage(), other.getDictStorage()));
+            return factory().createSet(unionNode.execute(frame, self.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
-        Object doReverse(PBaseSet self, Object other,
+        Object doReverse(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create(__OR__)") LookupAndCallBinaryNode callOr) {
-            return callOr.executeObject(other, self);
+            return callOr.executeObject(frame, other, self);
         }
     }
 
-    @Builtin(name = "remove", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "remove", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object remove(PBaseSet self, Object other,
+        Object remove(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
 
-            if (!delItemNode.execute(self, self.getDictStorage(), other)) {
+            if (!delItemNode.execute(frame, self, self.getDictStorage(), other)) {
                 throw raise(PythonErrorType.KeyError, "%s", other);
             }
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "discard", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "discard", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object discard(PBaseSet self, Object other,
+        Object discard(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
 
-            delItemNode.execute(self, self.getDictStorage(), other);
+            delItemNode.execute(frame, self, self.getDictStorage(), other);
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "pop", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "pop", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PopNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object remove(PBaseSet self,
+        Object remove(VirtualFrame frame, PBaseSet self,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
 
             Iterator<Object> iterator = self.getDictStorage().keys().iterator();
             if (iterator.hasNext()) {
                 Object next = iterator.next();
-                delItemNode.execute(self, self.getDictStorage(), next);
+                delItemNode.execute(frame, self, self.getDictStorage(), next);
                 return next;
             }
             throw raise(PythonErrorType.KeyError, "pop from an emtpy set");

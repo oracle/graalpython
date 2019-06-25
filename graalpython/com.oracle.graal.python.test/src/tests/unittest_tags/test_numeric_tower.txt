@@ -1,0 +1,3 @@
+test_bools
+test_fractions
+test_hash_normalization

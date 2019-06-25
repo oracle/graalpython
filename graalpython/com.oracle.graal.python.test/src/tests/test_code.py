@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -77,6 +77,8 @@ def test_firstlineno():
 
 
 def test_code_attributes():
+    import sys
+
     code = wrapper().__code__
     assert code.co_argcount == 3
     assert code.co_kwonlyargcount == 0
@@ -85,7 +87,8 @@ def test_code_attributes():
     assert code.co_flags & (1 << 5)
     assert not code.co_flags & (1 << 2)
     assert not code.co_flags & (1 << 3)
-    # assert code.co_code
+    if sys.implementation.name == 'graalpython':
+        assert code.co_code.decode().strip() == wrapper().__truffle_source__.strip()
     # assert code.co_consts
     # assert set(code.co_names) == {'set', 'TypeError', 'print'}
     assert set(code.co_varnames) == {'arg_l', 'kwarg_case', 'kwarg_other', 'loc_1', 'loc_3', 'inner_func'}
@@ -95,3 +98,66 @@ def test_code_attributes():
     # assert code.co_lnotab == b'\x00\x01\x0c\x01\x0c\x01\x06\x02\x15\x03\x03\x01\x0e\x01\r\x01\x05\x02'
     assert set(code.co_freevars) == {'values'}
     assert set(code.co_cellvars) == {'kwarg_other', 'loc_2'}
+
+
+def test_code_copy():
+    import types
+
+    code = wrapper().__code__
+    code2 = types.CodeType(
+        code.co_argcount,
+        code.co_kwonlyargcount,
+        code.co_nlocals,
+        code.co_stacksize,
+        code.co_flags,
+        code.co_code,
+        code.co_consts,
+        code.co_names,
+        code.co_varnames,
+        code.co_filename,
+        code.co_name,
+        code.co_firstlineno,
+        code.co_lnotab,
+        code.co_freevars,
+        code.co_cellvars)
+
+    assert code.co_argcount == code2.co_argcount
+    assert code.co_kwonlyargcount == code2.co_kwonlyargcount
+    assert code.co_nlocals == code2.co_nlocals
+    assert code.co_stacksize == code2.co_stacksize
+    assert code.co_flags == code2.co_flags
+    assert code.co_code == code2.co_code
+    assert code.co_consts == code2.co_consts
+    assert set(code.co_names) == set(code2.co_names)
+    assert set(code.co_varnames) == set(code2.co_varnames)
+    assert code.co_filename == code2.co_filename
+    assert code.co_name == code2.co_name
+    assert code.co_firstlineno == code2.co_firstlineno
+    assert code.co_lnotab == code2.co_lnotab
+    assert set(code.co_freevars) == set(code2.co_freevars)
+    assert set(code.co_cellvars) == set(code2.co_cellvars)
+
+
+def test_module_code():
+    import sys
+    m = __import__('package.moduleA')
+    with open(m.__file__, 'r') as MODULE:
+        source = MODULE.read()
+        code = compile(source, m.__file__, 'exec')
+        assert code.co_argcount == 0
+        assert code.co_kwonlyargcount == 0
+        assert code.co_nlocals == 0
+        # assert code.co_stacksize == 0
+        # assert code.co_flags == 0
+        if sys.implementation.name == 'graalpython':
+            assert code.co_code.decode().strip() == source.strip()
+        # assert code.co_consts == tuple()
+        # assert set(code.co_names) == set()
+        assert set(code.co_varnames) == set()
+        assert code.co_filename.endswith("__init__.py")
+        assert code.co_name.startswith("<module")
+        if sys.implementation.name == 'graalpython':
+            assert code.co_firstlineno == 1
+        # assert code.co_lnotab  == b''
+        assert code.co_freevars == tuple()
+        assert code.co_cellvars == tuple()

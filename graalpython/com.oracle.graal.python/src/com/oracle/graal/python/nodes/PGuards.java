@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -66,8 +68,9 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -87,6 +90,10 @@ public abstract class PGuards {
     /**
      * Specialization guards.
      */
+
+    public static boolean isSameObject(Object left, Object right) {
+        return left == right;
+    }
 
     public static boolean isEmpty(Object[] array) {
         return array.length == 0;
@@ -112,12 +119,20 @@ public abstract class PGuards {
         return value instanceof PBuiltinFunction || value instanceof PFunction;
     }
 
+    public static boolean isPBuiltinFunction(Object value) {
+        return value instanceof PBuiltinFunction;
+    }
+
+    public static boolean isPFunction(Object value) {
+        return value instanceof PFunction;
+    }
+
     public static boolean isCallable(Object value) {
         return value instanceof PBuiltinFunction || value instanceof PFunction || value instanceof PBuiltinMethod || value instanceof PMethod;
     }
 
     public static boolean isClass(Object value) {
-        return value instanceof PythonClass;
+        return value instanceof PythonAbstractClass;
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {
@@ -251,16 +266,24 @@ public abstract class PGuards {
         return !isPythonBuiltinClass(klass);
     }
 
+    public static boolean isPythonBuiltinClassType(Object klass) {
+        return klass instanceof PythonBuiltinClassType;
+    }
+
     public static boolean isPythonBuiltinClass(Object klass) {
         return klass instanceof PythonBuiltinClass;
     }
 
     public static boolean isNativeObject(Object object) {
-        return object instanceof PythonNativeObject;
+        return PythonNativeObject.isInstance(object);
+    }
+
+    public static boolean isManagedClass(Object klass) {
+        return klass instanceof PythonManagedClass;
     }
 
     public static boolean isNativeClass(Object klass) {
-        return klass instanceof PythonNativeClass;
+        return PythonNativeClass.isInstance(klass);
     }
 
     public static boolean isPRange(Object obj) {
@@ -275,12 +298,20 @@ public abstract class PGuards {
         return obj instanceof PBuiltinFunction;
     }
 
+    public static boolean isMethod(Object value) {
+        return value instanceof PMethod || value instanceof PBuiltinMethod;
+    }
+
     public static boolean isBuiltinMethod(Object obj) {
         return obj instanceof PBuiltinMethod;
     }
 
     public static boolean isBuiltinObject(Object obj) {
         return obj instanceof PythonBuiltinObject;
+    }
+
+    public static boolean isAnyPythonObject(Object obj) {
+        return obj instanceof PythonAbstractObject;
     }
 
     public static boolean isForeignObject(Object obj) {
@@ -307,12 +338,20 @@ public abstract class PGuards {
         return obj instanceof PTuple;
     }
 
+    public static boolean isPCode(Object obj) {
+        return obj instanceof PCode;
+    }
+
     public static boolean isInteger(Object obj) {
         return obj instanceof Long || obj instanceof Integer;
     }
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytes || obj instanceof PByteArray;
+    }
+
+    public static boolean isMemoryView(Object obj) {
+        return obj instanceof PMemoryView;
     }
 
     public static boolean isPSlice(Object obj) {

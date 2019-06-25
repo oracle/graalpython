@@ -6,6 +6,7 @@
 # monkey-patched when running the "test_xml_etree_c" test suite.
 
 import copy
+import functools
 import html
 import io
 import operator
@@ -89,6 +90,22 @@ ENTITY_XML = """\
 ]>
 <document>&entity;</document>
 """
+
+EXTERNAL_ENTITY_XML = """\
+<!DOCTYPE points [
+<!ENTITY entity SYSTEM "file:///non-existing-file.xml">
+]>
+<document>&entity;</document>
+"""
+
+def checkwarnings(*filters, quiet=False):
+    def decorator(test):
+        def newtest(*args, **kwargs):
+            with support.check_warnings(*filters, quiet=quiet):
+                test(*args, **kwargs)
+        functools.update_wrapper(newtest, test)
+        return newtest
+    return decorator
 
 
 class ModuleTest(unittest.TestCase):
@@ -606,6 +623,7 @@ class ElementTreeTest(unittest.TestCase):
         self.assertEqual(str(cm.exception),
                 'junk after document element: line 1, column 12')
 
+        self.addCleanup(support.unlink, TESTFN)
         with open(TESTFN, "wb") as f:
             f.write(b"<document />junk")
         it = iterparse(TESTFN)
@@ -691,6 +709,10 @@ class ElementTreeTest(unittest.TestCase):
             ])
 
 
+    # Element.getchildren() and ElementTree.getiterator() are deprecated.
+    @checkwarnings(("This method will be removed in future versions.  "
+                    "Use .+ instead.",
+                    (DeprecationWarning, PendingDeprecationWarning)))
     def test_getchildren(self):
         # Test Element.getchildren()
 
@@ -844,6 +866,13 @@ class ElementTreeTest(unittest.TestCase):
         parser.feed(ENTITY_XML)
         root = parser.close()
         self.serialize_check(root, '<document>text</document>')
+
+        # 4) external (SYSTEM) entity
+
+        with self.assertRaises(ET.ParseError) as cm:
+            ET.XML(EXTERNAL_ENTITY_XML)
+        self.assertEqual(str(cm.exception),
+                'undefined entity &entity;: line 4, column 10')
 
     def test_namespace(self):
         # Test namespace issues.
@@ -1560,7 +1589,7 @@ class BugsTest(unittest.TestCase):
         class EchoTarget:
             def close(self):
                 return ET.Element("element") # simulate root
-        parser = ET.XMLParser(EchoTarget())
+        parser = ET.XMLParser(target=EchoTarget())
         parser.feed("<element>some text</element>")
         self.assertEqual(parser.close().tag, 'element')
 
@@ -2131,6 +2160,21 @@ class ElementTreeTypeTest(unittest.TestCase):
         mye = MyElement('joe')
         self.assertEqual(mye.newmethod(), 'joe')
 
+    def test_Element_subclass_find(self):
+        class MyElement(ET.Element):
+            pass
+
+        e = ET.Element('foo')
+        e.text = 'text'
+        sub = MyElement('bar')
+        sub.text = 'subtext'
+        e.append(sub)
+        self.assertEqual(e.findtext('bar'), 'subtext')
+        self.assertEqual(e.find('bar').tag, 'bar')
+        found = list(e.findall('bar'))
+        self.assertEqual(len(found), 1, found)
+        self.assertEqual(found[0].tag, 'bar')
+
 
 class ElementFindTest(unittest.TestCase):
     def test_find_simple(self):
@@ -2222,6 +2266,39 @@ class ElementFindTest(unittest.TestCase):
             ['tag'] * 2)
         self.assertEqual(e.findall('section//'), e.findall('section//*'))
 
+        self.assertEqual(summarize_list(e.findall(".//section[tag='subtext']")),
+            ['section'])
+        self.assertEqual(summarize_list(e.findall(".//section[tag ='subtext']")),
+            ['section'])
+        self.assertEqual(summarize_list(e.findall(".//section[tag= 'subtext']")),
+            ['section'])
+        self.assertEqual(summarize_list(e.findall(".//section[tag = 'subtext']")),
+            ['section'])
+        self.assertEqual(summarize_list(e.findall(".//section[ tag = 'subtext' ]")),
+            ['section'])
+
+        self.assertEqual(summarize_list(e.findall(".//tag[.='subtext']")),
+                         ['tag'])
+        self.assertEqual(summarize_list(e.findall(".//tag[. ='subtext']")),
+                         ['tag'])
+        self.assertEqual(summarize_list(e.findall('.//tag[.= "subtext"]')),
+                         ['tag'])
+        self.assertEqual(summarize_list(e.findall('.//tag[ . = "subtext" ]')),
+                         ['tag'])
+        self.assertEqual(summarize_list(e.findall(".//tag[. = 'subtext']")),
+                         ['tag'])
+        self.assertEqual(summarize_list(e.findall(".//tag[. = 'subtext ']")),
+                         [])
+        self.assertEqual(summarize_list(e.findall(".//tag[.= ' subtext']")),
+                         [])
+
+        # duplicate section => 2x tag matches
+        e[1] = e[2]
+        self.assertEqual(summarize_list(e.findall(".//section[tag = 'subtext']")),
+                         ['section', 'section'])
+        self.assertEqual(summarize_list(e.findall(".//tag[. = 'subtext']")),
+                         ['tag', 'tag'])
+
     def test_test_find_with_ns(self):
         e = ET.XML(SAMPLE_XML_NS)
         self.assertEqual(summarize_list(e.findall('tag')), [])
@@ -2258,8 +2335,12 @@ class ElementFindTest(unittest.TestCase):
         self.assertEqual(summarize_list(ET.ElementTree(e).findall('tag')),
             ['tag'] * 2)
         # this produces a warning
-        self.assertEqual(summarize_list(ET.ElementTree(e).findall('//tag')),
-            ['tag'] * 3)
+        msg = ("This search is broken in 1.3 and earlier, and will be fixed "
+               "in a future version.  If you rely on the current behaviour, "
+               "change it to '.+'")
+        with self.assertWarnsRegex(FutureWarning, msg):
+            it = ET.ElementTree(e).findall('//tag')
+        self.assertEqual(summarize_list(it), ['tag'] * 3)
 
 
 class ElementIterTest(unittest.TestCase):
@@ -2344,6 +2425,9 @@ class ElementIterTest(unittest.TestCase):
         self.assertEqual(self._ilist(doc), all_tags)
         self.assertEqual(self._ilist(doc, '*'), all_tags)
 
+    # Element.getiterator() is deprecated.
+    @checkwarnings(("This method will be removed in future versions.  "
+                    "Use .+ instead.", PendingDeprecationWarning))
     def test_getiterator(self):
         doc = ET.XML('''
             <document>
@@ -2551,13 +2635,13 @@ class XMLParserTest(unittest.TestCase):
     def test_constructor_args(self):
         # Positional args. The first (html) is not supported, but should be
         # nevertheless correctly accepted.
-        parser = ET.XMLParser(None, ET.TreeBuilder(), 'utf-8')
+        with self.assertWarnsRegex(DeprecationWarning, r'\bhtml\b'):
+            parser = ET.XMLParser(None, ET.TreeBuilder(), 'utf-8')
         parser.feed(self.sample1)
         self._check_sample_element(parser.close())
 
         # Now as keyword args.
         parser2 = ET.XMLParser(encoding='utf-8',
-                               html=[{}],
                                target=ET.TreeBuilder())
         parser2.feed(self.sample1)
         self._check_sample_element(parser2.close())
@@ -2794,9 +2878,6 @@ class ElementSlicingTest(unittest.TestCase):
 
 
 class IOTest(unittest.TestCase):
-    def tearDown(self):
-        support.unlink(TESTFN)
-
     def test_encoding(self):
         # Test encoding issues.
         elem = ET.Element("tag")
@@ -2867,12 +2948,14 @@ class IOTest(unittest.TestCase):
                      "<tag key=\"åöö&lt;&gt;\" />" % enc).encode(enc))
 
     def test_write_to_filename(self):
+        self.addCleanup(support.unlink, TESTFN)
         tree = ET.ElementTree(ET.XML('''<site />'''))
         tree.write(TESTFN)
         with open(TESTFN, 'rb') as f:
             self.assertEqual(f.read(), b'''<site />''')
 
     def test_write_to_text_file(self):
+        self.addCleanup(support.unlink, TESTFN)
         tree = ET.ElementTree(ET.XML('''<site />'''))
         with open(TESTFN, 'w', encoding='utf-8') as f:
             tree.write(f, encoding='unicode')
@@ -2881,6 +2964,7 @@ class IOTest(unittest.TestCase):
             self.assertEqual(f.read(), b'''<site />''')
 
     def test_write_to_binary_file(self):
+        self.addCleanup(support.unlink, TESTFN)
         tree = ET.ElementTree(ET.XML('''<site />'''))
         with open(TESTFN, 'wb') as f:
             tree.write(f)
@@ -2889,6 +2973,7 @@ class IOTest(unittest.TestCase):
             self.assertEqual(f.read(), b'''<site />''')
 
     def test_write_to_binary_file_with_bom(self):
+        self.addCleanup(support.unlink, TESTFN)
         tree = ET.ElementTree(ET.XML('''<site />'''))
         # test BOM writing to buffered file
         with open(TESTFN, 'wb') as f:
@@ -3074,46 +3159,6 @@ class NoAcceleratorTest(unittest.TestCase):
 # --------------------------------------------------------------------
 
 
-class CleanContext(object):
-    """Provide default namespace mapping and path cache."""
-    checkwarnings = None
-
-    def __init__(self, quiet=False):
-        if sys.flags.optimize >= 2:
-            # under -OO, doctests cannot be run and therefore not all warnings
-            # will be emitted
-            quiet = True
-        deprecations = (
-            # Search behaviour is broken if search path starts with "/".
-            ("This search is broken in 1.3 and earlier, and will be fixed "
-             "in a future version.  If you rely on the current behaviour, "
-             "change it to '.+'", FutureWarning),
-            # Element.getchildren() and Element.getiterator() are deprecated.
-            ("This method will be removed in future versions.  "
-             "Use .+ instead.", DeprecationWarning),
-            ("This method will be removed in future versions.  "
-             "Use .+ instead.", PendingDeprecationWarning))
-        self.checkwarnings = support.check_warnings(*deprecations, quiet=quiet)
-
-    def __enter__(self):
-        from xml.etree import ElementPath
-        self._nsmap = ET.register_namespace._namespace_map
-        # Copy the default namespace mapping
-        self._nsmap_copy = self._nsmap.copy()
-        # Copy the path cache (should be empty)
-        self._path_cache = ElementPath._cache
-        ElementPath._cache = self._path_cache.copy()
-        self.checkwarnings.__enter__()
-
-    def __exit__(self, *args):
-        from xml.etree import ElementPath
-        # Restore mapping and path cache
-        self._nsmap.clear()
-        self._nsmap.update(self._nsmap_copy)
-        ElementPath._cache = self._path_cache
-        self.checkwarnings.__exit__(*args)
-
-
 def test_main(module=None):
     # When invoked without a module, runs the Python ET tests by loading pyET.
     # Otherwise, uses the given module as the ET.
@@ -3153,11 +3198,22 @@ def test_main(module=None):
             NoAcceleratorTest,
             ])
 
+    # Provide default namespace mapping and path cache.
+    from xml.etree import ElementPath
+    nsmap = ET.register_namespace._namespace_map
+    # Copy the default namespace mapping
+    nsmap_copy = nsmap.copy()
+    # Copy the path cache (should be empty)
+    path_cache = ElementPath._cache
+    ElementPath._cache = path_cache.copy()
     try:
-        # XXX the C module should give the same warnings as the Python module
-        with CleanContext(quiet=(pyET is not ET)):
-            support.run_unittest(*test_classes)
+        support.run_unittest(*test_classes)
     finally:
+        from xml.etree import ElementPath
+        # Restore mapping and path cache
+        nsmap.clear()
+        nsmap.update(nsmap_copy)
+        ElementPath._cache = path_cache
         # don't interfere with subsequent tests
         ET = pyET = None
 

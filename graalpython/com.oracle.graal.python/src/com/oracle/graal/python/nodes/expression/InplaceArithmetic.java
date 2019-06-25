@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 
 public enum InplaceArithmetic {
@@ -69,9 +70,11 @@ public enum InplaceArithmetic {
         this.methodName = methodName;
         this.operator = operator;
         this.notImplementedHandler = () -> new LookupAndCallInplaceNode.NotImplementedHandler() {
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
             @Override
             public Object execute(Object arg, Object arg2) {
-                throw raise(TypeError, "unsupported operand type(s) for %s: '%p' and '%p'", operator, arg, arg2);
+                throw raiseNode.raise(TypeError, "unsupported operand type(s) for %s: '%p' and '%p'", operator, arg, arg2);
             }
         };
     }

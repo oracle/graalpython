@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -689,7 +689,7 @@ mbuf_add_view(_PyManagedBufferObject *mbuf, const Py_buffer *src)
     Py_INCREF(mbuf);
     mbuf->exports++;
 
-    return (PyObject *)mv;
+    return (PyObject *)polyglot_from_PyMemoryViewObject(mv);
 }
 
 /* Register an incomplete view: shape, strides, suboffsets and flags still
@@ -720,7 +720,7 @@ mbuf_add_incomplete_view(_PyManagedBufferObject *mbuf, const Py_buffer *src,
     Py_INCREF(mbuf);
     mbuf->exports++;
 
-    return (PyObject *)mv;
+    return (PyObject *)polyglot_from_PyMemoryViewObject(mv);
 }
 
 /* Expose a raw memory area as a view of contiguous bytes. flags can be
@@ -941,7 +941,7 @@ PyMemoryView_GetContiguous(PyObject *obj, int buffertype, char order)
     }
 
     if (PyBuffer_IsContiguous(view, order))
-        return (PyObject *)mv;
+    	return (PyObject *)polyglot_from_PyMemoryViewObject(mv);
 
     if (buffertype == PyBUF_WRITE) {
         PyErr_SetString(PyExc_BufferError,
@@ -1403,7 +1403,7 @@ memory_cast(PyMemoryViewObject *self, PyObject *args, PyObject *kwds)
     if (shape && cast_to_ND(mv, shape, (int)ndim) < 0)
         goto error;
 
-    return (PyObject *)mv;
+  	return (PyObject *)polyglot_from_PyMemoryViewObject(mv);
 
 error:
     Py_DECREF(mv);
@@ -2924,7 +2924,7 @@ _IntTupleFromSsizet(int len, Py_ssize_t *vals)
 }
 
 static PyObject *
-memory_obj_get(PyMemoryViewObject *self)
+memory_obj_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     Py_buffer *view = &self->view;
 
@@ -2937,56 +2937,56 @@ memory_obj_get(PyMemoryViewObject *self)
 }
 
 static PyObject *
-memory_nbytes_get(PyMemoryViewObject *self)
+memory_nbytes_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     CHECK_RELEASED(self);
     return PyLong_FromSsize_t(self->view.len);
 }
 
 static PyObject *
-memory_format_get(PyMemoryViewObject *self)
+memory_format_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     CHECK_RELEASED(self);
     return PyUnicode_FromString(self->view.format);
 }
 
 static PyObject *
-memory_itemsize_get(PyMemoryViewObject *self)
+memory_itemsize_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     CHECK_RELEASED(self);
     return PyLong_FromSsize_t(self->view.itemsize);
 }
 
 static PyObject *
-memory_shape_get(PyMemoryViewObject *self)
+memory_shape_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     CHECK_RELEASED(self);
     return _IntTupleFromSsizet(self->view.ndim, self->view.shape);
 }
 
 static PyObject *
-memory_strides_get(PyMemoryViewObject *self)
+memory_strides_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     CHECK_RELEASED(self);
     return _IntTupleFromSsizet(self->view.ndim, self->view.strides);
 }
 
 static PyObject *
-memory_suboffsets_get(PyMemoryViewObject *self)
+memory_suboffsets_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     CHECK_RELEASED(self);
     return _IntTupleFromSsizet(self->view.ndim, self->view.suboffsets);
 }
 
 static PyObject *
-memory_readonly_get(PyMemoryViewObject *self)
+memory_readonly_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     CHECK_RELEASED(self);
     return PyBool_FromLong(self->view.readonly);
 }
 
 static PyObject *
-memory_ndim_get(PyMemoryViewObject *self)
+memory_ndim_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
 {
     CHECK_RELEASED(self);
     return PyLong_FromLong(self->view.ndim);

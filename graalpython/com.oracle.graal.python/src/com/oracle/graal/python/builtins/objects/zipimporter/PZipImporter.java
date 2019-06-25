@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,15 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.zipimporter;
 
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,10 +33,14 @@ import java.util.EnumSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
 public class PZipImporter extends PythonBuiltinObject {
-
-    public static String SEPARATOR = File.separator;
-
     /**
      * pathname of the Zip archive
      */
@@ -73,12 +69,17 @@ public class PZipImporter extends PythonBuiltinObject {
         IS_PACKAGE
     }
 
+    /**
+     * The separatorChar used in the context for this importer
+     */
+    private final String separator;
+
     private static class SearchOrderEntry {
 
-        public String suffix;
-        public EnumSet<EntryType> type;
+        String suffix;
+        EnumSet<EntryType> type;
 
-        public SearchOrderEntry(String suffix, EnumSet<EntryType> type) {
+        SearchOrderEntry(String suffix, EnumSet<EntryType> type) {
             this.suffix = suffix;
             this.type = type;
         }
@@ -86,11 +87,11 @@ public class PZipImporter extends PythonBuiltinObject {
 
     protected static class ModuleCodeData {
 
-        public String code;
-        public boolean isPackage;
-        public String path;
+        String code;
+        boolean isPackage;
+        String path;
 
-        public ModuleCodeData(String code, boolean isPackage, String path) {
+        ModuleCodeData(String code, boolean isPackage, String path) {
             this.code = code;
             this.isPackage = isPackage;
             this.path = path;
@@ -100,7 +101,7 @@ public class PZipImporter extends PythonBuiltinObject {
     /**
      * Defines how the source and module will be searched in archive.
      */
-    private static SearchOrderEntry[] searchOrder;
+    private final SearchOrderEntry[] searchOrder;
 
     /**
      * Module information
@@ -112,23 +113,26 @@ public class PZipImporter extends PythonBuiltinObject {
         PACKAGE
     }
 
-    public PZipImporter(LazyPythonClass cls, PDict zipDirectoryCache) {
+    public PZipImporter(LazyPythonClass cls, PDict zipDirectoryCache, String separator) {
         super(cls);
         this.archive = null;
         this.prefix = null;
+        this.separator = separator;
         this.moduleZipDirectoryCache = zipDirectoryCache;
-        if (searchOrder == null) { // define the order once
-            searchOrder = defineSearchOrder();
-        }
+        this.searchOrder = defineSearchOrder();
     }
 
-    @CompilerDirectives.TruffleBoundary
-    private static SearchOrderEntry[] defineSearchOrder() {
+    private SearchOrderEntry[] defineSearchOrder() {
         return new SearchOrderEntry[]{
-                        new SearchOrderEntry(SEPARATOR + "__init__.py",
+                        new SearchOrderEntry(joinStrings(separator, "__init__.py"),
                                         EnumSet.of(EntryType.IS_PACKAGE, EntryType.IS_SOURCE)),
                         new SearchOrderEntry(".py", EnumSet.of(EntryType.IS_SOURCE))
         };
+    }
+
+    @TruffleBoundary
+    private static String joinStrings(String a, String b) {
+        return a + b;
     }
 
     public PDict getZipDirectoryCache() {
@@ -181,7 +185,7 @@ public class PZipImporter extends PythonBuiltinObject {
 
     @TruffleBoundary
     protected String makeFilename(String fullname) {
-        return prefix + getSubname(fullname).replace('.', File.separatorChar);
+        return prefix + getSubname(fullname).replace(".", separator);
     }
 
     protected PTuple getEntry(String filenameAndSuffix) {
@@ -190,24 +194,30 @@ public class PZipImporter extends PythonBuiltinObject {
 
     @TruffleBoundary
     protected String makePackagePath(String fullname) {
-        return archive + SEPARATOR + prefix + getSubname(fullname);
+        return archive + separator + prefix + getSubname(fullname);
     }
 
     /**
      *
      * @param filenameAndSuffix
      * @return code
+     * @throws IOException
      */
     @CompilerDirectives.TruffleBoundary
-    private String getCode(String filenameAndSuffix) {
+    private String getCode(String filenameAndSuffix) throws IOException {
+        ZipFile zip = null;
         try {
-            ZipFile zip = new ZipFile(archive);
+            zip = new ZipFile(archive);
             ZipEntry entry = zip.getEntry(filenameAndSuffix);
             InputStream in = zip.getInputStream(entry);
 
             // reading the file should be done better?
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-            StringBuilder code = new StringBuilder();
+            int size = (int) entry.getSize();
+            if (size < 0) {
+                size = (int) entry.getCompressedSize();
+            }
+            StringBuilder code = new StringBuilder(size < 16 ? 16 : size);
             String line;
             while ((line = reader.readLine()) != null) {
                 code.append(line);
@@ -216,7 +226,15 @@ public class PZipImporter extends PythonBuiltinObject {
             reader.close();
             return code.toString();
         } catch (IOException e) {
-            throw new RuntimeException("Can not read code from " + makePackagePath(filenameAndSuffix), e);
+            throw new IOException("Can not read code from " + makePackagePath(filenameAndSuffix), e);
+        } finally {
+            if (zip != null) {
+                try {
+                    zip.close();
+                } catch (IOException e) {
+                    // just ignore it.
+                }
+            }
         }
     }
 
@@ -258,7 +276,7 @@ public class PZipImporter extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    protected final ModuleCodeData getModuleCode(String fullname) {
+    protected final ModuleCodeData getModuleCode(String fullname) throws IOException {
         String path = makeFilename(fullname);
         String fullPath = makePackagePath(fullname);
 

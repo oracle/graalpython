@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,22 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.cell;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.CompilerDirectives;
 
-public class PCell extends PythonBuiltinObject {
-    private final Assumption effectivelyFinal = Truffle.getRuntime().createAssumption("cell is effectively final");
+public final class PCell extends PythonAbstractObject {
+    private final Assumption effectivelyFinal;
     private Object ref;
 
-    public PCell() {
-        super(PythonBuiltinClassType.PCell);
+    public PCell(Assumption effectivelyFinalAssumption) {
+        this.effectivelyFinal = effectivelyFinalAssumption;
     }
 
     public Object getRef() {
@@ -75,16 +70,21 @@ public class PCell extends PythonBuiltinObject {
         this.ref = ref;
     }
 
-    public Assumption isEffectivelyFinalAssumption() {
-        return effectivelyFinal;
+    /**
+     * Use this to pass in the effectivelyFinal assumption from a node that made it constant.
+     */
+    public void setRef(Object ref, Assumption constantAssumption) {
+        assert constantAssumption == effectivelyFinal;
+        if (constantAssumption.isValid()) {
+            if (this.ref != null) {
+                constantAssumption.invalidate();
+            }
+        }
+        this.ref = ref;
     }
 
-    @Override
-    @TruffleBoundary
-    public List<String> getAttributeNames() {
-        ArrayList<String> arrayList = new ArrayList<>();
-        arrayList.add("cell_contents");
-        return arrayList;
+    public Assumption isEffectivelyFinalAssumption() {
+        return effectivelyFinal;
     }
 
     @Override
@@ -94,5 +94,11 @@ public class PCell extends PythonBuiltinObject {
             return String.format("<cell at %s: empty>", hashCode());
         }
         return String.format("<cell at %s: %s object at %s>", hashCode(), ref.getClass().getSimpleName(), ref.hashCode());
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException();
     }
 }

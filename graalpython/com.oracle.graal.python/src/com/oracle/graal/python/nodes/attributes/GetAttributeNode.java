@@ -56,6 +56,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
@@ -64,29 +65,29 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
 
     @Child private GetFixedAttributeNode getFixedAttributeNode;
 
-    public abstract int executeInt(Object object);
+    public abstract int executeInt(VirtualFrame frame, Object object);
 
-    public abstract boolean executeBoolean(Object object);
+    public abstract boolean executeBoolean(VirtualFrame frame, Object object);
 
-    public abstract Object executeObject(Object object);
+    public abstract Object executeObject(VirtualFrame frame, Object object);
 
     protected GetAttributeNode(String key) {
         getFixedAttributeNode = GetFixedAttributeNode.create(key);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    protected int doItInt(Object object) throws UnexpectedResultException {
-        return getFixedAttributeNode.executeInt(object);
+    protected int doItInt(VirtualFrame frame, Object object) throws UnexpectedResultException {
+        return getFixedAttributeNode.executeInt(frame, object);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    protected boolean doItBoolean(Object object) throws UnexpectedResultException {
-        return getFixedAttributeNode.executeBoolean(object);
+    protected boolean doItBoolean(VirtualFrame frame, Object object) throws UnexpectedResultException {
+        return getFixedAttributeNode.executeBoolean(frame, object);
     }
 
     @Specialization(replaces = {"doItInt", "doItBoolean"})
-    protected Object doIt(Object object) {
-        return getFixedAttributeNode.executeObject(object);
+    protected Object doIt(VirtualFrame frame, Object object) {
+        return getFixedAttributeNode.executeObject(frame, object);
     }
 
     public final String getKey() {
@@ -123,51 +124,51 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
             return key;
         }
 
-        public abstract int executeInt(Object object) throws UnexpectedResultException;
+        public abstract int executeInt(VirtualFrame frame, Object object) throws UnexpectedResultException;
 
-        public abstract long executeLong(Object object) throws UnexpectedResultException;
+        public abstract long executeLong(VirtualFrame frame, Object object) throws UnexpectedResultException;
 
-        public abstract boolean executeBoolean(Object object) throws UnexpectedResultException;
+        public abstract boolean executeBoolean(VirtualFrame frame, Object object) throws UnexpectedResultException;
 
-        public abstract Object executeObject(Object object);
+        public abstract Object executeObject(VirtualFrame frame, Object object);
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        protected int doItInt(Object object) throws UnexpectedResultException {
+        protected int doItInt(VirtualFrame frame, Object object) throws UnexpectedResultException {
             try {
-                return dispatchNode.executeInt(object, key);
+                return dispatchNode.executeInt(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeInt(object, key);
+                return getDispatchGetAttr().executeInt(frame, object, key);
             }
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        protected long doItLong(Object object) throws UnexpectedResultException {
+        protected long doItLong(VirtualFrame frame, Object object) throws UnexpectedResultException {
             try {
-                return dispatchNode.executeLong(object, key);
+                return dispatchNode.executeLong(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeInt(object, key);
+                return getDispatchGetAttr().executeInt(frame, object, key);
             }
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        protected boolean doItBoolean(Object object) throws UnexpectedResultException {
+        protected boolean doItBoolean(VirtualFrame frame, Object object) throws UnexpectedResultException {
             try {
-                return dispatchNode.executeBool(object, key);
+                return dispatchNode.executeBool(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeBool(object, key);
+                return getDispatchGetAttr().executeBool(frame, object, key);
             }
         }
 
         @Specialization(replaces = {"doItInt", "doItBoolean"})
-        protected Object doIt(Object object) {
+        protected Object doIt(VirtualFrame frame, Object object) {
             try {
-                return dispatchNode.executeObject(object, key);
+                return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeObject(object, key);
+                return getDispatchGetAttr().executeObject(frame, object, key);
             }
         }
 
@@ -190,51 +191,51 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
         @Child private LookupAndCallBinaryNode dispatchGetAttr;
         @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
-        public abstract int executeInt(Object object, Object key) throws UnexpectedResultException;
+        public abstract int executeInt(VirtualFrame frame, Object object, Object key) throws UnexpectedResultException;
 
-        public abstract long executeLong(Object object, Object key) throws UnexpectedResultException;
+        public abstract long executeLong(VirtualFrame frame, Object object, Object key) throws UnexpectedResultException;
 
-        public abstract boolean executeBoolean(Object object, Object key) throws UnexpectedResultException;
+        public abstract boolean executeBoolean(VirtualFrame frame, Object object, Object key) throws UnexpectedResultException;
 
-        public abstract Object executeObject(Object object, Object key);
+        public abstract Object executeObject(VirtualFrame frame, Object object, Object key);
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        protected int doItInt(Object object, String key) throws UnexpectedResultException {
+        protected int doItInt(VirtualFrame frame, Object object, String key) throws UnexpectedResultException {
             try {
-                return dispatchNode.executeInt(object, key);
+                return dispatchNode.executeInt(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeInt(object, key);
+                return getDispatchGetAttr().executeInt(frame, object, key);
             }
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        protected long doItLong(Object object, Object key) throws UnexpectedResultException {
+        protected long doItLong(VirtualFrame frame, Object object, Object key) throws UnexpectedResultException {
             try {
-                return dispatchNode.executeLong(object, key);
+                return dispatchNode.executeLong(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeInt(object, key);
+                return getDispatchGetAttr().executeInt(frame, object, key);
             }
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        protected boolean doItBoolean(Object object, Object key) throws UnexpectedResultException {
+        protected boolean doItBoolean(VirtualFrame frame, Object object, Object key) throws UnexpectedResultException {
             try {
-                return dispatchNode.executeBool(object, key);
+                return dispatchNode.executeBool(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeBool(object, key);
+                return getDispatchGetAttr().executeBool(frame, object, key);
             }
         }
 
         @Specialization(replaces = {"doItInt", "doItBoolean"})
-        protected Object doIt(Object object, Object key) {
+        protected Object doIt(VirtualFrame frame, Object object, Object key) {
             try {
-                return dispatchNode.executeObject(object, key);
+                return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeObject(object, key);
+                return getDispatchGetAttr().executeObject(frame, object, key);
             }
         }
 

@@ -62,9 +62,24 @@ def test_int_subclassing():
     assert str(MAXREPEAT) == "MAXREPEAT"
 
 
+def test_bigint():
+    i = int(BIG_NUMBER)
+    assert isinstance(i, int)
+    assert i == BIG_NUMBER
+    # from string
+    i = int(str(BIG_NUMBER))
+    assert isinstance(i, int)
+    assert i == BIG_NUMBER
+
+
 def test_boolean2int():
     assert int(True) == 1
     assert int(False) == 0
+
+
+def test_bigint_mul():
+    assert 99999937497465632974931 * 1223432423545234234123123 == 122343165886896325043539375228725106116626429513
+    assert 99999937497465632974931 * (2**100) == 126764980791447734004805377032945185921379990352429056
 
 
 def test_int_from_custom():

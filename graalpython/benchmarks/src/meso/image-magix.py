@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Pablo Mouzo
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -128,7 +128,6 @@ def __benchmark__(num=10000):
 if __name__ == '__main__':
     import sys
     import time
-    global SZ
     SZ = 5
     start = time.time()
     if len(sys.argv) >= 2:

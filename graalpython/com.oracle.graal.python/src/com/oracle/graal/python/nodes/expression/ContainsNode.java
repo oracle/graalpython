@@ -45,13 +45,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class ContainsNode extends BinaryOpNode {
@@ -68,130 +69,130 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBoolean(Object iter, boolean item) throws UnexpectedResultException {
-        Object result = callNode.executeObject(iter, item);
+    boolean doBoolean(VirtualFrame frame, Object iter, boolean item) throws UnexpectedResultException {
+        Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            Object iterator = getGetIterator().executeWith(iter);
-            return sequenceContains(iterator, item);
+            Object iterator = getGetIterator().executeWith(frame, iter);
+            return sequenceContains(frame, iterator, item);
         }
-        return castBool.executeWith(result);
+        return castBool.executeBoolean(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doInt(Object iter, int item) throws UnexpectedResultException {
-        Object result = callNode.executeObject(iter, item);
+    boolean doInt(VirtualFrame frame, Object iter, int item) throws UnexpectedResultException {
+        Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(getGetIterator().executeWith(iter), item);
+            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item);
         }
-        return castBool.executeWith(result);
+        return castBool.executeBoolean(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLong(Object iter, long item) throws UnexpectedResultException {
-        Object result = callNode.executeObject(iter, item);
+    boolean doLong(VirtualFrame frame, Object iter, long item) throws UnexpectedResultException {
+        Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(getGetIterator().executeWith(iter), item);
+            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item);
         }
-        return castBool.executeWith(result);
+        return castBool.executeBoolean(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDouble(Object iter, double item) throws UnexpectedResultException {
-        Object result = callNode.executeObject(iter, item);
+    boolean doDouble(VirtualFrame frame, Object iter, double item) throws UnexpectedResultException {
+        Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(getGetIterator().executeWith(iter), item);
+            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item);
         }
-        return castBool.executeWith(result);
+        return castBool.executeBoolean(frame, result);
     }
 
     @Specialization
-    boolean doGeneric(Object iter, Object item) {
-        Object result = callNode.executeObject(iter, item);
+    boolean doGeneric(VirtualFrame frame, Object iter, Object item) {
+        Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContainsObject(getGetIterator().executeWith(iter), item);
+            return sequenceContainsObject(frame, getGetIterator().executeWith(frame, iter), item);
         }
-        return castBool.executeWith(result);
+        return castBool.executeBoolean(frame, result);
     }
 
-    private void handleUnexpectedResult(Object iterator, Object item, UnexpectedResultException e) throws UnexpectedResultException {
+    private void handleUnexpectedResult(VirtualFrame frame, Object iterator, Object item, UnexpectedResultException e) throws UnexpectedResultException {
         // If we got an unexpected (non-primitive) result from the iterator, we need to compare it
         // and continue iterating with "next" through the generic case. However, we also want the
         // specialization to go away, so we wrap the boolean result in a new
         // UnexpectedResultException. This will cause the DSL to disable the specialization with the
         // primitive value and return the result we got, without iterating again.
         Object result = e.getResult();
-        if (getEqNode().executeBool(result, item)) {
+        if (getEqNode().executeBool(frame, result, item)) {
             result = true;
         } else {
-            result = sequenceContainsObject(iterator, item);
+            result = sequenceContainsObject(frame, iterator, item);
         }
         throw new UnexpectedResultException(result);
     }
 
-    private boolean sequenceContains(Object iterator, boolean item) throws UnexpectedResultException {
+    private boolean sequenceContains(VirtualFrame frame, Object iterator, boolean item) throws UnexpectedResultException {
         while (true) {
             try {
-                if (getNext().executeBoolean(iterator) == item) {
+                if (getNext().executeBoolean(frame, iterator) == item) {
                     return true;
                 }
             } catch (PException e) {
                 e.expectStopIteration(getErrorProfile());
                 return false;
             } catch (UnexpectedResultException e) {
-                handleUnexpectedResult(iterator, item, e);
+                handleUnexpectedResult(frame, iterator, item, e);
             }
         }
     }
 
-    private boolean sequenceContains(Object iterator, int item) throws UnexpectedResultException {
+    private boolean sequenceContains(VirtualFrame frame, Object iterator, int item) throws UnexpectedResultException {
         while (true) {
             try {
-                if (getNext().executeInt(iterator) == item) {
+                if (getNext().executeInt(frame, iterator) == item) {
                     return true;
                 }
             } catch (PException e) {
                 e.expectStopIteration(getErrorProfile());
                 return false;
             } catch (UnexpectedResultException e) {
-                handleUnexpectedResult(iterator, item, e);
+                handleUnexpectedResult(frame, iterator, item, e);
             }
         }
     }
 
-    private boolean sequenceContains(Object iterator, long item) throws UnexpectedResultException {
+    private boolean sequenceContains(VirtualFrame frame, Object iterator, long item) throws UnexpectedResultException {
         while (true) {
             try {
-                if (getNext().executeLong(iterator) == item) {
+                if (getNext().executeLong(frame, iterator) == item) {
                     return true;
                 }
             } catch (PException e) {
                 e.expectStopIteration(getErrorProfile());
                 return false;
             } catch (UnexpectedResultException e) {
-                handleUnexpectedResult(iterator, item, e);
+                handleUnexpectedResult(frame, iterator, item, e);
             }
         }
     }
 
-    private boolean sequenceContains(Object iterator, double item) throws UnexpectedResultException {
+    private boolean sequenceContains(VirtualFrame frame, Object iterator, double item) throws UnexpectedResultException {
         while (true) {
             try {
-                if (getNext().executeDouble(iterator) == item) {
+                if (getNext().executeDouble(frame, iterator) == item) {
                     return true;
                 }
             } catch (PException e) {
                 e.expectStopIteration(getErrorProfile());
                 return false;
             } catch (UnexpectedResultException e) {
-                handleUnexpectedResult(iterator, item, e);
+                handleUnexpectedResult(frame, iterator, item, e);
             }
         }
     }
 
-    private boolean sequenceContainsObject(Object iterator, Object item) {
+    private boolean sequenceContainsObject(VirtualFrame frame, Object iterator, Object item) {
         while (true) {
             try {
-                if (getEqNode().executeBool(getNext().execute(iterator), item)) {
+                if (getEqNode().executeBool(frame, getNext().execute(frame, iterator), item)) {
                     return true;
                 }
             } catch (PException e) {
