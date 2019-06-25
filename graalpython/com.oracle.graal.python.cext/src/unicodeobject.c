@@ -112,6 +112,8 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
     return to_sulong(polyglot_from_string_n(u, size, SRC_CS));
 }
 
+#define AS_I64(__arg__) (polyglot_fits_in_i64((__arg__)) ? polyglot_as_i64((__arg__)) : (int64_t)(__arg__))
+
 MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc) {
     size_t fmt_size = strlen(fmt) + 1;
     // n.b. avoid using 'strdup' for compatiblity with MUSL libc
@@ -132,7 +134,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
             c[0] = '\0';
             int bytes_written;
             if (variable != NULL) {
-                bytes_written = snprintf(buffer, remaining_space, fmtcpy, (unsigned long)variable);
+                bytes_written = snprintf(buffer, remaining_space, fmtcpy, AS_I64(variable));
                 if (allocated != NULL) {
                     free(allocated);
                     allocated = NULL;
@@ -186,7 +188,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
 
     // write the remaining buffer
     if (variable != NULL) {
-        snprintf(buffer, remaining_space, fmtcpy, (unsigned long)variable);
+        snprintf(buffer, remaining_space, fmtcpy, AS_I64(variable));
         if (allocated) {
             free(allocated);
         }
