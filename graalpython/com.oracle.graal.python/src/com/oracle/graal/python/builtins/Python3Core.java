@@ -40,6 +40,7 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -233,6 +234,7 @@ public final class Python3Core implements PythonCore {
                         "java",
                         "pyio_patches",
                         "pwd",
+                        "resource",
                         "_contextvars"));
         // must be last
         coreFiles.add("final_patches");
@@ -348,6 +350,7 @@ public final class Python3Core implements PythonCore {
                         new LockBuiltins(),
                         new RLockBuiltins(),
                         new PwdModuleBuiltins(),
+                        new ResourceModuleBuiltins(),
                         new ContextvarsModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
