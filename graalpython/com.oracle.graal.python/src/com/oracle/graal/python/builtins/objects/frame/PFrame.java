@@ -267,9 +267,11 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     /**
-     * When this is true, the frame has escaped
+     * {@code true} if this {@code PFrame} is associated with a {@code Frame}, i.e., it has a frame
+     * info. On the other hand, {@code false} means that this {@code PFrame} has been created
+     * artificially which is most commonly done to carry custom locals.
      **/
-    public boolean hasFrame() {
+    public boolean isAssociated() {
         return virtualFrameInfo != null;
     }
 
