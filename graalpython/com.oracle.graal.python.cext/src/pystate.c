@@ -51,7 +51,7 @@ PyThreadState * PyThreadState_Get() {
 
 PyGILState_STATE PyGILState_Ensure() {
     // ignore for the time being
-    return NULL;
+    return PyGILState_UNLOCKED;
 }
 
 void PyGILState_Release(PyGILState_STATE state) {
