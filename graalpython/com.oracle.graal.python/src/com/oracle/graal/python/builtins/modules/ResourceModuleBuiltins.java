@@ -80,8 +80,8 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
         PTuple getruusageThread(@SuppressWarnings("unused") int who) {
             ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
             long id = Thread.currentThread().getId();
-            double ru_utime = threadMXBean.getThreadUserTime(id); // time in user mode (float)
-            double ru_stime = threadMXBean.getThreadCpuTime(id); // time in system mode (float)
+            double ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0; // time in user mode (float)
+            double ru_stime = threadMXBean.getThreadCpuTime(id) / 1000000000.0; // time in system mode (float)
 
             long ru_maxrss; // maximum resident set size
             if (threadMXBean instanceof com.sun.management.ThreadMXBean) {
@@ -92,7 +92,13 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
                 ru_maxrss = runtime.maxMemory();
             }
 
-            long ru_ixrss = -1;  // shared memory size
+            String osName = System.getProperty("os.name");
+            if (osName.contains("Linux")) {
+                // peak memory usage (kilobytes on Linux
+                ru_maxrss /= 1024;
+            }
+
+            long ru_ixrss = -1; // shared memory size
             long ru_idrss = -1; // unshared memory size
             long ru_isrss = -1; // unshared stack size
             long ru_minflt = -1; // page faults not requiring I/O
@@ -117,19 +123,22 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
             double ru_utime = 0; // time in user mode (float)
             double ru_stime = 0; // time in system mode (float)
             for (long thId : threadMXBean.getAllThreadIds()) {
-                ru_utime += threadMXBean.getThreadUserTime(thId);
-                ru_stime += threadMXBean.getThreadCpuTime(thId);
+                ru_utime += threadMXBean.getThreadUserTime(thId) / 1000000000.0;
+                ru_stime += threadMXBean.getThreadCpuTime(thId) / 1000000000.0;
             }
 
             MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
             MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
             MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
-            long ru_maxrss = heapMemoryUsage.getCommitted() + nonHeapMemoryUsage.getCommitted(); // maximum
-                                                                                                 // resident
-                                                                                                 // set
-                                                                                                 // size
+            long ru_maxrss = heapMemoryUsage.getCommitted() + nonHeapMemoryUsage.getCommitted();
 
-            long ru_ixrss = -1;  // shared memory size
+            String osName = System.getProperty("os.name");
+            if (osName.contains("Linux")) {
+                // peak memory usage (kilobytes on Linux
+                ru_maxrss /= 1024;
+            }
+
+            long ru_ixrss = -1; // shared memory size
             long ru_idrss = -1; // unshared memory size
             long ru_isrss = -1; // unshared stack size
             long ru_minflt = -1; // page faults not requiring I/O
