@@ -58,7 +58,6 @@ CONFIGURATION_DEFAULT = "default"
 CONFIGURATION_NATIVE = "native"
 CONFIG_EXPERIMENTAL_SPLITTING = "experimental_splitting"
 CONFIGURATION_SANDBOXED = "sandboxed"
-CONFIGURATION_DUMP = "dump"
 
 DEFAULT_ITERATIONS = 10
 
@@ -336,15 +335,27 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def postprocess_run_args(self, run_args):
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument("-i", default=None)
+        parser.add_argument("--cpusampler", action="store_true")
+        parser.add_argument("--memtracer", action="store_true")
+        parser.add_argument("-dump", action="store_true")
         args, remaining = parser.parse_known_args(run_args)
+
+        vm_options = []
+        if args.cpusampler:
+            vm_options.append("--cpusampler")
+        if args.memtracer:
+            vm_options.append("--memtracer")
+        if args.dump:
+            vm_options.append("-dump")
+
         if args.i:
             if args.i.isdigit():
-                return ["-i", args.i] + remaining
+                return vm_options, (["-i", args.i] + remaining)
             if args.i == "-1":
-                return remaining
+                return vm_options, remaining
         else:
             iterations = DEFAULT_ITERATIONS + self.getExtraIterationCount(DEFAULT_ITERATIONS)
-            return ["-i", str(iterations)] + remaining
+            return vm_options, (["-i", str(iterations)] + remaining)
 
     def createVmCommandLineArgs(self, benchmarks, run_args):
         if not benchmarks or len(benchmarks) != 1:
@@ -371,9 +382,9 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
         if len(run_args) == 0:
             run_args = self._benchmarks[benchmark]
-        run_args = self.postprocess_run_args(run_args)
+        vm_options, run_args = self.postprocess_run_args(run_args)
         cmd_args.extend(run_args)
-        return cmd_args
+        return vm_options + cmd_args
 
     def benchmarkList(self, bm_suite_args):
         return self._benchmarks.keys()
