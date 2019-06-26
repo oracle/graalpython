@@ -533,6 +533,8 @@ typedef struct _build_stack {
 PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
 #   define ARG polyglot_get_arg(value_idx)
 #   define APPEND_VALUE(list, value) PyList_Append(list, value); value_idx++
+#   define AS_I64(__arg__) (polyglot_fits_in_i64((__arg__)) ? polyglot_as_i64((__arg__)) : ((int64_t)(__arg__)))
+#   define AS_DOUBLE(__arg__) (polyglot_fits_in_double((__arg__)) ? polyglot_as_double((__arg__)) : ((double)(unsigned long long)(__arg__)))
 
     PyObject* (*converter)(void*) = NULL;
     char argchar[2] = {'\0'};
@@ -551,7 +553,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         case 'z':
         case 'U':
             if (format[format_idx + 1] == '#') {
-                int size = (int)polyglot_get_arg(value_idx + 1);
+                int size = (int) AS_I64(polyglot_get_arg(value_idx + 1));
                 if (ARG == NULL) {
                     APPEND_VALUE(list, Py_None);
                 } else {
@@ -569,7 +571,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
             break;
         case 'y':
             if (format[format_idx + 1] == '#') {
-                int size = (int)polyglot_get_arg(value_idx + 1);
+                int size = (int) AS_I64(polyglot_get_arg(value_idx + 1));
                 if (ARG == NULL) {
                     APPEND_VALUE(list, Py_None);
                 } else {
@@ -591,39 +593,39 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         case 'i':
         case 'b':
         case 'h':
-            APPEND_VALUE(list, PyLong_FromLong((int)ARG));
+            APPEND_VALUE(list, PyLong_FromLong((int)AS_I64(ARG)));
             break;
         case 'l':
-            APPEND_VALUE(list, PyLong_FromLong((long)ARG));
+            APPEND_VALUE(list, PyLong_FromLong(AS_I64(ARG)));
             break;
         case 'B':
         case 'H':
         case 'I':
-            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned int)ARG));
+            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned int)AS_I64(ARG)));
             break;
         case 'k':
-            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned long)ARG));
+            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned long)AS_I64(ARG)));
             break;
         case 'L':
-            APPEND_VALUE(list, PyLong_FromLongLong((long long)ARG));
+            APPEND_VALUE(list, PyLong_FromLongLong((long long)AS_I64(ARG)));
             break;
         case 'K':
-            APPEND_VALUE(list, PyLong_FromLongLong((unsigned long long)ARG));
+            APPEND_VALUE(list, PyLong_FromLongLong((unsigned long long)AS_I64(ARG)));
             break;
         case 'n':
-            APPEND_VALUE(list, PyLong_FromSsize_t((Py_ssize_t)ARG));
+            APPEND_VALUE(list, PyLong_FromSsize_t((Py_ssize_t)AS_I64(ARG)));
             break;
         case 'c':
-            argchar[0] = (char)ARG;
+            argchar[0] = (char)AS_I64(ARG);
             APPEND_VALUE(list, PyBytes_FromStringAndSize(argchar, 1));
             break;
         case 'C':
-            argchar[0] = (char)ARG;
+            argchar[0] = (char)AS_I64(ARG);
             APPEND_VALUE(list, polyglot_from_string(argchar, "ascii"));
             break;
         case 'd':
         case 'f':
-            APPEND_VALUE(list, PyFloat_FromDouble((double)(unsigned long long)ARG));
+            APPEND_VALUE(list, PyFloat_FromDouble((double)AS_DOUBLE(ARG)));
             break;
         case 'D':
             fprintf(stderr, "error: unsupported format 'D'\n");

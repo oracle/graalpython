@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -80,7 +80,7 @@ class TestPyBytes(CPyExtTestCase):
     test_PyBytes_FromStringAndSizeNULL = CPyExtFunction(
         lambda args: len(b"\x00"*args[0]),
         lambda: ( (128, ), ),
-        code = """PyObject* PyBytes_FromStringAndSizeNULL(Py_ssize_t n) {
+        code = """Py_ssize_t PyBytes_FromStringAndSizeNULL(Py_ssize_t n) {
             // we are return the length because the content is random (uninitialized)
             return PyBytes_Size(PyBytes_FromStringAndSize(NULL, n));
         }

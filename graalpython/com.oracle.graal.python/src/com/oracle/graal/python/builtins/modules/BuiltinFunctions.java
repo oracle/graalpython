@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -1419,7 +1420,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public int ord(PBytes chr,
+        public int ord(PIBytesLike chr,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
             int len = lenNode.execute(chr.getSequenceStorage());
@@ -1427,7 +1428,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, "ord() expected a character, but string of length %d found", len);
             }
 
-            return (byte) getItemNode.execute(chr.getSequenceStorage(), 0);
+            Object element = getItemNode.execute(chr.getSequenceStorage(), 0);
+            if (element instanceof Long) {
+                long e = (long) element;
+                if (e >= Byte.MIN_VALUE && e <= Byte.MAX_VALUE) {
+                    return (int) e;
+                }
+            } else if (element instanceof Integer) {
+                int e = (int) element;
+                if (e >= Byte.MIN_VALUE && e <= Byte.MAX_VALUE) {
+                    return e;
+                }
+            } else if (element instanceof Byte) {
+                return (byte) element;
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("got a bytes-like with non-byte elements");
         }
     }
 

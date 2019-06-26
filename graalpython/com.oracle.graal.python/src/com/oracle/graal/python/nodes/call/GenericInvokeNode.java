@@ -48,7 +48,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -57,8 +56,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class GenericInvokeNode extends AbstractInvokeNode {
     private static final GenericInvokeUncachedNode UNCACHED = new GenericInvokeUncachedNode();
 
-    @Child private IndirectCallNode callNode = Truffle.getRuntime().createIndirectCallNode();
-    @Child private CallContext callContext = CallContext.create();
+    @Child private IndirectCallNode callNode;
+    @Child private CallContext callContext;
 
     private final ConditionProfile isNullFrameProfile;
 
@@ -70,7 +69,9 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
         return UNCACHED;
     }
 
-    public GenericInvokeNode(ConditionProfile isNullFrameProfile) {
+    public GenericInvokeNode(IndirectCallNode callNode, CallContext callContext, ConditionProfile isNullFrameProfile) {
+        this.callNode = callNode;
+        this.callContext = callContext;
         this.isNullFrameProfile = isNullFrameProfile;
     }
 
@@ -109,14 +110,14 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
     private static final class GenericInvokeCachedNode extends GenericInvokeNode {
 
         public GenericInvokeCachedNode() {
-            super(ConditionProfile.createBinaryProfile());
+            super(IndirectCallNode.create(), CallContext.create(), ConditionProfile.createBinaryProfile());
         }
 
     }
 
     private static final class GenericInvokeUncachedNode extends GenericInvokeNode {
         public GenericInvokeUncachedNode() {
-            super(ConditionProfile.getUncached());
+            super(IndirectCallNode.getUncached(), CallContext.getUncached(), ConditionProfile.getUncached());
         }
 
         @Override

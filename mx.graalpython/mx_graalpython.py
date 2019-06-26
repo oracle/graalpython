@@ -31,6 +31,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 from argparse import ArgumentParser
 
 import mx
@@ -42,7 +43,7 @@ import mx_subst
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
-    CONFIGURATION_DEFAULT, CONFIG_EXPERIMENTAL_SPLITTING, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE
+    CONFIGURATION_DEFAULT, CONFIG_EXPERIMENTAL_SPLITTING, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, CONFIGURATION_DUMP
 
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
@@ -147,7 +148,9 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
 def punittest(args):
     if '--regex' not in args:
         args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
-    args += ["-Dgraal.TraceTruffleCompilation=true", "-Dgraal.TruffleCompilationExceptionsAreFatal=false", "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
+    args += ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
+             "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
+             "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
     mx_unittest.unittest(args)
 
 
@@ -360,8 +363,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
-                run_python_unittests(python_gvm(), paths=["test_tagged_unittests.py"])
+            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
+                run_python_unittests(python_gvm(), args=["--python.WithThread=true"], paths=["test_tagged_unittests.py"])
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -1000,6 +1003,9 @@ def _register_vms(namespace):
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
         "--llvm.sandboxed=false"
     ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DUMP, extra_polyglot_args=[
+        "--experimental-options", "-dump"
+    ]), SUITE, 10)
 
 
 def _register_bench_suites(namespace):
@@ -1019,12 +1025,57 @@ def python_coverage(args):
     mx.command_function("jacocoreport")(["--omit-excluded", "--format=html"])
 
 
+def python_build_watch(args):
+    """
+    Watch the suite and on any changes to .class, .jar, .h, or .c files rebuild.
+    By default, rebuilds only the archives and non-Java projects.
+    """
+    parser = ArgumentParser(prog='mx python-build-watch')
+    parser.add_argument('--full', action='store_true', help='Run a full mx build', required=False)
+    parser.add_argument('--graalvm', action='store_true', help='Build a graalvm', required=False)
+    parser.add_argument('--no-java', action='store_true', help='Build only archives and native projects [default]', required=False)
+    args = parser.parse_args(args)
+    if sum([args.full, args.graalvm, args.no_java]) > 1:
+        mx.abort("Only one of --full, --graalvm, --no-java can be specified")
+    if args.full:
+        suffixes = [".c", ".h", ".class", ".jar", ".java"]
+        excludes = [".*\\.py$"]
+    elif args.graalvm:
+        suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
+        excludes = ["mx_.*\\.py$"]
+    else:
+        suffixes = [".c", ".h", ".class", ".jar"]
+        excludes = [".*\\.py$", ".*\\.java$"]
+
+    cmd = ["inotifywait", "-q", "-e", "close_write,moved_to", "-r", "--format=%f"]
+    for e in excludes:
+        cmd += ["--exclude", e]
+    cmd += ["@%s" % os.path.join(SUITE.dir, ".git"), SUITE.dir]
+
+    while True:
+        out = mx.OutputCapture()
+        mx.run(cmd, out=out)
+        changed_file = out.data.strip()
+        mx.logv(changed_file)
+        if any(changed_file.endswith(ext) for ext in [".c", ".h", ".class", ".jar"]):
+            mx.log("Build needed ...")
+            time.sleep(2)
+            if args.full:
+                mx.command_function("build")()
+            elif args.graalvm:
+                mx.log(python_gvm())
+            else:
+                nativebuild([])
+        mx.log("Build done.")
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
 #
 # ----------------------------------------------------------------------------------------------------------------------
 mx.update_commands(SUITE, {
+    'python-build-watch': [python_build_watch, ''],
     'python': [python, '[Python args|@VM options]'],
     'python3': [python, '[Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_master, ''],

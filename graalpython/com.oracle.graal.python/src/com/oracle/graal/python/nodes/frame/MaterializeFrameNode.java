@@ -51,6 +51,9 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -72,6 +75,17 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * container that will be filled in by the caller.
  **/
 public abstract class MaterializeFrameNode extends Node {
+
+    private final boolean adoptable;
+    private static final MaterializeFrameNode INSTANCE = MaterializeFrameNodeGen.create(false);
+
+    public MaterializeFrameNode() {
+        this.adoptable = true;
+    }
+
+    protected MaterializeFrameNode(boolean adoptable) {
+        this.adoptable = adoptable;
+    }
 
     public final PFrame execute(VirtualFrame frame, boolean markAsEscaped, Frame frameToMaterialize) {
         return execute(frame, markAsEscaped, false, frameToMaterialize);
@@ -96,7 +110,7 @@ public abstract class MaterializeFrameNode extends Node {
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "isGeneratorFrame(frameToMaterialize)"})
     static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getGeneratorFrameLocals(frameToMaterialize), false);
         syncArgs(frameToMaterialize, escapedFrame);
         PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
@@ -106,8 +120,8 @@ public abstract class MaterializeFrameNode extends Node {
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)", "!isGeneratorFrame(frameToMaterialize)"})
     static PFrame freshPFrame(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
+                    @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
+                    @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(frameToMaterialize.getFrameDescriptor());
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, false);
         return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location), syncValuesNode);
@@ -115,8 +129,8 @@ public abstract class MaterializeFrameNode extends Node {
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "inClassBody(frameToMaterialize)"})
     static PFrame freshPFrameInClassBody(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
+                    @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
+                    @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
         // the namespace argument stores the locals
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getArgument(frameToMaterialize, 0), true);
         // The locals dict in a class body is always custom; we must not write the values from the
@@ -131,18 +145,18 @@ public abstract class MaterializeFrameNode extends Node {
      *
      * @see PFrame#isIncomplete
      **/
-    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "!getPFrame(frameToMaterialize).hasFrame()"})
+    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "!getPFrame(frameToMaterialize).isAssociated()"})
     static PFrame incompleteFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
+                    @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
+                    @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
         Object locals = getPFrame(frameToMaterialize).getLocalsDict();
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, inClassBody(frameToMaterialize));
         return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location), syncValuesNode);
     }
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).hasFrame()"}, replaces = "freshPFrame")
+    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).isAssociated()"}, replaces = "freshPFrame")
     static PFrame alreadyEscapedFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
-                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
+                    @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
                     @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
         if (syncProfile.profile(forceSync && !inClassBody(frameToMaterialize) && !inModuleRoot(location))) {
@@ -156,16 +170,23 @@ public abstract class MaterializeFrameNode extends Node {
         return pyFrame;
     }
 
-    @Specialization(replaces = {"freshPFrame", "alreadyEscapedFrame"})
-    static PFrame notInClassBody(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
+    @Specialization(replaces = {"freshPFrame", "alreadyEscapedFrame", "incompleteFrame"})
+    static PFrame generic(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+                    @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
+                    @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
                     @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
-        if (getPFrame(frameToMaterialize) != null) {
-            return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, syncValuesNode, syncProfile);
+        PFrame pyFrame = getPFrame(frameToMaterialize);
+        if (pyFrame != null) {
+            if (pyFrame.isAssociated()) {
+                return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, syncValuesNode, syncProfile);
+            } else {
+                return incompleteFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+            }
         } else {
             if (inClassBody(frameToMaterialize)) {
                 return freshPFrameInClassBody(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+            } else if (isGeneratorFrame(frameToMaterialize)) {
+                return freshPFrameForGenerator(location, markAsEscaped, forceSync, frameToMaterialize, factory);
             } else {
                 return freshPFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
             }
@@ -220,6 +241,26 @@ public abstract class MaterializeFrameNode extends Node {
         return location.getRootNode() instanceof ModuleRootNode;
     }
 
+    protected final SyncFrameValuesNode createSyncNode() {
+        return SyncFrameValuesNodeGen.create(isAdoptable());
+    }
+
+    protected final PythonObjectFactory createFactory() {
+        if (isAdoptable()) {
+            return PythonObjectFactory.create();
+        }
+        return PythonObjectFactory.getUncached();
+    }
+
+    @Override
+    public boolean isAdoptable() {
+        return adoptable;
+    }
+
+    public static MaterializeFrameNode getUnadoptable() {
+        return INSTANCE;
+    }
+
     /**
      * When refreshing the frame values in the locals dict, there are 4 cases:
      * <ol>
@@ -240,6 +281,12 @@ public abstract class MaterializeFrameNode extends Node {
      */
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class SyncFrameValuesNode extends Node {
+
+        private final boolean adoptable;
+
+        public SyncFrameValuesNode(boolean adoptable) {
+            this.adoptable = adoptable;
+        }
 
         public abstract void execute(VirtualFrame frame, PFrame pyframe, Frame frameToSync);
 
@@ -315,11 +362,11 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = {"isDictWithCustomStorage(pyFrame)", "frameToSync.getFrameDescriptor() == cachedFd"}, //
+        @Specialization(guards = {"isDictWithCustomStorage(pyFrame)", "frameToSync.getFrameDescriptor() == cachedFd", "isAdoptable()"}, //
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
         @ExplodeLoop
-        static void doGenericDictCached(VirtualFrame frame, PFrame pyFrame, Frame frameToSync,
+        static void doGenericDictAdoptableCached(VirtualFrame frame, PFrame pyFrame, Frame frameToSync,
                         @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots,
                         @Cached(value = "getProfiles(cachedSlots.length)", dimensions = 1) ConditionProfile[] profiles,
@@ -346,8 +393,8 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "isDictWithCustomStorage(pyFrame)", replaces = "doGenericDictCached")
-        static void doGenericDict(VirtualFrame frame, PFrame pyFrame, Frame frameToSync,
+        @Specialization(guards = {"isDictWithCustomStorage(pyFrame)", "isAdoptable()"}, replaces = "doGenericDictAdoptableCached")
+        static void doGenericDictAdoptable(VirtualFrame frame, PFrame pyFrame, Frame frameToSync,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached HashingStorageNodes.DelItemNode deleteItemNode) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
@@ -368,6 +415,34 @@ public abstract class MaterializeFrameNode extends Node {
                     } else {
                         // delete variable
                         deleteItemNode.execute(frame, localsDict, localsDict.getDictStorage(), slot.getIdentifier());
+                    }
+                }
+            }
+        }
+
+        @Specialization(guards = {"isDictWithCustomStorage(pyFrame)", "!isAdoptable()"})
+        static void doGenericDict(VirtualFrame frame, PFrame pyFrame, Frame frameToSync) {
+            // Same as 'doGenericDictAdoptable' but uses a full call node to call '__setitem__' and
+            // '__delitem__' since this node is not adoptable.
+
+            FrameDescriptor fd = frameToSync.getFrameDescriptor();
+            FrameSlot[] slots = getSlots(fd);
+            // The cast is guaranteed by the guard.
+            PDict localsDict = (PDict) pyFrame.getLocalsDict();
+
+            // we need to use nodes where we are sure that they may not be adopted
+            Object setItemMethod = LookupInheritedAttributeNode.Dynamic.getUncached().execute(localsDict, SpecialMethodNames.__SETITEM__);
+            Object deleteItemMethod = LookupInheritedAttributeNode.Dynamic.getUncached().execute(localsDict, SpecialMethodNames.__DELITEM__);
+
+            for (int i = 0; i < slots.length; i++) {
+                FrameSlot slot = slots[i];
+                if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
+                    Object value = frameToSync.getValue(slot);
+                    if (value != null) {
+                        CallNode.getUncached().execute(frame, setItemMethod, localsDict, slot.getIdentifier(), resolveCellValue(ConditionProfile.getUncached(), value));
+                    } else {
+                        // delete variable
+                        CallNode.getUncached().execute(frame, deleteItemMethod, localsDict, slot.getIdentifier());
                     }
                 }
             }
@@ -428,5 +503,11 @@ public abstract class MaterializeFrameNode extends Node {
             }
             return value;
         }
+
+        @Override
+        public boolean isAdoptable() {
+            return adoptable;
+        }
     }
+
 }
