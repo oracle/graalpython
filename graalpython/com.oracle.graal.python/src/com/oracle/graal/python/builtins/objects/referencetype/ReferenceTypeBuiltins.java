@@ -103,9 +103,14 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
             return self.getHash();
         }
 
-        @Fallback
-        public int hash(@SuppressWarnings("unused") Object self) {
+        @Specialization(guards = "self.getObject() == null")
+        public int hashGone(@SuppressWarnings("unused") PReferenceType self) {
             throw raise(PythonErrorType.TypeError, "weak object has gone away");
+        }
+
+        @Fallback
+        public int hashWrong(@SuppressWarnings("unused") Object self) {
+            throw raise(PythonErrorType.TypeError, "descriptor '__hash__' requires a 'weakref' object but received a '%p'", self);
         }
     }
 

@@ -58,6 +58,7 @@ CONFIGURATION_DEFAULT = "default"
 CONFIGURATION_NATIVE = "native"
 CONFIG_EXPERIMENTAL_SPLITTING = "experimental_splitting"
 CONFIGURATION_SANDBOXED = "sandboxed"
+CONFIGURATION_DUMP = "dump"
 
 DEFAULT_ITERATIONS = 10
 
@@ -311,7 +312,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         ]
 
     def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
-        # host-vm rewrite rules 
+        # host-vm rewrite rules
         ret_code, out, dims = super(PythonBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
 
         def _replace_host_vm(key):

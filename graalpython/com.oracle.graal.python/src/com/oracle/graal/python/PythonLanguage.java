@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -121,6 +120,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
+    /*
+     * We need to store this here, because the check is on the language and can come from a thread
+     * that has no context, but we enable or disable threads with a context option. So we store this
+     * here when a context is created.
+     */
+    private Boolean isWithThread = null;
+
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
     }
@@ -153,14 +159,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
         // internal sources were marked during context initialization
         return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
+                        // we cache WithThread on the lanugage
+                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
                         // we cache CatchAllExceptions hard on TryExceptNode
                         firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)));
     }
 
     private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
         return (areOptionsCompatible(firstOptions, newOptions) &&
-                        // we cache WithThread in SysConfigModuleBuiltins
-                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
                         // disabling TRegex has an effect on the _sre Python functions that are
                         // dynamically created
                         firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
@@ -172,7 +178,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             PythonCore.writeInfo("Cannot use preinitialized context.");
             return false;
         }
-        ensureHomeInOptions(newEnv);
+        context.initializeHomeAndPrefixPaths(newEnv, getLanguageHome());
         PythonCore.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
         return true;
@@ -180,90 +186,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
-        ensureHomeInOptions(env);
+        assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
+        this.isWithThread = PythonOptions.isWithThread(env);
         Python3Core newCore = new Python3Core(new PythonParserImpl());
-        return new PythonContext(this, env, newCore);
-    }
-
-    private void ensureHomeInOptions(Env env) {
-        String languageHome = getLanguageHome();
-        String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
-        String basePrefix = env.getOptions().get(PythonOptions.SysBasePrefix);
-        String coreHome = env.getOptions().get(PythonOptions.CoreHome);
-        String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
-
-        PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
-                        "\n\tLanguage home: {0}" +
-                        "\n\tSysPrefix: {1}" +
-                        "\n\tBaseSysPrefix: {2}" +
-                        "\n\tCoreHome: {3}" +
-                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
-
-        TruffleFile home = null;
-        if (languageHome != null) {
-            home = env.getTruffleFile(languageHome);
-        }
-
-        try {
-            String envHome = System.getenv("GRAAL_PYTHONHOME");
-            if (envHome != null) {
-                TruffleFile envHomeFile = env.getTruffleFile(envHome);
-                if (envHomeFile.isDirectory()) {
-                    home = envHomeFile;
-                }
-            }
-        } catch (SecurityException e) {
-        }
-
-        if (home != null) {
-            if (sysPrefix.isEmpty()) {
-                sysPrefix = home.getAbsoluteFile().getPath();
-                env.getOptions().set(PythonOptions.SysPrefix, sysPrefix);
-            }
-
-            if (basePrefix.isEmpty()) {
-                basePrefix = home.getAbsoluteFile().getPath();
-                env.getOptions().set(PythonOptions.SysBasePrefix, basePrefix);
-            }
-
-            if (coreHome.isEmpty()) {
-                try {
-                    for (TruffleFile f : home.list()) {
-                        if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
-                            coreHome = f.getPath();
-                            break;
-                        }
-                    }
-                } catch (SecurityException | IOException e) {
-                }
-                env.getOptions().set(PythonOptions.CoreHome, coreHome);
-            }
-
-            if (stdLibHome.isEmpty()) {
-                try {
-                    outer: for (TruffleFile f : home.list()) {
-                        if (f.getName().equals("lib-python") && f.isDirectory()) {
-                            for (TruffleFile f2 : f.list()) {
-                                if (f2.getName().equals("3") && f.isDirectory()) {
-                                    stdLibHome = f2.getPath();
-                                    break outer;
-                                }
-                            }
-                        }
-                    }
-                } catch (SecurityException | IOException e) {
-                }
-                env.getOptions().set(PythonOptions.StdLibHome, stdLibHome);
-            }
-
-            PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
-                            "\n\tLanguage home: {0}" +
-                            "\n\tSysPrefix: {1}" +
-                            "\n\tSysBasePrefix: {2}" +
-                            "\n\tCoreHome: {3}" +
-                            "\n\tStdLibHome: {4}" +
-                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, env.getOptions().get(PythonOptions.Executable))));
-        }
+        final PythonContext context = new PythonContext(this, env, newCore);
+        context.initializeHomeAndPrefixPaths(env, getLanguageHome());
+        return context;
     }
 
     @Override
@@ -449,7 +377,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         ArrayList<Scope> scopes = new ArrayList<>();
         if (context.getBuiltins() != null) {
             // false during initialization
-            scopes.add(Scope.newBuilder("__main__", scopeFromObject(context.getMainModule())).build());
+            scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
             scopes.add(Scope.newBuilder("builtins", scopeFromObject(context.getBuiltins())).build());
         }
         return scopes;
@@ -604,12 +532,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (singleThreaded) {
             return super.isThreadAccessAllowed(thread, singleThreaded);
         }
-        return PythonOptions.isWithThread();
+        return isWithThread;
     }
 
     @Override
     protected void initializeMultiThreading(PythonContext context) {
-        PythonContext.getSingleThreadedAssumption().invalidate();
+        context.createInteropLock();
+        context.getSingleThreadedAssumption().invalidate();
     }
 
     @Override

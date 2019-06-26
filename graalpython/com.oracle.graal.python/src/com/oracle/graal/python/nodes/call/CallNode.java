@@ -226,9 +226,6 @@ public abstract class CallNode extends PNodeWithContext {
                 }
                 return CallVarargsMethodNode.getUncached().execute(frame, attrCall, PositionalArgumentsNode.prependArgument(callableObject, args), keywords);
             } else {
-                if (frame != null) {
-                    PArguments.setCallerFrame(arguments, frame.materialize());
-                }
                 if (ct.getRootNode() instanceof ClassBodyRootNode) {
                     PArguments.setSpecialArgument(arguments, ct.getRootNode());
                 }

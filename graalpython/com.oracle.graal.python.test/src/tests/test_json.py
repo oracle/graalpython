@@ -39,15 +39,47 @@
 
 import unittest
 
+BIGINT_JSON_DATA = '''
+{
+  "int_values": [
+    1521583201297000000,
+    13,
+    5,
+    1521583201297000000,
+    67,
+    87,
+    1521583201331000000,
+    1521583201347000000,
+    10
+  ]
+}
+'''
+
 
 class JsonTest(unittest.TestCase):
-
     def test_dump(self):
         import json
         import os
         cwd = os.getcwd()
-        new_file_path = os.path.join(cwd , 'myFile.json')
+        new_file_path = os.path.join(cwd, 'myFile.json')
         json.dump(['a', 'b', 'c'], open(new_file_path, 'w'))
         assert json.load(open(new_file_path)) == ['a', 'b', 'c']
         os.remove(new_file_path)
 
+    def test_load_bigin(self):
+        import json
+        data = json.loads(BIGINT_JSON_DATA)
+        assert "int_values" in data
+        int_values_ = data['int_values']
+        assert isinstance(int_values_, list)
+        assert set(int_values_) == {
+            1521583201297000000,
+            13,
+            5,
+            1521583201297000000,
+            67,
+            87,
+            1521583201331000000,
+            1521583201347000000,
+            10,
+        }

@@ -46,8 +46,8 @@ void *Py_NoValue;
 
 
 PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
-PyObject*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
-PyObject*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
+uint64_t(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
+double(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
 PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
 uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
@@ -63,8 +63,8 @@ static void initialize_upcall_functions() {
     PY_BUILTIN = (void*)polyglot_eval("python", "import builtins\nbuiltins");
 
     PY_TRUFFLE_LANDING = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)));
-    PY_TRUFFLE_LANDING_L = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
-    PY_TRUFFLE_LANDING_D = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)));
+    PY_TRUFFLE_LANDING_L = ((uint64_t(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
+    PY_TRUFFLE_LANDING_D = ((double(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)));
     PY_TRUFFLE_LANDING_PTR = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_ptr", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_L = ((uint64_t (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)));
@@ -364,7 +364,10 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
     return str;
 }
 
-const char* PyTruffle_CstrToString(const char* o) {
+void* PyTruffle_CstrToString(void* o) {
+    if (polyglot_fits_in_i64(o)) {
+        return polyglot_from_string((const char*)polyglot_as_i64(o), SRC_CS);
+    }
     return polyglot_from_string(o, SRC_CS);
 }
 

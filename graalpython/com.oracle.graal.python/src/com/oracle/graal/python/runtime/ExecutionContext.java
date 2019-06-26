@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -57,7 +58,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * An ExecutionContext ensures proper entry and exit for Python calls on both sides of the call, and
@@ -66,7 +67,18 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public abstract class ExecutionContext {
 
     public static final class CallContext extends Node {
+
+        private static final CallContext INSTANCE = new CallContext(false);
+
         @Child private MaterializeFrameNode materializeNode;
+
+        private final boolean adoptable;
+
+        @CompilationFinal private ConditionProfile isPythonFrameProfile;
+
+        private CallContext(boolean adoptable) {
+            this.adoptable = adoptable;
+        }
 
         /**
          * Prepare a call from a Python frame to a Python function.
@@ -82,14 +94,20 @@ public abstract class ExecutionContext {
             // must only be used when calling from Python to Python
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             if (calleeRootNode.needsCallerFrame()) {
-                PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
+                PFrame.Reference thisInfo;
 
-                // We are handing the PFrame of the current frame to the caller, i.e., it does not
-                // 'escape' since it is still on the stack.
-                // Also, force synchronization of values
-                PFrame pyFrame = ensureMaterializeNode().execute(frame, callNode, false, true);
-                assert thisInfo.getPyFrame() == pyFrame;
-                assert pyFrame.getRef() == thisInfo;
+                if (isPythonFrame(frame, callNode)) {
+                    thisInfo = PArguments.getCurrentFrameInfo(frame);
+
+                    // We are handing the PFrame of the current frame to the caller, i.e., it does
+                    // not 'escape' since it is still on the stack.Also, force synchronization of
+                    // values
+                    PFrame pyFrame = materialize(frame, callNode, false, true);
+                    assert thisInfo.getPyFrame() == pyFrame;
+                    assert pyFrame.getRef() == thisInfo;
+                } else {
+                    thisInfo = PFrame.Reference.EMPTY;
+                }
 
                 thisInfo.setCallNode(callNode);
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
@@ -111,16 +129,43 @@ public abstract class ExecutionContext {
             }
         }
 
+        private PFrame materialize(VirtualFrame frame, Node callNode, boolean markAsEscaped, boolean forceSync) {
+            if (adoptable) {
+                return ensureMaterializeNode().execute(frame, callNode, markAsEscaped, forceSync);
+            }
+            return MaterializeFrameNode.getUnadoptable().execute(frame, callNode, markAsEscaped, forceSync);
+        }
+
+        private boolean isPythonFrame(VirtualFrame frame, Node callNode) {
+            if (isPythonFrameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isPythonFrameProfile = ConditionProfile.createBinaryProfile();
+            }
+            boolean result = isPythonFrameProfile.profile(PArguments.isPythonFrame(frame));
+            assert result || callNode.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
+            return result;
+        }
+
         private MaterializeFrameNode ensureMaterializeNode() {
             if (materializeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 materializeNode = insert(MaterializeFrameNodeGen.create());
             }
             return materializeNode;
+
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return adoptable;
         }
 
         public static CallContext create() {
-            return new CallContext();
+            return new CallContext(true);
+        }
+
+        public static CallContext getUncached() {
+            return INSTANCE;
         }
     }
 
@@ -133,7 +178,7 @@ public abstract class ExecutionContext {
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
-        public static void enter(VirtualFrame frame, BranchProfile profile) {
+        public static void enter(VirtualFrame frame, ConditionProfile profile) {
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
@@ -141,8 +186,7 @@ public abstract class ExecutionContext {
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
             // tfel: If there are custom locals, write them into an (incomplete)
             // PFrame here
-            if (customLocals != null && !(customLocals instanceof PFrame.Reference)) {
-                profile.enter();
+            if (profile.profile(customLocals != null && !(customLocals instanceof PFrame.Reference))) {
                 thisFrameRef.setCustomLocals(customLocals);
             }
         }
@@ -242,6 +286,9 @@ public abstract class ExecutionContext {
          * </p>
          */
         public static PException enter(VirtualFrame frame, PythonContext context, Node callNode) {
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.acquireInteropLock();
+            }
             PFrame.Reference prev = context.popTopFrameInfo();
             assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                             "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
@@ -257,6 +304,9 @@ public abstract class ExecutionContext {
             if (context != null) {
                 context.popTopFrameInfo();
                 ExceptionContext.exit(context, savedExceptionState);
+                if (!context.getSingleThreadedAssumption().isValid()) {
+                    context.releaseInteropLock();
+                }
             }
         }
     }

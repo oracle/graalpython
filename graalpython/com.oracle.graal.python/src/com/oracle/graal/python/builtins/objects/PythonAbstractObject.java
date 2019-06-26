@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -567,7 +568,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         @Specialization
         int access(Object object, String fieldName,
-                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
+                        @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @Cached IsCallableNode isCallableNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
@@ -596,7 +598,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
 
             for (PythonAbstractClass c : getMroNode.execute(klass)) {
-                attr = readNode.execute(c, attrKeyName);
+                // n.b. we need to use a different node because it makes a difference if the type is
+                // native
+                attr = readTypeAttrNode.execute(c, attrKeyName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
                     break;
@@ -604,7 +608,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
 
             if (attr == PNone.NO_VALUE) {
-                attr = readNode.execute(owner, attrKeyName);
+                attr = readObjectAttrNode.execute(owner, attrKeyName);
             }
 
             if (attr != PNone.NO_VALUE) {
@@ -632,10 +636,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 if (!isImmutable.execute(owner)) {
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
-                } else if (check(isMapping, object)) {
-                    // Even if the attribute's owner is immutable, if the object is a mapping, it
-                    // may be inserted.
-                    info |= INSERTABLE;
                 }
             } else if (!isImmutable.execute(object) || check(isMapping, object)) {
                 // If the member does not exist yet, it is insertable if this object is mutable,
@@ -675,7 +675,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             // 'type'
             if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
                 return true;
-            } else if (object instanceof PythonClass) {
+            } else if (object instanceof PythonClass || object instanceof PythonModule) {
                 return false;
             } else {
                 LazyPythonClass klass = getClass.execute(object);
