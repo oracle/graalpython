@@ -316,6 +316,10 @@ public abstract class ExecutionContext {
          * Prepare a call from a foreign frame to a Python function.
          */
         public static PFrame.Reference enter(PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.acquireInteropLock();
+            }
+
             Reference popTopFrameInfo = context.popTopFrameInfo();
             PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
@@ -344,6 +348,9 @@ public abstract class ExecutionContext {
             // topframeref was marked as escaped, it'll be materialized at the
             // latest needed time
             context.setTopFrameInfo(frameInfo);
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.releaseInteropLock();
+            }
         }
     }
 
