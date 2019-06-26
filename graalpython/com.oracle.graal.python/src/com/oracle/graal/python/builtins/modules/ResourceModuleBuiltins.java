@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.lang.management.ManagementFactory;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -78,17 +78,24 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"who == RUSAGE_THREAD"})
         @TruffleBoundary
         PTuple getruusageThread(@SuppressWarnings("unused") int who) {
-            ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
             long id = Thread.currentThread().getId();
-            double ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0; // time in user mode (float)
-            double ru_stime = threadMXBean.getThreadCpuTime(id) / 1000000000.0; // time in system mode (float)
+            Runtime runtime = Runtime.getRuntime();
 
+            double ru_utime = -1; // time in user mode (float)
+            double ru_stime = -1; // time in system mode (float)
             long ru_maxrss; // maximum resident set size
-            if (threadMXBean instanceof com.sun.management.ThreadMXBean) {
-                com.sun.management.ThreadMXBean thMxBean = (com.sun.management.ThreadMXBean) threadMXBean;
-                ru_maxrss = thMxBean.getThreadAllocatedBytes(id);
+
+            if (!TruffleOptions.AOT) {
+                ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+                ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
+                ru_stime = threadMXBean.getThreadCpuTime(id) / 1000000000.0;
+                if (threadMXBean instanceof com.sun.management.ThreadMXBean) {
+                    com.sun.management.ThreadMXBean thMxBean = (com.sun.management.ThreadMXBean) threadMXBean;
+                    ru_maxrss = thMxBean.getThreadAllocatedBytes(id);
+                } else {
+                    ru_maxrss = runtime.maxMemory();
+                }
             } else {
-                Runtime runtime = Runtime.getRuntime();
                 ru_maxrss = runtime.maxMemory();
             }
 
@@ -119,18 +126,28 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"who == RUSAGE_SELF"})
         @TruffleBoundary
         PTuple getruusageSelf(@SuppressWarnings("unused") int who) {
-            ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-            double ru_utime = 0; // time in user mode (float)
-            double ru_stime = 0; // time in system mode (float)
-            for (long thId : threadMXBean.getAllThreadIds()) {
-                ru_utime += threadMXBean.getThreadUserTime(thId) / 1000000000.0;
-                ru_stime += threadMXBean.getThreadCpuTime(thId) / 1000000000.0;
-            }
+            Runtime runtime = Runtime.getRuntime();
 
-            MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-            MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
-            MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
-            long ru_maxrss = heapMemoryUsage.getCommitted() + nonHeapMemoryUsage.getCommitted();
+            double ru_utime = -1; // time in user mode (float)
+            double ru_stime = -1; // time in system mode (float)
+            long ru_maxrss;
+
+            if (!TruffleOptions.AOT) {
+                ru_utime = 0;
+                ru_stime = 0;
+                ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+                for (long thId : threadMXBean.getAllThreadIds()) {
+                    ru_utime += threadMXBean.getThreadUserTime(thId) / 1000000000.0;
+                    ru_stime += threadMXBean.getThreadCpuTime(thId) / 1000000000.0;
+                }
+
+                MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
+                MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
+                MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
+                ru_maxrss = heapMemoryUsage.getCommitted() + nonHeapMemoryUsage.getCommitted();
+            } else {
+                ru_maxrss = runtime.maxMemory();
+            }
 
             String osName = System.getProperty("os.name");
             if (osName.contains("Linux")) {
