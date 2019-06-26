@@ -282,11 +282,6 @@ def charmap_decode(string, errors=None, mapping=None):
 
 
 @__builtin__
-def charmap_build(mapping):
-    raise NotImplementedError("charmap_build")
-
-
-@__builtin__
 def readbuffer_encode(data, errors=None):
     raise NotImplementedError("readbuffer_encode")
 

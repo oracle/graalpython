@@ -628,4 +628,26 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    // _codecs.lookup(name)
+    @Builtin(name = "charmap_build", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CharmapBuildNode extends PythonBuiltinNode {
+        // This is replaced in the core _codecs.py with the full functionality
+        @Specialization
+        Object lookup(String chars) {
+            Map<Integer, Integer> charmap = new HashMap<>();
+            int pos = 0;
+            int num = 0;
+
+            while (pos < chars.length()) {
+                int charid = Character.codePointAt(chars, pos);
+                charmap.put(charid, num);
+                pos += Character.charCount(charid);
+                num++;
+            }
+
+            return factory().createDict(charmap);
+        }
+    }
 }
