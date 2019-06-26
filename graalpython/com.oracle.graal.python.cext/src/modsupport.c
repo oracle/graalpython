@@ -121,9 +121,13 @@ MUST_INLINE static int _PyTruffleArg_ParseTupleAndKeywords(PyObject *argv, PyObj
         case 'y':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             if (format[format_idx + 1] == '*') {
-                format_idx++; // skip over '*'
-                PyErr_Format(PyExc_TypeError, "%c* not supported", c);
-                return 0;
+                Py_buffer* p = PyTruffleVaArg(poly_args, offset, va, Py_buffer*);
+            	const char* buf;
+            	format_idx++; // skip over '*'
+            	if (getbuffer(arg, p, &buf) < 0) {
+            		PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg));
+            		return 0;
+            	}
             } else if (arg == Py_None) {
                 if (c == 'z') {
                     PyTruffle_WriteOut(poly_args, offset, va, const char*, NULL);
@@ -374,7 +378,6 @@ int _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const c
     return _PyTruffleArg_ParseTupleAndKeywords(argv, kwds, format, kwdnames, va, NULL, 0);
 }
 
-
 int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
     CallWithPolyglotArgs(int result, kwdnames, 4, _PyTruffleArg_ParseTupleAndKeywords, argv, kwds, format, kwdnames);
     return result;
@@ -394,24 +397,27 @@ MUST_INLINE PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs) {
     return argv;
 }
 
-int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, PyObject *kwds, struct _PyArg_Parser *parser, ...) {
-    CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwds, parser->format, parser->keywords);
+int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
+	// TODO(fa) Converting the stack to a tuple is rather slow. We should refactor
+	// '_PyTruffleArg_ParseTupleAndKeywords' (like CPython) into smaller operations.
+    CallWithPolyglotArgs(int result, parser, 3, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), PyDict_New(), format, NULL);
     return result;
 }
 
-int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, PyObject *kwds, struct _PyArg_Parser *parser, ...) {
-    CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwds, parser->format, parser->keywords);
+int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
+	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
+    CallWithPolyglotArgs(int result, parser, 3, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), PyDict_New(), format, NULL);
     return result;
 }
 
 int _PyArg_ParseStackAndKeywords(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-	// TODO(fa) That's not very fast and we should refactor these functions.
+	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
     CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwnames, parser->format, parser->keywords);
     return result;
 }
 
 int _PyArg_ParseStackAndKeywords_SizeT(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-	// TODO(fa) That's not very fast and we should refactor these functions.
+	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
     CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwnames, parser->format, parser->keywords);
     return result;
 }
