@@ -218,6 +218,8 @@ class GraalPythonVm(GuestVm):
             dists += self._distributions
 
         extra_polyglot_args = self._extra_polyglot_args if isinstance(self._extra_polyglot_args, list) else []
+        if mx.suite("tools", fatalIfMissing=False):
+            dists.append('CHROMEINSPECTOR')
         if mx.suite("sulong", fatalIfMissing=False):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
