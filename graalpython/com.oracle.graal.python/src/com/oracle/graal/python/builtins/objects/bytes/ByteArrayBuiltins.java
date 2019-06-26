@@ -478,6 +478,18 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
+        boolean startswith(PByteArray self, PTuple prefixes, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                           @Cached("create()") BytesNodes.FindNode findNode) {
+            for (Object arrayObj : prefixes.getArray()) {
+                PIBytesLike array = (PIBytesLike) arrayObj;
+                if (startswith(self, array, start, end, findNode)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Specialization
         boolean startswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Cached("create()") BytesNodes.FindNode findNode) {
             return findNode.execute(self, prefix, 0, getLength(self.getSequenceStorage())) == 0;
