@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -49,13 +49,18 @@ def reduce(function, iterable, initializer=None):
     return value
 
 
-@__builtin__
-def partial(func, *args, **keywords):
-    def newfunc(*fargs, **fkeywords):
-        newkeywords = keywords.copy()
-        newkeywords.update(fkeywords)
-        return func(*args, *fargs, **newkeywords)
-    newfunc.func = func
-    newfunc.args = args
-    newfunc.keywords = keywords
-    return newfunc
+class partial:
+    def __init__(self, func, *args, **keywords):
+        def newfunc(*fargs, **fkeywords):
+            newkeywords = keywords.copy()
+            newkeywords.update(fkeywords)
+            return func(*args, *fargs, **newkeywords)
+        self.func = func
+        self.args = args
+        self.keywords = keywords
+        self.newfunc = newfunc
+    
+    def __call__(self, *args, **keywords):
+        return self.newfunc(*args, **keywords)
+    
+    # TODO: correctly implement '__reduce__' and '__setstate__'
