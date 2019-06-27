@@ -236,3 +236,10 @@ def test_code_marshal_with_freevars():
     assert_raises(ValueError, assign_code, foo, foobar_code)
     bazbar.__code__ = foobar_code
     assert bazbar() == (2,3)
+    
+
+def test_function_dict_writeable():
+    def foo(): pass
+    new_dict = { "customProp": "hello, world"}
+    foo.__dict__ = new_dict
+    assert foo.customProp == "hello, world"
