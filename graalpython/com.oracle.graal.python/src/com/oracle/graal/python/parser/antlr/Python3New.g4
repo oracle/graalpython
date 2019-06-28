@@ -154,8 +154,6 @@ import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
-import com.oracle.graal.python.parser.ParserCtxInfo;
-import com.oracle.graal.python.parser.PosParsingVisitor;
 import com.oracle.graal.python.parser.sst.*;
 
 import com.oracle.graal.python.parser.sst.SSTNode;
@@ -185,22 +183,6 @@ import java.util.Arrays;
 			return containsContinue;
 		} finally {
 			containsContinue = false;
-		}
-	}
-	
-	public final StatementNode wrapBreak(StatementNode node, boolean oldValue) {
-		try {
-			return containsBreak? factory.createBreakTarget(node) : node;
-		} finally {
-			containsBreak = oldValue;
-		}
-	}
-	
-	public final StatementNode wrapContinue(StatementNode node, boolean oldValue) {
-		try {
-			return containsContinue ? factory.createContinueTarget(node) : node;
-		} finally {
-			containsContinue = oldValue;
 		}
 	}
 	
@@ -310,8 +292,6 @@ import java.util.Arrays;
         }
         return -1;
     }
- 
-    private final ParserCtxInfo parserInfo = new ParserCtxInfo();
 }
 
 /*
@@ -566,11 +546,9 @@ small_stmt
 ;
 
 expr_stmt
-:       { parserInfo.isVarDefinition = true;}
-	lhs=testlist_star_expr
+:       lhs=testlist_star_expr
 	{ SSTNode rhs = null; 
           int rhsStopIndex = 0;
-          parserInfo.isVarDefinition = false;
         }
 	(
 		':' t=test
@@ -598,7 +576,7 @@ expr_stmt
 				testlist_star_expr { value = $testlist_star_expr.result; rhsStopIndex = getStopIndex($testlist_star_expr.stop);}
 			)
 		)*
-		{ push(start == start() ? new ExpressionStatementNode(value) : factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex($ctx), rhsStopIndex)); }
+		{ push(start == start() ? new ExpressionStatementSSTNode(value) : factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex($ctx), rhsStopIndex)); }
 	)
 ;
 
@@ -675,7 +653,7 @@ return_stmt
 yield_stmt
 :
 	yield_expr
-	{ push(new ExpressionStatementNode($yield_expr.result)); }
+	{ push(new ExpressionStatementSSTNode($yield_expr.result)); }
 ;
 
 raise_stmt
@@ -1037,7 +1015,7 @@ comparison returns [SSTNode result]
 	(
             { int start = start(); int stringStart = stringStart(); }
             ( comp_op expr { pushString($comp_op.result); push($expr.result); } )+
-            { $result = new ComparisonNode($first.result, getStringArray(stringStart), getArray(start, SSTNode[].class), getStartIndex($ctx), getStopIndex($expr.stop)); }
+            { $result = new ComparisonSSTNode($first.result, getStringArray(stringStart), getArray(start, SSTNode[].class), getStartIndex($ctx), getStopIndex($expr.stop)); }
             |
             { $result = $first.result; }
 	)
@@ -1199,17 +1177,17 @@ atom returns [SSTNode result]
             }
         }
 	| NAME { $result = factory.createVariableLookup($NAME.text, getStartIndex($NAME), getStopIndex($NAME)); }
-	| DECIMAL_INTEGER { $result = new NumberLiteralNode($DECIMAL_INTEGER.text, 0, 10, getStartIndex($DECIMAL_INTEGER), getStopIndex($DECIMAL_INTEGER)); }
-	| OCT_INTEGER { $result = new NumberLiteralNode($OCT_INTEGER.text, 2, 8, getStartIndex($OCT_INTEGER), getStopIndex($OCT_INTEGER)); }
-	| HEX_INTEGER { $result = new NumberLiteralNode($HEX_INTEGER.text, 2, 16, getStartIndex($HEX_INTEGER), getStopIndex($HEX_INTEGER)); }
-	| BIN_INTEGER { $result = new NumberLiteralNode($BIN_INTEGER.text, 2, 1, getStartIndex($BIN_INTEGER), getStopIndex($BIN_INTEGER)); }
-	| FLOAT_NUMBER { $result = new FloatLiteralNode($FLOAT_NUMBER.text, false, getStartIndex($FLOAT_NUMBER), getStopIndex($FLOAT_NUMBER)); }
-	| IMAG_NUMBER { $result = new FloatLiteralNode($IMAG_NUMBER.text, true, getStartIndex($IMAG_NUMBER), getStopIndex($IMAG_NUMBER)); }
-	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = new StringLiteralNode(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
+	| DECIMAL_INTEGER { $result = new NumberLiteralSSTNode($DECIMAL_INTEGER.text, 0, 10, getStartIndex($DECIMAL_INTEGER), getStopIndex($DECIMAL_INTEGER)); }
+	| OCT_INTEGER { $result = new NumberLiteralSSTNode($OCT_INTEGER.text, 2, 8, getStartIndex($OCT_INTEGER), getStopIndex($OCT_INTEGER)); }
+	| HEX_INTEGER { $result = new NumberLiteralSSTNode($HEX_INTEGER.text, 2, 16, getStartIndex($HEX_INTEGER), getStopIndex($HEX_INTEGER)); }
+	| BIN_INTEGER { $result = new NumberLiteralSSTNode($BIN_INTEGER.text, 2, 1, getStartIndex($BIN_INTEGER), getStopIndex($BIN_INTEGER)); }
+	| FLOAT_NUMBER { $result = new FloatLiteralSSTNode($FLOAT_NUMBER.text, false, getStartIndex($FLOAT_NUMBER), getStopIndex($FLOAT_NUMBER)); }
+	| IMAG_NUMBER { $result = new FloatLiteralSSTNode($IMAG_NUMBER.text, true, getStartIndex($IMAG_NUMBER), getStopIndex($IMAG_NUMBER)); }
+	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = new StringLiteralSSTNode(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
 	| t='...' { $result = new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS, getStartIndex($t), getStopIndex($t));}
 	| t='None' { $result = new SimpleSSTNode(SimpleSSTNode.Type.NONE, getStartIndex($t), getStopIndex($t));}
-	| t='True' { $result = new BooleanLiteralNode(true, getStartIndex($t), getStopIndex($t)); }
-	| t='False' { $result = new BooleanLiteralNode(false, getStartIndex($t), getStopIndex($t)); }
+	| t='True' { $result = new BooleanLiteralSSTNode(true, getStartIndex($t), getStopIndex($t)); }
+	| t='False' { $result = new BooleanLiteralSSTNode(false, getStartIndex($t), getStopIndex($t)); }
 ;
 
 
@@ -1402,7 +1380,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
                     throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                   }
                 }
-		n=test {if (!((((ArgumentContext)_localctx).n).result instanceof VarLookupNode)) {
+		n=test {if (!((((ArgumentContext)_localctx).n).result instanceof VarLookupSSTNode)) {
                                     throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                                 }} '=' test { 
                                 args.addNamedArg(name, $test.result); 

@@ -35,31 +35,48 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
 QUIETLY$(MX_VERBOSE) = @
 
 # during clean, this isn't set
 PARSER_PATH ?= ../com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr
 
-TARGETS=${PARSER_PATH}/Python3NewParser.java \
+TARGETS=${PARSER_PATH}/Python3BaseVisitor.java \
+	${PARSER_PATH}/Python3Listener.java \
+	${PARSER_PATH}/Python3BaseListener.java \
+	${PARSER_PATH}/Python3Visitor.java \
+	${PARSER_PATH}/Python3Parser.java \
+	${PARSER_PATH}/Python3Lexer.java
+
+TARGETSNEW=${PARSER_PATH}/Python3NewParser.java \
 	${PARSER_PATH}/Python3NewLexer.java
 
-SOURCE=${PARSER_PATH}/Python3New.g4
-STAMP=${PARSER_PATH}/Python3New.g4.stamp
+SOURCE=${PARSER_PATH}/Python3.g4
+STAMP=${SOURCE}.stamp
+
+SOURCENEW=${PARSER_PATH}/Python3New.g4
+STAMPNEW=${PARSER_PATH}/Python3New.g4.stamp
 
 .PHONY: default clean
+default: ${TARGETSNEW}
+
+${STAMP}: ${SOURCE} ${POSTPROCESSOR}
+	$(QUIETLY) touch $@
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
+
+${STAMPNEW}: ${SOURCENEW} ${POSTPROCESSOR}
+	$(QUIETLY) touch $@
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCENEW}
 
 # postprocessing to make source compile without warnings
-define postprocess_file
-	python ${POSTPROCESSOR} $(1)
-endef
-
-${STAMP}: ${SOURCE}
-	echo ${PARSER_PATH}
-	${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
-	$(foreach var,$(TARGETS),$(call postprocess_file,$(var));)
-	touch $@
+${PARSER_PATH}/%.java: ${STAMPNEW} ${STAMP}
+	$(QUIETLY) python ${POSTPROCESSOR} $@
 
 clean:
-	rm -f ${TARGETS}
+ifeq ($(wildcard ${SOURCE}),)
+	$(error ${SOURCE} is not in the location I expected it to be, not cleaning antlr parser)
+endif
+	$(QUIETLY) rm -f ${TARGETS}
+	$(QUIETLY) rm -f ${STAMP}
+	$(QUIETLY) rm -f ${TARGETSNEW}
+	$(QUIETLY) rm -f ${STAMPNEW}
 

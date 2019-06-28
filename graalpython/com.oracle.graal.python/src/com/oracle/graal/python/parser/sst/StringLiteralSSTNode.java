@@ -41,20 +41,17 @@
 
 package com.oracle.graal.python.parser.sst;
 
-public class ExceptSSTNode extends SSTNode {
-    protected final SSTNode test;
-    protected final String asName;
-    protected final SSTNode body;
+public class StringLiteralSSTNode extends SSTNode{
+    protected final String[] values;
 
-    public ExceptSSTNode(SSTNode test, String asName, SSTNode body, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
-        this.test = test;
-        this.asName = asName;
-        this.body = body;
+    public StringLiteralSSTNode(String[] values, int start, int end) {
+        super(start, end);
+        this.values = values;
     }
-     
+
     @Override
     public <T>T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
+    
 }

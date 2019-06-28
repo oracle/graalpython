@@ -41,20 +41,47 @@
 
 package com.oracle.graal.python.parser.sst;
 
-public class ExceptSSTNode extends SSTNode {
-    protected final SSTNode test;
-    protected final String asName;
-    protected final SSTNode body;
+public class NumberLiteralSSTNode extends SSTNode {
+    protected final String value;
+    protected final int start;
+    protected final int base;
 
-    public ExceptSSTNode(SSTNode test, String asName, SSTNode body, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
-        this.test = test;
-        this.asName = asName;
-        this.body = body;
+    public NumberLiteralSSTNode(String value, int start, int base, int startIndex, int endIndex) {
+        super(startIndex, endIndex);
+        this.value = value;
+        this.start = start;
+        this.base = base;
     }
-     
+
+//    @Override
+//    PNode createPythonNode(ScopeEnvironment scopeEnvironment) {
+//        int i = start;
+//        long result = 0;
+//        while (i < value.length()) {
+//            long next = result * base + digitValue(value.charAt(i));
+//            if (next < 0) {
+//                // overflow
+//                BigInteger bigResult = BigInteger.valueOf(result);
+//                BigInteger bigBase = BigInteger.valueOf(base);
+//                while (i < value.length()) {
+//                    bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(value.charAt(i))));
+//                    i++;
+//                }
+//                PIntLiteralNode intLiteral = new PIntLiteralNode(bigResult);
+//                return intLiteral;
+//            }
+//            result = next;
+//            i++;
+//        }
+//        
+//        ExpressionNode intLiteral = result <= Integer.MAX_VALUE ? new IntegerLiteralNode((int) result) : new LongLiteralNode(result);
+//        return intLiteral;
+//    }
+    
+    
     @Override
     public <T>T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
+    
 }

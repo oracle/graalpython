@@ -1,8 +1,44 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
 package com.oracle.graal.python.parser.sst;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -28,12 +64,10 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
@@ -52,7 +86,6 @@ import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
-import com.oracle.graal.python.nodes.literal.DictLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
@@ -64,7 +97,6 @@ import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
-import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -76,7 +108,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import java.math.BigInteger;
@@ -84,10 +115,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- *
- * @author petr
- */
 public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     
     private static final ExpressionNode EMPTY_DOC = new com.oracle.graal.python.nodes.literal.StringLiteralNode("");
@@ -163,7 +190,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     @Override
     public PNode visit(AnnAssignmentSSTNode node) {
         // TODO should be done type checking here?
-        return visit((AssignmentNode) node);
+        return visit((AssignmentSSTNode) node);
     }
 
     @Override
@@ -176,7 +203,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     }
     
     @Override
-    public PNode visit(AssignmentNode node) {
+    public PNode visit(AssignmentSSTNode node) {
         ExpressionNode[] lhs = new ExpressionNode[node.lhs.length];
         for(int i = 0; i < node.lhs.length; i++) {
             lhs[i] = (ExpressionNode)node.lhs[i].accept(this);
@@ -235,7 +262,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     }
 
     @Override
-    public PNode visit(BooleanLiteralNode node) {
+    public PNode visit(BooleanLiteralSSTNode node) {
         ExpressionNode result = new com.oracle.graal.python.nodes.literal.BooleanLiteralNode(node.value);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -399,7 +426,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     
     
     @Override
-    public PNode visit(ComparisonNode node) {
+    public PNode visit(ComparisonSSTNode node) {
         String operator;
         ExpressionNode left = (ExpressionNode)node.firstValue.accept(this);
         ExpressionNode right;
@@ -517,13 +544,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     
     @Override
-    public PNode visit(ExpressionStatementNode node) {
+    public PNode visit(ExpressionStatementSSTNode node) {
         ExpressionNode expression = (ExpressionNode)node.expression.accept(this);
         return expression.asStatement();
     }
     
     @Override
-    public PNode visit(FloatLiteralNode node) {
+    public PNode visit(FloatLiteralSSTNode node) {
         ExpressionNode result;
         if (node.imaginary) {
             double imag = Double.parseDouble(node.value.substring(0, node.value.length() - 1));
@@ -863,7 +890,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     }
 
     @Override
-    public PNode visit(NumberLiteralNode node) {
+    public PNode visit(NumberLiteralSSTNode node) {
         int i = node.start;
         long result = 0;
         while (i < node.value.length()) {
@@ -973,7 +1000,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     
     @Override
-    public PNode visit(StringLiteralNode node) {
+    public PNode visit(StringLiteralSSTNode node) {
         com.oracle.graal.python.nodes.literal.StringLiteralNode result;
         if (node.values.length == 1) {
             result = new com.oracle.graal.python.nodes.literal.StringLiteralNode(node.values[0]);
@@ -1037,7 +1064,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     
     
     @Override
-    public PNode visit(VarLookupNode node) {
+    public PNode visit(VarLookupSSTNode node) {
 //        ScopeInfo oldScope = scopeEnvironment.setCurrentScope(node.scope);
         PNode result =  (PNode)scopeEnvironment.findVariable(node.name);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));

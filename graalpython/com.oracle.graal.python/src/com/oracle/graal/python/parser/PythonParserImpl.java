@@ -26,16 +26,12 @@
 package com.oracle.graal.python.parser;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.NodeFactory;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.oracle.graal.python.parser.antlr.Builder;
-import static com.oracle.graal.python.parser.antlr.Builder.ERROR_LISTENER;
-import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3NewLexer;
 import com.oracle.graal.python.parser.antlr.Python3NewParser;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
@@ -51,11 +47,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import java.net.URI;
-import java.net.URL;
 import java.util.HashSet;
-import java.util.Hashtable;
-import org.graalvm.polyglot.io.ByteSequence;
 
 public final class PythonParserImpl implements PythonParser {
 

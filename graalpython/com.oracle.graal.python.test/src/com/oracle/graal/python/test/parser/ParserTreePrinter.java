@@ -41,25 +41,21 @@
 
 package com.oracle.graal.python.test.parser;
 
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.AccessNameNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
-import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
@@ -70,8 +66,6 @@ import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.parser.ParserTmpVariableNode;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
@@ -473,9 +467,6 @@ public class ParserTreePrinter implements NodeVisitor {
                 }
                 if (node instanceof FrameSlotNode) {
                     indent(level); sb.append("Frame: ").append(((FrameSlotNode)node).getSlot().toString()); newLine();
-                }
-                if (node instanceof ParserTmpVariableNode) {
-                    indent(level); sb.append("Identifier: ").append(((ParserTmpVariableNode)node).getName()); newLine();
                 }
                 if (node instanceof WriteGlobalNode) {
                     indent(level); sb.append("Identifier: ").append(((WriteGlobalNode)node).getAttributeId()); newLine();

@@ -31,6 +31,6 @@ import com.oracle.truffle.api.nodes.NodeInterface;
 
 public interface ReadNode extends NodeInterface {
 
-     StatementNode makeWriteNode(ExpressionNode rhs);
+    StatementNode makeWriteNode(ExpressionNode rhs);
 
 }
