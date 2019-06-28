@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -115,6 +116,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -479,12 +482,18 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(NativeMemberNames.class)
     abstract static class DictNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doManaged(PythonManagedClass self) {
-            PHashingCollection dict = self.getDict();
+        @Specialization(limit = "1")
+        Object doManaged(PythonManagedClass self,
+                         @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createMappingproxy(self);
-                self.setDict(dict);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException(e);
+                }
             } else if (dict instanceof PDict) {
                 // this is the case for types defined in native code
                 dict = factory().createMappingproxy(new DynamicObjectStorage.PythonObjectHybridDictStorage(self.getStorage()));

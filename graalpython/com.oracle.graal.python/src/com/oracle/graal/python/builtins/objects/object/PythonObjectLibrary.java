@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,57 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.object;
+package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.GenerateLibrary;
+import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
+import com.oracle.truffle.api.library.Library;
+import com.oracle.truffle.api.library.LibraryFactory;
 
-@ImportStatic(PGuards.class)
-public abstract class GetDictNode extends PNodeWithContext {
-
-    public abstract Object execute(Object o);
-
-    @Specialization
-    Object dict(PDict self) {
-        return self;
+@GenerateLibrary
+@SuppressWarnings("unused")
+public abstract class PythonObjectLibrary extends Library {
+    public boolean hasDict(PythonAbstractObject receiver) {
+        return false;
     }
 
-    @Specialization(limit = "1")
-    Object dict(PythonModule self,
-                @CachedLibrary("self") PythonObjectLibrary lib,
-                @Cached PythonObjectFactory factory) {
-        PHashingCollection dict = lib.getDict(self);
-        if (dict == null) {
-            dict = factory.createDictFixedStorage(self);
-            try {
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalStateException(e);
-            }
-        }
-        return dict;
+    @Abstract(ifExported = "hasDict")
+    public PHashingCollection getDict(PythonAbstractObject receiver) {
+        return null;
     }
 
-    @Fallback
-    Object dict(@SuppressWarnings("unused") Object self) {
-        return PNone.NONE;
+    @Abstract(ifExported = "hasDict")
+    public PHashingCollection getOrCreateDict(PythonAbstractObject receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
     }
 
-    public static GetDictNode create() {
-        return GetDictNodeGen.create();
+    @Abstract(ifExported = "hasDict")
+    public void setDict(PythonAbstractObject receiver, PHashingCollection dict) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    static final LibraryFactory<PythonObjectLibrary> FACTORY = LibraryFactory.resolve(PythonObjectLibrary.class);
+
+    public static LibraryFactory<PythonObjectLibrary> getFactory() {
+        return FACTORY;
+    }
+
+    public static PythonObjectLibrary getUncached() {
+        return FACTORY.getUncached();
     }
 }

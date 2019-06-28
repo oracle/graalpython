@@ -103,6 +103,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -569,19 +571,31 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
-        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
-            PHashingCollection dict = self.getDict();
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"}, limit = "1")
+        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
+                    @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
-                self.setDict(dict);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException(e);
+                }
             }
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
-        Object dict(PythonObject self, PDict dict) {
-            self.setDict(dict);
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"}, limit = "1")
+        Object dict(PythonObject self, PDict dict,
+                    @CachedLibrary("self") PythonObjectLibrary lib) {
+            try {
+                lib.setDict(self, dict);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
             return PNone.NONE;
         }
 

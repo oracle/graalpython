@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -67,6 +68,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PBuiltinFunction})
 public class AbstractFunctionBuiltins extends PythonBuiltins {
@@ -231,18 +234,30 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class DictNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        PNone dict(PFunction self, PHashingCollection mapping) {
-            self.setDict(mapping);
+        @Specialization(limit = "1")
+        PNone dict(PFunction self, PHashingCollection mapping,
+                    @CachedLibrary("self") PythonObjectLibrary lib) {
+            try {
+                lib.setDict(self, mapping);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isNoValue(mapping)")
-        Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping) {
-            PHashingCollection dict = self.getDict();
+        @Specialization(guards = "isNoValue(mapping)", limit = "1")
+        Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping,
+                    @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
-                self.setDict(dict);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException(e);
+                }
             }
             return dict;
         }
