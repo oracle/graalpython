@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperF
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectHybridDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -305,10 +306,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_DOC, key)")
         Object doTpDoc(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached PInteropGetAttributeNode getAttrNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
-            Object docObj = readAttrNode.execute(object, SpecialAttributeNames.__DOC__);
+            Object docObj = getAttrNode.execute(object, SpecialAttributeNames.__DOC__);
             if (docObj instanceof String) {
                 return new CStringWrapper((String) docObj);
             } else if (docObj instanceof PString) {
@@ -513,9 +514,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_DICT, key)")
         Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached PythonObjectFactory factory,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(readAttrNode.execute(object, __DICT__));
+            // TODO(fa): we could cache the dict instance on the class' native wrapper
+            PHashingCollection dict = object.getDict();
+            if (dict != null && dict.getDictStorage() instanceof PythonObjectHybridDictStorage) {
+                // reuse the existing and modifiable storage
+                return toSulongNode.execute(factory.createDict(dict.getDictStorage()));
+            }
+            PythonObjectHybridDictStorage storage = new PythonObjectHybridDictStorage(object.getStorage());
+            object.setDict(factory.createMappingproxy(storage));
+            return toSulongNode.execute(factory.createDict(storage));
         }
 
         @Specialization(guards = "eq(TP_TRAVERSE, key) || eq(TP_CLEAR, key)")
