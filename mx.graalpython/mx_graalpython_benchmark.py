@@ -83,10 +83,11 @@ def _check_vm_args(name, args):
 class AbstractPythonVm(Vm):
     __metaclass__ = ABCMeta
 
-    def __init__(self, config_name, options=None):
+    def __init__(self, config_name, options=None, env=None):
         super(AbstractPythonVm, self).__init__()
         self._config_name = config_name
         self._options = options
+        self._env = env
 
     @property
     def options(self):
@@ -125,15 +126,15 @@ class AbstractPythonVm(Vm):
         _check_vm_args(self.name(), args)
         out = mx.OutputCapture()
         stdout_capture = mx.TeeOutputCapture(out)
-        ret_code = mx.run([self.interpreter] + args, out=stdout_capture, err=stdout_capture)
+        ret_code = mx.run([self.interpreter] + args, out=stdout_capture, err=stdout_capture, env=self._env)
         return ret_code, out.data
 
 
 class AbstractPythonIterationsControlVm(AbstractPythonVm):
     __metaclass__ = ABCMeta
 
-    def __init__(self, config_name, options=None, iterations=None):
-        super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
+    def __init__(self, config_name, options=None, env=None, iterations=None):
+        super(AbstractPythonIterationsControlVm, self).__init__(config_name, options=options, env=env)
         try:
             self._iterations = int(iterations)
         except:
@@ -160,8 +161,8 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
 class CPythonVm(AbstractPythonIterationsControlVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None, iterations=0):
-        super(CPythonVm, self).__init__(config_name, options=options, iterations=iterations)
+    def __init__(self, config_name, options=None, env=None, virtualenv=None, iterations=0):
+        super(CPythonVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
         self._virtualenv = virtualenv
 
     @property
@@ -177,8 +178,8 @@ class CPythonVm(AbstractPythonIterationsControlVm):
 class PyPyVm(AbstractPythonIterationsControlVm):
     PYPY_INTERPRETER = "pypy3"
 
-    def __init__(self, config_name, options=None, iterations=None):
-        super(PyPyVm, self).__init__(config_name, options=options, iterations=iterations)
+    def __init__(self, config_name, options=None, env=None, iterations=None):
+        super(PyPyVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
 
     @property
     def interpreter(self):
