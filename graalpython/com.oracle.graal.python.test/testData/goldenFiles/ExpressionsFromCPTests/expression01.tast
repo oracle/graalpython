@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'expression01'> SourceSection: [0,13]`def f(): pass
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,13]`def f(): pass`
+              Name: f
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

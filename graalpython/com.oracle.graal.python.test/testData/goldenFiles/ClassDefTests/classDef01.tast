@@ -29,6 +29,7 @@ ModuleRootNode Name: <module 'classDef01'> SourceSection: [0,16]`class foo():pas
                     FreeVarsSlots: None
                     CellVarsSlots: __class__, 
                   ClassBodyRootNode SourceSection: [0,16]`class foo():pass`
+                    Name: foo
                     Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                       Param Names: namespace
                     CelVars: __class__

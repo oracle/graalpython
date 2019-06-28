@@ -22,6 +22,7 @@ ModuleRootNode Name: <module 'functionDefCPT06'> SourceSection: [0,27]`def f(foo
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,27]`def f(foo=bar, *args...`
+              Name: f
               Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
                 Param Names: foo
               CelVars: None

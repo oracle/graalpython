@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
             FreeVarsSlots: None
             CellVarsSlots: None
           FunctionRootNode SourceSection: [25,111]`def add():↵    globa...`
+            Name: add
             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
             CelVars: None
             FreeVars: None

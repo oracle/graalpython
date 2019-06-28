@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,52]`def fn():↵  for a, b...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

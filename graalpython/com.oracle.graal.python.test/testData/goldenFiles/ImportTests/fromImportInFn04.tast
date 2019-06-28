@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'fromImportInFn04'> SourceSection: [0,66]`def fn():
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,66]`def fn():↵  from sys...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

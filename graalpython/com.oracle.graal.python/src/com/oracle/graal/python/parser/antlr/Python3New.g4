@@ -1175,8 +1175,10 @@ atom returns [SSTNode result]
 	)
 	endIndex = ']' 
         {
-            $result.setStartOffset(getStartIndex($startIndex));
-            $result.setEndOffset(getStopIndex($endIndex));
+            if (!($result instanceof ForComprehensionSSTNode)) {
+                $result.setStartOffset(getStartIndex($startIndex));
+                $result.setEndOffset(getStopIndex($endIndex));
+            }
         }
 	|
 	startIndex = '{'
@@ -1191,8 +1193,10 @@ atom returns [SSTNode result]
 	)
 	endIndex = '}' 
         {
-            $result.setStartOffset(getStartIndex($startIndex));
-            $result.setEndOffset(getStopIndex($endIndex));
+            if (!($result instanceof ForComprehensionSSTNode)) {
+                $result.setStartOffset(getStartIndex($startIndex));
+                $result.setEndOffset(getStopIndex($endIndex));
+            }
         }
 	| NAME { $result = factory.createVariableLookup($NAME.text, getStartIndex($NAME), getStopIndex($NAME)); }
 	| DECIMAL_INTEGER { $result = new NumberLiteralNode($DECIMAL_INTEGER.text, 0, 10, getStartIndex($DECIMAL_INTEGER), getStopIndex($DECIMAL_INTEGER)); }
@@ -1290,7 +1294,8 @@ dictmaker returns [SSTNode result]
 		{ name = null; value = $expr.result; }
 	)
 	(
-		comp_for[value, name, PythonBuiltinClassType.PDict]
+		comp_for[value, name, PythonBuiltinClassType.PDict, 0]
+                { $result = $comp_for.result; }
 		|
 		{ /*factory.leaveScope(); */}
 		{ int start = start(); push(name); push(value); }
@@ -1318,7 +1323,7 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
 		star_expr { value = $star_expr.result; }
 	)
 	(
-		comp_for[value, null, $compType]
+		comp_for[value, null, $compType, 0]
 		{ $result = $comp_for.result; }
 		|
 		{ /*factory.leaveScope(); */}
@@ -1387,9 +1392,10 @@ arglist returns [ArgListBuilder result]
 
 argument [ArgListBuilder args] returns [SSTNode result]
 :               
-		{ factory.createScope(_localctx, ScopeInfo.ScopeKind.Transparent); }
-		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator]
-		{ factory.leaveScope(); }
+		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]
+                {
+                    args.addArg($comp_for.result);
+                }
 	|
                 { String name = getCurrentToken().getText();
                   if (getCurrentToken().getType() != NAME) {
@@ -1423,17 +1429,28 @@ argument [ArgListBuilder args] returns [SSTNode result]
 ;
 
 comp_for
-[SSTNode target, SSTNode name, PythonBuiltinClassType resultType]
+[SSTNode target, SSTNode name, PythonBuiltinClassType resultType, int level]
 returns [SSTNode result]
 :
-	{ boolean scopeCreated = true; factory.createGeneratorScope($target, $name); }
-	{ boolean async = false; }
+	{ 
+            boolean scopeCreated = true; 
+            ScopeInfo generatorScope = factory.createScope($ctx, ScopeInfo.ScopeKind.Generator); 
+            boolean async = false; 
+        }
 	(
 		ASYNC { async = true; }
 	)?
-	{ SSTNode value; }
-	'for' exprlist 'in' or_test
-	{ value = $or_test.result; }
+	{ 
+            SSTNode iterator; 
+            SSTNode[] variables;
+            int lineNumber;
+        }
+	f = 'for' exprlist 'in' or_test
+	{ 
+            lineNumber = $f.getLine();
+            iterator = $or_test.result; 
+            variables = $exprlist.result;
+        }
 	
 	{ int start = start(); }
 	(
@@ -1442,10 +1459,10 @@ returns [SSTNode result]
 	{ SSTNode[] conditions = getArray(start, SSTNode[].class); }
 	
 	(
-		comp_for [value, null, PythonBuiltinClassType.PGenerator]
-		{ value = $comp_for.result; }
+		comp_for [iterator, null, PythonBuiltinClassType.PGenerator, level + 1]
+		{ iterator = $comp_for.result; }
 	)?
-	{ $result = new ForComprehensionSSTNode(async, $target, $name, value, conditions, $resultType, getStartIndex($ctx), getStopIndex($comp_for.stop)); }
+	{ $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, $resultType, lineNumber, level, getStartIndex($f), getLastIndex(_localctx)); }
 	{ factory.leaveGeneratorScope(scopeCreated); }
 ;
 

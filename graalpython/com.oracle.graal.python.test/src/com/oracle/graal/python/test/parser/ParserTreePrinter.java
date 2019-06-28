@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -61,12 +62,16 @@ import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
+import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
+import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
+import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.ParserTmpVariableNode;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
@@ -173,6 +178,7 @@ public class ParserTreePrinter implements NodeVisitor {
         public boolean visit (FunctionRootNode node) {
             nodeHeader(node);
             level++;
+            indent(level); sb.append("Name: ").append(node.getName()); newLine();
             addInfoPClosureFunctionRootNode(node);
             add(node.getExecutionCellSlots());
             level--;
@@ -247,6 +253,40 @@ public class ParserTreePrinter implements NodeVisitor {
             nodeHeader(node);
             level++;
             indent(level); sb.append("Attribute: ").append(node.getAttributeId()); newLine();
+            level--;
+            return true;
+        }
+        
+        public boolean visit(GeneratorExpressionNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Name: ").append(node.getName()); newLine();
+            addFrameDescriptor(node.getFrameDescriptor());
+            indent(level); sb.append("Enclosing"); newLine();
+            level++;
+            addFrameDescriptor(node.getEnclosingFrameDescriptor());
+            level--;
+            indent(level); sb.append("Active Flags: ").append(node.getNumOfActiveFlags()); newLine();
+            indent(level); sb.append("For Nodes: ").append(node.getNumOfGeneratorForNode()); newLine();
+            indent(level); sb.append("Block Nodes: ").append(node.getNumOfGeneratorBlockNode()); newLine();
+            indent(level); sb.append("Is Enclosing Frame Generator: ").append(node.isEnclosingFrameGenerator()); newLine();
+            visit(node.getCallTarget().getRootNode());
+            level--;
+            return true;
+        }
+        
+        public boolean visit(YieldNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("flagSlot: ").append(node.getFlagSlot()); newLine();
+            level--;
+            return true;
+        }
+        
+        public boolean visit(GeneratorReturnTargetNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("flagSlot: ").append(node.getFlagSlot()); newLine();
             level--;
             return true;
         }
@@ -416,6 +456,12 @@ public class ParserTreePrinter implements NodeVisitor {
                 visitChildren = visit((LookupAndCallUnaryNode)node); 
             } else if (node instanceof SetAttributeNode) {
                 visitChildren = visit((SetAttributeNode)node); 
+            } else if (node instanceof GeneratorExpressionNode) {
+                visitChildren = visit((GeneratorExpressionNode)node); 
+            } else if (node instanceof YieldNode) {
+                visitChildren = visit((YieldNode)node); 
+            } else if (node instanceof GeneratorReturnTargetNode) {
+                visitChildren = visit((GeneratorReturnTargetNode)node); 
             } else {
                 nodeHeader(node);
                 level++;

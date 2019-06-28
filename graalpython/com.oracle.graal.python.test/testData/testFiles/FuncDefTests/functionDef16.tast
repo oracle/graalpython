@@ -42,6 +42,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [357,379]`print(foo
               FreeVarsSlots: None
               CellVarsSlots: x, 
             FunctionRootNode SourceSection: [0,357]`def foo(x):↵    # in...`
+              Name: foo
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                 Param Names: x
               CelVars: x
@@ -75,6 +76,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [357,379]`print(foo
                             FreeVarsSlots: x, 
                             CellVarsSlots: q, , y, 
                           FunctionRootNode SourceSection: [43,253]`def bar(y):↵        ...`
+                            Name: bar
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: y
                             CelVars: q, y
@@ -114,6 +116,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [357,379]`print(foo
                                           FreeVarsSlots: q, , x, , y, 
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [109,238]`def baz(z):↵        ...`
+                                          Name: baz
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: z
                                           CelVars: None

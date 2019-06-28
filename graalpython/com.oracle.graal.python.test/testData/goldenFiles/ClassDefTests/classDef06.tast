@@ -29,6 +29,7 @@ ModuleRootNode Name: <module 'classDef06'> SourceSection: [0,49]`class DerivedCl
                     FreeVarsSlots: None
                     CellVarsSlots: __class__, 
                   ClassBodyRootNode SourceSection: [0,49]`class DerivedClassNa...`
+                    Name: DerivedClassName
                     Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                       Param Names: namespace
                     CelVars: __class__

@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'functionDef04'> SourceSection: [0,31]`def foo(a, b
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,31]`def foo(a, b): ↵  re...`
+              Name: foo
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                 Param Names: a, b
               CelVars: None

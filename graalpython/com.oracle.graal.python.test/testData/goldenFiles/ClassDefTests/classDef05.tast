@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,63]`def fn():↵  class De...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
@@ -54,6 +55,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                                 FreeVarsSlots: None
                                 CellVarsSlots: __class__, 
                               ClassBodyRootNode SourceSection: [12,63]`class DerivedClassNa...`
+                                Name: DerivedClassName
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: namespace
                                 CelVars: __class__

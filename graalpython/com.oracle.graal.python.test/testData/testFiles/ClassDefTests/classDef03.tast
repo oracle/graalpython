@@ -29,6 +29,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                     FreeVarsSlots: None
                     CellVarsSlots: __class__, 
                   ClassBodyRootNode SourceSection: [0,108]`class MyClass:↵    "...`
+                    Name: MyClass
                     Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                       Param Names: namespace
                     CelVars: __class__
@@ -71,6 +72,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [67,108]`def f(self):↵       ...`
+                                Name: f
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: self
                                 CelVars: None

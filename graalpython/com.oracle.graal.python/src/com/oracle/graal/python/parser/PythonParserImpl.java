@@ -147,6 +147,7 @@ public final class PythonParserImpl implements PythonParser {
                     PythonLanguage lang = errors.getLanguage();
                     PythonNodeFactory factory = newParser.factory;
                     lastGlobalScope = factory.getScopeEnvironment().getGlobalScope();
+                    factory.getScopeEnvironment().setCurrentScope(lastGlobalScope);
                     FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, factory.getScopeEnvironment(), lang.getNodeFactory(), source);
                     ModuleRootNode mrn = factory.createModuleRoot(source.getName(), factoryVisitor.asExpression((BlockSSTNode)parserResult), file_input.scope.getFrameDescriptor());
                     

@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'functionDoc01'> SourceSection: [0,65]`↵def test 
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [1,65]`def test ():↵    "th...`
+              Name: test
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

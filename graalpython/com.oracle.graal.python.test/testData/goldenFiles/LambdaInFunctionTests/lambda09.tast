@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,34]`def fn():↵  lambda f...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
@@ -45,6 +46,7 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                           FreeVarsSlots: None
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [12,34]`lambda foo=bar, **z:...`
+                          Name: anonymous
                           Signature: varArgs=False, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
                             Param Names: foo
                             Keyword Names: None

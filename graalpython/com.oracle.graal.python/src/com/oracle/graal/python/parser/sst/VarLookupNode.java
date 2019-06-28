@@ -15,12 +15,10 @@ import com.oracle.graal.python.parser.ScopeInfo;
 public class VarLookupNode extends SSTNode {
 
     protected final String name;
-    protected final ScopeInfo scope;
     
-    public VarLookupNode(String name, ScopeInfo scope, int start, int end) {
+    public VarLookupNode(String name, int start, int end) {
         super(start, end);
         this.name = name;
-        this.scope = scope;
     }
 
     @Override

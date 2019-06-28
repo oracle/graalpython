@@ -24,6 +24,7 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                 FreeVarsSlots: None
                 CellVarsSlots: None
               FunctionRootNode SourceSection: [24,38]`def fn(): pass`
+                Name: fn
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None

@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -268,7 +269,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return null;
     }
 
-    private ReadNode findVariableNodeLEGB(String name) {
+     private ReadNode findVariableNodeLEGB(String name) {
         // 1 (local scope) & 2 (enclosing scope(s))
         ReadNode readNode = findVariableInLocalOrEnclosingScopes(name);
         if (readNode != null) {
@@ -277,6 +278,16 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
         // 3 (global scope) & 4 (builtin)
         return findVariableInGlobalOrBuiltinScope(name);
+    }
+     
+    private ReadNode findVariableNodeInGenerator(String name) {
+        
+        FrameSlot slot = currentScope.findFrameSlot(name);
+        if (slot != null && !isCellInCurrentScope(name)) {
+            // is local in generater?
+            return ReadGeneratorFrameVariableNode.create(slot);
+        }
+        return findVariableNodeLEGB(name);
     }
 
     private ReadNode findVariableNodeClass(String name) {
@@ -310,6 +321,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             case Module:
                 return findVariableNodeModule(name);
             case Generator:
+                return findVariableNodeInGenerator(name);
             case ListComp:
             case Function:
                 return findVariableNodeLEGB(name);
@@ -367,8 +379,10 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return getWriteNode(name, ReadVarKeywordsNode.createForUserFunction(names));
     }
     
-    public void setCurrentScope(ScopeInfo info) {
+    public ScopeInfo setCurrentScope(ScopeInfo info) {
+        ScopeInfo oldCurrent = currentScope;
         currentScope = info;
+        return oldCurrent;
     } 
     
     public void setToGeneratorScope() {

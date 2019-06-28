@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'basicInFn03'> SourceSection: [0,28]`def fn():↵  
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,28]`def fn():↵  import s...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

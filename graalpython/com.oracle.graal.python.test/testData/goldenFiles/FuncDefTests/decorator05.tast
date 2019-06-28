@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,77]`def outer():â†µ  def d...`
+              Name: outer
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
@@ -46,6 +47,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                             FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [15,46]`def decorator1(fn):â†µ...`
+                            Name: decorator1
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: fn
                             CelVars: None
@@ -86,6 +88,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                               FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [60,77]`def inner(): pass`
+                              Name: inner
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: None

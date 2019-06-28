@@ -79,6 +79,7 @@ import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AssignmentNode;
 import com.oracle.graal.python.parser.sst.ClassSSTNode;
 import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.parser.sst.ForSSTNode;
 import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
 import com.oracle.graal.python.parser.sst.ImportSSTNode;
@@ -859,7 +860,7 @@ public final class PythonNodeFactory {
 
     public VarLookupNode createVariableLookup(String name, int start, int stop) {
         scopeEnvironment.addSeenVar(name);
-        return new VarLookupNode(name, scopeEnvironment.getCurrentScope(), start, stop);
+        return new VarLookupNode(name, start, stop);
     }
 
     public StatementNode createClassDefinition(String name, ExpressionNode[] baseClasses, StatementNode body) {
@@ -969,6 +970,13 @@ public final class PythonNodeFactory {
                 }
             }
         }
+    }
+    
+    public SSTNode createForComprehension(boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType, int lineNumber, int level,  int startOffset, int endOffset) {
+        for (SSTNode variable: variables) {
+            declareVar(variable);
+        }
+        return new ForComprehensionSSTNode(scopeEnvironment.getCurrentScope(), async, target, name, variables, iterator, conditions, resultType, lineNumber, level, startOffset, endOffset);
     }
     
     public SSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int start, int stop) {
@@ -1147,7 +1155,7 @@ public final class PythonNodeFactory {
     
     public boolean createGeneratorScope(SSTNode target, SSTNode name) {
         log(target, name);
-
+        createScope(name.toString(), ScopeKind.Generator);
         // we're still within the transparent arguments scope
 
 //        if (generatorScope == null) {
@@ -1156,7 +1164,7 @@ public final class PythonNodeFactory {
 //            return true;
 //        }
         // get rid of the argument scope immediately
-        leaveScope();
+  //      leaveScope();
         return false;
     }
 

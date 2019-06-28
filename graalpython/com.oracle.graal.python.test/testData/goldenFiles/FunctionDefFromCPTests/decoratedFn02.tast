@@ -28,6 +28,7 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
                   FreeVarsSlots: None
                   CellVarsSlots: None
                 FunctionRootNode SourceSection: [31,44]`def f(): pass`
+                  Name: f
                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                   CelVars: None
                   FreeVars: None

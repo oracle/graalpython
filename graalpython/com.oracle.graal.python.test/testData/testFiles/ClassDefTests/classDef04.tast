@@ -29,6 +29,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                     FreeVarsSlots: None
                     CellVarsSlots: __class__, 
                   ClassBodyRootNode SourceSection: [0,110]`class Complex:↵    d...`
+                    Name: Complex
                     Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                       Param Names: namespace
                     CelVars: __class__
@@ -61,6 +62,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [19,110]`def __init__(self, r...`
+                                Name: __init__
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: self, realpart, imagpart
                                 CelVars: None

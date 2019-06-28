@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,35]`def fn():↵  with 
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,35]`def fn():↵  with A()...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'asyncFor01'> SourceSection: [0,39]`async def f():â
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [6,39]`def f():â†µ async for ...`
+              Name: f
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

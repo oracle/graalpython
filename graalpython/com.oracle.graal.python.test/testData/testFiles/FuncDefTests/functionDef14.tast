@@ -17,6 +17,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,547]`↵def oute
             FreeVarsSlots: None
             CellVarsSlots: x, 
           FunctionRootNode SourceSection: [1,434]`def outer ():↵    x ...`
+            Name: outer
             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
             CelVars: x
             FreeVars: None
@@ -49,6 +50,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,547]`↵def oute
                           FreeVarsSlots: x, 
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [30,298]`def inner():↵       ...`
+                          Name: inner
                           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                           CelVars: None
                           FreeVars: x
@@ -91,6 +93,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,547]`↵def oute
                                         FreeVarsSlots: x, 
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [91,138]`def extraInner():↵  ...`
+                                        Name: extraInner
                                         Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                         CelVars: None
                                         FreeVars: x

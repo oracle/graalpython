@@ -25,6 +25,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
               FreeVarsSlots: None
               CellVarsSlots: x, 
             FunctionRootNode SourceSection: [0,74]`def outer ():↵    de...`
+              Name: outer
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: x
               FreeVars: None
@@ -51,6 +52,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                             FreeVarsSlots: x, 
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [18,54]`def inner():↵       ...`
+                            Name: inner
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: x

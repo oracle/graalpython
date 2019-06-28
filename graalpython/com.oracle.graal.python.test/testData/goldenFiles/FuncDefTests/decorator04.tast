@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,46]`def outer():â†µ  @deco...`
+              Name: outer
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
@@ -49,6 +50,7 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
                             FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [29,46]`def inner(): pass`
+                            Name: inner
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
                             FreeVars: None

@@ -33,18 +33,30 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void expression05() throws Exception {
         checkTreeResult("a[...]");
     }
-//
-//    @Test
-//    public void expression04() throws Exception {
-//        checkScopeAndTree("[x**3 for x in range(20)]");
-//    }
+
+    @Test
+    public void generator01() throws Exception {
+        checkScopeAndTree("[x**3 for x in range(20)]");
+    }
     
-//        self.check_expr("[x**3 for x in range(20)]")
 //        self.check_expr("[x**3 for x in range(20) if x % 3]")
 //        self.check_expr("[x**3 for x in range(20) if x % 2 if x % 3]")
-//        self.check_expr("list(x**3 for x in range(20))")
+    @Test
+    public void generator04() throws Exception {
+        checkScopeAndTree("list(x**3 for x in range(20))");
+    }
+
 //        self.check_expr("list(x**3 for x in range(20) if x % 3)")
 //        self.check_expr("list(x**3 for x in range(20) if x % 2 if x % 3)")
+    @Test
+    public void generator07() throws Exception {
+        checkScopeAndTree("(x for x in range(10))");
+    }
+    
+    @Test
+    public void generator08() throws Exception {
+        checkScopeAndTree("foo(x for x in range(10))");
+    }
 
     @Test
     public void fnCall01() throws Exception {
@@ -185,7 +197,4 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void lambda12() throws Exception {
         checkScopeAndTree("lambda x, *y, **z: 0");
     }
-//        self.check_expr("(x for x in range(10))")
-//        self.check_expr("foo(x for x in range(10))")
- 
 }

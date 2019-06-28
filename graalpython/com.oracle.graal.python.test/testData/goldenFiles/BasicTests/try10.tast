@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,214]`def divide(x, y):â†µ  ...`
+              Name: divide
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                 Param Names: x, y
               CelVars: None

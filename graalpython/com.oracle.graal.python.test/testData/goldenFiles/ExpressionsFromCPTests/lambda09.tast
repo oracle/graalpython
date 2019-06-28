@@ -16,6 +16,7 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,22]`lambda foo=bar, *
         FreeVarsSlots: None
         CellVarsSlots: None
       FunctionRootNode SourceSection: [0,22]`lambda foo=bar, **z:...`
+        Name: anonymous
         Signature: varArgs=False, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
           Param Names: foo
           Keyword Names: None

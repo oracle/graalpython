@@ -17,6 +17,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
             FreeVarsSlots: None
             CellVarsSlots: delta, 
           FunctionRootNode SourceSection: [0,151]`def mydecorator(delt...`
+            Name: mydecorator
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
               Param Names: delta
             CelVars: delta
@@ -50,6 +51,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                           FreeVarsSlots: delta, 
                           CellVarsSlots: fn, 
                         FunctionRootNode SourceSection: [28,138]`def wrap(fn):↵      ...`
+                          Name: wrap
                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                             Param Names: fn
                           CelVars: fn
@@ -83,6 +85,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                         FreeVarsSlots: delta, , fn, 
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [50,117]`def wrapped_f(*args)...`
+                                        Name: wrapped_f
                                         Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
                                         CelVars: None
                                         FreeVars: delta, fn
@@ -168,6 +171,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [167,198]`def getNumber():↵   ...`
+              Name: getNumber
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

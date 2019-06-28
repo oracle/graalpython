@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,61]`def fn():↵  try:�
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,61]`def fn():↵  try:↵   ...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

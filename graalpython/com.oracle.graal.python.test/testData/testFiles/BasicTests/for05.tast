@@ -25,6 +25,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,119]`def fn():↵  for x
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,115]`def fn():↵  for x in...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

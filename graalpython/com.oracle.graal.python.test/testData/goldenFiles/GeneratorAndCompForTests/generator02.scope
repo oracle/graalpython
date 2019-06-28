@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: fn
+        Kind: Function
+        FrameDescriptor: Empty
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: [1372 1162 1138 1127 1122 1087 1070 1053 1042 1031 1020 975 970 950 934 885 509 466 455 442 438 874 247 734 439 183]
+            Kind: Generator
+            FrameDescriptor: [x, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty

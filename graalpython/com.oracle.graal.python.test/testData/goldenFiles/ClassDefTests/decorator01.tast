@@ -33,6 +33,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
                       FreeVarsSlots: None
                       CellVarsSlots: __class__, 
                     ClassBodyRootNode SourceSection: [17,33]`class foo():pass`
+                      Name: foo
                       Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                         Param Names: namespace
                       CelVars: __class__

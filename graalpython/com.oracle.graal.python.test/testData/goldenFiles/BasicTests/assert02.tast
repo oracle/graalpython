@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,59]`def avg(marks):â†µ    ...`
+              Name: avg
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                 Param Names: marks
               CelVars: None

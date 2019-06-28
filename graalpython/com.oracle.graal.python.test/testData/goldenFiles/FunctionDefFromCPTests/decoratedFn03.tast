@@ -24,6 +24,7 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
                 FreeVarsSlots: None
                 CellVarsSlots: None
               FunctionRootNode SourceSection: [13,26]`def f(): pass`
+                Name: f
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None

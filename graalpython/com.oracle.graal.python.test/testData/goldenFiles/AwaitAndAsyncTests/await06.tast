@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'await06'> SourceSection: [0,38]`async def f():↵ 
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [6,38]`def f():↵ await foo(...`
+              Name: f
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
