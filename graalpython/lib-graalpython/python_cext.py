@@ -724,9 +724,23 @@ def PyModule_AddObject(m, k, v):
     return None
 
 
-from posix import stat_result
 def PyStructSequence_New(typ):
-    return stat_result([None] * stat_result.n_sequence_fields * 2)
+    return typ()
+
+
+namedtuple_type = None
+def PyStructSequence_InitType2(type_name, type_doc, field_names, field_docs):
+    assert len(field_names) == len(field_docs)
+    global namedtuple_type
+    if not namedtuple_type:
+        from collections import namedtuple as namedtuple_type
+    new_type = namedtuple_type(type_name, field_names)
+    new_type.__doc__ = type_doc
+    for i in range(len(field_names)):
+        prop = getattr(new_type, field_names[i])
+        assert isinstance(prop, property)
+        prop.__doc__ = field_docs[i]
+    return new_type
 
 
 def METH_UNSUPPORTED(fun):
