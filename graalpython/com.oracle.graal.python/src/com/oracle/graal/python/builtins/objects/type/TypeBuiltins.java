@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
@@ -78,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -123,6 +125,7 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(__DICTOFFSET__);
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(__ITEMSIZE__);
     public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(__BASICSIZE__);
+    public static final HiddenKey TYPE_ALLOC = new HiddenKey(__ALLOC__);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -887,4 +890,42 @@ public class TypeBuiltins extends PythonBuiltins {
             return getFlagsNode.execute(self);
         }
     }
+
+    @Builtin(name = __ALLOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    abstract static class AllocNode extends AbstractSlotNode {
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getAlloc(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") IsBuiltinClassProfile profile,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            // recursion anchor; since the metaclass of 'type' is 'type'
+            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
+                return getName.execute(cls, TYPE_ALLOC);
+            }
+            return getName.execute(cls, __ALLOC__);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object setName(PythonClass cls, Object value,
+                        @Cached WriteAttributeToObjectNode setName) {
+            return setName.execute(cls, __ALLOC__, value);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") GetTypeMemberNode getTpAllocNode) {
+            return getTpAllocNode.execute(cls, NativeMemberNames.TP_ALLOC);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+        }
+    }
+
 }

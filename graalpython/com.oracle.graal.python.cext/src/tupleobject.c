@@ -79,3 +79,36 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     }
     return result;
 }
+
+MUST_INLINE
+static PyObject * tuple_create(PyObject *iterable) {
+    if (iterable == NULL) {
+        return PyTuple_New(0);
+    }
+    return PySequence_Tuple(iterable);
+}
+
+PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
+    PyObject *tmp, *newobj, *item;
+    Py_ssize_t i, n;
+
+    assert(PyType_IsSubtype(type, &PyTuple_Type));
+    tmp = tuple_create(iterable);
+    if (tmp == NULL) {
+        return NULL;
+    }
+    assert(PyTuple_Check(tmp));
+    n = PyTuple_GET_SIZE(tmp);
+
+    newobj = type->tp_alloc(type, n);
+    if (newobj == NULL) {
+        return NULL;
+    }
+    for (i = 0; i < n; i++) {
+        item = PyTuple_GetItem(tmp, i);
+        Py_INCREF(item);
+        PyTuple_SetItem(newobj, i, item);
+    }
+    Py_DECREF(tmp);
+    return newobj;
+}

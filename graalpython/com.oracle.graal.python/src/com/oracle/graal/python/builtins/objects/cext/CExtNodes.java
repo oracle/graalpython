@@ -259,6 +259,17 @@ public abstract class CExtNodes {
         }
     }
 
+    public abstract static class TupleSubtypeNew extends SubtypeNew {
+        @Override
+        protected final String getTypenamePrefix() {
+            return "tuple";
+        }
+
+        public static TupleSubtypeNew create() {
+            return CExtNodesFactory.TupleSubtypeNewNodeGen.create();
+        }
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     public abstract static class FromNativeSubclassNode extends CExtBaseNode {
 
