@@ -40,19 +40,14 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
-import com.oracle.truffle.api.object.Shape;
 
 public final class IsBuiltinClassProfile {
     @CompilationFinal private boolean isBuiltinType;
@@ -62,101 +57,34 @@ public final class IsBuiltinClassProfile {
     @CompilationFinal private boolean match;
     @CompilationFinal private boolean noMatch;
 
-    // n.b.: (tfel) We store the python class as a Shape property on the
-    // DynamicObject representing the Python-level object. Thus, accessing the
-    // python class incurs an indirection that we'd like to avoid if
-    // possible. We use this cache to avoid the indirection. In the single
-    // context case, we just cache all classes, in the multi-context case, we
-    // only cache classes if they are builtin types that are shared across
-    // contexts.
-    private final Assumption singleContextAssumption;
-    private static final int CLASS_CACHE_SIZE = 3;
-    @CompilationFinal(dimensions = 1) private ClassCache[] classCache = new ClassCache[CLASS_CACHE_SIZE];
-    @CompilationFinal private boolean cacheUsedInSingleContext = false;
-
-    private static final class ClassCache {
-        private final LazyPythonClass klass;
-        private final Shape shape;
-
-        ClassCache(Shape shape, LazyPythonClass klass) {
-            this.shape = shape;
-            this.klass = klass;
-        }
-    }
-
-    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile(null);
-    static {
-        UNCACHED.classCache = null;
-    }
+    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile();
 
     /* private constructor */
-    private IsBuiltinClassProfile(Assumption singleContextAssumption) {
-        this.singleContextAssumption = singleContextAssumption;
+    private IsBuiltinClassProfile() {
     }
 
     public static IsBuiltinClassProfile create() {
-        return new IsBuiltinClassProfile(PythonLanguage.getCurrent().singleContextAssumption);
+        return new IsBuiltinClassProfile();
     }
 
     public static IsBuiltinClassProfile getUncached() {
         return UNCACHED;
     }
 
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    private LazyPythonClass getLazyPythonClass(PythonObject object) {
-        if (classCache != null) {
-            // we're still caching
-            if (!(singleContextAssumption != null && singleContextAssumption.isValid()) && cacheUsedInSingleContext) {
-                // we previously used this cache in a single context, now we're
-                // in a multi-context mode. Reset the cache.
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                cacheUsedInSingleContext = false;
-                classCache = new ClassCache[CLASS_CACHE_SIZE];
-            }
-            for (int i = 0; i < classCache.length; i++) {
-                ClassCache cache = classCache[i];
-                if (cache == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    Shape shape = object.getStorage().getShape();
-                    LazyPythonClass klass = PythonObject.getLazyPythonClass(shape.getObjectType());
-                    if (klass instanceof PythonBuiltinClassType) {
-                        classCache[i] = new ClassCache(shape, klass);
-                    } else if (singleContextAssumption != null && singleContextAssumption.isValid()) {
-                        // we're caching a non-builtin type, so if we switch to
-                        // a multi-context, the cache needs to be flushed.
-                        cacheUsedInSingleContext = true;
-                        classCache[i] = new ClassCache(shape, klass);
-                    } else {
-                        classCache = null;
-                    }
-                    return klass;
-                } else if (cache.shape == object.getStorage().getShape()) {
-                    return cache.klass;
-                }
-            }
-        }
-        if (classCache != null) {
-            // cache overflow, revert to generic access
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            classCache = null;
-        }
-        return object.getLazyPythonClass();
-    }
-
     public boolean profileIsAnyBuiltinObject(PythonObject object) {
-        return profileIsAnyBuiltinClass(getLazyPythonClass(object));
+        return profileIsAnyBuiltinClass(object.getLazyPythonClass());
     }
 
     public boolean profileIsOtherBuiltinObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileIsOtherBuiltinClass(getLazyPythonClass(object), type);
+        return profileIsOtherBuiltinClass(object.getLazyPythonClass(), type);
     }
 
     public boolean profileException(PException object, PythonBuiltinClassType type) {
-        return profileClass(getLazyPythonClass(object.getExceptionObject()), type);
+        return profileClass(object.getExceptionObject().getLazyPythonClass(), type);
     }
 
     public boolean profileObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileClass(getLazyPythonClass(object), type);
+        return profileClass(object.getLazyPythonClass(), type);
 
     }
 
