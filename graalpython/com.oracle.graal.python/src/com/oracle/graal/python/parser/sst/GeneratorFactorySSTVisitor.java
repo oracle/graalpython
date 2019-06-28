@@ -39,48 +39,46 @@
  * SOFTWARE.
  */
 
-package com.oracle.graal.python.test.parser;
+package com.oracle.graal.python.parser.sst;
 
-import static com.oracle.graal.python.test.parser.ParserTestBase.readFile;
-import java.io.File;
-import org.junit.Test;
+import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.ScopeEnvironment;
+import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.truffle.api.source.Source;
 
-public class PerformanceTests extends ParserTestBase {
-    int count = 100;
+public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
+
+    private int activeFlagSlot;
     
-    @Test
-    public void assignment01() throws Exception {
-        File file = getTestFileFromTestAndTestMethod();
-        executePerformanceTest(file);
+    public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source) {
+        super(errors, scopeEnvironment, nodeFactory, source);
+    }
+
+    public void init(int activeFlagSlot) {
+        this.activeFlagSlot = activeFlagSlot;
     }
     
-    @Test
-    public void generator01() throws Exception {
-        File file = getTestFileFromTestAndTestMethod();
-        executePerformanceTest(file);
+    public int getActiveFlagSlot() {
+        return activeFlagSlot;
     }
     
-    private void executePerformanceTest(File file) throws Exception {
-        String source = readFile(file);
-        
-        System.out.println(name.getMethodName() + " count:" + count);
-        long start = System.currentTimeMillis();
-        for(int i = 0; i < count; i++) {
-            parseOld(source, name.getMethodName());
+    @Override
+    public PNode visit(IfSSTNode node) {
+        ExpressionNode test = (ExpressionNode)node.test.accept(this);
+        StatementNode thenStatement = (StatementNode)node.thenStatement.accept(this);
+        // TODO: Do we need to generate empty else block, if doesn't exist? The execution check if the else branch is empty anyway.
+        StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
+        StatementNode result = GeneratorIfNode.create(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement, activeFlagSlot++, activeFlagSlot++);
+        if (node.startOffset != -1) {
+            result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
-        
-        long end = System.currentTimeMillis();
-        System.out.println(name.getMethodName() + " old parsing took: " + (end - start));
-
-        for(int i = 0; i < 30; i++) {
-            parseNew(source,name.getMethodName());
-        }
-        System.out.println(name.getMethodName() + " count:" + count);
-        start = System.currentTimeMillis();
-        for(int i = 0; i < count; i++) {
-            parseNew(source, name.getMethodName());
-        }
-        end = System.currentTimeMillis();
-        System.out.println(name.getMethodName() + " new parsing took: " + (end - start));
+        return result;
     }
+ 
+    
 }

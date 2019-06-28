@@ -56,6 +56,11 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     }
     
     @Test
+    public void list02() throws Exception {
+        checkScopeAndTree("[x**y for x in range(20) if x*y % 3]");
+    }
+    
+    @Test
     public void argument01() throws Exception {
         checkScopeAndTree("foo(x+2 for x in range(10))");
     }
@@ -78,23 +83,18 @@ public class GeneratorAndCompForTests extends ParserTestBase {
         );
     }
     
-//    @Test
-//    public void generator02() throws Exception {
-//        checkScopeAndTree(
-//                "def fn():\n" + 
-//                "  (x*x for x in range(10))");
-//    }
-    
-//    @Test
-//    public void generator03() throws Exception {
-//        checkTreeResult("(x + c for x in range(10))");
-//    }
-//    
-//    @Test
-//    public void generator04() throws Exception {
-//        checkTreeResult(
-//                "def fn():\n" +
-//                "  c = 10\n" +
-//                "  (x + c for x in range(10))");
-//    }
+    @Test
+    public void generator02() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" + 
+                "  (x*x for x in range(10))");
+    }
+      
+    @Test
+    public void generator03() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "  c = 10\n" +
+                "  (x + c for x in range(10))");
+    }
 }

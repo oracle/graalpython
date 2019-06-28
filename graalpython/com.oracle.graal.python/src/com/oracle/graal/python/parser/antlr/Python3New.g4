@@ -1263,19 +1263,39 @@ testlist returns [SSTNode result]
 
 dictmaker returns [SSTNode result]
 :
-	{ SSTNode name; SSTNode value; }
-	{ /*factory.createScope(_localctx, ScopeInfo.ScopeKind.Transparent); */}
+	
 	(
+            { 
+                SSTNode value; 
+                SSTNode name;
+                factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+            }
+            (
 		n=test ':' v=test
 		{ name = $n.result; value = $v.result; }
 		| '**' expr
 		{ name = null; value = $expr.result; }
-	)
+            )
+            comp_for[value, name, PythonBuiltinClassType.PDict, 0]
+            { 
+                $result = $comp_for.result;
+                factory.leaveScope();
+            }
+            
+        )
+        |
 	(
-		comp_for[value, name, PythonBuiltinClassType.PDict, 0]
-                { $result = $comp_for.result; }
-		|
-		{ /*factory.leaveScope(); */}
+            { 
+                SSTNode value; 
+                SSTNode name;
+            }
+            (
+		n=test ':' v=test
+		{ name = $n.result; value = $v.result; }
+		| '**' expr
+		{ name = null; value = $expr.result; }
+            )
+		
 		{ int start = start(); push(name); push(value); }
 		(
 			','
@@ -1293,18 +1313,28 @@ dictmaker returns [SSTNode result]
 
 setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType] returns [SSTNode result]
 :
-	{ SSTNode value; }
-	{ /*factory.createScope(_localctx, ScopeInfo.ScopeKind.Transparent); */}
-	(
+	
+	(   { 
+                SSTNode value; 
+                factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+            }
+            (
 		test { value = $test.result; }
 		|
 		star_expr { value = $star_expr.result; }
+            ) comp_for[value, null, $compType, 0]
+            { 
+                $result = $comp_for.result; 
+                factory.leaveScope();
+            }
 	)
-	(
-		comp_for[value, null, $compType, 0]
-		{ $result = $comp_for.result; }
+        |
+	(   { SSTNode value; }
+            (
+		test { value = $test.result; }
 		|
-		{ /*factory.leaveScope(); */}
+		star_expr { value = $star_expr.result; }
+            )
 		{ int start = start(); push(value); }
 		(
 			','
@@ -1369,10 +1399,13 @@ arglist returns [ArgListBuilder result]
 // that precede iterable unpackings are blocked; etc.
 
 argument [ArgListBuilder args] returns [SSTNode result]
-:               
+:               {
+                    factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                }
 		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]
                 {
                     args.addArg($comp_for.result);
+                    factory.leaveScope();
                 }
 	|
                 { String name = getCurrentToken().getText();
@@ -1412,7 +1445,6 @@ returns [SSTNode result]
 :
 	{ 
             boolean scopeCreated = true; 
-            ScopeInfo generatorScope = factory.createScope($ctx, ScopeInfo.ScopeKind.Generator); 
             boolean async = false; 
         }
 	(
@@ -1437,11 +1469,16 @@ returns [SSTNode result]
 	{ SSTNode[] conditions = getArray(start, SSTNode[].class); }
 	
 	(
-		comp_for [iterator, null, PythonBuiltinClassType.PGenerator, level + 1]
-		{ iterator = $comp_for.result; }
+            {
+                factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+            }
+            comp_for [iterator, null, PythonBuiltinClassType.PGenerator, level + 1]
+            { 
+                factory.leaveScope();
+                iterator = $comp_for.result; 
+            }
 	)?
 	{ $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, $resultType, lineNumber, level, getStartIndex($f), getLastIndex(_localctx)); }
-	{ factory.leaveGeneratorScope(scopeCreated); }
 ;
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler

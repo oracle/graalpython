@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorForNode;
+import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
@@ -121,7 +122,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
-    private final NodeFactory nodeFactory;
+    protected final NodeFactory nodeFactory;
     private final PythonParser.ParserErrorCallback errors;
 
     public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source) {
@@ -564,6 +565,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     @Override
     public PNode visit(ForComprehensionSSTNode node) {
+        ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         if (node.level == 0) {
             scopeEnvironment.setCurrentScope(node.scope.getParent());
         }
@@ -590,7 +592,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         StatementNode body = yieldExpression.asStatement();
         if (condition != null) {
             // TODO: Do we have to create empty block in the else branch?
-            body = nodeFactory.createIf(nodeFactory.createYesNode(condition), body, nodeFactory.createBlock());
+            body = GeneratorIfNode.create(nodeFactory.createYesNode(condition), body, nodeFactory.createBlock(), activeFlagSlot++, activeFlagSlot++);
         }
         GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
@@ -642,6 +644,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
                 result = genExprDef;
                 break;
         }
+        scopeEnvironment.setCurrentScope(oldScope);
         return result;
     }
 
@@ -1129,7 +1132,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         }
     }
     
-    private SourceSection createSourceSection(int start, int stop) {
+    protected SourceSection createSourceSection(int start, int stop) {
         if (source.getLength() > start && source.getLength() >= stop) {
             return source.createSection(start, stop - start);
         } else {

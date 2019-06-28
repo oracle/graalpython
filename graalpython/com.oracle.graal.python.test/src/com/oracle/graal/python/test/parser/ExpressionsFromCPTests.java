@@ -75,15 +75,31 @@ public class ExpressionsFromCPTests extends ParserTestBase {
         checkScopeAndTree("[x**3 for x in range(20)]");
     }
     
-//        self.check_expr("[x**3 for x in range(20) if x % 3]")
-//        self.check_expr("[x**3 for x in range(20) if x % 2 if x % 3]")
+    @Test
+    public void generator02() throws Exception {
+        checkScopeAndTree("[x**3 for x in range(20) if x % 3]");
+    }
+
+    @Test
+    public void generator03() throws Exception {
+        checkScopeAndTree("[x**3 for x in range(20) if x % 2 if x % 3]");
+    }
+
     @Test
     public void generator04() throws Exception {
         checkScopeAndTree("list(x**3 for x in range(20))");
     }
 
-//        self.check_expr("list(x**3 for x in range(20) if x % 3)")
-//        self.check_expr("list(x**3 for x in range(20) if x % 2 if x % 3)")
+    @Test
+    public void generator05() throws Exception {
+        checkScopeAndTree("list(x**3 for x in range(20) if x % 3)");
+    }
+    
+    @Test
+    public void generator06() throws Exception {
+        checkScopeAndTree("list(x**3 for x in range(20) if x % 2 if x % 3)");
+    }
+
     @Test
     public void generator07() throws Exception {
         checkScopeAndTree("(x for x in range(10))");

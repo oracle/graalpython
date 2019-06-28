@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.cell.ReadLocalCellNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import com.oracle.graal.python.nodes.frame.ReadNode;
@@ -286,7 +287,10 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         if (slot != null && !isCellInCurrentScope(name)) {
             // is local in generater?
             return ReadGeneratorFrameVariableNode.create(slot);
+        } else if (slot != null && isCellInCurrentScope(name)) {
+            return ReadLocalCellNode.create(slot, currentScope.isFreeVar(name), ReadGeneratorFrameVariableNode.create(slot));
         }
+        
         return findVariableNodeLEGB(name);
     }
 

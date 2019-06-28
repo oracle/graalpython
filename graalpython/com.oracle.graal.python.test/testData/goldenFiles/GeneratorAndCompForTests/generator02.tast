@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [0,36]`def fn():↵  (x*x for...`
+              Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
@@ -41,7 +42,9 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                         Active Flags: 2
                         For Nodes: 1
                         Block Nodes: 0
+                        Is Enclosing Frame Generator: false
                         FunctionRootNode SourceSection: [17,35]`for x in range(10)`
+                          Name: fn.<locals>.<genexp>:generator02:2
                           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                           CelVars: None
                           FreeVars: None
@@ -52,9 +55,11 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [17,35]`for x in range(10)`
                             GeneratorReturnTargetNode SourceSection: [17,35]`for x in range(10)`
+                              flagSlot: 1
                               GeneratorForNode SourceSection: [17,35]`for x in range(10)`
                                 ExpressionStatementNode SourceSection: [13,16]`x*x`
                                   YieldNode SourceSection: [13,16]`x*x`
+                                    flagSlot: 0
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: <return_val>
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None

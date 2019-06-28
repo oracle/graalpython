@@ -3,7 +3,7 @@ Scope: []
     FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
-    Scope: [1373 1161 1137 1126 1121 1086 1069 1052 1041 1030 1019 974 969 949 933 884 508 465 455 442 438 183]
+    Scope: generator1
         Kind: Generator
         FrameDescriptor: [x, <return_val>]
         CellVars: Empty
