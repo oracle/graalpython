@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -47,16 +48,20 @@ import com.oracle.truffle.api.object.dsl.Layout;
 import com.oracle.truffle.api.object.dsl.Nullable;
 
 public class PythonObject extends PythonAbstractObject {
+    private LazyPythonClass storedPythonClass;
     private final DynamicObject storage;
 
     public PythonObject(LazyPythonClass pythonClass) {
         assert pythonClass != null : getClass().getSimpleName();
-        storage = TypeNodes.GetInstanceShape.doSlowPath(pythonClass).newInstance();
+        this.storedPythonClass = pythonClass;
+        this.storage = TypeNodes.GetInstanceShape.doSlowPath(pythonClass).newInstance();
         assert getLazyPythonClass() == pythonClass;
     }
 
-    public PythonObject(Shape instanceShape) {
-        storage = instanceShape.newInstance();
+    public PythonObject(LazyPythonClass pythonClass, Shape instanceShape) {
+        assert pythonClass != null;
+        this.storedPythonClass = pythonClass;
+        this.storage = instanceShape.newInstance();
     }
 
     public final PythonAbstractClass getPythonClass() {
@@ -69,15 +74,25 @@ public class PythonObject extends PythonAbstractObject {
         }
     }
 
-    public final void setLazyPythonClass(PythonAbstractClass cls) {
-        PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(storage, cls);
+    public final void setLazyPythonClass(PythonAbstractClass cls, Assumption storingClassesInShapes) {
+        storedPythonClass = cls;
+        if (storingClassesInShapes.isValid()) {
+            PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(storage, cls);
+        } else {
+            if (PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(storage) != null) {
+                // for the builtin class enums, we now should change the shape
+                // to the generic one that just doesn't store the class
+                Shape shape = storage.getShape();
+                storage.setShapeAndGrow(shape, shape.changeType(emptyShape.getObjectType()));
+            }
+        }
     }
 
     /**
      * This is usually final, a fact may be optimized further if the storage turns into a constant.
      */
     public final LazyPythonClass getLazyPythonClass() {
-        return PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(storage);
+        return storedPythonClass;
     }
 
     public final DynamicObject getStorage() {
@@ -132,7 +147,7 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     /**
-     * Returns the dictionary backed by {@link #storage} (only available for user objects).
+     * Returns the dictionary (only available for user objects).
      */
     public final PHashingCollection getDict() {
         return PythonObjectLayoutImpl.INSTANCE.getDict(storage);
@@ -161,8 +176,15 @@ public class PythonObject extends PythonAbstractObject {
         void setLazyPythonClass(DynamicObject object, LazyPythonClass value);
     }
 
+    private static final Shape emptyShape = PythonObjectLayoutImpl.INSTANCE.createPythonObjectShape(null).getShape();
+
     public static Shape freshShape(LazyPythonClass klass) {
+        assert (PythonLanguage.getCurrent().singleContextAssumption.isValid() && klass != null) || klass instanceof PythonBuiltinClassType;
         return PythonObjectLayoutImpl.INSTANCE.createPythonObjectShape(klass).getShape();
+    }
+
+    public static Shape freshShape() {
+        return emptyShape;
     }
 
     public static LazyPythonClass getLazyPythonClass(ObjectType type) {

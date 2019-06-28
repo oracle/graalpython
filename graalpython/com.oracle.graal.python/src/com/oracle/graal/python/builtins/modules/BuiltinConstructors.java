@@ -1497,7 +1497,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            return factory().createPythonObject(cachedInstanceShape);
+            return factory().createPythonObject(self, cachedInstanceShape);
         }
 
         @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectCachedInstanceShape")

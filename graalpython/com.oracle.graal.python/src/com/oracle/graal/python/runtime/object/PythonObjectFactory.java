@@ -191,8 +191,8 @@ public abstract class PythonObjectFactory extends Node {
      * Creates a Python object with the given shape. Python object shapes store the class in the
      * ObjectType.
      */
-    public PythonObject createPythonObject(Shape instanceShape) {
-        return trace(new PythonObject(instanceShape));
+    public PythonObject createPythonObject(LazyPythonClass klass, Shape instanceShape) {
+        return trace(new PythonObject(klass, instanceShape));
     }
 
     public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {

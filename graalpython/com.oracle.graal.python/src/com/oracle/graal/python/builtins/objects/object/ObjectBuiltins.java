@@ -93,6 +93,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -142,6 +143,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
+                        @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
                         @Cached("create()") BranchProfile errorSlotsBranch,
@@ -163,7 +165,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     throw raise(TypeError, "__class__ assignment: '%s' object layout differs from '%s'", getTypeName(value), getTypeName(lazyClass));
                 }
             }
-            self.setLazyPythonClass(value);
+            self.setLazyPythonClass(value, singleContextAssumption);
             return PNone.NONE;
         }
 
