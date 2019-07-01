@@ -402,6 +402,10 @@ PRIMITIVE_ARRAY_TO_NATIVE(Long, int64_t, i64, polyglot_as_i64);
 PRIMITIVE_ARRAY_TO_NATIVE(Double, double, double, polyglot_as_double);
 PRIMITIVE_ARRAY_TO_NATIVE(Object, PyObjectPtr, PyObjectPtr, (PyObjectPtr));
 
+Py_ssize_t PyTruffle_Object_Size(PyObject *op) {
+    return ((PyVarObject*)op)->ob_size;
+}
+
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 
 int ReadShortMember(PyObject* object, Py_ssize_t offset) {

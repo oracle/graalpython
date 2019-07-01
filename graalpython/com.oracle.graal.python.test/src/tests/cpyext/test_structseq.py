@@ -38,35 +38,65 @@
 # SOFTWARE.
 
 import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
+
+# 
+# class TestPyStructSequenceTypes(object):
+#     def test_properties(self):
+#         TestPyStructSequence = CPyExtType("TestPyStructSequence",
+#                                           """
+#                                static PyStructSequence_Field typeinfo_fields[] = {
+#                                    {"element0",      "The first element."},
+#                                    {"element1",      "The second element."},
+#                                    {NULL, NULL,}
+#                                };
+#            
+#                                static PyStructSequence_Desc typeinfo_desc = { 
+#                                    "TestPyStructSequenceTypes.TestPyStructSequence",
+#                                    "Information about some custom struct type",
+#                                    typeinfo_fields,
+#                                    2,
+#                                };
+#                                 """,
+#                                 ready_code="""if(PyStructSequence_InitType2(&TestPyStructSequenceType, &typeinfo_desc) < 0) {
+#                                  return NULL;
+#                              }
+#                              Py_INCREF(&TestPyStructSequenceType);
+#                              """,
+#         )
+#         assert TestPyStructSequence.__doc__ == "Information about some custom struct type"
+# 
+#         tester = TestPyStructSequence()
+#         assert hasattr(tester.element0)
+#         assert hasattr(tester.element1)
 
 
 class TestPyStructSequence(CPyExtTestCase):
-
+ 
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyStructSequence, self).compile_module(name)
-
+ 
     test_PyStructSequence_InitType2 = CPyExtFunction(
         lambda args: 0,
         lambda: ( (0,), ),
         code='''
         static PyTypeObject CustomStructSeqType;
-        
+          
         static PyStructSequence_Field typeinfo_fields[] = {
             {"element0",      "The first element."},
             {"element1",      "The second element."},
             {NULL, NULL,}
         };
-        
+          
         static PyStructSequence_Desc typeinfo_desc = { 
             "custom.named.tuple",
             "Information about some custom struct type",
             typeinfo_fields,
             2,
         };
-        
+          
         int wrap_PyStructSequence_InitType2(int n) {
             return PyStructSequence_InitType2(&CustomStructSeqType, &typeinfo_desc);
         }
@@ -78,3 +108,64 @@ class TestPyStructSequence(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyStructSequence_Usage = CPyExtFunction(
+        lambda args: args[0],
+        lambda: ( 
+            (("hello", "world",),),
+#             ("john", "doe",), 
+#             (1, "doe",), 
+#             ("john", False,), 
+#             ("john", None,), 
+        ),
+        code='''
+        static PyTypeObject CustomStructSeqType;
+
+        static PyStructSequence_Field typeinfo_fields[] = {
+            {"element0",      "The first element."},
+            {"element1",      "The second element."},
+            {NULL, NULL,}
+        };
+         
+        static PyStructSequence_Desc typeinfo_desc = { 
+            "custom.named.tuple",
+            "Information about some custom struct type",
+            typeinfo_fields,
+            2,
+        };
+         
+        PyObject* wrap_PyStructSequence_Usage(PyObject* elements) {
+            Py_ssize_t i = 0;
+            PyObject* elem = NULL;
+            Py_INCREF(elements);
+
+            PyStructSequence_InitType2(&CustomStructSeqType, &typeinfo_desc);
+
+            PyObject* struct_obj = PyStructSequence_New(&CustomStructSeqType);
+            if (struct_obj == NULL) {
+                return NULL;
+            }
+            for (i = 0; i < PyObject_Length(elements); i++) {
+                elem = PyTuple_GetItem(elements, i);
+                Py_INCREF(elem);
+                PyStructSequence_SetItem(struct_obj, i, elem);
+            }
+
+            PyObject* result = PyTuple_New(PyObject_Length(struct_obj));
+            if (result == NULL) {
+                return NULL;
+            }
+            for (i = 0; i < PyObject_Length(struct_obj); i++) {
+                elem = PyStructSequence_GetItem(struct_obj, i);
+                Py_INCREF(elem);
+                PyTuple_SetItem(result, i, elem);
+            }
+            Py_INCREF(result);
+            return result;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* elements"],
+        callfunction="wrap_PyStructSequence_Usage",
+        cmpfunc=unhandled_error_compare
+    )

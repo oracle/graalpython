@@ -48,10 +48,8 @@ PyObject* PyStructSequence_New(PyTypeObject* o) {
 
 UPCALL_ID(PyStructSequence_InitType2);
 int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) {
-    PyObject *dict;
-    PyMemberDef* members;
-    Py_ssize_t n_members, n_unnamed_members, i, k;
-    PyObject *v;
+    Py_ssize_t n_members = desc->n_in_sequence;
+    Py_ssize_t i;
 
     memset(type, 0, sizeof(PyTypeObject));
 
@@ -79,6 +77,7 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     type->tp_members = NULL;
     type->tp_new = newType->tp_new;
     type->tp_base = &PyTuple_Type;
+    type->tp_alloc = PyType_GenericAlloc;
 
     // now copy specific fields
     type->tp_name = newType->tp_name;
@@ -93,8 +92,40 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     return 0;
 }
 
+PyTypeObject* PyStructSequence_NewType(PyStructSequence_Desc *desc) {
+    Py_ssize_t n_members = desc->n_in_sequence;
+    Py_ssize_t i;
+
+    // put field names and doc strings into two tuples
+    PyObject* field_names = PyTuple_New(n_members);
+    PyObject* field_docs = PyTuple_New(n_members);
+    PyStructSequence_Field* fields = desc->fields;
+    for (i = 0; i < n_members; i++) {
+    	PyTuple_SetItem(field_names, i, polyglot_from_string(fields[i].name, SRC_CS));
+    	PyTuple_SetItem(field_docs, i, polyglot_from_string(fields[i].doc, SRC_CS));
+    }
+
+    // we create the new type managed
+    PyTypeObject* newType = (PyTypeObject*) UPCALL_CEXT_O(_jls_PyStructSequence_InitType2,
+    		polyglot_from_string(desc->name, SRC_CS),
+			polyglot_from_string(desc->doc, SRC_CS),
+			native_to_java(field_names),
+			native_to_java(field_docs));
+    return newType;
+}
+
 // taken from CPython "Objects/structseq.c"
 void PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc) {
     (void)PyStructSequence_InitType2(type, desc);
+}
+
+// taken from CPython "Objects/structseq.c"
+void PyStructSequence_SetItem(PyObject* op, Py_ssize_t i, PyObject* v) {
+    PyStructSequence_SET_ITEM(op, i, v);
+}
+
+// taken from CPython "Objects/structseq.c"
+PyObject* PyStructSequence_GetItem(PyObject* op, Py_ssize_t i) {
+	return PyStructSequence_GET_ITEM(op, i);
 }
 

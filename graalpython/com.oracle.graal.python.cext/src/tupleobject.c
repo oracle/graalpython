@@ -88,8 +88,10 @@ static PyObject * tuple_create(PyObject *iterable) {
     return PySequence_Tuple(iterable);
 }
 
+POLYGLOT_DECLARE_TYPE(PyTupleObject);
 PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
-    PyObject *tmp, *newobj, *item;
+	PyTupleObject* newobj;
+    PyObject *tmp, *item;
     Py_ssize_t i, n;
 
     assert(PyType_IsSubtype(type, &PyTuple_Type));
@@ -100,15 +102,25 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     assert(PyTuple_Check(tmp));
     n = PyTuple_GET_SIZE(tmp);
 
-    newobj = type->tp_alloc(type, n);
+    newobj = (PyTupleObject*) type->tp_alloc(type, n);
     if (newobj == NULL) {
         return NULL;
     }
+    newobj = polyglot_from_PyTupleObject(newobj);
     for (i = 0; i < n; i++) {
         item = PyTuple_GetItem(tmp, i);
         Py_INCREF(item);
-        PyTuple_SetItem(newobj, i, item);
+        PyTuple_SetItem((PyObject*)newobj, i, item);
     }
     Py_DECREF(tmp);
-    return newobj;
+
+    // This polyglot type cast is important such that we can directly read and
+    // write members of the pointer from Java code.
+    // Note: the return type is 'PyObject*' to be compatible with CPython
+    return (PyObject*) newobj;
+}
+
+int PyTruffle_Tuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
+    PyTuple_SET_ITEM(tuple, position, item);
+    return 0;
 }

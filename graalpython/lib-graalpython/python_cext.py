@@ -724,11 +724,14 @@ def PyModule_AddObject(m, k, v):
     return None
 
 
+@may_raise
 def PyStructSequence_New(typ):
-    return typ()
+    n = len(typ._fields)
+    return typ(*([None]*n))
 
 
 namedtuple_type = None
+@may_raise
 def PyStructSequence_InitType2(type_name, type_doc, field_names, field_docs):
     assert len(field_names) == len(field_docs)
     global namedtuple_type
@@ -740,6 +743,8 @@ def PyStructSequence_InitType2(type_name, type_doc, field_names, field_docs):
         prop = getattr(new_type, field_names[i])
         assert isinstance(prop, property)
         prop.__doc__ = field_docs[i]
+    # ensure '_fields' attribute; required in 'PyStructSequence_New'
+    assert hasattr(new_type, "_fields")
     return new_type
 
 

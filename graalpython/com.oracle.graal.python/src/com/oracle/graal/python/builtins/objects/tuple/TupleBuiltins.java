@@ -55,6 +55,10 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -282,9 +286,17 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(PTuple self,
+        public int doManaged(PTuple self,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(self.getSequenceStorage());
+        }
+
+        @Specialization
+        public int doNative(PythonNativeObject self,
+                        @Cached PCallCapiFunction callSizeNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CastToJavaLongNode castToLongNode) {
+            return (int) castToLongNode.execute(callSizeNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self)));
         }
     }
 
