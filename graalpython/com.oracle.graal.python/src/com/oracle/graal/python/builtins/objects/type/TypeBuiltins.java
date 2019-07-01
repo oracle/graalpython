@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
@@ -459,6 +460,16 @@ public class TypeBuiltins extends PythonBuiltins {
         Object bases(LazyPythonClass self,
                         @Cached("create()") TypeNodes.GetBaseClassesNode getBaseClassesNode) {
             return factory().createTuple(getBaseClassesNode.execute(self));
+        }
+    }
+
+    @Builtin(name = __BASE__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class BaseNode extends PythonBuiltinNode {
+        @Specialization
+        Object base(LazyPythonClass self,
+                        @Cached("create()") TypeNodes.GetBaseClassNode getBaseClassNode) {
+            return getBaseClassNode.execute(self);
         }
     }
 
