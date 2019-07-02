@@ -121,6 +121,20 @@ index e450a66..ed538b4 100644
  typedef int (PyArray_ArgSortFunc)(void *, npy_intp *, npy_intp, void *);
 
 
+diff --git a/numpy/core/src/multiarray/shape.c b/numpy/core/src/multiarray/shape.c
+index 30820737e..d8a350f0d 100644
+--- a/numpy/core/src/multiarray/shape.c
++++ b/numpy/core/src/multiarray/shape.c
+@@ -94,3 +94,4 @@ PyArray_Resize(PyArrayObject *self, PyArray_Dims *newshape, int refcheck,
+                     "Use the np.resize function or refcheck=False");
+-            return NULL;
++            PyErr_Clear();
++            refcnt = 1;
+ #else
+             refcnt = PyArray_REFCOUNT(self);
+ #endif /* PYPY_VERSION */
+
+
 diff --git a/numpy/linalg/setup.py 2018-02-28 17:03:26.000000000 +0100
 index e450a66..ed538b4 100644
 --- a/numpy/linalg/setup.py
