@@ -627,3 +627,6 @@ class defaultdict(dict):
             raise KeyError((key,))
         self[key] = value = self.default_factory()
         return value
+    
+    def __repr__(self):
+        return "%s(%r, %s)" % (type(self).__name__, self.default_factory, dict.__repr__(self))  
