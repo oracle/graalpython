@@ -124,13 +124,223 @@ def known_packages():
             print("Installing required dependency: setuptools")
             setuptools(**kwargs)
 
-        patch = """
-diff --git a/setup.py 2018-02-28 17:03:26.000000000 +0100
-index e450a66..ed538b4 100644
+        patch = r'''
+diff --git a/numpy/__init__.py b/numpy/__init__.py
+index ba88c73..e4db404 100644
+--- a/numpy/__init__.py
++++ b/numpy/__init__.py
+@@ -206,7 +206,7 @@ else:
+         try:
+             x = ones(2, dtype=float32)
+             if not abs(x.dot(x) - 2.0) < 1e-5:
+-                raise AssertionError()
++                pass
+         except AssertionError:
+             msg = ("The current Numpy installation ({!r}) fails to "
+                    "pass simple sanity checks. This can be caused for example "
+diff --git a/numpy/core/_dtype_ctypes.py b/numpy/core/_dtype_ctypes.py
+index 0852b1e..cf4dc6f 100644
+--- a/numpy/core/_dtype_ctypes.py
++++ b/numpy/core/_dtype_ctypes.py
+@@ -22,7 +22,6 @@ Unfortunately, this fails because:
+ * PEP3118 cannot represent unions, but both numpy and ctypes can
+ * ctypes cannot handle big-endian structs with PEP3118 (bpo-32780)
+ """
+-import _ctypes
+ import ctypes
+ 
+ import numpy as np
+diff --git a/numpy/core/_internal.py b/numpy/core/_internal.py
+index 1d3bb55..202c63b 100644
+--- a/numpy/core/_internal.py
++++ b/numpy/core/_internal.py
+@@ -13,6 +13,7 @@ from numpy.compat import unicode
+ from numpy.core.overrides import set_module
+ from .multiarray import dtype, array, ndarray
+ try:
++    import _ctypes
+     import ctypes
+ except ImportError:
+     ctypes = None
+diff --git a/numpy/core/getlimits.py b/numpy/core/getlimits.py
+index 544b8b3..799f669 100644
+--- a/numpy/core/getlimits.py
++++ b/numpy/core/getlimits.py
+@@ -154,87 +154,6 @@ def _register_known_types():
+     _register_type(float64_ma, b'\x9a\x99\x99\x99\x99\x99\xb9\xbf')
+     _float_ma[64] = float64_ma
+ 
+-    # Known parameters for IEEE 754 128-bit binary float
+-    ld = ntypes.longdouble
+-    epsneg_f128 = exp2(ld(-113))
+-    tiny_f128 = exp2(ld(-16382))
+-    # Ignore runtime error when this is not f128
+-    with numeric.errstate(all='ignore'):
+-        huge_f128 = (ld(1) - epsneg_f128) / tiny_f128 * ld(4)
+-    float128_ma = MachArLike(ld,
+-                             machep=-112,
+-                             negep=-113,
+-                             minexp=-16382,
+-                             maxexp=16384,
+-                             it=112,
+-                             iexp=15,
+-                             ibeta=2,
+-                             irnd=5,
+-                             ngrd=0,
+-                             eps=exp2(ld(-112)),
+-                             epsneg=epsneg_f128,
+-                             huge=huge_f128,
+-                             tiny=tiny_f128)
+-    # IEEE 754 128-bit binary float
+-    _register_type(float128_ma,
+-        b'\x9a\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\xfb\xbf')
+-    _register_type(float128_ma,
+-        b'\x9a\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\xfb\xbf')
+-    _float_ma[128] = float128_ma
+-
+-    # Known parameters for float80 (Intel 80-bit extended precision)
+-    epsneg_f80 = exp2(ld(-64))
+-    tiny_f80 = exp2(ld(-16382))
+-    # Ignore runtime error when this is not f80
+-    with numeric.errstate(all='ignore'):
+-        huge_f80 = (ld(1) - epsneg_f80) / tiny_f80 * ld(4)
+-    float80_ma = MachArLike(ld,
+-                            machep=-63,
+-                            negep=-64,
+-                            minexp=-16382,
+-                            maxexp=16384,
+-                            it=63,
+-                            iexp=15,
+-                            ibeta=2,
+-                            irnd=5,
+-                            ngrd=0,
+-                            eps=exp2(ld(-63)),
+-                            epsneg=epsneg_f80,
+-                            huge=huge_f80,
+-                            tiny=tiny_f80)
+-    # float80, first 10 bytes containing actual storage
+-    _register_type(float80_ma, b'\xcd\xcc\xcc\xcc\xcc\xcc\xcc\xcc\xfb\xbf')
+-    _float_ma[80] = float80_ma
+-
+-    # Guessed / known parameters for double double; see:
+-    # https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format#Double-double_arithmetic
+-    # These numbers have the same exponent range as float64, but extended number of
+-    # digits in the significand.
+-    huge_dd = (umath.nextafter(ld(inf), ld(0))
+-                if hasattr(umath, 'nextafter')  # Missing on some platforms?
+-                else float64_ma.huge)
+-    float_dd_ma = MachArLike(ld,
+-                              machep=-105,
+-                              negep=-106,
+-                              minexp=-1022,
+-                              maxexp=1024,
+-                              it=105,
+-                              iexp=11,
+-                              ibeta=2,
+-                              irnd=5,
+-                              ngrd=0,
+-                              eps=exp2(ld(-105)),
+-                              epsneg= exp2(ld(-106)),
+-                              huge=huge_dd,
+-                              tiny=exp2(ld(-1022)))
+-    # double double; low, high order (e.g. PPC 64)
+-    _register_type(float_dd_ma,
+-        b'\x9a\x99\x99\x99\x99\x99Y<\x9a\x99\x99\x99\x99\x99\xb9\xbf')
+-    # double double; high, low order (e.g. PPC 64 le)
+-    _register_type(float_dd_ma,
+-        b'\x9a\x99\x99\x99\x99\x99\xb9\xbf\x9a\x99\x99\x99\x99\x99Y<')
+-    _float_ma['dd'] = float_dd_ma
+-
+ 
+ def _get_machar(ftype):
+     """ Get MachAr instance or MachAr-like instance
+diff --git a/numpy/core/include/numpy/ndarraytypes.h b/numpy/core/include/numpy/ndarraytypes.h
+index b0b749c..2d8e8c0 100644
+--- a/numpy/core/include/numpy/ndarraytypes.h
++++ b/numpy/core/include/numpy/ndarraytypes.h
+@@ -412,7 +412,7 @@ typedef int (PyArray_ScanFunc)(FILE *fp, void *dptr,
+ typedef int (PyArray_FromStrFunc)(char *s, void *dptr, char **endptr,
+                                   struct _PyArray_Descr *);
+ 
+-typedef int (PyArray_FillFunc)(void *, npy_intp, void *);
++typedef void (PyArray_FillFunc)(void *, npy_intp, void *);
+ 
+ typedef int (PyArray_SortFunc)(void *, npy_intp, void *);
+ typedef int (PyArray_ArgSortFunc)(void *, npy_intp *, npy_intp, void *);
+
+diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
+index f837df1..d3ce70d 100644
+--- a/numpy/core/setup_common.py
++++ b/numpy/core/setup_common.py
+@@ -243,8 +243,8 @@ def check_long_double_representation(cmd):
+     except ValueError:
+         # try linking to support CC="gcc -flto" or icc -ipo
+         # struct needs to be volatile so it isn't optimized away
+-        body = body.replace('struct', 'volatile struct')
+-        body += "int main(void) { return 0; }\n"
++        body = "#include <stdio.h>\n" + body.replace('struct', 'volatile struct')
++        body += 'int main(void) { printf("%p", &foo); return 0; }\n'
+         src, obj = cmd._compile(body, None, None, 'c')
+         cmd.temp_files.append("_configtest")
+         cmd.compiler.link_executable([obj], "_configtest")
+diff --git a/numpy/core/src/multiarray/typeinfo.c b/numpy/core/src/multiarray/typeinfo.c
+index 14c4f27..c5a72b1 100644
+--- a/numpy/core/src/multiarray/typeinfo.c
++++ b/numpy/core/src/multiarray/typeinfo.c
+@@ -105,8 +105,7 @@ PyArray_typeinforanged(
+ }
+ 
+ /* Python version only needed for backport to 2.7 */
+-#if (PY_VERSION_HEX < 0x03040000) \
+-    || (defined(PYPY_VERSION_NUM) && (PYPY_VERSION_NUM < 0x07020000))
++#if (PY_VERSION_HEX < 0x03040000)
+ 
+     static int
+     PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) {
+diff --git a/numpy/ctypeslib.py b/numpy/ctypeslib.py
+index 535ea76..2ecf3a2 100644
+--- a/numpy/ctypeslib.py
++++ b/numpy/ctypeslib.py
+@@ -61,7 +61,7 @@ from numpy import (
+ from numpy.core.multiarray import _flagdict, flagsobj
+ 
+ try:
+-    import ctypes
++    ctypes = None # Truffle: use the mock ctypes
+ except ImportError:
+     ctypes = None
+ 
+diff --git a/numpy/linalg/setup.py b/numpy/linalg/setup.py
+index 66c07c9..847116f 100644
+
+--- a/numpy/linalg/setup.py
++++ b/numpy/linalg/setup.py
+@@ -29,6 +29,7 @@ def configuration(parent_package='', top_path=None):
+     lapack_info = get_info('lapack_opt', 0)  # and {}
+ 
+     def get_lapack_lite_sources(ext, build_dir):
++        return all_sources
+         if not lapack_info:
+             print("### Warning:  Using unoptimized lapack ###")
+             return all_sources
+diff --git a/numpy/tests/test_ctypeslib.py b/numpy/tests/test_ctypeslib.py
+index 521208c..b9fa4c3 100644
+--- a/numpy/tests/test_ctypeslib.py
++++ b/numpy/tests/test_ctypeslib.py
+@@ -10,6 +10,7 @@ from numpy.distutils.misc_util import get_shared_lib_extension
+ from numpy.testing import assert_, assert_array_equal, assert_raises, assert_equal
+ 
+ try:
++    import _ctypes
+     import ctypes
+ except ImportError:
+     ctypes = None
+diff --git a/setup.py b/setup.py
+index 8b2ded1..cca8674 100755
 --- a/setup.py
 +++ b/setup.py
-@@ -348,6 +348,8 @@
- metadata = dict(
+@@ -364,6 +364,8 @@ def setup_package():
+     metadata = dict(
          name = 'numpy',
          maintainer = "NumPy Developers",
 +        zip_safe = False, # Truffle: make sure we're not zipped
@@ -138,37 +348,6 @@ index e450a66..ed538b4 100644
          maintainer_email = "numpy-discussion@python.org",
          description = DOCLINES[0],
          long_description = "\n".join(DOCLINES[2:]),
-
-
-diff --git a/numpy/ctypeslib.py 2018-02-28 17:03:26.000000000 +0100
-index e450a66..ed538b4 100644
---- a/numpy/ctypeslib.py
-+++ b/numpy/ctypeslib.py
-@@ -59,6 +59,6 @@
- from numpy.core.multiarray import _flagdict, flagsobj
-
- try:
--    import ctypes
-+    ctypes = None # Truffle: use the mock ctypes
- except ImportError:
-     ctypes = None
-
-
-
-diff --git a/numpy/core/include/numpy/ndarraytypes.h 2018-02-28 17:03:26.000000000 +0100
-index e450a66..ed538b4 100644
---- a/numpy/core/include/numpy/ndarraytypes.h
-+++ b/numpy/core/include/numpy/ndarraytypes.h
-@@ -407,6 +407,6 @@
- typedef int (PyArray_FromStrFunc)(char *s, void *dptr, char **endptr,
-                                   struct _PyArray_Descr *);
-
--typedef int (PyArray_FillFunc)(void *, npy_intp, void *);
-+typedef void (PyArray_FillFunc)(void *, npy_intp, void *);
-
- typedef int (PyArray_SortFunc)(void *, npy_intp, void *);
- typedef int (PyArray_ArgSortFunc)(void *, npy_intp *, npy_intp, void *);
-
 
 diff --git a/numpy/core/src/multiarray/shape.c b/numpy/core/src/multiarray/shape.c
 index 30820737e..d8a350f0d 100644
@@ -183,194 +362,8 @@ index 30820737e..d8a350f0d 100644
              refcnt = PyArray_REFCOUNT(self);
  #endif /* PYPY_VERSION */
 
-
-diff --git a/numpy/linalg/setup.py 2018-02-28 17:03:26.000000000 +0100
-index e450a66..ed538b4 100644
---- a/numpy/linalg/setup.py
-+++ b/numpy/linalg/setup.py
-@@ -29,6 +29,7 @@
-     lapack_info = get_info('lapack_opt', 0)  # and {}
-
-     def get_lapack_lite_sources(ext, build_dir):
-+        return all_sources
-         if not lapack_info:
-             print("### Warning:  Using unoptimized lapack ###")
-             return all_sources
-
-
-diff --git a/numpy/core/getlimits.py b/numpy/core/getlimits.py
-index e450a66..ed538b4 100644
---- a/numpy/core/getlimits.py
-+++ b/numpy/core/getlimits.py
-@@ -160,70 +160,70 @@ _float64_ma = MachArLike(_f64,
-                          huge=(1.0 - _epsneg_f64) / _tiny_f64 * _f64(4),
-                          tiny=_tiny_f64)
-
--# Known parameters for IEEE 754 128-bit binary float
--_ld = ntypes.longdouble
--_epsneg_f128 = exp2(_ld(-113))
--_tiny_f128 = exp2(_ld(-16382))
--# Ignore runtime error when this is not f128
--with numeric.errstate(all='ignore'):
--    _huge_f128 = (_ld(1) - _epsneg_f128) / _tiny_f128 * _ld(4)
--_float128_ma = MachArLike(_ld,
--                         machep=-112,
--                         negep=-113,
--                         minexp=-16382,
--                         maxexp=16384,
--                         it=112,
--                         iexp=15,
--                         ibeta=2,
--                         irnd=5,
--                         ngrd=0,
--                         eps=exp2(_ld(-112)),
--                         epsneg=_epsneg_f128,
--                         huge=_huge_f128,
--                         tiny=_tiny_f128)
--
--# Known parameters for float80 (Intel 80-bit extended precision)
--_epsneg_f80 = exp2(_ld(-64))
--_tiny_f80 = exp2(_ld(-16382))
--# Ignore runtime error when this is not f80
--with numeric.errstate(all='ignore'):
--    _huge_f80 = (_ld(1) - _epsneg_f80) / _tiny_f80 * _ld(4)
--_float80_ma = MachArLike(_ld,
--                         machep=-63,
--                         negep=-64,
--                         minexp=-16382,
--                         maxexp=16384,
--                         it=63,
--                         iexp=15,
--                         ibeta=2,
--                         irnd=5,
--                         ngrd=0,
--                         eps=exp2(_ld(-63)),
--                         epsneg=_epsneg_f80,
--                         huge=_huge_f80,
--                         tiny=_tiny_f80)
--
--# Guessed / known parameters for double double; see:
--# https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format#Double-double_arithmetic
--# These numbers have the same exponent range as float64, but extended number of
--# digits in the significand.
--_huge_dd = (umath.nextafter(_ld(inf), _ld(0))
--            if hasattr(umath, 'nextafter')  # Missing on some platforms?
--            else _float64_ma.huge)
--_float_dd_ma = MachArLike(_ld,
--                          machep=-105,
--                          negep=-106,
--                          minexp=-1022,
--                          maxexp=1024,
--                          it=105,
--                          iexp=11,
--                          ibeta=2,
--                          irnd=5,
--                          ngrd=0,
--                          eps=exp2(_ld(-105)),
--                          epsneg= exp2(_ld(-106)),
--                          huge=_huge_dd,
--                          tiny=exp2(_ld(-1022)))
-+# # Known parameters for IEEE 754 128-bit binary float
-+# _ld = ntypes.longdouble
-+# _epsneg_f128 = exp2(_ld(-113))
-+# _tiny_f128 = exp2(_ld(-16382))
-+# # Ignore runtime error when this is not f128
-+# with numeric.errstate(all='ignore'):
-+#     _huge_f128 = (_ld(1) - _epsneg_f128) / _tiny_f128 * _ld(4)
-+# _float128_ma = MachArLike(_ld,
-+#                          machep=-112,
-+#                          negep=-113,
-+#                          minexp=-16382,
-+#                          maxexp=16384,
-+#                          it=112,
-+#                          iexp=15,
-+#                          ibeta=2,
-+#                          irnd=5,
-+#                          ngrd=0,
-+#                          eps=exp2(_ld(-112)),
-+#                          epsneg=_epsneg_f128,
-+#                          huge=_huge_f128,
-+#                          tiny=_tiny_f128)
-+
-+# # Known parameters for float80 (Intel 80-bit extended precision)
-+# _epsneg_f80 = exp2(_ld(-64))
-+# _tiny_f80 = exp2(_ld(-16382))
-+# # Ignore runtime error when this is not f80
-+# with numeric.errstate(all='ignore'):
-+#     _huge_f80 = (_ld(1) - _epsneg_f80) / _tiny_f80 * _ld(4)
-+# _float80_ma = MachArLike(_ld,
-+#                          machep=-63,
-+#                          negep=-64,
-+#                          minexp=-16382,
-+#                          maxexp=16384,
-+#                          it=63,
-+#                          iexp=15,
-+#                          ibeta=2,
-+#                          irnd=5,
-+#                          ngrd=0,
-+#                          eps=exp2(_ld(-63)),
-+#                          epsneg=_epsneg_f80,
-+#                          huge=_huge_f80,
-+#                          tiny=_tiny_f80)
-+
-+# # Guessed / known parameters for double double; see:
-+# # https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format#Double-double_arithmetic
-+# # These numbers have the same exponent range as float64, but extended number of
-+# # digits in the significand.
-+# _huge_dd = (umath.nextafter(_ld(inf), _ld(0))
-+#             if hasattr(umath, 'nextafter')  # Missing on some platforms?
-+#             else _float64_ma.huge)
-+# _float_dd_ma = MachArLike(_ld,
-+#                           machep=-105,
-+#                           negep=-106,
-+#                           minexp=-1022,
-+#                           maxexp=1024,
-+#                           it=105,
-+#                           iexp=11,
-+#                           ibeta=2,
-+#                           irnd=5,
-+#                           ngrd=0,
-+#                           eps=exp2(_ld(-105)),
-+#                           epsneg= exp2(_ld(-106)),
-+#                           huge=_huge_dd,
-+#                           tiny=exp2(_ld(-1022)))
-
-
- # Key to identify the floating point type.  Key is result of
-@@ -234,17 +234,17 @@ _KNOWN_TYPES = {
-     b'\\x9a\\x99\\x99\\x99\\x99\\x99\\xb9\\xbf' : _float64_ma,
-     b'\\xcd\\xcc\\xcc\\xbd' : _float32_ma,
-     b'f\\xae' : _float16_ma,
--    # float80, first 10 bytes containing actual storage
--    b'\\xcd\\xcc\\xcc\\xcc\\xcc\\xcc\\xcc\\xcc\\xfb\\xbf' : _float80_ma,
--    # double double; low, high order (e.g. PPC 64)
--    b'\\x9a\\x99\\x99\\x99\\x99\\x99Y<\\x9a\\x99\\x99\\x99\\x99\\x99\\xb9\\xbf' :
--    _float_dd_ma,
--    # double double; high, low order (e.g. PPC 64 le)
--    b'\\x9a\\x99\\x99\\x99\\x99\\x99\\xb9\\xbf\\x9a\\x99\\x99\\x99\\x99\\x99Y<' :
--    _float_dd_ma,
--    # IEEE 754 128-bit binary float
--    b'\\x9a\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\xfb\\xbf' :
--    _float128_ma,
-+    # # float80, first 10 bytes containing actual storage
-+    # b'\\xcd\\xcc\\xcc\\xcc\\xcc\\xcc\\xcc\\xcc\\xfb\\xbf' : _float80_ma,
-+    # # double double; low, high order (e.g. PPC 64)
-+    # b'\\x9a\\x99\\x99\\x99\\x99\\x99Y<\\x9a\\x99\\x99\\x99\\x99\\x99\\xb9\\xbf' :
-+    # _float_dd_ma,
-+    # # double double; high, low order (e.g. PPC 64 le)
-+    # b'\\x9a\\x99\\x99\\x99\\x99\\x99\\xb9\\xbf\\x9a\\x99\\x99\\x99\\x99\\x99Y<' :
-+    # _float_dd_ma,
-+    # # IEEE 754 128-bit binary float
-+    # b'\\x9a\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\x99\\xfb\\xbf' :
-+    # _float128_ma,
- }
-
-
---
-2.14.1
-
-"""
-        install_from_pypi("numpy==1.14.3", patch=patch, **kwargs)
+'''
+        install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"})
 
 
     def dateutil(**kwargs):
@@ -470,7 +463,6 @@ index fa08f53..49f3bf3 100644
      #define __Pyx_sst_abs(value) abs(value)
  #elif SIZEOF_LONG >= SIZEOF_SIZE_T
      #define __Pyx_sst_abs(value) labs(value)
-
 """
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.20.3", patch=patch, add_cflags=cflags, **kwargs)
@@ -486,13 +478,25 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def _install_from_url(url, patch=None, extra_opts=[], add_cflags="", ignore_errors=False):
+def _install_from_url(url, patch=None, extra_opts=[], add_cflags="", ignore_errors=False, env={}):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
+    # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
+    os_env = os.environ
+    curl_opts = []
+    if url.startswith("http://") and "HTTP_PROXY" in os_env:
+        curl_opts += ["--proxy", os_env["HTTP_PROXY"]]
+    elif url.startswith("https://") and "HTTPS_PROXY" in os_env:
+        curl_opts += ["--proxy", os_env["HTTPS_PROXY"]]
+
     # honor env var 'CFLAGS' and 'CPPFLAGS'
-    cppflags = os.environ.get("CPPFLAGS", "")
-    cflags = "-v " + os.environ.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
+    cppflags = os_env.get("CPPFLAGS", "")
+    cflags = "-v " + os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
+
+    env_str = ('CFLAGS="%s" ' % cflags if cflags else "") + ('CPPFLAGS="%s" ' % cppflags if cppflags else "")
+    for key in env.keys():
+        env_str = env_str + ('%s="%s" ' % (key, env[key]))
 
     if os.system("curl -L -o %s/%s %s" % (tempdir, name, url)) != 0:
         # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
@@ -525,12 +529,12 @@ def _install_from_url(url, patch=None, extra_opts=[], add_cflags="", ignore_erro
         user_arg = "--user"
     else:
         user_arg = ""
-    status = system("cd %s/%s; %s %s %s setup.py install %s %s" % (tempdir, bare_name, 'CFLAGS="%s"' % cflags if cflags else "", 'CPPFLAGS="%s"' % cppflags if cppflags else "", sys.executable, user_arg, " ".join(extra_opts)))
+    status = system("cd %s/%s; %s %s setup.py install %s %s" % (tempdir, bare_name, env_str, sys.executable, user_arg, " ".join(extra_opts)))
     if status != 0 and not ignore_errors:
         xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
 
 
-def install_from_pypi(package, patch=None, extra_opts=[], add_cflags="", ignore_errors=True):
+def install_from_pypi(package, patch=None, extra_opts=[], add_cflags="", ignore_errors=True, env={}):
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
 
@@ -557,7 +561,7 @@ def install_from_pypi(package, patch=None, extra_opts=[], add_cflags="", ignore_
                     break
 
     if url:
-        _install_from_url(url, patch=patch, extra_opts=extra_opts, add_cflags=add_cflags, ignore_errors=ignore_errors)
+        _install_from_url(url, patch=patch, extra_opts=extra_opts, add_cflags=add_cflags, ignore_errors=ignore_errors, env=env)
     else:
         xit("Package not found: '%s'" % package)
 
