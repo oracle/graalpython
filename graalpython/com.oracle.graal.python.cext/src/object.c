@@ -234,6 +234,19 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     return PyObject_CallObject(callable, args);
 }
 
+PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
+    PyObject* args;
+    CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
+    if (strlen(fmt) < 2) {
+        PyObject* singleArg = args;
+        args = PyTuple_New(strlen(fmt));
+        if (strlen(fmt) == 1) {
+            PyTuple_SetItem(args, 0, singleArg);
+        }
+    }
+    return PyObject_CallObject(callable, args);
+}
+
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     // the arguments are given as a variable list followed by NULL
     PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
