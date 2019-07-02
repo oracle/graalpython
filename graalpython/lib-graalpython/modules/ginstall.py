@@ -91,6 +91,23 @@ index e450a66..ed538b4 100644
          long_description = "\n".join(DOCLINES[2:]),
 
 
+
+diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
+index bf6abcf..fc06d85 100644
+--- a/numpy/core/setup_common.py
++++ b/numpy/core/setup_common.py
+@@ -136,7 +136,7 @@ OPTIONAL_INTRINSICS = [("__builtin_isnan", '5.'),
+                        ("__builtin_expect", '5, 0'),
+                        ("__builtin_mul_overflow", '5, 5, (int*)5'),
+                        # broken on OSX 10.11, make sure its not optimized away
+-                       ("volatile int r = __builtin_cpu_supports", '"sse"',
++                       ("volatile int r = haddeduddeda", '"sse"',
+                         "stdio.h", "__BUILTIN_CPU_SUPPORTS"),
+                        # MMX only needed for icc, but some clangs don't have it
+                        ("_m_from_int64", '0', "emmintrin.h"),
+
+
+
 diff --git a/numpy/ctypeslib.py 2018-02-28 17:03:26.000000000 +0100
 index e450a66..ed538b4 100644
 --- a/numpy/ctypeslib.py
