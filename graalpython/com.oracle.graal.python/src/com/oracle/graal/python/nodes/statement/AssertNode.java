@@ -51,6 +51,7 @@ public class AssertNode extends StatementNode {
     @Child private ExpressionNode message;
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
+    @CompilationFinal private boolean javaExceptionsFailAssertions;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
@@ -64,7 +65,9 @@ public class AssertNode extends StatementNode {
     public void executeVoid(VirtualFrame frame) {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            assertionsEnabled = !PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.PythonOptimizeFlag);
+            PythonContext context = PythonLanguage.getContextRef().get();
+            assertionsEnabled = !PythonOptions.getOption(context, PythonOptions.PythonOptimizeFlag);
+            javaExceptionsFailAssertions = PythonOptions.getOption(context, PythonOptions.CatchAllExceptions);
         }
         if (assertionsEnabled) {
             try {
@@ -75,8 +78,12 @@ public class AssertNode extends StatementNode {
                 // Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
-                // catch any other exception and convert to Python exception
-                throw assertionFailed(frame);
+                if (javaExceptionsFailAssertions) {
+                    // catch any other exception and convert to Python exception
+                    throw assertionFailed(frame);
+                } else {
+                    throw e;
+                }
             }
         }
     }

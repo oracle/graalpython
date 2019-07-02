@@ -177,6 +177,10 @@ PyObject* PyObject_Str(PyObject* o) {
     return UPCALL_CEXT_O(_jls_PyObject_Str, native_to_java(o));
 }
 
+PyObject* PyObject_ASCII(PyObject* o) {
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("ascii", SRC_CS), native_to_java(o));
+}
+
 UPCALL_ID(PyObject_Repr);
 PyObject* PyObject_Repr(PyObject* o) {
     return UPCALL_CEXT_O(_jls_PyObject_Repr, native_to_java(o));

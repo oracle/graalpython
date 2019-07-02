@@ -112,89 +112,105 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
     return to_sulong(polyglot_from_string_n(u, size, SRC_CS));
 }
 
-PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
-    char** allocated_strings = calloc(sizeof(char*), s);
-#   define ASSIGN(n, value)                     \
-    switch(n) {                                 \
-    case 0: v0 = value; break;                  \
-    case 1: v1 = value; break;                  \
-    case 2: v2 = value; break;                  \
-    case 3: v3 = value; break;                  \
-    case 4: v4 = value; break;                  \
-    case 5: v5 = value; break;                  \
-    case 6: v6 = value; break;                  \
-    case 7: v7 = value; break;                  \
-    case 8: v8 = value; break;                  \
-    case 9: v9 = value; break;                  \
-    case 10: v10 = value; break;                \
-    case 11: v11 = value; break;                \
-    case 12: v12 = value; break;                \
-    case 13: v13 = value; break;                \
-    case 14: v14 = value; break;                \
-    case 15: v15 = value; break;                \
-    case 16: v16 = value; break;                \
-    case 17: v17 = value; break;                \
-    case 18: v18 = value; break;                \
-    case 19: v19 = value; break;                \
-    }
+#define AS_I64(__arg__) (polyglot_fits_in_i64((__arg__)) ? polyglot_as_i64((__arg__)) : (int64_t)(__arg__))
 
+MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc) {
     size_t fmt_size = strlen(fmt) + 1;
     // n.b. avoid using 'strdup' for compatiblity with MUSL libc
     char* fmtcpy = (char*) malloc(fmt_size*sizeof(char));
-    char* c = fmtcpy;
-    char* allocated;
-    int cnt = 0;
-
     memcpy(fmtcpy, fmt, fmt_size);
+    char* c = fmtcpy;
 
-    while (c[0] && cnt < s) {
+    int remaining_space = 2047;
+    char* buffer = (char*)calloc(sizeof(char), remaining_space + 1);
+    char* full_buffer = buffer;
+
+    void *variable = NULL;
+    char *allocated = NULL; // points to the same as variable, if it has to be free'd
+
+    while (c[0]) {
         if (c[0] == '%') {
-            switch (c[1]) {
-            case 'c':
-                c[1] = 'd';
-                break;
-            case 'A':
-                c[1] = 's';
-                ;
-                allocated_strings[cnt] = allocated = as_char_pointer(UPCALL_O(PY_BUILTIN, polyglot_from_string("ascii", SRC_CS), native_to_java(polyglot_get_arg(cnt + 2))));
-                ASSIGN(cnt, allocated);
-                break;
-            case 'U':
-                c[1] = 's';
-                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Str(polyglot_get_arg(cnt + 2)));
-                ASSIGN(cnt, allocated);
-                break;
-            case 'S':
-                c[1] = 's';
-                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Str(polyglot_get_arg(cnt + 2)));
-                ASSIGN(cnt, allocated);
-                break;
-            case 'R':
-                c[1] = 's';
-                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Repr(polyglot_get_arg(cnt + 2)));
-                ASSIGN(cnt, allocated);
-                break;
+            // we've reached the next directive, write until here
+            c[0] = '\0';
+            int bytes_written;
+            if (variable != NULL) {
+                bytes_written = snprintf(buffer, remaining_space, fmtcpy, AS_I64(variable));
+                if (allocated != NULL) {
+                    free(allocated);
+                    allocated = NULL;
+                }
+                variable = NULL;
+            } else if (va != NULL) {
+                bytes_written = vsnprintf(buffer, remaining_space, fmtcpy, va);
+            } else {
+                strncpy(buffer, fmtcpy, remaining_space);
+                bytes_written = strlen(fmtcpy);
             }
-            cnt++;
+            remaining_space -= bytes_written;
+            buffer += bytes_written;
+            fmtcpy = c;
+            c[0] = '%';
+
+            // now decide if we need to do something special with this directive
+            PyObject* (*converter)(PyObject*) = NULL;
+            switch (c[1]) {
+            case 'A':
+                // The conversion cases, these all use a function to convert the
+                // PyObject* to a char* and they fall through
+                converter = PyObject_ASCII;
+            case 'U':
+                if (converter == NULL) converter = PyObject_Str;
+            case 'S':
+                if (converter == NULL) converter = PyObject_Str;
+            case 'R':
+                if (converter == NULL) converter = PyObject_Repr;
+                c[1] = 's';
+                allocated = variable = as_char_pointer(converter(args == NULL ? va_arg(va, PyObject*) : (PyObject*)(args[argc++])));
+                break;
+            case '%':
+                // literal %
+                break;
+            case 'c':
+                // This case should just treat it's argument as an integer
+                c[1] = 'd';
+            default:
+                // if we're reading args from a void* array, read it now,
+                // otherwise there's nothing to do
+                if (args != NULL) {
+                    variable = args[argc++];
+                }
+            }
+            // skip over next char, we checked it
             c += 1;
         }
         c += 1;
     }
 
-    char buffer[2048] = {'\0'};
-    snprintf(buffer, 2047, fmtcpy, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19);
-
-    for (int i = 0; i < s; i++) {
-        if (allocated_strings[i] != NULL) {
-            free(allocated_strings[i]);
+    // write the remaining buffer
+    if (variable != NULL) {
+        snprintf(buffer, remaining_space, fmtcpy, AS_I64(variable));
+        if (allocated) {
+            free(allocated);
         }
+    } else if (va != NULL) {
+        vsnprintf(buffer, remaining_space, fmtcpy, va);
+    } else {
+        strncpy(buffer, fmtcpy, remaining_space);
     }
 
-    return PyUnicode_FromString(buffer);
-
-#   undef ASSIGN
+    PyObject* result = PyUnicode_FromString(full_buffer);
+    free(full_buffer);
+    return result;
 }
 
+PyObject* PyUnicode_FromFormatV(const char* format, va_list va) {
+    return PyTruffle_Unicode_FromFormat(format, va, NULL, 0);
+}
+
+PyObject* PyUnicode_FromFormat(const char* format, ...) {
+    CallWithPolyglotArgs(PyObject* result, format, 1, PyTruffle_Unicode_FromFormat, format);
+    return result;
+}
 
 PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
     if (u == NULL) {

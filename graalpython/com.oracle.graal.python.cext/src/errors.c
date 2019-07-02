@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -159,8 +159,8 @@ int PyErr_ExceptionMatches(PyObject *exc) {
     return PyErr_GivenExceptionMatches(PyErr_Occurred(), exc);
 }
 
-PyObject* PyTruffle_Err_Format(PyObject* exception, const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
-    PyObject *formatted_msg = PyTruffle_Unicode_FromFormat(fmt, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
+    CallWithPolyglotArgs(PyObject* formatted_msg, fmt, 2, PyTruffle_Unicode_FromFormat, fmt);
     UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(formatted_msg));
     return NULL;
 }

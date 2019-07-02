@@ -328,6 +328,9 @@ extern PyObject* wrapped_null;
 /* DICT */
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
 
+/* STR */
+PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
+
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
@@ -337,5 +340,36 @@ int bytes_copy2mem(char* target, char* source, size_t nbytes);
 
 /* MEMORYVIEW, BUFFERDECORATOR */
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
+
+#if 1
+/*
+ * (tfel): On native Sulong, using va_list will force all arguments to native
+ * memory, which hinders escape analysis and PE in a big way. To avoid this,
+ * when we have function called with var args (rather than already with a
+ * va_list), we allocate a managed array of void*, fill it with the arguments,
+ * and pass that one on. In the target functions, we use the macros below to
+ * access the variable arguments part depending on whether it is a va_list or a
+ * managed void* array. The assumption is that once everything is compiled
+ * together, the managed array with arguments will be escape analyzed away.
+ */
+#define CallWithPolyglotArgs(result, last, off, function, ...)          \
+    int __poly_argc = polyglot_get_arg_count();                         \
+    int __poly_args_s = sizeof(void*) * (__poly_argc - off);            \
+    void **__poly_args = truffle_managed_malloc(__poly_args_s);         \
+    for (int i = off; i < __poly_argc; i++) {                           \
+        __poly_args[i - off] = polyglot_get_arg(i);                     \
+    }                                                                   \
+    result = function(__VA_ARGS__, NULL, __poly_args, 0)
+#else
+/*
+ * (tfel): Just skip the optimization with using a managed malloc and use
+ * va_list always.
+ */
+#define CallWithPolyglotArgs(result, last, off, function, ...)          \
+    va_list __poly_args;                                                \
+    va_start(__poly_args, last);                                        \
+    result = function(__VA_ARGS__, __poly_args, NULL, 0);               \
+    va_end(__poly_args)
+#endif
 
 #endif
