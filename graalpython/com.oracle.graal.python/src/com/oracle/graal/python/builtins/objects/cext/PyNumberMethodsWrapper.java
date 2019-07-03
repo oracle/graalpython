@@ -42,19 +42,23 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_AND;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_FLOOR_DIVIDE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_SUBTRACT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -85,10 +89,12 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     // TODO extend list according to 'isValidMember'
     private static final String[] NUMBER_METHODS = new String[]{
                     NB_ADD,
+                    NB_SUBTRACT,
                     NB_AND,
                     NB_INDEX,
                     NB_POW,
                     NB_TRUE_DIVIDE,
+                    NB_FLOOR_DIVIDE,
                     NB_MULTIPLY,
                     NB_INPLACE_ADD,
                     NB_INPLACE_MULTIPLY
@@ -96,10 +102,12 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     private static final String[] NUMBER_METHODS_MAPPING = new String[]{
                     __ADD__,
+                    __SUB__,
                     __AND__,
                     __INDEX__,
                     __POW__,
                     __TRUEDIV__,
+                    __FLOORDIV__,
                     __MUL__,
                     __IADD__,
                     __IMUL__
