@@ -51,7 +51,6 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_SUBCLASSES;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
@@ -79,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetSpecialSinglet
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SetSpecialSingletonPtrNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -892,6 +892,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 writeAttrNode.execute(object, SpecialAttributeNames.__BASICSIZE__, basicsize);
             }
             return basicsize;
+        }
+
+        @Specialization(guards = "eq(TP_ALLOC, key)")
+        Object doTpAlloc(PythonAbstractClass object, @SuppressWarnings("unused") String key, Object allocFunc,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
+                        @Cached IsBuiltinClassProfile profile,
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+            if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
+            } else {
+                writeAttrNode.execute(object, SpecialMethodNames.__ALLOC__, asPythonObjectNode.execute(allocFunc));
+            }
+            return allocFunc;
         }
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")

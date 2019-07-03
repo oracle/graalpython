@@ -263,7 +263,7 @@ void* wrap_unsupported(void *fun, ...);
            wrap_direct :                                                                 \
            wrap_unsupported))))))))
 
-#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
+#define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
@@ -300,11 +300,13 @@ void* wrap_unsupported(void *fun, ...);
     0,                                          /* tp_descr_set */\
     0,                                          /* tp_dictoffset */\
     0,                                          /* tp_init */\
-    0,                                          /* tp_alloc */\
+    (__ALLOC__),                                /* tp_alloc */\
     0,                                          /* tp_new */\
     0,                                          /* tp_free */\
     0,                                          /* tp_is_gc */\
 }
+
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0)
 
 /** to be used from Java code only; returns a type's basic size */
 #define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \

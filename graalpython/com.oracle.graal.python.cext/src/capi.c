@@ -85,10 +85,14 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
+    allocfunc alloc = structure->tp_alloc;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
+    if (alloc) {
+    	type_handle->tp_alloc = alloc;
+    }
 }
 
 static void initialize_builtin_type(PyTypeObject* structure, const char* typname, polyglot_typeid tid) {

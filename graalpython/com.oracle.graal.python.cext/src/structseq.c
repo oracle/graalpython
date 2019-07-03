@@ -77,7 +77,7 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     type->tp_members = NULL;
     type->tp_new = newType->tp_new;
     type->tp_base = &PyTuple_Type;
-    type->tp_alloc = PyType_GenericAlloc;
+    type->tp_alloc = newType->tp_alloc;
 
     // now copy specific fields
     type->tp_name = newType->tp_name;
