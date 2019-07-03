@@ -130,6 +130,10 @@ int PyTruffle_Tuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item
     return 0;
 }
 
+PyObject* PyTruffle_Tuple_GetItem(PyObject* tuple, Py_ssize_t position) {
+    return native_to_java(PyTuple_GET_ITEM(tuple, position));
+}
+
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
 	/*
 	 * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
