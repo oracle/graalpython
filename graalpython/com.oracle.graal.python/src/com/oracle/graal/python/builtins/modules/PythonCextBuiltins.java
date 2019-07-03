@@ -332,7 +332,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return 0;
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         int doNative(PythonNativeObject tuple, long position, Object element,
                         @Cached PCallCapiFunction callSetItem,
                         @Cached CExtNodes.ToSulongNode receiverToSulongNode,
