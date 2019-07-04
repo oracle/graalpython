@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
@@ -123,6 +124,7 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(__DICTOFFSET__);
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(__ITEMSIZE__);
     public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(__BASICSIZE__);
+    public static final HiddenKey TYPE_ALLOC = new HiddenKey(__ALLOC__);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

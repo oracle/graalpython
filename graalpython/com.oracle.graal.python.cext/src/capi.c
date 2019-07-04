@@ -85,10 +85,14 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
+    allocfunc alloc = structure->tp_alloc;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
+    if (alloc) {
+    	type_handle->tp_alloc = alloc;
+    }
 }
 
 static void initialize_builtin_type(PyTypeObject* structure, const char* typname, polyglot_typeid tid) {
@@ -303,6 +307,11 @@ Py_ssize_t get_tp_basicsize(PyTypeObject* obj) {
 	return obj->tp_basicsize;
 }
 
+/** to be used from Java code only; reads native 'tp_alloc' field */
+allocfunc get_tp_alloc(PyTypeObject* obj) {
+	return obj->tp_alloc;
+}
+
 /** to be used from Java code only; returns the type ID for a byte array */
 polyglot_typeid get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);
@@ -396,6 +405,10 @@ PRIMITIVE_ARRAY_TO_NATIVE(Int, int32_t, i32, polyglot_as_i32);
 PRIMITIVE_ARRAY_TO_NATIVE(Long, int64_t, i64, polyglot_as_i64);
 PRIMITIVE_ARRAY_TO_NATIVE(Double, double, double, polyglot_as_double);
 PRIMITIVE_ARRAY_TO_NATIVE(Object, PyObjectPtr, PyObjectPtr, (PyObjectPtr));
+
+Py_ssize_t PyTruffle_Object_Size(PyObject *op) {
+    return ((PyVarObject*)op)->ob_size;
+}
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 

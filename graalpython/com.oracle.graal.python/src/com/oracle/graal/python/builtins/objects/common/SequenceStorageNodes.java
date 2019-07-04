@@ -135,6 +135,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
@@ -771,6 +772,11 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doObject(ObjectSequenceStorage storage, int idx) {
+            return storage.getItemNormalized(idx);
+        }
+
+        @Specialization
+        protected Object doMro(MroSequenceStorage storage, int idx) {
             return storage.getItemNormalized(idx);
         }
 

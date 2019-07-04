@@ -1818,16 +1818,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        protected PTuple constructTuple(VirtualFrame frame, LazyPythonClass cls, Object value,
+        @Specialization(guards = "!isNativeClass(cls)")
+        protected PTuple constructTuple(VirtualFrame frame, LazyPythonClass cls, Object iterable,
                         @Cached("create()") TupleNodes.ConstructTupleNode constructTupleNode) {
-            return constructTupleNode.execute(frame, cls, value);
+            return constructTupleNode.execute(frame, cls, iterable);
+        }
+
+        // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
+        @Specialization(guards = "isSubtypeOfTuple(frame, isSubtype, cls)", limit = "1")
+        Object doNative(@SuppressWarnings("unused") VirtualFrame frame, PythonNativeClass cls, Object iterable,
+                        @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Cached CExtNodes.TupleSubtypeNew subtypeNew) {
+            return subtypeNew.execute(cls, iterable);
+        }
+
+        protected static boolean isSubtypeOfTuple(VirtualFrame frame, IsSubtypeNode isSubtypeNode, PythonNativeClass cls) {
+            return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PTuple);
         }
 
         @Fallback
-        public PTuple tupleObject(@SuppressWarnings("unused") Object cls, Object arg) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new RuntimeException("tuple does not support iterable object " + arg);
+        public PTuple tupleObject(Object cls, @SuppressWarnings("unused") Object arg) {
+            throw raise(PythonBuiltinClassType.TypeError, "'cls' is not a type object (%p)", cls);
         }
     }
 

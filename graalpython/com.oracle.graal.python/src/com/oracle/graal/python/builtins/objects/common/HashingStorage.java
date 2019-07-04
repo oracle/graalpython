@@ -230,6 +230,7 @@ public abstract class HashingStorage {
         addAll(other, DEFAULT_EQIVALENCE);
     }
 
+    @TruffleBoundary
     public void addAll(HashingStorage other, Equivalence eq) {
         for (DictEntry e : other.entries()) {
             setItem(e.getKey(), e.getValue(), eq);
