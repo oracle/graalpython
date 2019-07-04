@@ -83,7 +83,10 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectHybridDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -513,14 +516,20 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_DICT, key)")
         Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached PythonObjectFactory factory,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached(value = "createEquivalence()", uncached = "getSlowPathEquivalence()") Equivalence equivalence) {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
             PHashingCollection dict = object.getDict();
-            if (dict != null && dict.getDictStorage() instanceof PythonObjectHybridDictStorage) {
+            HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
+            if (dictStorage instanceof PythonObjectHybridDictStorage) {
                 // reuse the existing and modifiable storage
                 return toSulongNode.execute(factory.createDict(dict.getDictStorage()));
             }
             PythonObjectHybridDictStorage storage = new PythonObjectHybridDictStorage(object.getStorage());
+            if (dictStorage != null) {
+                // copy all mappings to the new storage
+                storage.addAll(dictStorage, equivalence);
+            }
             object.setDict(factory.createMappingproxy(storage));
             return toSulongNode.execute(factory.createDict(storage));
         }
@@ -543,6 +552,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         public static ReadTypeNativeMemberNode create() {
             return ReadTypeNativeMemberNodeGen.create();
+        }
+
+        protected static Equivalence createEquivalence() {
+            return PythonEquivalence.create();
+        }
+
+        protected static Equivalence getSlowPathEquivalence() {
+            return HashingStorage.getSlowPathEquivalence(null);
         }
     }
 
