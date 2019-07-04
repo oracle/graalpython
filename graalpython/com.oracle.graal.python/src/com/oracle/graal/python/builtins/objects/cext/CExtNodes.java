@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCom
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -83,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -117,6 +119,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -1891,6 +1894,53 @@ public abstract class CExtNodes {
                 return true;
             }
             return pointerCompareNode.execute(SpecialMethodNames.__EQ__, left, right);
+        }
+    }
+
+    /**
+     * Use this node to lookup a native type member like {@code tp_alloc}.<br>
+     * <p>
+     * This node basically implements the native member inheritance that is done by
+     * {@code inherit_special} or other code in {@code PyType_Ready}.
+     * </p>
+     * <p>
+     * Since it may be that a managed types needs to emulate such members but there is no
+     * corresponding Python attribute (e.g. {@code tp_alloc}), such members are stored as hidden
+     * keys on the managed type. However, the MRO may contain native types and in this case, we need
+     * to access the native member.
+     * </p>
+     */
+    @GenerateUncached
+    public abstract static class LookupNativeMemberInMRONode extends Node {
+
+        public abstract Object execute(PythonAbstractClass cls, String nativeMemberName, Object managedMemberName);
+
+        @Specialization
+        Object doSingleContext(PythonAbstractClass cls, String nativeMemberName, Object managedMemberName,
+                        @Cached GetMroStorageNode getMroNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached GetTypeMemberNode getTypeMemberNode) {
+
+            MroSequenceStorage mroStorage = getMroNode.execute(cls);
+            int n = lenNode.execute(mroStorage);
+
+            for (int i = 0; i < n; i++) {
+                PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);
+                Object result = PNone.NO_VALUE;
+                if (PGuards.isManagedClass(mroCls)) {
+                    result = readAttrNode.execute(mroCls, managedMemberName);
+                } else {
+                    assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
+                    result = getTypeMemberNode.execute(mroCls, nativeMemberName);
+                }
+                if (result != PNone.NO_VALUE) {
+                    return result;
+                }
+            }
+
+            return PNone.NO_VALUE;
         }
     }
 }

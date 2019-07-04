@@ -54,7 +54,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -335,9 +334,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_ALLOC, key)")
         Object doTpAlloc(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic getAllocNode,
+                        @Cached CExtNodes.LookupNativeMemberInMRONode lookupNativeMemberNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            Object result = getAllocNode.execute(object, __ALLOC__);
+            Object result = lookupNativeMemberNode.execute(object, NativeMemberNames.TP_ALLOC, TypeBuiltins.TYPE_ALLOC);
             return toSulongNode.execute(result);
         }
 
@@ -896,13 +895,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_ALLOC, key)")
         Object doTpAlloc(PythonAbstractClass object, @SuppressWarnings("unused") String key, Object allocFunc,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached IsBuiltinClassProfile profile,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
-            if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
-                writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
-            } else {
-                writeAttrNode.execute(object, SpecialMethodNames.__ALLOC__, asPythonObjectNode.execute(allocFunc));
-            }
+            writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
             return allocFunc;
         }
 

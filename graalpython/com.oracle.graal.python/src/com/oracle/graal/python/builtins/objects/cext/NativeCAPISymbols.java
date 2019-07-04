@@ -64,6 +64,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_TP_BASES = "get_tp_bases";
     public static final String FUN_GET_TP_NAME = "get_tp_name";
     public static final String FUN_GET_TP_MRO = "get_tp_mro";
+    public static final String FUN_GET_TP_ALLOC = "get_tp_alloc";
     public static final String FUN_GET_TP_SUBCLASSES = "get_tp_subclasses";
     public static final String FUN_GET_TP_DICTOFFSET = "get_tp_dictoffset";
     public static final String FUN_GET_TP_BASICSIZE = "get_tp_basicsize";
