@@ -8,9 +8,14 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Implement PyStructSequence_* C API functions
 * Implement `_functools.partial` as a class instead of a function
 * Implement `type.__base__`
+* Implement reading C API type attributes `nb_inplace_add`, `nb_remainder`, `nb_subtract`, and `nb_floor_divide` for builtin types
+* Implement C API functions `_PyObject_CallFunction_SizeT`, `PyEval_InitThreads`, and `PyEval_ThreadsInitialized`
+* Implement writing to a function's `__dict__` field
+* Implement the C API thread state fields `overflowed` and `recursion_depth`
+* Fix printing of errors in the REPL
+* Fix printing full paths in traceback
 * Support the C API varargs functions with arbitrary numbers of arguments instead of imposing an upper limit
-* Make `function.__dict__` writeable
-* Print full paths in traceback
+* Improve performance of attribute reads and reading closure variables
 
 ## Version 19.1.0
 
