@@ -101,6 +101,7 @@ public class PThreadState extends PythonNativeWrapper {
     public static final String DICT = "dict";
     public static final String PREV = "prev";
     public static final String RECURSION_DEPTH = "recursion_depth";
+    public static final String OVERFLOWED = "overflowed";
 
     private PDict dict;
 
@@ -130,6 +131,7 @@ public class PThreadState extends PythonNativeWrapper {
             case DICT:
             case PREV:
             case RECURSION_DEPTH:
+            case OVERFLOWED:
                 return true;
             default:
                 return false;
@@ -139,7 +141,7 @@ public class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
                     @Exclusive @Cached PythonObjectFactory factory) {
-        return factory.createList(new Object[] { CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH });
+        return factory.createList(new Object[] { CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED });
     }
 
     @ExportMessage
@@ -280,6 +282,11 @@ public class PThreadState extends PythonNativeWrapper {
             return visitor.depth;
         }
 
+        @Specialization(guards = "eq(key, OVERFLOWED)")
+        long doOverflowed(@SuppressWarnings("unused") String key) {
+            return 0;
+        }
+
         protected static boolean eq(String key, String expected) {
             return expected.equals(key);
         }
@@ -303,6 +310,7 @@ public class PThreadState extends PythonNativeWrapper {
             case EXC_VALUE:
             case EXC_TRACEBACK:
             case RECURSION_DEPTH:
+            case OVERFLOWED:
                 return true;
             default:
                 return false;
@@ -319,6 +327,8 @@ public class PThreadState extends PythonNativeWrapper {
             case EXC_TYPE:
             case EXC_VALUE:
             case EXC_TRACEBACK:
+            case RECURSION_DEPTH:
+            case OVERFLOWED:
                 return true;
             default:
                 return false;
@@ -418,6 +428,13 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, RECURSION_DEPTH)")
         @SuppressWarnings("unused")
         Object doRecursionDepth(String key, int value) {
+            // TODO: (tfel) Can we not ignore this?
+            return null;
+        }
+
+        @Specialization(guards = "eq(key, OVERFLOWED)")
+        @SuppressWarnings("unused")
+        Object doOverflowed(String key, int value) {
             // TODO: (tfel) Can we not ignore this?
             return null;
         }
