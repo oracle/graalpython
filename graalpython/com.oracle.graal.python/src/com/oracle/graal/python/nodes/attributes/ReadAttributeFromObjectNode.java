@@ -183,7 +183,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     @GenerateUncached
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
-        @Specialization(guards = {"!isHiddenKey(key)"})
+        @Specialization(guards = {"!isHiddenKey(key)"}, insertBefore = "readForeign")
         protected Object readNativeObject(PythonNativeObject object, Object key,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached("create()") GetObjectDictNode getNativeDict,
@@ -199,7 +199,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     @GenerateUncached
     protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
-        @Specialization(guards = {"!isHiddenKey(key)"})
+        @Specialization(guards = {"!isHiddenKey(key)"}, insertBefore = "readForeign")
         protected Object readNativeClass(PythonNativeClass object, Object key,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached GetTypeMemberNode getNativeDict,
