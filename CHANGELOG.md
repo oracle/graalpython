@@ -3,6 +3,15 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 19.2.0
+
+* Implement PyStructSequence_* C API functions
+* Implement `_functools.partial` as a class instead of a function
+* Implement `type.__base__`
+* Support the C API varargs functions with arbitrary numbers of arguments instead of imposing an upper limit
+* Make `function.__dict__` writeable
+* Print full paths in traceback
+
 ## Version 19.1.0
 
 * Add `java.add_to_classpath` API to dynamically extend the host class path
