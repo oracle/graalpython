@@ -180,6 +180,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1331,20 +1332,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "args.length != 0")
         Object minmaxBinary(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
-            return minmaxBinaryWithKey(frame, arg1, args, null, compare, null, moreThanTwo);
+                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode) {
+            return minmaxBinaryWithKey(frame, arg1, args, null, compare, null, moreThanTwo, castToBooleanNode);
         }
 
         @Specialization(guards = "args.length != 0")
         Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, PythonObject keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("create()") CallNode keyCall,
-                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
+                        @Cached CallNode keyCall,
+                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode) {
             Object currentValue = arg1;
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
             Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-            if (compare.executeBool(frame, nextKey, currentKey)) {
+            if (castToBooleanNode.executeBoolean(frame, compare.executeWith(frame, nextKey, currentKey))) {
                 currentKey = nextKey;
                 currentValue = nextValue;
             }
