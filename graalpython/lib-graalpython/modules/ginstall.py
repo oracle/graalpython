@@ -336,7 +336,7 @@ index 521208c..b9fa4c3 100644
  except ImportError:
      ctypes = None
 diff --git a/setup.py b/setup.py
-index 8b2ded1..cca8674 100755
+index 8b2ded1..8a9295a 100755
 --- a/setup.py
 +++ b/setup.py
 @@ -364,6 +364,8 @@ def setup_package():
@@ -348,6 +348,14 @@ index 8b2ded1..cca8674 100755
          maintainer_email = "numpy-discussion@python.org",
          description = DOCLINES[0],
          long_description = "\n".join(DOCLINES[2:]),
+@@ -376,7 +378,6 @@ def setup_package():
+         test_suite='nose.collector',
+         cmdclass={"sdist": sdist_checked},
+         python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
+-        zip_safe=False,
+         entry_points={
+             'console_scripts': f2py_cmds
+         },
 
 diff --git a/numpy/core/src/multiarray/shape.c b/numpy/core/src/multiarray/shape.c
 index 30820737e..d8a350f0d 100644
