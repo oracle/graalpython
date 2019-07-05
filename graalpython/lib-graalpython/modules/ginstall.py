@@ -522,16 +522,13 @@ def install_from_pypi(package, extra_opts=[]):
         pass
     else:
         for url_info in urls:
-            print("The url in list:" ,url_info)
             if url_info["python_version"] == "source":
                 url = url_info["url"]
                 break
 
     if url:
-        print('The url:' , url)
         tempdir = tempfile.mkdtemp()
         filename = url.rpartition("/")[2]
-        print('Filename',filename)
         system("curl -L -o %s/%s %s" % (tempdir, filename, url), msg="Download error")
         dirname = None
         if filename.endswith(".zip"):
