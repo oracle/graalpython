@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -69,6 +68,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -77,6 +77,8 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameInstance;
+import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -98,6 +100,7 @@ public class PThreadState extends PythonNativeWrapper {
     public static final String EXC_TRACEBACK = "exc_traceback";
     public static final String DICT = "dict";
     public static final String PREV = "prev";
+    public static final String RECURSION_DEPTH = "recursion_depth";
 
     private PDict dict;
 
@@ -126,6 +129,7 @@ public class PThreadState extends PythonNativeWrapper {
             case EXC_TRACEBACK:
             case DICT:
             case PREV:
+            case RECURSION_DEPTH:
                 return true;
             default:
                 return false;
@@ -133,16 +137,15 @@ public class PThreadState extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
+                    @Exclusive @Cached PythonObjectFactory factory) {
+        return factory.createList(new Object[] { CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH });
     }
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Exclusive @Cached ThreadStateReadNode readNode,
-                    @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
-        Object result = readNode.execute(member);
-        return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
+                    @Exclusive @Cached ThreadStateReadNode readNode) {
+        return readNode.execute(member);
     }
 
     @ImportStatic(PThreadState.class)
@@ -154,84 +157,97 @@ public class PThreadState extends PythonNativeWrapper {
         public abstract Object execute(Object key);
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonAbstractClass doCurExcType(@SuppressWarnings("unused") String key,
+        Object doCurExcType(@SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             PException currentException = context.getCurrentException();
+            Object result = null;
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return getClassNode.execute(exceptionObject);
+                result = getClassNode.execute(exceptionObject);
             }
-            return null;
+            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
-        PBaseException doCurExcValue(@SuppressWarnings("unused") String key,
+        Object doCurExcValue(@SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException currentException = context.getCurrentException();
+            Object result = null;
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject;
+                result = exceptionObject;
             }
-            return null;
+            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
         Object doCurExcTraceback(@SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("invokeNode") @Cached GenericInvokeNode invokeNode) {
             PException currentException = context.getCurrentException();
+            Object result = null;
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
                 // we use 'GetTracebackNode' via a call to have a frame
                 Object[] arguments = PArguments.create(1);
                 PArguments.setArgument(arguments, 0, exceptionObject);
-                return invokeNode.execute(null, ensureCallTarget(context.getLanguage()), arguments);
+                result = invokeNode.execute(null, ensureCallTarget(context.getLanguage()), arguments);
             }
-            return null;
+            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonAbstractClass doExcType(@SuppressWarnings("unused") String key,
+        Object doExcType(@SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             PException currentException = context.getCaughtException();
+            Object result = null;
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return getClassNode.execute(exceptionObject);
+                result = getClassNode.execute(exceptionObject);
             }
-            return null;
+            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(key, EXC_VALUE)")
-        PBaseException doExcValue(@SuppressWarnings("unused") String key,
+        Object doExcValue(@SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException currentException = context.getCaughtException();
+            Object result = null;
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject;
+                result = exceptionObject;
             }
-            return null;
+            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
         Object doExcTraceback(@SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("invokeNode") @Cached GenericInvokeNode invokeNode) {
             PException currentException = context.getCaughtException();
+            Object result = null;
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
                 // we use 'GetTracebackNode' via a call to have a frame
                 Object[] arguments = PArguments.create(1);
                 PArguments.setArgument(arguments, 0, exceptionObject);
-                return invokeNode.execute(null, ensureCallTarget(context.getLanguage()), arguments);
+                result = invokeNode.execute(null, ensureCallTarget(context.getLanguage()), arguments);
             }
-            return null;
+            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(key, DICT)")
-        PDict doDict(@SuppressWarnings("unused") String key,
+        Object doDict(@SuppressWarnings("unused") String key,
                         @Cached PythonObjectFactory factory,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PThreadState customThreadState = context.getCustomThreadState();
             PDict threadStateDict = customThreadState.getThreadStateDict();
@@ -239,13 +255,29 @@ public class PThreadState extends PythonNativeWrapper {
                 threadStateDict = factory.createDict();
                 customThreadState.setThreadStateDict(threadStateDict);
             }
-            return threadStateDict;
+            return toSulongNode.execute(threadStateDict != null ? threadStateDict : PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(key, PREV)")
         Object doPrev(@SuppressWarnings("unused") String key,
                         @Cached GetNativeNullNode getNativeNullNode) {
             return getNativeNullNode.execute(null);
+        }
+
+        private static class DepthCounter implements FrameInstanceVisitor<Object> {
+            public long depth = 0;
+
+            public Object visitFrame(FrameInstance frameInstance) {
+                depth++;
+                return null;
+            }
+        }
+
+        @Specialization(guards = "eq(key, RECURSION_DEPTH)")
+        long doRecursionDepth(@SuppressWarnings("unused") String key) {
+            DepthCounter visitor = new DepthCounter();
+            Truffle.getRuntime().iterateFrames(visitor);
+            return visitor.depth;
         }
 
         protected static boolean eq(String key, String expected) {
@@ -270,6 +302,7 @@ public class PThreadState extends PythonNativeWrapper {
             case EXC_TYPE:
             case EXC_VALUE:
             case EXC_TRACEBACK:
+            case RECURSION_DEPTH:
                 return true;
             default:
                 return false;
@@ -380,6 +413,13 @@ public class PThreadState extends PythonNativeWrapper {
                 e.getExceptionObject().setTraceback(value);
             }
             return value;
+        }
+
+        @Specialization(guards = "eq(key, RECURSION_DEPTH)")
+        @SuppressWarnings("unused")
+        Object doRecursionDepth(String key, int value) {
+            // TODO: (tfel) Can we not ignore this?
+            return null;
         }
 
         private static void setCurrentException(PRaiseNode raiseNode, PythonContext context, PBaseException exceptionObject) {
