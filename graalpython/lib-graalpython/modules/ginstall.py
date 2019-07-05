@@ -297,6 +297,538 @@ index 14c4f27..c5a72b1 100644
  
      static int
      PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) {
+diff --git a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee754.c.src
+index d960838..56a8056 100644
+--- a/numpy/core/src/npymath/ieee754.c.src
++++ b/numpy/core/src/npymath/ieee754.c.src
+@@ -558,12 +558,10 @@ npy_longdouble npy_nextafterl(npy_longdouble x, npy_longdouble y)
+ #endif
+ 
+ int npy_clear_floatstatus() {
+-    char x=0;
+-    return npy_clear_floatstatus_barrier(&x);
++    return 0;
+ }
+ int npy_get_floatstatus() {
+-    char x=0;
+-    return npy_get_floatstatus_barrier(&x);
++    return 0;
+ }
+ 
+ /*
+@@ -593,45 +591,32 @@ int npy_get_floatstatus() {
+ 
+ int npy_get_floatstatus_barrier(char * param)
+ {
+-    int fpstatus = fpgetsticky();
+-    /*
+-     * By using a volatile, the compiler cannot reorder this call
+-     */
+-    if (param != NULL) {
+-        volatile char NPY_UNUSED(c) = *(char*)param;
+-    }
+-    return ((FP_X_DZ  & fpstatus) ? NPY_FPE_DIVIDEBYZERO : 0) |
+-           ((FP_X_OFL & fpstatus) ? NPY_FPE_OVERFLOW : 0) |
+-           ((FP_X_UFL & fpstatus) ? NPY_FPE_UNDERFLOW : 0) |
+-           ((FP_X_INV & fpstatus) ? NPY_FPE_INVALID : 0);
++    return 0;
+ }
+ 
+ int npy_clear_floatstatus_barrier(char * param)
+ {
+-    int fpstatus = npy_get_floatstatus_barrier(param);
+-    fpsetsticky(0);
+-
+-    return fpstatus;
++    return 0;
+ }
+ 
+ void npy_set_floatstatus_divbyzero(void)
+ {
+-    fpsetsticky(FP_X_DZ);
++    return;
+ }
+ 
+ void npy_set_floatstatus_overflow(void)
+ {
+-    fpsetsticky(FP_X_OFL);
++    return;
+ }
+ 
+ void npy_set_floatstatus_underflow(void)
+ {
+-    fpsetsticky(FP_X_UFL);
++    return;
+ }
+ 
+ void npy_set_floatstatus_invalid(void)
+ {
+-    fpsetsticky(FP_X_INV);
++    return;
+ }
+ 
+ #elif defined(_AIX)
+@@ -640,45 +625,32 @@ void npy_set_floatstatus_invalid(void)
+ 
+ int npy_get_floatstatus_barrier(char *param)
+ {
+-    int fpstatus = fp_read_flag();
+-    /*
+-     * By using a volatile, the compiler cannot reorder this call
+-     */
+-    if (param != NULL) {
+-        volatile char NPY_UNUSED(c) = *(char*)param;
+-    }
+-    return ((FP_DIV_BY_ZERO & fpstatus) ? NPY_FPE_DIVIDEBYZERO : 0) |
+-           ((FP_OVERFLOW & fpstatus) ? NPY_FPE_OVERFLOW : 0) |
+-           ((FP_UNDERFLOW & fpstatus) ? NPY_FPE_UNDERFLOW : 0) |
+-           ((FP_INVALID & fpstatus) ? NPY_FPE_INVALID : 0);
++    return 0;
+ }
+ 
+ int npy_clear_floatstatus_barrier(char * param)
+ {
+-    int fpstatus = npy_get_floatstatus_barrier(param);
+-    fp_swap_flag(0);
+-
+-    return fpstatus;
++    return 0;
+ }
+ 
+ void npy_set_floatstatus_divbyzero(void)
+ {
+-    fp_raise_xcp(FP_DIV_BY_ZERO);
++    return;
+ }
+ 
+ void npy_set_floatstatus_overflow(void)
+ {
+-    fp_raise_xcp(FP_OVERFLOW);
++    return;
+ }
+ 
+ void npy_set_floatstatus_underflow(void)
+ {
+-    fp_raise_xcp(FP_UNDERFLOW);
++    return;
+ }
+ 
+ void npy_set_floatstatus_invalid(void)
+ {
+-    fp_raise_xcp(FP_INVALID);
++    return;
+ }
+ 
+ #elif defined(_MSC_VER) || (defined(__osf__) && defined(__alpha))
+@@ -698,23 +670,22 @@ static volatile double _npy_floatstatus_x,
+ 
+ void npy_set_floatstatus_divbyzero(void)
+ {
+-    _npy_floatstatus_x = 1.0 / _npy_floatstatus_zero;
++    return;
+ }
+ 
+ void npy_set_floatstatus_overflow(void)
+ {
+-    _npy_floatstatus_x = _npy_floatstatus_big * 1e300;
++    return;
+ }
+ 
+ void npy_set_floatstatus_underflow(void)
+ {
+-    _npy_floatstatus_x = _npy_floatstatus_small * 1e-300;
++    return;
+ }
+ 
+ void npy_set_floatstatus_invalid(void)
+ {
+-    _npy_floatstatus_inf = NPY_INFINITY;
+-    _npy_floatstatus_x = _npy_floatstatus_inf - NPY_INFINITY;
++    return;
+ }
+ 
+ /* MS Windows -----------------------------------------------------*/
+@@ -724,32 +695,12 @@ void npy_set_floatstatus_invalid(void)
+ 
+ int npy_get_floatstatus_barrier(char *param)
+ {
+-    /*
+-     * By using a volatile, the compiler cannot reorder this call
+-     */
+-#if defined(_WIN64)
+-    int fpstatus = _statusfp();
+-#else
+-    /* windows enables sse on 32 bit, so check both flags */
+-    int fpstatus, fpstatus2;
+-    _statusfp2(&fpstatus, &fpstatus2);
+-    fpstatus |= fpstatus2;
+-#endif
+-    if (param != NULL) {
+-        volatile char NPY_UNUSED(c) = *(char*)param;
+-    }
+-    return ((SW_ZERODIVIDE & fpstatus) ? NPY_FPE_DIVIDEBYZERO : 0) |
+-           ((SW_OVERFLOW & fpstatus) ? NPY_FPE_OVERFLOW : 0) |
+-           ((SW_UNDERFLOW & fpstatus) ? NPY_FPE_UNDERFLOW : 0) |
+-           ((SW_INVALID & fpstatus) ? NPY_FPE_INVALID : 0);
++    return 0;
+ }
+ 
+ int npy_clear_floatstatus_barrier(char *param)
+ {
+-    int fpstatus = npy_get_floatstatus_barrier(param);
+-    _clearfp();
+-
+-    return fpstatus;
++    return 0;
+ }
+ 
+ /*  OSF/Alpha (Tru64)  ---------------------------------------------*/
+@@ -759,26 +710,12 @@ int npy_clear_floatstatus_barrier(char *param)
+ 
+ int npy_get_floatstatus_barrier(char *param)
+ {
+-    unsigned long fpstatus = ieee_get_fp_control();
+-    /*
+-     * By using a volatile, the compiler cannot reorder this call
+-     */
+-    if (param != NULL) {
+-        volatile char NPY_UNUSED(c) = *(char*)param;
+-    }
+-    return  ((IEEE_STATUS_DZE & fpstatus) ? NPY_FPE_DIVIDEBYZERO : 0) |
+-            ((IEEE_STATUS_OVF & fpstatus) ? NPY_FPE_OVERFLOW : 0) |
+-            ((IEEE_STATUS_UNF & fpstatus) ? NPY_FPE_UNDERFLOW : 0) |
+-            ((IEEE_STATUS_INV & fpstatus) ? NPY_FPE_INVALID : 0);
++    return 0;
+ }
+ 
+ int npy_clear_floatstatus_barrier(char *param)
+ {
+-    int fpstatus = npy_get_floatstatus_barrier(param);
+-    /* clear status bits as well as disable exception mode if on */
+-    ieee_set_fp_control(0);
+-
+-    return fpstatus;
++    return 0;
+ }
+ 
+ #endif
+@@ -790,52 +727,33 @@ int npy_clear_floatstatus_barrier(char *param)
+ 
+ int npy_get_floatstatus_barrier(char* param)
+ {
+-    int fpstatus = fetestexcept(FE_DIVBYZERO | FE_OVERFLOW |
+-                                FE_UNDERFLOW | FE_INVALID);
+-    /*
+-     * By using a volatile, the compiler cannot reorder this call
+-     */
+-    if (param != NULL) {
+-        volatile char NPY_UNUSED(c) = *(char*)param;
+-    }
+-
+-    return ((FE_DIVBYZERO  & fpstatus) ? NPY_FPE_DIVIDEBYZERO : 0) |
+-           ((FE_OVERFLOW   & fpstatus) ? NPY_FPE_OVERFLOW : 0) |
+-           ((FE_UNDERFLOW  & fpstatus) ? NPY_FPE_UNDERFLOW : 0) |
+-           ((FE_INVALID    & fpstatus) ? NPY_FPE_INVALID : 0);
++    return 0;
+ }
+ 
+ int npy_clear_floatstatus_barrier(char * param)
+ {
+-    /* testing float status is 50-100 times faster than clearing on x86 */
+-    int fpstatus = npy_get_floatstatus_barrier(param);
+-    if (fpstatus != 0) {
+-        feclearexcept(FE_DIVBYZERO | FE_OVERFLOW |
+-                      FE_UNDERFLOW | FE_INVALID);
+-    }
+-
+-    return fpstatus;
++    return 0;
+ }
+ 
+ 
+ void npy_set_floatstatus_divbyzero(void)
+ {
+-    feraiseexcept(FE_DIVBYZERO);
++    return;
+ }
+ 
+ void npy_set_floatstatus_overflow(void)
+ {
+-    feraiseexcept(FE_OVERFLOW);
++    return;
+ }
+ 
+ void npy_set_floatstatus_underflow(void)
+ {
+-    feraiseexcept(FE_UNDERFLOW);
++    return;
+ }
+ 
+ void npy_set_floatstatus_invalid(void)
+ {
+-    feraiseexcept(FE_INVALID);
++    return;
+ }
+ 
+ #endif
+diff --git a/numpy/core/src/umath/extobj.c b/numpy/core/src/umath/extobj.c
+index aea1815..b83fab9 100644
+--- a/numpy/core/src/umath/extobj.c
++++ b/numpy/core/src/umath/extobj.c
+@@ -282,7 +282,7 @@ _check_ufunc_fperr(int errmask, PyObject *extobj, const char *ufunc_name) {
+     if (!errmask) {
+         return 0;
+     }
+-    fperr = npy_get_floatstatus_barrier((char*)extobj);
++    fperr = npy_get_floatstatus_barrier("");
+     if (!fperr) {
+         return 0;
+     }
+diff --git a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
+index 975a5e6..55f3a46 100644
+--- a/numpy/core/src/umath/loops.c.src
++++ b/numpy/core/src/umath/loops.c.src
+@@ -1872,7 +1872,7 @@ NPY_NO_EXPORT void
+             *((npy_bool *)op1) = @func@(in1) != 0;
+         }
+     }
+-    npy_clear_floatstatus_barrier((char*)dimensions);
++    npy_clear_floatstatus_barrier("");
+ }
+ /**end repeat1**/
+ 
+@@ -1932,7 +1932,7 @@ NPY_NO_EXPORT void
+             *((@type@ *)op1) = in1;
+         }
+     }
+-    npy_clear_floatstatus_barrier((char*)dimensions);
++    npy_clear_floatstatus_barrier("");
+ }
+ /**end repeat1**/
+ 
+@@ -1960,7 +1960,7 @@ NPY_NO_EXPORT void
+             *((@type@ *)op1) = (in1 @OP@ in2 || npy_isnan(in2)) ? in1 : in2;
+         }
+     }
+-    npy_clear_floatstatus_barrier((char*)dimensions);
++    npy_clear_floatstatus_barrier("");
+ }
+ /**end repeat1**/
+ 
+@@ -2050,7 +2050,7 @@ NPY_NO_EXPORT void
+             *((@type@ *)op1) = tmp + 0;
+         }
+     }
+-    npy_clear_floatstatus_barrier((char*)dimensions);
++    npy_clear_floatstatus_barrier("");
+ }
+ 
+ NPY_NO_EXPORT void
+@@ -2236,7 +2236,7 @@ HALF_@kind@(char **args, npy_intp *dimensions, npy_intp *steps, void *NPY_UNUSED
+         const npy_half in1 = *(npy_half *)ip1;
+         *((npy_bool *)op1) = @func@(in1) != 0;
+     }
+-    npy_clear_floatstatus_barrier((char*)dimensions);
++    npy_clear_floatstatus_barrier("");
+ }
+ /**end repeat**/
+ 
+@@ -2741,7 +2741,7 @@ NPY_NO_EXPORT void
+         const @ftype@ in1i = ((@ftype@ *)ip1)[1];
+         *((npy_bool *)op1) = @func@(in1r) @OP@ @func@(in1i);
+     }
+-    npy_clear_floatstatus_barrier((char*)dimensions);
++    npy_clear_floatstatus_barrier("");
+ }
+ /**end repeat1**/
+ 
+@@ -2848,7 +2848,7 @@ NPY_NO_EXPORT void
+         ((@ftype@ *)op1)[0] = in1r;
+         ((@ftype@ *)op1)[1] = in1i;
+     }
+-    npy_clear_floatstatus_barrier((char*)dimensions);
++    npy_clear_floatstatus_barrier("");
+ }
+ /**end repeat1**/
+ 
+@@ -2873,7 +2873,7 @@ NPY_NO_EXPORT void
+             ((@ftype@ *)op1)[1] = in2i;
+         }
+     }
+-    npy_clear_floatstatus_barrier((char*)dimensions);
++    npy_clear_floatstatus_barrier("");
+ }
+ /**end repeat1**/
+ 
+diff --git a/numpy/core/src/umath/reduction.c b/numpy/core/src/umath/reduction.c
+index 791d369..317ee71 100644
+--- a/numpy/core/src/umath/reduction.c
++++ b/numpy/core/src/umath/reduction.c
+@@ -534,7 +534,7 @@ PyUFunc_ReduceWrapper(PyArrayObject *operand, PyArrayObject *out,
+     }
+ 
+     /* Start with the floating-point exception flags cleared */
+-    npy_clear_floatstatus_barrier((char*)&iter);
++    npy_clear_floatstatus_barrier("");
+ 
+     if (NpyIter_GetIterSize(iter) != 0) {
+         NpyIter_IterNextFunc *iternext;
+diff --git a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalarmath.c.src
+index a7987ac..aae7c30 100644
+--- a/numpy/core/src/umath/scalarmath.c.src
++++ b/numpy/core/src/umath/scalarmath.c.src
+@@ -846,7 +846,7 @@ static PyObject *
+     }
+ 
+ #if @fperr@
+-    npy_clear_floatstatus_barrier((char*)&out);
++    npy_clear_floatstatus_barrier("");
+ #endif
+ 
+     /*
+@@ -861,7 +861,7 @@ static PyObject *
+ 
+ #if @fperr@
+     /* Check status flag.  If it is set, then look up what to do */
+-    retstatus = npy_get_floatstatus_barrier((char*)&out);
++    retstatus = npy_get_floatstatus_barrier("");
+     if (retstatus) {
+         int bufsize, errmask;
+         PyObject *errobj;
+@@ -991,7 +991,7 @@ static PyObject *
+         return Py_NotImplemented;
+     }
+ 
+-    npy_clear_floatstatus_barrier((char*)&out);
++    npy_clear_floatstatus_barrier("");
+ 
+     /*
+      * here we do the actual calculation with arg1 and arg2
+@@ -1006,7 +1006,7 @@ static PyObject *
+     }
+ 
+     /* Check status flag.  If it is set, then look up what to do */
+-    retstatus = npy_get_floatstatus_barrier((char*)&out);
++    retstatus = npy_get_floatstatus_barrier("");
+     if (retstatus) {
+         int bufsize, errmask;
+         PyObject *errobj;
+@@ -1070,7 +1070,7 @@ static PyObject *
+         return Py_NotImplemented;
+     }
+ 
+-    npy_clear_floatstatus_barrier((char*)&out);
++    npy_clear_floatstatus_barrier("");
+ 
+     /*
+      * here we do the actual calculation with arg1 and arg2
+@@ -1134,7 +1134,7 @@ static PyObject *
+         return Py_NotImplemented;
+     }
+ 
+-    npy_clear_floatstatus_barrier((char*)&out);
++    npy_clear_floatstatus_barrier("");
+ 
+     /*
+      * here we do the actual calculation with arg1 and arg2
+@@ -1148,7 +1148,7 @@ static PyObject *
+     }
+ 
+     /* Check status flag.  If it is set, then look up what to do */
+-    retstatus = npy_get_floatstatus_barrier((char*)&out);
++    retstatus = npy_get_floatstatus_barrier("");
+     if (retstatus) {
+         int bufsize, errmask;
+         PyObject *errobj;
+diff --git a/numpy/core/src/umath/simd.inc.src b/numpy/core/src/umath/simd.inc.src
+index 4bb8569..8b120d7 100644
+--- a/numpy/core/src/umath/simd.inc.src
++++ b/numpy/core/src/umath/simd.inc.src
+@@ -1047,7 +1047,7 @@ sse2_@kind@_@TYPE@(@type@ * ip, @type@ * op, const npy_intp n)
+         i += 2 * stride;
+ 
+         /* minps/minpd will set invalid flag if nan is encountered */
+-        npy_clear_floatstatus_barrier((char*)&c1);
++        npy_clear_floatstatus_barrier("");
+         LOOP_BLOCKED(@type@, 2 * VECTOR_SIZE_BYTES) {
+             @vtype@ v1 = @vpre@_load_@vsuf@((@type@*)&ip[i]);
+             @vtype@ v2 = @vpre@_load_@vsuf@((@type@*)&ip[i + stride]);
+@@ -1056,7 +1056,7 @@ sse2_@kind@_@TYPE@(@type@ * ip, @type@ * op, const npy_intp n)
+         }
+         c1 = @vpre@_@VOP@_@vsuf@(c1, c2);
+ 
+-        if (npy_get_floatstatus_barrier((char*)&c1) & NPY_FPE_INVALID) {
++        if (npy_get_floatstatus_barrier("") & NPY_FPE_INVALID) {
+             *op = @nan@;
+         }
+         else {
+@@ -1069,7 +1069,7 @@ sse2_@kind@_@TYPE@(@type@ * ip, @type@ * op, const npy_intp n)
+         /* Order of operations important for MSVC 2015 */
+         *op  = (*op @OP@ ip[i] || npy_isnan(*op)) ? *op : ip[i];
+     }
+-    npy_clear_floatstatus_barrier((char*)op);
++    npy_clear_floatstatus_barrier("");
+ }
+ /**end repeat1**/
+ 
+diff --git a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_object.c
+index d1b029c..2bdff3d 100644
+--- a/numpy/core/src/umath/ufunc_object.c
++++ b/numpy/core/src/umath/ufunc_object.c
+@@ -107,7 +107,7 @@ PyUFunc_getfperr(void)
+      * keep it so just in case third party code relied on the clearing
+      */
+     char param = 0;
+-    return npy_clear_floatstatus_barrier(&param);
++    return npy_clear_floatstatus_barrier("");
+ }
+ 
+ #define HANDLEIT(NAME, str) {if (retstatus & NPY_FPE_##NAME) {          \
+@@ -141,7 +141,7 @@ PyUFunc_checkfperr(int errmask, PyObject *errobj, int *first)
+ {
+     /* clearing is done for backward compatibility */
+     int retstatus;
+-    retstatus = npy_clear_floatstatus_barrier((char*)&retstatus);
++    retstatus = npy_clear_floatstatus_barrier("");
+ 
+     return PyUFunc_handlefperr(errmask, errobj, retstatus, first);
+ }
+@@ -153,7 +153,7 @@ NPY_NO_EXPORT void
+ PyUFunc_clearfperr()
+ {
+     char param = 0;
+-    npy_clear_floatstatus_barrier(&param);
++    npy_clear_floatstatus_barrier("");
+ }
+ 
+ /*
+@@ -2979,7 +2979,7 @@ PyUFunc_GeneralizedFunction(PyUFuncObject *ufunc,
+ #endif
+ 
+     /* Start with the floating-point exception flags cleared */
+-    npy_clear_floatstatus_barrier((char*)&iter);
++    npy_clear_floatstatus_barrier("");
+ 
+     NPY_UF_DBG_PRINT("Executing inner loop\n");
+ 
+@@ -3237,7 +3237,7 @@ PyUFunc_GenericFunction(PyUFuncObject *ufunc,
+ 
+         /* Set up the flags */
+ 
+-        npy_clear_floatstatus_barrier((char*)&ufunc);
++        npy_clear_floatstatus_barrier("");
+         retval = execute_fancy_ufunc_loop(ufunc, wheremask,
+                             op, dtypes, order,
+                             buffersize, arr_prep, full_args, op_flags);
+@@ -3257,7 +3257,7 @@ PyUFunc_GenericFunction(PyUFuncObject *ufunc,
+         }
+ 
+         /* check_for_trivial_loop on half-floats can overflow */
+-        npy_clear_floatstatus_barrier((char*)&ufunc);
++        npy_clear_floatstatus_barrier("");
+ 
+         retval = execute_legacy_ufunc_loop(ufunc, trivial_loop_ok,
+                             op, dtypes, order,
 diff --git a/numpy/ctypeslib.py b/numpy/ctypeslib.py
 index 535ea76..2ecf3a2 100644
 --- a/numpy/ctypeslib.py
@@ -323,6 +855,28 @@ index 66c07c9..847116f 100644
          if not lapack_info:
              print("### Warning:  Using unoptimized lapack ###")
              return all_sources
+diff --git a/numpy/linalg/umath_linalg.c.src b/numpy/linalg/umath_linalg.c.src
+index 9fc68a7..6c04f96 100644
+--- a/numpy/linalg/umath_linalg.c.src
++++ b/numpy/linalg/umath_linalg.c.src
+@@ -386,7 +386,7 @@ static NPY_INLINE int
+ get_fp_invalid_and_clear(void)
+ {
+     int status;
+-    status = npy_clear_floatstatus_barrier((char*)&status);
++    status = npy_clear_floatstatus_barrier("");
+     return !!(status & NPY_FPE_INVALID);
+ }
+ 
+@@ -397,7 +397,7 @@ set_fp_invalid_or_clear(int error_occurred)
+         npy_set_floatstatus_invalid();
+     }
+     else {
+-        npy_clear_floatstatus_barrier((char*)&error_occurred);
++        npy_clear_floatstatus_barrier("");
+     }
+ }
+ 
 diff --git a/numpy/tests/test_ctypeslib.py b/numpy/tests/test_ctypeslib.py
 index 521208c..b9fa4c3 100644
 --- a/numpy/tests/test_ctypeslib.py
