@@ -141,7 +141,7 @@ public class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
                     @Exclusive @Cached PythonObjectFactory factory) {
-        return factory.createList(new Object[] { CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED });
+        return factory.createList(new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED});
     }
 
     @ExportMessage
