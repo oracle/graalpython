@@ -484,7 +484,7 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
         Object doManaged(PythonManagedClass self,
-                         @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
             PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createMappingproxy(self);

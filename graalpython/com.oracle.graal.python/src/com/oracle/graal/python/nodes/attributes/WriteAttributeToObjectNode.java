@@ -108,9 +108,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "isAttrWritable(exactBuiltinInstanceProfile, object, key)",
                     "isHiddenKey(key) || !lib.hasDict(object)"
-        }, limit = "1")
+    }, limit = "1")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
-                                            @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile,
                     @Exclusive @Cached @SuppressWarnings("unused") IsBuiltinClassProfile exactBuiltinInstanceProfile) {
@@ -122,9 +122,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "lib.hasDict(object)"
-        }, limit = "1")
+    }, limit = "1")
     protected boolean writeToDict(PythonObject object, Object key, Object value,
-                                  @CachedLibrary("object") PythonObjectLibrary lib,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Cached HashingStorageNodes.SetItemNode setItemNode,
@@ -151,7 +151,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     @Specialization(guards = "isErrorCase(exactBuiltinInstanceProfile, lib, object, key)")
     protected static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
-                                     @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Exclusive @Cached @SuppressWarnings("unused") IsBuiltinClassProfile exactBuiltinInstanceProfile,
                     @Exclusive @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);
@@ -188,9 +188,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = {
                         "!isHiddenKey(key)",
                         "lib.hasDict(object)"
-            }, replaces = {"writeToDict"}, limit = "1")
+        }, replaces = {"writeToDict"}, limit = "1")
         protected boolean writeToDictUncached(PythonObject object, Object key, Object value,
-                                              @CachedLibrary("object") PythonObjectLibrary lib,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
                         @Cached CallNode callSetItem,
                         @Cached PRaiseNode raiseNode,

@@ -1938,7 +1938,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object globals(VirtualFrame frame,
-                              @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             PythonObject globals = callerFrame.getGlobals();
             if (condProfile.profile(globals instanceof PythonModule)) {

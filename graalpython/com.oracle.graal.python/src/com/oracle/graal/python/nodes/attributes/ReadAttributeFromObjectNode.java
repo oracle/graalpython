@@ -97,7 +97,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     "!lib.hasDict(object) || isHiddenKey(key)"
     }, limit = "1")
     protected Object readFromDynamicStorage(PythonObject object, Object key,
-                                            @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
@@ -121,7 +121,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     "hasBuiltinDict(cachedObject, lib, isBuiltinDict, isBuiltinMappingproxy)",
     }, assumptions = "singleContextAssumption", limit = "1")
     protected Object readFromBuiltinModuleDict(@SuppressWarnings("unused") PythonModule object, String key,
-                                               @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
                     @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,
                     @SuppressWarnings("unused") @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
@@ -135,7 +135,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // read from a builtin dict
     @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib, isBuiltinDict, isBuiltinMappingproxy)"}, limit = "1")
     protected Object readFromBuiltinDict(PythonObject object, String key,
-                                         @CachedLibrary("object") PythonObjectLibrary lib,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
@@ -147,9 +147,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "lib.hasDict(object)"
-        }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"}, limit = "1")
+    }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"}, limit = "1")
     protected Object readFromDict(PythonObject object, Object key,
-                                  @CachedLibrary("object") PythonObjectLibrary lib,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
         Object value = getItemNode.passState().execute(getDictStorage.execute(lib.getDict(object)), key);

@@ -572,7 +572,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"}, limit = "1")
         Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
-                    @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
             PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -588,7 +588,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"}, limit = "1")
         Object dict(PythonObject self, PDict dict,
-                    @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {

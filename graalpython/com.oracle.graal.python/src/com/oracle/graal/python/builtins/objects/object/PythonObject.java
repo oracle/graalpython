@@ -95,7 +95,7 @@ public class PythonObject extends PythonAbstractObject {
 
         @Specialization(assumptions = "storingClassesInShapes")
         public static void setSingle(PythonObject self, PythonAbstractClass cls,
-                    @SuppressWarnings("unused") @Cached(value = "getSingleContextAssumption()", allowUncached = true) Assumption storingClassesInShapes) {
+                        @SuppressWarnings("unused") @Cached(value = "getSingleContextAssumption()", allowUncached = true) Assumption storingClassesInShapes) {
             self.storedPythonClass = cls;
             PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(self.storage, cls);
         }
@@ -177,17 +177,17 @@ public class PythonObject extends PythonAbstractObject {
     public abstract static class HasDict {
         @Specialization(guards = {"receiver.getStorage().getShape() == cachedShape", "prop == null"}, assumptions = "layoutAssumption", limit = "1")
         public static boolean hasNoDict(PythonObject receiver,
-                            @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
-                            @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                            @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
+                        @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
+                        @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                        @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
             return false;
         }
 
         @Specialization(guards = {"receiver.getStorage().getShape() == cachedShape", "prop != null"}, assumptions = "layoutAssumption", limit = "1")
         public static boolean hasDict(PythonObject receiver,
-                            @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
-                            @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                            @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
+                        @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
+                        @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                        @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
             return true;
         }
 
@@ -203,9 +203,9 @@ public class PythonObject extends PythonAbstractObject {
     public abstract static class GetDict {
         @Specialization(guards = {"receiver.getStorage().getShape() == cachedShape", "prop == null"}, assumptions = "layoutAssumption", limit = "1")
         public static PHashingCollection getNoDict(PythonObject receiver,
-                            @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
-                            @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                            @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
+                        @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
+                        @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                        @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
             return null;
         }
 
@@ -217,7 +217,7 @@ public class PythonObject extends PythonAbstractObject {
 
     @ExportMessage
     public final void setDict(PHashingCollection dict,
-                @Cached WriteAttributeToDynamicObjectNode writeNode) {
+                    @Cached WriteAttributeToDynamicObjectNode writeNode) {
         writeNode.execute(storage, HAS_DICT, true);
         this.dict = dict;
     }

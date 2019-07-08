@@ -236,7 +236,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
         PNone dict(PFunction self, PHashingCollection mapping,
-                    @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
             try {
                 lib.setDict(self, mapping);
             } catch (UnsupportedMessageException e) {
@@ -248,7 +248,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(mapping)", limit = "1")
         Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping,
-                    @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
             PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
