@@ -74,7 +74,7 @@ local const = import 'constants.libsonnet';
 
     local labsjdk8 = {
         downloads +: {
-            JAVA_HOME: utils.download("oraclejdk", "8u212-jvmci-20-b04"),
+            JAVA_HOME: utils.download("oraclejdk", "8u212-jvmci-19.2-b01"),
             EXTRA_JAVA_HOMES : {
                 pathlist: [utils.download("oraclejdk", "11+28")]
             },
