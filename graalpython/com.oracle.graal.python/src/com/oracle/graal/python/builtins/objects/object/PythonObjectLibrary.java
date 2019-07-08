@@ -61,11 +61,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     @Abstract(ifExported = "hasDict")
-    public PHashingCollection getOrCreateDict(PythonAbstractObject receiver) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
-    }
-
-    @Abstract(ifExported = "hasDict")
     public void setDict(PythonAbstractObject receiver, PHashingCollection dict) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
