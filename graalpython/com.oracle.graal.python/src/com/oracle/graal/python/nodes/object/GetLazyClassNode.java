@@ -167,7 +167,7 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     }
 
     protected static boolean isBuiltinType(Shape shape) {
-        return PythonObject.getLazyPythonClass(shape.getObjectType()) instanceof PythonBuiltinClassType;
+        return PythonObject.getLazyClassFromObjectType(shape.getObjectType()) instanceof PythonBuiltinClassType;
     }
 
     // we can at least cache builtin types in the multi-context case

@@ -144,7 +144,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
                         @Cached("create()") BranchProfile errorSlotsBranch,

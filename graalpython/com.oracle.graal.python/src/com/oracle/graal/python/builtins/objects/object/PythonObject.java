@@ -43,7 +43,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -88,18 +87,27 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     @ExportMessage
-    public final void setLazyPythonClass(PythonAbstractClass cls,
-                                         @SuppressWarnings("unused") @CachedLanguage PythonLanguage language,
-                                         @Cached("language.singleContextAssumption") Assumption storingClassesInShapes) {
-        storedPythonClass = cls;
-        if (storingClassesInShapes.isValid()) {
-            PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(storage, cls);
-        } else {
-            if (PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(storage) != null) {
+    @GenerateUncached
+    public abstract static class SetLazyPythonClass {
+        public static Assumption getSingleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        @Specialization(assumptions = "storingClassesInShapes")
+        public static void setSingle(PythonObject self, PythonAbstractClass cls,
+                    @SuppressWarnings("unused") @Cached(value = "getSingleContextAssumption()", allowUncached = true) Assumption storingClassesInShapes) {
+            self.storedPythonClass = cls;
+            PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(self.storage, cls);
+        }
+
+        @Specialization
+        public static void setMultiContext(PythonObject self, PythonAbstractClass cls) {
+            self.storedPythonClass = cls;
+            if (PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(self.storage) != null) {
                 // for the builtin class enums, we now should change the shape
                 // to the generic one that just doesn't store the class
-                Shape shape = storage.getShape();
-                storage.setShapeAndGrow(shape, shape.changeType(emptyShape.getObjectType()));
+                Shape shape = self.storage.getShape();
+                self.storage.setShapeAndGrow(shape, shape.changeType(emptyShape.getObjectType()));
             }
         }
     }
@@ -240,7 +248,7 @@ public class PythonObject extends PythonAbstractObject {
         return emptyShape;
     }
 
-    public static LazyPythonClass getLazyPythonClass(ObjectType type) {
+    public static LazyPythonClass getLazyClassFromObjectType(ObjectType type) {
         return PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(type);
     }
 }
