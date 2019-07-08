@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
@@ -64,6 +65,8 @@ public abstract class PythonObjectLibrary extends Library {
     public void setDict(PythonAbstractObject receiver, PHashingCollection dict) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
+
+    public abstract void setLazyPythonClass(PythonAbstractObject receiver, LazyPythonClass cls);
 
     static final LibraryFactory<PythonObjectLibrary> FACTORY = LibraryFactory.resolve(PythonObjectLibrary.class);
 

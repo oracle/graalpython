@@ -43,6 +43,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -86,7 +87,10 @@ public class PythonObject extends PythonAbstractObject {
         }
     }
 
-    public final void setLazyPythonClass(PythonAbstractClass cls, Assumption storingClassesInShapes) {
+    @ExportMessage
+    public final void setLazyPythonClass(PythonAbstractClass cls,
+                                         @SuppressWarnings("unused") @CachedLanguage PythonLanguage language,
+                                         @Cached("language.singleContextAssumption") Assumption storingClassesInShapes) {
         storedPythonClass = cls;
         if (storingClassesInShapes.isValid()) {
             PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(storage, cls);
