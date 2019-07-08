@@ -69,7 +69,37 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void expression05() throws Exception {
         checkTreeResult("a[...]");
     }
+    
+    @Test
+    public void setComprehensions01() throws Exception {
+        checkTreeResult("{x for x in seq}");
+    }
+    
+    @Test
+    public void setComprehensions02() throws Exception {
+        checkTreeResult("{f(x) for x in seq}");
+    }
+    
+    @Test
+    public void setComprehensions03() throws Exception {
+        checkTreeResult("{f(x) for x in seq if condition(x)}");
+    }
 
+    @Test
+    public void dictComprehensions01() throws Exception {
+        checkTreeResult("{x:x for x in seq}");
+    }
+    
+    @Test
+    public void dictComprehensions02() throws Exception {
+        checkTreeResult("{x**2:x[3] for x in seq if condition(x)}");
+    }
+    
+    @Test
+    public void dictComprehensions03() throws Exception {
+        checkTreeResult("{x:x for x in seq1 for y in seq2 if condition(x, y)}");
+    }
+    
     @Test
     public void generator01() throws Exception {
         checkScopeAndTree("[x**3 for x in range(20)]");

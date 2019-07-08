@@ -97,4 +97,12 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                 "  c = 10\n" +
                 "  (x + c for x in range(10))");
     }
+    
+    @Test
+    public void generator04() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "  yield 1\n" +
+                "  yield 2");
+    }
 }
