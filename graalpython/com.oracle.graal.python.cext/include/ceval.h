@@ -94,13 +94,8 @@ PyAPI_FUNC(int) Py_MakePendingCalls(void);
 PyAPI_FUNC(void) Py_SetRecursionLimit(int);
 PyAPI_FUNC(int) Py_GetRecursionLimit(void);
 
-#define Py_EnterRecursiveCall(where)  \
-            (_Py_MakeRecCheck(PyThreadState_GET()->recursion_depth) &&  \
-             _Py_CheckRecursiveCall(where))
-#define Py_LeaveRecursiveCall()                         \
-    do{ if(_Py_MakeEndRecCheck(PyThreadState_GET()->recursion_depth))  \
-      PyThreadState_GET()->overflowed = 0;  \
-    } while(0)
+#define Py_EnterRecursiveCall(where) 0
+#define Py_LeaveRecursiveCall()
 PyAPI_FUNC(int) _Py_CheckRecursiveCall(const char *where);
 
 /* Due to the macros in which it's used, _Py_CheckRecursionLimit is in
@@ -130,13 +125,9 @@ PyAPI_DATA(int) _Py_CheckRecursionLimit;
 #define _Py_MakeEndRecCheck(x) \
     (--(x) < _Py_RecursionLimitLowerWaterMark(_Py_CheckRecursionLimit))
 
-#define Py_ALLOW_RECURSION \
-  do { unsigned char _old = PyThreadState_GET()->recursion_critical;\
-    PyThreadState_GET()->recursion_critical = 1;
+#define Py_ALLOW_RECURSION
 
-#define Py_END_ALLOW_RECURSION \
-    PyThreadState_GET()->recursion_critical = _old; \
-  } while(0);
+#define Py_END_ALLOW_RECURSION
 
 PyAPI_FUNC(const char *) PyEval_GetFuncName(PyObject *);
 PyAPI_FUNC(const char *) PyEval_GetFuncDesc(PyObject *);

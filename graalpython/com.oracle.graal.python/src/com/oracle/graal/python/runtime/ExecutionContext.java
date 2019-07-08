@@ -113,17 +113,24 @@ public abstract class ExecutionContext {
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
             if (calleeRootNode.needsExceptionState()) {
-                PException curExc = PArguments.getException(frame);
-                if (curExc == null) {
-                    // bad, but we must provide the exception state
+                PException curExc = null;
+                if (isPythonFrame(frame, callNode)) {
+                    curExc = PArguments.getException(frame);
+                    if (curExc == null) {
+                        // bad, but we must provide the exception state
 
-                    // TODO: frames: check that this also set
-                    // needsExceptionState on our own root node
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                    curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                    // now, set in our args, such that we won't do this again
-                    PArguments.setException(frame, curExc);
+                        // TODO: frames: check that this also set
+                        // needsExceptionState on our own root node
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                        curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                        // now, set in our args, such that we won't do this again
+                        PArguments.setException(frame, curExc);
+                    }
+                } else {
+                    // If we're here, it can only be because some top-level call
+                    // inside Python led us here
+                    curExc = PException.NO_EXCEPTION;
                 }
                 PArguments.setException(callArguments, curExc);
             }
