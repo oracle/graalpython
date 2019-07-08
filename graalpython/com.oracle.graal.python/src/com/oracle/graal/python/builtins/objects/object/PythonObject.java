@@ -107,6 +107,7 @@ public class PythonObject extends PythonAbstractObject {
     /**
      * This is usually final, a fact may be optimized further if the storage turns into a constant.
      */
+    @ExportMessage
     public final LazyPythonClass getLazyPythonClass() {
         return storedPythonClass;
     }
