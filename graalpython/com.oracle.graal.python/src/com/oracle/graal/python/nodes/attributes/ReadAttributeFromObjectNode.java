@@ -41,12 +41,10 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -129,7 +127,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
                     @Cached HashingStorageNodes.GetItemNode getItemNode) {
-        return readDirectlyFromBuiltinDict(cachedDict, key, getDictStorage, getItemNode);
+        return readDirectlyFromBuiltinDict((PHashingCollection) cachedDict, key, getDictStorage, getItemNode);
     }
 
     // read from a builtin dict
@@ -188,12 +186,12 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     @GenerateUncached
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
-        @Specialization(guards = {"!isHiddenKey(key)"}, insertBefore = "readForeign")
-        protected Object readNativeObject(PythonNativeObject object, Object key,
+        @Specialization(guards = {"!isHiddenKey(key)"}, insertBefore = "readForeign", limit = "1")
+        protected Object readNativeObject(PythonAbstractNativeObject object, Object key,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                        @Cached("create()") GetObjectDictNode getNativeDict,
                         @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
-            return readNative(key, getNativeDict.execute(object), getItemNode, getDictStorage);
+            return readNative(key, lib.getDict(object), getItemNode, getDictStorage);
         }
 
         @Fallback
@@ -243,7 +241,12 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                 }
             }
         } else if (object instanceof PythonAbstractNativeObject) {
-            Object d = forceType ? GetTypeMemberNode.getUncached().execute(object, NativeMemberNames.TP_DICT) : GetObjectDictNode.getUncached().execute(object);
+            Object d = null;
+            if (forceType) {
+                d = GetTypeMemberNode.getUncached().execute(object, NativeMemberNames.TP_DICT);
+            } else {
+                d = PythonObjectLibrary.getUncached().getDict((PythonAbstractNativeObject) object);
+            }
             Object value = null;
             if (d instanceof PHashingCollection) {
                 HashingStorage dictStorage = ((PHashingCollection) d).getDictStorage();

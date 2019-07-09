@@ -44,12 +44,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.Shape;
 
 @TypeSystemReference(PythonTypes.class)
@@ -146,12 +147,6 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected static LazyPythonClass getIt(PythonAbstractNativeObject object,
-                    @Cached("create()") GetNativeClassNode getNativeClassNode) {
-        return getNativeClassNode.execute(object);
-    }
-
-    @Specialization
     protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
         return PythonBuiltinClassType.PInt;
     }
@@ -179,8 +174,9 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"getPythonClassCached", "getPythonClassCachedSingle"})
-    protected static LazyPythonClass getPythonClassGeneric(PythonObject object) {
-        return object.getLazyPythonClass();
+    protected static LazyPythonClass getPythonClassGeneric(PythonAbstractObject object,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        return lib.getLazyPythonClass(object);
     }
 
     @Specialization(guards = "isForeignObject(object)")

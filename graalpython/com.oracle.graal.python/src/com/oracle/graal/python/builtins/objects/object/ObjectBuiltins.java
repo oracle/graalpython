@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -598,11 +597,11 @@ public class ObjectBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isNoValue(none)")
-        Object dict(PythonNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") CExtNodes.GetObjectDictNode getDictNode) {
-            Object dict = getDictNode.execute(self);
-            if (dict == PNone.NO_VALUE) {
+        @Specialization(guards = "isNoValue(none)", limit = "1")
+        Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
+            if (dict == null) {
                 raise(self, none);
             }
             return dict;

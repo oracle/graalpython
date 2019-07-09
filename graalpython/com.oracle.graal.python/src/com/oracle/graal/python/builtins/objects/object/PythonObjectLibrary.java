@@ -66,7 +66,7 @@ public abstract class PythonObjectLibrary extends Library {
         throw UnsupportedMessageException.create();
     }
 
-    public abstract void getLazyPythonClass(PythonAbstractObject receiver);
+    public abstract LazyPythonClass getLazyPythonClass(PythonAbstractObject receiver);
 
     public abstract void setLazyPythonClass(PythonAbstractObject receiver, LazyPythonClass cls);
 

@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -174,12 +173,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     protected abstract static class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
-        @Specialization(guards = {"!isHiddenKey(key)"})
+        @Specialization(guards = {"!isHiddenKey(key)"}, limit = "1")
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
-                        @Cached GetObjectDictNode getNativeDict,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PRaiseNode raiseNode) {
-            return writeNativeGeneric(object, key, value, getNativeDict.execute(object), setItemNode, raiseNode);
+            return writeNativeGeneric(object, key, value, lib.getDict(object), setItemNode, raiseNode);
         }
     }
 
@@ -200,13 +199,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
             return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, dict);
         }
 
-        @Specialization(guards = {"!isHiddenKey(key)"})
+        @Specialization(guards = {"!isHiddenKey(key)"}, limit = "1")
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
-                        @Cached GetObjectDictNode getNativeDict,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
                         @Cached CallNode callSetItem,
                         @Cached PRaiseNode raiseNode) {
-            Object nativeDict = getNativeDict.execute(object);
+            PHashingCollection nativeDict = lib.getDict(object);
             return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, nativeDict);
         }
 
