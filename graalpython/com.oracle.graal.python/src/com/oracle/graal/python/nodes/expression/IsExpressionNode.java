@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -58,10 +57,9 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         return IsExpressionNodeGen.create(left, right);
     }
 
-    @Child private IsNode isNode = IsNodeGen.create();
-
     @Specialization
-    boolean doIt(Object left, Object right) {
+    boolean doIt(Object left, Object right,
+                 @Cached IsNode isNode) {
         return isNode.execute(left, right);
     }
 
