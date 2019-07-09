@@ -514,13 +514,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(lookupAttrNode.execute(object, __REPR__));
         }
 
-        @Specialization(guards = "eq(TP_DICT, key)")
+        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
         Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached PythonObjectFactory factory,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached(value = "createEquivalence()", uncached = "getSlowPathEquivalence()") Equivalence equivalence) {
+                        @Cached(value = "createEquivalence()", uncached = "getSlowPathEquivalence()") Equivalence equivalence) throws UnsupportedMessageException {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
-            PHashingCollection dict = object.getDict();
+            PHashingCollection dict = lib.getDict(object);
             HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
             if (dictStorage instanceof PythonObjectHybridDictStorage) {
                 // reuse the existing and modifiable storage
@@ -531,7 +532,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // copy all mappings to the new storage
                 storage.addAll(dictStorage, equivalence);
             }
-            object.setDict(factory.createMappingproxy(storage));
+            lib.setDict(object, factory.createMappingproxy(storage));
             return toSulongNode.execute(factory.createDict(storage));
         }
 
