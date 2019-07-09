@@ -59,7 +59,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
     @Specialization
     boolean doIt(Object left, Object right,
-                 @Cached IsNode isNode) {
+                    @Cached IsNode isNode) {
         return isNode.execute(left, right);
     }
 

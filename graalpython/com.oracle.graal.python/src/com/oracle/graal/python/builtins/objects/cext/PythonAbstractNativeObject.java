@@ -189,9 +189,9 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
 
         @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "singleContextAssumption")
         public static PythonAbstractClass getNativeClassCachedIdentity(PythonAbstractNativeObject object,
-                                                                       @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
-                                                                       @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
-                                                                       @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
+                        @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
+                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
+                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
             // happen. OTOH, CPython also has caches that can become invalid when someone just
@@ -201,17 +201,17 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
 
         @Specialization(guards = "cachedObject.equals(object)", limit = "1", assumptions = "singleContextAssumption")
         public static PythonAbstractClass getNativeClassCached(PythonAbstractNativeObject object,
-                                                        @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
-                                                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
-                                                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
+                        @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
+                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
+                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
             // TODO same as for 'getNativeClassCachedIdentity'
             return cachedClass;
         }
 
         @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"})
         public static PythonAbstractClass getNativeClass(PythonAbstractNativeObject object,
-                                                  @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
-                                                  @Exclusive @Cached ToJavaNode toJavaNode) {
+                        @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
+                        @Exclusive @Cached ToJavaNode toJavaNode) {
             // do not convert wrap 'object.object' since that is really the native pointer
             // object
             return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
