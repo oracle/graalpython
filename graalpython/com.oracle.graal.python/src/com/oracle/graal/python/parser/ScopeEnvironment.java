@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
+import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -367,7 +368,9 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         if (isCellInCurrentScope(name)) {
             return factory.createWriteLocalCell(right, slot);
         }
-        return factory.createWriteLocal(right, slot);
+        return currentScope.getScopeKind() != ScopeInfo.ScopeKind.Generator
+                ? factory.createWriteLocal(right, slot)
+                :  WriteGeneratorFrameVariableNode.create(slot, right);
     }
     
     private StatementNode getWriteNode(String name, ReadArgumentNode readNode) {

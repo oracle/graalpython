@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -54,10 +53,10 @@ import com.oracle.graal.python.parser.*;
 import com.oracle.graal.python.nodes.PNode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
+import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
@@ -79,10 +78,7 @@ import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
-import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
-import com.oracle.graal.python.nodes.generator.GeneratorForNode;
-import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
@@ -650,8 +646,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             body = (StatementNode)node.body.accept(this);
         }
         ExpressionNode doc = (new PythonNodeFactory.DocExtractor()).extract(body);
-        if (doc != null && body instanceof com.oracle.graal.python.nodes.control.BlockNode) {
-            StatementNode[] st = ((com.oracle.graal.python.nodes.control.BlockNode)body).getStatements();
+        if (doc != null && body instanceof BaseBlockNode) {
+            StatementNode[] st = ((BaseBlockNode)body).getStatements();
             if (st.length == 1) {
                 body = com.oracle.graal.python.nodes.control.BlockNode.create();
             } else {

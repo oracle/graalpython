@@ -49,7 +49,7 @@ import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.control.BlockNode;
+import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -321,8 +321,8 @@ public final class PythonNodeFactory {
         public StringLiteralNode extract(StatementNode node) {
             if (node instanceof ExpressionNode.ExpressionStatementNode) {
                 return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
-            } else if (node instanceof BlockNode) {
-                StatementNode[] statements = ((BlockNode)node).getStatements();
+            } else if (node instanceof BaseBlockNode) {
+                StatementNode[] statements = ((BaseBlockNode)node).getStatements();
                 if (statements != null && statements.length > 0) {
                     return extract(statements[0]);
                 }

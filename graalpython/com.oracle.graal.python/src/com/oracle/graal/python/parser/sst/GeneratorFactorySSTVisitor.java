@@ -49,7 +49,6 @@ import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
-import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -62,6 +61,7 @@ import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorForNode;
 import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
+import com.oracle.graal.python.nodes.generator.GeneratorWithNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.YieldFromNode;
@@ -71,7 +71,6 @@ import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
-import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonParser;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 import com.oracle.truffle.api.RootCallTarget;
@@ -301,6 +300,24 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         }
         return result;
     }
+    
+    @Override
+    public PNode visit(WithSSTNode node) {
+        int oldNumOfActiveFlags = numOfActiveFlags;
+        StatementNode body = (StatementNode)node.body.accept(this);
+        WriteNode asName = node.target == null ? null 
+                : (WriteNode)createWriteLocal((ExpressionNode)node.target.accept(this), scopeEnvironment.getReturnSlot());
+        ExpressionNode expression = (ExpressionNode)node.expression.accept(this);
+        PNode result = oldNumOfActiveFlags != numOfActiveFlags 
+                // if the body contains yield -> create Generator control node. 
+                ? new GeneratorWithNode(asName, body, expression, numOfActiveFlags++, numOfGeneratorForNode++, numOfActiveFlags++)
+                : nodeFactory.createWithNode(expression, asName, body);
+        if (node.startOffset > -1) {
+            result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        }
+        return result;
+    }
+    
     
     @Override
     public PNode visit(YieldExpressionSSTNode node) {

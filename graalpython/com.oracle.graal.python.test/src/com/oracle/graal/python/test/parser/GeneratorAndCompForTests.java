@@ -105,4 +105,52 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                 "  yield 1\n" +
                 "  yield 2");
     }
+    
+    @Test
+    public void param01() throws Exception {
+        checkScopeAndTree(
+                "def fn(a):\n" +
+                "  yield a\n" +
+                "  yield 2");
+    }
+    
+    @Test
+    public void param02() throws Exception {
+        checkScopeAndTree(
+                "def fn(a, b):\n" +
+                "  yield a\n" +
+                "  yield b");
+    }
+    
+    @Test
+    public void param03() throws Exception {
+        checkScopeAndTree(
+                "def fn(a, b=1):\n" +
+                "  yield a\n" +
+                "  yield b");
+    }
+    
+    @Test
+    public void param04() throws Exception {
+        checkScopeAndTree(
+                "def fn(*arg):\n" +
+                "  for p in arg:\n" +
+                "    yield p");
+    }
+    
+    @Test
+    public void param05() throws Exception {
+        checkScopeAndTree(
+                "def fn(**arg):\n" +
+                "  for p in arg:\n" +
+                "    yield p");
+    }
+    
+    @Test
+    public void doc01() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "  \"This is a doc\"\n" +
+                "  yield \"neco\"");
+    }
 }

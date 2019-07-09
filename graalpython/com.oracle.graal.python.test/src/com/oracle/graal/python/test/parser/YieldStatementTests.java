@@ -132,5 +132,34 @@ public class YieldStatementTests extends ParserTestBase {
                 "    if (yield):\n" +
                 "        yield x\n");
     }
+    
+    @Test
+    public void with01() throws Exception {
+        checkScopeAndTree(
+                "def gen():\n" +
+                "  with fn():\n" +
+                "    yield 12\n" +
+                "    yield 13");
+    }
+
+    @Test
+    public void with02() throws Exception {
+        checkScopeAndTree(
+                "def gen(a):\n" +
+                "  with a:\n" +
+                "    bla(p1, p2, p3)\n" +
+                "  with fn():\n" +
+                "    yield 12\n" +
+                "    yield 13");
+    }
+
+    @Test
+    public void with03() throws Exception {
+        checkScopeAndTree(
+                "def gen(a):\n" +
+                "  with a:\n" +
+                "    yield 12\n" +
+                "    yield 13");
+    }
 
 }
