@@ -74,4 +74,5 @@ public abstract class SpecialAttributeNames {
     public static final String __ITEMSIZE__ = "__itemsize__";
     public static final String __WEAKREF__ = "__weakref__";
     public static final String __WEAKLISTOFFSET__ = "__weaklistoffset__";
+    public static final String __ALL__ = "__all__";
 }
