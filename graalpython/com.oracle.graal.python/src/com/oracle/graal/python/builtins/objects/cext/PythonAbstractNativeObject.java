@@ -47,6 +47,7 @@ import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ImportCAPISymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
@@ -160,6 +161,8 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
                 Object javaDict = toJava.execute(interopLibrary.execute(func, toSulong.execute(self)));
                 if (javaDict instanceof PHashingCollection) {
                     return (PHashingCollection) javaDict;
+                } else if (javaDict == PNone.NO_VALUE) {
+                    return null;
                 } else {
                     throw raiseNode.raise(PythonBuiltinClassType.TypeError, "__dict__ must have been set to a dictionary, not a '%p'", javaDict);
                 }
