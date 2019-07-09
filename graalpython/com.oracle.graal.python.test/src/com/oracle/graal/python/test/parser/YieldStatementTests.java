@@ -43,118 +43,94 @@ package com.oracle.graal.python.test.parser;
 
 import org.junit.Test;
 
-public class AssignmentTests extends ParserTestBase{
-
+public class YieldStatementTests extends ParserTestBase {
+   
     @Test
-    public void assignment01() throws Exception {
-        checkTreeResult("a = 1");
+    public void yeild01() throws Exception {
+        checkScopeAndTree("def f(): yield 1");
     }
     
     @Test
-    public void assignment02() throws Exception {
-        checkTreeResult("a = b = 1");
+    public void yeild02() throws Exception {
+        checkScopeAndTree("def f(): yield");
     }
     
     @Test
-    public void assignment03() throws Exception {
-        checkTreeResult("a = 0\n"
-                + "b = a\n"
-                + "c = a + a + b");
+    public void yeild03() throws Exception {
+        checkScopeAndTree("def f(): x += yield");
+    }
+
+    @Test
+    public void yeild04() throws Exception {
+        checkScopeAndTree("def f(): x = yield 1");
+    }
+
+    @Test
+    public void yeild05() throws Exception {
+        checkScopeAndTree("def f(): x = y = yield 1");
     }
     
     @Test
-    public void assignment04() throws Exception {
-        checkTreeResult("a = b = c = d = e");
+    public void yeild06() throws Exception {
+        checkScopeAndTree("def f(): x = yield");
+    }
+
+    
+    @Test
+    public void yeild07() throws Exception {
+        checkScopeAndTree("def f(): x = y = yield");
+    }
+
+    
+    @Test
+    public void yeild08() throws Exception {
+        checkScopeAndTree("def f(): 1 + (yield)*2");
     }
     
     @Test
-    public void assignment05() throws Exception {
-        checkTreeResult("a, b, c = 1, 2, 3");
+    public void yeild09() throws Exception {
+        checkScopeAndTree("def f(): (yield 1)*2");
+    }
+
+    @Test
+    public void yeild10() throws Exception {
+        checkScopeAndTree("def f(): return; yield 1");
+    }
+
+    @Test
+    public void yeild11() throws Exception {
+        checkScopeAndTree("def f(): yield 1; return");
     }
     
     @Test
-    public void assignment06() throws Exception {
-        checkScopeAndTree("def fn():\n  a = b = c = d = e");
+    public void yeild12() throws Exception {
+        checkScopeAndTree("def f(): yield from 1");
     }
     
     @Test
-    public void assignment07() throws Exception {
-        checkScopeAndTree("def fn():\n  a, b, c = 1, 2, 3");
+    public void yeild13() throws Exception {
+        checkScopeAndTree("def f(): f((yield from 1))");
+    }
+
+    @Test
+    public void yeild14() throws Exception {
+        checkScopeAndTree("def f(): yield 1; return 1");
+    }
+
+    @Test
+    public void yeild15() throws Exception {
+        checkScopeAndTree(
+                "def f():\n" +
+                "    for x in range(30):\n"+
+                "        yield x\n");
     }
     
     @Test
-    public void assignment08() throws Exception {
-        checkTreeResult("a.b = 1");
-    }
-    
-    @Test
-    public void assignment09() throws Exception {
-        checkTreeResult("f().b = 1");
-    }
-    
-    @Test
-    public void augassign01() throws Exception {
-        checkTreeResult("a += b");
-    }
-    
-    @Test
-    public void augassign02() throws Exception {
-        checkTreeResult("a -= b");
-    }
-
-    @Test
-    public void augassign03() throws Exception {
-        checkTreeResult("a *= b");
-    }
-
-    @Test
-    public void augassign04() throws Exception {
-        checkTreeResult("a /= b");
-    }
-
-    @Test
-    public void augassign05() throws Exception {
-        checkTreeResult("a //= b");
-    }
-
-    @Test
-    public void augassign06() throws Exception {
-        checkTreeResult("a %= b");
-    }
-
-    @Test
-    public void augassign07() throws Exception {
-        checkTreeResult("a &= b");
-    }
-
-    @Test
-    public void augassign08() throws Exception {
-        checkTreeResult("a |= b");
-    }
-
-    @Test
-    public void augassign09() throws Exception {
-        checkTreeResult("a ^= b");
-    }
-
-    @Test
-    public void augassign10() throws Exception {
-        checkTreeResult("a <<= b");
-    }
-
-    @Test
-    public void augassign11() throws Exception {
-        checkTreeResult("a >>= b");
-    }   
-
-    @Test
-    public void augassign12() throws Exception {
-        checkTreeResult("a **= b");
-    }
-    
-    @Test
-    public void augassign13() throws Exception {
-        checkScopeAndTree("def fn (): x += 3");
+    public void yeild16() throws Exception {
+        checkScopeAndTree(
+                "def f():\n" +
+                "    if (yield):\n" +
+                "        yield x\n");
     }
 
 }

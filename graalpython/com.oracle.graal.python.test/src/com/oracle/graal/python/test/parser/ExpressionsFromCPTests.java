@@ -97,7 +97,7 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     
     @Test
     public void dictComprehensions03() throws Exception {
-        checkTreeResult("{x:x for x in seq1 for y in seq2 if condition(x, y)}");
+        checkScopeAndTree("{x:x for x in seq1 for y in seq2 if condition(x, y)}");
     }
     
     @Test

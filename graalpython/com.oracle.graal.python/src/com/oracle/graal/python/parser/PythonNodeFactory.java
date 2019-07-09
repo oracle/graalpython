@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.ClassSSTNode;
 import com.oracle.graal.python.parser.sst.CollectionSSTNode;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
@@ -65,6 +66,7 @@ import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
+import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -216,6 +218,11 @@ public final class PythonNodeFactory {
         return new AssignmentSSTNode(lhs, rhs, start, stop);
     }
     
+    public SSTNode createAugAssignment(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {
+        declareVar(lhs);
+        return new AugAssignmentSSTNode(lhs, operation, rhs, startOffset, endOffset);
+    }
+    
     private void declareVar(SSTNode value) {
         if (value instanceof VarLookupSSTNode) {
             String name = ((VarLookupSSTNode)value).getName();
@@ -239,7 +246,10 @@ public final class PythonNodeFactory {
         return new ForSSTNode(targets, iterator, body, containsContinue, startOffset, endOffset);
     }
     
-    
+    public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
+        scopeEnvironment.setToGeneratorScope();
+        return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
+    }
     
     public ModuleRootNode createModuleRoot(String name, ExpressionNode file, FrameDescriptor fd) {
         log(name, file);

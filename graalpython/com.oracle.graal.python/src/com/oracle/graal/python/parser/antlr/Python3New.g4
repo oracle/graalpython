@@ -563,7 +563,7 @@ expr_stmt
 			|
 			testlist { rhs = $testlist.result; rhsStopIndex = getStopIndex($testlist.stop);}
 		)
-		{ push(new AugAssignmentSSTNode($lhs.result, $augassign.text, rhs, getStartIndex($ctx), rhsStopIndex));}
+		{ push(factory.createAugAssignment($lhs.result, $augassign.text, rhs, getStartIndex($ctx), rhsStopIndex));}
 		|
 		{ int start = start(); }
 		{ SSTNode value = $lhs.result; }
@@ -647,7 +647,7 @@ return_stmt
 	'return'
 	{ SSTNode value = null; }
 	( testlist { value = $testlist.result; } )?
-	{ push(new ReturnSSTNode(value, getStartIndex($ctx), getStopIndex($testlist.stop)));}
+	{ push(new ReturnSSTNode(value, getStartIndex($ctx), getLastIndex($ctx)));}
 ;
 
 yield_stmt
@@ -1469,12 +1469,8 @@ returns [SSTNode result]
 	{ SSTNode[] conditions = getArray(start, SSTNode[].class); }
 	
 	(
-            {
-                factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
-            }
             comp_for [iterator, null, PythonBuiltinClassType.PGenerator, level + 1]
             { 
-                factory.leaveScope();
                 iterator = $comp_for.result; 
             }
 	)?
@@ -1484,8 +1480,21 @@ returns [SSTNode result]
 // not used in grammar, but may appear in "node" passed from Parser to Compiler
 encoding_decl: NAME;
 
-yield_expr returns [SSTNode result] locals [SSTNode value]: 'yield' (yield_arg { $value = $yield_arg.result; })? { $result = new YieldExpressionSSTNode($value, getStartIndex($ctx), $value.getEndOffset()); };
-yield_arg returns [SSTNode result]: 'from' test | testlist;
+yield_expr 
+returns [SSTNode result] 
+:   
+    { 
+        SSTNode value = null;
+        boolean isFrom = false; 
+    }
+    'yield' 
+        (
+            'from' test {value = $test.result; isFrom = true;}
+            |
+            testlist { value = $testlist.result; }
+        )?
+        { $result = factory.createYieldExpressionSSTNode(value, isFrom, getStartIndex($ctx), getLastIndex($ctx)); }
+;
 
 /*
  * lexer rules

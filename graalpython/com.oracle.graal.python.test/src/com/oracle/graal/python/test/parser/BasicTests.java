@@ -119,6 +119,11 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void simpleExpression06() throws Exception {
+        checkTreeResult("a[1]");
+    }
+    
+    @Test
     public void longString01() throws Exception {
         checkTreeResult("'''ahoj'''");
     }

@@ -41,30 +41,252 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.control.BlockNode;
+import com.oracle.graal.python.nodes.control.ForNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
+import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
+import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
+import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
+import com.oracle.graal.python.nodes.generator.GeneratorForNode;
 import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
+import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
+import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
+import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
+import com.oracle.graal.python.nodes.generator.YieldFromNode;
+import com.oracle.graal.python.nodes.generator.YieldNode;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
+import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
+import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
+import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonParser;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
 
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
-    private int activeFlagSlot;
+    private int numOfActiveFlags;
+    private int numOfGeneratorBlockNode;
+    private int numOfGeneratorForNode;
     
     public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source) {
         super(errors, scopeEnvironment, nodeFactory, source);
+        init();
     }
 
-    public void init(int activeFlagSlot) {
-        this.activeFlagSlot = activeFlagSlot;
+    public void init() {
+        this.numOfActiveFlags = 0;
+        this.numOfGeneratorBlockNode = 0;
+        this.numOfGeneratorForNode = 0;
+    }
+
+    public int getNumOfActiveFlags() {
+        return numOfActiveFlags;
+    }
+
+    public int getNumOfGeneratorBlockNode() {
+        return numOfGeneratorBlockNode;
+    }
+
+    public int getNumOfGeneratorForNode() {
+        return numOfGeneratorForNode;
     }
     
-    public int getActiveFlagSlot() {
-        return activeFlagSlot;
+    public int getNextNumOfActiveFlags() {
+        return numOfActiveFlags++;
+    }
+
+    public int getNextNumOfGeneratorBlockNode() {
+        return numOfGeneratorBlockNode++;
+    }
+
+    public int getNextNumOfGeneratorForNode() {
+        return numOfGeneratorForNode++;
+    }
+    
+    
+    @Override
+    protected StatementNode createBlock(StatementNode... statements) {
+        return new GeneratorBlockNode(statements, numOfGeneratorBlockNode++);
+    }
+
+    @Override
+    protected StatementNode createWriteLocal(ExpressionNode value, FrameSlot slot) {
+        return WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), value);
+    }
+    
+    @Override
+    public PNode visit(BlockSSTNode node) {
+        StatementNode[] statements = new StatementNode[node.statements.length];
+        for (int i =0; i < statements.length; i++) {
+            statements[i] = (StatementNode)node.statements[i].accept(this);
+        }
+        if (statements.length == 1) {
+            return BlockNode.create(statements);
+        } else {
+            return new GeneratorBlockNode(statements, numOfGeneratorBlockNode++);
+        }
+    }
+
+    @Override
+    public PNode visit(ForComprehensionSSTNode node) {
+        SSTNode sstIterator = node.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode)node.iterator).target : node.iterator;
+        scopeEnvironment.setCurrentScope(node.scope.getParent());
+        ExpressionNode iterator = (ExpressionNode)sstIterator.accept(this);
+        GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
+        getIterator.assignSourceSection(iterator.getSourceSection());
+        scopeEnvironment.setCurrentScope(node.scope);
+        
+        ExpressionNode targetExpression;
+        if (node.resultType == PythonBuiltinClassType.PDict) {
+            targetExpression = nodeFactory.createTupleLiteral((ExpressionNode)node.name.accept(this), (ExpressionNode)node.target.accept(this));
+        } else {
+            targetExpression = (ExpressionNode)node.target.accept(this);
+        }
+        YieldNode yieldExpression = new YieldNode(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), targetExpression));
+        yieldExpression.setFlagSlot(numOfActiveFlags++);
+        yieldExpression.assignSourceSection(targetExpression.getSourceSection());
+        
+        StatementNode body = createGeneratorExpressionBody(node, getIterator, yieldExpression.asStatement());
+
+        ExpressionNode returnTarget;
+        
+        if (body instanceof BlockNode) {
+            System.out.println(" NOt implemented block node");
+            returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+        } else {
+            returnTarget = new GeneratorReturnTargetNode(BlockNode.create(), body,  ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()), numOfActiveFlags++);
+        } 
+            
+//        ExpressionNode returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+        returnTarget.assignSourceSection(body.getSourceSection());
+//            int lineNum = ctx.getStart().getLine();
+
+        // createing generator expression
+        FrameDescriptor fd = node.scope.getFrameDescriptor();
+        String name = node.scope.getParent().getScopeId() + ".<locals>.<genexp>:" + source.getName() + ":" + node.line;
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
+        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(funcRoot);
+        ExpressionNode loopIterator = getIterator;
+        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, callTarget, loopIterator, fd, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), 
+                numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+        genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameDescriptor());
+        genExprDef.assignSourceSection(funcRoot.getSourceSection());
+        genExprDef.setEnclosingFrameGenerator(node.level != 0);
+        PNode result;
+        switch (node.resultType) {
+            case PList:
+                result = nodeFactory.callBuiltin(BuiltinNames.LIST, genExprDef);
+                break;
+            case PSet:
+                result = nodeFactory.callBuiltin(BuiltinNames.SET, genExprDef);
+                break;
+            case PDict:
+                result = nodeFactory.callBuiltin(BuiltinNames.DICT, genExprDef);
+                result.assignSourceSection(createSourceSection(node.name != null ? node.name.startOffset : node.target.startOffset, node.endOffset));
+                break;
+            default:
+                result = genExprDef;
+                break;
+        }
+        return result;
+    }
+    
+    private StatementNode createGeneratorExpressionBody(ForComprehensionSSTNode node, GetIteratorExpressionNode iterator, StatementNode yield) {
+        ExpressionNode condition = null;
+        if (node.conditions != null && node.conditions.length > 0) {
+            condition = (ExpressionNode)node.conditions[0].accept(this);
+            for(int i = 1; i < node.conditions.length; i++) {
+                condition = nodeFactory.createBinaryOperation("and", condition, (ExpressionNode)node.conditions[i].accept(this));
+            }
+        }
+        StatementNode body = yield;
+        if (condition != null) {
+            // TODO: Do we have to create empty block in the else branch?
+            body = GeneratorIfNode.create(nodeFactory.createYesNode(condition), body, nodeFactory.createBlock(), numOfActiveFlags++, numOfActiveFlags++);
+        } else if (node.iterator instanceof ForComprehensionSSTNode) {
+            ForComprehensionSSTNode forComp = (ForComprehensionSSTNode)node.iterator;
+            SSTNode sstIterator = forComp.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode)forComp.iterator).target : forComp.iterator;
+            ExpressionNode exprIterator = (ExpressionNode)sstIterator.accept(this);
+            GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(exprIterator);
+            getIterator.assignSourceSection(exprIterator.getSourceSection());
+            body = createGeneratorExpressionBody(forComp, getIterator, yield);
+        }
+        
+        StatementNode variable = makeWriteNode((ExpressionNode)node.variables[0].accept(this));
+        body = GeneratorForNode.create((WriteNode)variable, 
+                node.level == 0 ? ReadIndexedArgumentNode.create(0).asExpression() : iterator,
+                body, numOfGeneratorForNode++);
+        body.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return body;
+    }
+    
+    @Override
+    public PNode visit(ForSSTNode node) {
+        ExpressionNode[] targets = new ExpressionNode[node.targets.length];
+        for (int i = 0; i < targets.length; i++) {
+            targets[i] = (ExpressionNode)node.targets[i].accept(this);
+        }
+        PNode target;
+        if (targets.length == 1) {
+            target = targets[0];
+            if (!(target instanceof ReadNode || target instanceof TupleLiteralNode || target instanceof ListLiteralNode)) {
+                if (target instanceof StarredExpressionNode) {
+                    throw errors.raise(SyntaxError, "starred assignment target must be in a list or tuple");
+                } else {
+                // TODO handle this???
+//                String text = ctx.getText();
+//                if (environment.isNonlocal(text)) {
+//                    throw errors.raise(SyntaxError, "no binding for nonlocal variable \"%s\" found", text);
+//                }
+                    throw errors.raise(SyntaxError, "Cannot assign to %s", target);
+                }
+            }
+        } else {
+            target = nodeFactory.createObjectLiteral(targets);
+        }
+        StatementNode body = (StatementNode)node.body.accept(this);
+        if (node.containsContinue) {
+            body = nodeFactory.createContinueTarget(body);
+        }
+        ExpressionNode iterator = (ExpressionNode)node.iterator.accept(this);
+        iterator.assignSourceSection(createSourceSection(node.iterator.startOffset, node.iterator.endOffset));
+        GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
+        getIterator.assignSourceSection(iterator.getSourceSection());
+        StatementNode forNode = GeneratorForNode.create((WriteNode)makeWriteNode((ExpressionNode)target), getIterator, body, numOfGeneratorForNode++);
+                //new ForNode(body, makeWriteNode((ExpressionNode)target), getIterator);
+        // TODO: Do we need to create the ElseNode, even if the else branch is empty?
+        StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
+        StatementNode result;
+        if (!node.containsBreak) {
+             result = nodeFactory.createElse(forNode, elseBranch);
+        } else {
+            // TODO: this is also strange, that we create don't create ElseNode for break target. 
+            // At least it seems to be inconsistent. 
+            result = node.elseStatement == null ? 
+                    //TODO: Do we need to create the empty block here?
+                    nodeFactory.createBreakTarget(forNode, nodeFactory.createBlock(new StatementNode[0])) : 
+                    nodeFactory.createBreakTarget(forNode, elseBranch);
+        }
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
     }
     
     @Override
@@ -73,12 +295,29 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         StatementNode thenStatement = (StatementNode)node.thenStatement.accept(this);
         // TODO: Do we need to generate empty else block, if doesn't exist? The execution check if the else branch is empty anyway.
         StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
-        StatementNode result = GeneratorIfNode.create(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement, activeFlagSlot++, activeFlagSlot++);
+        StatementNode result = GeneratorIfNode.create(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement, numOfActiveFlags++, numOfActiveFlags++);
         if (node.startOffset != -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
         return result;
     }
- 
+    
+    @Override
+    public PNode visit(YieldExpressionSSTNode node) {
+        ExpressionNode value = node.value != null ? (ExpressionNode)node.value.accept(this) : EmptyNode.create();
+        ExpressionNode result;
+        if (node.isFrom) {
+            YieldFromNode yieldNode = new YieldFromNode(value, WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), null));
+            yieldNode.setFlagSlot(numOfActiveFlags++);
+            yieldNode.setIteratorSlot(numOfGeneratorForNode++);
+            result = yieldNode;
+        } else {
+            YieldNode yieldNode = new YieldNode(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), value));
+            yieldNode.setFlagSlot(numOfActiveFlags++);
+            result = yieldNode;
+        }
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
+    }
     
 }

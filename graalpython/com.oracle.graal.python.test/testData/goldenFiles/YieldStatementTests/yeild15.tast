@@ -1,0 +1,72 @@
+ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for x i...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,49]`def f():↵    for x i...`
+    ExpressionWithSideEffect SourceSection: [0,49]`def f():↵    for x i...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,49]`def f():↵    for x i...`
+          Identifier: f
+          GeneratorFunctionDefinitionNode Name: f SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,49]`def f():↵    for x i...`
+              Name: f
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [x, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,49]`def f():↵    for x i...`
+                GeneratorReturnTargetNode SourceSection: [0,49]`def f():↵    for x i...`
+                  flagSlot: 1
+                  ElseNode SourceSection: [13,49]`for x in range(30):↵...`
+                    GeneratorForNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [41,48]`yield x`
+                        YieldNode SourceSection: [41,48]`yield x`
+                          flagSlot: 0
+                          WriteGeneratorFrameVariableNodeGen SourceSection: None
+                            Identifier: <return_val>
+                            WriteGeneraterFrameSlotNodeGen SourceSection: None
+                              Frame: [1,<return_val>,Illegal]
+                            ReadGeneratorFrameVariableNode SourceSection: [47,48]`x`
+                              Frame: [0,x,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                          GeneratorAccessNode SourceSection: None
+                      WriteGeneratorFrameVariableNodeGen SourceSection: None
+                        Identifier: x
+                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                          Frame: [0,x,Illegal]
+                      GetIteratorExpressionNodeGen SourceSection: [22,31]`range(30)`
+                        GetIteratorNodeGen SourceSection: None
+                        PythonCallNodeGen SourceSection: [22,31]`range(30)`
+                          CachedCallNodeGen SourceSection: None
+                            CreateArgumentsNodeGen SourceSection: None
+                            CallDispatchNodeGen SourceSection: None
+                          IntegerLiteralNode SourceSection: [28,30]`30`
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: range
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      GetNextCachedNode SourceSection: None
+                        LookupAndCallUnaryNodeGen SourceSection: None
+                          Op: __next__
+                      GeneratorAccessNode SourceSection: None
+                    BlockNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  BlockNode SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

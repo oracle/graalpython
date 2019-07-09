@@ -1,0 +1,52 @@
+ModuleRootNode Name: <module 'yeild10'> SourceSection: [0,24]`def f(): return; yie...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,24]`def f(): return; yie...`
+    ExpressionWithSideEffect SourceSection: [0,24]`def f(): return; yie...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,24]`def f(): return; yie...`
+          Identifier: f
+          GeneratorFunctionDefinitionNode Name: f SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,24]`def f(): return; yie...`
+              Name: f
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,24]`def f(): return; yie...`
+                GeneratorReturnTargetNode SourceSection: [0,24]`def f(): return; yie...`
+                  flagSlot: 1
+                  GeneratorBlockNode SourceSection: None
+                    ReturnNode SourceSection: [9,15]`return`
+                    ExpressionStatementNode SourceSection: [17,24]`yield 1`
+                      YieldNode SourceSection: [17,24]`yield 1`
+                        flagSlot: 0
+                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteGeneraterFrameSlotNodeGen SourceSection: None
+                            Frame: [0,<return_val>,Illegal]
+                          IntegerLiteralNode SourceSection: [23,24]`1`
+                        GeneratorAccessNode SourceSection: None
+                    GeneratorAccessNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  BlockNode SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

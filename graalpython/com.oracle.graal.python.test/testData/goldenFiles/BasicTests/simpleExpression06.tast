@@ -1,0 +1,11 @@
+ModuleRootNode Name: <module 'simpleExpression06'> SourceSection: [0,4]`a[1]`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,4]`a[1]`
+    GetItemNodeGen SourceSection: [0,4]`a[1]`
+      ReadNameNodeGen SourceSection: None
+        Identifier: a
+      IntegerLiteralNode SourceSection: [2,3]`1`

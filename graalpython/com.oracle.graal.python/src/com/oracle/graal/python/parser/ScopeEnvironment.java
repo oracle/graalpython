@@ -190,6 +190,10 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return currentScope.isFreeVar(name) || currentScope.isCellVar(name);
     }
     
+    public boolean isInFunctionScope() {
+        return getScopeKind() == ScopeInfo.ScopeKind.Function || getScopeKind() == ScopeInfo.ScopeKind.Generator;
+    }
+    
     public boolean isInGeneratorScope() {
         return getScopeKind() == ScopeInfo.ScopeKind.Generator;
     }
