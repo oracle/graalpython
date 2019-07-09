@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
@@ -68,7 +70,9 @@ public abstract class PythonObjectLibrary extends Library {
 
     public abstract LazyPythonClass getLazyPythonClass(PythonAbstractObject receiver);
 
-    public abstract void setLazyPythonClass(PythonAbstractObject receiver, LazyPythonClass cls);
+    public void setLazyPythonClass(PythonAbstractObject receiver, LazyPythonClass cls) {
+        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'", receiver);
+    }
 
     static final LibraryFactory<PythonObjectLibrary> FACTORY = LibraryFactory.resolve(PythonObjectLibrary.class);
 

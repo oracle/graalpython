@@ -127,7 +127,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
                     @Cached HashingStorageNodes.GetItemNode getItemNode) {
-        return readDirectlyFromBuiltinDict((PHashingCollection) cachedDict, key, getDictStorage, getItemNode);
+        return readDirectlyFromBuiltinDict(cachedDict, key, getDictStorage, getItemNode);
     }
 
     // read from a builtin dict

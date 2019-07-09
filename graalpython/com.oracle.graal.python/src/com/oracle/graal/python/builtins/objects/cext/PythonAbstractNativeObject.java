@@ -147,10 +147,16 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
     }
 
     @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void setDict(PHashingCollection value) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
     @GenerateUncached
     public static abstract class GetDict {
         @Specialization
-        public PHashingCollection getNativeDictionary(Object self,
+        public static PHashingCollection getNativeDictionary(PythonAbstractNativeObject self,
                         @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached ToSulongNode toSulong,
                         @Exclusive @Cached ToJavaNode toJava,
@@ -184,7 +190,7 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
         @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "singleContextAssumption")
         public static PythonAbstractClass getNativeClassCachedIdentity(PythonAbstractNativeObject object,
                                                                        @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
-                                                                       @Exclusive @Cached("object") PythonNativeObject cachedObject,
+                                                                       @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
                                                                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
@@ -196,7 +202,7 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
         @Specialization(guards = "cachedObject.equals(object)", limit = "1", assumptions = "singleContextAssumption")
         public static PythonAbstractClass getNativeClassCached(PythonAbstractNativeObject object,
                                                         @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
-                                                        @Exclusive @Cached("object") PythonNativeObject cachedObject,
+                                                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
                                                         @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
             // TODO same as for 'getNativeClassCachedIdentity'
             return cachedClass;
@@ -211,7 +217,6 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
             return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
         }
 
-        @Specialization(replaces = "getNativeClass")
         public static PythonAbstractClass getNativeClassUncached(PythonAbstractNativeObject object) {
             // do not convert wrap 'object.object' since that is really the native pointer
             // object

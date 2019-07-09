@@ -25,12 +25,16 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PNone extends PythonAbstractObject {
 
     public static final PNone NONE = new PNone();
@@ -53,5 +57,11 @@ public final class PNone extends PythonAbstractObject {
     @ExportMessage
     static boolean isNull(@SuppressWarnings("unused") PNone self) {
         return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public LazyPythonClass getLazyPythonClass() {
+        return PythonBuiltinClassType.PNone;
     }
 }

@@ -40,8 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PEllipsis extends PythonAbstractObject {
 
     public static final PEllipsis INSTANCE = new PEllipsis();
@@ -58,5 +64,11 @@ public final class PEllipsis extends PythonAbstractObject {
     @Override
     public int compareTo(Object o) {
         return this.hashCode() - o.hashCode();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public LazyPythonClass getLazyPythonClass() {
+        return PythonBuiltinClassType.PEllipsis;
     }
 }
