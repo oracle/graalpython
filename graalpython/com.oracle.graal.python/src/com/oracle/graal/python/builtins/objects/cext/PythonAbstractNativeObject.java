@@ -154,7 +154,7 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
 
     @ExportMessage
     @GenerateUncached
-    public static abstract class GetDict {
+    public abstract static class GetDict {
         @Specialization
         public static PHashingCollection getNativeDictionary(PythonAbstractNativeObject self,
                         @Cached PRaiseNode raiseNode,
@@ -182,7 +182,7 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
     @ExportMessage
     @GenerateUncached
     @SuppressWarnings("unused")
-    public static abstract class GetLazyPythonClass {
+    public abstract static class GetLazyPythonClass {
         public static Assumption getSingleContextAssumption() {
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
