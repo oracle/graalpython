@@ -68,7 +68,10 @@ public abstract class PythonObjectLibrary extends Library {
         throw UnsupportedMessageException.create();
     }
 
-    public abstract LazyPythonClass getLazyPythonClass(PythonAbstractObject receiver);
+    @Abstract
+    public LazyPythonClass getLazyPythonClass(PythonAbstractObject receiver) {
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    }
 
     public void setLazyPythonClass(PythonAbstractObject receiver, LazyPythonClass cls) {
         PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'", receiver);
