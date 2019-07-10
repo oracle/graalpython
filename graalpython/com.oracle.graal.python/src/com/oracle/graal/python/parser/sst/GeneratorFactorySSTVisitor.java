@@ -61,6 +61,9 @@ import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorForNode;
 import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
+import com.oracle.graal.python.nodes.generator.GeneratorTryExceptNode;
+import com.oracle.graal.python.nodes.generator.GeneratorTryFinallyNode;
+import com.oracle.graal.python.nodes.generator.GeneratorWhileNode;
 import com.oracle.graal.python.nodes.generator.GeneratorWithNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
@@ -69,6 +72,7 @@ import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -133,6 +137,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     
     @Override
     public PNode visit(BlockSSTNode node) {
+        int oldNumber = numOfActiveFlags;
         StatementNode[] statements = new StatementNode[node.statements.length];
         for (int i =0; i < statements.length; i++) {
             statements[i] = (StatementNode)node.statements[i].accept(this);
@@ -140,7 +145,9 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         if (statements.length == 1) {
             return BlockNode.create(statements);
         } else {
-            return new GeneratorBlockNode(statements, numOfGeneratorBlockNode++);
+            return oldNumber != numOfActiveFlags 
+                    ? new GeneratorBlockNode(statements, numOfGeneratorBlockNode++)
+                    : nodeFactory.createBlock(statements);
         }
     }
 
@@ -290,14 +297,43 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     
     @Override
     public PNode visit(IfSSTNode node) {
+        int oldNum = numOfActiveFlags;
         ExpressionNode test = (ExpressionNode)node.test.accept(this);
         StatementNode thenStatement = (StatementNode)node.thenStatement.accept(this);
         // TODO: Do we need to generate empty else block, if doesn't exist? The execution check if the else branch is empty anyway.
         StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
-        StatementNode result = GeneratorIfNode.create(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement, numOfActiveFlags++, numOfActiveFlags++);
+        StatementNode result = oldNum != numOfActiveFlags
+                ? GeneratorIfNode.create(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement, numOfActiveFlags++, numOfActiveFlags++)
+                : nodeFactory.createIf(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement);
         if (node.startOffset != -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
+        return result;
+    }
+    
+    @Override
+    public PNode visit(TrySSTNode node) {
+        int oldNumber = numOfActiveFlags;
+        StatementNode body = (StatementNode)node.body.accept(this);
+        StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(): (StatementNode)node.elseStatement.accept(this);
+        StatementNode finalyStatement = node.finallyStatement == null ? nodeFactory.createBlock(): (StatementNode)node.finallyStatement.accept(this);
+        ExceptNode[] exceptNodes = new ExceptNode[node.exceptNodes.length];
+        for (int i = 0; i < exceptNodes.length; i++) {
+            ExceptSSTNode exceptNode = node.exceptNodes[i];
+            ExpressionNode exceptTest = exceptNode.test != null ? (ExpressionNode)exceptNode.test.accept(this) : null;
+            StatementNode exceptBody = (StatementNode)exceptNode.body.accept(this);
+            WriteNode exceptName = exceptNode.asName != null ? (WriteNode)scopeEnvironment.findVariable(exceptNode.asName).makeWriteNode(null) : null;
+            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName);
+        }
+        
+        StatementNode result;
+        if (oldNumber == numOfActiveFlags) {
+            result = nodeFactory.createTryExceptElseFinallyNode(body, exceptNodes, elseStatement, finalyStatement);
+        } else {
+            result = new GeneratorTryExceptNode(body, exceptNodes, elseStatement, numOfActiveFlags++, numOfActiveFlags++, numOfGeneratorBlockNode++);
+            result = new GeneratorTryFinallyNode(result, finalyStatement, numOfActiveFlags);
+        }
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
     
@@ -318,6 +354,36 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         return result;
     }
     
+    @Override
+    public PNode visit(WhileSSTNode node) {
+        int oldNumber = numOfActiveFlags;
+        ExpressionNode test = (ExpressionNode)node.test.accept(this);
+        StatementNode body = (StatementNode)node.body.accept(this);
+        if (node.containsContinue) {
+            body = nodeFactory.createContinueTarget(body);
+        }
+        StatementNode whileNode = oldNumber != numOfActiveFlags
+                ? new GeneratorWhileNode(CastToBooleanNode.createIfTrueNode(test), body, numOfActiveFlags++)
+                : nodeFactory.createWhile(CastToBooleanNode.createIfTrueNode(test), body);
+        // TODO: Do we need to create the ElseNode, even if the else branch is empty?
+        StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
+        StatementNode result;
+        if (!node.containsBreak) {
+             result = nodeFactory.createElse(whileNode, elseBranch);
+        } else if (oldNumber == numOfActiveFlags ) {
+            // TODO: The old parser doesn't enclude the else branch to the tree. See issue GR-16991
+            // TODO: this is also strange, that we create don't create ElseNode for break target. 
+            // At least it seems to be inconsistent.
+            result = node.elseStatement == null ? 
+                    //TODO: Do we need to create the empty block here?
+                    nodeFactory.createBreakTarget(whileNode, nodeFactory.createBlock(new StatementNode[0])) : 
+                    nodeFactory.createBreakTarget(whileNode, elseBranch);
+        } else {
+            result = whileNode;
+        }
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
+    }
     
     @Override
     public PNode visit(YieldExpressionSSTNode node) {

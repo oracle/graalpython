@@ -161,5 +161,165 @@ public class YieldStatementTests extends ParserTestBase {
                 "    yield 12\n" +
                 "    yield 13");
     }
+    
+    
+    @Test
+    public void with04() throws Exception {
+        // TODO the golden is different from the old parser 
+        checkScopeAndTree(
+                "def gen():\n" +
+                "  with A() as a, B() as b:\n" +
+                "    yield a");
+    }
+        
+    @Test
+    public void if01() throws Exception {
+        checkScopeAndTree(
+                "def gen():\n" +
+                "  if b:\n" +
+                "    yield 12\n" +
+                "  else:\n" + 
+                "    yield 13");
+    }
+    
+    @Test
+    public void if02() throws Exception {
+        checkScopeAndTree(
+                "def gen(c, b):\n" +
+                "  if c:\n" +
+                "    b=1\n" +
+                "  if b:\n" +
+                "    yield 12\n" +
+                "  else:\n" + 
+                "    yield 13");
+    }
+    
+    @Test
+    public void if03() throws Exception {
+        checkScopeAndTree(
+                "def gen(c, b):\n" +
+                "  if c:\n" +
+                "    b=1\n" +
+                "  else:\n" + 
+                "    yield 9\n" + 
+                "  if b:\n" +
+                "    yield 12\n" +
+                "  else:\n" + 
+                "    yield 13");
+    }
 
+    
+    @Test
+    public void while01() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "   while x:\n" +
+                "     x = x-1\n" +
+                "     yield x");
+    }
+    
+    @Test
+    public void while02() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "   while x:\n" +
+                "     pass\n" +
+                "   while x:\n" +
+                "     x = x-1\n" +
+                "     yield x");
+    }
+    
+    @Test
+    public void while03() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "   while x:\n" +
+                "     if x == 1:\n" +
+                "       continue\n" +
+                "     x = x-1\n" +
+                "     yield x");
+    }
+    
+    @Test
+    public void while04() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "   while x:\n" +
+                "     if x == 1:\n" +
+                "       yield -1\n" +
+                "     x = x-1\n" +
+                "     yield x");
+    }
+    
+    @Test
+    public void while05() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "   while x:\n" +
+                "     if x == 1:\n" +
+                "       break\n" +
+                "     x = x-1\n" +
+                "     yield x");
+    }
+    
+    @Test
+    public void while06() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "   while x:\n" +
+                "     if x == 1:\n" +
+                "       break\n" +
+                "     if x == 2:\n" +
+                "       continue\n" +                        
+                "     x = x-1\n" +
+                "     yield x");
+    }
+    
+    
+    @Test
+    public void while07() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "   while x:\n" +
+                "     if x == 1:\n" +
+                "       break\n" +
+                "     x = x-1\n" +
+                "     yield x\n" +
+                "   else:\n" +
+                "     yield 10");
+    }
+    
+    @Test
+    public void try01() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "  try:\n" +
+                "    pass\n" +
+                "  except ValueError:\n" +
+                "    yield 3");
+    }
+    
+    @Test
+    public void try02() throws Exception {
+        checkScopeAndTree(
+                "def gen(x):\n" +
+                "  try:\n" +
+                "    yield 3\n" +
+                "  except ValueError:\n" +
+                "    pass");
+    }
+    
+    @Test
+    public void try03() throws Exception {
+        checkScopeAndTree(
+                "def gen():\n" +
+                "  try:\n" +
+                "    pass\n" +
+                "  except ValueError:\n" +
+                "    pass\n" +
+                "  try:\n" +
+                "    yield 3\n" +
+                "  except ValueError:\n" +
+                "    pass");
+    }
 }

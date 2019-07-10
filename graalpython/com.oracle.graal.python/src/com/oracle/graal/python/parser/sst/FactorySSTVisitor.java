@@ -219,7 +219,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         
         StatementNode result;
         if (lhs.length == 1) {
-            result = createAssignment(lhs[0], rhs); //((ReadNode) lhs[0]).makeWriteNode(rhs);
+            result = createAssignment(lhs[0], rhs);
         } else {
             int len = lhs.length;
             StatementNode [] assignments = new StatementNode[len + 1];
