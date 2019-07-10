@@ -55,6 +55,8 @@ import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.object.dsl.Layout;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 @ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey HAS_DICT = new HiddenKey("has_dict");
@@ -240,7 +242,9 @@ public class PythonObject extends PythonAbstractObject {
     private static final Shape emptyShape = PythonObjectLayoutImpl.INSTANCE.createPythonObjectShape(null).getShape();
 
     public static Shape freshShape(LazyPythonClass klass) {
-        assert (PythonLanguage.getCurrent().singleContextAssumption.isValid() && klass != null) || klass instanceof PythonBuiltinClassType;
+        if (!ImageInfo.inImageCode()) {
+            assert (PythonLanguage.getCurrent().singleContextAssumption.isValid() && klass != null) || klass instanceof PythonBuiltinClassType;
+        }
         return PythonObjectLayoutImpl.INSTANCE.createPythonObjectShape(klass).getShape();
     }
 
