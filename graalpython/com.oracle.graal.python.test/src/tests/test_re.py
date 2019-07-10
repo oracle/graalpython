@@ -438,3 +438,7 @@ class ReTests(unittest.TestCase):
         self.assertTrue(match)
         assert "frac" in match.groupdict()
         assert match.groupdict()["frac"] == "1"
+        
+    
+    def test_escape(self):
+        self.assertEqual(re.escape(" ()"), "\\ \\(\\)")
