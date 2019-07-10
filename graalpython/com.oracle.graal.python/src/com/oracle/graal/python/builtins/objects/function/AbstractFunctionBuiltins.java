@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -227,11 +228,17 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class DictNode extends PythonUnaryBuiltinNode {
+    abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object dict(PFunction self) {
+        PNone dict(PFunction self, PHashingCollection mapping) {
+            self.setDict(mapping);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(mapping)")
+        Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping) {
             PHashingCollection dict = self.getDict();
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -240,9 +247,9 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        Object builtinCode(PBuiltinFunction self) {
+        @SuppressWarnings("unused")
+        Object builtinCode(PBuiltinFunction self, Object mapping) {
             throw raise(AttributeError, "'builtin_function_or_method' object has no attribute '__dict__'");
         }
     }

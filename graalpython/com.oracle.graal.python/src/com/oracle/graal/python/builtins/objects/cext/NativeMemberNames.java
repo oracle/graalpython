@@ -77,6 +77,9 @@ public final class NativeMemberNames {
     public static final String TP_ITERNEXT = "tp_iternext";
     public static final String TP_NEW = "tp_new";
     public static final String TP_DICT = "tp_dict";
+    public static final String TP_REPR = "tp_repr";
+    public static final String TP_TRAVERSE = "tp_traverse";
+    public static final String TP_CLEAR = "tp_clear";
     public static final String _BASE = "_base";
     public static final String OB_ITEM = "ob_item";
     public static final String SQ_ITEM = "sq_item";
@@ -102,11 +105,15 @@ public final class NativeMemberNames {
     public static final String BUF_DELEGATE = "buf_delegate";
     public static final String BUF_READONLY = "readonly";
     public static final String NB_ADD = "nb_add";
+    public static final String NB_SUBTRACT = "nb_subtract";
+    public static final String NB_REMAINDER = "nb_remainder";
     public static final String NB_AND = "nb_and";
     public static final String NB_INDEX = "nb_index";
     public static final String NB_POW = "nb_power";
     public static final String NB_TRUE_DIVIDE = "nb_true_divide";
+    public static final String NB_FLOOR_DIVIDE = "nb_floor_divide";
     public static final String NB_MULTIPLY = "nb_multiply";
+    public static final String NB_INPLACE_ADD = "nb_inplace_add";
     public static final String NB_INPLACE_MULTIPLY = "nb_inplace_multiply";
     public static final String OB_FVAL = "ob_fval";
     public static final String START = "start";

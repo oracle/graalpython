@@ -48,7 +48,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class BuiltinFunctionRootNode extends PRootNode {
     private final Signature signature;
@@ -56,7 +56,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     private final String name;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final boolean declaresExplicitSelf;
-    private final BranchProfile customLocalsProfile = BranchProfile.create();
+    private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
     @Child private BuiltinCallNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
 

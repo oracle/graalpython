@@ -44,6 +44,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.PolyglotException.StackFrame;
 import org.graalvm.polyglot.Source;
@@ -73,6 +74,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean stdinIsInteractive = System.console() != null;
     private boolean runLLI = false;
     private boolean unbufferedIO = false;
+    private boolean multiContext = false;
     private VersionAction versionAction = VersionAction.None;
     private String sulongLibraryPath = null;
     private List<String> givenArguments;
@@ -81,7 +83,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
-
         ArrayList<String> unrecognized = new ArrayList<>();
         ArrayList<String> inputArgs = new ArrayList<>();
         inputArgs.addAll(givenArgs);
@@ -182,9 +183,20 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         unrecognized.add(arg);
                     }
                     break;
+                case "-multi-context":
+                    if (wantsExperimental) {
+                        multiContext = true;
+                    } else {
+                        unrecognized.add(arg);
+                    }
+                    break;
                 case "-dump":
                     if (wantsExperimental) {
                         subprocessArgs.add("Dgraal.Dump=");
+                        subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleTransferToInterpreter=true");
+                        subprocessArgs.add("Dgraal.TruffleBackgroundCompilation=false");
                         inputArgs.remove("-dump");
                     } else {
                         unrecognized.add(arg);
@@ -371,6 +383,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
         contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
+
+        if (multiContext) {
+            contextBuilder.engine(Engine.create());
+        }
 
         int rc = 1;
         try (Context context = contextBuilder.build()) {

@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionSt
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -121,11 +122,8 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                 }
             }
         } else if (matchingExceptNodeIndex <= exceptNodes.length) {
-            // we already found the right except handler, jump back into
-            // it directly
-            ExceptNode exceptNode = exceptNodes[matchingExceptNodeIndex - 1];
-            runExceptionHandler(frame, exception, exceptNode, exceptionState);
-            wasHandled = true;
+            // we already found the right except handler, jump back into it directly
+            wasHandled = catchExceptionInGeneratorCached(frame, exceptNodes, exception, exceptionState, matchingExceptNodeIndex);
         }
         reset(frame);
         if (!wasHandled) {
@@ -133,6 +131,23 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             throw exception;
         }
         restoreExceptionState.execute(frame, exceptionState);
+    }
+
+    @ExplodeLoop
+    private boolean catchExceptionInGeneratorCached(VirtualFrame frame, ExceptNode[] exceptNodes, PException exception, ExceptionState exceptionState, int matchingExceptNodeIndex) {
+        CompilerAsserts.compilationConstant(exceptNodes);
+        assert matchingExceptNodeIndex <= exceptNodes.length;
+        boolean wasHandled = false;
+        for (int i = 0; i < exceptNodes.length; i++) {
+            // we want a constant loop iteration count for ExplodeLoop to work,
+            // so we always run through all except handlers
+            if (i == matchingExceptNodeIndex - 1) {
+                runExceptionHandler(frame, exception, exceptNodes[i], exceptionState);
+                wasHandled = true;
+            }
+        }
+        assert wasHandled : "cached exception handler does not handle exception";
+        return wasHandled;
     }
 
     private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, ExceptionState exceptionState) {

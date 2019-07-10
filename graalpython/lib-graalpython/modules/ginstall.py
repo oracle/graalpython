@@ -63,7 +63,55 @@ def known_packages():
         install_from_pypi("Cython==0.29.2", ('--no-cython-compile',) + args)
 
     def setuptools(*args):
-        install_from_pypi("setuptools==40.6.3", args)
+        install_from_pypi("setuptools==41.0.1", args)
+
+    def pkgconfig(*args):
+        install_from_pypi("pkgconfig==1.5.1", args)
+
+    def wheel(*args):
+        install_from_pypi("wheel==0.33.4", args)
+
+    def protobuf(*args):
+        install_from_pypi("protobuf==3.8.0", args)
+
+    def Keras_preprocessing(*args):
+        install_from_pypi("Keras-Preprocessing==1.0.5", args)
+
+    def gast(*args):
+        install_from_pypi("gast==0.2.2", args)
+
+    def astor(*args):
+        install_from_pypi("astor==0.8.0", args)
+
+    def absl_py(*args):
+        install_from_pypi("absl-py==0.7.1", args)
+
+    def mock(*args):
+        install_from_pypi("mock==3.0.5", args)
+
+    def Markdown(*args):
+        install_from_pypi("Markdown==3.1.1", args)
+
+    def Werkzeug(*args):
+        install_from_pypi("Werkzeug==0.15.4", args)
+
+    # Does not yet work
+    # def h5py(*args):
+    #     try:
+    #         import pkgconfig
+    #     except ImportError:
+    #         print("Installing required dependency: pkgconfig")
+    #         pkgconfig(*args)
+    #     install_from_pypi("h5py==2.9.0", args)
+
+    # Does not yet work
+    # def keras_applications(*args):
+    #     try:
+    #         import h5py
+    #     except ImportError:
+    #         print("Installing required dependency: h5py")
+    #         h5py(*args)
+    #     install_from_pypi("Keras-Applications==1.0.6", args)
 
     def setuptools_scm(*args):
         install_from_url("https://files.pythonhosted.org/packages/70/bc/f34b06274c1260c5e4842f789fb933a09b89f23549f282b36a15bdf63614/setuptools_scm-1.15.0rc1.tar.gz", extra_opts=args)
@@ -136,6 +184,20 @@ index e450a66..ed538b4 100644
 
  typedef int (PyArray_SortFunc)(void *, npy_intp, void *);
  typedef int (PyArray_ArgSortFunc)(void *, npy_intp *, npy_intp, void *);
+
+
+diff --git a/numpy/core/src/multiarray/shape.c b/numpy/core/src/multiarray/shape.c
+index 30820737e..d8a350f0d 100644
+--- a/numpy/core/src/multiarray/shape.c
++++ b/numpy/core/src/multiarray/shape.c
+@@ -94,3 +94,4 @@ PyArray_Resize(PyArrayObject *self, PyArray_Dims *newshape, int refcheck,
+                     "Use the np.resize function or refcheck=False");
+-            return NULL;
++            PyErr_Clear();
++            refcnt = 1;
+ #else
+             refcnt = PyArray_REFCOUNT(self);
+ #endif /* PYPY_VERSION */
 
 
 diff --git a/numpy/linalg/setup.py 2018-02-28 17:03:26.000000000 +0100

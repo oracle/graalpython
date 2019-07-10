@@ -58,7 +58,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -114,17 +113,24 @@ public abstract class ExecutionContext {
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
             if (calleeRootNode.needsExceptionState()) {
-                PException curExc = PArguments.getException(frame);
-                if (curExc == null) {
-                    // bad, but we must provide the exception state
+                PException curExc = null;
+                if (isPythonFrame(frame, callNode)) {
+                    curExc = PArguments.getException(frame);
+                    if (curExc == null) {
+                        // bad, but we must provide the exception state
 
-                    // TODO: frames: check that this also set
-                    // needsExceptionState on our own root node
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                    curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                    // now, set in our args, such that we won't do this again
-                    PArguments.setException(frame, curExc);
+                        // TODO: frames: check that this also set
+                        // needsExceptionState on our own root node
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                        curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                        // now, set in our args, such that we won't do this again
+                        PArguments.setException(frame, curExc);
+                    }
+                } else {
+                    // If we're here, it can only be because some top-level call
+                    // inside Python led us here
+                    curExc = PException.NO_EXCEPTION;
                 }
                 PArguments.setException(callArguments, curExc);
             }
@@ -179,7 +185,7 @@ public abstract class ExecutionContext {
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
-        public static void enter(VirtualFrame frame, BranchProfile profile) {
+        public static void enter(VirtualFrame frame, ConditionProfile profile) {
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
@@ -187,8 +193,7 @@ public abstract class ExecutionContext {
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
             // tfel: If there are custom locals, write them into an (incomplete)
             // PFrame here
-            if (customLocals != null && !(customLocals instanceof PFrame.Reference)) {
-                profile.enter();
+            if (profile.profile(customLocals != null && !(customLocals instanceof PFrame.Reference))) {
                 thisFrameRef.setCustomLocals(customLocals);
             }
         }
@@ -326,6 +331,10 @@ public abstract class ExecutionContext {
          * Prepare a call from a foreign frame to a Python function.
          */
         public static PFrame.Reference enter(PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.acquireInteropLock();
+            }
+
             Reference popTopFrameInfo = context.popTopFrameInfo();
             PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
@@ -354,6 +363,9 @@ public abstract class ExecutionContext {
             // topframeref was marked as escaped, it'll be materialized at the
             // latest needed time
             context.setTopFrameInfo(frameInfo);
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.releaseInteropLock();
+            }
         }
     }
 

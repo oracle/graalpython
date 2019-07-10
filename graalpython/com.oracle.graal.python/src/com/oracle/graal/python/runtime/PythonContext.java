@@ -36,11 +36,9 @@ import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-import com.oracle.truffle.api.TruffleFile;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionValues;
 
@@ -50,8 +48,8 @@ import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -63,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -120,7 +119,7 @@ public final class PythonContext {
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
     /* A lock for interop calls when this context is used by multiple threads. */
-    private Lock interopLock;
+    private ReentrantLock interopLock;
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
@@ -626,7 +625,9 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void releaseInteropLock() {
-        interopLock.unlock();
+        if (interopLock.isLocked()) {
+            interopLock.unlock();
+        }
     }
 
     @TruffleBoundary

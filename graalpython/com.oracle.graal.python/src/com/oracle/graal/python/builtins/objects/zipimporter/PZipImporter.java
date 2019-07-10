@@ -125,14 +125,24 @@ public class PZipImporter extends PythonBuiltinObject {
     private SearchOrderEntry[] defineSearchOrder() {
         return new SearchOrderEntry[]{
                         new SearchOrderEntry(joinStrings(separator, "__init__.py"),
-                                        EnumSet.of(EntryType.IS_PACKAGE, EntryType.IS_SOURCE)),
-                        new SearchOrderEntry(".py", EnumSet.of(EntryType.IS_SOURCE))
+                                        enumSetOf(EntryType.IS_PACKAGE, EntryType.IS_SOURCE)),
+                        new SearchOrderEntry(".py", enumSetOf(EntryType.IS_SOURCE))
         };
     }
 
     @TruffleBoundary
     private static String joinStrings(String a, String b) {
         return a + b;
+    }
+
+    @TruffleBoundary
+    private static <E extends Enum<E>> EnumSet<E> enumSetOf(E e1) {
+        return EnumSet.of(e1);
+    }
+
+    @TruffleBoundary
+    private static <E extends Enum<E>> EnumSet<E> enumSetOf(E e1, E e2) {
+        return EnumSet.of(e1, e2);
     }
 
     public PDict getZipDirectoryCache() {

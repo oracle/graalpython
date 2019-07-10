@@ -40,7 +40,11 @@
  */
 #include "capi.h"
 
-PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS, sizeof(PyTupleObject) - sizeof(PyObject *));
+/* prototype */
+PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
+
+/* tuple type */
+PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS, sizeof(PyTupleObject) - sizeof(PyObject *), PyTruffle_Tuple_Alloc);
 
 /* Tuples */
 UPCALL_ID(PyTuple_New);
@@ -79,3 +83,70 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     }
     return result;
 }
+
+MUST_INLINE
+static PyObject * tuple_create(PyObject *iterable) {
+    if (iterable == NULL) {
+        return PyTuple_New(0);
+    }
+    return PySequence_Tuple(iterable);
+}
+
+POLYGLOT_DECLARE_TYPE(PyTupleObject);
+PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
+	PyTupleObject* newobj;
+    PyObject *tmp, *item;
+    Py_ssize_t i, n;
+
+    assert(PyType_IsSubtype(type, &PyTuple_Type));
+    tmp = tuple_create(iterable);
+    if (tmp == NULL) {
+        return NULL;
+    }
+    assert(PyTuple_Check(tmp));
+    n = PyTuple_GET_SIZE(tmp);
+
+    newobj = (PyTupleObject*) type->tp_alloc(type, n);
+    if (newobj == NULL) {
+        return NULL;
+    }
+    newobj->ob_item = (PyObject **) ((char *)newobj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
+    newobj = polyglot_from_PyTupleObject(newobj);
+    for (i = 0; i < n; i++) {
+        item = PyTuple_GetItem(tmp, i);
+        Py_INCREF(item);
+        PyTuple_SetItem((PyObject*)newobj, i, item);
+    }
+    Py_DECREF(tmp);
+
+    // This polyglot type cast is important such that we can directly read and
+    // write members of the pointer from Java code.
+    // Note: the return type is 'PyObject*' to be compatible with CPython
+    return (PyObject*) newobj;
+}
+
+int PyTruffle_Tuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
+    PyTuple_SET_ITEM(tuple, position, item);
+    return 0;
+}
+
+PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
+	/*
+	 * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
+	 * because this additional pointer can then be used as pointer to the element array.
+	 * CPython usually embeds the array in the struct but Sulong doesn't currently support that.
+	 * So we allocate space for the additional array pointer.
+	 * Also consider any 'PyVarObject' (in particular 'PyTupleObject') if this is fixed.
+	 */
+	Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems + sizeof(PyObject **);
+    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
+    if(cls->tp_dictoffset) {
+    	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
+    }
+    Py_TYPE(newObj) = cls;
+    if (nitems > 0) {
+        ((PyVarObject*)newObj)->ob_size = nitems;
+    }
+    return newObj;
+}
+

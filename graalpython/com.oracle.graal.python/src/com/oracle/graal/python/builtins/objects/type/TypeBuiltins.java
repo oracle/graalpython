@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
@@ -36,6 +37,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
@@ -123,6 +125,7 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(__DICTOFFSET__);
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(__ITEMSIZE__);
     public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(__BASICSIZE__);
+    public static final HiddenKey TYPE_ALLOC = new HiddenKey(__ALLOC__);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -459,6 +462,16 @@ public class TypeBuiltins extends PythonBuiltins {
         Object bases(LazyPythonClass self,
                         @Cached("create()") TypeNodes.GetBaseClassesNode getBaseClassesNode) {
             return factory().createTuple(getBaseClassesNode.execute(self));
+        }
+    }
+
+    @Builtin(name = __BASE__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class BaseNode extends PythonBuiltinNode {
+        @Specialization
+        Object base(LazyPythonClass self,
+                        @Cached("create()") TypeNodes.GetBaseClassNode getBaseClassNode) {
+            return getBaseClassNode.execute(self);
         }
     }
 

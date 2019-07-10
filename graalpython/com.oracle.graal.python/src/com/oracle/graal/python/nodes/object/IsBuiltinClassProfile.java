@@ -69,7 +69,7 @@ public final class IsBuiltinClassProfile {
     // context case, we just cache all classes, in the multi-context case, we
     // only cache classes if they are builtin types that are shared across
     // contexts.
-    private final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    private final Assumption singleContextAssumption;
     private static final int CLASS_CACHE_SIZE = 3;
     @CompilationFinal(dimensions = 1) private ClassCache[] classCache = new ClassCache[CLASS_CACHE_SIZE];
     @CompilationFinal private boolean cacheUsedInSingleContext = false;
@@ -84,17 +84,18 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile();
+    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile(null);
     static {
         UNCACHED.classCache = null;
     }
 
-    private IsBuiltinClassProfile() {
-        // private constructor
+    /* private constructor */
+    private IsBuiltinClassProfile(Assumption singleContextAssumption) {
+        this.singleContextAssumption = singleContextAssumption;
     }
 
     public static IsBuiltinClassProfile create() {
-        return new IsBuiltinClassProfile();
+        return new IsBuiltinClassProfile(PythonLanguage.getCurrent().singleContextAssumption);
     }
 
     public static IsBuiltinClassProfile getUncached() {
@@ -105,7 +106,7 @@ public final class IsBuiltinClassProfile {
     private LazyPythonClass getLazyPythonClass(PythonObject object) {
         if (classCache != null) {
             // we're still caching
-            if (!singleContextAssumption.isValid() && cacheUsedInSingleContext) {
+            if (!(singleContextAssumption != null && singleContextAssumption.isValid()) && cacheUsedInSingleContext) {
                 // we previously used this cache in a single context, now we're
                 // in a multi-context mode. Reset the cache.
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -120,7 +121,7 @@ public final class IsBuiltinClassProfile {
                     LazyPythonClass klass = PythonObject.getLazyPythonClass(shape.getObjectType());
                     if (klass instanceof PythonBuiltinClassType) {
                         classCache[i] = new ClassCache(shape, klass);
-                    } else if (singleContextAssumption.isValid()) {
+                    } else if (singleContextAssumption != null && singleContextAssumption.isValid()) {
                         // we're caching a non-builtin type, so if we switch to
                         // a multi-context, the cache needs to be flushed.
                         cacheUsedInSingleContext = true;

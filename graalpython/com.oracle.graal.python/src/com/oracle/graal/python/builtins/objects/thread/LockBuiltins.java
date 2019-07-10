@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.DEFAULT_BLOCKING;
-import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.DEFAULT_TIMEOUT;
+import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.UNSET_TIMEOUT;
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
@@ -109,18 +109,20 @@ public class LockBuiltins extends PythonBuiltins {
         boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout) {
             // args setup
             boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeBoolean(frame, blocking);
-            double timeoutSeconds = DEFAULT_TIMEOUT;
+            double timeoutSeconds = UNSET_TIMEOUT;
             if (!(timeout instanceof PNone)) {
-                if (!isBlocking) {
-                    throw raise(ValueError, "can't specify a timeout for a non-blocking call");
-                }
-
                 timeoutSeconds = getCastToDoubleNode().execute(frame, timeout);
 
-                if (timeoutSeconds < 0) {
-                    throw raise(ValueError, "timeout value must be positive");
-                } else if (timeoutSeconds > TIMEOUT_MAX) {
-                    throw raise(OverflowError, "timeout value is too large");
+                if (timeoutSeconds != UNSET_TIMEOUT) {
+                    if (!isBlocking) {
+                        throw raise(ValueError, "can't specify a timeout for a non-blocking call");
+                    }
+
+                    if (timeoutSeconds < 0) {
+                        throw raise(ValueError, "timeout value must be positive");
+                    } else if (timeoutSeconds > TIMEOUT_MAX) {
+                        throw raise(OverflowError, "timeout value is too large");
+                    }
                 }
             }
 
@@ -128,7 +130,7 @@ public class LockBuiltins extends PythonBuiltins {
             if (isBlockingProfile.profile(!isBlocking)) {
                 return self.acquireNonBlocking();
             } else {
-                if (defaultTimeoutProfile.profile(timeoutSeconds == DEFAULT_TIMEOUT)) {
+                if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
                     return self.acquireBlocking();
                 } else {
                     return self.acquireTimeout(timeoutSeconds);

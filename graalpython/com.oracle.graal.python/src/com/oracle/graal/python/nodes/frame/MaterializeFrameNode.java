@@ -145,7 +145,7 @@ public abstract class MaterializeFrameNode extends Node {
      *
      * @see PFrame#isIncomplete
      **/
-    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "!getPFrame(frameToMaterialize).hasFrame()"})
+    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "!getPFrame(frameToMaterialize).isAssociated()"})
     static PFrame incompleteFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
@@ -154,7 +154,7 @@ public abstract class MaterializeFrameNode extends Node {
         return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location), syncValuesNode);
     }
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).hasFrame()"}, replaces = "freshPFrame")
+    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).isAssociated()"}, replaces = "freshPFrame")
     static PFrame alreadyEscapedFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
                     @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
@@ -170,16 +170,23 @@ public abstract class MaterializeFrameNode extends Node {
         return pyFrame;
     }
 
-    @Specialization(replaces = {"freshPFrame", "alreadyEscapedFrame"})
-    static PFrame notInClassBody(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+    @Specialization(replaces = {"freshPFrame", "alreadyEscapedFrame", "incompleteFrame"})
+    static PFrame generic(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
                     @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
-        if (getPFrame(frameToMaterialize) != null) {
-            return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, syncValuesNode, syncProfile);
+        PFrame pyFrame = getPFrame(frameToMaterialize);
+        if (pyFrame != null) {
+            if (pyFrame.isAssociated()) {
+                return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, syncValuesNode, syncProfile);
+            } else {
+                return incompleteFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+            }
         } else {
             if (inClassBody(frameToMaterialize)) {
                 return freshPFrameInClassBody(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+            } else if (isGeneratorFrame(frameToMaterialize)) {
+                return freshPFrameForGenerator(location, markAsEscaped, forceSync, frameToMaterialize, factory);
             } else {
                 return freshPFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
             }

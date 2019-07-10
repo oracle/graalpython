@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,42 +40,7 @@
  */
 #include "capi.h"
 
-#ifndef Py_DEFAULT_RECURSION_LIMIT
-#define Py_DEFAULT_RECURSION_LIMIT 1000
-#endif
-int _Py_CheckRecursionLimit = Py_DEFAULT_RECURSION_LIMIT;
 
-
-PyObject* PyEval_CallObjectWithKeywords(PyObject *func, PyObject *args, PyObject *kwargs) {
-    return PyObject_Call(func, args, kwargs);
-}
-
-void PyEval_InitThreads() {
-    // Nothing to do
-}
-
-int PyEval_ThreadsInitialized() {
-    return 1;
-}
-
-PyThreadState* PyEval_SaveThread() {
-    return NULL;
-}
-
-void PyEval_RestoreThread(PyThreadState *ptr) {
-}
-
-UPCALL_ID(PyThread_allocate_lock);
-void* PyThread_allocate_lock() {
-    return UPCALL_CEXT_O(_jls_PyThread_allocate_lock);
-}
-
-UPCALL_ID(PyThread_acquire_lock);
-int PyThread_acquire_lock(PyThread_type_lock aLock, int waitflag) {
-    return UPCALL_CEXT_I(_jls_PyThread_acquire_lock, native_to_java(aLock), waitflag ? -1 : 0);
-}
-
-UPCALL_ID(PyThread_release_lock);
-void PyThread_release_lock(PyThread_type_lock aLock) {
-    UPCALL_CEXT_O(_jls_PyThread_release_lock, native_to_java(aLock));
+PyObject* _PyLong_FromTime_t(time_t sec) {
+    return PyLong_FromLong((long)sec);
 }

@@ -154,6 +154,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Determines wether context startup tries to re-use previously cached sources of the core library.") //
     public static final OptionKey<Boolean> WithCachedSources = new OptionKey<>(true);
 
+    @Option(category = OptionCategory.EXPERT, help = "Embedder option: what to print in response to PythonLanguage#toString.") //
+    public static final OptionKey<Boolean> UseReprForPrintString = new OptionKey<>(true);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }

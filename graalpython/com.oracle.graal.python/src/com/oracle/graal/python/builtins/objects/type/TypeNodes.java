@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
@@ -572,6 +574,49 @@ public abstract class TypeNodes {
             return bases;
         }
 
+    }
+
+    @ImportStatic(NativeMemberNames.class)
+    public abstract static class GetBaseClassNode extends PNodeWithContext {
+
+        public abstract PythonAbstractClass execute(Object obj);
+
+        @Specialization
+        PythonAbstractClass doPythonClass(PythonManagedClass obj,
+                        @Cached PRaiseNode raise) {
+            PythonAbstractClass[] baseClasses = obj.getBaseClasses();
+            if (baseClasses.length == 1) {
+                return baseClasses[0];
+            }
+            throw raise.raise(NotImplementedError, "get bestBase case not yet implemented");
+        }
+
+        @Specialization
+        PythonAbstractClass doPythonClass(PythonBuiltinClassType obj,
+                        @Cached PRaiseNode raise,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PythonAbstractClass[] baseClasses = context.getCore().lookupType(obj).getBaseClasses();
+            if (baseClasses.length == 1) {
+                return baseClasses[0];
+            }
+            throw raise.raise(NotImplementedError, "get bestBase case not yet implemented");
+        }
+
+        @Specialization
+        PythonAbstractClass doNative(PythonNativeClass obj,
+                        @Cached PRaiseNode raise,
+                        @Cached GetTypeMemberNode getTpBaseNode,
+                        @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
+            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE));
+            if (result instanceof PythonAbstractClass) {
+                return (PythonAbstractClass) result;
+            }
+            throw raise.raise(PythonBuiltinClassType.SystemError, "type does not provide __base__");
+        }
+
+        public static GetBaseClassNode create() {
+            return GetBaseClassNodeGen.create();
+        }
     }
 
     @ImportStatic(SpecialMethodNames.class)

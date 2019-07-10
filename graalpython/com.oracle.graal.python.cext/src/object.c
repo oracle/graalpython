@@ -177,6 +177,10 @@ PyObject* PyObject_Str(PyObject* o) {
     return UPCALL_CEXT_O(_jls_PyObject_Str, native_to_java(o));
 }
 
+PyObject* PyObject_ASCII(PyObject* o) {
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("ascii", SRC_CS), native_to_java(o));
+}
+
 UPCALL_ID(PyObject_Repr);
 PyObject* PyObject_Repr(PyObject* o) {
     return UPCALL_CEXT_O(_jls_PyObject_Repr, native_to_java(o));
@@ -222,6 +226,19 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
     }
 
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
+    PyObject* args;
+    CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
+    if (strlen(fmt) < 2) {
+        PyObject* singleArg = args;
+        args = PyTuple_New(strlen(fmt));
+        if (strlen(fmt) == 1) {
+            PyTuple_SetItem(args, 0, singleArg);
+        }
+    }
+    return PyObject_CallObject(callable, args);
+}
+
+PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
     if (strlen(fmt) < 2) {

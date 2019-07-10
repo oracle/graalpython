@@ -440,7 +440,8 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__sub__", numbers->nb_subtract, -2);
         ADD_SLOT_CONV("__rsub__", wrap_reverse_binop, numbers->nb_subtract, -2);
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
-        ADD_SLOT("__rem__", numbers->nb_remainder, -2);
+        ADD_SLOT("__mod__", numbers->nb_remainder, -2);
+        ADD_SLOT_CONV("__rmod__", wrap_reverse_binop, numbers->nb_remainder, -2);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
         ADD_SLOT_CONV("__pow__", wrap_pow, numbers->nb_power, -3);
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
