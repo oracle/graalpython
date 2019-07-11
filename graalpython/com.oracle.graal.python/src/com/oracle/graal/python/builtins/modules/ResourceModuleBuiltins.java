@@ -81,14 +81,17 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
             long id = Thread.currentThread().getId();
             Runtime runtime = Runtime.getRuntime();
 
-            double ru_utime = -1; // time in user mode (float)
-            double ru_stime = -1; // time in system mode (float)
+            double ru_utime = 0; // time in user mode (float)
+            double ru_stime = 0; // time in system mode (float)
             long ru_maxrss; // maximum resident set size
 
             if (!TruffleOptions.AOT) {
                 ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-                ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
-                ru_stime = threadMXBean.getThreadCpuTime(id) / 1000000000.0;
+                if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
+                    ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
+                    ru_stime = (threadMXBean.getThreadCpuTime(id) - threadMXBean.getThreadUserTime(id)) / 1000000000.0;
+                }
+
                 if (threadMXBean instanceof com.sun.management.ThreadMXBean) {
                     com.sun.management.ThreadMXBean thMxBean = (com.sun.management.ThreadMXBean) threadMXBean;
                     ru_maxrss = thMxBean.getThreadAllocatedBytes(id);
@@ -128,17 +131,25 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
         PTuple getruusageSelf(@SuppressWarnings("unused") int who) {
             Runtime runtime = Runtime.getRuntime();
 
-            double ru_utime = -1; // time in user mode (float)
-            double ru_stime = -1; // time in system mode (float)
+            double ru_utime = 0; // time in user mode (float)
+            double ru_stime = 0; // time in system mode (float)
             long ru_maxrss;
 
             if (!TruffleOptions.AOT) {
-                ru_utime = 0;
-                ru_stime = 0;
                 ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-                for (long thId : threadMXBean.getAllThreadIds()) {
-                    ru_utime += threadMXBean.getThreadUserTime(thId) / 1000000000.0;
-                    ru_stime += threadMXBean.getThreadCpuTime(thId) / 1000000000.0;
+                if (threadMXBean.isThreadCpuTimeSupported()) {
+                    for (long thId : threadMXBean.getAllThreadIds()) {
+                        long tu = threadMXBean.getThreadUserTime(thId);
+                        long tc = threadMXBean.getThreadCpuTime(thId);
+
+                        if (tu != -1) {
+                            ru_utime += tu / 1000000000.0;
+                        }
+
+                        if (tu != -1 && tc != -1) {
+                            ru_stime += (tc - tu) / 1000000000.0;
+                        }
+                    }
                 }
 
                 MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();

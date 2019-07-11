@@ -65,6 +65,6 @@ def test_gerusage():
             "ru_minflt", "ru_majflt", "ru_nswap", "ru_inblock", "ru_oublock", "ru_msgsnd", "ru_msgrcv", "ru_nsignals",
             "ru_nvcsw", "ru_nivcsw"
         ]
-        assert ru.ru_utime > 0
+        assert ru.ru_utime >= 0
         assert ru.ru_stime >= 0
         assert ru.ru_maxrss > 0
