@@ -315,7 +315,7 @@ locals
 		| simple_stmt
 		| compound_stmt NEWLINE
 	)
-	{ /*$result = factory.createBlock(getArray(start, StatementNode[].class)); */}
+	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
 	{
             if ($interactive || $curInlineLocals != null) {
                 factory.leaveScope();
@@ -333,10 +333,10 @@ locals
 		NEWLINE
 		| stmt
 	)* EOF
-	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), getStopIndex($stmt.stop)); }
+	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), 
+                $stmt.stop != null ?  getStopIndex($stmt.stop) : getLastIndex($ctx)); }
 	{ 
             factory.leaveScope(); 
-            /*$result.accept(new PosParsingVisitor(factory))*/;   
         }
 ;
 
@@ -924,8 +924,8 @@ test returns [SSTNode result]
 :
 	or_test { $result = $or_test.result; }
 	(
-		'if' or_test 'else' test
-		{ $result = new IfSSTNode($or_test.result, $result, $test.result, getStartIndex($ctx), getStopIndex($test.stop));}
+		'if' condition=or_test 'else' elTest=test
+		{ $result = new TernaryIfSSTNode($condition.result, $result, $elTest.result, getStartIndex($ctx), getLastIndex($ctx));}
 	)?
 	| lambdef { $result = $lambdef.result; }
 ;
@@ -1412,12 +1412,22 @@ argument [ArgListBuilder args] returns [SSTNode result]
                   if (getCurrentToken().getType() != NAME) {
                     throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                   }
+                  // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
+                  boolean isNameAsVariableInScope = factory.getCurrentScope().getSeenVars().contains(name);
                 }
-		n=test {if (!((((ArgumentContext)_localctx).n).result instanceof VarLookupSSTNode)) {
-                                    throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
-                                }} '=' test { 
-                                args.addNamedArg(name, $test.result); 
-                        }
+		n=test 
+                {
+                    if (!((((ArgumentContext)_localctx).n).result instanceof VarLookupSSTNode)) {
+                        throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+                    }
+                    if (!isNameAsVariableInScope && factory.getCurrentScope().getSeenVars().contains(name)) {
+                        factory.getCurrentScope().getSeenVars().remove(name);
+                    }
+                } 
+                    '=' test 
+                    { 
+                        args.addNamedArg(name, $test.result); 
+                    }
 	|
 		test {  
                         if (args.hasNameArg()) {

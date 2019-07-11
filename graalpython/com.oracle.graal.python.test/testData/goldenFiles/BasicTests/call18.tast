@@ -1,0 +1,64 @@
+ModuleRootNode Name: <module 'call18'> SourceSection: [0,35]`def fn(arg = [1,2]):...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,35]`def fn(arg = [1,2]):...`
+    ExpressionWithSideEffect SourceSection: [0,35]`def fn(arg = [1,2]):...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,35]`def fn(arg = [1,2]):...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments:
+              ListLiteralNode SourceSection: [13,18]`[1,2]`
+                PythonObjectFactoryNodeGen SourceSection: None
+                IntegerLiteralNode SourceSection: [14,15]`1`
+                IntegerLiteralNode SourceSection: [16,17]`2`
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,35]`def fn(arg = [1,2]):...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: arg
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [arg, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,35]`def fn(arg = [1,2]):...`
+                ReturnTargetNode SourceSection: [0,35]`def fn(arg = [1,2]):...`
+                  Body: BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: arg
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,arg,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                    ExpressionStatementNode SourceSection: [21,35]`foo(arg = [1])`
+                      PythonCallNodeGen SourceSection: [21,35]`foo(arg = [1])`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        KeywordArgumentsNodeGen SourceSection: None
+                          KeywordLiteralNode SourceSection: None
+                            ListLiteralNode SourceSection: [31,34]`[1]`
+                              PythonObjectFactoryNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [32,33]`1`
+                          CompactKeywordsNodeGen SourceSection: None
+                          ExecuteKeywordStarargsNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: foo
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

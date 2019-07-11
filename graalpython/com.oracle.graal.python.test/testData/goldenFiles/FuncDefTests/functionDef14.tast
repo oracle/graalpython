@@ -1,0 +1,94 @@
+ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():↵  install...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,71]`def bla():↵  install...`
+    ExpressionWithSideEffect SourceSection: [0,71]`def bla():↵  install...`
+      Expression:
+        ExpressionWithSideEffect SourceSection: None
+          Expression:
+            EmptyNode SourceSection: None
+          SideEffect:
+            WriteNameNodeGen SourceSection: [37,71]`def install(extra_op...`
+              Identifier: install
+              FunctionDefinitionNode Name: install SourceSection: None
+                Arguments:
+                  ListLiteralNode SourceSection: [60,62]`[]`
+                    PythonObjectFactoryNodeGen SourceSection: None
+                KwArguments: None
+                Documentation: StringLiteralNode: Empty
+                FreeVarSlots: None
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: None
+                FunctionRootNode SourceSection: [37,71]`def install(extra_op...`
+                  Name: install
+                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                    Param Names: extra_opts
+                  CelVars: None
+                  FreeVars: None
+                  NeedsCellFrame: False
+                  FrameDescriptor: 2 slots [extra_opts, <return_val>]
+                  ExecutionSlots:
+                    FreeVarsSlots: None
+                    CellVarsSlots: None
+                  InnerRootNode SourceSection: [37,71]`def install(extra_op...`
+                    ReturnTargetNode SourceSection: [37,71]`def install(extra_op...`
+                      Body: BlockNode SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: extra_opts
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [0,extra_opts,Illegal]
+                          ArgumentExpressionNode SourceSection: None
+                            ReadIndexedArgumentNodeGen SourceSection: None
+                        ExpressionStatementNode SourceSection: [67,71]`pass`
+                          EmptyNode SourceSection: [67,71]`pass`
+                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                        Frame: [1,<return_val>,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,37]`def bla():↵  install...`
+          Identifier: bla
+          FunctionDefinitionNode Name: bla SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,37]`def bla():↵  install...`
+              Name: bla
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,37]`def bla():↵  install...`
+                ReturnTargetNode SourceSection: [0,37]`def bla():↵  install...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [13,36]`install(extra_opts=[...`
+                      PythonCallNodeGen SourceSection: [13,36]`install(extra_opts=[...`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        KeywordArgumentsNodeGen SourceSection: None
+                          KeywordLiteralNode SourceSection: None
+                            ListLiteralNode SourceSection: [32,35]`[1]`
+                              PythonObjectFactoryNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [33,34]`1`
+                          CompactKeywordsNodeGen SourceSection: None
+                          ExecuteKeywordStarargsNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: install
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

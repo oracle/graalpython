@@ -45,19 +45,24 @@ package com.oracle.graal.python.parser;
 import com.oracle.graal.python.PythonLanguage;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
+import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.BlockSSTNode;
 import com.oracle.graal.python.parser.sst.ClassSSTNode;
 import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.parser.sst.ForSSTNode;
 import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
@@ -67,7 +72,10 @@ import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
+import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -251,9 +259,44 @@ public final class PythonNodeFactory {
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
     }
     
-    public ModuleRootNode createModuleRoot(String name, ExpressionNode file, FrameDescriptor fd) {
-        log(name, file);
-        StringLiteralNode sln = (new DocExtractor()).extract(file);
+    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Source source, Frame currentFrame) {
+        Node result;
+        scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
+        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source);
+        ExpressionNode body =  mode == PythonParser.ParserMode.Eval
+                ? (ExpressionNode)parserSSTResult.accept(factoryVisitor)
+                : factoryVisitor.asExpression((BlockSSTNode)parserSSTResult);
+        FrameDescriptor fd = currentFrame == null ? null : currentFrame.getFrameDescriptor();
+        switch (mode) {
+            case Eval:
+                scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
+                StatementNode evalReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(body, scopeEnvironment.getReturnSlot()));
+                ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+                FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
+                result = functionRoot;
+                break;
+            case File:
+                result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, fd);
+                break;    
+            case InlineEvaluation:
+                result = body;
+                break;
+            case InteractiveStatement:
+                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd);
+                break;
+            case Statement:
+                ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
+                printExpression.assignSourceSection(body.getSourceSection());
+                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd);
+                break;
+            default:
+                throw new RuntimeException("unexpected mode: " + mode);
+        }
+        return result;
+    }
+           
+    public String getModuleDoc (ExpressionNode from) {
+        StringLiteralNode sln = (new DocExtractor()).extract(from);
         String doc = null;
         if (sln != null) {
             doc = sln.getValue();
@@ -262,9 +305,7 @@ public final class PythonNodeFactory {
                 doc = doc.substring(cut, doc.length() - cut);
             }
         }
-//        if (file instanceof ExpressionNode.ExpressionWithSideEffect) { 
-//                && ((ExpressionNode.ExpressionWithSideEffect)file).getSideEffect() instanceof StringLiteralNode)
-        return nodeFactory.createModuleRoot(name, doc, file, fd);
+        return doc;
     }
     
     public ScopeInfo createScope(ParserRuleContext ctx, ScopeKind kind) {

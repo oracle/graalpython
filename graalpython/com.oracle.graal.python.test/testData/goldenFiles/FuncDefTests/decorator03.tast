@@ -45,10 +45,12 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNodeGen SourceSection: None
                 GetFixedAttributeNodeGen SourceSection: None
+                  Key: to
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                 GetAttributeNodeGen SourceSection: None
                   GetFixedAttributeNodeGen SourceSection: None
+                    Key: path
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__
                   ReadNameNodeGen SourceSection: None

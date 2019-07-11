@@ -123,7 +123,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                         scope.addFreeVar(name, true);
                         definingScope.addCellVar(name);
                         scope = scope.getParent();
-                        while(scope != definingScope && scope.findFrameSlot(name) == null) {
+                        while(scope != null && scope != definingScope && scope.findFrameSlot(name) == null) {
                             scope.addFreeVar(name, true);
                             scope = scope.getParent();
                         }

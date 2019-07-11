@@ -81,6 +81,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                             StringLiteralNode SourceSection: None
                             GetAttributeNodeGen SourceSection: [35,56]`modname.BaseClassNam...`
                               GetFixedAttributeNodeGen SourceSection: None
+                                Key: BaseClassName
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               ReadGlobalOrBuiltinNodeGen SourceSection: [35,42]`modname`

@@ -131,7 +131,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     
     public ExpressionNode asExpression(BlockSSTNode block) {
         if (block.statements.length == 0) {
-            return EmptyNode.create();
+            EmptyNode empty = EmptyNode.create();
+            empty.assignSourceSection(createSourceSection(0, 0));
+            return empty;
         }
         
         StatementNode[] statements = new StatementNode[block.statements.length];
@@ -227,7 +229,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             StatementNode tmpWrite = tmp.makeWriteNode(rhs);
             assignments[0] = tmpWrite;
             for (int i = 0; i < len; i++) {
-                assignments[i + 1] = ((ReadNode) lhs[i]).makeWriteNode((ExpressionNode) tmp);
+                assignments[i + 1] = createAssignment(lhs[i], (ExpressionNode)tmp);
             }
             result = createBlock(assignments);
         }
@@ -298,7 +300,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             
             switch (scope.getScopeKind()) {
                 case Function:
+                case Generator:
                     qualifiedName.insert(0, "<locals>");
+                    qualifiedName.insert(0, scope.getScopeId());
+                    scope = scope.getParent();
+                    break;
                 case Class:
                     qualifiedName.insert(0, scope.getScopeId());
                     scope = scope.getParent();
@@ -307,6 +313,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
                     scope = null;
                     break;
             }
+            
         }
         
         // 1) create a cellvar in the class body (__class__), the class itself is stored here
@@ -993,6 +1000,14 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         return result;
     }
 
+    @Override
+    public PNode visit(TernaryIfSSTNode node) {
+        ExpressionNode test = (ExpressionNode)node.test.accept(this);
+        ExpressionNode thenExpr = (ExpressionNode)node.thenStatement.accept(this);
+        ExpressionNode elseExpr = (ExpressionNode)node.elseStatement.accept(this);
+        return nodeFactory.createTernaryIf(CastToBooleanNode.createIfTrueNode(test), thenExpr, elseExpr);
+    }
+    
     @Override
     public PNode visit(TrySSTNode node) {
         StatementNode body = (StatementNode)node.body.accept(this);

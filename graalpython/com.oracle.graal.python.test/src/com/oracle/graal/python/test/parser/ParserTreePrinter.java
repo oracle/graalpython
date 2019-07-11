@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -285,6 +286,15 @@ public class ParserTreePrinter implements NodeVisitor {
             return true;
         }
         
+        public boolean visit(GetFixedAttributeNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Key: ").append(node.getKey()); newLine();
+            level--;
+            return true;
+        }
+        
+        
         private boolean visitChildren(Node node) {
             for (Node child : node.getChildren()) {
                 visit(child);
@@ -456,6 +466,8 @@ public class ParserTreePrinter implements NodeVisitor {
                 visitChildren = visit((YieldNode)node); 
             } else if (node instanceof GeneratorReturnTargetNode) {
                 visitChildren = visit((GeneratorReturnTargetNode)node); 
+            } else if (node instanceof GetFixedAttributeNode) {
+                visitChildren = visit((GetFixedAttributeNode)node); 
             } else {
                 nodeHeader(node);
                 level++;

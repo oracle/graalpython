@@ -1,0 +1,8 @@
+ModuleRootNode Name: <module 'simpleExpression07'> SourceSection: [0,0]Empty
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,0]Empty
+    EmptyNode SourceSection: [0,0]Empty

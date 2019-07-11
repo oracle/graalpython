@@ -118,20 +118,14 @@ public class FuncDefTests extends ParserTestBase{
         checkScopeAndTree();
     }
     
-//    @Test
-//    public void functionDef14() throws Exception {
-//        checkScopeAndTree();
-//    }
-    
-//    @Test
-//    public void functionDef15() throws Exception {
-//        checkScopeAndTree();
-//    }
-    
-//    @Test
-//    public void functionDef16() throws Exception {
-//        checkScopeAndTree();
-//    }
+    @Test
+    public void functionDef14() throws Exception {
+        checkScopeAndTree(
+                "def bla():\n" +
+                "  install(extra_opts=[1])\n" +        
+                "def install(extra_opts=[]):\n" +
+                "  pass");
+    }
     
     @Test
     public void decorator01() throws Exception {

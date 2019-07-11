@@ -63,7 +63,6 @@ import org.junit.rules.TestName;
 
 public class ParserTestBase {
     private PythonContext context;
-//    private ParserRuleContext lastAntrlTree;
     private final static String GOLDEN_FILE_EXT = ".tast";
     private final static String SCOPE_FILE_EXT = ".scope";
     
@@ -82,7 +81,6 @@ public class ParserTestBase {
         PythonParser parser = context.getCore().getParser();
         RootNode result = (RootNode) parser.parse(PythonParser.ParserMode.File, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
-//        lastAntrlTree = ((PythonParserImpl)parser).getLastAntlrTree();
         return result;
     }
     
@@ -92,7 +90,6 @@ public class ParserTestBase {
         Node result = ((PythonParserImpl)parser).parseWithNew(PythonParser.ParserMode.File, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
-        //return (RootNode) ((PythonParserImpl)context.getCore().getParser()).getParsergetPython3NewParser(PythonParser.ParserMode.File, context.getCore(), source, null);
     }
     
     protected ScopeInfo getLastGlobalScope() {

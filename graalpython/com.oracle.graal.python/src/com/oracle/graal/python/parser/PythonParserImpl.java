@@ -27,11 +27,14 @@ package com.oracle.graal.python.parser;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.oracle.graal.python.parser.antlr.Builder;
+import com.oracle.graal.python.parser.antlr.BuilderNew;
 import com.oracle.graal.python.parser.antlr.Python3NewLexer;
 import com.oracle.graal.python.parser.antlr.Python3NewParser;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
@@ -53,6 +56,12 @@ public final class PythonParserImpl implements PythonParser {
 
     private static Python3Parser getPython3Parser(String string) {
         Python3Parser parser = Builder.createParser(CharStreams.fromString(string));
+        parser.setErrorHandler(new PythonErrorStrategy());
+        return parser;
+    }
+    
+    private static Python3NewParser getPython3NewParser(String string) {
+        Python3NewParser parser = BuilderNew.createParser(CharStreams.fromString(string));
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
     }
@@ -121,11 +130,10 @@ public final class PythonParserImpl implements PythonParser {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         // ANTLR parsing
 //        long start = System.currentTimeMillis();
+//        Python3NewParser newParser = getPython3NewParser(source.getCharacters().toString());
         Python3NewParser newParser = getPython3NewParser(source, errors);
         ParserRuleContext input;
-        ScopeInfo topScope;
         SSTNode parserResult;
-        Python3Parser parser = getPython3Parser(source.getCharacters().toString());
         try {
             switch (mode) {
                 case Eval:
@@ -141,7 +149,8 @@ public final class PythonParserImpl implements PythonParser {
                     lastGlobalScope = factory.getScopeEnvironment().getGlobalScope();
                     factory.getScopeEnvironment().setCurrentScope(lastGlobalScope);
                     FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, factory.getScopeEnvironment(), lang.getNodeFactory(), source);
-                    ModuleRootNode mrn = factory.createModuleRoot(source.getName(), factoryVisitor.asExpression((BlockSSTNode)parserResult), file_input.scope.getFrameDescriptor());
+                    ExpressionNode body = factoryVisitor.asExpression((BlockSSTNode)parserResult);
+                    ModuleRootNode mrn = lang.getNodeFactory().createModuleRoot(source.getName(), factory.getModuleDoc(body), body, file_input.scope.getFrameDescriptor());
                     
 //                    long start = System.currentTimeMillis();
 //                    parser.file_input();
@@ -221,15 +230,69 @@ public final class PythonParserImpl implements PythonParser {
         return lastGlobalScope;
     }
     
-    @Override
-    @TruffleBoundary
+    private boolean useNewParser = false;
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
+        if (useNewParser) {
+            return parseN(mode, errors, source, currentFrame);
+        } else {
+            return parseO(mode, errors, source, currentFrame);
+        }
+    }
+    
+//    @Override
+    @TruffleBoundary
+    public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
+        FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
+        // ANTLR parsing
+//        Python3NewParser parser = getPython3NewParser(source.getCharacters().toString());
+        Python3NewParser parser = getPython3NewParser(source, errors);
+        parser.factory = new PythonNodeFactory(errors.getLanguage(), source);
+        SSTNode parserSSTResult = null;
+        
+        try {
+            switch (mode) {
+                case Eval:
+                    parserSSTResult = parser.eval_input().result;
+                    break;
+                case File:
+                    parserSSTResult = parser.file_input().result;
+                    break;
+                case InteractiveStatement:
+                case InlineEvaluation:
+                case Statement:
+                    parserSSTResult = parser.single_input(source.isInteractive(), inlineLocals).result;
+                    break;
+                default:
+                    throw new RuntimeException("unexpected mode: " + mode);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement || mode == ParserMode.InlineEvaluation) {
+                try {
+                    parser.reset();
+                    parserSSTResult = parser.eval_input().result;
+                } catch (Exception e2) {
+                    throw handleParserError(errors, source, e);
+                }
+            } else {
+                throw handleParserError(errors, source, e);
+            }
+        }
+        
+        
+        return parser.factory.createParserResult(parserSSTResult, mode, errors, source, currentFrame);
+        
+    }
+    
+    
+//    @Override
+    @TruffleBoundary
+    public Node parseO(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         // ANTLR parsing
         long start = System.currentTimeMillis();
         Python3Parser parser = getPython3Parser(source.getCharacters().toString());
-//        Python3NewParser newParser = getPython3NewParser(source.getCharacters().toString());
-        ParserRuleContext input;
+        ParserRuleContext input = null;
         Node result;
         try {
             switch (mode) {
@@ -248,7 +311,7 @@ public final class PythonParserImpl implements PythonParser {
                 case InlineEvaluation:
                 case Statement:
                     input = parser.single_input();
-//                    newParser.single_input(source.isInteractive(), inlineLocals);
+//                    input = parser.single_input(source.isInteractive(), inlineLocals);
                     break;
                 default:
                     throw new RuntimeException("unexpected mode: " + mode);

@@ -7,6 +7,7 @@ ModuleRootNode Name: <module 'getAttr01'> SourceSection: [0,3]`a.b`
   InnerRootNode SourceSection: [0,3]`a.b`
     GetAttributeNodeGen SourceSection: [0,3]`a.b`
       GetFixedAttributeNodeGen SourceSection: None
+        Key: b
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
       ReadNameNodeGen SourceSection: [0,1]`a`

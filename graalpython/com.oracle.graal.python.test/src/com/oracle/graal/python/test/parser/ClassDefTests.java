@@ -77,7 +77,7 @@ public class ClassDefTests extends ParserTestBase {
     public void classDef06() throws Exception {
         checkScopeAndTree("class DerivedClassName(Base1, Base2, Base3): pass");
     }
-
+    
     @Test
     public void decorator01() throws Exception {
         checkScopeAndTree("@class_decorator\n" +

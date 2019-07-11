@@ -41,50 +41,15 @@
 
 package com.oracle.graal.python.parser.sst;
 
+public class TernaryIfSSTNode extends IfSSTNode {
 
-public interface SSTreeVisitor<T> {
-    T visit(AndSSTNode node);
-    T visit(AnnAssignmentSSTNode node);
-    T visit(AssertSSTNode node);
-    T visit(AssignmentSSTNode node);
-    T visit(AugAssignmentSSTNode node);
-    T visit(BinaryArithmeticSSTNode node);
-    T visit(BlockSSTNode node);
-    T visit(BooleanLiteralSSTNode node);
-    T visit(CallSSTNode node);
-    T visit(ClassSSTNode node);
-    T visit(CollectionSSTNode node);
-    T visit(ComparisonSSTNode node);
-    T visit(DecoratedSSTNode node);
-    T visit(DecoratorSSTNode node);
-    T visit(DelSSTNode node);
-    T visit(ExceptSSTNode node);
-    T visit(ExpressionStatementSSTNode node);
-    T visit(FloatLiteralSSTNode node);
-    T visit(ForComprehensionSSTNode node);
-    T visit(ForSSTNode node);
-    T visit(FunctionDefSSTNode node);
-    T visit(GetAttributeSSTNode node);
-    T visit(IfSSTNode node);
-    T visit(ImportFromSSTNode node);
-    T visit(ImportSSTNode node);
-    T visit(LambdaSSTNode node);
-    T visit(NotSSTNode node);
-    T visit(NumberLiteralSSTNode node);
-    T visit(OrSSTNode node);
-    T visit(RaiseSSTNode node);
-    T visit(ReturnSSTNode node);
-    T visit(SimpleSSTNode node);
-    T visit(SliceSSTNode node);
-    T visit(StarSSTNode node);
-    T visit(StringLiteralSSTNode node);
-    T visit(SubscriptSSTNode node);
-    T visit(TernaryArithmeticSSTNode node);
-    T visit(TernaryIfSSTNode node);
-    T visit(TrySSTNode node);
-    T visit(UnarySSTNode node);
-    T visit(VarLookupSSTNode node);
-    T visit(WhileSSTNode node);
-    T visit(WithSSTNode node);
-    T visit(YieldExpressionSSTNode node);
+    public TernaryIfSSTNode(SSTNode test, SSTNode thenStatement, SSTNode elseStatement, int startOffset, int endOffset) {
+        super(test, thenStatement, elseStatement, startOffset, endOffset);
+    }
+
+    @Override
+    public <T>T accept(SSTreeVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+    
 }

@@ -93,6 +93,11 @@ public class AssignmentTests extends ParserTestBase{
     }
     
     @Test
+    public void assignment10() throws Exception {
+        checkTreeResult("i, j, k = x = a");
+    }
+    
+    @Test
     public void augassign01() throws Exception {
         checkTreeResult("a += b");
     }

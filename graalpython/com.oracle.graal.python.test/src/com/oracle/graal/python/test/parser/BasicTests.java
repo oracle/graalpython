@@ -124,6 +124,11 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void simpleExpression07() throws Exception {
+        checkTreeResult("");
+    }
+    
+    @Test
     public void longString01() throws Exception {
         checkTreeResult("'''ahoj'''");
     }
@@ -189,6 +194,11 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void if03() throws Exception {
+        checkTreeResult("10 if False else 11");
+    }
+    
+    @Test
     public void elif01() throws Exception {
         checkTreeResult(
             "var = 100\n"
@@ -212,7 +222,7 @@ public class BasicTests extends ParserTestBase {
     
     @Test
     public void call03() throws Exception {
-        checkTreeResult("foo(arg = 1)");
+        checkScopeAndTree("foo(arg = 1)");
     }
     
     @Test
@@ -278,6 +288,16 @@ public class BasicTests extends ParserTestBase {
     @Test
     public void call16() throws Exception {
         checkTreeResult("a.b.c.foo()");
+    }
+    
+    @Test
+    public void call17() throws Exception {
+        checkScopeAndTree("def fn(): foo(arg = 1)");
+    }
+    
+    @Test
+    public void call18() throws Exception {
+        checkScopeAndTree("def fn(arg = [1,2]): foo(arg = [1])");
     }
     
     @Test
@@ -620,6 +640,13 @@ public class BasicTests extends ParserTestBase {
     @Test
     public void tuple12() throws Exception {
         checkTreeResult("a[1,3,4]");
+    }
+    
+    @Test
+    public void tuple13() throws Exception {
+        checkTreeResult("b = (\n" +
+                "  (0x69, 0x131), # iı\n" +
+                ")");
     }
     
     @Test

@@ -1,0 +1,328 @@
+ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c) 2018...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,2880]`# Copyright (c) 2018...`
+    ExpressionWithSideEffects SourceSection: [0,2880]`# Copyright (c) 2018...`
+      WriteNameNodeGen SourceSection: [2168,2239]`def __gr__(self, nam...`
+        Identifier: __gr__
+        FunctionDefinitionNode Name: __gr__ SourceSection: None
+          Arguments:
+            StringLiteralNode SourceSection: [2196,2199]`'r'`
+            BooleanLiteralNode SourceSection: [2209,2213]`True`
+            ObjectLiteralNode SourceSection: [2222,2226]`None`
+          KwArguments: None
+          Documentation: StringLiteralNode: Empty
+          FreeVarSlots: None
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          FunctionRootNode SourceSection: [2168,2239]`def __gr__(self, nam...`
+            Name: __gr__
+            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+              Param Names: self, name, mode, closefd, opener
+            CelVars: None
+            FreeVars: None
+            NeedsCellFrame: False
+            FrameDescriptor: 6 slots [self, name, mode, closefd, opener, <return_val>]
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            InnerRootNode SourceSection: [2168,2239]`def __gr__(self, nam...`
+              ReturnTargetNode SourceSection: [2168,2239]`def __gr__(self, nam...`
+                Body: BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: self
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,self,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: name
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [1,name,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: mode
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [2,mode,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: closefd
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [3,closefd,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: opener
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [4,opener,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                  ExpressionStatementNode SourceSection: [2233,2237]`pass`
+                    EmptyNode SourceSection: [2233,2237]`pass`
+                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Frame: [5,<return_val>,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: [2239,2635]`def __import__(filen...`
+        Identifier: __import__
+        FunctionDefinitionNode Name: __import__ SourceSection: None
+          Arguments: None
+          KwArguments: None
+          Documentation: StringLiteralNode: Empty
+          FreeVarSlots: None
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          FunctionRootNode SourceSection: [2239,2635]`def __import__(filen...`
+            Name: __import__
+            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+              Param Names: filename, module_name
+            CelVars: None
+            FreeVars: None
+            NeedsCellFrame: False
+            FrameDescriptor: 9 slots [filename, module_name, sys, posix, module, fd, content, code, <return_val>]
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            InnerRootNode SourceSection: [2239,2635]`def __import__(filen...`
+              ReturnTargetNode SourceSection: [2239,2635]`def __import__(filen...`
+                Body: BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: filename
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,filename,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: module_name
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [1,module_name,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                  BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: sys
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [2,sys,Illegal]
+                      ImportExpression SourceSection: None
+                        ImportNode SourceSection: None
+                          Module: sys
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: posix
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [3,posix,Illegal]
+                      ImportExpression SourceSection: None
+                        ImportNode SourceSection: None
+                          Module: posix
+                    WriteLocalVariableNodeGen SourceSection: [2304,2337]`module = sys.modules...`
+                      Identifier: module
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [4,module,Illegal]
+                      GetItemNodeGen SourceSection: [2313,2337]`sys.modules[module_n...`
+                        GetAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
+                            Key: modules
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __getattribute__
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [2,sys,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2325,2336]`module_name`
+                          Frame: [1,module_name,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                    IfNode SourceSection: [2342,2433]`if filename.startswi...`
+                      YesNodeGen SourceSection: None
+                        PythonCallNodeGen SourceSection: [2345,2370]`filename.startswith(...`
+                          CachedCallNodeGen SourceSection: None
+                            CreateArgumentsNodeGen SourceSection: None
+                            CallDispatchNodeGen SourceSection: None
+                          StringLiteralNode SourceSection: [2365,2369]`"%s"`
+                          GetCallAttributeNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: None
+                              Frame: [0,filename,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: [2380,2428]`filename = filename ...`
+                        Identifier: filename
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,filename,Illegal]
+                        BinaryArithmeticExpression SourceSection: [2391,2428]`filename % sys.graal...`
+                          LookupAndCallBinaryNodeGen SourceSection: None
+                            Op: __mod__
+                          ReadLocalVariableNode SourceSection: [2391,2399]`filename`
+                            Frame: [0,filename,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          GetAttributeNodeGen SourceSection: [2402,2428]`sys.graal_python_cor...`
+                            GetFixedAttributeNodeGen SourceSection: None
+                              Key: graal_python_core_home
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __getattribute__
+                            ReadLocalVariableNode SourceSection: None
+                              Frame: [2,sys,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                      BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [2433,2474]`fd = posix.open(file...`
+                      Identifier: fd
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [5,fd,Illegal]
+                      PythonCallNodeGen SourceSection: [2438,2474]`posix.open(filename,...`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2449,2457]`filename`
+                          Frame: [0,filename,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        GetAttributeNodeGen SourceSection: [2459,2473]`posix.O_RDONLY`
+                          GetFixedAttributeNodeGen SourceSection: None
+                            Key: O_RDONLY
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __getattribute__
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [3,posix,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        GetCallAttributeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [3,posix,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [2479,2516]`content = posix.read...`
+                      Identifier: content
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [6,content,Illegal]
+                      PythonCallNodeGen SourceSection: [2489,2516]`posix.read(fd, sys.m...`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2500,2502]`fd`
+                          Frame: [5,fd,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        GetAttributeNodeGen SourceSection: [2504,2515]`sys.maxsize`
+                          GetFixedAttributeNodeGen SourceSection: None
+                            Key: maxsize
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __getattribute__
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [2,sys,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        GetCallAttributeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [3,posix,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                    ExpressionStatementNode SourceSection: [2521,2536]`posix.close(fd)`
+                      PythonCallNodeGen SourceSection: [2521,2536]`posix.close(fd)`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2533,2535]`fd`
+                          Frame: [5,fd,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        GetCallAttributeNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [3,posix,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [2541,2582]`code = compile(conte...`
+                      Identifier: code
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [7,code,Illegal]
+                      PythonCallNodeGen SourceSection: [2548,2582]`compile(content, fil...`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2556,2563]`content`
+                          Frame: [6,content,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2565,2573]`filename`
+                          Frame: [0,filename,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        StringLiteralNode SourceSection: [2575,2581]`"exec"`
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: compile
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    ExpressionStatementNode SourceSection: [2587,2614]`exec(code, module.__...`
+                      PythonCallNodeGen SourceSection: [2587,2614]`exec(code, module.__...`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2592,2596]`code`
+                          Frame: [7,code,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        GetAttributeNodeGen SourceSection: [2598,2613]`module.__dict__`
+                          GetFixedAttributeNodeGen SourceSection: None
+                            Key: __dict__
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __getattribute__
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [4,module,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: exec
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    FrameReturnNode SourceSection: [2619,2632]`return module`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <return_val>
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [8,<return_val>,Illegal]
+                        ReadLocalVariableNode SourceSection: [2626,2632]`module`
+                          Frame: [4,module,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Frame: [8,<return_val>,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+      ExpressionStatementNode SourceSection: [2635,2676]`__import__("%s/funct...`
+        PythonCallNodeGen SourceSection: [2635,2676]`__import__("%s/funct...`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [2646,2663]`"%s/functions.py"`
+          StringLiteralNode SourceSection: [2665,2675]`"builtins"`
+          ReadNameNodeGen SourceSection: None
+            Identifier: __import__
+      ExpressionStatementNode SourceSection: [2677,2717]`__import__("%s/prope...`
+        PythonCallNodeGen SourceSection: [2677,2717]`__import__("%s/prope...`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [2688,2704]`"%s/property.py"`
+          StringLiteralNode SourceSection: [2706,2716]`"builtins"`
+          ReadNameNodeGen SourceSection: None
+            Identifier: __import__
+      ExpressionStatementNode SourceSection: [2718,2760]`__import__("%s/excep...`
+        PythonCallNodeGen SourceSection: [2718,2760]`__import__("%s/excep...`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [2729,2747]`"%s/exceptions.py"`
+          StringLiteralNode SourceSection: [2749,2759]`"builtins"`
+          ReadNameNodeGen SourceSection: None
+            Identifier: __import__
+      ExpressionStatementNode SourceSection: [2761,2798]`__import__("%s/super...`
+        PythonCallNodeGen SourceSection: [2761,2798]`__import__("%s/super...`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [2772,2785]`"%s/super.py"`
+          StringLiteralNode SourceSection: [2787,2797]`"builtins"`
+          ReadNameNodeGen SourceSection: None
+            Identifier: __import__
+      ExpressionStatementNode SourceSection: [2799,2839]`__import__("%s/ellip...`
+        PythonCallNodeGen SourceSection: [2799,2839]`__import__("%s/ellip...`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [2810,2826]`"%s/ellipsis.py"`
+          StringLiteralNode SourceSection: [2828,2838]`"builtins"`
+          ReadNameNodeGen SourceSection: None
+            Identifier: __import__
+      PythonCallNodeGen SourceSection: [2840,2879]`__import__("%s/timso...`
+        CachedCallNodeGen SourceSection: None
+          CreateArgumentsNodeGen SourceSection: None
+          CallDispatchNodeGen SourceSection: None
+        StringLiteralNode SourceSection: [2851,2866]`"%s/timsort.py"`
+        StringLiteralNode SourceSection: [2868,2878]`"builtins"`
+        ReadNameNodeGen SourceSection: None
+          Identifier: __import__
