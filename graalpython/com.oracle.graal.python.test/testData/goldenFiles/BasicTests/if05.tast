@@ -1,0 +1,18 @@
+ModuleRootNode Name: <module 'if05'> SourceSection: [0,14]`if not i: pass`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,14]`if not i: pass`
+    ExpressionWithSideEffect SourceSection: [0,14]`if not i: pass`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        IfNode SourceSection: [0,14]`if not i: pass`
+          NotNodeGen SourceSection: [3,8]`not i`
+            ReadNameNodeGen SourceSection: [7,8]`i`
+              Identifier: i
+          ExpressionStatementNode SourceSection: [10,14]`pass`
+            EmptyNode SourceSection: [10,14]`pass`
+          BlockNode SourceSection: None

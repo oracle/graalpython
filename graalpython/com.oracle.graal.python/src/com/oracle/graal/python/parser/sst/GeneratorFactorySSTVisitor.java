@@ -303,8 +303,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         // TODO: Do we need to generate empty else block, if doesn't exist? The execution check if the else branch is empty anyway.
         StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
         StatementNode result = oldNum != numOfActiveFlags
-                ? GeneratorIfNode.create(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement, numOfActiveFlags++, numOfActiveFlags++)
-                : nodeFactory.createIf(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement);
+                ? GeneratorIfNode.create(nodeFactory.toBooleanCastNode(test), thenStatement, elseStatement, numOfActiveFlags++, numOfActiveFlags++)
+                : nodeFactory.createIf(nodeFactory.toBooleanCastNode(test), thenStatement, elseStatement);
         if (node.startOffset != -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }

@@ -723,7 +723,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         StatementNode thenStatement = (StatementNode)node.thenStatement.accept(this);
         // TODO: Do we need to generate empty else block, if doesn't exist? The execution check if the else branch is empty anyway.
         StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
-        StatementNode result = nodeFactory.createIf(CastToBooleanNode.createIfTrueNode(test), thenStatement, elseStatement);
+        StatementNode result = nodeFactory.createIf(nodeFactory.toBooleanCastNode(test), thenStatement, elseStatement);
         if (node.startOffset != -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
@@ -997,7 +997,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         ExpressionNode test = (ExpressionNode)node.test.accept(this);
         ExpressionNode thenExpr = (ExpressionNode)node.thenStatement.accept(this);
         ExpressionNode elseExpr = (ExpressionNode)node.elseStatement.accept(this);
-        return nodeFactory.createTernaryIf(CastToBooleanNode.createIfTrueNode(test), thenExpr, elseExpr);
+        PNode result = nodeFactory.createTernaryIf(nodeFactory.toBooleanCastNode(test), thenExpr, elseExpr);
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
     }
     
     @Override

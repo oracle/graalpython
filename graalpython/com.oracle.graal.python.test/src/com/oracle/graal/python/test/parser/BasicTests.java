@@ -199,6 +199,16 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void if04() throws Exception {
+        checkTreeResult("predicate = func if func is not None else lambda a: a");
+    }
+    
+    @Test
+    public void if05() throws Exception {
+        checkTreeResult("if not i: pass");
+    }
+    
+    @Test
     public void elif01() throws Exception {
         checkTreeResult(
             "var = 100\n"

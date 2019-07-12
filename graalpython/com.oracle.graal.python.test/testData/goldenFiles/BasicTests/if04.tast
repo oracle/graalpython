@@ -1,0 +1,60 @@
+ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,53]`predicate = func if ...`
+    ExpressionWithSideEffect SourceSection: [0,53]`predicate = func if ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,53]`predicate = func if ...`
+          Identifier: predicate
+          TernaryIfNode SourceSection: [12,53]`func if func is not ...`
+            NotNodeGen SourceSection: [20,36]`func is not None`
+              IsNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [20,24]`func`
+                  Identifier: func
+                ObjectLiteralNode SourceSection: [32,36]`None`
+            ReadNameNodeGen SourceSection: [12,16]`func`
+              Identifier: func
+            FunctionDefinitionNode Name: anonymous SourceSection: [42,53]`lambda a: a`
+              Arguments: None
+              KwArguments: None
+              Documentation: None
+              FreeVarSlots: None
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              FunctionRootNode SourceSection: [42,53]`lambda a: a`
+                Name: anonymous
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                  Param Names: a
+                CelVars: None
+                FreeVars: None
+                NeedsCellFrame: False
+                FrameDescriptor: 2 slots [a, <return_val>]
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: None
+                InnerRootNode SourceSection: [42,53]`lambda a: a`
+                  ReturnTargetNode SourceSection: [42,53]`lambda a: a`
+                    Body: BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,a,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                      FrameReturnNode SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [1,<return_val>,Illegal]
+                          ReadLocalVariableNode SourceSection: [52,53]`a`
+                            Frame: [0,a,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                      Frame: [1,<return_val>,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
