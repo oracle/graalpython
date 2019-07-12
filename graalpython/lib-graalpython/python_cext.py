@@ -984,8 +984,8 @@ def PyObject_GetAttr(obj, attr):
 
 
 @may_raise(-1)
-def PyObject_SetAttr(obj, attr, value):
-    setattr(obj, attr, value)
+def PyObject_GenericSetAttr(obj, attr, value):
+    object.__setattr__(obj, attr, value)
     return 0
 
 

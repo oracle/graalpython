@@ -369,9 +369,23 @@ PyObject* PyObject_GetAttrString(PyObject* obj, const char* attr) {
     return UPCALL_CEXT_O(_jls_PyObject_GetAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS));
 }
 
-UPCALL_ID(PyObject_SetAttr);
-int PyObject_SetAttrString(PyObject* obj, const char* attr, PyObject* value) {
-    return UPCALL_CEXT_I(_jls_PyObject_SetAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS), native_to_java(value));
+// taken from CPython "Objects/object.c"
+int PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w) {
+    PyObject *s;
+    int res;
+    PyTypeObject *type = Py_TYPE(v);
+
+    if (type->tp_setattr != NULL) {
+        return (*type->tp_setattr)(v, (char*)name, w);
+    }
+    // TODO(fa): CPython interns strings; verify if that makes sense for us as well
+    // s = PyUnicode_InternFromString(name);
+    s = PyUnicode_FromString(name);
+    if (s == NULL) {
+        return -1;
+    }
+    res = PyObject_SetAttr(v, s, w);
+    return res;
 }
 
 UPCALL_ID(PyObject_HasAttr);
@@ -391,12 +405,57 @@ PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
     return PyObject_GetAttr(obj, attr);
 }
 
-int PyObject_SetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
-    return PyObject_SetAttrString(obj, as_char_pointer(attr), value);
+/* Note: We must implement this in native because it might happen that this function is used on an
+   unitialized type which means that a managed attribute lookup won't work. */
+// taken from CPython "Objects/object.c"
+int PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value) {
+    PyTypeObject *tp = Py_TYPE(v);
+    int err;
+
+    if (!PyUnicode_Check(name)) {
+        PyErr_Format(PyExc_TypeError,
+                     "attribute name must be string, not '%.200s'",
+                     name->ob_type->tp_name);
+        return -1;
+    }
+
+    // TODO(fa): CPython interns strings; verify if that makes sense for us as well
+    // PyUnicode_InternInPlace(&name);
+    if (tp->tp_setattro != NULL) {
+        err = (*tp->tp_setattro)(v, name, value);
+        return err;
+    }
+    if (tp->tp_setattr != NULL) {
+        const char *name_str = PyUnicode_AsUTF8(name);
+        if (name_str == NULL)
+            return -1;
+        err = (*tp->tp_setattr)(v, (char *)name_str, value);
+        return err;
+    }
+    if (tp->tp_getattr == NULL && tp->tp_getattro == NULL)
+        PyErr_Format(PyExc_TypeError,
+                     "'%.100s' object has no attributes "
+                     "(%s .%U)",
+                     tp->tp_name,
+                     value==NULL ? "del" : "assign to",
+                     name);
+    else
+        PyErr_Format(PyExc_TypeError,
+                     "'%.100s' object has only read-only attributes "
+                     "(%s .%U)",
+                     tp->tp_name,
+                     value==NULL ? "del" : "assign to",
+                     name);
+    return -1;
 }
 
+UPCALL_ID(PyObject_GenericSetAttr);
 int PyObject_GenericSetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
-    return PyObject_SetAttr(obj, attr, value);
+    PyTypeObject *tp = Py_TYPE(obj);
+    if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
+        return -1;
+    }
+	return (int) UPCALL_CEXT_L(_jls_PyObject_GenericSetAttr, native_to_java(obj), native_to_java(attr), native_to_java(value));
 }
 
 Py_hash_t PyObject_Hash(PyObject* obj) {
@@ -471,7 +530,7 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     return op;
 }
 
-// taken from CPython 3.6.4 "Objects/object.c"
+// taken from CPython "Objects/object.c"
 PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size) {
     if (op == NULL) {
         return (PyVarObject *) PyErr_NoMemory();

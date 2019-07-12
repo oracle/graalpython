@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -136,9 +137,10 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @Specialization
-        static Object doSetAttr(SetAttrWrapper object, Object[] arguments,
+        static int doSetAttr(SetAttrWrapper object, Object[] arguments,
                         @Shared("executeNode") @Cached PythonAbstractObject.PExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException, UnsupportedMessageException {
+                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -150,6 +152,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 executeNode.execute(object.getDelegate(), converted);
                 return 0;
             } catch (PException e) {
+                PythonContext context = contextRef.get();
+                e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+                context.setCurrentException(e);
                 return -1;
             }
         }
@@ -160,7 +165,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Shared("executeNode") @Cached PythonAbstractObject.PExecuteNode executeNode,
                         @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws ArityException, UnsupportedMessageException {
+                        @Shared("context") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
@@ -172,6 +177,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             try {
                 result = toSulongNode.execute(executeNode.execute(object.getDelegate(), converted));
             } catch (PException e) {
+                PythonContext context = contextRef.get();
                 e.getExceptionObject().reifyException(context.peekTopFrameInfo());
                 context.setCurrentException(e);
                 result = getNativeNullNode.execute();
