@@ -67,10 +67,6 @@ OBJ_FILES=${SOURCE_FILES:src/%.c=${PLATFORM}/%.o}
 INCLUDE_FILES=$(wildcard include/*.h)
 LEGACY_INCLUDES=$(wildcard $(TRUFFLE_H_INC)/*.h)
 
-$(info include files $(INCLUDE_FILES))
-$(info legacy includes $(LEGACY_INCLUDES))
-$(info truffleh $(TRUFFLE_H_INC))
-
 MODULE_SOURCES=$(wildcard modules/*.c)
 MODULE_OBJ_FILES=$(MODULE_SOURCES:modules/%.c=modules/${PLATFORM}/%.o})
 MODULE_TARGETS=$(MODULE_SOURCES:modules/%.c=${LIBDIR}/modules/${PLATFORM}/%${SO_EXT})
@@ -115,8 +111,6 @@ $(HEADER_TARGETS): ${INCLUDE_FILES}
 	$(QUIETLY) cp $(@:../include/%.h=include/%.h) $@
 
 $(LEGACY_TARGETS): ${LEGACY_INCLUDES}
-	$(info args $@)
-	$(info src $(@:../include/%.h=$(TRUFFLE_H_INC)/%.h))
 	$(QUIETLY) mkdir -p ../include/
 	$(QUIETLY) cp $(@:../include/%.h=$(TRUFFLE_H_INC)/%.h) $@
 
