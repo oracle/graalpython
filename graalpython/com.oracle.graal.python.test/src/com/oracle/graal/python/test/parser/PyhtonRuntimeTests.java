@@ -23,7 +23,7 @@ public class PyhtonRuntimeTests extends ParserTestBase {
     
     @Test
     public void testSingleFile() throws Exception {
-        String path = "/home/petr/labs/sstparser/graalpython/graalpython/lib-graalpython/builtins_1.py";
+        String path = "/home/petr/labs/sstparser/graalpython/graalpython/lib-graalpython/functions.py";
         File file = new File(path);
         String source = readFile(file);
         parseNew(source,file.getName());

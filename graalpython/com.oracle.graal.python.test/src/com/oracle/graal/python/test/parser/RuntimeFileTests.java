@@ -14,8 +14,13 @@ import org.junit.Test;
  */
 public class RuntimeFileTests extends ParserTestBase {
     
+//    @Test
+//    public void builtins() throws Exception {
+//        checkScopeAndTree();
+//    }
+    
     @Test
-    public void builtins() throws Exception {
+    public void functions() throws Exception {
         checkScopeAndTree();
     }
     

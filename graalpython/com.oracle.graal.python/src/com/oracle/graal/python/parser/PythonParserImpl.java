@@ -233,6 +233,7 @@ public final class PythonParserImpl implements PythonParser {
     private boolean useNewParser = false;
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         if (useNewParser) {
+            System.out.println("Parsing: " + source.getPath());
             return parseN(mode, errors, source, currentFrame);
         } else {
             return parseO(mode, errors, source, currentFrame);

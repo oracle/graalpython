@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'doc01'> SourceSection: [0,42]`def fn():↵  "This 
           GeneratorFunctionDefinitionNode Name: fn SourceSection: None
             Arguments: None
             KwArguments: None
-            Documentation: StringLiteralNode: `"This is a doc"`
+            Documentation: StringLiteralNode: `This is a doc`
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None

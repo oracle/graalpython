@@ -300,10 +300,6 @@ public final class PythonNodeFactory {
         String doc = null;
         if (sln != null) {
             doc = sln.getValue();
-            if (doc != null && doc.length() > 0) {
-                int cut = doc.startsWith("'''") || doc.startsWith("\"\"\"") ? 3 : 1;
-                doc = doc.substring(cut, doc.length() - cut);
-            }
         }
         return doc;
     }

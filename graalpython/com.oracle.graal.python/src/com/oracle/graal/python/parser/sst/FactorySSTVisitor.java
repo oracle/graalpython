@@ -92,6 +92,7 @@ import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
 import com.oracle.graal.python.nodes.literal.SetLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
+import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
@@ -964,20 +965,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     
     @Override
     public PNode visit(StringLiteralSSTNode node) {
-        com.oracle.graal.python.nodes.literal.StringLiteralNode result;
-        if (node.values.length == 1) {
-            result = new com.oracle.graal.python.nodes.literal.StringLiteralNode(node.values[0]);
-        } else {
-            StringBuilder str = new StringBuilder();
-            for (String s : node.values) {
-                str.append(s);
-            }
-            result = new com.oracle.graal.python.nodes.literal.StringLiteralNode(str.toString());
-        }
+        PNode result = StringUtils.parseString(node.values, nodeFactory, errors);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
-
+        
     @Override
     public PNode visit(SubscriptSSTNode node) {
         ExpressionNode receiver = (ExpressionNode)node.receiver.accept(this);
