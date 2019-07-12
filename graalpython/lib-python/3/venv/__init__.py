@@ -321,18 +321,18 @@ class EnvBuilder:
         module = os.path.join(sys.graal_python_cext_home, "capi" + so_ext)
         if not os.path.exists(module):
             self.compile([os.path.abspath(f) for f in files], os.path.abspath(module))
-        # Truffle change end
             
 
-    def compile(self, f, module):
-        from distutils import sysconfig
-        ld = sysconfig.get_config_vars()["LDSHARED"]
-        cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + f)
-        logging.debug(cmd_line)
-        res = os.system(cmd_line)
-        if res:
-            logging.fatal("compilation failed: '%s' returned with %r" % (cmd_line, res))
-            raise BaseException
+        def compile(self, f, module):
+            from distutils import sysconfig
+            ld = sysconfig.get_config_vars()["LDSHARED"]
+            cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + f)
+            logging.debug(cmd_line)
+            res = os.system(cmd_line)
+            if res:
+                logging.fatal("compilation failed: '%s' returned with %r" % (cmd_line, res))
+                raise BaseException
+        # Truffle change end
             
     
 
