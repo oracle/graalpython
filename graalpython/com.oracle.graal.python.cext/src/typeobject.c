@@ -88,7 +88,10 @@ static PyObject* wrap_getattrfunc(getattrfunc f, PyObject* obj, PyObject* unicod
 /* Wrapper around the native function to be called by Python code. */
 static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicode, PyObject* value) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
-	return native_to_java(f(obj, as_char_pointer(unicode), value));
+    if (f(obj, as_char_pointer(unicode), value) < 0) {
+        return NULL;
+    }
+    return Py_None;
 }
 
 static PyObject* wrap_setattrofunc(setattrofunc f, PyObject* obj, PyObject* key, PyObject* item) {
