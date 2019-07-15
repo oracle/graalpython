@@ -364,10 +364,21 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
     return 0;
 }
 
-UPCALL_ID(PyObject_GetAttr);
-PyObject* PyObject_GetAttrString(PyObject* obj, const char* attr) {
-    return UPCALL_CEXT_O(_jls_PyObject_GetAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS));
+// taken from CPython "Objects/object.c"
+PyObject * PyObject_GetAttrString(PyObject *v, const char *name) {
+    PyObject *w, *res;
+
+    if (Py_TYPE(v)->tp_getattr != NULL) {
+        return (*Py_TYPE(v)->tp_getattr)(v, (char*)name);
+    }
+    w = PyUnicode_FromString(name);
+    if (w == NULL) {
+        return NULL;
+    }
+    res = PyObject_GetAttr(v, w);
+    return res;
 }
+
 
 // taken from CPython "Objects/object.c"
 int PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w) {
@@ -397,12 +408,37 @@ int PyObject_HasAttrString(PyObject* obj, const char* attr) {
     return UPCALL_CEXT_I(_jls_PyObject_HasAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS));
 }
 
-PyObject* PyObject_GetAttr(PyObject* obj, PyObject* attr) {
-    return UPCALL_CEXT_O(_jls_PyObject_GetAttr, native_to_java(obj), native_to_java(attr));
+/* Note: We must implement this in native because it might happen that this function is used on an
+   uninitialized type which means that a managed attribute lookup won't work. */
+// taken from CPython "Objects/object.c"
+PyObject * PyObject_GetAttr(PyObject *v, PyObject *name) {
+    PyTypeObject *tp = Py_TYPE(v);
+
+    if (!PyUnicode_Check(name)) {
+        PyErr_Format(PyExc_TypeError,
+                     "attribute name must be string, not '%.200s'",
+                     name->ob_type->tp_name);
+        return NULL;
+    }
+    if (tp->tp_getattro != NULL) {
+        return (*tp->tp_getattro)(v, name);
+    }
+    if (tp->tp_getattr != NULL) {
+        const char *name_str = PyUnicode_AsUTF8(name);
+        if (name_str == NULL) {
+            return NULL;
+        }
+        return (*tp->tp_getattr)(v, (char *)name_str);
+    }
+    PyErr_Format(PyExc_AttributeError,
+                 "'%.50s' object has no attribute '%U'",
+                 tp->tp_name, name);
+    return NULL;
 }
 
+UPCALL_ID(PyObject_GenericGetAttr);
 PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
-    return PyObject_GetAttr(obj, attr);
+	return UPCALL_CEXT_O(_jls_PyObject_GenericGetAttr, native_to_java(obj), native_to_java(attr));
 }
 
 /* Note: We must implement this in native because it might happen that this function is used on an

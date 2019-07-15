@@ -979,8 +979,8 @@ def PyObject_AsFileDescriptor(obj):
 
 
 @may_raise
-def PyObject_GetAttr(obj, attr):
-    return getattr(obj, attr)
+def PyObject_GenericGetAttr(obj, attr):
+    return object.__getattribute__(obj, attr)
 
 
 @may_raise(-1)
