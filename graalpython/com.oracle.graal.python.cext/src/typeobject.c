@@ -76,19 +76,19 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
 /* Special C landing functions that convert some arguments to primitives. */
 
 static PyObject* wrap_allocfunc(allocfunc f, PyTypeObject* klass, PyObject* n) {
-	return f(klass, PyLong_AsSsize_t(n));
+	return native_to_java(f(klass, PyLong_AsSsize_t(n)));
 }
 
 /* Wrapper around a native function to be called by Python code. */
 static PyObject* wrap_getattrfunc(getattrfunc f, PyObject* obj, PyObject* unicode) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
-	return f(obj, as_char_pointer(unicode));
+	return native_to_java(f(obj, as_char_pointer(unicode)));
 }
 
 /* Wrapper around the native function to be called by Python code. */
 static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicode, PyObject* value) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
-	return f(obj, as_char_pointer(unicode), value);
+	return native_to_java(f(obj, as_char_pointer(unicode), value));
 }
 
 static PyObject* wrap_setattrofunc(setattrofunc f, PyObject* obj, PyObject* key, PyObject* item) {
@@ -108,7 +108,7 @@ static PyObject* wrap_descrgetfunc(descrgetfunc f, PyObject* self, PyObject* obj
 }
 
 static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObject* n) {
-	return f(a, b, (int)PyLong_AsLong(n));
+	return native_to_java(f(a, b, (int)PyLong_AsLong(n)));
 }
 
 #undef RICHCMP_WRAPPER
