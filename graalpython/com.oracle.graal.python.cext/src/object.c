@@ -438,6 +438,10 @@ PyObject * PyObject_GetAttr(PyObject *v, PyObject *name) {
 
 UPCALL_ID(PyObject_GenericGetAttr);
 PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
+    PyTypeObject *tp = Py_TYPE(obj);
+    if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
+    	return NULL;
+    }
 	return UPCALL_CEXT_O(_jls_PyObject_GenericGetAttr, native_to_java(obj), native_to_java(attr));
 }
 

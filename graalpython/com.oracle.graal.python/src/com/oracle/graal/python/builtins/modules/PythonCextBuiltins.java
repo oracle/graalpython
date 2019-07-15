@@ -2436,6 +2436,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
 
+        @Specialization(guards = "isNoValue(mroTuple)")
+        Object doIt(PythonNativeClass clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
+            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+            if (nativeClassStableAssumption != null) {
+                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") (without MRO) called");
+            }
+            return PNone.NONE;
+        }
+
         @Specialization
         Object doIt(PythonNativeClass clazz, String name, PTuple mroTuple,
                         @Cached("createClassProfile()") ValueProfile profile) {

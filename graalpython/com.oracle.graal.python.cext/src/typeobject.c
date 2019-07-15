@@ -182,6 +182,11 @@ static PyObject* wrap_reverse_binop(binaryfunc f, PyObject* a, PyObject* b) {
     return f(b, a);
 }
 
+UPCALL_ID(PyTruffle_Type_Modified);
+void PyType_Modified(PyTypeObject* type) {
+	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, native_type_to_java(type), polyglot_from_string(type->tp_name, SRC_CS), native_to_java(type->tp_mro));
+}
+
 static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
 
     /* Copying basicsize is connected to the GC flags */
@@ -576,17 +581,15 @@ int PyType_Ready(PyTypeObject* cls) {
     cls->tp_flags = cls->tp_flags & ~Py_TPFLAGS_READYING;
     cls->tp_flags = cls->tp_flags | Py_TPFLAGS_READY;
 
+    // it may be that the type was used uninitialized
+	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, cls, polyglot_from_string(cls->tp_name, SRC_CS), Py_NoValue);
+
     return 0;
 
 #undef ADD_IF_MISSING
 #undef ADD_METHOD
 #undef ADD_SLOT
 #undef ADD_METHOD_OR_SLOT
-}
-
-UPCALL_ID(PyTruffle_Type_Modified);
-void PyType_Modified(PyTypeObject* type) {
-	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, native_type_to_java(type), polyglot_from_string(type->tp_name, SRC_CS), native_to_java(type->tp_mro));
 }
 
 MUST_INLINE static int valid_identifier(PyObject *s) {
