@@ -487,6 +487,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__sub__", numbers->nb_subtract, -2);
         ADD_SLOT_CONV("__rsub__", wrap_reverse_binop, numbers->nb_subtract, -2);
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
+        ADD_SLOT_CONV("__rmul__", wrap_reverse_binop, numbers->nb_multiply, -2);
         ADD_SLOT("__mod__", numbers->nb_remainder, -2);
         ADD_SLOT_CONV("__rmod__", wrap_reverse_binop, numbers->nb_remainder, -2);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
