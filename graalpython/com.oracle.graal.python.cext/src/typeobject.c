@@ -182,9 +182,7 @@ static PyObject* wrap_reverse_binop(binaryfunc f, PyObject* a, PyObject* b) {
     return f(b, a);
 }
 
-static void
-inherit_special(PyTypeObject *type, PyTypeObject *base)
-{
+static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
 
     /* Copying basicsize is connected to the GC flags */
     if (!(type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
@@ -245,6 +243,17 @@ inherit_special(PyTypeObject *type, PyTypeObject *base)
         type->tp_flags |= Py_TPFLAGS_DICT_SUBCLASS;
 }
 
+static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
+    if (type->tp_getattr == NULL && type->tp_getattro == NULL) {
+        type->tp_getattr = base->tp_getattr;
+        type->tp_getattro = base->tp_getattro;
+    }
+    if (type->tp_setattr == NULL && type->tp_setattro == NULL) {
+        type->tp_setattr = base->tp_setattr;
+        type->tp_setattro = base->tp_setattro;
+    }
+}
+
 // TODO support member flags other than READONLY
 UPCALL_ID(AddMember);
 static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
@@ -294,6 +303,9 @@ int PyType_Ready(PyTypeObject* cls) {
 	if (__meth__) { \
 		add_method_or_slot(cls, dict, (__name__), (__meth__), (__clanding__), (__flags__), (__doc__)); \
 	}
+
+    Py_ssize_t n;
+    Py_ssize_t i;
 
     // https://docs.python.org/3/c-api/typeobj.html#Py_TPFLAGS_READY
     if ((cls->tp_flags & Py_TPFLAGS_READY) || (cls->tp_flags & Py_TPFLAGS_READYING)) {
@@ -407,6 +419,17 @@ int PyType_Ready(PyTypeObject* cls) {
     /* Inherit special flags from dominant base */
     if (cls->tp_base != NULL)
         inherit_special(cls, cls->tp_base);
+
+    /* Initialize tp_dict properly */
+    bases = cls->tp_mro;
+    assert(bases != NULL);
+    assert(PyTuple_Check(bases));
+    n = PyTuple_GET_SIZE(bases);
+    for (i = 1; i < n; i++) {
+        PyObject *b = PyTuple_GET_ITEM(bases, i);
+        if (PyType_Check(b))
+            inherit_slots(cls, (PyTypeObject *)b);
+    }
 
     ADD_IF_MISSING(cls->tp_alloc, PyType_GenericAlloc);
     ADD_IF_MISSING(cls->tp_new, PyType_GenericNew);
@@ -540,8 +563,7 @@ int PyType_Ready(PyTypeObject* cls) {
 
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
-    Py_ssize_t n = PyTuple_GET_SIZE(bases);
-    Py_ssize_t i;
+    n = PyTuple_GET_SIZE(bases);
     for (i = 0; i < n; i++) {
         PyObject* base_class_object = PyTuple_GetItem(bases, i);
         PyTypeObject* b = (PyTypeObject*) base_class_object;
