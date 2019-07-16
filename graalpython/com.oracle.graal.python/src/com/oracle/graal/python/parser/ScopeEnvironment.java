@@ -117,15 +117,23 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
                 List<ScopeInfo> usedInScopes = unresolvedVars.remove(name);
                 // was the declared varibale seen before?
-                if (usedInScopes != null) { 
+                if (usedInScopes != null && !(definingScope.getScopeKind() == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) { 
                     // make the varible freevar and cellvar in scopes, where is used
                     for (ScopeInfo scope : usedInScopes) {
-                        scope.addFreeVar(name, true);
-                        definingScope.addCellVar(name);
-                        scope = scope.getParent();
-                        while(scope != null && scope != definingScope && scope.findFrameSlot(name) == null) {
+                        // we need to find out, whether the scope is a under the defing scope
+                        ScopeInfo tmpScope = scope;
+                        ScopeInfo parentDefiningScope = definingScope.getParent();
+                        while(tmpScope != null && tmpScope != definingScope && tmpScope != parentDefiningScope) {
+                            tmpScope = tmpScope.getParent();
+                        }
+                        if (definingScope == tmpScope) {
                             scope.addFreeVar(name, true);
+                            definingScope.addCellVar(name);
                             scope = scope.getParent();
+                            while(scope != null && scope != definingScope && scope.findFrameSlot(name) == null) {
+                                scope.addFreeVar(name, true);
+                                scope = scope.getParent();
+                            }
                         }
                     }
                 }

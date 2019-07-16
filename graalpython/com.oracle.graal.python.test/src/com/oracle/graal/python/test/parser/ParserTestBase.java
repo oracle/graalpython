@@ -47,6 +47,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -84,10 +86,24 @@ public class ParserTestBase {
         return result;
     }
     
+    protected RootNode parseOld(Source source) {
+        PythonParser parser = context.getCore().getParser();
+        RootNode result = (RootNode) parser.parse(PythonParser.ParserMode.File, context.getCore(), source, null);
+        lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
+        return result;
+    }
+    
     protected Node parseNew(String src, String moduleName) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
         PythonParser parser = context.getCore().getParser();
-        Node result = ((PythonParserImpl)parser).parseWithNew(PythonParser.ParserMode.File, context.getCore(), source, null);
+        Node result = ((PythonParserImpl)parser).parseN(PythonParser.ParserMode.File, context.getCore(), source, null);
+        lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
+        return result;
+    }
+    
+    protected Node parseNew(Source source) {
+        PythonParser parser = context.getCore().getParser();
+        Node result = ((PythonParserImpl)parser).parseN(PythonParser.ParserMode.File, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
     }
@@ -109,8 +125,9 @@ public class ParserTestBase {
     
     public void checkTreeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
-        String source = readFile(testFile);
-        Node resultNew = parseNew(source, getFileName(testFile));
+        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
+        Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
+        Node resultNew = parseNew(source);
         String tree = printTreeToString(resultNew);
         File goldenFile = goldenFileNextToTestFile 
                 ? new File(testFile.getParentFile(), getFileName(testFile) + GOLDEN_FILE_EXT)
@@ -118,7 +135,7 @@ public class ParserTestBase {
         if (!goldenFile.exists()) {
             // parse it with old parser and create golden file with this result
             // TODO, when the new parser will work, it has to be removed
-            RootNode resultOld = parseOld(source, getFileName(testFile));
+            RootNode resultOld = parseOld(source);
             String oldTree = printTreeToString(resultOld);
             FileWriter fw = new FileWriter(goldenFile);
             try {
@@ -134,8 +151,9 @@ public class ParserTestBase {
     
     public void checkScopeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
-        String source = readFile(testFile);
-        parseNew(source, getFileName(testFile));
+        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
+        Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
+        parseNew(source);
         ScopeInfo scopeNew = getLastGlobalScope();
         StringBuilder scopes = new StringBuilder();
         scopeNew.debugPrint(scopes, 0);
@@ -143,7 +161,7 @@ public class ParserTestBase {
                 ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
                 : getGoldenFile(SCOPE_FILE_EXT);
         if (!goldenScopeFile.exists()) {
-            parseOld(source, getFileName(testFile));
+            parseOld(source);
             StringBuilder oldScope = new StringBuilder();
             getLastGlobalScope().debugPrint(oldScope, 0);
             FileWriter fw = new FileWriter(goldenScopeFile);

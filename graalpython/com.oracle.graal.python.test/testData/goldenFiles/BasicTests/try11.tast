@@ -1,0 +1,61 @@
+ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:↵ ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,79]`def fn():↵    try:↵ ...`
+    ExpressionWithSideEffect SourceSection: [0,79]`def fn():↵    try:↵ ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,79]`def fn():↵    try:↵ ...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,79]`def fn():↵    try:↵ ...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,79]`def fn():↵    try:↵ ...`
+                ReturnTargetNode SourceSection: [0,79]`def fn():↵    try:↵ ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    TryFinallyNode SourceSection: [14,79]`try:↵        pass↵  ...`
+                      TryExceptNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [27,31]`pass`
+                          EmptyNode SourceSection: [27,31]`pass`
+                        ExceptNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [69,79]`print(err)`
+                            PythonCallNodeGen SourceSection: [69,79]`print(err)`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [75,78]`err`
+                                Identifier: err
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: print
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
+                            Identifier: Exception
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          WriteGlobalNodeGen SourceSection: None
+                            Identifier: err
+                        BlockNode SourceSection: None
+                      BlockNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

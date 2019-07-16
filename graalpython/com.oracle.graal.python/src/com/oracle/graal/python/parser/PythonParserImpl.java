@@ -232,7 +232,8 @@ public final class PythonParserImpl implements PythonParser {
     
     private boolean useNewParser = false;
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
-        if (useNewParser) {
+        
+        if (useNewParser && PythonLanguage.getCore().isInitialized()) {
             System.out.println("Parsing: " + source.getPath());
             return parseN(mode, errors, source, currentFrame);
         } else {
@@ -267,7 +268,6 @@ public final class PythonParserImpl implements PythonParser {
                     throw new RuntimeException("unexpected mode: " + mode);
             }
         } catch (Exception e) {
-            e.printStackTrace();
             if (mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement || mode == ParserMode.InlineEvaluation) {
                 try {
                     parser.reset();
@@ -280,7 +280,7 @@ public final class PythonParserImpl implements PythonParser {
             }
         }
         
-        
+        lastGlobalScope = parser.factory.getScopeEnvironment().getGlobalScope();
         return parser.factory.createParserResult(parserSSTResult, mode, errors, source, currentFrame);
         
     }

@@ -1,0 +1,20 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: Test
+        Kind: Class
+        FrameDescriptor: [fn1, fn2, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: fn2
+            Kind: Function
+            FrameDescriptor: [args, kwds, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: fn1
+            Kind: Function
+            FrameDescriptor: [format, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]

@@ -19,10 +19,30 @@ public class RuntimeFileTests extends ParserTestBase {
 //        checkScopeAndTree();
 //    }
     
+//    @Test
+//    public void _sitebuiltins() throws Exception {
+//        checkScopeAndTree();
+//    }
+    
+//    @Test
+//    public void site() throws Exception {
+//        checkScopeAndTree();
+//    }
+    
+//    @Test
+//    public void initCollections() throws Exception {
+//        checkScopeAndTree();
+//    }
+    
     @Test
-    public void functions() throws Exception {
+    public void sre_compile() throws Exception {
         checkScopeAndTree();
     }
+    
+//    @Test
+//    public void functions() throws Exception {
+//        checkScopeAndTree();
+//    }
     
     private void checkScopeAndTree()  throws Exception{
         File testFile = getTestFileFromTestAndTestMethod();

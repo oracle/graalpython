@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: OrderedDict
+        Kind: Class
+        FrameDescriptor: [__reversed__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __reversed__
+            Kind: Generator
+            FrameDescriptor: [root, self, curr, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]

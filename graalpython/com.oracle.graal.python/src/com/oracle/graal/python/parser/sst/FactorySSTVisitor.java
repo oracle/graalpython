@@ -322,7 +322,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         // 2) all class methods receive a __class__ freevar
         ScopeInfo childScope = classScope.getFirstChildScope();
         while (childScope != null) {
-            if (childScope.getScopeKind() == ScopeKind.Function) {
+            if (childScope.getScopeKind() == ScopeKind.Function 
+                    || childScope.getScopeKind() == ScopeKind.Generator) {
                 childScope.addFreeVar(__CLASS__, true);
             }
             childScope = childScope.getNextChildScope();
@@ -522,7 +523,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         for(int i = 0; i < node.expressions.length; i++) {
             delTarget(blockList, (ExpressionNode)node.expressions[i].accept(this));
         }
-        return nodeFactory.createBlock(blockList);
+        PNode result = nodeFactory.createBlock(blockList);
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
     }
     
     private void delTarget(List<StatementNode> blockList, PNode target) {

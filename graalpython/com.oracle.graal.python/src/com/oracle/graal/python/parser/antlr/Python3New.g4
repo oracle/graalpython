@@ -875,7 +875,7 @@ except_clause returns [SSTNode result]
 		( 'as' NAME 
                     { 
                         asName = $NAME.text; 
-                        factory.getScopeEnvironment().createLocal(asName);
+                        //factory.getScopeEnvironment().createLocal(asName);
                     } 
                 )?
 	)?
@@ -1465,8 +1465,19 @@ returns [SSTNode result]
             SSTNode[] variables;
             int lineNumber;
         }
-	f = 'for' exprlist 'in' or_test
-	{ 
+	f = 'for' exprlist 'in' 
+            {
+                ScopeInfo currentScope = null;
+                if (level == 0) {
+                    currentScope = factory.getCurrentScope();
+                    factory.getScopeEnvironment().setCurrentScope(currentScope.getParent());
+                }
+            }
+                or_test    
+	{   
+            if (level == 0) {
+                factory.getScopeEnvironment().setCurrentScope(currentScope);
+            }
             lineNumber = $f.getLine();
             iterator = $or_test.result; 
             variables = $exprlist.result;

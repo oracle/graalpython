@@ -79,6 +79,25 @@ public class ClassDefTests extends ParserTestBase {
     }
     
     @Test
+    public void classDef07() throws Exception {
+        checkScopeAndTree(
+                "class OrderedDict(dict):\n" +
+                "  def setup(dict_setitem = dict.__setitem__):\n" +
+                "    dict_setitem()\n" +
+                "    dict.clear()");
+    }
+    @Test
+    public void classDef08() throws Exception {
+        checkScopeAndTree(
+                "class Test():\n" +
+                "    def fn1(format):\n" +
+                "        return (format % args)\n" +
+                "    def fn2(*args, **kwds):\n" +
+                "        return self(*args, **kwds)\n");
+    }
+    
+
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree("@class_decorator\n" +
                          "class foo():pass");

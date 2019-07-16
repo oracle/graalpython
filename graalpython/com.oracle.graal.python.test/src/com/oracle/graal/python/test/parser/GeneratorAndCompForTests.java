@@ -147,10 +147,42 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     }
     
     @Test
+    public void param06() throws Exception {
+        checkScopeAndTree(
+                "def fn(files, dirs):\n" +
+                "  a = [join(dir, file) for dir in dirs for file in files]");
+    }
+    
+    @Test
     public void doc01() throws Exception {
         checkScopeAndTree(
                 "def fn():\n" +
                 "  \"This is a doc\"\n" +
                 "  yield \"neco\"");
     }
+    
+    
+    @Test
+    public void class01() throws Exception {
+        checkScopeAndTree(
+                "class OrderedDict(dict):\n" +
+                "    def __reversed__(self):\n" +
+                "        root = self.__root\n" +
+                "        curr = root.prev\n" +
+                "        while curr is not root:\n" +
+                "            yield curr.key\n" +
+                "            curr = curr.prev");
+    }
+    
+    @Test
+    public void class02() throws Exception {
+        checkScopeAndTree(
+                "class Counter(dict):\n" +
+                "    def _keep_positive(self):\n" +
+                "        nonpositive = [elem for elem, count in self.items() if not count > 0]\n" +
+                "        for elem in nonpositive:\n" +
+                "            del self[elem]\n" +
+                "        return self");
+    }
+   
 }

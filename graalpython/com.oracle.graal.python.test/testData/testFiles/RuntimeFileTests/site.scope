@@ -1,0 +1,140 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [ENABLE_USER_SITE, PREFIXES, USER_BASE, USER_SITE]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: _script
+        Kind: Function
+        FrameDescriptor: [args, help, user_base, user_site, textwrap, buffer, dir, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: main
+        Kind: Function
+        FrameDescriptor: [orig_path, known_paths, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: execusercustomize
+        Kind: Function
+        FrameDescriptor: [usercustomize, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: execsitecustomize
+        Kind: Function
+        FrameDescriptor: [sitecustomize, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: venv
+        Kind: Function
+        FrameDescriptor: [<>temp18, <>temp17, <>temp19, <>temp14, line, f, <>temp16, <>temp15, system_site, env, known_paths, executable, candidate_confs, site_prefix, exe_dir, virtual_conf, conf_basename, value, <return_val>, key, _]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: generator16114
+            Kind: Generator
+            FrameDescriptor: [conffile, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: enablerlcompleter
+        Kind: Function
+        FrameDescriptor: [register_readline, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: register_readline
+            Kind: Function
+            FrameDescriptor: [readline_doc, atexit, rlcompleter, history, <return_val>, readline]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: sethelper
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: setcopyright
+        Kind: Function
+        FrameDescriptor: [here, files, dirs, <>temp3, <>temp4, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: setquit
+        Kind: Function
+        FrameDescriptor: [eof, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: addsitepackages
+        Kind: Function
+        FrameDescriptor: [prefixes, known_paths, sitedir, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: getsitepackages
+        Kind: Function
+        FrameDescriptor: [prefixes, sitepackages, prefix, <return_val>, seen]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: addusersitepackages
+        Kind: Function
+        FrameDescriptor: [user_site, known_paths, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: getusersitepackages
+        Kind: Function
+        FrameDescriptor: [userbase, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: getuserbase
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _get_path
+        Kind: Function
+        FrameDescriptor: [userbase, version, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _getuserbase
+        Kind: Function
+        FrameDescriptor: [joinuser, env_base, <return_val>, base]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: joinuser
+            Kind: Function
+            FrameDescriptor: [args, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: check_enableusersite
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: addsitedir
+        Kind: Function
+        FrameDescriptor: [sitedircase, names, <>temp6, <>temp7, name, reset, sitedir, known_paths, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: generator7404
+            Kind: Generator
+            FrameDescriptor: [name, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: addpackage
+        Kind: Function
+        FrameDescriptor: [<>temp14, <>temp13, f, line, <>temp15, <>temp12, dir, sitedir, known_paths, dircase, n, record, name, reset, fullname, traceback, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _init_pathinfo
+        Kind: Function
+        FrameDescriptor: [item, d, itemcase, <>temp4, <>temp5, <return_val>, _]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: removeduppaths
+        Kind: Function
+        FrameDescriptor: [<>temp4, <>temp5, L, dir, known_paths, dircase, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: abs_paths
+        Kind: Function
+        FrameDescriptor: [m, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: makepath
+        Kind: Function
+        FrameDescriptor: [paths, dir, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty

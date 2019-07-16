@@ -1,0 +1,941 @@
+
+Scope: []
+    Kind: Module
+    FrameDescriptor: [args, <>temp6, <>temp7, <>temp8, <>temp9, <>temp2, <>temp10, dict, <>temp3, <>temp4, <>temp5, <>temp11]
+    CellVars: Empty
+    FreeVars: [args, dict]
+    Scope: UserString
+        Kind: Class
+        FrameDescriptor: [encode, __mul__, upper, replace, translate, split, strip, find, __float__, __ge__, zfill, join, isdigit, expandtabs, rindex, isalnum, rjust, lower, __int__, count, format, isprintable, isspace, index, __rmod__, capitalize, __class__, __complex__, __repr__, __getitem__, __init__, __lt__, isalpha, startswith, __mod__, isdecimal, format_map, islower, swapcase, __hash__, endswith, title, __getnewargs__, istitle, partition, splitlines, rpartition, maketrans, rfind, isascii, isnumeric, __radd__, __str__, center, isupper, __eq__, __gt__, __contains__, __rmul__, __le__, args, isidentifier, __add__, rstrip, __len__, rsplit, lstrip, ljust, casefold]
+        CellVars: [__class__]
+        FreeVars: [args]
+        Scope: zfill
+            Kind: Function
+            FrameDescriptor: [width, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: upper
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: translate
+            Kind: Function
+            FrameDescriptor: [args, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: title
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: swapcase
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: strip
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, chars, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: startswith
+            Kind: Function
+            FrameDescriptor: [prefix, start, self, end, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: splitlines
+            Kind: Function
+            FrameDescriptor: [self, keepends, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: rsplit
+            Kind: Function
+            FrameDescriptor: [self, maxsplit, <return_val>, __class__, sep]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: split
+            Kind: Function
+            FrameDescriptor: [self, maxsplit, <return_val>, __class__, sep]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: rstrip
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, chars, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: rpartition
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__, sep]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: rjust
+            Kind: Function
+            FrameDescriptor: [args, width, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: rindex
+            Kind: Function
+            FrameDescriptor: [sub, start, self, end, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: rfind
+            Kind: Function
+            FrameDescriptor: [sub, start, self, end, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: replace
+            Kind: Function
+            FrameDescriptor: [new, old, self, maxsplit, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: partition
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__, sep]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: lstrip
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, chars, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: lower
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: ljust
+            Kind: Function
+            FrameDescriptor: [args, width, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: join
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, seq, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isupper
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: istitle
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isspace
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isprintable
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isnumeric
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: islower
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isidentifier
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isdigit
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isdecimal
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isascii
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isalnum
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: isalpha
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: index
+            Kind: Function
+            FrameDescriptor: [sub, start, self, end, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: format_map
+            Kind: Function
+            FrameDescriptor: [mapping, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: format
+            Kind: Function
+            FrameDescriptor: [args, self, kwds, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: find
+            Kind: Function
+            FrameDescriptor: [sub, start, self, end, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: expandtabs
+            Kind: Function
+            FrameDescriptor: [tabsize, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: endswith
+            Kind: Function
+            FrameDescriptor: [start, self, end, suffix, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: encode
+            Kind: Function
+            FrameDescriptor: [self, encoding, <return_val>, errors, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: count
+            Kind: Function
+            FrameDescriptor: [sub, start, self, end, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: center
+            Kind: Function
+            FrameDescriptor: [args, width, self, <return_val>, __class__]
+            CellVars: [args]
+            FreeVars: [__class__]
+        Scope: casefold
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: capitalize
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __rmod__
+            Kind: Function
+            FrameDescriptor: [args, format, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__, args]
+        Scope: __mod__
+            Kind: Function
+            FrameDescriptor: [args, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __mul__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, n, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __radd__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __add__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __getitem__
+            Kind: Function
+            FrameDescriptor: [self, index, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __len__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __contains__
+            Kind: Function
+            FrameDescriptor: [char, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __ge__
+            Kind: Function
+            FrameDescriptor: [string, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __gt__
+            Kind: Function
+            FrameDescriptor: [string, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __le__
+            Kind: Function
+            FrameDescriptor: [string, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __lt__
+            Kind: Function
+            FrameDescriptor: [string, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __eq__
+            Kind: Function
+            FrameDescriptor: [string, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __getnewargs__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __hash__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __complex__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __float__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __int__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __str__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, seq, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: UserList
+        Kind: Class
+        FrameDescriptor: [__lt__, __mul__, insert, remove, __delitem__, pop, __imul__, __ge__, __cast, copy, __radd__, clear, count, index, __eq__, __gt__, __iadd__, sort, __contains__, __rmul__, reverse, __class__, __le__, __setitem__, extend, __add__, __len__, __repr__, __getitem__, __doc__, __init__, append]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: extend
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: sort
+            Kind: Function
+            FrameDescriptor: [args, self, kwds, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: reverse
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: index
+            Kind: Function
+            FrameDescriptor: [args, item, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: count
+            Kind: Function
+            FrameDescriptor: [item, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: copy
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: clear
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: remove
+            Kind: Function
+            FrameDescriptor: [item, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: pop
+            Kind: Function
+            FrameDescriptor: [self, i, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: insert
+            Kind: Function
+            FrameDescriptor: [item, self, i, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: append
+            Kind: Function
+            FrameDescriptor: [item, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __imul__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, n, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __mul__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, n, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __iadd__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __radd__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __add__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __delitem__
+            Kind: Function
+            FrameDescriptor: [self, i, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __setitem__
+            Kind: Function
+            FrameDescriptor: [item, self, i, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __getitem__
+            Kind: Function
+            FrameDescriptor: [self, i, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __len__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __contains__
+            Kind: Function
+            FrameDescriptor: [item, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __cast
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __ge__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __gt__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __eq__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __le__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __lt__
+            Kind: Function
+            FrameDescriptor: [other, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [initlist, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: UserDict
+        Kind: Class
+        FrameDescriptor: [__setitem__, fromkeys, __iter__, __len__, __getitem__, __repr__, copy, __init__, __contains__, __class__, __delitem__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: fromkeys
+            Kind: Function
+            FrameDescriptor: [d, iterable, cls, value, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: copy
+            Kind: Function
+            FrameDescriptor: [c, data, self, copy, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __contains__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __iter__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __delitem__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __setitem__
+            Kind: Function
+            FrameDescriptor: [item, self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __getitem__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __len__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [args, <>temp6, <>temp7, warnings, kwargs, self, dict, <return_val>, __class__]
+            CellVars: [dict]
+            FreeVars: [__class__]
+    Scope: ChainMap
+        Kind: Class
+        FrameDescriptor: [__bool__, fromkeys, __missing__, __iter__, clear, __contains__, __class__, __delitem__, __setitem__, pop, __copy__, get, __len__, __getitem__, __repr__, new_child, dict, __doc__, copy, popitem, __init__, parents]
+        CellVars: [__class__]
+        FreeVars: [dict]
+        Scope: clear
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: pop
+            Kind: Function
+            FrameDescriptor: [args, self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: popitem
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __delitem__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __setitem__
+            Kind: Function
+            FrameDescriptor: [self, value, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: parents
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: new_child
+            Kind: Function
+            FrameDescriptor: [self, m, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: copy
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: fromkeys
+            Kind: Function
+            FrameDescriptor: [args, iterable, dict, cls, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__, dict]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __bool__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __contains__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: [key]
+            FreeVars: [__class__]
+            Scope: generator33790
+                Kind: Generator
+                FrameDescriptor: [m, <return_val>, key]
+                CellVars: Empty
+                FreeVars: [key]
+        Scope: __iter__
+            Kind: Function
+            FrameDescriptor: [mapping, d, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __len__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: get
+            Kind: Function
+            FrameDescriptor: [default, self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __getitem__
+            Kind: Function
+            FrameDescriptor: [mapping, self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __missing__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [maps, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: Counter
+        Kind: Class
+        FrameDescriptor: [__isub__, __and__, fromkeys, __ior__, update, most_common, __delitem__, _keep_positive, __sub__, __neg__, dict, copy, __reduce__, __missing__, subtract, __or__, __iadd__, __class__, __add__, elements, __iand__, __repr__, __doc__, __init__, __pos__]
+        CellVars: [__class__]
+        FreeVars: [dict]
+        Scope: __iand__
+            Kind: Function
+            FrameDescriptor: [elem, other, <>temp6, <>temp7, count, self, <return_val>, other_count, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __ior__
+            Kind: Function
+            FrameDescriptor: [elem, other, <>temp6, <>temp7, count, self, <return_val>, other_count, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __isub__
+            Kind: Function
+            FrameDescriptor: [elem, other, <>temp6, count, self, <>temp5, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __iadd__
+            Kind: Function
+            FrameDescriptor: [elem, other, <>temp6, count, self, <>temp5, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: _keep_positive
+            Kind: Function
+            FrameDescriptor: [elem, nonpositive, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+            Scope: generator30346
+                Kind: Generator
+                FrameDescriptor: [elem, count, <>temp3, <>temp4, <return_val>]
+                CellVars: Empty
+                FreeVars: Empty
+        Scope: __neg__
+            Kind: Function
+            FrameDescriptor: [result, elem, <>temp6, count, self, <>temp5, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __pos__
+            Kind: Function
+            FrameDescriptor: [result, elem, <>temp6, count, self, <>temp5, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __and__
+            Kind: Function
+            FrameDescriptor: [result, elem, newcount, other, <>temp9, count, <>temp10, self, <return_val>, other_count, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __or__
+            Kind: Function
+            FrameDescriptor: [elem, newcount, other, count, <>temp10, <>temp12, <>temp11, __class__, result, <>temp9, self, <return_val>, other_count]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __sub__
+            Kind: Function
+            FrameDescriptor: [result, elem, newcount, other, <>temp8, <>temp9, count, <>temp10, self, <>temp11, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __add__
+            Kind: Function
+            FrameDescriptor: [result, elem, newcount, other, <>temp8, <>temp9, count, <>temp10, self, <>temp11, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, dict, items, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__, dict]
+        Scope: __delitem__
+            Kind: Function
+            FrameDescriptor: [elem, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __reduce__
+            Kind: Function
+            FrameDescriptor: [self, dict, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__, dict]
+        Scope: copy
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: subtract
+            Kind: Function
+            FrameDescriptor: [elem, count, <>temp10, kwds, iterable, <>temp11, __class__, args, self_get, <>temp8, <>temp9, self, <return_val>]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: update
+            Kind: Function
+            FrameDescriptor: [elem, count, <>temp10, kwds, iterable, <>temp11, __class__, args, self_get, <>temp8, <>temp9, self, <return_val>]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: fromkeys
+            Kind: Function
+            FrameDescriptor: [v, iterable, cls, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: elements
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: most_common
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, n, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __missing__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [args, kwds, self, <>temp4, <>temp5, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: _count_elements
+        Kind: Function
+        FrameDescriptor: [elem, mapping, mapping_get, iterable, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: namedtuple
+        Kind: Function
+        FrameDescriptor: [tuple_new, <>temp35, field_names, <>temp32, <>temp31, <>temp34, <>temp33, seen, __getnewargs__, <>temp30, result, dict, field_defaults, _make, cache, method, module, index, *, __new__, class_namespace, repr_fmt, arg_list, itemgetter_object, s, defaults, rename, name, num_fields, namespace, _replace, __repr__, doc, _len, <return_val>, typename, _asdict]
+        CellVars: [_len, field_names, num_fields, repr_fmt, tuple_new]
+        FreeVars: [dict]
+        Scope: __getnewargs__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+        Scope: _asdict
+            Kind: Function
+            FrameDescriptor: [self, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, repr_fmt]
+            CellVars: Empty
+            FreeVars: [repr_fmt]
+        Scope: _replace
+            Kind: Function
+            FrameDescriptor: [result, field_names, kwds, _self, <return_val>]
+            CellVars: Empty
+            FreeVars: [field_names]
+        Scope: _make
+            Kind: Function
+            FrameDescriptor: [result, tuple_new, num_fields, iterable, _len, cls, <return_val>]
+            CellVars: Empty
+            FreeVars: [_len, num_fields, tuple_new]
+        Scope: generator14106
+            Kind: Generator
+            FrameDescriptor: [name, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: OrderedDict
+        Kind: Class
+        FrameDescriptor: [move_to_end, fromkeys, keys, setdefault, values, update, __delitem__, pop, __update, __marker, dict, popitem, copy, __reduce__, <>temp25, __iter__, clear, __reversed__, __eq__, __class__, __setitem__, __sizeof__, __repr__, __doc__, __init__, items, __ne__]
+        CellVars: [__class__]
+        FreeVars: [dict]
+        Scope: __eq__
+            Kind: Function
+            FrameDescriptor: [other, self, dict, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__, dict]
+        Scope: fromkeys
+            Kind: Function
+            FrameDescriptor: [iterable, self, cls, value, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: copy
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __reduce__
+            Kind: Function
+            FrameDescriptor: [inst_dict, self, k, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: setdefault
+            Kind: Function
+            FrameDescriptor: [default, self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: pop
+            Kind: Function
+            FrameDescriptor: [result, default, self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: values
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: items
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: keys
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __sizeof__
+            Kind: Function
+            FrameDescriptor: [size, sizeof, self, <return_val>, n, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: move_to_end
+            Kind: Function
+            FrameDescriptor: [last, link_next, soft_link, link_prev, root, link, self, <return_val>, key, first, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: popitem
+            Kind: Function
+            FrameDescriptor: [last, link_next, link_prev, root, link, self, dict, value, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__, dict]
+        Scope: clear
+            Kind: Function
+            FrameDescriptor: [root, self, dict, <>temp4, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__, dict]
+        Scope: __reversed__
+            Kind: Generator
+            FrameDescriptor: [root, self, curr, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __iter__
+            Kind: Generator
+            FrameDescriptor: [root, self, curr, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __delitem__
+            Kind: Function
+            FrameDescriptor: [dict_delitem, link_next, link_prev, link, self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __setitem__
+            Kind: Function
+            FrameDescriptor: [last, <>temp13, dict_setitem, link, <>temp10, <>temp12, <>temp11, __class__, proxy, root, self, value, <return_val>, key, Link]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [args, <>temp6, <>temp7, <>temp8, root, kwds, self, <>temp5, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: _Link
+        Kind: Class
+        FrameDescriptor: [__slots__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+    Scope: _OrderedDictValuesView
+        Kind: Class
+        FrameDescriptor: [__reversed__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __reversed__
+            Kind: Generator
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: _OrderedDictItemsView
+        Kind: Class
+        FrameDescriptor: [__reversed__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __reversed__
+            Kind: Generator
+            FrameDescriptor: [self, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: _OrderedDictKeysView
+        Kind: Class
+        FrameDescriptor: [__reversed__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __reversed__
+            Kind: Generator
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: __getattr__
+        Kind: Function
+        FrameDescriptor: [obj, warnings, name, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty

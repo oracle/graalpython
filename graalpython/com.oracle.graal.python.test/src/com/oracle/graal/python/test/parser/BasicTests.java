@@ -593,6 +593,16 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void try11() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "    try:\n" +
+                "        pass\n" +
+                "    except Exception as err:\n" +
+                "        print(err)");
+    }
+    
+    @Test
     public void tuple01() throws Exception {
         checkTreeResult("(1, 2, 3)");
     }

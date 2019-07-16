@@ -128,6 +128,41 @@ public class FuncDefTests extends ParserTestBase{
     }
     
     @Test
+    public void functionDef15() throws Exception {
+        checkScopeAndTree(
+                "SOMETHING = NONE\n" +
+                "def setup():\n" +
+                "  global SOMETHING\n" +
+                "  if True : SOMETHING = True\n" +
+                "def install():\n" +
+                "  if SOMETHING : pass");
+    }
+    
+    @Test
+    public void functionDef16() throws Exception {
+        checkScopeAndTree(
+                "def test():\n" +
+                "  def inner (end):\n" +
+                "    def inner_inner():\n" +
+                "      print(\"inner_inner\", end=end)\n" +
+                "    inner_inner()\n" +
+                "  inner(\" baf\\n\")\n" +
+                "test()");
+    }
+    
+    @Test
+    public void functionDef17() throws Exception {
+        checkScopeAndTree(
+                "def test():\n" +
+                "  def inner (end):\n" +
+                "    def inner_inner():\n" +
+                "      print(\"inner_inner\", end=\" haha\\n\")\n" +
+                "    inner_inner()\n" +
+                "  inner(\" baf\\n\")\n" +
+                "test()");
+    }
+    
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree();
     }

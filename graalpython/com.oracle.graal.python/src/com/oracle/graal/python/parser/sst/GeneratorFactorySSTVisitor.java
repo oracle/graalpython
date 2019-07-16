@@ -42,6 +42,7 @@
 package com.oracle.graal.python.parser.sst;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
@@ -51,7 +52,6 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -81,6 +81,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.Source;
 
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
@@ -200,9 +201,11 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         switch (node.resultType) {
             case PList:
                 result = nodeFactory.callBuiltin(BuiltinNames.LIST, genExprDef);
+                result.assignSourceSection(createSourceSection(node.target.startOffset, node.endOffset));
                 break;
             case PSet:
                 result = nodeFactory.callBuiltin(BuiltinNames.SET, genExprDef);
+                result.assignSourceSection(createSourceSection(node.target.startOffset, node.endOffset));
                 break;
             case PDict:
                 result = nodeFactory.callBuiltin(BuiltinNames.DICT, genExprDef);
@@ -236,7 +239,16 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             body = createGeneratorExpressionBody(forComp, getIterator, yield);
         }
         
-        StatementNode variable = makeWriteNode((ExpressionNode)node.variables[0].accept(this));
+        StatementNode variable;
+        if (node.variables.length == 1 ) {
+            variable = makeWriteNode((ExpressionNode)node.variables[0].accept(this));
+        } else {
+            ExpressionNode[] variables = new ExpressionNode[node.variables.length];
+            for (int i = 0; i < node.variables.length; i++) {
+                variables[i] = (ExpressionNode)node.variables[i].accept(this);
+            }
+            variable = makeWriteNode(nodeFactory.createObjectLiteral(variables));
+        }
         body = GeneratorForNode.create((WriteNode)variable, 
                 node.level == 0 ? ReadIndexedArgumentNode.create(0).asExpression() : iterator,
                 body, numOfGeneratorForNode++);
@@ -363,8 +375,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             body = nodeFactory.createContinueTarget(body);
         }
         StatementNode whileNode = oldNumber != numOfActiveFlags
-                ? new GeneratorWhileNode(CastToBooleanNode.createIfTrueNode(test), body, numOfActiveFlags++)
-                : nodeFactory.createWhile(CastToBooleanNode.createIfTrueNode(test), body);
+                ? new GeneratorWhileNode(nodeFactory.toBooleanCastNode(test), body, numOfActiveFlags++)
+                : nodeFactory.createWhile(nodeFactory.toBooleanCastNode(test), body);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
         StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
         StatementNode result;

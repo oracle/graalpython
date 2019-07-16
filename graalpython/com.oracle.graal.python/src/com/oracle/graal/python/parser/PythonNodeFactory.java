@@ -276,7 +276,7 @@ public final class PythonNodeFactory {
                 result = functionRoot;
                 break;
             case File:
-                result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, fd);
+                result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor());
                 break;    
             case InlineEvaluation:
                 result = body;

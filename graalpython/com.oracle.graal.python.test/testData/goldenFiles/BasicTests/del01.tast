@@ -9,5 +9,5 @@ ModuleRootNode Name: <module 'del01'> SourceSection: [0,5]`del x`
       Expression:
         EmptyNode SourceSection: None
       SideEffect:
-        DeleteNameNodeGen SourceSection: None
+        DeleteNameNodeGen SourceSection: [0,5]`del x`
           Identifier: x

@@ -1,0 +1,20 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: Counter
+        Kind: Class
+        FrameDescriptor: [__class__, _keep_positive]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: _keep_positive
+            Kind: Function
+            FrameDescriptor: [elem, nonpositive, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+            Scope: generator74
+                Kind: Generator
+                FrameDescriptor: [elem, count, <>temp3, <>temp4, <return_val>]
+                CellVars: Empty
+                FreeVars: Empty
