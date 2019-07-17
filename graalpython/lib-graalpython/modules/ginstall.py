@@ -114,7 +114,7 @@ def known_packages():
     #     install_from_pypi("Keras-Applications==1.0.6", args)
 
     def setuptools_scm(*args):
-        install_from_url("https://files.pythonhosted.org/packages/70/bc/f34b06274c1260c5e4842f789fb933a09b89f23549f282b36a15bdf63614/setuptools_scm-1.15.0rc1.tar.gz", extra_opts=args)
+        install_from_pypi("setuptools_scm==1.15.0rc1", extra_opts=args)
 
     def numpy(*args):
         try:
@@ -369,7 +369,7 @@ index e450a66..ed538b4 100644
 2.14.1
 
 """
-        install_from_url("https://files.pythonhosted.org/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip", patch=patch, extra_opts=args)
+        install_from_pypi("numpy==1.14.3", patch=patch, extra_opts=args)
 
 
     def dateutil(*args):
@@ -378,11 +378,11 @@ index e450a66..ed538b4 100644
         except ImportError:
             print("Installing required dependency: setuptools_scm")
             setuptools_scm(*args)
-        install_from_url("https://files.pythonhosted.org/packages/0e/01/68747933e8d12263d41ce08119620d9a7e5eb72c876a3442257f74490da0/python-dateutil-2.7.5.tar.gz", extra_opts=args)
+        install_from_pypi("python-dateutil==2.7.5", extra_opts=args)
 
 
     def pytz(*args):
-        install_from_url("https://files.pythonhosted.org/packages/cd/71/ae99fc3df1b1c5267d37ef2c51b7d79c44ba8a5e37b48e3ca93b4d74d98b/pytz-2018.7.tar.gz", extra_opts=args)
+        install_from_pypi("pytz==2018.7", extra_opts=args)
 
 
     def pandas(*args):
@@ -473,7 +473,7 @@ index fa08f53..49f3bf3 100644
 
 """
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
-        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, add_cflags=cflags)
+        install_from_pypi("pandas==0.20.3", patch=patch, extra_opts=args, add_cflags=cflags)
 
     return locals()
 
@@ -486,7 +486,7 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
+def _install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
@@ -502,13 +502,18 @@ def install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
     cppflags = os.environ.get("CPPFLAGS", "")
     cflags = "-v " + os.environ.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
 
-    system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url))
+    system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url), msg="Download error")
     if name.endswith(".tar.gz"):
-        system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir))
+        system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir), msg="Error extracting tar.gz")
         bare_name = name[:-len(".tar.gz")]
+    elif name.endswith(".tar.bz2"):
+        system("tar xjf %s/%s -C %s" % (tempdir, name, tempdir), msg="Error extracting tar.bz2")
+        bare_name = name[:-len(".tar.bz2")]
     elif name.endswith(".zip"):
-        system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir))
+        system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir), msg="Error extracting zip")
         bare_name = name[:-len(".zip")]
+    else:
+        xit("Unknown file type: %s" % filename)
 
     if patch:
         with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
@@ -519,51 +524,37 @@ def install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
         user_arg = "--user"
     else:
         user_arg = ""
-    system("cd %s/%s; %s %s %s setup.py install %s %s" % (tempdir, bare_name, 'CFLAGS="%s"' % cflags if cflags else "", 'CPPFLAGS="%s"' % cppflags if cppflags else "", sys.executable, user_arg, " ".join(extra_opts)))
+    status = system("cd %s/%s; %s %s %s setup.py install %s %s" % (tempdir, bare_name, 'CFLAGS="%s"' % cflags if cflags else "", 'CPPFLAGS="%s"' % cppflags if cppflags else "", sys.executable, user_arg, " ".join(extra_opts)))
+    if status != 0:
+        xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
 
 
-def install_from_pypi(package, extra_opts=[]):
+def install_from_pypi(package, patch=None, extra_opts=[], add_cflags=""):
+    package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
+    package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
+
     if "==" in package:
         package, _, version = package.rpartition("==")
-        url = "https://pypi.org/pypi/%s/%s/json" % (package, version)
+        url = package_version_pattern % (package, version)
     else:
-        url = "https://pypi.org/pypi/%s/json" % package
+        url = package_pattern % package
 
-    r = subprocess.check_output("curl %s" % url, shell=True).decode("utf8")
-    try:
-        urls = json.loads(r)["urls"]
-    except:
-        pass
+    if any(url.endswith(ending) for ending in [".zip", ".tar.bz2", ".tar.gz"]):
+        # this is already the url to the actual package
     else:
-        for url_info in urls:
-            if url_info["python_version"] == "source":
-                url = url_info["url"]
-                break
+        r = subprocess.check_output("curl %s" % url, shell=True).decode("utf8")
+        try:
+            urls = json.loads(r)["urls"]
+        except:
+            pass
+        else:
+            for url_info in urls:
+                if url_info["python_version"] == "source":
+                    url = url_info["url"]
+                    break
 
     if url:
-        tempdir = tempfile.mkdtemp()
-        filename = url.rpartition("/")[2]
-        system("curl -L -o %s/%s %s" % (tempdir, filename, url), msg="Download error")
-        dirname = None
-        if filename.endswith(".zip"):
-            system("unzip -u %s/%s -d %s" % (tempdir, filename, tempdir))
-            dirname = filename[:-4]
-        elif filename.endswith(".tar.gz"):
-            system("tar -C %s -xzf %s/%s" % (tempdir, tempdir, filename), msg="Error during extraction")
-            dirname = filename[:-7]
-        elif filename.endswith(".tar.bz2"):
-            system("tar -C %s -xjf %s/%s" % (tempdir, tempdir, filename), msg="Error during extraction")
-            dirname = filename[:-7]
-        else:
-            xit("Unknown file type: %s" % filename)
-
-        if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
-            user_arg = "--user"
-        else:
-            user_arg = ""
-        status = os.system("cd %s/%s; %s setup.py install %s %s" % (tempdir, dirname, sys.executable, user_arg, " ".join(extra_opts)))
-        if status != 0:
-            xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
+        _install_from_url(url, patch=patch, extra_opts=extra_opts, add_cflags=add_cflags)
     else:
         xit("Package not found: '%s'" % package)
 
