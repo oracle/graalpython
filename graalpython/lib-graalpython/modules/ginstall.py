@@ -541,6 +541,7 @@ def install_from_pypi(package, patch=None, extra_opts=[], add_cflags=""):
 
     if any(url.endswith(ending) for ending in [".zip", ".tar.bz2", ".tar.gz"]):
         # this is already the url to the actual package
+        pass
     else:
         r = subprocess.check_output("curl %s" % url, shell=True).decode("utf8")
         try:
