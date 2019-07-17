@@ -47,81 +47,82 @@ import sys
 import tempfile
 
 def system(cmd, msg=""):
+    print("+", cmd)
     status = os.system(cmd)
     if status != 0:
         xit(msg, status=status)
 
 
 def known_packages():
-    def PyYAML(*args):
-        install_from_pypi("PyYAML==3.13", args)
+    def PyYAML(**kwargs):
+        install_from_pypi("PyYAML==3.13", **kwargs)
 
-    def six(*args):
-        install_from_pypi("six==1.12.0", args)
+    def six(**kwargs):
+        install_from_pypi("six==1.12.0", **kwargs)
 
-    def Cython(*args):
-        install_from_pypi("Cython==0.29.2", ('--no-cython-compile',) + args)
+    def Cython(extra_opts=[], **kwargs):
+        install_from_pypi("Cython==0.29.2", extra_opts=(['--no-cython-compile'] + extra_opts), **kwargs)
 
-    def setuptools(*args):
-        install_from_pypi("setuptools==41.0.1", args)
+    def setuptools(**kwargs):
+        install_from_pypi("setuptools==41.0.1", **kwargs)
 
-    def pkgconfig(*args):
-        install_from_pypi("pkgconfig==1.5.1", args)
+    def pkgconfig(**kwargs):
+        install_from_pypi("pkgconfig==1.5.1", **kwargs)
 
-    def wheel(*args):
-        install_from_pypi("wheel==0.33.4", args)
+    def wheel(**kwargs):
+        install_from_pypi("wheel==0.33.4", **kwargs)
 
-    def protobuf(*args):
-        install_from_pypi("protobuf==3.8.0", args)
+    def protobuf(**kwargs):
+        install_from_pypi("protobuf==3.8.0", **kwargs)
 
-    def Keras_preprocessing(*args):
-        install_from_pypi("Keras-Preprocessing==1.0.5", args)
+    def Keras_preprocessing(**kwargs):
+        install_from_pypi("Keras-Preprocessing==1.0.5", **kwargs)
 
-    def gast(*args):
-        install_from_pypi("gast==0.2.2", args)
+    def gast(**kwargs):
+        install_from_pypi("gast==0.2.2", **kwargs)
 
-    def astor(*args):
-        install_from_pypi("astor==0.8.0", args)
+    def astor(**kwargs):
+        install_from_pypi("astor==0.8.0", **kwargs)
 
-    def absl_py(*args):
-        install_from_pypi("absl-py==0.7.1", args)
+    def absl_py(**kwargs):
+        install_from_pypi("absl-py==0.7.1", **kwargs)
 
-    def mock(*args):
-        install_from_pypi("mock==3.0.5", args)
+    def mock(**kwargs):
+        install_from_pypi("mock==3.0.5", **kwargs)
 
-    def Markdown(*args):
-        install_from_pypi("Markdown==3.1.1", args)
+    def Markdown(**kwargs):
+        install_from_pypi("Markdown==3.1.1", **kwargs)
 
-    def Werkzeug(*args):
-        install_from_pypi("Werkzeug==0.15.4", args)
+    def Werkzeug(**kwargs):
+        install_from_pypi("Werkzeug==0.15.4", **kwargs)
 
     # Does not yet work
-    # def h5py(*args):
+    # def h5py(**kwargs):
     #     try:
     #         import pkgconfig
     #     except ImportError:
     #         print("Installing required dependency: pkgconfig")
-    #         pkgconfig(*args)
-    #     install_from_pypi("h5py==2.9.0", args)
+    #         pkgconfig(**kwargs)
+    #     install_from_pypi("h5py==2.9.0", **kwargs)
 
     # Does not yet work
-    # def keras_applications(*args):
+    # def keras_applications(**kwargs):
     #     try:
     #         import h5py
     #     except ImportError:
     #         print("Installing required dependency: h5py")
-    #         h5py(*args)
-    #     install_from_pypi("Keras-Applications==1.0.6", args)
+    #         h5py(**kwargs)
+    #     install_from_pypi("Keras-Applications==1.0.6", **kwargs)
 
-    def setuptools_scm(*args):
-        install_from_url("https://files.pythonhosted.org/packages/70/bc/f34b06274c1260c5e4842f789fb933a09b89f23549f282b36a15bdf63614/setuptools_scm-1.15.0rc1.tar.gz", extra_opts=args)
+    def setuptools_scm(**kwargs):
+        install_from_pypi("setuptools_scm==1.15.0rc1", **kwargs)
 
-    def numpy(*args):
+    def numpy(**kwargs):
         try:
             import setuptools as st
         except ImportError:
             print("Installing required dependency: setuptools")
-            setuptools(*args)
+            setuptools(**kwargs)
 
         patch = """
 diff --git a/setup.py 2018-02-28 17:03:26.000000000 +0100
@@ -369,47 +370,46 @@ index e450a66..ed538b4 100644
 2.14.1
 
 """
-        install_from_url("https://files.pythonhosted.org/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip", patch=patch, extra_opts=args)
+        install_from_pypi("numpy==1.14.3", patch=patch, **kwargs)
 
 
-    def dateutil(*args):
+    def dateutil(**kwargs):
         try:
             import setuptools_scm as st_scm
         except ImportError:
             print("Installing required dependency: setuptools_scm")
-            setuptools_scm(*args)
-        install_from_url("https://files.pythonhosted.org/packages/0e/01/68747933e8d12263d41ce08119620d9a7e5eb72c876a3442257f74490da0/python-dateutil-2.7.5.tar.gz", extra_opts=args)
+            setuptools_scm(**kwargs)
+        install_from_pypi("python-dateutil==2.7.5", **kwargs)
 
 
-    def pytz(*args):
-        install_from_url("https://files.pythonhosted.org/packages/cd/71/ae99fc3df1b1c5267d37ef2c51b7d79c44ba8a5e37b48e3ca93b4d74d98b/pytz-2018.7.tar.gz", extra_opts=args)
+    def pytz(**kwargs):
+        install_from_pypi("pytz==2018.7", **kwargs)
 
 
-    def pandas(*args):
-        try:
-            import numpy as np
-        except ImportError:
-            print("Installing required dependency: numpy")
-            numpy(*args)
-
-
+    def pandas(**kwargs):
         try:
             import pytz as _dummy_pytz
         except ImportError:
             print("Installing required dependency: pytz")
-            pytz(*args)
+            pytz(**kwargs)
 
         try:
             import six as _dummy_six
         except ImportError:
             print("Installing required dependency: six")
-            six(*args)
+            six(**kwargs)
 
         try:
             import dateutil as __dummy_dateutil
         except ImportError:
             print("Installing required dependency: dateutil")
-            dateutil(*args)
+            dateutil(**kwargs)
+
+        try:
+            import numpy as np
+        except ImportError:
+            print("Installing required dependency: numpy")
+            numpy(**kwargs)
 
         # download pandas-0.20.3
         patch = """diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
@@ -473,7 +473,7 @@ index fa08f53..49f3bf3 100644
 
 """
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
-        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, add_cflags=cflags)
+        install_from_pypi("pandas==0.20.3", patch=patch, add_cflags=cflags, **kwargs)
 
     return locals()
 
@@ -486,29 +486,35 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
+def _install_from_url(url, patch=None, extra_opts=[], add_cflags="", ignore_errors=False):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
-
-    # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
-    env = os.environ
-    curl_opts = []
-    if url.startswith("http://") and "HTTP_PROXY" in env:
-        curl_opts += ["--proxy", env["HTTP_PROXY"]]
-    elif url.startswith("https://") and "HTTPS_PROXY" in env:
-        curl_opts += ["--proxy", env["HTTPS_PROXY"]]
 
     # honor env var 'CFLAGS' and 'CPPFLAGS'
     cppflags = os.environ.get("CPPFLAGS", "")
     cflags = "-v " + os.environ.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
 
-    system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url))
+    if os.system("curl -L -o %s/%s %s" % (tempdir, name, url)) != 0:
+        # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
+        env = os.environ
+        curl_opts = []
+        if url.startswith("http://") and "HTTP_PROXY" in env:
+            curl_opts += ["--proxy", env["HTTP_PROXY"]]
+        elif url.startswith("https://") and "HTTPS_PROXY" in env:
+            curl_opts += ["--proxy", env["HTTPS_PROXY"]]
+        system("curl -L %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url), msg="Download error")
+
     if name.endswith(".tar.gz"):
-        system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir))
+        system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir), msg="Error extracting tar.gz")
         bare_name = name[:-len(".tar.gz")]
+    elif name.endswith(".tar.bz2"):
+        system("tar xjf %s/%s -C %s" % (tempdir, name, tempdir), msg="Error extracting tar.bz2")
+        bare_name = name[:-len(".tar.bz2")]
     elif name.endswith(".zip"):
-        system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir))
+        system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir), msg="Error extracting zip")
         bare_name = name[:-len(".zip")]
+    else:
+        xit("Unknown file type: %s" % name)
 
     if patch:
         with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
@@ -519,51 +525,39 @@ def install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
         user_arg = "--user"
     else:
         user_arg = ""
-    system("cd %s/%s; %s %s %s setup.py install %s %s" % (tempdir, bare_name, 'CFLAGS="%s"' % cflags if cflags else "", 'CPPFLAGS="%s"' % cppflags if cppflags else "", sys.executable, user_arg, " ".join(extra_opts)))
+    status = system("cd %s/%s; %s %s %s setup.py install %s %s" % (tempdir, bare_name, 'CFLAGS="%s"' % cflags if cflags else "", 'CPPFLAGS="%s"' % cppflags if cppflags else "", sys.executable, user_arg, " ".join(extra_opts)))
+    if status != 0 and not ignore_errors:
+        xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
 
 
-def install_from_pypi(package, extra_opts=[]):
+def install_from_pypi(package, patch=None, extra_opts=[], add_cflags="", ignore_errors=True):
+    package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
+    package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
+
     if "==" in package:
         package, _, version = package.rpartition("==")
-        url = "https://pypi.org/pypi/%s/%s/json" % (package, version)
+        url = package_version_pattern % (package, version)
     else:
-        url = "https://pypi.org/pypi/%s/json" % package
+        url = package_pattern % package
 
-    r = subprocess.check_output("curl %s" % url, shell=True).decode("utf8")
-    try:
-        urls = json.loads(r)["urls"]
-    except:
+    if any(url.endswith(ending) for ending in [".zip", ".tar.bz2", ".tar.gz"]):
+        # this is already the url to the actual package
         pass
     else:
-        for url_info in urls:
-            if url_info["python_version"] == "source":
-                url = url_info["url"]
-                break
+        r = subprocess.check_output("curl -L %s" % url, shell=True).decode("utf8")
+        url = None
+        try:
+            urls = json.loads(r)["urls"]
+        except:
+            pass
+        else:
+            for url_info in urls:
+                if url_info["python_version"] == "source":
+                    url = url_info["url"]
+                    break
 
     if url:
-        tempdir = tempfile.mkdtemp()
-        filename = url.rpartition("/")[2]
-        system("curl -L -o %s/%s %s" % (tempdir, filename, url), msg="Download error")
-        dirname = None
-        if filename.endswith(".zip"):
-            system("unzip -u %s/%s -d %s" % (tempdir, filename, tempdir))
-            dirname = filename[:-4]
-        elif filename.endswith(".tar.gz"):
-            system("tar -C %s -xzf %s/%s" % (tempdir, tempdir, filename), msg="Error during extraction")
-            dirname = filename[:-7]
-        elif filename.endswith(".tar.bz2"):
-            system("tar -C %s -xjf %s/%s" % (tempdir, tempdir, filename), msg="Error during extraction")
-            dirname = filename[:-7]
-        else:
-            xit("Unknown file type: %s" % filename)
-
-        if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
-            user_arg = "--user"
-        else:
-            user_arg = ""
-        status = os.system("cd %s/%s; %s setup.py install %s %s" % (tempdir, dirname, sys.executable, user_arg, " ".join(extra_opts)))
-        if status != 0:
-            xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
+        _install_from_url(url, patch=patch, extra_opts=extra_opts, add_cflags=add_cflags, ignore_errors=ignore_errors)
     else:
         xit("Package not found: '%s'" % package)
 
@@ -649,12 +643,12 @@ def main(argv):
                 xit("Unknown package: '%s'" % pkg)
             else:
                 if args.prefix:
-                    KNOWN_PACKAGES[pkg]("--prefix", args.prefix)
+                    KNOWN_PACKAGES[pkg](extra_opts=["--prefix", args.prefix])
                 else:
                     KNOWN_PACKAGES[pkg]()
     elif args.command == "pypi":
         for pkg in args.package.split(","):
-            install_from_pypi(pkg)
+            install_from_pypi(pkg, ignore_errors=False)
 
 
 
