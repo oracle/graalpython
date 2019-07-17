@@ -54,75 +54,75 @@ def system(cmd, msg=""):
 
 
 def known_packages():
-    def PyYAML(*args):
-        install_from_pypi("PyYAML==3.13", args)
+    def PyYAML(**kwargs):
+        install_from_pypi("PyYAML==3.13", **kwargs)
 
-    def six(*args):
-        install_from_pypi("six==1.12.0", args)
+    def six(**kwargs):
+        install_from_pypi("six==1.12.0", **kwargs)
 
-    def Cython(*args):
-        install_from_pypi("Cython==0.29.2", ('--no-cython-compile',) + args)
+    def Cython(extra_opts=[], **kwargs):
+        install_from_pypi("Cython==0.29.2", extra_opts=(['--no-cython-compile'] + extra_opts), **kwargs)
 
-    def setuptools(*args):
-        install_from_pypi("setuptools==41.0.1", args)
+    def setuptools(**kwargs):
+        install_from_pypi("setuptools==41.0.1", **kwargs)
 
-    def pkgconfig(*args):
-        install_from_pypi("pkgconfig==1.5.1", args)
+    def pkgconfig(**kwargs):
+        install_from_pypi("pkgconfig==1.5.1", **kwargs)
 
-    def wheel(*args):
-        install_from_pypi("wheel==0.33.4", args)
+    def wheel(**kwargs):
+        install_from_pypi("wheel==0.33.4", **kwargs)
 
-    def protobuf(*args):
-        install_from_pypi("protobuf==3.8.0", args)
+    def protobuf(**kwargs):
+        install_from_pypi("protobuf==3.8.0", **kwargs)
 
-    def Keras_preprocessing(*args):
-        install_from_pypi("Keras-Preprocessing==1.0.5", args)
+    def Keras_preprocessing(**kwargs):
+        install_from_pypi("Keras-Preprocessing==1.0.5", **kwargs)
 
-    def gast(*args):
-        install_from_pypi("gast==0.2.2", args)
+    def gast(**kwargs):
+        install_from_pypi("gast==0.2.2", **kwargs)
 
-    def astor(*args):
-        install_from_pypi("astor==0.8.0", args)
+    def astor(**kwargs):
+        install_from_pypi("astor==0.8.0", **kwargs)
 
-    def absl_py(*args):
-        install_from_pypi("absl-py==0.7.1", args)
+    def absl_py(**kwargs):
+        install_from_pypi("absl-py==0.7.1", **kwargs)
 
-    def mock(*args):
-        install_from_pypi("mock==3.0.5", args)
+    def mock(**kwargs):
+        install_from_pypi("mock==3.0.5", **kwargs)
 
-    def Markdown(*args):
-        install_from_pypi("Markdown==3.1.1", args)
+    def Markdown(**kwargs):
+        install_from_pypi("Markdown==3.1.1", **kwargs)
 
-    def Werkzeug(*args):
-        install_from_pypi("Werkzeug==0.15.4", args)
+    def Werkzeug(**kwargs):
+        install_from_pypi("Werkzeug==0.15.4", **kwargs)
 
     # Does not yet work
-    # def h5py(*args):
+    # def h5py(**kwargs):
     #     try:
     #         import pkgconfig
     #     except ImportError:
     #         print("Installing required dependency: pkgconfig")
-    #         pkgconfig(*args)
-    #     install_from_pypi("h5py==2.9.0", args)
+    #         pkgconfig(**kwargs)
+    #     install_from_pypi("h5py==2.9.0", **kwargs)
 
     # Does not yet work
-    # def keras_applications(*args):
+    # def keras_applications(**kwargs):
     #     try:
     #         import h5py
     #     except ImportError:
     #         print("Installing required dependency: h5py")
-    #         h5py(*args)
-    #     install_from_pypi("Keras-Applications==1.0.6", args)
+    #         h5py(**kwargs)
+    #     install_from_pypi("Keras-Applications==1.0.6", **kwargs)
 
-    def setuptools_scm(*args):
-        install_from_pypi("setuptools_scm==1.15.0rc1", extra_opts=args)
+    def setuptools_scm(**kwargs):
+        install_from_pypi("setuptools_scm==1.15.0rc1", **kwargs)
 
-    def numpy(*args):
+    def numpy(**kwargs):
         try:
             import setuptools as st
         except ImportError:
             print("Installing required dependency: setuptools")
-            setuptools(*args)
+            setuptools(**kwargs)
 
         patch = """
 diff --git a/setup.py 2018-02-28 17:03:26.000000000 +0100
@@ -370,47 +370,47 @@ index e450a66..ed538b4 100644
 2.14.1
 
 """
-        install_from_pypi("numpy==1.14.3", patch=patch, extra_opts=args)
+        install_from_pypi("numpy==1.14.3", patch=patch, **kwargs)
 
 
-    def dateutil(*args):
+    def dateutil(**kwargs):
         try:
             import setuptools_scm as st_scm
         except ImportError:
             print("Installing required dependency: setuptools_scm")
-            setuptools_scm(*args)
-        install_from_pypi("python-dateutil==2.7.5", extra_opts=args)
+            setuptools_scm(**kwargs)
+        install_from_pypi("python-dateutil==2.7.5", **kwargs)
 
 
-    def pytz(*args):
-        install_from_pypi("pytz==2018.7", extra_opts=args)
+    def pytz(**kwargs):
+        install_from_pypi("pytz==2018.7", **kwargs)
 
 
-    def pandas(*args):
+    def pandas(**kwargs):
         try:
             import numpy as np
         except ImportError:
             print("Installing required dependency: numpy")
-            numpy(*args)
+            numpy(**kwargs)
 
 
         try:
             import pytz as _dummy_pytz
         except ImportError:
             print("Installing required dependency: pytz")
-            pytz(*args)
+            pytz(**kwargs)
 
         try:
             import six as _dummy_six
         except ImportError:
             print("Installing required dependency: six")
-            six(*args)
+            six(**kwargs)
 
         try:
             import dateutil as __dummy_dateutil
         except ImportError:
             print("Installing required dependency: dateutil")
-            dateutil(*args)
+            dateutil(**kwargs)
 
         # download pandas-0.20.3
         patch = """diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
@@ -474,7 +474,7 @@ index fa08f53..49f3bf3 100644
 
 """
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
-        install_from_pypi("pandas==0.20.3", patch=patch, extra_opts=args, add_cflags=cflags)
+        install_from_pypi("pandas==0.20.3", patch=patch, add_cflags=cflags, **kwargs)
 
     return locals()
 
@@ -643,7 +643,7 @@ def main(argv):
                 xit("Unknown package: '%s'" % pkg)
             else:
                 if args.prefix:
-                    KNOWN_PACKAGES[pkg]("--prefix", args.prefix)
+                    KNOWN_PACKAGES[pkg](extra_opts=["--prefix", args.prefix])
                 else:
                     KNOWN_PACKAGES[pkg]()
     elif args.command == "pypi":
