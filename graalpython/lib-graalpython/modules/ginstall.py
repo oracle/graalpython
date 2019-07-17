@@ -388,13 +388,6 @@ index e450a66..ed538b4 100644
 
     def pandas(**kwargs):
         try:
-            import numpy as np
-        except ImportError:
-            print("Installing required dependency: numpy")
-            numpy(**kwargs)
-
-
-        try:
             import pytz as _dummy_pytz
         except ImportError:
             print("Installing required dependency: pytz")
@@ -411,6 +404,12 @@ index e450a66..ed538b4 100644
         except ImportError:
             print("Installing required dependency: dateutil")
             dateutil(**kwargs)
+
+        try:
+            import numpy as np
+        except ImportError:
+            print("Installing required dependency: numpy")
+            numpy(**kwargs)
 
         # download pandas-0.20.3
         patch = """diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
