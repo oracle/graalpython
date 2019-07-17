@@ -541,8 +541,6 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal(True, 'abc', 'islower')
         self.checkequal(False, 'aBc', 'islower')
         self.checkequal(True, 'abc\n', 'islower')
-        self.checkequal(True, 'a_b!c\n', 'islower')
-        self.checkequal(False, 'A_b!c\n', 'islower')
         self.checkraises(TypeError, 'abc', 'islower', 42)
         self.checkequalnofix(False, '\u1FFc', 'islower')
         self.assertFalse('\u2167'.islower())
@@ -565,8 +563,6 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal(True, 'ABC', 'isupper')
         self.checkequal(False, 'AbC', 'isupper')
         self.checkequal(True, 'ABC\n', 'isupper')
-        self.checkequal(True, 'A_B!C\n', 'isupper')
-        self.checkequal(False, 'a_B!C\n', 'isupper')
         self.checkraises(TypeError, 'abc', 'isupper', 42)
         if not sys.platform.startswith('java'):
             self.checkequalnofix(False, '\u1FFc', 'isupper')
