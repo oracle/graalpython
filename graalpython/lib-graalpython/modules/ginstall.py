@@ -487,7 +487,7 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def _install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
+def _install_from_url(url, patch=None, extra_opts=[], add_cflags="", ignore_errors=False):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
@@ -526,11 +526,11 @@ def _install_from_url(url, patch=None, extra_opts=[], add_cflags=""):
     else:
         user_arg = ""
     status = system("cd %s/%s; %s %s %s setup.py install %s %s" % (tempdir, bare_name, 'CFLAGS="%s"' % cflags if cflags else "", 'CPPFLAGS="%s"' % cppflags if cppflags else "", sys.executable, user_arg, " ".join(extra_opts)))
-    if status != 0:
+    if status != 0 and not ignore_errors:
         xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
 
 
-def install_from_pypi(package, patch=None, extra_opts=[], add_cflags=""):
+def install_from_pypi(package, patch=None, extra_opts=[], add_cflags="", ignore_errors=True):
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
 
@@ -556,7 +556,7 @@ def install_from_pypi(package, patch=None, extra_opts=[], add_cflags=""):
                     break
 
     if url:
-        _install_from_url(url, patch=patch, extra_opts=extra_opts, add_cflags=add_cflags)
+        _install_from_url(url, patch=patch, extra_opts=extra_opts, add_cflags=add_cflags, ignore_errors=ignore_errors)
     else:
         xit("Package not found: '%s'" % package)
 
@@ -647,7 +647,7 @@ def main(argv):
                     KNOWN_PACKAGES[pkg]()
     elif args.command == "pypi":
         for pkg in args.package.split(","):
-            install_from_pypi(pkg)
+            install_from_pypi(pkg, ignore_errors=False)
 
 
 
