@@ -491,19 +491,20 @@ def _install_from_url(url, patch=None, extra_opts=[], add_cflags="", ignore_erro
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
-    # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
-    env = os.environ
-    curl_opts = []
-    if url.startswith("http://") and "HTTP_PROXY" in env:
-        curl_opts += ["--proxy", env["HTTP_PROXY"]]
-    elif url.startswith("https://") and "HTTPS_PROXY" in env:
-        curl_opts += ["--proxy", env["HTTPS_PROXY"]]
-
     # honor env var 'CFLAGS' and 'CPPFLAGS'
     cppflags = os.environ.get("CPPFLAGS", "")
     cflags = "-v " + os.environ.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
 
-    system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url), msg="Download error")
+    if os.system("curl -o %s/%s %s" % (tempdir, name, url)) != 0:
+        # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
+        env = os.environ
+        curl_opts = []
+        if url.startswith("http://") and "HTTP_PROXY" in env:
+            curl_opts += ["--proxy", env["HTTP_PROXY"]]
+        elif url.startswith("https://") and "HTTPS_PROXY" in env:
+            curl_opts += ["--proxy", env["HTTPS_PROXY"]]
+        system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url), msg="Download error")
+
     if name.endswith(".tar.gz"):
         system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir), msg="Error extracting tar.gz")
         bare_name = name[:-len(".tar.gz")]
