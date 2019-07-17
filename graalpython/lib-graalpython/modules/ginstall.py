@@ -515,7 +515,7 @@ def _install_from_url(url, patch=None, extra_opts=[], add_cflags="", ignore_erro
         system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir), msg="Error extracting zip")
         bare_name = name[:-len(".zip")]
     else:
-        xit("Unknown file type: %s" % filename)
+        xit("Unknown file type: %s" % name)
 
     if patch:
         with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
