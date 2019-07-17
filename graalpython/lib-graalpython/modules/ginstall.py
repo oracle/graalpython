@@ -47,6 +47,7 @@ import sys
 import tempfile
 
 def system(cmd, msg=""):
+    print("+", cmd)
     status = os.system(cmd)
     if status != 0:
         xit(msg, status=status)
