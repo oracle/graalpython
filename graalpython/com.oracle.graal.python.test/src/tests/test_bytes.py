@@ -442,8 +442,16 @@ def test_startswith():
     assert b.startswith(b"h")
     assert not b.startswith(b"hellow")
     assert not b.startswith(b"ha")
+
     assert b.startswith((b"hellow", b"he"))
     assert not b.startswith((b"hellow", b"ha"))
+
+    try:
+        assert b.startswith(("hel", "hello"))
+    except TypeError:
+        assert True
+    else:
+        assert False
 
 
 def test_endswith():
