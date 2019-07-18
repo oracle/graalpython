@@ -224,9 +224,14 @@ public abstract class BytesNodes {
             // TODO implement a more efficient algorithm
             outer: for (int i = start; i < end; i++) {
                 for (int j = 0; j < len2; j++) {
+                    if (i + j >= end) {
+                        continue outer;
+                    }
+
                     int hb = getGetLeftItemNode().executeInt(haystack, i + j);
                     int nb = getGetRightItemNode().executeInt(needle, j);
-                    if (nb != hb || i + j >= end) {
+
+                    if (nb != hb) {
                         continue outer;
                     }
                 }
