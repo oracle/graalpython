@@ -282,7 +282,7 @@ if sys.implementation.name == "graalpython":
         try:
             polyglot.eval(language="nfi", string="default")
         except NotImplementedError as e:
-            assert "internal language" in str(e)
+            assert "No language for id nfi found" in str(e)
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 
