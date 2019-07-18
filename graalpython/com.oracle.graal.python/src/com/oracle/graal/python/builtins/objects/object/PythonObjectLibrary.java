@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,37 +38,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects;
+package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.GenerateLibrary;
+import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
+import com.oracle.truffle.api.library.Library;
+import com.oracle.truffle.api.library.LibraryFactory;
 
-@ExportLibrary(PythonObjectLibrary.class)
-public final class PEllipsis extends PythonAbstractObject {
-
-    public static final PEllipsis INSTANCE = new PEllipsis();
-
-    private PEllipsis() {
+@GenerateLibrary
+@SuppressWarnings("unused")
+public abstract class PythonObjectLibrary extends Library {
+    public boolean hasDict(PythonAbstractObject receiver) {
+        return false;
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        return "Ellipsis";
+    @Abstract(ifExported = "hasDict")
+    public PHashingCollection getDict(PythonAbstractObject receiver) {
+        return null;
     }
 
-    @Override
-    public int compareTo(Object o) {
-        return this.hashCode() - o.hashCode();
+    @Abstract(ifExported = "hasDict")
+    public void setDict(PythonAbstractObject receiver, PHashingCollection dict) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public LazyPythonClass getLazyPythonClass() {
-        return PythonBuiltinClassType.PEllipsis;
+    @Abstract
+    public LazyPythonClass getLazyPythonClass(PythonAbstractObject receiver) {
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    }
+
+    public void setLazyPythonClass(PythonAbstractObject receiver, LazyPythonClass cls) {
+        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'", receiver);
+    }
+
+    static final LibraryFactory<PythonObjectLibrary> FACTORY = LibraryFactory.resolve(PythonObjectLibrary.class);
+
+    public static LibraryFactory<PythonObjectLibrary> getFactory() {
+        return FACTORY;
+    }
+
+    public static PythonObjectLibrary getUncached() {
+        return FACTORY.getUncached();
     }
 }

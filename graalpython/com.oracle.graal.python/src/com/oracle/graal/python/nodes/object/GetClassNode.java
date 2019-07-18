@@ -46,11 +46,11 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -221,10 +222,12 @@ public abstract class GetClassNode extends PNodeWithContext {
             return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PString);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         protected PythonAbstractClass getIt(PythonAbstractNativeObject object,
-                        @Cached("create()") GetNativeClassNode getNativeClassNode) {
-            return getNativeClassNode.execute(object);
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            // n.b.: native objects never store lazy enum class values, they
+            // always store resolved classes
+            return (PythonAbstractClass) lib.getLazyPythonClass(object);
         }
 
         @Specialization(assumptions = "singleContextAssumption()")
@@ -322,7 +325,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getPythonClass();
         } else if (o instanceof PythonAbstractNativeObject) {
-            return GetNativeClassNode.getUncached().execute((PythonAbstractNativeObject) o);
+            return (PythonAbstractClass) PythonObjectLibrary.getUncached().getLazyPythonClass((PythonAbstractNativeObject) o);
         } else if (o instanceof PEllipsis) {
             return core.lookupType(PythonBuiltinClassType.PEllipsis);
         } else if (o instanceof PNotImplemented) {

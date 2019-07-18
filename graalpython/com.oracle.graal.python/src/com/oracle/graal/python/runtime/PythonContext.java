@@ -39,9 +39,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionValues;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
@@ -51,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
@@ -65,8 +63,12 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionValues;
 
 public final class PythonContext {
 
@@ -339,7 +341,11 @@ public final class PythonContext {
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
-        mainModule.setDict(core.factory().createDictFixedStorage(mainModule));
+        try {
+            PythonObjectLibrary.getUncached().setDict(mainModule, core.factory().createDictFixedStorage(mainModule));
+        } catch (UnsupportedMessageException e) {
+            throw new IllegalStateException("This cannot happen - the main module doesn't accept a __dict__", e);
+        }
 
         sysModules.setItem(__MAIN__, mainModule);
 
