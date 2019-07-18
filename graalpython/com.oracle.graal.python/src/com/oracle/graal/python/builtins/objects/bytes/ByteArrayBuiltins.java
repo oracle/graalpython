@@ -479,7 +479,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean startswith(PByteArray self, PTuple prefixes, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                           @Cached("create()") BytesNodes.FindNode findNode) {
+                        @Cached("create()") BytesNodes.FindNode findNode) {
             for (Object arrayObj : prefixes.getArray()) {
                 PIBytesLike array = (PIBytesLike) arrayObj;
                 if (startswith(self, array, start, end, findNode)) {
