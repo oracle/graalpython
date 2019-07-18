@@ -105,7 +105,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object run(String code,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return getContext().getEnv().parse(Source.newBuilder("regex", code, "build-regex-engine").build()).call();
+            return getContext().getEnv().parseInternal(Source.newBuilder("regex", code, "build-regex-engine").build()).call();
         }
     }
 
