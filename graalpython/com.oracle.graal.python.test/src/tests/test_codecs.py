@@ -172,3 +172,9 @@ class UnicodeEscapeTest(unittest.TestCase):
         check(br"[\x410]", "[A0]")
         check(br"\u20ac", "\u20ac")
         check(br"\U0001d120", "\U0001d120")
+
+
+def test_charmap_build():
+    import codecs
+    assert codecs.charmap_build(u'123456') == {49: 0, 50: 1, 51: 2,
+                                               52: 3, 53: 4, 54: 5}
