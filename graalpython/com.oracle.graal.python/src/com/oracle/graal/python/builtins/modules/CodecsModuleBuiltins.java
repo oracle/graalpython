@@ -636,6 +636,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
         Object lookup(String chars) {
+            Map<Integer, Integer> charmap = createMap(chars);
+            return factory().createDict(charmap);
+        }
+
+        @TruffleBoundary
+        private static Map<Integer, Integer> createMap(String chars) {
             Map<Integer, Integer> charmap = new HashMap<>();
             int pos = 0;
             int num = 0;
@@ -646,8 +652,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 pos += Character.charCount(charid);
                 num++;
             }
-
-            return factory().createDict(charmap);
+            return charmap;
         }
     }
 }
