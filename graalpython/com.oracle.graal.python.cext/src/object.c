@@ -227,6 +227,11 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
 
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
+
+    if (fmt == NULL || fmt[0] == '\0') {
+        return _PyObject_CallNoArg(callable);
+    }
+
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
@@ -240,6 +245,11 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
 
 PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
+
+    if (fmt == NULL || fmt[0] == '\0') {
+        return _PyObject_CallNoArg(callable);
+    }
+
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
@@ -263,13 +273,21 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 UPCALL_ID(PyObject_CallMethod);
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
-    CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    if (fmt == NULL || fmt[0] == '\0') {
+        args = Py_None;
+    } else {
+    	CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    }
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
 PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
-    CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    if (fmt == NULL || fmt[0] == '\0') {
+        args = Py_None;
+    } else {
+    	CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    }
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 

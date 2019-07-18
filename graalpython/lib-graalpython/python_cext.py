@@ -910,6 +910,7 @@ def PyObject_Size(obj):
         return -1
 
 
+@may_raise
 def PyObject_Call(callee, args, kwargs):
     return callee(*args, **kwargs)
 
