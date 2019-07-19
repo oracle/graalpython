@@ -47,11 +47,11 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.nodes.Node;
 
-public class PException extends RuntimeException implements TruffleException {
+public final class PException extends RuntimeException implements TruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
 
     /** A marker object indicating that there is for sure no exception. */
-    public static final PException NO_EXCEPTION = PException.empty();
+    public static final PException NO_EXCEPTION = new PException(null, null);
 
     private Node location;
     private String message = null;
@@ -59,23 +59,13 @@ public class PException extends RuntimeException implements TruffleException {
     private boolean exit;
     private final PBaseException pythonException;
 
-    private PException(PBaseException actual, Node node) {
+    public PException(PBaseException actual, Node node) {
         this.pythonException = actual;
         this.location = node;
     }
 
-    public static PException empty() {
-        return new PExceptionWithoutStack(null, null);
-    }
-
     public static PException fromObject(PBaseException actual, Node node) {
-        PException pException = new PExceptionWithStack(actual, node);
-        actual.setException(pException);
-        return pException;
-    }
-
-    public static PException fromObjectWithoutStack(PBaseException actual, Node node) {
-        PException pException = new PExceptionWithoutStack(actual, node);
+        PException pException = new PException(actual, node);
         actual.setException(pException);
         return pException;
     }
@@ -171,36 +161,6 @@ public class PException extends RuntimeException implements TruffleException {
     public void expect(PythonBuiltinClassType error, IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, error)) {
             throw this;
-        }
-    }
-
-    private static final class PExceptionWithStack extends PException {
-        private static final long serialVersionUID = 1;
-
-        public PExceptionWithStack(PBaseException actual, Node node) {
-            super(actual, node);
-        }
-    }
-
-    private static final class PExceptionWithoutStack extends PException  {
-        private static final long serialVersionUID = 1;
-
-        public PExceptionWithoutStack(PBaseException actual, Node node) {
-            super(actual, node);
-        }
-
-        @Override
-        public int getStackTraceElementLimit() {
-            return 0;
-        }
-
-        /**
-         * For performance reasons, this exception does not record any stack trace information.
-         */
-        @SuppressWarnings("sync-override")
-        @Override
-        public final Throwable fillInStackTrace() {
-            return this;
         }
     }
 }

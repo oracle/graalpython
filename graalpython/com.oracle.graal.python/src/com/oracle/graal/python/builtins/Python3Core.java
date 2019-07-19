@@ -40,6 +40,9 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
@@ -74,7 +77,6 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
@@ -163,9 +165,9 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -175,8 +177,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -602,7 +602,7 @@ public final class Python3Core implements PythonCore {
             errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
         PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
-        PException e = PException.empty();
+        PException e = new PException(null, null);
         e.setMessage(errorMessage);
         throw e;
     }

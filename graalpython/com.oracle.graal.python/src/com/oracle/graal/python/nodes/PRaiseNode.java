@@ -62,7 +62,6 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 @ImportStatic(PGuards.class)
 @GenerateUncached
 public abstract class PRaiseNode extends Node {
-    private static final Object[] NO_ARGS = new Object[0];
 
     public abstract PException execute(Object type, Object cause, Object format, Object[] arguments);
 
@@ -71,15 +70,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raise(PythonBuiltinClassType type, Exception e) {
-        throw execute(type, PNone.NO_VALUE, getMessage(e), NO_ARGS);
-    }
-
-    public final PException raiseStopIteration(Object value) {
-        throw execute(PythonBuiltinClassType.StopIteration, PNone.NO_VALUE, null, new Object[] { value });
-    }
-
-    public final PException raiseStopIteration() {
-        throw execute(PythonBuiltinClassType.StopIteration, PNone.NO_VALUE, null, NO_ARGS);
+        throw execute(type, PNone.NO_VALUE, getMessage(e), new Object[0]);
     }
 
     public final PException raiseIndexError() {
@@ -87,7 +78,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raise(LazyPythonClass exceptionType) {
-        throw execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, NO_ARGS);
+        throw execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, new Object[0]);
     }
 
     public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
@@ -103,34 +94,6 @@ public abstract class PRaiseNode extends Node {
             throw PException.fromObject(exc, raisingNode);
         } else {
             throw PException.fromObject(exc, NodeUtil.getCurrentEncapsulatingNode());
-        }
-    }
-
-    protected static boolean isStopIteration(PythonBuiltinClassType exceptionType) {
-        return exceptionType == PythonBuiltinClassType.StopIteration;
-    }
-
-    @Specialization(guards = {"isStopIteration(exceptionType)", "arguments.length == 0", "format == null"}, limit = "1")
-    @SuppressWarnings("unused")
-    PException doStopIterationNoArg(PythonBuiltinClassType exceptionType, PNone cause, Object format, Object[] arguments,
-                    @Cached PythonObjectFactory factory) {
-        PBaseException exc = factory.createBaseException(exceptionType);
-        if (this.isAdoptable()) {
-            throw PException.fromObjectWithoutStack(exc, this);
-        } else {
-            throw PException.fromObjectWithoutStack(exc, NodeUtil.getCurrentEncapsulatingNode());
-        }
-    }
-
-    @Specialization(guards = {"isStopIteration(exceptionType)", "arguments.length == 1", "format == null"}, limit = "1")
-    @SuppressWarnings("unused")
-    PException doStopIterationArg(PythonBuiltinClassType exceptionType, PNone cause, Object format, Object[] arguments,
-                    @Cached PythonObjectFactory factory) {
-        PBaseException exc = factory.createBaseException(exceptionType, factory.createTuple(arguments));
-        if (this.isAdoptable()) {
-            throw PException.fromObjectWithoutStack(exc, this);
-        } else {
-            throw PException.fromObjectWithoutStack(exc, NodeUtil.getCurrentEncapsulatingNode());
         }
     }
 

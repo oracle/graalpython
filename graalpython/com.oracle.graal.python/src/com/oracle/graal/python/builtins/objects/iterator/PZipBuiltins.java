@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -57,7 +58,7 @@ public class PZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isEmpty(self.getIterators())")
         Object doEmpty(@SuppressWarnings("unused") PZip self) {
-            throw raiseStopIteration();
+            throw raise(PythonErrorType.StopIteration);
         }
 
         @Specialization

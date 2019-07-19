@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesIterat
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -61,7 +62,7 @@ public final class DictValuesIteratorBuiltins extends PythonBuiltins {
             if (profile.profile(self.getIterator().hasNext())) {
                 return self.getIterator().next();
             }
-            throw raiseStopIteration();
+            throw raise(PythonErrorType.StopIteration);
         }
     }
 

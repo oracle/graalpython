@@ -162,10 +162,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
         return getRaiseNode().raise(exceptionType);
     }
 
-    public final PException raiseStopIteration() {
-        return getRaiseNode().raiseStopIteration();
-    }
-
     public final PException raiseIndexError() {
         return getRaiseNode().raiseIndexError();
     }
