@@ -85,7 +85,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
                 TruffleFile next = self.next();
                 return factory().createDirEntry(next.getName(), next);
             } else {
-                throw raise(PythonBuiltinClassType.StopIteration);
+                throw raiseStopIteration();
             }
         }
     }

@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -82,7 +81,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 // types
                 return itemTypeProfile.profile(getItemNode.execute(self.array.getSequenceStorage(), self.index++));
             }
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization
@@ -91,7 +90,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
             self.setExhausted();
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization
@@ -101,7 +100,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 self.index += self.step;
                 return value;
             }
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization
@@ -111,7 +110,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 self.index -= self.step;
                 return value;
             }
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization
@@ -120,7 +119,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
             self.setExhausted();
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization
@@ -129,7 +128,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 return self.sequence.getLongItemNormalized(self.index++);
             }
             self.setExhausted();
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization
@@ -137,7 +136,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             if (self.hasNext()) {
                 return self.next();
             }
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "self.isPList()")
@@ -149,7 +148,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 return storage.getItemNormalized(self.index++);
             }
             self.setExhausted();
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "self.isPSequence()")
@@ -163,7 +162,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 return getItemNode.execute(s, self.index++);
             }
             self.setExhausted();
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization
@@ -171,7 +170,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             if (self.index < self.value.length()) {
                 return Character.toString(self.value.charAt(self.index++));
             }
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "!self.isPSequence()")
@@ -182,7 +181,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 return callGetItem.executeObject(frame, self.getObject(), self.index++);
             } catch (PException e) {
                 e.expectIndexError(profile);
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
         }
     }

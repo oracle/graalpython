@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -38,7 +37,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -64,14 +62,14 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
                         @Cached PForeignToPTypeNode fromForeignNode,
                         @CachedLibrary(limit = "3") InteropLibrary interop) {
             if (foreignIter.getCursor() >= foreignIter.getSize()) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
 
             try {
                 Object element = interop.readArrayElement(foreignIter.getForeignArray(), foreignIter.advance());
                 return fromForeignNode.executeConvert(element);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw raise(PythonErrorType.StopIteration);
+                throw raiseStopIteration();
             }
         }
     }

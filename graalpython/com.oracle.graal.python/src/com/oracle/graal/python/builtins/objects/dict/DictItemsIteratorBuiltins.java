@@ -39,7 +39,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsIterato
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -65,7 +64,7 @@ public final class DictItemsIteratorBuiltins extends PythonBuiltins {
                 DictEntry value = next(self);
                 return factory().createTuple(new Object[]{value.getKey(), value.getValue()});
             }
-            throw raise(PythonErrorType.StopIteration);
+            throw raiseStopIteration();
         }
 
         @TruffleBoundary

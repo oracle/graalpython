@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -73,7 +72,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator) {
             if (iterator.sentinelReached()) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             Object nextValue;
             try {
@@ -85,7 +84,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
             }
             if (equalNode.executeBool(frame, nextValue, iterator.getSentinel())) {
                 iterator.markSentinelReached();
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return nextValue;
         }

@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.reversed;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -69,13 +68,13 @@ public class ReversedBuiltins extends PythonBuiltins {
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
                         @Cached("create()") IsBuiltinClassProfile profile) {
             if (self.index < 0) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             try {
                 return callGetItem.executeObject(frame, self.getObject(), self.index--);
             } catch (PException e) {
                 e.expectIndexError(profile);
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
         }
 
@@ -84,7 +83,7 @@ public class ReversedBuiltins extends PythonBuiltins {
             if (self.index >= 0) {
                 return Character.toString(self.value.charAt(self.index--));
             }
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
     }
 

@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.generator;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -115,7 +114,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         public Object nextCached(VirtualFrame frame, PGenerator self,
                         @Cached("createDirectCall(self.getCallTarget())") CallTargetInvokeNode call) {
             if (self.isFinished()) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             try {
                 Object[] arguments = self.getArguments();
@@ -131,7 +130,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         public Object next(VirtualFrame frame, PGenerator self,
                         @Cached("createIndirectCall()") GenericInvokeNode call) {
             if (self.isFinished()) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             try {
                 Object[] arguments = self.getArguments();
