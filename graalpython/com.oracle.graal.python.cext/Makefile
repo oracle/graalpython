@@ -92,7 +92,7 @@ rebuild:
 
 ${TARGET_LIB}: ${OBJ_FILES}
 	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) ${CLANG} -fPIC -shared -o $@ $+
+	$(QUIETLY) ${CLANG} -fPIC -shared -lpolyglot-mock -o $@ $+
 
 ${PLATFORM}/%.o: src/%.c Makefile src/capi.h ${INCLUDE_FILES} ${LEGACY_INCLUDES}
 	$(QUIETLY) mkdir -p $(dir $@)

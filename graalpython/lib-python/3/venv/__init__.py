@@ -326,7 +326,7 @@ class EnvBuilder:
         def compile(self, f, module):
             from distutils import sysconfig
             ld = sysconfig.get_config_vars()["LDSHARED"]
-            cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + f)
+            cmd_line = " ".join([ld, "-lpolyglot-mock" , "-I" + sysconfig.get_python_inc(), "-o", module] + f)
             logging.debug(cmd_line)
             res = os.system(cmd_line)
             if res:
