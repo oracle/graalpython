@@ -100,6 +100,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -1407,6 +1410,62 @@ public class IntBuiltins extends PythonBuiltins {
             return a.equals(b);
         }
 
+        @Specialization
+        boolean eqVoidPtrLong(PythonNativeVoidPtr a, long b,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+            if (lib.isPointer(a.object)) {
+                try {
+                    long ptrVal = lib.asPointer(a.object);
+                    // pointers are considered unsigned
+                    return ptrVal >= 0L && ptrVal == b;
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            return doHash(a.object, b);
+        }
+
+        @Specialization
+        boolean eqLongVoidPtr(long a, PythonNativeVoidPtr b,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+            return eqVoidPtrLong(b, a, lib);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        boolean eqVoidPtrPInt(PythonNativeVoidPtr a, PInt b,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+            if (lib.isPointer(a.object)) {
+                try {
+                    long ptrVal = lib.asPointer(a.object);
+                    if (ptrVal < 0) {
+                        // pointers are considered unsigned
+                        BigInteger bi = BigInteger.valueOf(ptrVal).add(BigInteger.ONE.shiftLeft(64));
+                        return bi.equals(b.getValue());
+                    }
+                    return BigInteger.valueOf(ptrVal).equals(b.getValue());
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            try {
+                return a.object.hashCode() == b.longValueExact();
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+
+        @Specialization
+        boolean eqPIntVoidPtr(PInt a, PythonNativeVoidPtr b,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+            return eqVoidPtrPInt(b, a, lib);
+        }
+
+        @TruffleBoundary
+        private static boolean doHash(Object object, long b) {
+            return object.hashCode() == b;
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented eq(Object a, Object b) {
@@ -2183,6 +2242,24 @@ public class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public String doPInt(PInt self) {
             return self.toString();
+        }
+
+        @Specialization
+        public String doNativeVoidPtr(PythonNativeVoidPtr self,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            if (lib.isPointer(self.object)) {
+                try {
+                    return Long.toString(lib.asPointer(self.object));
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            return doHash(self.object);
+        }
+
+        @TruffleBoundary
+        private static String doHash(Object object) {
+            return Integer.toString(object.hashCode());
         }
     }
 
