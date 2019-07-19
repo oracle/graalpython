@@ -170,8 +170,12 @@ static PyObject* wrap_lenfunc(lenfunc f, PyObject* a) {
     return PyLong_FromSsize_t(f(a));
 }
 
-static Py_hash_t wrap_hashfunc(hashfunc f, PyObject* a) {
-    return PyLong_FromSsize_t(f(a));
+static PyObject* wrap_hashfunc(hashfunc f, PyObject* a) {
+    Py_hash_t res = f(a);
+    if (res == -1 && PyErr_Occurred()) {
+        return NULL;
+    }
+    return PyLong_FromSsize_t(res);
 }
 
 static PyObject* wrap_reverse_binop(binaryfunc f, PyObject* a, PyObject* b) {
