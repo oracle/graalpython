@@ -302,36 +302,36 @@ class EnvBuilder:
             elif os.path.islink(d) or os.path.isfile(d):
                 raise ValueError('Unable to create directory %r' % d)
 
-        create_if_needed(sys.graal_python_cext_module_home)
-        create_if_needed(sys.graal_python_cext_home)
-
-        cext_module_src_path = os.path.join(sys.graal_python_cext_src, "modules")
-        files = [os.path.join(cext_module_src_path, f) for f in os.listdir(cext_module_src_path) if f.endswith(".c")]
-        so_ext = sysconfig.get_config_var("EXT_SUFFIX")
-        for f in files:
-            f_basename = os.path.splitext(os.path.basename(f))[0]
-            module = os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext)
-            if not os.path.exists(module):
-                self.compile([os.path.abspath(f)], os.path.abspath(module))
-
-        
-        cext_src_path = os.path.join(sys.graal_python_cext_src, "src")
-        files = [os.path.join(cext_src_path, f) for f in os.listdir(cext_src_path) if f.endswith(".c")]
-        f_basename = os.path.splitext(os.path.basename(f))[0]
-        module = os.path.join(sys.graal_python_cext_home, "capi" + so_ext)
-        if not os.path.exists(module):
-            self.compile([os.path.abspath(f) for f in files], os.path.abspath(module))
-            
-
-        def compile(self, f, module):
+        def compile(f, module, libs=[]):
             from distutils import sysconfig
             ld = sysconfig.get_config_vars()["LDSHARED"]
-            cmd_line = " ".join([ld, "-lpolyglot-mock" , "-I" + sysconfig.get_python_inc(), "-o", module] + f)
+            cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + f + libs)
             logging.debug(cmd_line)
             res = os.system(cmd_line)
             if res:
                 logging.fatal("compilation failed: '%s' returned with %r" % (cmd_line, res))
                 raise BaseException
+
+        create_if_needed(sys.graal_python_cext_module_home)
+        create_if_needed(sys.graal_python_cext_home)
+
+        so_ext = sysconfig.get_config_var("EXT_SUFFIX")
+
+        cext_src_path = os.path.join(sys.graal_python_cext_src, "src")
+        files = [os.path.join(cext_src_path, f) for f in os.listdir(cext_src_path) if f.endswith(".c")]
+        capi_module = os.path.abspath(os.path.join(sys.graal_python_cext_home, "capi" + so_ext))
+        if not os.path.exists(capi_module):
+            compile([os.path.abspath(f) for f in files], capi_module)
+            
+
+        cext_module_src_path = os.path.join(sys.graal_python_cext_src, "modules")
+        files = [os.path.join(cext_module_src_path, f) for f in os.listdir(cext_module_src_path) if f.endswith(".c")]
+        for f in files:
+            f_basename = os.path.splitext(os.path.basename(f))[0]
+            module = os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext)
+            if not os.path.exists(module):
+                compile([os.path.abspath(f)], os.path.abspath(module), [capi_module])
+
         # Truffle change end
             
     

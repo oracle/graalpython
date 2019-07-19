@@ -102,9 +102,9 @@ modules/${PLATFORM}/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES} ${LEGA
 	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) ${CLANG} ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
 
-${LIBDIR}/modules/${PLATFORM}/%${SO_EXT}: modules/${PLATFORM}/%.o
+${LIBDIR}/modules/${PLATFORM}/%${SO_EXT}: modules/${PLATFORM}/%.o ${TARGET_LIB}
 	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) ${CLANG} -fPIC -shared ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $<
+	$(QUIETLY) ${CLANG} -fPIC -shared -lbz2 ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $< ${TARGET_LIB}
 
 $(HEADER_TARGETS): ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p ../include/
