@@ -31,21 +31,6 @@ source <dir-to-venv>/bin/activate
 ```
 
 In the venv multiple executables are available, like `python`, `python3` and `graalpython`. 
-Also `pip`(or `pip3`) can be used out of here to install libraries from local sources or see installed modules by:
-
-```
-pip list
-```
-
-We recommend the installation commands mentioned in the next section. Should the intended package not be available, also pip can be used. 
-Although we don't guarantee successful installations for packages installed without `ginstall`.
-To install a new package download the source(e.g. the `.tar.gz` file, not the wheel file), unpack it and run the command in the libraries source directory:
-
-```
-pip install .
-```
-
-
 
 ### Installing packages
 
@@ -94,39 +79,6 @@ conduct](http://www.graalvm.org/community/conduct/) for contributors.
 To get you started, we have [written a bit](doc/CONTRIBUTING.md) about the
 structure of this interpreter that should show how to fix things or add
 features.
-
-#### IDE usage
-
-Graalpython provides commands to initialize the project for usage in various IDE's. To do so call the corresponding 
-command for your IDE in graalpython source directory:
-
-```
-mx intellijinit
-mx eclipseinit
-mx netbeansinit
-```
-
-This generates a clean source tree in the IDE and provides additional configurations for Graal.    
-
-#### Debug options
-
-Graalpython provides proper debug options. It is possible to either debug the python code, using Chrome debugger,   
-or the java code, using your preferred IDE. 
-The following commands should be executed in a virtualenv environment, which provides a graalpython executable.
-
-For debug python side code call this:
-
-```graalpython --inspect your_script.py ```
-
-This will open a debug server, which can be accessed in Chrome Browser under URL `chrome://inspect`.
-
-For debugging java implemented code execute:
-
-```graalpython --experimental-options -debug-java your_script.py```
-
-The command will also start a debug server, which can be used in an IDE. If the IDE was initialized properly 
-by using the commands mentioned above, the existing `GraalDebug` run configuration can be used to debug.
-
 
 ### Licensing
 
