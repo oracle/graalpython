@@ -127,7 +127,7 @@ MESO_BENCHMARKS = {
     'pads-eratosthenes': ITER_10 + ['100000'],
     'pads-integerpartitions': ITER_10 + ['700'],
     'pads-bipartite': ITER_10 + ['10000'],
-    'pads-lyndon': ITER_10 + ['10000000'],
+    'pads-lyndon': ITER_25 + ['10000000'],
     # -------------------------------------------------------
     # object benchmarks
     # -------------------------------------------------------
@@ -174,4 +174,3 @@ BENCHMARKS = {
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
     # "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
 }
-
