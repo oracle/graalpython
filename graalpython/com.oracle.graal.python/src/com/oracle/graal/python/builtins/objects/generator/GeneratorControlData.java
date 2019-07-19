@@ -35,7 +35,6 @@ public final class GeneratorControlData {
     private final boolean[] activeFlags;
     private final int[] blockNodeIndices;       // See {@link GeneratorBlockNode}
     private final Object[] forNodeIterators; // See {@link GeneratorForNode}
-    private boolean throwOnReturn = true; // See {@link ForNode}
     private ExceptionState activeException;
 
     public GeneratorControlData(int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
@@ -74,13 +73,5 @@ public final class GeneratorControlData {
 
     public void setActiveException(ExceptionState activeException) {
         this.activeException = activeException;
-    }
-
-    public boolean shouldThrowOnReturn() {
-        return throwOnReturn;
-    }
-
-    public void setThrowOnReturn(boolean value) {
-        throwOnReturn = value;
     }
 }

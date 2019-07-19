@@ -26,7 +26,6 @@
 package com.oracle.graal.python.nodes.control;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongIterator;
@@ -35,7 +34,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
-import com.oracle.graal.python.nodes.generator.GeneratorAccessNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -44,7 +42,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -137,33 +134,6 @@ abstract class ForNextElementNode extends PNodeWithContext {
         }
         ((WriteNode) target).doWrite(frame, profiledIterator.next());
         return true;
-    }
-
-    @Specialization(guards = "generator.getCallTarget() == cachedCallTarget", limit = "1")
-    protected boolean doGenerator(VirtualFrame frame, PGenerator generator,
-                    @SuppressWarnings("unused") @Cached("generator.getCallTarget()") RootCallTarget cachedCallTarget,
-                    @Cached("create()") GetNextNode next,
-                    @Cached("create()") IsBuiltinClassProfile errorProfile,
-                    @Cached GeneratorAccessNode gen) {
-        if (generator.isFinished()) {
-            return false;
-        }
-        // we know that in case the generator finishes that we are going to
-        // ignore the exception, so let's not throw it
-        gen.setThrowOnReturn(generator.getArguments(), false);
-        try {
-            Object value = next.execute(frame, generator);
-            if (value != null) {
-                return false;
-            }
-            ((WriteNode) target).doWrite(frame, value);
-            return true;
-        } catch (PException e) {
-            e.expectStopIteration(errorProfile);
-            return false;
-        } finally {
-            gen.setThrowOnReturn(generator.getArguments(), true);
-        }
     }
 
     @Specialization

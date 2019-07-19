@@ -33,7 +33,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-public final class GeneratorAccessNode extends Node {
+final class GeneratorAccessNode extends Node {
 
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
 
@@ -48,10 +48,6 @@ public final class GeneratorAccessNode extends Node {
 
     private GeneratorControlData getControlData(VirtualFrame frame) {
         return PArguments.getControlDataFromGeneratorFrame(frameProfile.profile(PArguments.getGeneratorFrame(frame)));
-    }
-
-    private GeneratorControlData getControlData(Object[] arguments) {
-        return PArguments.getControlDataFromGeneratorFrame(frameProfile.profile(PArguments.getGeneratorFrame(arguments)));
     }
 
     public boolean isActive(VirtualFrame frame, int flagSlot) {
@@ -84,14 +80,6 @@ public final class GeneratorAccessNode extends Node {
 
     public void setActiveException(VirtualFrame frame, ExceptionState ex) {
         getControlData(frame).setActiveException(ex);
-    }
-
-    public boolean shouldThrowOnReturn(Object[] arguments) {
-        return getControlData(arguments).shouldThrowOnReturn();
-    }
-
-    public void setThrowOnReturn(Object[] arguments, boolean value) {
-        getControlData(arguments).setThrowOnReturn(value);
     }
 
     public static GeneratorAccessNode create() {

@@ -50,7 +50,6 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
     private final BranchProfile returnProfile = BranchProfile.create();
     private final BranchProfile fallthroughProfile = BranchProfile.create();
     private final BranchProfile yieldProfile = BranchProfile.create();
-    private final BranchProfile throwOnReturnProfile = BranchProfile.create();
 
     private final int flagSlot;
 
@@ -82,20 +81,15 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
         } catch (ReturnException ire) {
             // return statement in generators throws StopIteration with the return value
             returnProfile.enter();
-            if (gen.shouldThrowOnReturn(frame.getArguments())) {
-                throwOnReturnProfile.enter();
-                Object retVal = returnValue.execute(frame);
-                if (retVal != PNone.NONE) {
-                    if (factory == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        factory = insert(PythonObjectFactory.create());
-                    }
-                    throw raise.raise(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})));
-                } else {
-                    throw raise.raise(StopIteration);
+            Object retVal = returnValue.execute(frame);
+            if (retVal != PNone.NONE) {
+                if (factory == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    factory = insert(PythonObjectFactory.create());
                 }
+                throw raise.raise(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})));
             } else {
-                return null;
+                throw raise.raise(StopIteration);
             }
         }
     }
