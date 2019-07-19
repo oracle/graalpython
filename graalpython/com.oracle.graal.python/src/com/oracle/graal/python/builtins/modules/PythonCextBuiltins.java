@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
+import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -160,6 +161,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -167,6 +169,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -2450,6 +2453,44 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 throw new IllegalStateException("invalid MRO object for native type \"" + name + "\"");
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_FatalError", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonTypes.class)
+    public abstract static class PyTruffle_FatalError extends PythonBuiltinNode {
+        private static final int SIGABRT_EXIT_CODE = 134;
+
+        @Specialization
+        @TruffleBoundary
+        Object doStrings(String prefix, String msg, int status) {
+            PrintWriter stderr = new PrintWriter(getContext().getStandardErr());
+            stderr.print("Fatal Python error: ");
+            if (prefix != null) {
+                stderr.print(prefix);
+                stderr.print(": ");
+            }
+            if (msg != null) {
+                stderr.print(msg);
+            } else {
+                stderr.print("<messgae not set>");
+            }
+            stderr.println();
+            stderr.flush();
+
+            if (status < 0) {
+                // In CPython, this will use 'abort()' which sets a special exit code.
+                throw new PythonExitException(this, SIGABRT_EXIT_CODE);
+            }
+            throw new PythonExitException(this, status);
+        }
+
+        @Specialization
+        Object doGeneric(Object prefixObj, Object msgObj, int status) {
+            String prefix = prefixObj == PNone.NO_VALUE ? null : (String) prefixObj;
+            String msg = msgObj == PNone.NO_VALUE ? null : (String) msgObj;
+            return doStrings(prefix, msg, status);
         }
     }
 }
