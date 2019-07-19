@@ -408,8 +408,8 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         # the benchmark
         cmd_args += [join(self._bench_path, "{}.py".format(benchmark))]
 
-        if len(run_args) == 0:
-            run_args = self._benchmarks[benchmark]
+        if "-i" not in run_args:
+            run_args += self._benchmarks[benchmark]
         vm_options, run_args = self.postprocess_run_args(run_args)
         cmd_args.extend(run_args)
         return vm_options + cmd_args
