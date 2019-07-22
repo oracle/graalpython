@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -513,13 +514,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(lookupAttrNode.execute(object, __REPR__));
         }
 
-        @Specialization(guards = "eq(TP_DICT, key)")
+        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
         Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached PythonObjectFactory factory,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached(value = "createEquivalence()", uncached = "getSlowPathEquivalence()") Equivalence equivalence) {
+                        @Cached(value = "createEquivalence()", uncached = "getSlowPathEquivalence()") Equivalence equivalence) throws UnsupportedMessageException {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
-            PHashingCollection dict = object.getDict();
+            PHashingCollection dict = lib.getDict(object);
             HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
             if (dictStorage instanceof PythonObjectHybridDictStorage) {
                 // reuse the existing and modifiable storage
@@ -530,7 +532,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // copy all mappings to the new storage
                 storage.addAll(dictStorage, equivalence);
             }
-            object.setDict(factory.createMappingproxy(storage));
+            lib.setDict(object, factory.createMappingproxy(storage));
             return toSulongNode.execute(factory.createDict(storage));
         }
 
@@ -676,11 +678,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
         }
 
-        @Specialization(guards = "eq(TP_DICT, key)")
+        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
         Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached PythonObjectFactory factory,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            PHashingCollection dict = object.getDict();
+                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
+            PHashingCollection dict = lib.getDict(object);
             if (!(dict instanceof PDict)) {
                 assert dict instanceof PMappingproxy || dict == null;
                 // If 'dict instanceof PMappingproxy', it seems that someone already used
@@ -688,7 +691,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // on this type and created a mappingproxy object. We need to replace it by a
                 // dict.
                 dict = factory.createDictFixedStorage(object);
-                object.setDict(dict);
+                lib.setDict(object, dict);
             }
             assert dict instanceof PDict;
             return toSulongNode.execute(dict);
@@ -937,12 +940,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return value;
         }
 
-        @Specialization(guards = "eq(TP_DICT, key)")
+        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
         Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key, Object nativeValue,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached HashingStorageNodes.GetItemInteropNode getItem,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached IsBuiltinClassProfile isPrimitiveDictProfile) {
+                        @Cached IsBuiltinClassProfile isPrimitiveDictProfile) throws UnsupportedMessageException {
             Object value = asPythonObjectNode.execute(nativeValue);
             if (value instanceof PDict && isPrimitiveDictProfile.profileObject((PDict) value, PythonBuiltinClassType.PDict)) {
                 // special and fast case: commit items and change store
@@ -950,13 +954,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 for (Object k : d.keys()) {
                     writeAttrNode.execute(object, k, getItem.passState().execute(d.getDictStorage(), k));
                 }
-                PHashingCollection existing = object.getDict();
+                PHashingCollection existing = lib.getDict(object);
                 if (existing != null) {
                     d.setDictStorage(existing.getDictStorage());
                 } else {
                     d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage()));
                 }
-                object.setDict(d);
+                lib.setDict(object, d);
             } else {
                 // TODO custom mapping object
             }

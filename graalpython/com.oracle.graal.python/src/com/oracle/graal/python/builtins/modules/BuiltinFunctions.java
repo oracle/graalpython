@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -188,6 +189,8 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -652,12 +655,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setCustomLocals(args, locals);
         }
 
-        private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
+        private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins, PythonObjectLibrary lib) {
             if (builtins != null) {
-                PHashingCollection builtinsDict = builtins.getDict();
+                PHashingCollection builtinsDict = lib.getDict(builtins);
                 if (builtinsDict == null) {
                     builtinsDict = factory().createDictFixedStorage(builtins);
-                    builtins.setDict(builtinsDict);
+                    try {
+                        lib.setDict(builtins, builtinsDict);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreter();
+                        throw new IllegalStateException(e);
+                    }
                 }
                 setBuiltins.execute(frame, globals, BuiltinNames.__BUILTINS__, builtinsDict);
             } else {
@@ -666,9 +674,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        private void setCustomGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
+        private void setCustomGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args, PythonObjectLibrary lib) {
             PythonModule builtins = getContext().getBuiltins();
-            setBuiltinsInGlobals(frame, globals, setBuiltins, builtins);
+            setBuiltinsInGlobals(frame, globals, setBuiltins, builtins, lib);
             PArguments.setGlobals(args, globals);
         }
 
@@ -687,10 +695,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object execCustomGlobalsGlobalLocals(VirtualFrame frame, Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(frame, globals, setBuiltins, args);
+            setCustomGlobals(frame, globals, setBuiltins, args, lib);
             // here, we don't need to set any locals, since the {Write,Read,Delete}NameNodes will
             // fall back (like their CPython counterparts) to writing to the globals. We only need
             // to ensure that the `locals()` call still gives us the globals dict
@@ -717,10 +726,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"isMapping(locals)"})
         Object execCustomGlobalsCustomLocals(VirtualFrame frame, Object source, PDict globals, Object locals,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(frame, globals, setBuiltins, args);
+            setCustomGlobals(frame, globals, setBuiltins, args, lib);
             setCustomLocals(args, locals);
 
             return invokeNode.execute(frame, code.getRootCallTarget(), args);
@@ -1927,14 +1937,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public Object globals(VirtualFrame frame) {
+        public Object globals(VirtualFrame frame,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             PythonObject globals = callerFrame.getGlobals();
             if (condProfile.profile(globals instanceof PythonModule)) {
-                PHashingCollection dict = globals.getDict();
+                PHashingCollection dict = lib.getDict(globals);
                 if (dict == null) {
                     CompilerDirectives.transferToInterpreter();
-                    globals.setDict(dict = factory().createDictFixedStorage(globals));
+                    dict = factory().createDictFixedStorage(globals);
+                    try {
+                        lib.setDict(globals, dict);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreter();
+                        throw new IllegalStateException(e);
+                    }
                 }
                 return dict;
             } else {

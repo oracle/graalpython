@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -64,7 +65,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @TruffleBoundary
     public PythonManagedClass(LazyPythonClass typeClass, String name, PythonAbstractClass... baseClasses) {
-        super(PythonObject.freshShape(typeClass) /* do not inherit layout from the */);
+        super(typeClass);
         this.className = name;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
@@ -85,7 +86,11 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         setAttribute(__QUALNAME__, className);
         setAttribute(__DOC__, PNone.NONE);
         // provide our instances with a fresh shape tree
-        this.instanceShape = PythonObject.freshShape(this);
+        if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+            this.instanceShape = PythonObject.freshShape(this);
+        } else {
+            this.instanceShape = PythonObject.freshShape();
+        }
     }
 
     private static String getBaseName(String qname) {

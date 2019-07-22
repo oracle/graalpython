@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -102,6 +101,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -142,6 +143,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
                         @Cached("create()") BranchProfile errorSlotsBranch,
@@ -163,7 +165,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     throw raise(TypeError, "__class__ assignment: '%s' object layout differs from '%s'", getTypeName(value), getTypeName(lazyClass));
                 }
             }
-            self.setLazyPythonClass(value);
+            lib.setLazyPythonClass(self, value);
             return PNone.NONE;
         }
 
@@ -567,27 +569,39 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
-        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
-            PHashingCollection dict = self.getDict();
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"}, limit = "1")
+        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
-                self.setDict(dict);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException(e);
+                }
             }
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
-        Object dict(PythonObject self, PDict dict) {
-            self.setDict(dict);
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"}, limit = "1")
+        Object dict(PythonObject self, PDict dict,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            try {
+                lib.setDict(self, dict);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isNoValue(none)")
-        Object dict(PythonNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") CExtNodes.GetObjectDictNode getDictNode) {
-            Object dict = getDictNode.execute(self);
-            if (dict == PNone.NO_VALUE) {
+        @Specialization(guards = "isNoValue(none)", limit = "1")
+        Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
+            if (dict == null) {
                 raise(self, none);
             }
             return dict;
