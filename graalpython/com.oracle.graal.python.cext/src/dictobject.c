@@ -52,6 +52,11 @@ int PyDict_SetItem(PyObject* d, PyObject* k, PyObject* v) {
     return UPCALL_CEXT_I(_jls_PyDict_SetItem, native_to_java(d), native_to_java(k), native_to_java(v));
 }
 
+UPCALL_ID(PyDict_SetItem_KnownHash);
+int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t hash) {
+    return UPCALL_CEXT_I(_jls_PyDict_SetItem_KnownHash, native_to_java(d), native_to_java(k), native_to_java(v), hash);
+}
+
 UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
     return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));

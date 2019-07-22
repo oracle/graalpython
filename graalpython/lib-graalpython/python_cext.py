@@ -163,6 +163,15 @@ def PyDict_SetItem(dictObj, key, value):
 
 
 @may_raise(-1)
+def PyDict_SetItem_KnownHash(dictObj, key, value, given_hash):
+    if not isinstance(dictObj, dict):
+        raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+    assert hash(key) == given_hash, "hash mismatch: known hash is different to computed hash"
+    dictObj[key] = value
+    return 0
+
+
+@may_raise(-1)
 def PyDict_DelItem(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
