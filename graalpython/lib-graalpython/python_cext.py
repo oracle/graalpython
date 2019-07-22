@@ -128,7 +128,7 @@ def PyDict_Next(dictObj, pos):
         return native_null
     for key in dictObj:
         if curPos == pos:
-            return key, dictObj[key]
+            return key, dictObj[key], hash(key)
         curPos = curPos + 1
     return native_null
 

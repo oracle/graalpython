@@ -67,8 +67,12 @@ int PyDict_DelItem(PyObject *d, PyObject *k) {
 }
 
 
-UPCALL_ID(PyDict_Next);
 int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
+	return _PyDict_Next(d, ppos, pkey, pvalue, NULL);
+}
+
+UPCALL_ID(PyDict_Next);
+int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue, Py_hash_t *phash) {
     PyObject *tresult = UPCALL_CEXT_O(_jls_PyDict_Next, native_to_java(d), *ppos);
     if (tresult == NULL) {
     	if(pkey != NULL) {
@@ -86,7 +90,11 @@ int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalu
     if (pvalue != NULL) {
     	*pvalue = PyTuple_GetItem(tresult, 1);
     }
+    if (phash != NULL) {
+    	*phash = PyTuple_GetItem(tresult, 2);
+    }
     return 1;
+
 }
 
 UPCALL_ID(PyDict_Size);
