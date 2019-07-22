@@ -39,33 +39,31 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
-    protected final int numOfActiveFlags;
-    protected final int numOfGeneratorBlockNode;
-    protected final int numOfGeneratorForNode;
-    protected final FrameDescriptor frameDescriptor;
+    @CompilationFinal(dimensions = 1) private final FrameSlot[] flagSlots;
+    @CompilationFinal(dimensions = 1) private final FrameSlot[] indexSlots;
+    private final FrameDescriptor frameDescriptor;
 
     @CompilationFinal private RootCallTarget generatorCallTarget;
 
     public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
-                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
-                    int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
+                    FrameSlot[] flagSlots, FrameSlot[] indexSlots) {
         super(name, enclosingClassName, doc, defaults, kwDefaults, callTarget, definitionCellSlots, executionCellSlots);
         this.frameDescriptor = frameDescriptor;
-        this.numOfActiveFlags = numOfActiveFlags;
-        this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
-        this.numOfGeneratorForNode = numOfGeneratorForNode;
+        this.flagSlots = flagSlots;
+        this.indexSlots = indexSlots;
     }
 
     public static GeneratorFunctionDefinitionNode create(String name, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
-                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
-                    int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
+                    FrameSlot[] flagSlots, FrameSlot[] indexSlots) {
         return new GeneratorFunctionDefinitionNode(name, enclosingClassName, doc, defaults, kwDefaults, callTarget,
-                        frameDescriptor, definitionCellSlots, executionCellSlots,
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+                        frameDescriptor, definitionCellSlots, executionCellSlots, flagSlots, indexSlots);
     }
 
     @Override
@@ -95,7 +93,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         if (generatorCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(getContext().getLanguage(), callTarget, functionName, frameDescriptor,
-                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), flagSlots, indexSlots);
             generatorCallTarget = Truffle.getRuntime().createCallTarget(generatorFunctionRootNode);
         }
         return generatorCallTarget;

@@ -47,18 +47,19 @@ import com.oracle.graal.python.nodes.statement.WithNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorWithNode extends WithNode implements GeneratorControlNode {
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
-    private final int withObjectSlot;
-    private final int enterSlot;
-    private final int yieldSlot;
+    private final FrameSlot withObjectSlot;
+    private final FrameSlot enterSlot;
+    private final FrameSlot yieldSlot;
 
-    public GeneratorWithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext, int enterSlot, int withObjectSlot, int yieldSlot) {
+    public GeneratorWithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext, FrameSlot enterSlot, FrameSlot frameSlot, FrameSlot yieldSlot) {
         super(targetNode, body, withContext);
         this.enterSlot = enterSlot;
-        this.withObjectSlot = withObjectSlot;
+        this.withObjectSlot = frameSlot;
         this.yieldSlot = yieldSlot;
     }
 

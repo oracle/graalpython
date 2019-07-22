@@ -522,9 +522,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         RootCallTarget callTarget = gtran.translate();
         ExpressionNode loopIterator = gtran.getGetOuterMostLoopIterator();
         return new GeneratorExpressionNode(generatorName, callTarget, loopIterator, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
-                        gtran.getNumOfActiveFlags(),
-                        gtran.getNumOfGeneratorBlockNode(),
-                        gtran.getNumOfGeneratorForNode());
+                        gtran.getFlagSlots(), gtran.getIndexSlots());
     }
 
     @Override
@@ -1511,8 +1509,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
             RootCallTarget ct = gtran.translate();
             funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, defaults, kwDefaults, ct, fd,
-                            environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
-                            gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
+                            environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(), gtran.getFlagSlots(), gtran.getIndexSlots());
         } else {
             RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
             funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
@@ -1690,7 +1687,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             RootCallTarget ct = gtran.translate();
             funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults, kwDefaults, ct, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
-                            gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
+                            gtran.getFlagSlots(), gtran.getIndexSlots());
         } else {
             RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
             funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());

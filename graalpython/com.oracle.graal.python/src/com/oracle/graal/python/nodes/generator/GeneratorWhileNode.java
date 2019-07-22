@@ -34,6 +34,7 @@ import com.oracle.graal.python.runtime.exception.BreakException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -48,9 +49,9 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
     private final BranchProfile seenBreak = BranchProfile.create();
-    private final int flagSlot;
+    private final FrameSlot flagSlot;
 
-    public GeneratorWhileNode(CastToBooleanNode condition, StatementNode body, int flagSlot) {
+    public GeneratorWhileNode(CastToBooleanNode condition, StatementNode body, FrameSlot flagSlot) {
         this.body = body;
         this.condition = condition;
         this.flagSlot = flagSlot;

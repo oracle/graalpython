@@ -49,17 +49,18 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
     private final FrameDescriptor frameDescriptor;
-    private final int numOfActiveFlags;
-    private final int numOfGeneratorBlockNode;
-    private final int numOfGeneratorForNode;
+    @CompilationFinal(dimensions = 1) private final FrameSlot[] flagSlots;
+    @CompilationFinal(dimensions = 1) private final FrameSlot[] indexSlots;
     private final ExecutionCellSlots cellSlots;
     private final String name;
 
@@ -67,22 +68,20 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Child private MaterializeFrameNode materializeNode;
 
     public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+                    FrameSlot[] flagSlots, FrameSlot[] indexSlots) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
         this.name = name;
         this.frameDescriptor = frameDescriptor;
         this.cellSlots = executionCellSlots;
-        this.numOfActiveFlags = numOfActiveFlags;
-        this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
-        this.numOfGeneratorForNode = numOfGeneratorForNode;
+        this.flagSlots = flagSlots;
+        this.indexSlots = indexSlots;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         // TODO 'materialize' generator frame and create locals dict eagerly
-        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode);
+        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, flagSlots, indexSlots);
     }
 
     public RootNode getFunctionRootNode() {

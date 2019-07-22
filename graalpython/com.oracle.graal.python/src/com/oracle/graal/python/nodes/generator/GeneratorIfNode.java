@@ -30,6 +30,7 @@ import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.YieldException;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -41,15 +42,15 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
     @Child protected StatementNode then;
     @Child protected StatementNode orelse;
 
-    protected final int thenFlagSlot;
-    protected final int elseFlagSlot;
+    protected final FrameSlot thenFlagSlot;
+    protected final FrameSlot elseFlagSlot;
 
     protected final ConditionProfile needsConditionProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile needsThenUpdateProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsElseUpdateProfile = ConditionProfile.createBinaryProfile();
     protected final BranchProfile seenYield = BranchProfile.create();
 
-    public GeneratorIfNode(CastToBooleanNode condition, StatementNode then, StatementNode orelse, int thenFlagSlot, int elseFlagSlot) {
+    public GeneratorIfNode(CastToBooleanNode condition, StatementNode then, StatementNode orelse, FrameSlot thenFlagSlot, FrameSlot elseFlagSlot) {
         this.condition = condition;
         this.then = then;
         this.orelse = orelse;
@@ -57,7 +58,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
         this.elseFlagSlot = elseFlagSlot;
     }
 
-    public static GeneratorIfNode create(CastToBooleanNode condition, StatementNode then, StatementNode orelse, int thenFlagSlot, int elseFlagSlot) {
+    public static GeneratorIfNode create(CastToBooleanNode condition, StatementNode then, StatementNode orelse, FrameSlot thenFlagSlot, FrameSlot elseFlagSlot) {
         if (!EmptyNode.isEmpty(orelse)) {
             return new GeneratorIfNode(condition, then, orelse, thenFlagSlot, elseFlagSlot);
         } else {
@@ -103,7 +104,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
         /**
          * Both flagSlot getter return the same slot.
          */
-        public GeneratorIfWithoutElseNode(CastToBooleanNode condition, StatementNode then, int thenFlagSlot) {
+        public GeneratorIfWithoutElseNode(CastToBooleanNode condition, StatementNode then, FrameSlot thenFlagSlot) {
             super(condition, then, BlockNode.create(), thenFlagSlot, thenFlagSlot);
         }
 

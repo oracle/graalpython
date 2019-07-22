@@ -35,6 +35,7 @@ import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -51,9 +52,9 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
     private final BranchProfile fallthroughProfile = BranchProfile.create();
     private final BranchProfile yieldProfile = BranchProfile.create();
 
-    private final int flagSlot;
+    private final FrameSlot flagSlot;
 
-    public GeneratorReturnTargetNode(StatementNode parameters, StatementNode body, ExpressionNode returnValue, int activeFlagIndex) {
+    public GeneratorReturnTargetNode(StatementNode parameters, StatementNode body, ExpressionNode returnValue, FrameSlot activeFlagIndex) {
         this.body = body;
         this.returnValue = returnValue;
         this.parameters = parameters;

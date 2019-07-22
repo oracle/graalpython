@@ -62,6 +62,7 @@ import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -89,7 +90,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     private final IsBuiltinClassProfile stopIterProfile3 = IsBuiltinClassProfile.create();
     private final IsBuiltinClassProfile genExitProfile = IsBuiltinClassProfile.create();
 
-    @CompilationFinal private int iteratorSlot;
+    @CompilationFinal private FrameSlot iteratorSlot;
 
     private final BranchProfile noThrow = BranchProfile.create();
 
@@ -286,7 +287,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         return getTracebackNode;
     }
 
-    public void setIteratorSlot(int slot) {
-        this.iteratorSlot = slot;
+    public void setIteratorSlot(FrameSlot frameSlot) {
+        this.iteratorSlot = frameSlot;
     }
 }

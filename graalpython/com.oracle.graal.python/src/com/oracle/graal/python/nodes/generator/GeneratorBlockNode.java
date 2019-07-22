@@ -30,6 +30,7 @@ import java.util.List;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.YieldException;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -41,18 +42,18 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
 
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
-    private final int indexSlot;
+    private final FrameSlot indexSlot;
 
-    public GeneratorBlockNode(StatementNode[] statements, int indexSlot) {
+    public GeneratorBlockNode(StatementNode[] statements, FrameSlot indexSlot) {
         super(statements);
         this.indexSlot = indexSlot;
     }
 
-    public static GeneratorBlockNode create(StatementNode[] statements, int indexSlot) {
+    public static GeneratorBlockNode create(StatementNode[] statements, FrameSlot indexSlot) {
         return new GeneratorBlockNode(statements, indexSlot);
     }
 
-    public int getIndexSlot() {
+    public FrameSlot getIndexSlot() {
         return indexSlot;
     }
 

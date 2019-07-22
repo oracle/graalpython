@@ -28,6 +28,9 @@ package com.oracle.graal.python.nodes.generator;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -47,31 +50,35 @@ final class GeneratorAccessNode extends Node {
     }
 
     private GeneratorControlData getControlData(VirtualFrame frame) {
-        return PArguments.getControlDataFromGeneratorFrame(frameProfile.profile(PArguments.getGeneratorFrame(frame)));
+        return PArguments.getControlDataFromGeneratorFrame(getGeneratorFrame(frame));
     }
 
-    public boolean isActive(VirtualFrame frame, int flagSlot) {
-        return getControlData(frame).getActive(flagSlot);
+    private Frame getGeneratorFrame(VirtualFrame frame) {
+        return frameProfile.profile(PArguments.getGeneratorFrame(frame));
     }
 
-    public void setActive(VirtualFrame frame, int flagSlot, boolean value) {
-        getControlData(frame).setActive(flagSlot, value);
+    public boolean isActive(VirtualFrame frame, FrameSlot flagSlot) {
+        return FrameUtil.getBooleanSafe(getGeneratorFrame(frame), flagSlot);
     }
 
-    public int getIndex(VirtualFrame frame, int blockIndexSlot) {
-        return getControlData(frame).getBlockIndexAt(blockIndexSlot);
+    public void setActive(VirtualFrame frame, FrameSlot flagSlot, boolean value) {
+        getGeneratorFrame(frame).setBoolean(flagSlot, value);
     }
 
-    public void setIndex(VirtualFrame frame, int blockIndexSlot, int value) {
-        getControlData(frame).setBlockIndexAt(blockIndexSlot, value);
+    public int getIndex(VirtualFrame frame, FrameSlot blockIndexSlot) {
+        return FrameUtil.getIntSafe(getGeneratorFrame(frame), blockIndexSlot);
     }
 
-    public Object getIterator(VirtualFrame frame, int iteratorSlot) {
-        return getControlData(frame).getIteratorAt(iteratorSlot);
+    public void setIndex(VirtualFrame frame, FrameSlot blockIndexSlot, int value) {
+        getGeneratorFrame(frame).setInt(blockIndexSlot, value);
     }
 
-    public void setIterator(VirtualFrame frame, int iteratorSlot, Object value) {
-        getControlData(frame).setIteratorAt(iteratorSlot, value);
+    public Object getIterator(VirtualFrame frame, FrameSlot withObjectSlot) {
+        return FrameUtil.getObjectSafe(getGeneratorFrame(frame), withObjectSlot);
+    }
+
+    public void setIterator(VirtualFrame frame, FrameSlot withObjectSlot, Object value) {
+        getGeneratorFrame(frame).setObject(withObjectSlot, value);
     }
 
     public ExceptionState getActiveException(VirtualFrame frame) {
