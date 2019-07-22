@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_SUBTRACT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_AND;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_FLOOR_DIVIDE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
@@ -53,7 +52,6 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_SUBTRACT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
