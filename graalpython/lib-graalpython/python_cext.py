@@ -547,6 +547,11 @@ def PyIter_Next(itObj):
         return native_null
 
 
+@may_raise
+def PyCallIter_New(it, sentinel):
+    return iter(it, sentinel)
+
+
 ##################### SEQUENCE
 
 
