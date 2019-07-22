@@ -49,6 +49,8 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
     protected final ConditionProfile needsThenUpdateProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsElseUpdateProfile = ConditionProfile.createBinaryProfile();
     protected final BranchProfile seenYield = BranchProfile.create();
+    protected final BranchProfile seenThen = BranchProfile.create();
+    protected final BranchProfile seenElse = BranchProfile.create();
 
     public GeneratorIfNode(CastToBooleanNode condition, StatementNode then, StatementNode orelse, FrameSlot thenFlagSlot, FrameSlot elseFlagSlot) {
         this.condition = condition;
@@ -79,8 +81,10 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
                 thenFlag = condition.executeBoolean(frame);
             }
             if (thenFlag) {
+                seenThen.enter();
                 then.executeVoid(frame);
             } else {
+                seenElse.enter();
                 orelse.executeVoid(frame);
             }
             return;
@@ -119,6 +123,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
                     thenFlag = condition.executeBoolean(frame);
                 }
                 if (thenFlag) {
+                    seenThen.enter();
                     then.executeVoid(frame);
                 }
                 return;
