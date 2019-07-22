@@ -16,9 +16,9 @@ some examples of what you can do with it, check out the
 
 ### Create a virtual environment
 
-The best way of using graalpython is out of a virtual environment. This generates 
-wrapper scripts and makes graalpython usable from shell as standard python interpreter. To do so
-execute the following command in the graalpython project directory:
+The best way of using the GraalVM implementation of Python is out of a virtual environment. This generates 
+wrapper scripts and makes the implementation usable from shell as standard Python interpreter. To do so
+execute the following command in the project directory:
 
 ```
 mx graalpython -m venv <dir-to-venv>

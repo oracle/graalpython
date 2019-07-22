@@ -82,11 +82,11 @@ modules that we have adapted from C Python.
 
 ##### Debug options
 
-Graalpython provides proper debug options. It is possible to either debug the python code, using Chrome debugger,   
+The GraalVM implementation of Python provides proper debug options. It is possible to either debug the Python code, using Chrome debugger,   
 or the java code, using your preferred IDE. 
 The following commands should be executed in a virtualenv environment, which provides a graalpython executable.
 
-For debug python side code call this:
+For debug Python side code call this:
 
 ```graalpython --inspect your_script.py ```
 
