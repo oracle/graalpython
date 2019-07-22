@@ -52,11 +52,11 @@ public final class PGenerator extends PythonBuiltinObject {
     private PCode code;
 
     public static PGenerator create(LazyPythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
-                    FrameSlot[] flagSlots, FrameSlot[] indexSlots, PythonObjectFactory factory) {
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, PythonObjectFactory factory) {
         /*
          * Setting up the persistent frame in {@link #arguments}.
          */
-        GeneratorControlData generatorArgs = new GeneratorControlData();
+        GeneratorControlData generatorArgs = new GeneratorControlData(numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
         Object[] generatorFrameArguments = PArguments.create();
         MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, frameDescriptor);
         PArguments.setGeneratorFrame(arguments, generatorFrame);
@@ -79,14 +79,6 @@ public final class PGenerator extends PythonBuiltinObject {
         // create their own closures)
         for (int i = 0; i < cellVarSlots.length; i++) {
             generatorFrame.setObject(cellVarSlots[i], new PCell(cellVarAssumptions[i]));
-        }
-        // reset all indices
-        for (int i = 0; i < indexSlots.length; i++) {
-            generatorFrame.setInt(indexSlots[i], 0);
-        }
-        // reset all flags
-        for (int i = 0; i < flagSlots.length; i++) {
-            generatorFrame.setBoolean(flagSlots[i], false);
         }
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
         return new PGenerator(clazz, name, callTarget, frameDescriptor, arguments, closure);

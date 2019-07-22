@@ -133,7 +133,6 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -522,10 +521,10 @@ public abstract class PythonObjectFactory extends Node {
      * Special objects: generators, proxies, references
      */
 
-    public PGenerator createGenerator(String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
-                    FrameSlot[] flagSlots, FrameSlot[] indexSlots) {
-        return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTarget, frameDescriptor, arguments, closure, cellSlots,
-                        flagSlots, indexSlots, this));
+    public PGenerator createGenerator(String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots, int numOfActiveFlags,
+                    int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+        return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTarget, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
+                        numOfGeneratorForNode, this));
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,

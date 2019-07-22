@@ -47,7 +47,6 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionSt
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
@@ -55,9 +54,9 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
     @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
 
-    private final FrameSlot finallyFlag;
+    private final int finallyFlag;
 
-    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, FrameSlot finallyFlag) {
+    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag) {
         super(body, finalbody);
         this.finallyFlag = finallyFlag;
     }

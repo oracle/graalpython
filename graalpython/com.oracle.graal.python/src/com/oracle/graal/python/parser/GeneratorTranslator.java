@@ -40,7 +40,6 @@ import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
@@ -69,19 +68,15 @@ import com.oracle.graal.python.nodes.statement.WithNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 
 public class GeneratorTranslator {
 
-    private static final String GENERATOR_ACTIVE_FLAG_SLOT = "generatorActiveFlagSlot";
-    private static final String GENERATOR_BLOCK_INDEX_SLOT = "generatorBlockIndexSlot";
-    private static final String GENERATOR_FOR_NODE_SLOT = "generatorForNodeSlot";
     private final FunctionRootNode root;
-    private final ArrayList<FrameSlot> activeFlagSlots = new ArrayList<>();
-    private final ArrayList<FrameSlot> generatorBlockIndexSlots = new ArrayList<>();
+    private int numOfActiveFlags;
+    private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
     private boolean needToHandleComplicatedYieldExpression;
     private ExpressionNode getOuterMostLoopIterator;
@@ -291,8 +286,8 @@ public class GeneratorTranslator {
             }
         } else if (node instanceof IfNode) {
             IfNode ifNode = (IfNode) node;
-            FrameSlot ifFlag = nextActiveFlagSlot();
-            FrameSlot elseFlag = nextActiveFlagSlot();
+            int ifFlag = nextActiveFlagSlot();
+            int elseFlag = nextActiveFlagSlot();
             replace(node, GeneratorIfNode.create(ifNode.getCondition(), ifNode.getThen(), ifNode.getElse(), ifFlag, elseFlag));
 
         } else if (node instanceof ForNode) {
@@ -304,20 +299,20 @@ public class GeneratorTranslator {
 
         } else if (node instanceof BlockNode) {
             BlockNode block = (BlockNode) node;
-            FrameSlot slotOfBlockIndex = nextGeneratorBlockIndexSlot();
+            int slotOfBlockIndex = nextGeneratorBlockIndexSlot();
 
             replace(node, new GeneratorBlockNode(block.getStatements(), slotOfBlockIndex));
 
         } else if (node instanceof TryExceptNode) {
             TryExceptNode tryExceptNode = (TryExceptNode) node;
-            FrameSlot exceptFlag = nextActiveFlagSlot();
-            FrameSlot elseFlag = nextActiveFlagSlot();
-            FrameSlot exceptIndex = nextGeneratorBlockIndexSlot();
+            int exceptFlag = nextActiveFlagSlot();
+            int elseFlag = nextActiveFlagSlot();
+            int exceptIndex = nextGeneratorBlockIndexSlot();
             replace(node, new GeneratorTryExceptNode(tryExceptNode.getBody(), tryExceptNode.getExceptNodes(), tryExceptNode.getOrelse(), exceptFlag, elseFlag, exceptIndex));
 
         } else if (node instanceof TryFinallyNode) {
             TryFinallyNode tryFinally = (TryFinallyNode) node;
-            FrameSlot finallyFlag = nextActiveFlagSlot();
+            int finallyFlag = nextActiveFlagSlot();
             replace(node, new GeneratorTryFinallyNode(tryFinally.getBody(), tryFinally.getFinalbody(), finallyFlag));
 
         } else if (node instanceof StatementNode) {
@@ -372,35 +367,31 @@ public class GeneratorTranslator {
         }
     }
 
-    private FrameSlot nextActiveFlagSlot() {
-        String slotId = FrameSlotIDs.TEMP_LOCAL_PREFIX + GENERATOR_ACTIVE_FLAG_SLOT + activeFlagSlots.size();
-        FrameSlot slot = root.getFrameDescriptor().addFrameSlot(slotId, FrameSlotKind.Boolean);
-        activeFlagSlots.add(slot);
-        return slot;
+    private int nextActiveFlagSlot() {
+        return numOfActiveFlags++;
     }
 
-    public FrameSlot[] getFlagSlots() {
-        return activeFlagSlots.toArray(new FrameSlot[activeFlagSlots.size()]);
+    public int getNumOfActiveFlags() {
+        return numOfActiveFlags;
     }
 
-    private FrameSlot nextGeneratorBlockIndexSlot() {
-        String slotId = FrameSlotIDs.TEMP_LOCAL_PREFIX + GENERATOR_BLOCK_INDEX_SLOT + generatorBlockIndexSlots.size();
-        FrameSlot slot = root.getFrameDescriptor().addFrameSlot(slotId, FrameSlotKind.Int);
-        generatorBlockIndexSlots.add(slot);
-        return slot;
+    private int nextGeneratorBlockIndexSlot() {
+        return numOfGeneratorBlockNode++;
     }
 
-    private FrameSlot nextGeneratorForNodeSlot() {
-        numOfGeneratorForNode++;
-        String slotId = FrameSlotIDs.TEMP_LOCAL_PREFIX + GENERATOR_FOR_NODE_SLOT + numOfGeneratorForNode;
-        return root.getFrameDescriptor().addFrameSlot(slotId, FrameSlotKind.Object);
+    public int getNumOfGeneratorBlockNode() {
+        return numOfGeneratorBlockNode;
+    }
+
+    private int nextGeneratorForNodeSlot() {
+        return numOfGeneratorForNode++;
+    }
+
+    public int getNumOfGeneratorForNode() {
+        return numOfGeneratorForNode;
     }
 
     public ExpressionNode getGetOuterMostLoopIterator() {
         return getOuterMostLoopIterator;
-    }
-
-    public FrameSlot[] getIndexSlots() {
-        return generatorBlockIndexSlots.toArray(new FrameSlot[generatorBlockIndexSlots.size()]);
     }
 }

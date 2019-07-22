@@ -36,7 +36,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -46,8 +45,9 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     private final String name;
     private final RootCallTarget callTarget;
     private final FrameDescriptor frameDescriptor;
-    @CompilationFinal(dimensions = 1) private final FrameSlot[] flagSlots;
-    @CompilationFinal(dimensions = 1) private final FrameSlot[] indexSlots;
+    private final int numOfActiveFlags;
+    private final int numOfGeneratorBlockNode;
+    private final int numOfGeneratorForNode;
 
     @CompilationFinal private FrameDescriptor enclosingFrameDescriptor;
     @CompilationFinal private boolean isEnclosingFrameGenerator;
@@ -56,14 +56,16 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public GeneratorExpressionNode(String name, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
-                    ExecutionCellSlots executionCellSlots, FrameSlot[] flagSlots, FrameSlot[] indexSlots) {
+                    ExecutionCellSlots executionCellSlots,
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         super(definitionCellSlots, executionCellSlots);
         this.name = name;
         this.callTarget = callTarget;
         this.getIterator = getIterator;
         this.frameDescriptor = descriptor;
-        this.flagSlots = flagSlots;
-        this.indexSlots = indexSlots;
+        this.numOfActiveFlags = numOfActiveFlags;
+        this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
+        this.numOfGeneratorForNode = numOfGeneratorForNode;
     }
 
     public String getName() {
@@ -103,6 +105,18 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         isOptimized = true;
     }
 
+    public int getNumOfActiveFlags() {
+        return numOfActiveFlags;
+    }
+
+    public int getNumOfGeneratorBlockNode() {
+        return numOfGeneratorBlockNode;
+    }
+
+    public int getNumOfGeneratorForNode() {
+        return numOfGeneratorForNode;
+    }
+
     public RootNode getFunctionRootNode() {
         return callTarget.getRootNode();
     }
@@ -122,7 +136,8 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         PArguments.setException(arguments, PException.NO_EXCEPTION);
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return factory.createGenerator(name, callTarget, frameDescriptor, arguments, closure, executionCellSlots, flagSlots, indexSlots);
+        return factory.createGenerator(name, callTarget, frameDescriptor, arguments, closure, executionCellSlots,
+                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
     }
 
     @Override

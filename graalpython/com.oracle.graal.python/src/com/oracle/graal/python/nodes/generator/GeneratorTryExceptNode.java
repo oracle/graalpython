@@ -49,7 +49,6 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionState
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -60,11 +59,11 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionState = RestoreExceptionStateNode.create();
 
-    private final FrameSlot exceptFlag;
-    private final FrameSlot elseFlag;
-    private final FrameSlot exceptIndex;
+    private final int exceptFlag;
+    private final int elseFlag;
+    private final int exceptIndex;
 
-    public GeneratorTryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse, FrameSlot exceptFlag, FrameSlot elseFlag, FrameSlot exceptIndex) {
+    public GeneratorTryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse, int exceptFlag, int elseFlag, int exceptIndex) {
         super(body, exceptNodes, orelse);
         this.exceptFlag = exceptFlag;
         this.elseFlag = elseFlag;

@@ -32,9 +32,39 @@ public final class GeneratorControlData {
     // See {@link GeneratorReturnTargetNode},
     // {@link GeneratorIfNode},
     // {@link GeneratorWhileNode}.
+    private final boolean[] activeFlags;
+    private final int[] blockNodeIndices;       // See {@link GeneratorBlockNode}
+    private final Object[] forNodeIterators; // See {@link GeneratorForNode}
     private ExceptionState activeException;
 
-    public GeneratorControlData() {
+    public GeneratorControlData(int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+        this.activeFlags = new boolean[numOfActiveFlags];
+        this.blockNodeIndices = new int[numOfGeneratorBlockNode];
+        this.forNodeIterators = new Object[numOfGeneratorForNode];
+    }
+
+    public boolean getActive(int slot) {
+        return activeFlags[slot];
+    }
+
+    public void setActive(int slot, boolean flag) {
+        activeFlags[slot] = flag;
+    }
+
+    public int getBlockIndexAt(int slot) {
+        return blockNodeIndices[slot];
+    }
+
+    public void setBlockIndexAt(int slot, int value) {
+        blockNodeIndices[slot] = value;
+    }
+
+    public Object getIteratorAt(int slot) {
+        return forNodeIterators[slot];
+    }
+
+    public void setIteratorAt(int slot, Object value) {
+        forNodeIterators[slot] = value;
     }
 
     public ExceptionState getActiveException() {
