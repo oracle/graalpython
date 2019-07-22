@@ -565,7 +565,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String multiArch = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "_multiarch");
 
             Env env = ctxt.getEnv();
-            LanguageInfo llvmInfo = env.getLanguages().get(SysModuleBuiltins.LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(SysModuleBuiltins.LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             String toolchainId = toolchain.getIdentifier();
 

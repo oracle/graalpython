@@ -207,7 +207,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Env env = context.getEnv();
         String option = PythonOptions.getOption(context, PythonOptions.PythonPath);
 
-        LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
+        LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         String cextModuleHome = String.join(env.getFileNameSeparator(), context.getCoreHome(), "modules", toolchain.getIdentifier());
         String cextHome = String.join(env.getFileNameSeparator(), context.getCoreHome(), toolchain.getIdentifier());
@@ -495,7 +495,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected Object getToolPath(String tool) {
             Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             TruffleFile toolPath = toolchain.getToolPath(tool);
             if (toolPath == null) {
