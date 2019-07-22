@@ -1054,6 +1054,8 @@ def python_build_watch(args):
     for e in excludes:
         cmd += ["--exclude", e]
     cmd += ["@%s" % os.path.join(SUITE.dir, ".git"), SUITE.dir]
+    cmd_qq = cmd[:]
+    cmd_qq[1] = "-qq"
 
     while True:
         out = mx.OutputCapture()
@@ -1061,15 +1063,26 @@ def python_build_watch(args):
         changed_file = out.data.strip()
         mx.logv(changed_file)
         if any(changed_file.endswith(ext) for ext in [".c", ".h", ".class", ".jar"]):
-            mx.log("Build needed ...")
-            time.sleep(2)
+            mx.log("Build needed ")
+            while True:
+                # re-run this until it times out, which we'll interpret as quiet
+                # time
+                if not mx.get_opts().quiet:
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+                retcode = mx.run(cmd_qq, timeout=3, nonZeroIsFatal=False)
+                if retcode == mx.ERROR_TIMEOUT:
+                    if not mx.get_opts().quiet:
+                        sys.stdout.write("\n")
+                    break
+            mx.log("Building ...")
             if args.full:
                 mx.command_function("build")()
             elif args.graalvm:
                 mx.log(python_gvm())
             else:
                 nativebuild([])
-        mx.log("Build done.")
+            mx.log("Build done.")
 
 
 # ----------------------------------------------------------------------------------------------------------------------
