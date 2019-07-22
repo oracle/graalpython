@@ -801,3 +801,42 @@ int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize
     }
     return 1;
 }
+
+#undef _PyArg_NoKeywords
+#undef _PyArg_NoPositional
+
+// taken from CPython "Python/getargs.c"
+int _PyArg_NoKeywords(const char *funcname, PyObject *kwargs) {
+    if (kwargs == NULL) {
+        return 1;
+    }
+    if (!PyDict_CheckExact(kwargs)) {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+    if (PyDict_GET_SIZE(kwargs) == 0) {
+        return 1;
+    }
+
+    PyErr_Format(PyExc_TypeError, "%.200s() takes no keyword arguments",
+                    funcname);
+    return 0;
+}
+
+// taken from CPython "Python/getargs.c"
+int _PyArg_NoPositional(const char *funcname, PyObject *args) {
+    if (args == NULL) {
+        return 1;
+    }
+    if (!PyTuple_CheckExact(args)) {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+    if (PyTuple_GET_SIZE(args) == 0) {
+        return 1;
+    }
+
+    PyErr_Format(PyExc_TypeError, "%.200s() takes no positional arguments",
+                    funcname);
+    return 0;
+}

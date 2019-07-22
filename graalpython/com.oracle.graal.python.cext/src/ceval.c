@@ -79,3 +79,8 @@ UPCALL_ID(PyThread_release_lock);
 void PyThread_release_lock(PyThread_type_lock aLock) {
     UPCALL_CEXT_O(_jls_PyThread_release_lock, native_to_java(aLock));
 }
+
+
+void PyThread_free_lock(PyThread_type_lock lock)
+{
+}
