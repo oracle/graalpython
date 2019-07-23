@@ -104,6 +104,15 @@ def _reference_contains(args):
             return -1
 
 
+def _reference_clear(args):
+    try:
+        d = args[0]
+        d.clear()
+        return d
+    except:
+        raise SystemError
+
+
 class SubDict(dict):
     pass
 
@@ -329,4 +338,21 @@ class TestPyDict(CPyExtTestCase):
         }''',
         callfunction="wrap_PyDict_Update",
         cmpfunc=lambda cr, pr: (cr == pr or (isinstance(cr, BaseException) and type(cr) == type(pr))) and (ExampleDict.get("a") == 1 or len(ExampleDict) == 0)
+    )
+
+    test_PyDict_Clear = CPyExtFunction(
+        _reference_clear,
+        lambda: (
+            (dict({"a": 1}), ),
+            (dict(), ),
+        ),
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* self"],
+        code='''PyObject* wrap_PyDict_Clear(PyObject* self) {
+            PyDict_Clear(self);
+            return self;
+        }''',
+        callfunction="wrap_PyDict_Clear",
+        cmpfunc=unhandled_error_compare
     )

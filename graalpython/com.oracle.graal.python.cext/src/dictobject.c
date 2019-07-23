@@ -188,3 +188,7 @@ PyObject** _PyObject_GetDictPtr(PyObject* obj) {
     }
     return (PyObject **) ((char *)obj + dictoffset);
 }
+
+void PyDict_Clear(PyObject *obj) {
+	(void) UPCALL_O(to_java(obj), polyglot_from_string("clear", SRC_CS));
+}
