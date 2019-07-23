@@ -161,7 +161,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1042,16 +1041,24 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
         @Specialization
-        Object doBytes(VirtualFrame frame, TruffleObject o, long elementSize, Object errorMarker,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
+        Object doBytes(VirtualFrame frame, Object o, long elementSize, Object errorMarker,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                ByteBuffer bytes = wrap(getByteArrayNode.execute(frame, o, -1));
+                ByteBuffer bytes;
                 if (elementSize == 2L) {
-                    return decode2(bytes);
+                    if (!lib.hasArrayElements(o)) {
+                        return raiseNative(frame, errorMarker, PythonErrorType.SystemError, "provided object is not an array", elementSize);
+                    }
+                    long size = lib.getArraySize(o);
+                    bytes = readWithSize(lib, o, (int) size);
+                    bytes.flip();
                 } else if (elementSize == 4L) {
-                    return decode4(bytes);
+                    bytes = wrap(getByteArrayNode.execute(frame, o, -1));
+                } else {
+                    return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
                 }
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
+                return decode(bytes);
             } catch (CharacterCodingException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (IllegalArgumentException e) {
@@ -1062,25 +1069,31 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doBytes(VirtualFrame frame, TruffleObject o, PInt elementSize, Object errorMarker,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
+        Object doBytes(VirtualFrame frame, Object o, PInt elementSize, Object errorMarker,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return doBytes(frame, o, elementSize.longValueExact(), errorMarker, getByteArrayNode);
+                return doBytes(frame, o, elementSize.longValueExact(), errorMarker, getByteArrayNode, lib);
             } catch (ArithmeticException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
         }
 
         @TruffleBoundary
-        private static String decode2(ByteBuffer bytes) {
-            return bytes.asCharBuffer().toString();
-        }
-
-        @TruffleBoundary
-        private static String decode4(ByteBuffer bytes) throws CharacterCodingException {
+        private static String decode(ByteBuffer bytes) throws CharacterCodingException {
             return getUTF32Charset(0).newDecoder().decode(bytes).toString();
         }
 
+        @TruffleBoundary
+        private static ByteBuffer readWithSize(InteropLibrary interopLib, Object o, int size) throws UnsupportedMessageException, InvalidArrayIndexException {
+            ByteBuffer buf = ByteBuffer.allocate(size * Integer.BYTES);
+            for (long i = 0; i < size; i++) {
+                Object elem = interopLib.readArrayElement(o, i);
+                assert elem instanceof Number && 0 <= ((Number) elem).intValue() && ((Number) elem).intValue() < (1 << 16);
+                buf.putInt(((Number) elem).intValue());
+            }
+            return buf;
+        }
     }
 
     @Builtin(name = "PyTruffle_Unicode_FromUTF8", minNumOfPositionalArgs = 2)
