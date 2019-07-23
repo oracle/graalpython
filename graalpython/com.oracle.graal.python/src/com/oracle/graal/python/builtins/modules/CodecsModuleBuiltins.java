@@ -341,7 +341,18 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isBytes(bytes)")
         Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+                      @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+            // for now we'll just parse this as a String, ignoring any error strategies
+            PythonCore core = getCore();
+            byte[] byteArray = toBytes.execute(frame, bytes);
+            String string = strFromBytes(byteArray);
+            String unescapedString = core.getParser().unescapeJavaString(string);
+            return factory().createTuple(new Object[]{unescapedString, byteArray.length});
+        }
+
+        @Specialization(guards = "isBytes(bytes)")
+        Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") String errors,
+                      @Cached("create()") BytesNodes.ToBytesNode toBytes) {
             // for now we'll just parse this as a String, ignoring any error strategies
             PythonCore core = getCore();
             byte[] byteArray = toBytes.execute(frame, bytes);
