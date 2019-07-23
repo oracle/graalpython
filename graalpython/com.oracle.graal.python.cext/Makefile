@@ -104,7 +104,7 @@ modules/${PLATFORM}/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES} ${LEGA
 
 ${LIBDIR}/modules/${PLATFORM}/%${SO_EXT}: modules/${PLATFORM}/%.o ${TARGET_LIB}
 	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) ${CLANG} -fPIC -shared -lbz2 ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $< ${TARGET_LIB}
+	$(QUIETLY) ${CLANG} -fPIC -shared -lbz2 -lpolyglot-mock ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $< ${TARGET_LIB}
 
 $(HEADER_TARGETS): ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p ../include/
