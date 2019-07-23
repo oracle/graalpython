@@ -446,6 +446,10 @@ void PyObject_GC_Track(void *tp) {
 void PyObject_GC_Del(void *tp) {
 }
 
+
+void PyObject_GC_UnTrack(void *tp) {
+}
+
 PyObject* _PyObject_GC_New(PyTypeObject *tp) {
     return _PyObject_New(tp);
 }
