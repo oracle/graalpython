@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -98,7 +99,22 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(contextRef, result);
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", limit = "1")
+    protected static HashingStorage getStorage(Object cachedGlobals) {
+        return ((PDict) cachedGlobals).getDictStorage();
+    }
+
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)", "getStorage(cachedGlobals) == cachedStorage"}, assumptions = "singleContextAssumption", limit = "1")
+    protected Object readGlobalBuiltinDictCachedUnchangedStorage(VirtualFrame frame,
+                    @SuppressWarnings("unused") @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached("getStorage(cachedGlobals)") HashingStorage cachedStorage,
+                    @Cached HashingStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile builtinProfile,
+                    @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+        Object result = getItemNode.execute(frame, cachedStorage, attributeId);
+        return returnGlobalOrBuiltin(contextRef, result == null ? PNone.NO_VALUE : result);
+    }
+
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", limit = "1", replaces = "readGlobalBuiltinDictCachedUnchangedStorage")
     protected Object readGlobalBuiltinDictCached(VirtualFrame frame,
                     @Cached("getGlobals(frame)") Object cachedGlobals,
                     @Cached HashingStorageNodes.GetItemNode getItemNode,
@@ -108,7 +124,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(contextRef, result == null ? PNone.NO_VALUE : result);
     }
 
-    @Specialization(guards = "isBuiltinDict(getGlobals(frame), builtinProfile)", replaces = "readGlobalBuiltinDictCached")
+    @Specialization(guards = "isBuiltinDict(getGlobals(frame), builtinProfile)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"})
     protected Object readGlobalBuiltinDict(VirtualFrame frame,
                     @Cached HashingStorageNodes.GetItemNode getItemNode,
                     @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile,
