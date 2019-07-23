@@ -73,6 +73,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -341,7 +342,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isBytes(bytes)")
         Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+                        @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+            return encode(frame, bytes, "", toBytes);
+        }
+
+        @Specialization(guards = "isBytes(bytes)")
+        Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") String errors,
+                        @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
             // for now we'll just parse this as a String, ignoring any error strategies
             PythonCore core = getCore();
             byte[] byteArray = toBytes.execute(frame, bytes);
