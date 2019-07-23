@@ -14,6 +14,24 @@ To try it, you can use the bundled releases from
 some examples of what you can do with it, check out the
 [reference](https://www.graalvm.org/docs/reference-manual/languages/python/).
 
+### Create a virtual environment
+
+The best way of using the GraalVM implementation of Python is out of a virtual environment. This generates 
+wrapper scripts and makes the implementation usable from shell as standard Python interpreter. To do so
+execute the following command in the project directory:
+
+```
+mx graalpython -m venv <dir-to-venv>
+```
+
+To activate the environment in your shell session call:
+
+```
+source <dir-to-venv>/bin/activate
+```
+
+In the venv multiple executables are available, like `python`, `python3` and `graalpython`. 
+
 ### Installing packages
 
 At the moment not enough of the standard library is implemented to run the

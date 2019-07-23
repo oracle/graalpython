@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -627,3 +627,6 @@ class defaultdict(dict):
             raise KeyError((key,))
         self[key] = value = self.default_factory()
         return value
+    
+    def __repr__(self):
+        return "%s(%r, %s)" % (type(self).__name__, self.default_factory, dict.__repr__(self))  
