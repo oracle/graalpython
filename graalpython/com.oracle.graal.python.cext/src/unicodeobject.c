@@ -433,3 +433,7 @@ PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
         return NULL;
     }
 }
+
+PyObject * PyUnicode_FromOrdinal(int ordinal) {
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("chr", SRC_CS), ordinal);
+}

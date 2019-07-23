@@ -464,3 +464,17 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* str", "PyObject* seq"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyUnicode_FromOrdinal = CPyExtFunction(
+        lambda args: chr(args[0]),
+        lambda: (
+            (97,),
+            (65,),
+            (332,),
+        ),
+        resultspec="O",
+        argspec='i',
+        arguments=["int ordinal"],
+        cmpfunc=unhandled_error_compare
+    )
+    
