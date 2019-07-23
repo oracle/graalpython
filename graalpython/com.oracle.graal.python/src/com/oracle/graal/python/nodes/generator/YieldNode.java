@@ -28,17 +28,17 @@ package com.oracle.graal.python.nodes.generator;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class YieldNode extends AbstractYieldNode implements GeneratorControlNode {
 
-    @Child private StatementNode right;
+    @Child private ExpressionNode right;
     @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
 
-    public YieldNode(StatementNode right) {
+    public YieldNode(ExpressionNode right) {
         this.right = right;
     }
 
@@ -63,9 +63,8 @@ public class YieldNode extends AbstractYieldNode implements GeneratorControlNode
                 return specialArgument;
             }
         } else {
-            right.executeVoid(frame);
             access.setActive(frame, flagSlot, true);
-            throw YieldException.INSTANCE;
+            throw new YieldException(right.execute(frame));
         }
     }
 }

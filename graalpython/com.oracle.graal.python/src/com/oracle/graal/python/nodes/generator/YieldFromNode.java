@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -94,13 +93,11 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     private final BranchProfile noThrow = BranchProfile.create();
 
     @Child private ExpressionNode right;
-    @Child private WriteNode yieldWriteNode;
 
     @Child private PythonObjectFactory ofactory;
 
-    public YieldFromNode(ExpressionNode right, WriteNode yieldSlot) {
+    public YieldFromNode(ExpressionNode right) {
         this.right = right;
-        this.yieldWriteNode = yieldSlot;
     }
 
     @Override
@@ -129,8 +126,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         while (true) {
             if (!access.isActive(frame, flagSlot)) {
                 access.setActive(frame, flagSlot, true);
-                yieldWriteNode.doWrite(frame, _y);
-                throw YieldException.INSTANCE;
+                throw new YieldException(_y);
             } else {
                 access.setActive(frame, flagSlot, false);
                 _y = null;
