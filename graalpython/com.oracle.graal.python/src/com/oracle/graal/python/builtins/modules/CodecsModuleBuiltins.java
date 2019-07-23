@@ -342,12 +342,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isBytes(bytes)")
         Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") PNone errors,
                       @Cached("create()") BytesNodes.ToBytesNode toBytes) {
-            // for now we'll just parse this as a String, ignoring any error strategies
-            PythonCore core = getCore();
-            byte[] byteArray = toBytes.execute(frame, bytes);
-            String string = strFromBytes(byteArray);
-            String unescapedString = core.getParser().unescapeJavaString(string);
-            return factory().createTuple(new Object[]{unescapedString, byteArray.length});
+            return encode(frame, bytes, "", toBytes);
         }
 
         @Specialization(guards = "isBytes(bytes)")
