@@ -79,3 +79,22 @@ The C implementation and headers for our C API are in
 `graalpython/com.oracle.graal.python.cext`. The naming is analogous to C
 Python's source names. This folder also includes a `modules` folder for built-in
 modules that we have adapted from C Python.
+
+##### Debug options
+
+The GraalVM implementation of Python provides proper debug options. It is possible to either debug the Python code, using Chrome debugger,   
+or the java code, using your preferred IDE. 
+The following commands should be executed in a virtualenv environment, which provides a graalpython executable.
+
+For debug Python side code call this:
+
+```graalpython --inspect your_script.py ```
+
+This will open a debug server, which can be accessed in Chrome Browser under URL `chrome://inspect`.
+
+For debugging java implemented code execute:
+
+```graalpython --experimental-options -debug-java your_script.py```
+
+The command will also start a debug server, which can be used in an IDE. If the IDE was initialized properly 
+by using the command mentioned above, the existing `GraalDebug` run configuration can be used to debug.
