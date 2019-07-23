@@ -411,3 +411,84 @@ int PyBuffer_FillInfo(Py_buffer *view, PyObject *obj, void *buf, Py_ssize_t len,
     view->internal = NULL;
     return 0;
 }
+
+// taken from CPython "Objects/abstract.c"
+static int _IsFortranContiguous(const Py_buffer *view) {
+    Py_ssize_t sd, dim;
+    int i;
+
+    /* 1) len = product(shape) * itemsize
+       2) itemsize > 0
+       3) len = 0 <==> exists i: shape[i] = 0 */
+    if (view->len == 0) return 1;
+    if (view->strides == NULL) {  /* C-contiguous by definition */
+        /* Trivially F-contiguous */
+        if (view->ndim <= 1) return 1;
+
+        /* ndim > 1 implies shape != NULL */
+        assert(view->shape != NULL);
+
+        /* Effectively 1-d */
+        sd = 0;
+        for (i=0; i<view->ndim; i++) {
+            if (view->shape[i] > 1) sd += 1;
+        }
+        return sd <= 1;
+    }
+
+    /* strides != NULL implies both of these */
+    assert(view->ndim > 0);
+    assert(view->shape != NULL);
+
+    sd = view->itemsize;
+    for (i=0; i<view->ndim; i++) {
+        dim = view->shape[i];
+        if (dim > 1 && view->strides[i] != sd) {
+            return 0;
+        }
+        sd *= dim;
+    }
+    return 1;
+}
+
+// taken from CPython "Objects/abstract.c"
+static int _IsCContiguous(const Py_buffer *view) {
+    Py_ssize_t sd, dim;
+    int i;
+
+    /* 1) len = product(shape) * itemsize
+       2) itemsize > 0
+       3) len = 0 <==> exists i: shape[i] = 0 */
+    if (view->len == 0) return 1;
+    if (view->strides == NULL) return 1; /* C-contiguous by definition */
+
+    /* strides != NULL implies both of these */
+    assert(view->ndim > 0);
+    assert(view->shape != NULL);
+
+    sd = view->itemsize;
+    for (i=view->ndim-1; i>=0; i--) {
+        dim = view->shape[i];
+        if (dim > 1 && view->strides[i] != sd) {
+            return 0;
+        }
+        sd *= dim;
+    }
+    return 1;
+}
+
+// taken from CPython "Objects/abstract.c"
+int PyBuffer_IsContiguous(const Py_buffer *view, char order) {
+
+    if (view->suboffsets != NULL) return 0;
+
+    if (order == 'C')
+        return _IsCContiguous(view);
+    else if (order == 'F')
+        return _IsFortranContiguous(view);
+    else if (order == 'A')
+        return (_IsCContiguous(view) || _IsFortranContiguous(view));
+    return 0;
+}
+
+
