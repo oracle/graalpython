@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -68,8 +68,8 @@ class property(object):
 
     """
     def __init__(self, fget=None, fset=None, fdel=None, doc=None, name=None):
-        self.__get = fget
-        self.__set = fset
+        self.fget = fget
+        self.fset = fset
         self.__delete = fdel
         self.doc = doc
         self.name = name
@@ -80,15 +80,15 @@ class property(object):
             self._owner = owner
         if instance is None:
             return self
-        if self.__get is None:
+        if self.fget is None:
             raise AttributeError("unreadable attribute")
-        return self.__get(instance)
+        return self.fget(instance)
 
     def __set__(self, instance, value):
-        if self.__set is None:
+        if self.fset is None:
             raise AttributeError("attribute '{}' of '{}' objects is not writable".format(
                 self.name, getattr(self._owner, "__name__", str(self._owner))))
-        return self.__set(instance, value)
+        return self.fset(instance, value)
 
     def __delete__(self, instance):
         if self.__delete is None:
@@ -96,7 +96,7 @@ class property(object):
         return self.__delete(instance)
 
     def setter(self, func):
-        self.__set = func
+        self.fset = func
         return self
 
     def deleter(self, func):
@@ -104,7 +104,7 @@ class property(object):
         return self
 
     def getter(self, func):
-        self.__get = func
+        self.fget = func
         return self
 
     def __repr__(self):

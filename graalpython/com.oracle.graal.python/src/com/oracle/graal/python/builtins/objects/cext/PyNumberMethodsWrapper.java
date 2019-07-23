@@ -88,7 +88,6 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ImportStatic(SpecialMethodNames.class)
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
-    // TODO extend list according to 'isValidMember'
     private static final String[] NUMBER_METHODS = new String[]{
                     NB_ADD,
                     NB_SUBTRACT,

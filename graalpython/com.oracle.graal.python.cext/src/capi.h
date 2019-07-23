@@ -327,9 +327,6 @@ extern PyObject* wrapped_null;
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
-/* DICT */
-void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
-
 /* STR */
 PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
 
