@@ -64,6 +64,7 @@ def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
     so_ext = ".so"
     so_abi = sys.implementation.cache_tag + "-" + sys.graal_python_platform_id + "-" + sys.implementation._multiarch
+    darwin = sys.platform == "darwin"
 
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
@@ -73,7 +74,7 @@ def _init_posix():
     g['CPPFLAGS'] = '-I. -I%s' % get_python_inc()
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
-    g['LDSHARED'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
+    g['LDSHARED'] = "%s -shared -fPIC%s" % (sys.__graal_get_toolchain_path('CC'), " -undefined dynamic_lookup" if darwin else "") 
     g['SOABI'] = so_abi
     g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
