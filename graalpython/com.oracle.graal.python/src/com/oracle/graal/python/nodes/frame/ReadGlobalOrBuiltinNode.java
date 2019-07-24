@@ -55,6 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "read_global")
@@ -187,16 +188,16 @@ abstract class ReadBuiltinNode extends Node {
         this.attributeId = attributeId;
     }
 
-    @Specialization(assumptions = {"singleContextAssumption", "singleCoreNotInitialized"})
-    Object returnBuiltinConstantStartup(
+    // speed hack: builtins can change, but they do so very rarely. the more
+    // general case also leads to the same number of checks when the attribute
+    // is stable, but for example for a re-defined attribute, we still want to
+    // optimistically assume it will never change again.
+    @Specialization(guards = "builtins.getStorage().getShape() == cachedShape", assumptions = "singleContextAssumption", limit = "1")
+    Object returnBuiltinConstant(
                     @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached("getBuiltins(context)") PythonModule builtins) {
-        PythonCore core = context.getCore();
-        if (core.isInitialized()) {
-            // we continue with this specialization, but it will be replaced with the next one
-            singleCoreNotInitialized.invalidate();
-        }
-        Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
+                    @SuppressWarnings("unused") @Cached("getBuiltins(context)") PythonModule builtins,
+                    @SuppressWarnings("unused") @Cached("builtins.getStorage().getShape()") Shape cachedShape,
+                    @Cached("readFromBuiltinsNode.execute(builtins, attributeId)") Object builtin) {
         if (builtin != PNone.NO_VALUE) {
             return builtin;
         } else {
@@ -208,22 +209,14 @@ abstract class ReadBuiltinNode extends Node {
         }
     }
 
-    // we can let this specialization replace the previous one, since in a
-    // single context we cannot go back to being uninitialized
-    @Specialization(assumptions = "singleContextAssumption", replaces = "returnBuiltinConstantStartup")
-    Object returnBuiltinConstant(
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached("getBuiltins(context)") PythonModule builtins,
-                    @Cached("readFromBuiltinsNode.execute(builtins, attributeId)") Object builtin) {
-        if (builtin != PNone.NO_VALUE) {
-            return builtin;
-        } else {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(NameError, "name '%s' is not defined", attributeId);
-        }
+    @Specialization(assumptions = "singleContextAssumption")
+    Object returnBuiltinConstant() {
+        // speed hack: builtins can change, but they do so extremely rarely. we
+        // take the hit that any change to builtins will rewrite the AST and go
+        // to the above specialization again, assuming the result will stay
+        // constant from now on
+        ReadBuiltinNode replacement = replace(ReadBuiltinNodeGen.create(attributeId), "builtins module changed");
+        return replacement.execute();
     }
 
     @Specialization
