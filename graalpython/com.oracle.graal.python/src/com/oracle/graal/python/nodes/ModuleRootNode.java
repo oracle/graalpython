@@ -101,7 +101,7 @@ public class ModuleRootNode extends PClosureRootNode {
 
     @Override
     public boolean isInternal() {
-        return getSourceSection().getSource().isInternal();
+        return getSourceSection() != null && getSourceSection().getSource().isInternal();
     }
 
     @Override
