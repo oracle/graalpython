@@ -176,8 +176,8 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         return rhs;
     }
 
-    public void doWrite(VirtualFrame frame, Object rhsValue) {
-        rhsValue = factory.createList(storageNode.execute(frame,getIteratorNode.executeWith(frame,rhsValue)));
+    public void doWrite(VirtualFrame frame, Object rhsVal) {
+        Object rhsValue = factory.createList(storageNode.execute(frame, getIteratorNode.executeWith(frame, rhsVal)));
         int nonExistingItem;
         try {
             if (starredIndex == -1) {

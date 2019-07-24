@@ -112,3 +112,19 @@ def test_else_break_from_while():
             iters += 1
             break
     assert iters == 11, "if the while-loop doesn't break, the else should be executed and break out of the outer loop"
+
+class A(object):
+    def __iter__(self):
+        return iter(['key', 'value'])
+
+
+def test_for_iter():
+    a1 = A()
+    a2 = A()
+    list = [a1, a2]
+    iterator = 0
+    for key, value in list:
+        assert 'key' in key
+        assert 'value' in value
+        iterator += 1
+    assert iterator==2
