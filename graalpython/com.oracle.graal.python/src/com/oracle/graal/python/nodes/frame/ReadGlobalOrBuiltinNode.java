@@ -96,7 +96,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return ((PDict) cachedGlobals).getDictStorage();
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)", "getStorage(cachedGlobals) == cachedStorage"}, assumptions = "singleContextAssumption", limit = "1")
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)",
+                    "getStorage(cachedGlobals) == cachedStorage"}, assumptions = "singleContextAssumption", limit = "1")
     protected Object readGlobalBuiltinDictCachedUnchangedStorage(VirtualFrame frame,
                     @SuppressWarnings("unused") @Cached("getGlobals(frame)") Object cachedGlobals,
                     @Cached("getStorage(cachedGlobals)") HashingStorage cachedStorage,
@@ -106,7 +107,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", limit = "1", replaces = "readGlobalBuiltinDictCachedUnchangedStorage")
+    @Specialization(guards = {"getGlobals(frame) == cachedGlobals",
+                    "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", limit = "1", replaces = "readGlobalBuiltinDictCachedUnchangedStorage")
     protected Object readGlobalBuiltinDictCached(VirtualFrame frame,
                     @Cached("getGlobals(frame)") Object cachedGlobals,
                     @Cached HashingStorageNodes.GetItemNode getItemNode,
