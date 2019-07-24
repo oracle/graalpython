@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -106,6 +107,7 @@ public class ClassmethodBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
+    @ReportPolymorphism
     abstract static class MakeMethodNode extends PNodeWithContext {
         abstract Object execute(Object self, Object func);
 
