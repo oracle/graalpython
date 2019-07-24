@@ -73,7 +73,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -172,7 +171,6 @@ import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -186,7 +184,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -1454,19 +1451,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = LIST, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PList)
     @GenerateNodeFactory
     public abstract static class ListNode extends PythonBinaryBuiltinNode {
-        protected static boolean isBuiltinList(LazyPythonClass cls, PythonContext context) {
-            return context.getCore().lookupType(PythonBuiltinClassType.PList) == cls;
+        protected boolean isBuiltinList(LazyPythonClass cls) {
+            return getCore().lookupType(PythonBuiltinClassType.PList) == cls;
         }
 
-        @Specialization(guards = "isBuiltinList(cls, context)")
-        protected PList constructBuiltinList(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
+        @Specialization(guards = "isBuiltinList(cls)")
+        protected PList constructBuiltinList(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") Object value) {
             return factory().createList();
         }
 
-        @Specialization(guards = "!isBuiltinList(cls, context)")
-        protected PList constructList(LazyPythonClass cls, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
+        @Specialization(guards = "!isBuiltinList(cls)")
+        protected PList constructList(LazyPythonClass cls, @SuppressWarnings("unused") Object value) {
             return factory().createList(cls);
         }
 
