@@ -1653,7 +1653,25 @@ public abstract class HashingStorageNodes {
 
         public abstract boolean execute(VirtualFrame frame, HashingStorage left, HashingStorage right);
 
-        @Specialization
+        @Specialization(limit = "MAX_STORAGES", guards = {"left.getClass() == leftClass", "right.getClass() == rightClass"})
+        public boolean isSubsetCached(VirtualFrame frame, HashingStorage left, HashingStorage right,
+                        @Cached("left.getClass()") Class<? extends HashingStorage> leftClass,
+                        @Cached("right.getClass()") Class<? extends HashingStorage> rightClass,
+                        @Cached("create()") ContainsKeyNode containsKeyNode,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(leftClass.cast(left).length() > rightClass.cast(right).length())) {
+                return false;
+            }
+
+            for (Object leftKey : leftClass.cast(left).keys()) {
+                if (!containsKeyNode.execute(frame, right, leftKey)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Specialization(replaces = "isSubsetCached")
         public boolean isSubset(VirtualFrame frame, HashingStorage left, HashingStorage right,
                         @Cached("create()") ContainsKeyNode containsKeyNode,
                         @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
