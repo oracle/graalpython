@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -81,13 +82,9 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    static Object[] starargs(PList starargs) {
-        int length = starargs.getSequenceStorage().length();
-        Object[] internalArray = starargs.getSequenceStorage().getInternalArray();
-        if (internalArray.length != length) {
-            return starargs.getSequenceStorage().getCopyOfInternalArray();
-        }
-        return internalArray;
+    static Object[] starargs(PList starargs,
+                    @Cached SequenceStorageNodes.ToArrayNode toArray) {
+        return toArray.execute(starargs.getSequenceStorage());
     }
 
     @Specialization
@@ -170,7 +167,12 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
         @Specialization
         static Object[] starargs(PList starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+            int length = starargs.getSequenceStorage().length();
+            Object[] internalArray = starargs.getSequenceStorage().getInternalArray();
+            if (internalArray.length != length) {
+                return starargs.getSequenceStorage().getCopyOfInternalArray();
+            }
+            return internalArray;
         }
 
         @Specialization

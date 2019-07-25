@@ -3296,7 +3296,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         Object[] doObjectSequenceStorage(ObjectSequenceStorage s) {
             Object[] barr = s.getInternalArray();
-            if (exact) {
+            if (exact && barr.length != s.length()) {
                 return exactCopy(barr, s.length());
             }
             return barr;
