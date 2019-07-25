@@ -37,7 +37,9 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -54,7 +56,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public final class DestructuringAssignmentNode extends StatementNode implements WriteNode {
-    @Child private PythonObjectFactory factory;
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private PRaiseNode raiseNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
@@ -67,6 +69,9 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
     @Child private BuiltinFunctions.LenNode lenNode;
     @Child private LookupInheritedAttributeNode lookupGetItemNode = LookupInheritedAttributeNode.create(__GETITEM__);
     @Child private TupleNodes.ConstructTupleNode constructTupleNode = TupleNodes.ConstructTupleNode.create();
+
+    @Child private CreateStorageFromIteratorNode storageNode = CreateStorageFromIteratorNode.create();
+    @Child private GetIteratorNode getIteratorNode = GetIteratorNode.create();
 
     private final IsBuiltinClassProfile notEnoughValuesProfile = IsBuiltinClassProfile.create();
     private final IsBuiltinClassProfile tooManyValuesErrorProfile = IsBuiltinClassProfile.create();
@@ -120,10 +125,6 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
 
     private int fillStarred(VirtualFrame frame, Object rhsValue) {
         int pos = starredIndex;
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
-        }
         try {
             // TODO(ls): proper cast to int
             // TODO(ls): the result of the len call doesn't seem to be used in Python
@@ -175,7 +176,8 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         return rhs;
     }
 
-    public void doWrite(VirtualFrame frame, Object rhsValue) {
+    public void doWrite(VirtualFrame frame, Object rhsVal) {
+        Object rhsValue = factory.createList(storageNode.execute(frame, getIteratorNode.executeWith(frame, rhsVal)));
         int nonExistingItem;
         try {
             if (starredIndex == -1) {
