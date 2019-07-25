@@ -282,9 +282,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doIt0BuiltinType")
-        protected Object doItIndirect0BuiltinType(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClassType self, Object[] arguments, PKeyword[] keywords,
-                        @Cached("self") PythonBuiltinClassType cachedType) {
-            return op(frame, cachedType, arguments, keywords, true);
+        protected Object doItIndirect0BuiltinType(VirtualFrame frame, PythonBuiltinClassType self, Object[] arguments, PKeyword[] keywords) {
+            return op(frame, self, arguments, keywords, true);
         }
 
         @Specialization(replaces = {"doIt0User"}, guards = "!isPythonBuiltinClass(self)")
