@@ -251,7 +251,7 @@ public class TypeBuiltins extends PythonBuiltins {
             }
         }
 
-        /* self is  arguments */
+        /* self is first argument */
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"}, assumptions = "singleContextAssumption()")
         protected Object doIt0BuiltinSingle(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClass self, Object[] arguments, PKeyword[] keywords,
                         @Cached("self") PythonBuiltinClass cachedSelf) {
