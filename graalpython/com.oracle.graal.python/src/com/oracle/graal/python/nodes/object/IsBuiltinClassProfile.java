@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -202,6 +203,20 @@ public final class IsBuiltinClassProfile {
                 isOtherClass = true;
             }
             return false;
+        }
+    }
+
+    public boolean profileClassWithBaseClasses(LazyPythonClass clazz, PythonBuiltinClassType type){
+        if (!profileClass(clazz,type)) {
+            PythonAbstractClass [] baseClasses = ((PythonClass) clazz).getBaseClasses();
+            for (PythonAbstractClass baseClazz : baseClasses) {
+                if (profileClass(baseClazz, type)) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return true;
         }
     }
 
