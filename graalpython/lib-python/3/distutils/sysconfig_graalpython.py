@@ -62,9 +62,12 @@ _config_vars = None
 
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
-    so_ext = ".so"
-    so_abi = sys.implementation.cache_tag + "-" + sys.graal_python_platform_id + "-" + sys.implementation._multiarch
     darwin = sys.platform == "darwin"
+
+    # note: this must be kept in sync with _imp.extension_suffixes
+    so_abi = sys.implementation.cache_tag + "-" + sys.graal_python_platform_id + "-" + sys.implementation._multiarch
+    so_ext = ".so" if not darwin else ".dylib"
+    assert _imp.extension_suffixes()[0] == so_abi + so_ext, "mismatch between extention suffix to _imp.extension_suffixes"
 
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
