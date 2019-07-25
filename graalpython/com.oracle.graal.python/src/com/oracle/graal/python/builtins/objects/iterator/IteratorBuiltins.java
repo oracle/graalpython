@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
+import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -134,10 +136,21 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object next(PBaseSetIterator self) {
-            if (self.hasNext()) {
-                return self.next();
+            Iterator<Object> iterator = self.getIterator();
+            if (hasNext(iterator)) {
+                return getNext(iterator);
             }
             throw raise(StopIteration);
+        }
+
+        @TruffleBoundary
+        private static Object getNext(Iterator<Object> iterator) {
+            return iterator.next();
+        }
+
+        @TruffleBoundary
+        private static boolean hasNext(Iterator<Object> iterator) {
+            return iterator.hasNext();
         }
 
         @Specialization(guards = "self.isPList()")
