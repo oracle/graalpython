@@ -55,7 +55,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "read_global")
@@ -188,41 +187,12 @@ abstract class ReadBuiltinNode extends Node {
         this.attributeId = attributeId;
     }
 
-    // speed hack: builtins can change, but they do so very rarely. the more
-    // general case also leads to the same number of checks when the attribute
-    // is stable, but for example for a re-defined attribute, we still want to
-    // optimistically assume it will never change again.
-    @Specialization(guards = "builtins.getStorage().getShape() == cachedShape", assumptions = "singleContextAssumption", limit = "1")
-    Object returnBuiltinConstant(
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached("getBuiltins(context)") PythonModule builtins,
-                    @SuppressWarnings("unused") @Cached("builtins.getStorage().getShape()") Shape cachedShape,
-                    @Cached("readFromBuiltinsNode.execute(builtins, attributeId)") Object builtin) {
-        if (builtin != PNone.NO_VALUE) {
-            return builtin;
-        } else {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(NameError, "name '%s' is not defined", attributeId);
-        }
-    }
-
+    // TODO: (tfel) Think about how we can globally catch writes to the builtin
+    // module so we can treat anything read from it as constant here.
     @Specialization(assumptions = "singleContextAssumption")
-    Object returnBuiltinConstant() {
-        // speed hack: builtins can change, but they do so extremely rarely. we
-        // take the hit that any change to builtins will rewrite the AST and go
-        // to the above specialization again, assuming the result will stay
-        // constant from now on
-        ReadBuiltinNode replacement = replace(ReadBuiltinNodeGen.create(attributeId), "builtins module changed");
-        return replacement.execute();
-    }
-
-    @Specialization
-    Object returnBuiltin(
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        PythonModule builtins = getBuiltins(context);
+    Object returnBuiltinFromConstantModule(
+                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @SuppressWarnings("unused") @Cached("getBuiltins(context)") PythonModule builtins) {
         Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
         if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
             return builtin;
@@ -233,6 +203,13 @@ abstract class ReadBuiltinNode extends Node {
             }
             throw raiseNode.raise(NameError, "name '%s' is not defined", attributeId);
         }
+    }
+
+    @Specialization
+    Object returnBuiltin(
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        PythonModule builtins = getBuiltins(context);
+        return returnBuiltinFromConstantModule(context, builtins);
     }
 
     protected PythonModule getBuiltins(PythonContext context) {
