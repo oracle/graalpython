@@ -1482,10 +1482,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!self.needsNativeAllocation()"})
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!self.needsNativeAllocation()"}, assumptions = "singleContextAssumption()")
         Object doObjectDirect(@SuppressWarnings("unused") PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("self") PythonManagedClass cachedSelf) {
             return doObjectIndirect(cachedSelf, varargs, kwargs);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
+        Object doObjectDirectType(@SuppressWarnings("unused") PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs,
+                        @Cached("self") PythonBuiltinClassType cachedSelf) {
+            return doObjectIndirectType(cachedSelf, varargs, kwargs);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", //
@@ -1502,6 +1508,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectCachedInstanceShape")
         Object doObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
             return doObjectCachedInstanceShape(self, varargs, kwargs, getInstanceShape(self));
+        }
+
+        @Specialization(replaces = "doObjectDirectType")
+        Object doObjectIndirectType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs) {
+            if (varargs.length > 0 || kwargs.length > 0) {
+                // TODO: tfel: this should throw an error only if init isn't overridden
+            }
+            return factory().createPythonObject(self, self.getInstanceShape());
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
@@ -1948,14 +1962,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object type(VirtualFrame frame, PythonAbstractClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
-                        @Cached("create()") GetClassNode getMetaclassNode,
+        Object type(VirtualFrame frame, LazyPythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
+                        @Cached GetLazyClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
-                        @Cached("create()") CallNode callInitSubclassNode,
-                        @Cached("create()") CallNode callNewFuncNode) {
+                        @Cached CallNode callInitSubclassNode,
+                        @Cached CallNode callNewFuncNode) {
             // Determine the proper metatype to deal with this
-            PythonAbstractClass metaclass = calculate_metaclass(frame, cls, bases, getMetaclassNode);
+            LazyPythonClass metaclass = calculate_metaclass(frame, cls, bases, getMetaclassNode);
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -2009,7 +2023,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @SuppressWarnings("try")
-        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, PythonAbstractClass metaclass) {
+        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, LazyPythonClass metaclass) {
 
             Object[] array = bases.getArray();
 
@@ -2287,10 +2301,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getMroNode.execute(pythonClass);
         }
 
-        private PythonAbstractClass calculate_metaclass(VirtualFrame frame, PythonAbstractClass cls, PTuple bases, GetClassNode getMetaclassNode) {
-            PythonAbstractClass winner = cls;
+        private LazyPythonClass calculate_metaclass(VirtualFrame frame, LazyPythonClass cls, PTuple bases, GetLazyClassNode getMetaclassNode) {
+            LazyPythonClass winner = cls;
             for (Object base : bases.getArray()) {
-                PythonAbstractClass typ = getMetaclassNode.execute(base);
+                LazyPythonClass typ = getMetaclassNode.execute(base);
                 if (isSubType(frame, winner, typ)) {
                     continue;
                 } else if (isSubType(frame, typ, winner)) {
@@ -2303,7 +2317,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return winner;
         }
 
-        protected boolean isSubType(VirtualFrame frame, PythonAbstractClass subclass, PythonAbstractClass superclass) {
+        protected boolean isSubType(VirtualFrame frame, LazyPythonClass subclass, LazyPythonClass superclass) {
             if (isSubtypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSubtypeNode = insert(IsSubtypeNode.create());
