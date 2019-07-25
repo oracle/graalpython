@@ -302,10 +302,10 @@ class EnvBuilder:
             elif os.path.islink(d) or os.path.isfile(d):
                 raise ValueError('Unable to create directory %r' % d)
 
-        def compile(f, module, libs=[]):
+        def compile(f, module, cflags=[]):
             from distutils import sysconfig
             ld = sysconfig.get_config_vars()["LDSHARED"]
-            cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + f + libs)
+            cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + cflags + f)
             logging.debug(cmd_line)
             res = os.system(cmd_line)
             if res:
@@ -315,13 +315,15 @@ class EnvBuilder:
         create_if_needed(sys.graal_python_cext_module_home)
         create_if_needed(sys.graal_python_cext_home)
 
+        darwin = sys.platform == "darwin"
         so_ext = sysconfig.get_config_var("EXT_SUFFIX")
 
         cext_src_path = os.path.join(sys.graal_python_cext_src, "src")
         files = [os.path.join(cext_src_path, f) for f in os.listdir(cext_src_path) if f.endswith(".c")]
-        capi_module = os.path.abspath(os.path.join(sys.graal_python_cext_home, "capi" + so_ext))
+        capi_module = os.path.abspath(os.path.join(sys.graal_python_cext_home, "libpython" + so_ext))
         if not os.path.exists(capi_module):
-            compile([os.path.abspath(f) for f in files], capi_module)
+            cflags = ["-lpolyglot-mock", "-Wl,-install_name=@rpath/libpython" + so_ext] if darwin else []
+            compile([os.path.abspath(f) for f in files], capi_module, cflags)
             
 
         cext_module_src_path = os.path.join(sys.graal_python_cext_src, "modules")
@@ -330,7 +332,8 @@ class EnvBuilder:
             f_basename = os.path.splitext(os.path.basename(f))[0]
             module = os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext)
             if not os.path.exists(module):
-                compile([os.path.abspath(f)], os.path.abspath(module), [capi_module])
+                cflags = ["-lbz2", "-lpolyglot-mock", "-lpython" + so_ext, "-Wl,-rpath=" + capi_module] if darwin else []
+                compile([os.path.abspath(f)], os.path.abspath(module), cflags)
 
         # Truffle change end
             

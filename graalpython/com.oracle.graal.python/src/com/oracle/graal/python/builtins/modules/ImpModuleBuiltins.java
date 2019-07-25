@@ -260,7 +260,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // TODO(fa): should we try all extension suffixes?
                 String extSuffix = ExtensionSuffixesNode.getSoAbi(ctxt);
 
-                TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), capiHome, "capi" + extSuffix));
+                TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), capiHome, "libpython" + extSuffix));
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);

@@ -59,7 +59,7 @@ SO_EXT=${SO_ABI}.so
 endif
 
 LIBDIR=../lib-graalpython
-TARGET_LIB=${LIBDIR}/${PLATFORM}/capi${SO_EXT}
+TARGET_LIB=${LIBDIR}/${PLATFORM}/libpython${SO_EXT}
 
 SOURCE_FILES=$(wildcard src/*.c)
 OBJ_FILES=${SOURCE_FILES:%.c=%.o}
@@ -92,7 +92,11 @@ rebuild:
 
 ${TARGET_LIB}: ${OBJ_FILES}
 	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) ${CLANG} -fPIC -shared -lpolyglot-mock -o $@ $+
+ifeq ($(OS), darwin)
+	$(QUIETLY) ${CLANG} -fPIC -shared -lpolyglot-mock -Wl,-install_name,@rpath/libpython${SO_EXT} -o $@ $+
+else
+	$(QUIETLY) ${CLANG} -fPIC -shared -o $@ $+
+endif
 
 ${PLATFORM}/%.o: src/%.c Makefile src/capi.h ${INCLUDE_FILES} ${LEGACY_INCLUDES}
 	$(QUIETLY) mkdir -p $(dir $@)
@@ -104,7 +108,11 @@ modules/${PLATFORM}/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES} ${LEGA
 
 ${LIBDIR}/modules/${PLATFORM}/%${SO_EXT}: modules/${PLATFORM}/%.o ${TARGET_LIB}
 	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) ${CLANG} -fPIC -shared -lbz2 -lpolyglot-mock ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $< ${TARGET_LIB}
+ifeq ($(OS), darwin)
+	$(QUIETLY) ${CLANG} -fPIC -shared -lbz2 -lpolyglot-mock -lpython${SO_ABI} -L$(dir ${TARGET_LIB}) -Wl,-rpath,@loader_path/../../${PLATFORM} ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $<
+else
+	$(QUIETLY) ${CLANG} -fPIC -shared ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $<
+endif
 
 $(HEADER_TARGETS): ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p ../include/
