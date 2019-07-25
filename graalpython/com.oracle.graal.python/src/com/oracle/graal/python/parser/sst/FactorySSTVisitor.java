@@ -122,12 +122,15 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     protected final Source source;
     protected final NodeFactory nodeFactory;
     protected final PythonParser.ParserErrorCallback errors;
+    
+    protected int comprLevel;
 
     public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source) {
         this.scopeEnvironment = scopeEnvironment;
         this.source = source;
         this.nodeFactory = nodeFactory;
         this.errors = errors;
+        this.comprLevel = 0;
     }
     
     public ExpressionNode asExpression(BlockSSTNode block) {
@@ -583,7 +586,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     @Override
     public PNode visit(ForComprehensionSSTNode node) {
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
-        GeneratorFactorySSTVisitor generatorVisitor = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source);
+        GeneratorFactorySSTVisitor generatorVisitor = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source, this);
         PNode result = node.accept(generatorVisitor);
         scopeEnvironment.setCurrentScope(oldScope);
         return result;
@@ -651,7 +654,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         StatementNode body;
         GeneratorFactorySSTVisitor generatorFactory = null;
         if(scopeEnvironment.isInGeneratorScope()) {
-            generatorFactory = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source);
+            generatorFactory = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source, this);
             body = (StatementNode)node.body.accept(generatorFactory);
         } else {
             body = (StatementNode)node.body.accept(this);

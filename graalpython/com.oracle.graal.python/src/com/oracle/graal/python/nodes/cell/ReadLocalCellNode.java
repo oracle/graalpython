@@ -75,7 +75,7 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
 
     @Override
     public StatementNode makeWriteNode(ExpressionNode rhs) {
-        return WriteLocalCellNode.create(frameSlot, rhs);
+        return WriteLocalCellNode.create(frameSlot, readLocal, rhs);
     }
 
     abstract static class ReadFromCellNode extends PNodeWithContext {

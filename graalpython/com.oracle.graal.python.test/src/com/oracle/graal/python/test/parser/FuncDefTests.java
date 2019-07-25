@@ -157,6 +157,7 @@ public class FuncDefTests extends ParserTestBase{
                 "  def inner (end):\n" +
                 "    def inner_inner():\n" +
                 "      print(\"inner_inner\", end=\" haha\\n\")\n" +
+                "      print(end)\n" +
                 "    inner_inner()\n" +
                 "  inner(\" baf\\n\")\n" +
                 "test()");

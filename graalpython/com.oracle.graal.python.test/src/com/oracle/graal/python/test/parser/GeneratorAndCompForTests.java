@@ -184,5 +184,12 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                 "            del self[elem]\n" +
                 "        return self");
     }
+    
+    @Test
+    public void comp01() throws Exception {
+        checkScopeAndTree("resutl = {i: tuple(j for j in t if i != j)\n" +
+                          "                     for t in something for i in t}");
+    }
+    
    
 }

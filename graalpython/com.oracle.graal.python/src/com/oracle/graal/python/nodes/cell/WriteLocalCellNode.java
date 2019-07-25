@@ -30,6 +30,7 @@ import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
+import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -49,13 +50,13 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
 
     private final FrameSlot frameSlot;
 
-    WriteLocalCellNode(FrameSlot frameSlot) {
+    WriteLocalCellNode(FrameSlot frameSlot, ExpressionNode readLocalNode) {
         this.frameSlot = frameSlot;
-        this.readLocal = ReadLocalVariableNode.create(this.frameSlot);
+        this.readLocal = readLocalNode;
     }
 
-    public static WriteLocalCellNode create(FrameSlot frameSlot, ExpressionNode right) {
-        return WriteLocalCellNodeGen.create(frameSlot, right);
+    public static WriteLocalCellNode create(FrameSlot frameSlot, ExpressionNode readLocal, ExpressionNode right) {
+        return WriteLocalCellNodeGen.create(frameSlot, readLocal, right);
     }
 
     @Override

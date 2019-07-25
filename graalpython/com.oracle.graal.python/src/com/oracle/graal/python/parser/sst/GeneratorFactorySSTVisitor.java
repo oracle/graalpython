@@ -89,9 +89,11 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     private int numOfActiveFlags;
     private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
+    private FactorySSTVisitor parentVisitor;
     
-    public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source) {
+    public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source, FactorySSTVisitor parentVisitor) {
         super(errors, scopeEnvironment, nodeFactory, source);
+        this.parentVisitor = parentVisitor;
         init();
     }
 
@@ -162,11 +164,13 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         scopeEnvironment.setCurrentScope(node.scope);
         
         ExpressionNode targetExpression;
+        parentVisitor.comprLevel++;
         if (node.resultType == PythonBuiltinClassType.PDict) {
-            targetExpression = nodeFactory.createTupleLiteral((ExpressionNode)node.name.accept(this), (ExpressionNode)node.target.accept(this));
+            targetExpression = nodeFactory.createTupleLiteral((ExpressionNode)node.name.accept(this), (ExpressionNode)node.target.accept(parentVisitor));
         } else {
-            targetExpression = (ExpressionNode)node.target.accept(this);
+            targetExpression = (ExpressionNode)node.target.accept(parentVisitor);
         }
+        parentVisitor.comprLevel--;
         YieldNode yieldExpression = new YieldNode(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), targetExpression));
         yieldExpression.setFlagSlot(numOfActiveFlags++);
         yieldExpression.assignSourceSection(targetExpression.getSourceSection());
@@ -196,7 +200,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                 numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
         genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameDescriptor());
         genExprDef.assignSourceSection(funcRoot.getSourceSection());
-        genExprDef.setEnclosingFrameGenerator(node.level != 0);
+        genExprDef.setEnclosingFrameGenerator(node.level != 0 || parentVisitor.comprLevel != 0);
         PNode result;
         switch (node.resultType) {
             case PList:
@@ -241,7 +245,13 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         
         StatementNode variable;
         if (node.variables.length == 1 ) {
-            variable = makeWriteNode((ExpressionNode)node.variables[0].accept(this));
+//            if (node.variables[0] instanceof VarLookupSSTNode) {
+//                VarLookupSSTNode vln = (VarLookupSSTNode)node.variables[0];
+//                FrameSlot slot = scopeEnvironment.getCurrentScope().findFrameSlot(vln.name);
+//                variable = makeWriteNode(ReadGeneratorFrameVariableNode.create(slot));
+//            } else {
+                variable = makeWriteNode((ExpressionNode)node.variables[0].accept(this));
+//            }
         } else {
             ExpressionNode[] variables = new ExpressionNode[node.variables.length];
             for (int i = 0; i < node.variables.length; i++) {
