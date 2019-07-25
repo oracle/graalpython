@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-
 public abstract class BasicSequenceStorage extends SequenceStorage {
 
     // nominated storage length
@@ -52,7 +50,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
     /**
      * The capacity we should allocate for a given length.
      */
-    @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
     private static int capacityFor(int length) throws ArithmeticException {
         return Math.max(16, Math.multiplyExact(length, 2));
     }
