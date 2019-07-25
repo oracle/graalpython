@@ -1451,16 +1451,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = LIST, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PList)
     @GenerateNodeFactory
     public abstract static class ListNode extends PythonBinaryBuiltinNode {
-        protected boolean isBuiltinList(LazyPythonClass cls) {
-            return getCore().lookupType(PythonBuiltinClassType.PList) == cls;
-        }
-
-        @Specialization(guards = "isBuiltinList(cls)")
-        protected PList constructBuiltinList(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") Object value) {
-            return factory().createList();
-        }
-
-        @Specialization(guards = "!isBuiltinList(cls)")
+        @Specialization
         protected PList constructList(LazyPythonClass cls, @SuppressWarnings("unused") Object value) {
             return factory().createList(cls);
         }
