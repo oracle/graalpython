@@ -101,7 +101,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -464,7 +463,7 @@ public abstract class TypeNodes {
                     if (PGuards.isNativeClass(e)) {
                         dict.setItem(PythonNativeClass.cast(e).getPtr(), e);
                     }
-                    dict.setItem(new PythonNativeVoidPtr((TruffleObject) e), e);
+                    dict.setItem(new PythonNativeVoidPtr(e), e);
                     return true;
                 }
 

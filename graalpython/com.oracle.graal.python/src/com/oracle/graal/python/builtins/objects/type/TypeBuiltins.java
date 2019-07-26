@@ -139,9 +139,8 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-
         @Specialization
-        String repr(VirtualFrame frame, PythonAbstractClass self,
+        String repr(VirtualFrame frame, LazyPythonClass self,
                         @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
                         @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
             Object moduleName = readModuleNode.executeObject(frame, self);
@@ -172,7 +171,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization
-        Object doit(PythonAbstractClass klass,
+        Object doit(LazyPythonClass klass,
                         @Cached("create()") GetMroNode getMroNode) {
             PythonAbstractClass[] mro = getMroNode.execute(klass);
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
@@ -528,6 +527,12 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(NativeMemberNames.class)
     abstract static class DictNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doType(PythonBuiltinClassType self,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            return doManaged(getCore().lookupType(self), lib);
+        }
+
         @Specialization(limit = "1")
         Object doManaged(PythonManagedClass self,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
@@ -579,7 +584,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean isInstance(VirtualFrame frame, PythonAbstractClass cls, Object instance,
+        boolean isInstance(VirtualFrame frame, LazyPythonClass cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
                         @Cached("create()") GetClassNode getClass) {
             if (instance instanceof PythonObject && isSubtypeNode.execute(frame, getClass.execute(instance), cls)) {
@@ -689,7 +694,12 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     abstract static class NameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
-        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+        String getNameType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getName();
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        String getNameBuiltin(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
         }
 
@@ -697,6 +707,11 @@ public class TypeBuiltins extends PythonBuiltins {
         Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
             return getName.execute(cls, __NAME__);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -738,9 +753,14 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class ModuleNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object getModule(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
-            String module = cls.getType().getPublicInModule();
+        Object getModuleType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
+            String module = cls.getPublicInModule();
             return module == null ? "builtins" : module;
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getModuleBuiltin(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+            return getModuleType(cls.getType(), value);
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -790,6 +810,11 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     abstract static class QualNameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
+        String getName(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getName();
+        }
+
+        @Specialization(guards = "isNoValue(value)")
         String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
         }
@@ -836,9 +861,15 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DICTOFFSET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     abstract static class DictoffsetNode extends AbstractSlotNode {
+        @Specialization(guards = "isNoValue(value)")
+        Object getDictoffsetType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") IsBuiltinClassProfile profile,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            return getDictoffsetManaged(getCore().lookupType(cls), value, profile, getName);
+        }
 
         @Specialization(guards = "isNoValue(value)")
-        Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
+        Object getDictoffsetManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
             // recursion anchor; since the metaclass of 'type' is 'type'
@@ -849,12 +880,17 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+        Object setDictoffsetType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setDictoffsetBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object setName(PythonClass cls, Object value,
+        Object setDictoffsetClass(PythonClass cls, Object value,
                         @Cached("create()") WriteAttributeToObjectNode setName) {
             return setName.execute(cls, __DICTOFFSET__, value);
         }
@@ -875,7 +911,14 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class ItemsizeNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
+        Object getItemsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") IsBuiltinClassProfile profile,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            return getItemsizeManaged(getCore().lookupType(cls), value, profile, getName);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getItemsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
             // recursion anchor; since the metaclass of 'type' is 'type'
@@ -886,12 +929,17 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+        Object setItemsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setItemsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object setName(PythonClass cls, Object value,
+        Object setItemsize(PythonClass cls, Object value,
                         @Cached("create()") WriteAttributeToObjectNode setName) {
             return setName.execute(cls, __ITEMSIZE__, value);
         }
@@ -910,9 +958,15 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __BASICSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     abstract static class BasicsizeNode extends AbstractSlotNode {
+        @Specialization(guards = "isNoValue(value)")
+        Object getBasicsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") IsBuiltinClassProfile profile,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            return getBasicsizeManaged(getCore().lookupType(cls), value, profile, getName);
+        }
 
         @Specialization(guards = "isNoValue(value)")
-        Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
+        Object getBasicsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
             // recursion anchor; since the metaclass of 'type' is 'type'
@@ -923,12 +977,17 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+        Object setBasicsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setBasicsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object setName(PythonClass cls, Object value,
+        Object setBasicsize(PythonClass cls, Object value,
                         @Cached("create()") WriteAttributeToObjectNode setName) {
             return setName.execute(cls, __BASICSIZE__, value);
         }
@@ -953,6 +1012,11 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization
         Object flags(PythonAbstractClass self) {
             return getFlagsNode.execute(self);
+        }
+
+        @Specialization
+        Object flags(PythonBuiltinClassType self) {
+            return getFlagsNode.execute(getCore().lookupType(self));
         }
     }
 }
