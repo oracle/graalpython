@@ -216,12 +216,12 @@ public class NodeFactory {
         return new BreakTargetNode(forNode, orelse);
     }
 
-    public YieldNode createYield(ExpressionNode right, FrameSlot returnSlot) {
-        return new YieldNode(createWriteLocal(right, returnSlot));
+    public YieldNode createYield(ExpressionNode right) {
+        return new YieldNode(right);
     }
 
-    public YieldFromNode createYieldFrom(ExpressionNode right, FrameSlot returnSlot) {
-        return new YieldFromNode(right, (WriteNode) createWriteLocal(null, returnSlot));
+    public YieldFromNode createYieldFrom(ExpressionNode right) {
+        return new YieldFromNode(right);
     }
 
     public ExpressionNode createIntegerLiteral(int value) {

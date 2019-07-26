@@ -40,5 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-public interface LazyPythonClass {
+import com.oracle.truffle.api.interop.TruffleObject;
+
+public interface LazyPythonClass extends TruffleObject {
 }

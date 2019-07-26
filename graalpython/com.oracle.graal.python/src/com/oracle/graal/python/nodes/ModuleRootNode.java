@@ -100,6 +100,11 @@ public class ModuleRootNode extends PClosureRootNode {
     }
 
     @Override
+    public boolean isInternal() {
+        return getSourceSection() != null && getSourceSection().getSource().isInternal();
+    }
+
+    @Override
     public Signature getSignature() {
         return SIGNATURE;
     }

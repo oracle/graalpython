@@ -1054,22 +1054,43 @@ def python_build_watch(args):
     for e in excludes:
         cmd += ["--exclude", e]
     cmd += ["@%s" % os.path.join(SUITE.dir, ".git"), SUITE.dir]
+    cmd_qq = cmd[:]
+    cmd_qq[1] = "-qq"
+    was_quiet = mx.get_opts().quiet
 
     while True:
         out = mx.OutputCapture()
-        mx.run(cmd, out=out)
+        if mx.run(cmd, out=out, nonZeroIsFatal=False) != 0:
+            continue
         changed_file = out.data.strip()
         mx.logv(changed_file)
         if any(changed_file.endswith(ext) for ext in [".c", ".h", ".class", ".jar"]):
-            mx.log("Build needed ...")
-            time.sleep(2)
+            if not mx.get_opts().quiet:
+                sys.stdout.write("Build needed ")
+                sys.stdout.flush()
+            while True:
+                # re-run this until it times out, which we'll interpret as quiet
+                # time
+                if not mx.get_opts().quiet:
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+                mx.get_opts().quiet = True
+                try:
+                    retcode = mx.run(cmd_qq, timeout=3, nonZeroIsFatal=False)
+                finally:
+                    mx.get_opts().quiet = was_quiet
+                if retcode == mx.ERROR_TIMEOUT:
+                    if not mx.get_opts().quiet:
+                        sys.stdout.write("\n")
+                    break
+            mx.log("Building.")
             if args.full:
                 mx.command_function("build")()
             elif args.graalvm:
                 mx.log(python_gvm())
             else:
                 nativebuild([])
-        mx.log("Build done.")
+            mx.log("Build done.")
 
 
 # ----------------------------------------------------------------------------------------------------------------------

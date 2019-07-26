@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -112,12 +114,44 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
+    protected static boolean isBuiltinDict(PHashingCollection globals, IsBuiltinClassProfile profile) {
+        return globals instanceof PDict && profile.profileObject(globals, PythonBuiltinClassType.PDict);
+    }
+
+    protected static HashingStorage getStorage(Object cachedGlobals) {
+        return ((PDict) cachedGlobals).getDictStorage();
+    }
+
+    // special case for the very common module attribute read from an unchanging PDict
+    @Specialization(guards = {
+                    "cachedObject == object",
+                    "lib.getDict(cachedObject) == cachedDict",
+                    "getStorage(cachedDict) == cachedStorage",
+                    "isBuiltinDict(cachedDict, isBuiltinDict)",
+    }, assumptions = "singleContextAssumption", limit = "1")
+    protected Object readFromBuiltinModuleDictUnchanged(@SuppressWarnings("unused") PythonModule object, String key,
+                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,
+                    @SuppressWarnings("unused") @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
+                    @Cached("getStorage(cachedDict)") HashingStorage cachedStorage,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
+                    @Cached HashingStorageNodes.GetItemNode getItemNode) {
+        // note that we don't need to pass the state here - string keys are hashable by definition
+        Object value = getItemNode.execute(null, cachedStorage, key);
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
+    }
+
     // special case for the very common module attribute read
     @Specialization(guards = {
                     "cachedObject == object",
                     "lib.getDict(cachedObject) == cachedDict",
                     "hasBuiltinDict(cachedObject, lib, isBuiltinDict, isBuiltinMappingproxy)",
-    }, assumptions = "singleContextAssumption", limit = "1")
+    }, assumptions = "singleContextAssumption", limit = "1", replaces = "readFromBuiltinModuleDictUnchanged")
     protected Object readFromBuiltinModuleDict(@SuppressWarnings("unused") PythonModule object, String key,
                     @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
                     @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,

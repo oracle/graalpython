@@ -181,9 +181,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             checkMathDomainError(value < 0);
+            return op(value);
+        }
+
+        @TruffleBoundary
+        private static double op(double value) {
             return Math.sqrt(value);
         }
     }
