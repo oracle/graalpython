@@ -206,9 +206,9 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileClassWithBaseClasses(LazyPythonClass clazz, PythonBuiltinClassType type){
-        if (!profileClass(clazz,type)) {
-            PythonAbstractClass [] baseClasses = ((PythonClass) clazz).getBaseClasses();
+    public boolean profileClassWithBaseClasses(LazyPythonClass clazz, PythonBuiltinClassType type) {
+        if (!profileClass(clazz, type)) {
+            PythonAbstractClass[] baseClasses = ((PythonClass) clazz).getBaseClasses();
             for (PythonAbstractClass baseClazz : baseClasses) {
                 if (profileClass(baseClazz, type)) {
                     return true;

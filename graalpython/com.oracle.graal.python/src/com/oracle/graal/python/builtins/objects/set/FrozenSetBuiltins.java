@@ -491,8 +491,8 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean isSuperSetPSequence(VirtualFrame frame, PBaseSet self, PSequence other,
-                           @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                           @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
             PSet otherSet = constructSetNode.executeWith(frame, other);
             return isSupersetNode.execute(frame, self.getDictStorage(), otherSet.getDictStorage());
         }
