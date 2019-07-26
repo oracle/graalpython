@@ -62,12 +62,12 @@ _config_vars = None
 
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
-    darwin = sys.platform == "darwin"
+    darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
 
     # note: this must be kept in sync with _imp.extension_suffixes
     so_abi = sys.implementation.cache_tag + "-" + sys.graal_python_platform_id + "-" + sys.implementation._multiarch
-    so_ext = ".so" if not darwin else ".dylib"
-    assert _imp.extension_suffixes()[0] == so_abi + so_ext, "mismatch between extention suffix to _imp.extension_suffixes"
+    so_ext = ".so" if not darwin_native else ".dylib"
+    assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
 
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
@@ -78,7 +78,7 @@ def _init_posix():
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC') 
-    if darwin:
+    if darwin_native:
         capi_home = str(sys.graal_python_cext_home)
         g['LDSHARED'] = g['LDSHARED'] + "-lpython" + so_abi + " -Wl,-rpath=" + capi_home
     g['SOABI'] = so_abi

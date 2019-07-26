@@ -315,14 +315,14 @@ class EnvBuilder:
         create_if_needed(sys.graal_python_cext_module_home)
         create_if_needed(sys.graal_python_cext_home)
 
-        darwin = sys.platform == "darwin"
+        darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
         so_ext = sysconfig.get_config_var("EXT_SUFFIX")
 
         cext_src_path = os.path.join(sys.graal_python_cext_src, "src")
         files = [os.path.join(cext_src_path, f) for f in os.listdir(cext_src_path) if f.endswith(".c")]
         capi_module = os.path.abspath(os.path.join(sys.graal_python_cext_home, "libpython" + so_ext))
         if not os.path.exists(capi_module):
-            cflags = ["-lpolyglot-mock", "-Wl,-install_name=@rpath/libpython" + so_ext] if darwin else []
+            cflags = ["-lpolyglot-mock", "-Wl,-install_name=@rpath/libpython" + so_ext] if darwin_native else []
             compile([os.path.abspath(f) for f in files], capi_module, cflags)
             
 
@@ -332,7 +332,7 @@ class EnvBuilder:
             f_basename = os.path.splitext(os.path.basename(f))[0]
             module = os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext)
             if not os.path.exists(module):
-                cflags = ["-lbz2", "-lpolyglot-mock", "-lpython" + so_ext, "-Wl,-rpath=" + capi_module] if darwin else []
+                cflags = ["-lbz2", "-lpolyglot-mock", "-lpython" + so_ext, "-Wl,-rpath=" + capi_module] if darwin_native else []
                 compile([os.path.abspath(f)], os.path.abspath(module), cflags)
 
         # Truffle change end

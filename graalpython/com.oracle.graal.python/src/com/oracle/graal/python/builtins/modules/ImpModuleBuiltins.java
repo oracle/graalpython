@@ -552,7 +552,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         Object run(
                         @CachedContext(PythonLanguage.class) PythonContext ctxt) {
             String soAbi = getSoAbi(ctxt);
-            return factory().createList(new Object[]{soAbi, ".so", ".bc", ".dylib", ".su"});
+            return factory().createList(new Object[]{soAbi, ".so", ".dylib", ".su", ".bc"});
         }
 
         @TruffleBoundary
@@ -563,18 +563,19 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String cacheTag = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "cache_tag");
             // sys.implementation._multiarch
             String multiArch = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "_multiarch");
-            // sys.platform
-            String soExt;
-            if ("darwin".equals(SysModuleBuiltins.getPythonOSName())) {
-                soExt = ".dylib";
-            } else {
-                soExt = ".so";
-            }
 
             Env env = ctxt.getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(SysModuleBuiltins.LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             String toolchainId = toolchain.getIdentifier();
+
+            // only use '.dylib' if we are on 'Darwin-native'
+            String soExt;
+            if ("darwin".equals(SysModuleBuiltins.getPythonOSName()) && "native".equals(toolchainId)) {
+                soExt = ".dylib";
+            } else {
+                soExt = ".so";
+            }
 
             return "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
         }
