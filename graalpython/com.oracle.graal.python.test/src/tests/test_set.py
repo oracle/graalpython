@@ -187,6 +187,15 @@ def test_sub_and_super():
         assert not set('cbs').issuperset('a')
 
 
+def test_superset_list():
+    set = {1, 2, 3, 4}
+    list = [1, 2, 3, 4]
+    visited= False
+    if set.issuperset(list):
+        visited = True
+    assert visited
+
+
 def test_intersection():
     word = 'simsalabim'
     otherword = 'madagascar'
