@@ -127,11 +127,13 @@ import com.oracle.truffle.api.object.IncompatibleLocationException;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @GenerateNodeFactory
 public abstract class HashingStorageNodes {
+    private static final int MAX_STORAGES = 8;
 
     public static class PythonEquivalence extends Equivalence {
         @Child private PRaiseNode raise;
@@ -1650,10 +1652,29 @@ public abstract class HashingStorageNodes {
     }
 
     public abstract static class KeysIsSubsetNode extends DictStorageBaseNode {
+        protected static final int MAX_STORAGES = HashingStorageNodes.MAX_STORAGES;
 
         public abstract boolean execute(VirtualFrame frame, HashingStorage left, HashingStorage right);
 
-        @Specialization
+        @Specialization(limit = "MAX_STORAGES", guards = {"left.getClass() == leftClass", "right.getClass() == rightClass"})
+        public boolean isSubsetCached(VirtualFrame frame, HashingStorage left, HashingStorage right,
+                        @Cached("left.getClass()") Class<? extends HashingStorage> leftClass,
+                        @Cached("right.getClass()") Class<? extends HashingStorage> rightClass,
+                        @Cached("create()") ContainsKeyNode containsKeyNode,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(leftClass.cast(left).length() > rightClass.cast(right).length())) {
+                return false;
+            }
+
+            for (Object leftKey : leftClass.cast(left).keys()) {
+                if (!containsKeyNode.execute(frame, right, leftKey)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Specialization(replaces = "isSubsetCached")
         public boolean isSubset(VirtualFrame frame, HashingStorage left, HashingStorage right,
                         @Cached("create()") ContainsKeyNode containsKeyNode,
                         @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
@@ -1692,24 +1713,61 @@ public abstract class HashingStorageNodes {
     }
 
     public abstract static class DiffNode extends DictStorageBaseNode {
+        protected static final int MAX_STORAGES = HashingStorageNodes.MAX_STORAGES;
 
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage left, HashingStorage right);
 
-        @Specialization(guards = "left.length() == 0")
+        protected boolean isEmpty(Class<? extends HashingStorage> theClass, HashingStorage s) {
+            return theClass.cast(s).length() == 0;
+        }
+
+        @Specialization(limit = "MAX_STORAGES", guards = {"left.getClass() == leftClass", "isEmpty(leftClass, left)"})
         @SuppressWarnings("unused")
-        public HashingStorage doLeftEmpty(HashingStorage left, HashingStorage right) {
+        public HashingStorage doLeftEmpty(HashingStorage left, HashingStorage right,
+                        @SuppressWarnings("unused") @Cached("left.getClass()") Class<? extends HashingStorage> leftClass) {
             return EconomicMapStorage.create(false);
         }
 
-        @Specialization(guards = "right.length() == 0")
+        @Specialization(limit = "MAX_STORAGES", guards = {"left.getClass() == leftClass", "right.getClass() == rightClass"})
         @SuppressWarnings("try")
-        public HashingStorage doRightEmpty(VirtualFrame frame, HashingStorage left, @SuppressWarnings("unused") HashingStorage right) {
+        public HashingStorage doNonEmptyCached(VirtualFrame frame, HashingStorage left, HashingStorage right,
+                        @Cached("left.getClass()") Class<? extends HashingStorage> leftClass,
+                        @Cached("right.getClass()") Class<? extends HashingStorage> rightClass,
+                        @Cached("create()") ContainsKeyNode containsKeyNode,
+                        @Cached BranchProfile leftEmpty,
+                        @Cached BranchProfile rightEmpty,
+                        @Cached BranchProfile neitherEmpty,
+                        @Cached("create()") SetItemNode setItemNode) {
+            if (leftClass.cast(left).length() == 0) {
+                leftEmpty.enter();
+                return EconomicMapStorage.create(false);
+            }
+            if (rightClass.cast(right).length() == 0) {
+                rightEmpty.enter();
+                try (DefaultContextManager cm = withGlobalState(frame)) {
+                    return leftClass.cast(left).copy(getEquivalence());
+                }
+            }
+            neitherEmpty.enter();
+            HashingStorage newStorage = EconomicMapStorage.create(false);
+            for (Object leftKey : leftClass.cast(left).keys()) {
+                if (!containsKeyNode.execute(frame, right, leftKey)) {
+                    newStorage = setItemNode.execute(frame, newStorage, leftKey, PNone.NO_VALUE);
+                }
+            }
+            return newStorage;
+        }
+
+        @Specialization(limit = "MAX_STORAGES", guards = {"right.getClass() == rightClass", "isEmpty(rightClass, right)"})
+        @SuppressWarnings("try")
+        public HashingStorage doRightEmpty(VirtualFrame frame, HashingStorage left, @SuppressWarnings("unused") HashingStorage right,
+                        @SuppressWarnings("unused") @Cached("right.getClass()") Class<? extends HashingStorage> rightClass) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return left.copy(getEquivalence());
             }
         }
 
-        @Specialization(guards = {"left.length() != 0", "right.length() != 0"})
+        @Specialization(replaces = "doNonEmptyCached")
         public HashingStorage doNonEmpty(VirtualFrame frame, HashingStorage left, HashingStorage right,
                         @Cached("create()") ContainsKeyNode containsKeyNode,
                         @Cached("create()") SetItemNode setItemNode) {
@@ -1731,7 +1789,7 @@ public abstract class HashingStorageNodes {
     @GenerateUncached
     public abstract static class LenNode extends Node {
 
-        protected static final int MAX_STORAGES = 8;
+        protected static final int MAX_STORAGES = HashingStorageNodes.MAX_STORAGES;
 
         public abstract int execute(HashingStorage s);
 

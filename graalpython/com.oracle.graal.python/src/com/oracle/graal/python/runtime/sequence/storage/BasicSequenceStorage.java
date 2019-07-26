@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -24,8 +24,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.oracle.graal.python.runtime.sequence.storage;
-
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public abstract class BasicSequenceStorage extends SequenceStorage {
 
@@ -52,7 +50,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
     /**
      * The capacity we should allocate for a given length.
      */
-    @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
     private static int capacityFor(int length) throws ArithmeticException {
         return Math.max(16, Math.multiplyExact(length, 2));
     }

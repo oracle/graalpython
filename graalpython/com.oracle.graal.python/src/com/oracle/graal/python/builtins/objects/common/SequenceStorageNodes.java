@@ -556,8 +556,9 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doSlice(SequenceStorage storage, PSlice slice,
+                        @Cached LenNode lenNode,
                         @Cached PythonObjectFactory factory) {
-            SliceInfo info = slice.computeIndices(storage.length());
+            SliceInfo info = slice.computeIndices(lenNode.execute(storage));
             if (factoryMethod != null) {
                 return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, info.length), factory);
             }
@@ -3295,7 +3296,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         Object[] doObjectSequenceStorage(ObjectSequenceStorage s) {
             Object[] barr = s.getInternalArray();
-            if (exact) {
+            if (exact && barr.length != s.length()) {
                 return exactCopy(barr, s.length());
             }
             return barr;
