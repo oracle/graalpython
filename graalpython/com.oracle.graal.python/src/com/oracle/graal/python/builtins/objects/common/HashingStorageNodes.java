@@ -1729,6 +1729,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(limit = "MAX_STORAGES", guards = {"left.getClass() == leftClass", "right.getClass() == rightClass"})
+        @SuppressWarnings("try")
         public HashingStorage doNonEmptyCached(VirtualFrame frame, HashingStorage left, HashingStorage right,
                         @Cached("left.getClass()") Class<? extends HashingStorage> leftClass,
                         @Cached("right.getClass()") Class<? extends HashingStorage> rightClass,
