@@ -266,7 +266,7 @@ public abstract class HashingStorageNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isBuiltinClassProfile = IsBuiltinClassProfile.create();
             }
-            return isBuiltinClassProfile.profileClassWithBaseClasses(getClass(s), PythonBuiltinClassType.PString);
+            return isBuiltinClassProfile.profileClass(getClass(s), PythonBuiltinClassType.PString);
         }
 
         protected EconomicMapStorage switchToEconomicMap(HashingStorage storage) {
