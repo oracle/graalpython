@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
+import com.oracle.graal.python.parser.sst.ArgListBuilder;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.BlockSSTNode;
@@ -180,7 +181,7 @@ public final class PythonNodeFactory {
         return new VarLookupSSTNode(name, start, stop);
     }
     
-    public SSTNode createClassDefinition(String name, SSTNode[] baseClasses, SSTNode body, int start, int stop) {
+    public SSTNode createClassDefinition(String name,  ArgListBuilder baseClasses, SSTNode body, int start, int stop) {
 //        scopeEnvironment.createLocal(name);
         return new ClassSSTNode(scopeEnvironment.getCurrentScope(), name, baseClasses, body, start, stop);
     }

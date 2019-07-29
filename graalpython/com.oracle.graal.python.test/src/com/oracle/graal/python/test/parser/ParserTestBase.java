@@ -65,8 +65,10 @@ import org.junit.rules.TestName;
 
 public class ParserTestBase {
     private PythonContext context;
-    private final static String GOLDEN_FILE_EXT = ".tast";
+    protected final static String GOLDEN_FILE_EXT = ".tast";
+    protected final static String NEW_GOLDEN_FILE_EXT = ".new.tast";
     private final static String SCOPE_FILE_EXT = ".scope";
+    private final static String NEW_SCOPE_FILE_EXT = ".new.scope";
     
     @Rule public TestName name = new TestName();
 
@@ -123,6 +125,27 @@ public class ParserTestBase {
         assertTrue("Expected SyntaxError was not thrown.", thrown);
     }
     
+    public void saveNewTreeResult(File testFile, boolean goldenFileNextToTestFile) throws Exception {
+        assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
+        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
+        Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
+        Node resultNew = parseNew(source);
+        String tree = printTreeToString(resultNew);
+        File newGoldenFile = goldenFileNextToTestFile 
+                ? new File(testFile.getParentFile(), getFileName(testFile) + NEW_GOLDEN_FILE_EXT)
+                : getGoldenFile(NEW_GOLDEN_FILE_EXT);
+        if (!newGoldenFile.exists()) {
+            FileWriter fw = new FileWriter(newGoldenFile);
+            try {
+                fw.write(tree);
+            }
+            finally{
+                fw.close();
+            }
+            
+        }
+    }
+    
     public void checkTreeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
@@ -147,6 +170,28 @@ public class ParserTestBase {
             
         }
         assertDescriptionMatches(tree, goldenFile);
+    }
+    
+    public void saveNewScope(File testFile, boolean goldenFileNextToTestFile) throws Exception {
+        assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
+        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
+        Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
+        parseNew(source);
+        ScopeInfo scopeNew = getLastGlobalScope();
+        StringBuilder scopes = new StringBuilder();
+        scopeNew.debugPrint(scopes, 0);
+        File newScopeFile = goldenFileNextToTestFile 
+                ? new File(testFile.getParentFile(), getFileName(testFile) + NEW_SCOPE_FILE_EXT)
+                : getGoldenFile(NEW_SCOPE_FILE_EXT);
+        if (!newScopeFile.exists()) {
+            FileWriter fw = new FileWriter(newScopeFile);
+            try {
+                fw.write(scopes.toString());
+            }
+            finally{
+                fw.close();
+            }
+        }
     }
     
     public void checkScopeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
@@ -262,7 +307,7 @@ public class ParserTestBase {
         }
     }
     
-    public static String readFile(File f) throws IOException {
+     public static String readFile(File f) throws IOException {
         FileReader r = new FileReader(f);
         int fileLen = (int)f.length();
         CharBuffer cb = CharBuffer.allocate(fileLen);
@@ -307,7 +352,7 @@ public class ParserTestBase {
         return goldenFile;
     }
     
-    private String getFileName(File file) {
+    protected String getFileName(File file) {
         return file.getName().substring(0, file.getName().lastIndexOf('.'));
     }
     

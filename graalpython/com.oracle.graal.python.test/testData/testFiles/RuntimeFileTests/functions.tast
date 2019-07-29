@@ -8,7 +8,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
     ExpressionWithSideEffects SourceSection: [1998,4894]`↵@__builtin__↵def ha...`
       WriteNameNodeGen SourceSection: [1999,2113]`@__builtin__↵def has...`
         Identifier: hasattr
-        PythonCallNodeGen SourceSection: [1999,2011]`@__builtin__`
+        PythonCallNodeGen SourceSection: [1999,2012]`@__builtin__↵`
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
@@ -88,11 +88,11 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [1999,2011]`@__builtin__`
+          ReadNameNodeGen SourceSection: [1999,2012]`@__builtin__↵`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [2113,2225]`@__builtin__↵def any...`
         Identifier: any
-        PythonCallNodeGen SourceSection: [2113,2125]`@__builtin__`
+        PythonCallNodeGen SourceSection: [2113,2126]`@__builtin__↵`
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
@@ -161,11 +161,11 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [2113,2125]`@__builtin__`
+          ReadNameNodeGen SourceSection: [2113,2126]`@__builtin__↵`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [2225,2341]`@__builtin__↵def all...`
         Identifier: all
-        PythonCallNodeGen SourceSection: [2225,2237]`@__builtin__`
+        PythonCallNodeGen SourceSection: [2225,2238]`@__builtin__↵`
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
@@ -234,11 +234,11 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [2225,2237]`@__builtin__`
+          ReadNameNodeGen SourceSection: [2225,2238]`@__builtin__↵`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [2341,2618]`@__builtin__↵def fil...`
         Identifier: filter
-        PythonCallNodeGen SourceSection: [2341,2353]`@__builtin__`
+        PythonCallNodeGen SourceSection: [2341,2354]`@__builtin__↵`
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
@@ -395,7 +395,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [2341,2353]`@__builtin__`
+          ReadNameNodeGen SourceSection: [2341,2354]`@__builtin__↵`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [2618,3007]`def __build_class__(...`
         Identifier: __build_class__
@@ -985,7 +985,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
           Op: __getattribute__
       WriteNameNodeGen SourceSection: [3632,4211]`@__builtin__↵def var...`
         Identifier: vars
-        PythonCallNodeGen SourceSection: [3632,3644]`@__builtin__`
+        PythonCallNodeGen SourceSection: [3632,3645]`@__builtin__↵`
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
@@ -1115,11 +1115,11 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [3632,3644]`@__builtin__`
+          ReadNameNodeGen SourceSection: [3632,3645]`@__builtin__↵`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [4211,4503]`@__builtin__↵def for...`
         Identifier: format
-        PythonCallNodeGen SourceSection: [4211,4223]`@__builtin__`
+        PythonCallNodeGen SourceSection: [4211,4224]`@__builtin__↵`
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
@@ -1188,7 +1188,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [4211,4223]`@__builtin__`
+          ReadNameNodeGen SourceSection: [4211,4224]`@__builtin__↵`
             Identifier: __builtin__
       ExpressionWithSideEffect SourceSection: None
         Expression:
@@ -1196,7 +1196,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
         SideEffect:
           WriteNameNodeGen SourceSection: [4503,4894]`@__builtin__↵def sor...`
             Identifier: sorted
-            PythonCallNodeGen SourceSection: [4503,4515]`@__builtin__`
+            PythonCallNodeGen SourceSection: [4503,4516]`@__builtin__↵`
               CachedCallNodeGen SourceSection: None
                 CreateArgumentsNodeGen SourceSection: None
                 CallDispatchNodeGen SourceSection: None
@@ -1290,5 +1290,5 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [4,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: [4503,4515]`@__builtin__`
+              ReadNameNodeGen SourceSection: [4503,4516]`@__builtin__↵`
                 Identifier: __builtin__

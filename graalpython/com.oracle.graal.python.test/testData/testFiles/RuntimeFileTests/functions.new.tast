@@ -208,11 +208,10 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [1,i,Illegal]
                               IfNode SourceSection: [2288,2327]`if not i:↵          ...`
-                                YesNodeGen SourceSection: None
-                                  NotNodeGen SourceSection: [2291,2296]`not i`
-                                    ReadLocalVariableNode SourceSection: [2295,2296]`i`
-                                      Frame: [1,i,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                NotNodeGen SourceSection: [2291,2296]`not i`
+                                  ReadLocalVariableNode SourceSection: [2295,2296]`i`
+                                    Frame: [1,i,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                                 FrameReturnNode SourceSection: [2310,2322]`return False`
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
@@ -289,14 +288,13 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                         Identifier: predicate
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,predicate,Illegal]
-                        TernaryIfNode SourceSection: None
-                          YesNodeGen SourceSection: None
-                            NotNodeGen SourceSection: [2422,2438]`func is not None`
-                              IsNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [2422,2426]`func`
-                                  Frame: [0,func,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ObjectLiteralNode SourceSection: [2434,2438]`None`
+                        TernaryIfNode SourceSection: [2414,2455]`func if func is not ...`
+                          NotNodeGen SourceSection: [2422,2438]`func is not None`
+                            IsNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [2422,2426]`func`
+                                Frame: [0,func,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ObjectLiteralNode SourceSection: [2434,2438]`None`
                           ReadLocalVariableNode SourceSection: [2414,2418]`func`
                             Frame: [0,func,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

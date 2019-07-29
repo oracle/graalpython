@@ -96,6 +96,10 @@ public class ClassDefTests extends ParserTestBase {
                 "        return self(*args, **kwds)\n");
     }
     
+    @Test
+    public void classDef09() throws Exception {
+        checkScopeAndTree("class Enum(metaclass=EnumMeta): pass");
+    }
 
     @Test
     public void decorator01() throws Exception {

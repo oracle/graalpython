@@ -1,0 +1,90 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: clear_frames
+        Kind: Function
+        FrameDescriptor: [<return_val>, tb]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: extract_stack
+        Kind: Function
+        FrameDescriptor: [stack, f, limit, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: format_stack
+        Kind: Function
+        FrameDescriptor: [f, limit, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: print_stack
+        Kind: Function
+        FrameDescriptor: [file, f, limit, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: print_last
+        Kind: Function
+        FrameDescriptor: [chain, file, limit, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: format_exc
+        Kind: Function
+        FrameDescriptor: [chain, limit, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: print_exc
+        Kind: Function
+        FrameDescriptor: [chain, file, limit, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _some_str
+        Kind: Function
+        FrameDescriptor: [value, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _format_final_exc_line
+        Kind: Function
+        FrameDescriptor: [valuestr, line, etype, value, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: format_exception_only
+        Kind: Function
+        FrameDescriptor: [etype, value, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: format_exception
+        Kind: Function
+        FrameDescriptor: [chain, limit, etype, value, <return_val>, tb]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: print_exception
+        Kind: Function
+        FrameDescriptor: [chain, file, line, limit, etype, value, <return_val>, tb]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: extract_tb
+        Kind: Function
+        FrameDescriptor: [limit, <return_val>, tb]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: format_tb
+        Kind: Function
+        FrameDescriptor: [limit, <return_val>, tb]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: print_tb
+        Kind: Function
+        FrameDescriptor: [file, limit, <return_val>, tb]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: format_list
+        Kind: Function
+        FrameDescriptor: [extracted_list, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: print_list
+        Kind: Function
+        FrameDescriptor: [extracted_list, item, file, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty

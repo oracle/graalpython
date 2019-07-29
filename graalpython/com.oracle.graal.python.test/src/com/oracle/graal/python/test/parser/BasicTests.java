@@ -311,6 +311,16 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void call19() throws Exception {
+        checkScopeAndTree("def fn(): \"in\".format(name=\"Baf\")");
+    }
+    
+    @Test
+    public void call20() throws Exception {
+        checkScopeAndTree("def fn(name): \"in\".format(name=name)");
+    }
+    
+    @Test
     public void del01() throws Exception {
         checkTreeResult("del x");
     }

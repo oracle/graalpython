@@ -45,11 +45,11 @@ import com.oracle.graal.python.parser.ScopeInfo;
 
 public class ClassSSTNode extends SSTNode {
     protected final String name;
-    protected final SSTNode[] baseClasses;
+    protected final ArgListBuilder baseClasses;
     protected final SSTNode body;
     protected final ScopeInfo classScope;
 
-    public ClassSSTNode(ScopeInfo classScope, String name, SSTNode[] baseClasses, SSTNode body, int startOffset, int endOffset) {
+    public ClassSSTNode(ScopeInfo classScope, String name, ArgListBuilder baseClasses, SSTNode body, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.name = name;
         this.baseClasses = baseClasses;

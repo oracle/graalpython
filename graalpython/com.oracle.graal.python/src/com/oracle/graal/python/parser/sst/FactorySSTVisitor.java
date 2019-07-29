@@ -353,16 +353,28 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots());
         scopeEnvironment.setCurrentScope(node.classScope.getParent());
         
-        ExpressionNode[] args = node.baseClasses == null ? new ExpressionNode[2] : new ExpressionNode[node.baseClasses.length + 2];
+        ExpressionNode[] args;
+        ExpressionNode[] nameArgs;
+        ExpressionNode starArg = null;
+        ExpressionNode kwArg = null;
+        if (node.baseClasses != null) {
+            ExpressionNode[] sstArgs = node.baseClasses.getArgs(this);
+            args = new ExpressionNode[sstArgs.length + 2];
+            for (int i =  0; i < sstArgs.length; i++) {
+                args[i + 2] = sstArgs[i];
+            }
+            nameArgs = node.baseClasses.getNameArgs(this);
+            starArg = node.baseClasses.getStarArgs(this);
+            kwArg = node.baseClasses.getKwArgs(this);
+        } else {
+            args = new ExpressionNode[2];
+            nameArgs = new ExpressionNode[0];
+        }
         args[0] = funcDef;
         args[1] = nodeFactory.createStringLiteral(node.name);
-        for (int i =  0; i < node.baseClasses.length; i++) {
-            args[i + 2] = (ExpressionNode)node.baseClasses[i].accept(this);
-        }
-        
         
         ExpressionNode owner = nodeFactory.createGetAttribute(nodeFactory.createBuiltinsLiteral(), __BUILD_CLASS__);
-        ExpressionNode classDef = PythonCallNode.create(owner, args, new ExpressionNode[0], null, null);
+        ExpressionNode classDef = PythonCallNode.create(owner, args, nameArgs, starArg, kwArg);
         classDef.assignSourceSection(nodeSourceSection);
         
         ReadNode read = scopeEnvironment.findVariable(node.name);

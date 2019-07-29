@@ -1361,8 +1361,8 @@ locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
 :
 	
 	'class' NAME
-	{ SSTNode[] baseClasses = new SSTNode[0]; }
-	( '(' arglist ')' { baseClasses = $arglist.result.getArgs(); } )?
+	{ ArgListBuilder baseClasses = null; }
+	( '(' arglist ')' { baseClasses = $arglist.result; } )?
         {
             // we need to create the scope here to resolve base classes in the outer scope
             factory.getScopeEnvironment().createLocal($NAME.text);
@@ -1413,7 +1413,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
                     throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                   }
                   // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
-                  boolean isNameAsVariableInScope = factory.getCurrentScope().getSeenVars().contains(name);
+                  boolean isNameAsVariableInScope = factory.getCurrentScope().getSeenVars() == null ? false : factory.getCurrentScope().getSeenVars().contains(name);
                 }
 		n=test 
                 {
