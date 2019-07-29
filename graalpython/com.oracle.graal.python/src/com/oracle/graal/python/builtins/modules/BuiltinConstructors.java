@@ -837,10 +837,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return floatFromFloat(cls, doubleFromObject(frame, cls, obj, callFloatNode, gotException));
         }
 
-        protected CExtNodes.SubtypeNew createSubtypeNew() {
-            return CExtNodes.FloatSubtypeNew.create();
-        }
-
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
         // floatobject.c we have to first create a temporary float, then fill it into
         // a natively allocated subtype structure
@@ -849,9 +845,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached BranchProfile gotException,
-                        @Cached("createSubtypeNew()") CExtNodes.SubtypeNew subtypeNew) {
+                        @Cached CExtNodes.FloatSubtypeNew subtypeNew) {
             double realFloat = doubleFromObject(frame, PythonBuiltinClassType.PFloat, obj, callFloatNode, gotException);
-            return subtypeNew.execute(cls, realFloat);
+            return subtypeNew.call(cls, realFloat);
         }
 
         @Fallback
@@ -1842,7 +1838,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doNative(@SuppressWarnings("unused") VirtualFrame frame, PythonNativeClass cls, Object iterable,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.TupleSubtypeNew subtypeNew) {
-            return subtypeNew.execute(cls, iterable);
+            return subtypeNew.call(cls, iterable);
         }
 
         protected static boolean isSubtypeOfTuple(VirtualFrame frame, IsSubtypeNode isSubtypeNode, PythonNativeClass cls) {

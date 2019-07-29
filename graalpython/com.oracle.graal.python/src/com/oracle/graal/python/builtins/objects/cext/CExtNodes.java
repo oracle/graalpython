@@ -227,14 +227,14 @@ public abstract class CExtNodes {
             throw new IllegalStateException();
         }
 
-        public abstract Object execute(PythonNativeClass object, Object arg);
+        protected abstract Object execute(PythonNativeClass object, Object arg);
 
         protected String getFunctionName() {
             return getTypenamePrefix() + "_subtype_new";
         }
 
         @Specialization
-        public Object execute(PythonNativeClass object, Object arg,
+        protected Object callNativeConstructor(PythonNativeClass object, Object arg,
                         @Exclusive @Cached("getFunctionName()") String functionName,
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @Exclusive @Cached ToJavaNode toJavaNode,
@@ -254,15 +254,30 @@ public abstract class CExtNodes {
             return "float";
         }
 
+        public final Object call(PythonNativeClass object, double arg) {
+            return execute(object, arg);
+        }
+
         public static FloatSubtypeNew create() {
             return CExtNodesFactory.FloatSubtypeNewNodeGen.create();
         }
     }
 
     public abstract static class TupleSubtypeNew extends SubtypeNew {
+
+        @Child private ToSulongNode toSulongNode;
+
         @Override
         protected final String getTypenamePrefix() {
             return "tuple";
+        }
+
+        public final Object call(PythonNativeClass object, Object arg) {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return execute(object, toSulongNode.execute(arg));
         }
 
         public static TupleSubtypeNew create() {
