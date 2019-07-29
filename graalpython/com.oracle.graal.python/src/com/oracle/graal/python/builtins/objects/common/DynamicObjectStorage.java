@@ -154,7 +154,6 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         @Override
         @TruffleBoundary
         public HashingStorage copy(Equivalence eq) {
-            assert eq == HashingStorage.DEFAULT_EQIVALENCE;
             return new FastDictStorage(getStore().copy(getStore().getShape()));
         }
     }
