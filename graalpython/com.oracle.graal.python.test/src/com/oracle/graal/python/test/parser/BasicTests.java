@@ -94,6 +94,11 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void assert04() throws Exception {
+        checkTreeResult("assert not hascased");
+    }
+    
+    @Test
     public void simpleExpression01() throws Exception {
         checkTreeResult("'ahoj'");
     }
@@ -430,6 +435,19 @@ public class BasicTests extends ParserTestBase {
                 "def fn():\n" +
                 "  for a, b in ((1,2), (3,4)):\n" +
                 "    print(a)");
+    }
+    
+    @Test
+    public void for13() throws Exception {
+        checkScopeAndTree(
+                "def format(self):\n" +
+                "    for frame in self:\n" +
+                "        count += 1\n" +
+                "        if count >= 3:\n" +
+                "            continue\n" +
+                "        if count == 4:\n" +
+                "            for name, value in a:\n" +
+                "                count = 1");
     }
     
     @Test
@@ -794,6 +812,11 @@ public class BasicTests extends ParserTestBase {
                 + "  pass\n"
                 + "else:\n"
                 + "  pass");
+    }
+    
+    @Test
+    public void while10() throws Exception {
+        checkTreeResult("while tb is not None: pass");
     }
     
     @Test

@@ -1,0 +1,15 @@
+ModuleRootNode Name: <module 'assert04'> SourceSection: [0,19]`assert not hascased`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,19]`assert not hascased`
+    ExpressionWithSideEffect SourceSection: [0,19]`assert not hascased`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        AssertNode SourceSection: [0,19]`assert not hascased`
+          NotNodeGen SourceSection: [7,19]`not hascased`
+            ReadNameNodeGen SourceSection: [11,19]`hascased`
+              Identifier: hascased

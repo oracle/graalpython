@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
+import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
@@ -210,7 +211,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     public PNode visit(AssertSSTNode node) {
         ExpressionNode test = (ExpressionNode)node.test.accept(this);
         ExpressionNode message = node.message == null ? null : (ExpressionNode)node.message.accept(this);
-        PNode result = new AssertNode(CastToBooleanNode.createIfTrueNode(test), message);
+        PNode result = new AssertNode(nodeFactory.toBooleanCastNode(test), message);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -675,9 +676,17 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         if (doc != null && body instanceof BaseBlockNode) {
             StatementNode[] st = ((BaseBlockNode)body).getStatements();
             if (st.length == 1) {
-                body = com.oracle.graal.python.nodes.control.BlockNode.create();
+                body = BlockNode.create();
             } else {
-                body = com.oracle.graal.python.nodes.control.BlockNode.create(Arrays.copyOfRange(st, 1, st.length));
+                if (st.length == 2) {
+                    body = st[1];
+                } else {
+                    // TODO this is not nice. We create the block twice. Should be created just one?
+                    body = body instanceof GeneratorBlockNode 
+                            ? GeneratorBlockNode.create(Arrays.copyOfRange(st, 1, st.length), ((GeneratorBlockNode)body).getIndexSlot())
+                            : BlockNode.create(Arrays.copyOfRange(st, 1, st.length));
+                }
+                
             }
         }
         if (doc == null) {
@@ -1062,7 +1071,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         if (node.containsContinue) {
             body = nodeFactory.createContinueTarget(body);
         }
-        StatementNode whileNode = nodeFactory.createWhile(CastToBooleanNode.createIfTrueNode(test), body);
+        StatementNode whileNode = nodeFactory.createWhile(nodeFactory.toBooleanCastNode(test), body);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
         StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
         StatementNode result;

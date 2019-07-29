@@ -42,37 +42,39 @@ public class RuntimeFileTests extends ParserTestBase {
 //        checkScopeAndTree();
 //    }
     
-//    @Test
-//    public void sre_compile() throws Exception {
-//        checkScopeAndTree();
-//    }
-    
-//    @Test
-//    public void functions() throws Exception {
-//        checkScopeAndTree();
-//    }
-    
-//    @Test
-//    public void traceback() throws Exception {
-//        checkScopeAndTree();
-//    }
-    
-//    @Test
-//    public void re() throws Exception {
-//        checkScopeAndTree();
-//    }
-    
-//    @Test
-//    public void enumt() throws Exception {
-//        checkScopeAndTree();
-//    }
+    @Test
+    public void sre_compile() throws Exception {
+        checkScopeAndTreeWithCorrections();
+    }
     
     @Test
-    public void enumMeta() throws Exception {
+    public void functions() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    
+    @Test
+    public void traceback() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void re() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void enumt() throws Exception {
         checkScopeAndTree();
     }
     
     private void checkScopeAndTree()  throws Exception{
+        File testFile = getTestFileFromTestAndTestMethod();
+        checkScopeFromFile(testFile, true);
+        checkTreeFromFile(testFile, true);
+    }
+    
+    private void checkScopeAndTreeWithCorrections()  throws Exception{
         File testFile = getTestFileFromTestAndTestMethod();
         saveNewScope(testFile, true);
         checkScopeFromFile(testFile, true);

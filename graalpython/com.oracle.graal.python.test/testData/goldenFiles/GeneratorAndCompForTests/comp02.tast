@@ -1,0 +1,81 @@
+ModuleRootNode Name: <module 'comp02'> SourceSection: [0,61]`caretspace = ((c.iss...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: `aretspace=((c.isspac...`
+  InnerRootNode SourceSection: [0,61]`caretspace = ((c.iss...`
+    ExpressionWithSideEffect SourceSection: [0,61]`caretspace = ((c.iss...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,61]`caretspace = ((c.iss...`
+          Identifier: caretspace
+          GeneratorExpressionNode SourceSection: [41,60]`for c in caretspace`
+            Name: [].<locals>.<genexp>:comp02:1
+            FrameDescriptor: 2 slots [c, <return_val>]
+            Enclosing
+              FrameDescriptor:  Empty
+            Active Flags: 2
+            For Nodes: 1
+            Block Nodes: 0
+            Is Enclosing Frame Generator: false
+            FunctionRootNode SourceSection: [41,60]`for c in caretspace`
+              Name: [].<locals>.<genexp>:comp02:1
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [c, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [41,60]`for c in caretspace`
+                GeneratorReturnTargetNode SourceSection: [41,60]`for c in caretspace`
+                  flagSlot: 0
+                  GeneratorForNode SourceSection: [41,60]`for c in caretspace`
+                    ExpressionStatementNode SourceSection: [15,39]`c.isspace() and c or...`
+                      YieldNode SourceSection: [15,39]`c.isspace() and c or...`
+                        flagSlot: 1
+                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteGeneraterFrameSlotNodeGen SourceSection: None
+                            Frame: [1,<return_val>,Illegal]
+                          OrNode SourceSection: [15,39]`c.isspace() and c or...`
+                            AndNode SourceSection: None
+                              PythonCallNodeGen SourceSection: [15,26]`c.isspace()`
+                                CachedCallNodeGen SourceSection: None
+                                  CreateArgumentsNodeGen SourceSection: None
+                                  CallDispatchNodeGen SourceSection: None
+                                GetCallAttributeNodeGen SourceSection: None
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [0,c,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [31,32]`c`
+                                Frame: [0,c,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              YesNodeGen SourceSection: None
+                            StringLiteralNode SourceSection: [36,39]`' '`
+                            YesNodeGen SourceSection: None
+                        GeneratorAccessNode SourceSection: None
+                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                      Identifier: c
+                      WriteGeneraterFrameSlotNodeGen SourceSection: None
+                        Frame: [0,c,Illegal]
+                    ArgumentExpressionNode SourceSection: None
+                      ReadIndexedArgumentNodeGen SourceSection: None
+                    GetNextCachedNode SourceSection: None
+                      LookupAndCallUnaryNodeGen SourceSection: None
+                        Op: __next__
+                    GeneratorAccessNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  BlockNode SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None
+            GetIteratorExpressionNodeGen SourceSection: [50,60]`caretspace`
+              GetIteratorNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [50,60]`caretspace`
+                Identifier: caretspace
+            PythonObjectFactoryNodeGen SourceSection: None

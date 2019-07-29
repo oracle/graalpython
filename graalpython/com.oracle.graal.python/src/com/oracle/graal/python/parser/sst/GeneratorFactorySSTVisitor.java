@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
+import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonParser;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 import com.oracle.truffle.api.RootCallTarget;
@@ -156,7 +157,12 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
     @Override
     public PNode visit(ForComprehensionSSTNode node) {
+        int oldNumOfActiveFlags = numOfActiveFlags;
+        int oldNumOfGeneratorBlockNode = numOfGeneratorBlockNode;
+        int oldNumOfGeneratorForNode = numOfGeneratorForNode;
+        init();
         SSTNode sstIterator = node.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode)node.iterator).target : node.iterator;
+        ScopeInfo originScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope.getParent());
         ExpressionNode iterator = (ExpressionNode)sstIterator.accept(this);
         GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
@@ -200,7 +206,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                 numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
         genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameDescriptor());
         genExprDef.assignSourceSection(funcRoot.getSourceSection());
-        genExprDef.setEnclosingFrameGenerator(node.level != 0 || parentVisitor.comprLevel != 0);
+        genExprDef.setEnclosingFrameGenerator(node.level != 0 || parentVisitor.comprLevel != 0 || node.scope.getParent().getScopeKind() == ScopeInfo.ScopeKind.Generator);
         PNode result;
         switch (node.resultType) {
             case PList:
@@ -219,6 +225,10 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                 result = genExprDef;
                 break;
         }
+        scopeEnvironment.setCurrentScope(originScope);
+        numOfActiveFlags = oldNumOfActiveFlags;
+        numOfGeneratorBlockNode = oldNumOfGeneratorBlockNode;
+        numOfGeneratorForNode = oldNumOfGeneratorForNode;
         return result;
     }
     

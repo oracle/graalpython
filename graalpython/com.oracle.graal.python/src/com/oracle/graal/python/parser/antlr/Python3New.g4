@@ -172,9 +172,9 @@ import java.util.Arrays;
 	
 	public final boolean startLoopBreak() {
 		try {
-			return containsContinue;
+			return containsBreak;
 		} finally {
-			containsContinue = false;
+			containsBreak = false;
 		}
 	}
 	

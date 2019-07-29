@@ -1,0 +1,88 @@
+ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):↵ ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,118]`def walk_stack(f):↵ ...`
+    ExpressionWithSideEffect SourceSection: [0,118]`def walk_stack(f):↵ ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,118]`def walk_stack(f):↵ ...`
+          Identifier: walk_stack
+          GeneratorFunctionDefinitionNode Name: walk_stack SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: `Documentation`
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,118]`def walk_stack(f):↵ ...`
+              Name: walk_stack
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: f
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [f, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,118]`def walk_stack(f):↵ ...`
+                GeneratorReturnTargetNode SourceSection: [0,118]`def walk_stack(f):↵ ...`
+                  flagSlot: 2
+                  GeneratorBlockNode SourceSection: None
+                    IfNode SourceSection: [47,81]`if f is None:↵      ...`
+                      YesNodeGen SourceSection: None
+                        IsNodeGen SourceSection: [50,59]`f is None`
+                          ReadGeneratorFrameVariableNode SourceSection: [50,51]`f`
+                            Frame: [0,f,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ObjectLiteralNode SourceSection: [55,59]`None`
+                      WriteGeneratorFrameVariableNodeGen SourceSection: [69,76]`f = a()`
+                        Identifier: f
+                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                          Frame: [0,f,Illegal]
+                        PythonCallNodeGen SourceSection: [73,76]`a()`
+                          CachedCallNodeGen SourceSection: None
+                            CreateArgumentsNodeGen SourceSection: None
+                            CallDispatchNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: a
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      BlockNode SourceSection: None
+                    ElseNode SourceSection: [81,118]`while f is not None:...`
+                      GeneratorWhileNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [110,117]`yield f`
+                          YieldNode SourceSection: [110,117]`yield f`
+                            flagSlot: 0
+                            WriteGeneratorFrameVariableNodeGen SourceSection: None
+                              Identifier: <return_val>
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [1,<return_val>,Illegal]
+                              ReadGeneratorFrameVariableNode SourceSection: [116,117]`f`
+                                Frame: [0,f,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            GeneratorAccessNode SourceSection: None
+                        NotNodeGen SourceSection: [87,100]`f is not None`
+                          IsNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [87,88]`f`
+                              Frame: [0,f,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: [96,100]`None`
+                        GeneratorAccessNode SourceSection: None
+                      BlockNode SourceSection: None
+                    GeneratorAccessNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                    Identifier: f
+                    WriteGeneraterFrameSlotNodeGen SourceSection: None
+                      Frame: [0,f,Illegal]
+                    ArgumentExpressionNode SourceSection: None
+                      ReadIndexedArgumentNodeGen SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

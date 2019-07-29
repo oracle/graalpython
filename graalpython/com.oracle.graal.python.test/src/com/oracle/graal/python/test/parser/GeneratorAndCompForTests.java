@@ -107,6 +107,29 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     }
     
     @Test
+    public void generator05() throws Exception {
+        checkScopeAndTree(
+                "def fn(self):\n" +
+                "    caretspace = (c.isspace() for c in caretspace)\n" +
+                "    yield caretspace");
+    }
+    
+    @Test
+    public void generator06() throws Exception {
+        checkScopeAndTree(
+                "def format_exception_only(self):\n" +
+                "        if a():\n" +
+                "            yield \"neco\"\n" +
+                "            return\n" +
+                "        if badline is not None:\n" +
+                "            yield '\\n'\n" +
+                "            if offset is not None:\n" +
+                "                caretspace = (c.isspace() for c in caretspace)\n" +
+                "                yield caretspace\n" +
+                "        yield \"message\"");
+    }
+    
+    @Test
     public void param01() throws Exception {
         checkScopeAndTree(
                 "def fn(a):\n" +
@@ -161,7 +184,17 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                 "  yield \"neco\"");
     }
     
-    
+    @Test
+    public void doc02() throws Exception {
+        checkScopeAndTree(
+                "def walk_stack(f):\n" +
+                "    \"\"\"Documentation\"\"\"\n" +
+                "    if f is None:\n" +
+                "        f = a()\n" +
+                "    while f is not None:\n" +
+                "        yield f\n");
+    }
+
     @Test
     public void class01() throws Exception {
         checkScopeAndTree(
@@ -191,5 +224,4 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                           "                     for t in something for i in t}");
     }
     
-   
 }

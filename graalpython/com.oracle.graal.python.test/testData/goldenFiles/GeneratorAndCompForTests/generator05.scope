@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: fn
+        Kind: Generator
+        FrameDescriptor: [caretspace, self, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: generator32
+            Kind: Generator
+            FrameDescriptor: [c, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
