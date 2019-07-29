@@ -966,41 +966,15 @@ index 30820737e..d8a350f0d 100644
             print("Installing required dependency: numpy")
             numpy(**kwargs)
 
-        # download pandas-0.20.3
-        patch = """diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
-index 19f810e..2f01238 100644
---- a/pandas/_libs/src/period_helper.c
-+++ b/pandas/_libs/src/period_helper.c
-@@ -1105,7 +1105,7 @@ static int dInfoCalc_SetFromAbsDateTime(struct date_info *dinfo,
-     /* Bounds check */
-     Py_AssertWithArg(abstime >= 0.0 && abstime <= SECONDS_PER_DAY,
-                      PyExc_ValueError,
--                     "abstime out of range (0.0 - 86400.0): %f", abstime);
-+                     "abstime out of range (0.0 - 86400.0): %f", (long long)abstime);
-
-     /* Calculate the date */
-     if (dInfoCalc_SetFromAbsDate(dinfo, absdate, calendar)) goto onError;
-diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
-index 2f01238..6c79eb5 100644
---- a/pandas/_libs/src/period_helper.c
-+++ b/pandas/_libs/src/period_helper.c
-@@ -157,7 +157,7 @@ static int dInfoCalc_SetFromDateAndTime(struct date_info *dinfo, int year,
-                 (second < (double)60.0 ||
-                  (hour == 23 && minute == 59 && second < (double)61.0)),
-             PyExc_ValueError,
--            "second out of range (0.0 - <60.0; <61.0 for 23:59): %f", second);
-+            "second out of range (0.0 - <60.0; <61.0 for 23:59): %f", (long long)second);
-
-         dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
-
-diff --git a/pandas/io/msgpack/_packer.cpp b/pandas/io/msgpack/_packer.cpp
-index 8b5b382..7544707 100644
+        # download pandas-0.25.0
+        patch = r'''diff --git a/pandas/io/msgpack/_packer.cpp b/pandas/io/msgpack/_packer.cpp
+index f793920..5b0b28c 100644
 --- a/pandas/io/msgpack/_packer.cpp
 +++ b/pandas/io/msgpack/_packer.cpp
-@@ -477,10 +477,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
-     (sizeof(type) == sizeof(Py_ssize_t) &&\\
-           (is_signed || likely(v < (type)PY_SSIZE_T_MAX ||\\
-                                v == (type)PY_SSIZE_T_MAX)))  )
+@@ -680,10 +680,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+ static CYTHON_INLINE int __Pyx_is_valid_index(Py_ssize_t i, Py_ssize_t limit) {
+     return (size_t) i < (size_t) limit;
+ }
 -#if defined (__cplusplus) && __cplusplus >= 201103L
 -    #include <cstdlib>
 -    #define __Pyx_sst_abs(value) std::abs(value)
@@ -1010,13 +984,13 @@ index 8b5b382..7544707 100644
  #elif SIZEOF_LONG >= SIZEOF_SIZE_T
      #define __Pyx_sst_abs(value) labs(value)
 diff --git a/pandas/io/msgpack/_unpacker.cpp b/pandas/io/msgpack/_unpacker.cpp
-index fa08f53..49f3bf3 100644
+index d6c871c..5853474 100644
 --- a/pandas/io/msgpack/_unpacker.cpp
 +++ b/pandas/io/msgpack/_unpacker.cpp
-@@ -477,10 +477,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
-     (sizeof(type) == sizeof(Py_ssize_t) &&\\
-           (is_signed || likely(v < (type)PY_SSIZE_T_MAX ||\\
-                                v == (type)PY_SSIZE_T_MAX)))  )
+@@ -682,10 +682,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+ static CYTHON_INLINE int __Pyx_is_valid_index(Py_ssize_t i, Py_ssize_t limit) {
+     return (size_t) i < (size_t) limit;
+ }
 -#if defined (__cplusplus) && __cplusplus >= 201103L
 -    #include <cstdlib>
 -    #define __Pyx_sst_abs(value) std::abs(value)
@@ -1025,9 +999,9 @@ index fa08f53..49f3bf3 100644
      #define __Pyx_sst_abs(value) abs(value)
  #elif SIZEOF_LONG >= SIZEOF_SIZE_T
      #define __Pyx_sst_abs(value) labs(value)
-"""
+'''
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
-        install_from_pypi("pandas==0.20.3", patch=patch, add_cflags=cflags, **kwargs)
+        install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
 
     return locals()
 
