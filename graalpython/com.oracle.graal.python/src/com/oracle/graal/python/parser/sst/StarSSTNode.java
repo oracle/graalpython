@@ -49,6 +49,10 @@ public class StarSSTNode extends SSTNode {
         super(startOffset, endOffset);
         this.value = value;
     }
+
+    public SSTNode getValue() {
+        return value;
+    }
     
     @Override
     public <T>T accept(SSTreeVisitor<T> visitor) {

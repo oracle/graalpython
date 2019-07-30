@@ -451,6 +451,18 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void for14() throws Exception {
+        checkScopeAndTree(
+                "def merge(sequences):\n" +
+                "    for s1 in sequences:\n" +
+                "        for s2 in sequences:\n" +
+                "            if candidate in s2[1:]:\n" +
+                "                break\n" +
+                "        else:\n" +
+                "            break");
+    }
+    
+    @Test
     public void global01() throws Exception {
         checkScopeAndTree();
     }

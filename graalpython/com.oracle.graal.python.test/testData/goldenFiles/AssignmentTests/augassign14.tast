@@ -1,0 +1,88 @@
+ModuleRootNode Name: <module 'augassign14'> SourceSection: [0,61]`def _method(*args, *...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,61]`def _method(*args, *...`
+    ExpressionWithSideEffect SourceSection: [0,61]`def _method(*args, *...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,61]`def _method(*args, *...`
+          Identifier: _method
+          FunctionDefinitionNode Name: _method SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,61]`def _method(*args, *...`
+              Name: _method
+              Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                Keyword Names: None
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 7 slots [args, keywords, cls_or_self, rest, <>temp4, <>temp5, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,61]`def _method(*args, *...`
+                ReturnTargetNode SourceSection: [0,61]`def _method(*args, *...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: args
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,args,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadVarArgsNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: keywords
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,keywords,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadVarKeywordsNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
+                    DestructuringAssignmentNode SourceSection: [36,61]`cls_or_self, *rest =...`
+                      ReadLocalVariableNode SourceSection: [57,61]`args`
+                        Frame: [0,args,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <>temp4
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <>temp5
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [5,<>temp5,Illegal]
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: cls_or_self
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,cls_or_self,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: rest
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [3,rest,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [5,<>temp5,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      GetItemNodeGen SourceSection: None
+                      GetItemNodeGen SourceSection: None
+                      LenNodeGen SourceSection: None
+                      LookupInheritedAttributeNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
+                        GetLazyClassCachedNodeGen SourceSection: None
+                      ConstructTupleNodeGen SourceSection: None
+                        PythonObjectFactoryNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [6,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

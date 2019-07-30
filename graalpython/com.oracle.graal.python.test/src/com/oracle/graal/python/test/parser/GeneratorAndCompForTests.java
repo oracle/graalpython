@@ -224,4 +224,14 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                           "                     for t in something for i in t}");
     }
     
+    @Test
+    public void comp02() throws Exception {
+        checkScopeAndTree(
+                "def mro(cls, abcs=None):\n" +
+                "    for base in abcs:\n" +
+                "        if not any(issubclass(b, base) for b in cls.__bases__):\n" +
+                "            abstract_bases.append(base)\n" +
+                "    other = [mro(base, abcs=abcs) for base in other]");
+    }
+    
 }

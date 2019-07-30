@@ -161,5 +161,12 @@ public class AssignmentTests extends ParserTestBase{
     public void augassign13() throws Exception {
         checkScopeAndTree("def fn (): x += 3");
     }
+    
+    @Test
+    public void augassign14() throws Exception {
+        checkScopeAndTree(
+                "def _method(*args, **keywords):\n" +
+                "    cls_or_self, *rest = args");
+    }
 
 }

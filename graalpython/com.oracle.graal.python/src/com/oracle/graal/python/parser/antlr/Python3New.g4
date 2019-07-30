@@ -833,7 +833,9 @@ for_stmt
 	suite
 	{ 
             ForSSTNode result = factory.createForSSTNode($exprlist.result, $testlist.result, $suite.result, containsContinue, getStartIndex($ctx),getStopIndex($suite.stop));
+            result.setContainsBreak(containsBreak);
             containsContinue = cFlag;
+            containsBreak = bFlag;
         }
 	(
 		'else' ':' suite 
@@ -843,9 +845,7 @@ for_stmt
                 }
 	)?
 	{  
-            result.setContainsBreak(containsBreak);
             push(result);
-            containsBreak = bFlag;
         }
 ;
 

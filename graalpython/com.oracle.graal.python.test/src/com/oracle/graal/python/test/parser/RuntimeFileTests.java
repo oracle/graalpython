@@ -42,16 +42,20 @@ public class RuntimeFileTests extends ParserTestBase {
 //        checkScopeAndTree();
 //    }
     
-//    @Test
-//    public void sre_compile() throws Exception {
-//        checkScopeAndTreeWithCorrections();
-//    }
+    @Test
+    public void sre_compile() throws Exception {
+        checkScopeAndTree();
+    }
     
     @Test
     public void functions() throws Exception {
         checkScopeAndTree();
     }
     
+    @Test
+    public void functools() throws Exception {
+        checkScopeAndTree();
+    }
     
     @Test
     public void traceback() throws Exception {
@@ -121,26 +125,40 @@ public class RuntimeFileTests extends ParserTestBase {
                 oldLineIndex++;
                 newLineIndex++;
             } else {
-                ssIndex = oldLine.indexOf(SS_TEXT);
-                if (ssIndex != -1) { 
-                    if (newLine.startsWith(oldLine.substring(0, ssIndex))) {
-                        // the same line but different source section
-                        corrected.append(newLine).append(LINE_TEXT);
-                        oldLineIndex++;
-                        newLineIndex++;
-                    } else {
-                        // different lines
-                        corrected.append(oldLine).append(LINE_TEXT);
-                        oldLineIndex++;
-                    }
+                if (oldLine.contains("Frame: [") && newLine.contains("Frame: [")) {
+                    corrected.append(correctFrame(oldLine, newLine)).append(LINE_TEXT);
+                    oldLineIndex++;
+                    newLineIndex++;
+                } else if (oldLine.contains("flagSlot:") && newLine.contains("flagSlot:")) {
+                    corrected.append(correctSlot(oldLine, newLine)).append(LINE_TEXT);
+                    oldLineIndex++;
+                    newLineIndex++;
+                } else if (oldLine.contains("FrameDescriptor:") && newLine.contains("FrameDescriptor:")) {
+                    corrected.append(correctFrameDesc(oldLine, newLine)).append(LINE_TEXT);
+                    oldLineIndex++;
+                    newLineIndex++;
                 } else {
-                    if (newLine.indexOf(SS_TEXT) == -1) {
-                        corrected.append(oldLine).append(LINE_TEXT);
-                        oldLineIndex++;
-                        newLineIndex++;
+                    ssIndex = oldLine.indexOf(SS_TEXT);
+                    if (ssIndex != -1) { 
+                        if (newLine.startsWith(oldLine.substring(0, ssIndex))) {
+                            // the same line but different source section
+                            corrected.append(newLine).append(LINE_TEXT);
+                            oldLineIndex++;
+                            newLineIndex++;
+                        } else {
+                            // different lines
+                            corrected.append(oldLine).append(LINE_TEXT);
+                            oldLineIndex++;
+                        }
                     } else {
-                        corrected.append(oldLine).append(LINE_TEXT);
-                        oldLineIndex++;
+                        if (newLine.indexOf(SS_TEXT) == -1) {
+                            corrected.append(oldLine).append(LINE_TEXT);
+                            oldLineIndex++;
+                            newLineIndex++;
+                        } else {
+                            corrected.append(oldLine).append(LINE_TEXT);
+                            oldLineIndex++;
+                        }
                     }
                 }
             }
@@ -159,6 +177,47 @@ public class RuntimeFileTests extends ParserTestBase {
             fw.close();
         }
          
+    }
+    
+    private String correctFrame(String oldLine, String newLine) {
+        int oldStart = oldLine.indexOf("Frame: [");
+        int newStart = newLine.indexOf("Frame: [");
+        if (oldStart != newStart) {
+            return oldLine;
+        }
+        int oldComma = oldLine.indexOf(',', oldStart);
+        int newComma = newLine.indexOf(',', oldStart);
+        String oldRest = oldLine.substring(oldComma);
+        String newRest = newLine.substring(newComma);
+        if (oldRest.equals(newRest)) {
+            return newLine;
+        }
+        return oldLine;
+    }
+    
+    private String correctSlot(String oldLine, String newLine) {
+        int oldStart = oldLine.indexOf("flagSlot:");
+        int newStart = newLine.indexOf("flagSlot:");
+        if (oldStart != newStart) {
+            return oldLine;
+        }
+        return newLine;
+    }
+    
+    private String correctFrameDesc(String oldLine, String newLine) {
+        int oldStart = oldLine.indexOf("FrameDescriptor:");
+        int newStart = newLine.indexOf("FrameDescriptor:");
+        if (oldStart != newStart) {
+            return oldLine;
+        }
+        int oldBracket = oldLine.indexOf('[', oldStart);
+        int newBracket = newLine.indexOf('[', oldStart);
+        String oldPart = oldLine.substring(0, oldBracket);
+        String newPart = newLine.substring(0, newBracket);
+        if (oldPart.equals(newPart)) {
+            return newLine;
+        }
+        return oldLine;
     }
     
 }

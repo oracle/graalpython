@@ -70,6 +70,7 @@ import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
 import com.oracle.graal.python.parser.sst.ImportSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.sst.SimpleSSTNode;
+import com.oracle.graal.python.parser.sst.StarSSTNode;
 import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
@@ -243,7 +244,9 @@ public final class PythonNodeFactory {
             for (SSTNode variable : collection.getValues()) {
                 declareVar(variable);
             }
-        } 
+        } else if (value instanceof StarSSTNode) {
+            declareVar(((StarSSTNode)value).getValue());
+        }
     }
     
     public ForSSTNode createForSSTNode(SSTNode[] targets, SSTNode iterator, SSTNode body, boolean containsContinue, int startOffset, int endOffset) {

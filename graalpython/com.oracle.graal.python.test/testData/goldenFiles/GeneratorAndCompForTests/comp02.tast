@@ -1,81 +1,253 @@
-ModuleRootNode Name: <module 'comp02'> SourceSection: [0,61]`caretspace = ((c.iss...`
+ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=No...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
-  Documentation: `aretspace=((c.isspac...`
-  InnerRootNode SourceSection: [0,61]`caretspace = ((c.iss...`
-    ExpressionWithSideEffect SourceSection: [0,61]`caretspace = ((c.iss...`
+  Documentation: None
+  InnerRootNode SourceSection: [0,203]`def mro(cls, abcs=No...`
+    ExpressionWithSideEffect SourceSection: [0,203]`def mro(cls, abcs=No...`
       Expression:
         EmptyNode SourceSection: None
       SideEffect:
-        WriteNameNodeGen SourceSection: [0,61]`caretspace = ((c.iss...`
-          Identifier: caretspace
-          GeneratorExpressionNode SourceSection: [41,60]`for c in caretspace`
-            Name: [].<locals>.<genexp>:comp02:1
-            FrameDescriptor: 2 slots [c, <return_val>]
-            Enclosing
-              FrameDescriptor:  Empty
-            Active Flags: 2
-            For Nodes: 1
-            Block Nodes: 0
-            Is Enclosing Frame Generator: false
-            FunctionRootNode SourceSection: [41,60]`for c in caretspace`
-              Name: [].<locals>.<genexp>:comp02:1
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-              CelVars: None
+        WriteNameNodeGen SourceSection: [0,203]`def mro(cls, abcs=No...`
+          Identifier: mro
+          FunctionDefinitionNode Name: mro SourceSection: None
+            Arguments:
+              ObjectLiteralNode SourceSection: [18,22]`None`
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: abcs, , base, 
+            FunctionRootNode SourceSection: [0,203]`def mro(cls, abcs=No...`
+              Name: mro
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: cls, abcs
+              CelVars: abcs, base
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [c, <return_val>]
+              FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: None
-              InnerRootNode SourceSection: [41,60]`for c in caretspace`
-                GeneratorReturnTargetNode SourceSection: [41,60]`for c in caretspace`
-                  flagSlot: 0
-                  GeneratorForNode SourceSection: [41,60]`for c in caretspace`
-                    ExpressionStatementNode SourceSection: [15,39]`c.isspace() and c or...`
-                      YieldNode SourceSection: [15,39]`c.isspace() and c or...`
-                        flagSlot: 1
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [1,<return_val>,Illegal]
-                          OrNode SourceSection: [15,39]`c.isspace() and c or...`
-                            AndNode SourceSection: None
-                              PythonCallNodeGen SourceSection: [15,26]`c.isspace()`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
-                                GetCallAttributeNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: None
-                                    Frame: [0,c,Illegal]
+                CellVarsSlots: abcs, , base, 
+              InnerRootNode SourceSection: [0,203]`def mro(cls, abcs=No...`
+                ReturnTargetNode SourceSection: [0,203]`def mro(cls, abcs=No...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: cls
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,cls,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                      WriteLocalCellNodeGen SourceSection: None
+                        Identifier: abcs
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [1,abcs,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                    BlockNode SourceSection: None
+                      ElseNode SourceSection: [29,155]`for base in abcs:↵  ...`
+                        ForNode SourceSection: None
+                          DefaultLoopNode SourceSection: None
+                            ForRepeatingNode SourceSection: None
+                              ForNextElementNodeGen SourceSection: None
+                                WriteLocalCellNodeGen SourceSection: None
+                                  Identifier: base
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [2,base,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: [31,32]`c`
-                                Frame: [0,c,Illegal]
+                              IfNode SourceSection: [55,155]`if not any(issubclas...`
+                                NotNodeGen SourceSection: [58,109]`not any(issubclass(b...`
+                                  PythonCallNodeGen SourceSection: [62,109]`any(issubclass(b, ba...`
+                                    CachedCallNodeGen SourceSection: None
+                                      CreateArgumentsNodeGen SourceSection: None
+                                      CallDispatchNodeGen SourceSection: None
+                                    GeneratorExpressionNode SourceSection: [86,108]`for b in cls.__bases...`
+                                      Name: mro.<locals>.<genexp>:comp02:3
+                                      FrameDescriptor: 3 slots [b, base, <return_val>]
+                                      Enclosing
+                                        FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+                                      Active Flags: 2
+                                      For Nodes: 1
+                                      Block Nodes: 0
+                                      Is Enclosing Frame Generator: false
+                                      FunctionRootNode SourceSection: [86,108]`for b in cls.__bases...`
+                                        Name: mro.<locals>.<genexp>:comp02:3
+                                        Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                                        CelVars: None
+                                        FreeVars: base
+                                        NeedsCellFrame: False
+                                        FrameDescriptor: 3 slots [b, base, <return_val>]
+                                        ExecutionSlots:
+                                          FreeVarsSlots: base, 
+                                          CellVarsSlots: None
+                                        InnerRootNode SourceSection: [86,108]`for b in cls.__bases...`
+                                          GeneratorReturnTargetNode SourceSection: [86,108]`for b in cls.__bases...`
+                                            flagSlot: 1
+                                            GeneratorForNode SourceSection: [86,108]`for b in cls.__bases...`
+                                              ExpressionStatementNode SourceSection: [66,85]`issubclass(b, base)`
+                                                YieldNode SourceSection: [66,85]`issubclass(b, base)`
+                                                  flagSlot: 0
+                                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                                    Identifier: <return_val>
+                                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                                      Frame: [2,<return_val>,Illegal]
+                                                    PythonCallNodeGen SourceSection: [66,85]`issubclass(b, base)`
+                                                      CachedCallNodeGen SourceSection: None
+                                                        CreateArgumentsNodeGen SourceSection: None
+                                                        CallDispatchNodeGen SourceSection: None
+                                                      ReadGeneratorFrameVariableNode SourceSection: [77,78]`b`
+                                                        Frame: [0,b,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                      ReadLocalCellNodeGen SourceSection: [80,84]`base`
+                                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                                          Frame: [1,base,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadFromCellNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        Identifier: issubclass
+                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  GeneratorAccessNode SourceSection: None
+                                              WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                                Identifier: b
+                                                WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                                  Frame: [0,b,Illegal]
+                                              ArgumentExpressionNode SourceSection: None
+                                                ReadIndexedArgumentNodeGen SourceSection: None
+                                              GetNextCachedNode SourceSection: None
+                                                LookupAndCallUnaryNodeGen SourceSection: None
+                                                  Op: __next__
+                                              GeneratorAccessNode SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: None
+                                              Frame: [2,<return_val>,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            BlockNode SourceSection: None
+                                            GeneratorAccessNode SourceSection: None
+                                            PRaiseNodeGen SourceSection: None
+                                      GetIteratorExpressionNodeGen SourceSection: [95,108]`cls.__bases__`
+                                        GetIteratorNodeGen SourceSection: None
+                                        GetAttributeNodeGen SourceSection: [95,108]`cls.__bases__`
+                                          GetFixedAttributeNodeGen SourceSection: None
+                                            Key: __bases__
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
+                                          ReadLocalVariableNode SourceSection: [95,98]`cls`
+                                            Frame: [0,cls,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                      PythonObjectFactoryNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      Identifier: any
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ExpressionStatementNode SourceSection: [123,150]`abstract_bases.appen...`
+                                  PythonCallNodeGen SourceSection: [123,150]`abstract_bases.appen...`
+                                    CachedCallNodeGen SourceSection: None
+                                      CreateArgumentsNodeGen SourceSection: None
+                                      CallDispatchNodeGen SourceSection: None
+                                    ReadLocalCellNodeGen SourceSection: [145,149]`base`
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [2,base,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadFromCellNodeGen SourceSection: None
+                                    GetCallAttributeNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [123,137]`abstract_bases`
+                                        Identifier: abstract_bases
+                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                BlockNode SourceSection: None
+                          GetIteratorExpressionNodeGen SourceSection: [41,45]`abcs`
+                            GetIteratorNodeGen SourceSection: None
+                            ReadLocalCellNodeGen SourceSection: [41,45]`abcs`
+                              ReadLocalVariableNode SourceSection: None
+                                Frame: [1,abcs,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              YesNodeGen SourceSection: None
-                            StringLiteralNode SourceSection: [36,39]`' '`
-                            YesNodeGen SourceSection: None
-                        GeneratorAccessNode SourceSection: None
-                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: c
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [0,c,Illegal]
-                    ArgumentExpressionNode SourceSection: None
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                    GetNextCachedNode SourceSection: None
-                      LookupAndCallUnaryNodeGen SourceSection: None
-                        Op: __next__
-                    GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                              ReadFromCellNodeGen SourceSection: None
+                        BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: [155,203]`other = [mro(base, a...`
+                        Identifier: other
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [3,other,Illegal]
+                        PythonCallNodeGen SourceSection: [164,202]`mro(base, abcs=abcs)...`
+                          CachedCallNodeGen SourceSection: None
+                            CreateArgumentsNodeGen SourceSection: None
+                            CallDispatchNodeGen SourceSection: None
+                          GeneratorExpressionNode SourceSection: [185,202]`for base in other`
+                            Name: mro.<locals>.<genexp>:comp02:5
+                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            Enclosing
+                              FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+                            Active Flags: 2
+                            For Nodes: 1
+                            Block Nodes: 0
+                            Is Enclosing Frame Generator: false
+                            FunctionRootNode SourceSection: [185,202]`for base in other`
+                              Name: mro.<locals>.<genexp>:comp02:5
+                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                              CelVars: None
+                              FreeVars: abcs
+                              NeedsCellFrame: False
+                              FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                              ExecutionSlots:
+                                FreeVarsSlots: abcs, 
+                                CellVarsSlots: None
+                              InnerRootNode SourceSection: [185,202]`for base in other`
+                                GeneratorReturnTargetNode SourceSection: [185,202]`for base in other`
+                                  flagSlot: 1
+                                  GeneratorForNode SourceSection: [185,202]`for base in other`
+                                    ExpressionStatementNode SourceSection: [164,184]`mro(base, abcs=abcs)...`
+                                      YieldNode SourceSection: [164,184]`mro(base, abcs=abcs)...`
+                                        flagSlot: 0
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: <return_val>
+                                          WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                            Frame: [2,<return_val>,Illegal]
+                                          PythonCallNodeGen SourceSection: [164,184]`mro(base, abcs=abcs)...`
+                                            CachedCallNodeGen SourceSection: None
+                                              CreateArgumentsNodeGen SourceSection: None
+                                              CallDispatchNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [168,172]`base`
+                                              Frame: [0,base,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            KeywordArgumentsNodeGen SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalCellNodeGen SourceSection: [179,183]`abcs`
+                                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                                    Frame: [1,abcs,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadFromCellNodeGen SourceSection: None
+                                              CompactKeywordsNodeGen SourceSection: None
+                                              ExecuteKeywordStarargsNodeGen SourceSection: None
+                                                EmptyNode SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              Identifier: mro
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        GeneratorAccessNode SourceSection: None
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: base
+                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                        Frame: [0,base,Illegal]
+                                    ArgumentExpressionNode SourceSection: None
+                                      ReadIndexedArgumentNodeGen SourceSection: None
+                                    GetNextCachedNode SourceSection: None
+                                      LookupAndCallUnaryNodeGen SourceSection: None
+                                        Op: __next__
+                                    GeneratorAccessNode SourceSection: None
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [2,<return_val>,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  BlockNode SourceSection: None
+                                  GeneratorAccessNode SourceSection: None
+                                  PRaiseNodeGen SourceSection: None
+                            GetIteratorExpressionNodeGen SourceSection: [197,202]`other`
+                              GetIteratorNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [197,202]`other`
+                                Frame: [3,other,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-                  BlockNode SourceSection: None
-                  GeneratorAccessNode SourceSection: None
-                  PRaiseNodeGen SourceSection: None
-            GetIteratorExpressionNodeGen SourceSection: [50,60]`caretspace`
-              GetIteratorNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: [50,60]`caretspace`
-                Identifier: caretspace
-            PythonObjectFactoryNodeGen SourceSection: None
