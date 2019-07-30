@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
@@ -125,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
@@ -235,7 +237,8 @@ public final class Python3Core implements PythonCore {
                         "pyio_patches",
                         "pwd",
                         "resource",
-                        "_contextvars"));
+                        "_contextvars",
+                        "_lzma"));
         // must be last
         coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -351,7 +354,9 @@ public final class Python3Core implements PythonCore {
                         new RLockBuiltins(),
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
-                        new ContextvarsModuleBuiltins()));
+                        new ContextvarsModuleBuiltins(),
+                        new LZMAModuleBuiltins(),
+                        new LZMACompressorBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
