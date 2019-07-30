@@ -80,7 +80,7 @@ def _init_posix():
     g['LDSHARED'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC') 
     if darwin_native:
         capi_home = str(sys.graal_python_cext_home)
-        g['LDSHARED'] = g['LDSHARED'] + "-lpython" + so_abi + " -Wl,-rpath=" + capi_home
+        g['LDSHARED'] = g['LDSHARED'] + " -L" + capi_home + " -lpython." + so_abi + " -Wl,-rpath," + capi_home
     g['SOABI'] = so_abi
     g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
