@@ -230,7 +230,7 @@ public final class PythonParserImpl implements PythonParser {
         return lastGlobalScope;
     }
     
-    private boolean useNewParser = true;
+    private boolean useNewParser = false;
     
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         if (source.getPath() == null) {

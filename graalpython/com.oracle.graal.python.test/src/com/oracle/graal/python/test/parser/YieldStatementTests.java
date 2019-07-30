@@ -134,6 +134,11 @@ public class YieldStatementTests extends ParserTestBase {
     }
     
     @Test
+    public void yeild17() throws Exception {
+        checkScopeAndTree("generator = type((lambda: (yield))())");
+    }
+    
+    @Test
     public void with01() throws Exception {
         checkScopeAndTree(
                 "def gen():\n" +

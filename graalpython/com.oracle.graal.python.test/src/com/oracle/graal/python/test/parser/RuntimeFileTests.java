@@ -42,10 +42,10 @@ public class RuntimeFileTests extends ParserTestBase {
 //        checkScopeAndTree();
 //    }
     
-    @Test
-    public void sre_compile() throws Exception {
-        checkScopeAndTreeWithCorrections();
-    }
+//    @Test
+//    public void sre_compile() throws Exception {
+//        checkScopeAndTreeWithCorrections();
+//    }
     
     @Test
     public void functions() throws Exception {
@@ -65,6 +65,11 @@ public class RuntimeFileTests extends ParserTestBase {
     
     @Test
     public void enumt() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void _collections_abc() throws Exception {
         checkScopeAndTree();
     }
     

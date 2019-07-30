@@ -1103,7 +1103,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     @Override
     public PNode visit(YieldExpressionSSTNode node) {
-        ExpressionNode value = (ExpressionNode)node.value.accept(this);
+        ExpressionNode value = node.value == null ? EmptyNode.create() : (ExpressionNode)node.value.accept(this);
         PNode result = new YieldNode(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), value));
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
