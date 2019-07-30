@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
@@ -591,6 +592,19 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isJavaString(name)")
+        protected boolean readUncached(VirtualFrame frame, DynamicObjectStorage storage, PString name,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupHash,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupStringHash,
+                        @Cached ContainsKeyNode recursiveNode) {
+            if (lookupHash.execute(name, __HASH__) == lookupStringHash.execute(PythonBuiltinClassType.PString, __HASH__)) {
+                return recursiveNode.execute(frame, storage, name.getValue());
+            }
+            CompilerDirectives.transferToInterpreter();
+            // see GR-17389
+            throw new RuntimeException("String subclasses with custom hash in dict not implemented.");
+        }
+
+        @Specialization(guards = {"!isJavaString(name)", "!isPString(name)"})
         @SuppressWarnings("unused")
         protected boolean readUncached(DynamicObjectStorage storage, Object name) {
             return false;
