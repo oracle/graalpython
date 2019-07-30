@@ -124,6 +124,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.datamodel.IsSequenceTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -395,6 +396,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (getAttrNode.execute(object, __LEN__) != PNone.NO_VALUE) {
                 return new PySequenceMethodsWrapper(object);
+            } else {
+                return toSulongNode.execute(PNone.NO_VALUE);
+            }
+        }
+
+        @Specialization(guards = "eq(TP_AS_MAPPING, key)")
+        Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") String key,
+                        @Cached IsSequenceTypeNode isSequenceTypeNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            if (isSequenceTypeNode.passState().execute(object)) {
+                return new PyMappingMethodsWrapper(object);
             } else {
                 return toSulongNode.execute(PNone.NO_VALUE);
             }

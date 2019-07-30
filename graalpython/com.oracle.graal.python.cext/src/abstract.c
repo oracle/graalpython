@@ -349,6 +349,11 @@ PyObject * PyMapping_Keys(PyObject *o) {
 }
 
 // taken from CPython "Objects/abstract.c"
+int PyMapping_Check(PyObject *o) {
+    return o && o->ob_type->tp_as_mapping && o->ob_type->tp_as_mapping->mp_subscript;
+}
+
+// taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
     PyBufferProcs *pb = obj->ob_type->tp_as_buffer;
 

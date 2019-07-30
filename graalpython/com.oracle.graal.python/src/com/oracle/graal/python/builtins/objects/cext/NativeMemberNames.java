@@ -70,6 +70,7 @@ public final class NativeMemberNames {
     public static final String TP_SUBCLASSES = "tp_subclasses";
     public static final String TP_AS_BUFFER = "tp_as_buffer";
     public static final String TP_AS_SEQUENCE = "tp_as_sequence";
+    public static final String TP_AS_MAPPING = "tp_as_mapping";
     public static final String TP_GETATTR = "tp_getattr";
     public static final String TP_SETATTR = "tp_setattr";
     public static final String TP_GETATTRO = "tp_getattro";
@@ -115,6 +116,9 @@ public final class NativeMemberNames {
     public static final String NB_MULTIPLY = "nb_multiply";
     public static final String NB_INPLACE_ADD = "nb_inplace_add";
     public static final String NB_INPLACE_MULTIPLY = "nb_inplace_multiply";
+    public static final String MP_LENGTH = "mp_length";
+    public static final String MP_SUBSCRIPT = "mp_subscript";
+    public static final String MP_ASS_SUBSCRIPT = "mp_ass_subscript";
     public static final String OB_FVAL = "ob_fval";
     public static final String START = "start";
     public static final String STOP = "stop";
