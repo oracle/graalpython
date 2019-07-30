@@ -218,6 +218,7 @@ PyObject* PyUnicode_FromFormatV(const char* format, va_list va) {
     return PyTruffle_Unicode_FromFormat(format, va, NULL, 0);
 }
 
+NO_INLINE
 PyObject* PyUnicode_FromFormat(const char* format, ...) {
     CallWithPolyglotArgs(PyObject* result, format, 1, PyTruffle_Unicode_FromFormat, format);
     return result;

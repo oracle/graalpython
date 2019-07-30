@@ -638,10 +638,12 @@ typedef PyObject* (*f20)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, 
 #define _CALL_ARITY(FUN, ...) ( (_PICK_FUN_CAST(NULL, ##__VA_ARGS__, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0))(FUN))(__VA_ARGS__)
 #define ARG(__n) ((PyObject*)polyglot_get_arg((__n)))
 
+NO_INLINE
 int wrap_setter(PyCFunction fun, PyObject* self, PyObject* value, void* closure) {
     return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
 }
 
+NO_INLINE
 void* wrap_direct(PyCFunction fun, ...) {
     PyObject *res = NULL;
     switch(polyglot_get_arg_count()-1) {

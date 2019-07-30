@@ -42,6 +42,7 @@
 #define CAPI_H
 
 #define MUST_INLINE __attribute__((always_inline)) inline
+#define NO_INLINE __attribute__((noinline))
 
 #include "polyglot.h"
 #include "Python.h"

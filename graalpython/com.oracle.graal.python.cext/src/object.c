@@ -225,6 +225,7 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
         fprintf(stderr, "Too many arguments passed through varargs: %d", polyglot_get_arg_count() - skipN); \
     }
 
+NO_INLINE
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
 
@@ -243,6 +244,7 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     return PyObject_CallObject(callable, args);
 }
 
+NO_INLINE
 PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
 
@@ -261,6 +263,7 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
     return PyObject_CallObject(callable, args);
 }
 
+NO_INLINE
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     // the arguments are given as a variable list followed by NULL
     PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);

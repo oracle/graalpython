@@ -72,6 +72,7 @@ PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
     return UPCALL_CEXT_O(_jls_PyTuple_GetSlice, native_to_java(tuple), i, j);
 }
 
+NO_INLINE
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     PyObject *result = PyTuple_New(n);
     if (result == NULL) {

@@ -378,11 +378,13 @@ int _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const c
     return _PyTruffleArg_ParseTupleAndKeywords(argv, kwds, format, kwdnames, va, NULL, 0);
 }
 
+NO_INLINE
 int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
     CallWithPolyglotArgs(int result, kwdnames, 4, _PyTruffleArg_ParseTupleAndKeywords, argv, kwds, format, kwdnames);
     return result;
 }
 
+NO_INLINE
 int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
     CallWithPolyglotArgs(int result, kwdnames, 4, _PyTruffleArg_ParseTupleAndKeywords, argv, kwds, format, kwdnames);
     return result;
@@ -397,6 +399,7 @@ MUST_INLINE PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs) {
     return argv;
 }
 
+NO_INLINE
 int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
 	// TODO(fa) Converting the stack to a tuple is rather slow. We should refactor
 	// '_PyTruffleArg_ParseTupleAndKeywords' (like CPython) into smaller operations.
@@ -404,18 +407,21 @@ int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, const char* format, ...)
     return result;
 }
 
+NO_INLINE
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
 	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
     CallWithPolyglotArgs(int result, parser, 3, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), PyDict_New(), format, NULL);
     return result;
 }
 
+NO_INLINE
 int _PyArg_ParseStackAndKeywords(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
 	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
     CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwnames, parser->format, parser->keywords);
     return result;
 }
 
+NO_INLINE
 int _PyArg_ParseStackAndKeywords_SizeT(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
 	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
     CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwnames, parser->format, parser->keywords);
@@ -430,21 +436,25 @@ int _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, s
     return _PyArg_VaParseTupleAndKeywords_SizeT(args, kwargs, parser->format, parser->keywords, va);
 }
 
+NO_INLINE
 int _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
     CallWithPolyglotArgs(int result, parser, 3, _PyTruffleArg_ParseTupleAndKeywords, args, kwargs, parser->format, parser->keywords);
     return result;
 }
 
+NO_INLINE
 int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
     CallWithPolyglotArgs(int result, parser, 3, _PyTruffleArg_ParseTupleAndKeywords, args, kwargs, parser->format, parser->keywords);
     return result;
 }
 
+NO_INLINE
 int PyArg_ParseTuple(PyObject *args, const char *format, ...) {
     CallWithPolyglotArgs(int result, format, 2, _PyTruffleArg_ParseTupleAndKeywords, args, NULL, format, NULL);
     return result;
 }
 
+NO_INLINE
 int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
     CallWithPolyglotArgs(int result, format, 2, _PyTruffleArg_ParseTupleAndKeywords, args, NULL, format, NULL);
     return result;
@@ -458,11 +468,13 @@ int _PyArg_VaParse_SizeT(PyObject *args, const char *format, va_list va) {
     return _PyArg_VaParseTupleAndKeywords_SizeT(PyTuple_Pack(1, args), NULL, format, NULL, va);
 }
 
+NO_INLINE
 int PyArg_Parse(PyObject *args, const char *format, ...) {
     CallWithPolyglotArgs(int result, format, 2, _PyTruffleArg_ParseTupleAndKeywords, PyTuple_Pack(1, args), NULL, format, NULL);
     return result;
 }
 
+NO_INLINE
 int _PyArg_Parse_SizeT(PyObject *args, const char *format, ...) {
     CallWithPolyglotArgs(int result, format, 2, _PyTruffleArg_ParseTupleAndKeywords, PyTuple_Pack(1, args), NULL, format, NULL);
     return result;
@@ -681,11 +693,13 @@ PyObject* _Py_VaBuildValue_SizeT(const char *format, va_list va) {
     return _PyTruffle_BuildValue(format, va, NULL, 0);
 }
 
+NO_INLINE
 PyObject* Py_BuildValue(const char *format, ...) {
     CallWithPolyglotArgs(PyObject* result, format, 1, _PyTruffle_BuildValue, format);
     return result;
 }
 
+NO_INLINE
 PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
     CallWithPolyglotArgs(PyObject* result, format, 1, _PyTruffle_BuildValue, format);
     return result;
