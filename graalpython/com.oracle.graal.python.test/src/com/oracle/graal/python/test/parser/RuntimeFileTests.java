@@ -48,6 +48,11 @@ public class RuntimeFileTests extends ParserTestBase {
     }
     
     @Test
+    public void heapq() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
     public void functions() throws Exception {
         checkScopeAndTree();
     }

@@ -130,6 +130,36 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     }
     
     @Test
+    public void generator07() throws Exception {
+        checkScopeAndTree(
+                "def merge(h):\n" +
+                "    while len(h) > 1:\n" +
+                "        while True:\n" +
+                "            value, order, next = s = h[0]\n" +
+                "            yield value");
+    }
+    
+    @Test
+    public void generator08() throws Exception {
+        checkScopeAndTree(
+                "def merge(h):\n" +
+                "    for order, it in b():\n" +
+                "        value = next()\n" +
+                "    while len(h) > 1:\n" +
+                "        yield value");
+    }
+    
+    @Test
+    public void generator09() throws Exception {
+        checkScopeAndTree(
+                "def merge(h):\n" +
+                "    while True:\n" +
+                "        value = next()\n" +
+                "    while h > 1:\n" +
+                "        yield value");
+    }
+    
+    @Test
     public void param01() throws Exception {
         checkScopeAndTree(
                 "def fn(a):\n" +

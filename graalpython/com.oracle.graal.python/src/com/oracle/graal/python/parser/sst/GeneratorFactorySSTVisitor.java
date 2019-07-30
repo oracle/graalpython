@@ -42,7 +42,6 @@
 package com.oracle.graal.python.parser.sst;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
@@ -50,6 +49,7 @@ import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
+import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -82,7 +82,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.Source;
 
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
@@ -130,8 +129,12 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     
     
     @Override
-    protected StatementNode createBlock(StatementNode... statements) {
-        return new GeneratorBlockNode(statements, numOfGeneratorBlockNode++);
+    protected StatementNode createAssignmentBlock(AssignmentSSTNode node, StatementNode... statements) {
+        if (node.rhs instanceof YieldExpressionSSTNode) {
+            return new GeneratorBlockNode(statements, numOfGeneratorBlockNode++);
+        } else {
+            return BlockNode.create(statements);
+        }
     }
 
     @Override
@@ -278,6 +281,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     
     @Override
     public PNode visit(ForSSTNode node) {
+        int oldNumOfActiveFlags = numOfActiveFlags;
         ExpressionNode[] targets = new ExpressionNode[node.targets.length];
         for (int i = 0; i < targets.length; i++) {
             targets[i] = (ExpressionNode)node.targets[i].accept(this);
@@ -308,8 +312,9 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         iterator.assignSourceSection(createSourceSection(node.iterator.startOffset, node.iterator.endOffset));
         GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
-        StatementNode forNode = GeneratorForNode.create((WriteNode)makeWriteNode((ExpressionNode)target), getIterator, body, numOfGeneratorForNode++);
-                //new ForNode(body, makeWriteNode((ExpressionNode)target), getIterator);
+        StatementNode forNode = oldNumOfActiveFlags == numOfActiveFlags
+                ? new ForNode(body, makeWriteNode((ExpressionNode)target), getIterator)
+                : GeneratorForNode.create((WriteNode)makeWriteNode((ExpressionNode)target), getIterator, body, numOfGeneratorForNode++);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
         StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode)node.elseStatement.accept(this);
         StatementNode result;

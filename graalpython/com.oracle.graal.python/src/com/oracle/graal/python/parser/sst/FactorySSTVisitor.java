@@ -182,7 +182,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         }
     }
 
-    protected StatementNode createBlock(StatementNode... statements) {
+    protected StatementNode createAssignmentBlock(AssignmentSSTNode node, StatementNode... statements) {
         return BlockNode.create(statements);
     }
     
@@ -236,7 +236,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             for (int i = 0; i < len; i++) {
                 assignments[i + 1] = createAssignment(lhs[i], (ExpressionNode)tmp);
             }
-            result = createBlock(assignments);
+            result = createAssignmentBlock(node, assignments);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
