@@ -39,7 +39,6 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
@@ -49,14 +48,15 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
+import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
 
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
-
+    @CompilationFinal FrameSlot firstIterationSlot;
     @CompilationFinal FrameSlot iteratorSlot;
+    @CompilationFinal boolean loopNeverSkipped = true;
     private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
@@ -68,16 +68,30 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
     }
 
     public boolean executeRepeating(VirtualFrame frame) {
-        try {
-            if (!nextElement.execute(frame, frame.getObject(iteratorSlot))) {
+        Object iteratorObject = FrameUtil.getObjectSafe(frame, iteratorSlot);
+        if (loopNeverSkipped) {
+            boolean firstIteration = FrameUtil.getBooleanSafe(frame, firstIterationSlot);
+            if (firstIteration) {
+                // first loop iteration, write the iterator
+                if (!nextElement.execute(frame, iteratorObject)) {
+                    // if we ever skip the loop we invalidate here. this helps the
+                    // compiler understand if a loop is never skipped, that the loop
+                    // variable can never be null after the loop, so it doesn't have
+                    // to merge the last value of the loop variable with null
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    loopNeverSkipped = false;
+                    return false;
+                }
+                frame.setBoolean(firstIterationSlot, false);
+            } else {
+                if (!nextElement.execute(frame, iteratorObject)) {
+                    return false;
+                }
+            }
+        } else {
+            if (!nextElement.execute(frame, iteratorObject)) {
                 return false;
             }
-        } catch (FrameSlotTypeException e) {
-            if (raise == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raise = insert(PRaiseNode.create());
-            }
-            throw raise.raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
         }
         body.executeVoid(frame);
         contextRef.get().triggerAsyncActions(frame, this);
@@ -87,7 +101,6 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
 @ImportStatic({PythonOptions.class, SpecialMethodNames.class})
 abstract class ForNextElementNode extends PNodeWithContext {
-
     @Child StatementNode target;
 
     public ForNextElementNode(StatementNode target) {
@@ -152,11 +165,10 @@ abstract class ForNextElementNode extends PNodeWithContext {
 
 @NodeInfo(shortName = "for")
 public final class ForNode extends LoopNode {
-
     @CompilationFinal private FrameSlot iteratorSlot;
-
-    @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
+    @CompilationFinal private FrameSlot firstIterationSlot;
     @Child private ExpressionNode iterator;
+    @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
 
     public ForNode(StatementNode body, StatementNode target, ExpressionNode iterator) {
         this.iterator = iterator;
@@ -167,13 +179,13 @@ public final class ForNode extends LoopNode {
         return ((ForRepeatingNode) loopNode.getRepeatingNode()).nextElement.target;
     }
 
-    public ExpressionNode getIterator() {
-        return iterator;
-    }
-
     @Override
     public StatementNode getBody() {
         return ((ForRepeatingNode) loopNode.getRepeatingNode()).body;
+    }
+
+    public ExpressionNode getIterator() {
+        return iterator;
     }
 
     @Override
@@ -182,7 +194,10 @@ public final class ForNode extends LoopNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             iteratorSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Object);
             ((ForRepeatingNode) loopNode.getRepeatingNode()).iteratorSlot = iteratorSlot;
+            firstIterationSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Boolean);
+            ((ForRepeatingNode) loopNode.getRepeatingNode()).firstIterationSlot = firstIterationSlot;
         }
+        frame.setBoolean(firstIterationSlot, true);
         frame.setObject(iteratorSlot, iterator.execute(frame));
         try {
             loopNode.executeLoop(frame);
