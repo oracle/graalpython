@@ -73,9 +73,16 @@ public class PLZMADecompressor extends PythonObject {
 
     @TruffleBoundary
     public byte[] decompress(byte[] data) throws IOException {
+        if (data.length == 0) {
+            eof = true;
+            needsInput = false;
+            return data;
+        }
+
         try {
             ByteArrayInputStream bis = new ByteArrayInputStream(data);
-            return doDecompression(create(bis), bis);
+            InputStream xzStream = create(bis);
+            return doDecompression(xzStream, bis);
         } catch (XZFormatException xze) {
             // only retry if format was AUTO because we first tried XZ and now we try LZMA
             if (format == LZMAModuleBuiltins.FORMAT_AUTO) {
