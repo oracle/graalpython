@@ -5,42 +5,38 @@
  */
 package com.oracle.graal.python.test.parser;
 
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.List;
-import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
-/**
- *
- * @author petr
- */
 public class RuntimeFileTests extends ParserTestBase {
     
-//    @Test
-//    public void builtins() throws Exception {
-//        checkScopeAndTree();
-//    }
+    @Test
+    public void builtins() throws Exception {
+        checkScopeAndTree();
+    }
     
-//    @Test
-//    public void _sitebuiltins() throws Exception {
-//        checkScopeAndTree();
-//    }
+    @Test
+    public void _sitebuiltins() throws Exception {
+        checkScopeAndTree();
+    }
     
-//    @Test
-//    public void site() throws Exception {
-//        checkScopeAndTree();
-//    }
+    @Test
+    public void site() throws Exception {
+        checkScopeAndTree();
+    }
     
-//    @Test
-//    public void initCollections() throws Exception {
-//        checkScopeAndTree();
-//    }
+    @Test
+    public void initCollectionsPart1() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void initCollectionsPart2() throws Exception {
+        checkScopeAndTree();
+    }
     
     @Test
     public void sre_compile() throws Exception {

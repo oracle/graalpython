@@ -107,14 +107,14 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                   BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [2289,2292]`sys`
                       Identifier: sys
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,sys,Illegal]
                       ImportExpression SourceSection: None
                         ImportNode SourceSection: None
                           Module: sys
-                    WriteLocalVariableNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [2294,2299]`posix`
                       Identifier: posix
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,posix,Illegal]
@@ -131,7 +131,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                             Key: modules
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2313,2316]`sys`
                             Frame: [2,sys,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2325,2336]`module_name`
@@ -145,7 +145,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                             CallDispatchNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [2365,2369]`"%s"`
                           GetCallAttributeNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: None
+                            ReadLocalVariableNode SourceSection: [2345,2353]`filename`
                               Frame: [0,filename,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [2380,2428]`filename = filename ...`
@@ -163,7 +163,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                               Key: graal_python_core_home
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                            ReadLocalVariableNode SourceSection: None
+                            ReadLocalVariableNode SourceSection: [2402,2405]`sys`
                               Frame: [2,sys,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -183,11 +183,11 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                             Key: O_RDONLY
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2459,2464]`posix`
                             Frame: [3,posix,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2438,2443]`posix`
                             Frame: [3,posix,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2479,2516]`content = posix.read...`
@@ -206,11 +206,11 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                             Key: maxsize
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2504,2507]`sys`
                             Frame: [2,sys,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2489,2494]`posix`
                             Frame: [3,posix,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2521,2536]`posix.close(fd)`
@@ -222,7 +222,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                           Frame: [5,fd,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2521,2526]`posix`
                             Frame: [3,posix,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2541,2582]`code = compile(conte...`
@@ -256,7 +256,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                             Key: __dict__
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2598,2604]`module`
                             Frame: [4,module,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
