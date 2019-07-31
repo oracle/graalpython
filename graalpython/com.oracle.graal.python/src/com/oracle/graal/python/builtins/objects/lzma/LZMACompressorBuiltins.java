@@ -86,7 +86,7 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
             try {
                 compressed = addBytes(self, toBytesNode.execute(frame, bytesLike));
             } catch (IOException e) {
-                throw raise(LZMAError, e.getMessage());
+                throw raise(LZMAError, "%m", e);
 
             }
             return factory().createBytes(compressed);
@@ -116,7 +116,7 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
             try {
                 return factory().createBytes(finish(self));
             } catch (IOException e) {
-                throw raise(LZMAError, e.getMessage());
+                throw raise(LZMAError, "%m", e);
             }
         }
 
