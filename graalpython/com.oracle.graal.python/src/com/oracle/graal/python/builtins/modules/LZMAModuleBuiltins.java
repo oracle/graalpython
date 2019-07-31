@@ -285,6 +285,10 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             return asInt(lenNode.execute(frame, obj));
         }
 
+        protected static boolean isNoneOrNoValue(Object obj) {
+            return PGuards.isNone(obj) || PGuards.isNoValue(obj);
+        }
+
     }
 
     @Builtin(name = "LZMACompressor", parameterNames = {"cls", "format", "check", "preset", "filters"}, constructsClass = PLZMACompressor)
@@ -305,22 +309,22 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             int check = -1;
             int preset = LZMA2Options.PRESET_DEFAULT;
 
-            if (!PGuards.isNoValue(formatObj)) {
+            if (!isNoneOrNoValue(formatObj)) {
                 format = castFormatToIntNode.execute(formatObj);
             }
 
-            if (!PGuards.isNoValue(checkObj)) {
+            if (!isNoneOrNoValue(checkObj)) {
                 check = castCheckToIntNode.execute(checkObj);
             }
 
             if (format != FORMAT_XZ && check != -1 && check != XZ.CHECK_NONE) {
                 throw raise(ValueError, "Integrity checks are only supported by FORMAT_XZ");
             }
-            if (!PGuards.isNoValue(presetObj) && !PGuards.isNoValue(filters)) {
+            if (!isNoneOrNoValue(presetObj) && !isNoneOrNoValue(filters)) {
                 throw raise(ValueError, "Cannot specify both preset and filter chain");
             }
 
-            if (!PGuards.isNoValue(presetObj)) {
+            if (!isNoneOrNoValue(presetObj)) {
                 preset = castToIntNode.execute(presetObj);
             }
 
@@ -333,7 +337,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         }
 
                         XZOutputStream xzOutputStream;
-                        if (PGuards.isNoValue(filters)) {
+                        if (isNoneOrNoValue(filters)) {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
                             xzOutputStream = new XZOutputStream(bos, lzmaOptions, check);
                         } else {
@@ -344,7 +348,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
                     case FORMAT_ALONE:
                         LZMAOutputStream lzmaOutputStream;
-                        if (PGuards.isNoValue(filters)) {
+                        if (isNoneOrNoValue(filters)) {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
                             lzmaOutputStream = new LZMAOutputStream(bos, lzmaOptions, check);
                         } else {
@@ -389,20 +393,20 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             int format = FORMAT_AUTO;
             int memlimit = Integer.MAX_VALUE;
 
-            if (!PGuards.isNoValue(formatObj)) {
+            if (!isNoneOrNoValue(formatObj)) {
                 format = castFormatToIntNode.execute(formatObj);
             }
 
-            if (!PGuards.isNoValue(memlimitObj)) {
+            if (!isNoneOrNoValue(memlimitObj)) {
                 if (format == FORMAT_RAW) {
                     throw raise(ValueError, "Cannot specify memory limit with FORMAT_RAW");
                 }
                 memlimit = castCheckToIntNode.execute(memlimitObj);
             }
 
-            if (format == FORMAT_RAW && PGuards.isNoValue(filters)) {
+            if (format == FORMAT_RAW && isNoneOrNoValue(filters)) {
                 throw raise(ValueError, "Must specify filters for FORMAT_RAW");
-            } else if (format != FORMAT_RAW && !PGuards.isNoValue(filters)) {
+            } else if (format != FORMAT_RAW && !isNoneOrNoValue(filters)) {
                 throw raise(ValueError, "Cannot specify filters except with FORMAT_RAW");
             }
 
