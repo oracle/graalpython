@@ -61,19 +61,23 @@ import org.tukaani.xz.UnsupportedOptionsException;
 import org.tukaani.xz.X86Options;
 import org.tukaani.xz.XZ;
 import org.tukaani.xz.XZOutputStream;
+import org.tukaani.xz.check.Check;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -96,7 +100,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public class LZMAModuleBuiltins extends PythonBuiltins {
 
     // that's only define in the native 'lzma/check.h' header
-    private static final int LZMA_CHECK_ID_MAX = 15;
+    public static final int LZMA_CHECK_ID_MAX = 15;
+    public static final int LZMA_CHECK_UNKNOWN = LZMA_CHECK_ID_MAX + 1;
 
     /*
      * filter options; not exposed by the Java lib, so define manually; they are abstracted anyway
@@ -118,7 +123,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     public static final int FORMAT_RAW = 3;
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LZMAModuleBuiltinsFactory.getFactories();
     }
 
@@ -131,7 +136,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("CHECK_ID_MAX", LZMA_CHECK_ID_MAX);
 
         // as defined in '_lzmamodule.c'
-        builtinConstants.put("CHECK_UNKNOWN", LZMA_CHECK_ID_MAX + 1);
+        builtinConstants.put("CHECK_UNKNOWN", LZMA_CHECK_UNKNOWN);
 
         builtinConstants.put("FILTER_LZMA1", FILTER_LZMA1);
         builtinConstants.put("FILTER_LZMA2", FILTER_LZMA2);
@@ -171,6 +176,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         @Child private BuiltinFunctions.LenNode lenNode;
         @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
 
+        @TruffleBoundary
         protected static LZMA2Options parseLZMAOptions(int preset) {
             // the easy one; uses 'preset'
             LZMA2Options lzmaOptions = null;
@@ -178,9 +184,11 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 lzmaOptions = new LZMA2Options();
                 lzmaOptions.setPreset(preset);
             } catch (UnsupportedOptionsException e) {
-                lzmaOptions = null;
-                // TODO throw LZMAError
-                e.printStackTrace();
+                try {
+                    lzmaOptions.setPreset(LZMA2Options.PRESET_MAX);
+                } catch (UnsupportedOptionsException e1) {
+                    throw new IllegalStateException("should not be reached");
+                }
             }
             return lzmaOptions;
         }
@@ -339,10 +347,10 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         XZOutputStream xzOutputStream;
                         if (isNoneOrNoValue(filters)) {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
-                            xzOutputStream = new XZOutputStream(bos, lzmaOptions, check);
+                            xzOutputStream = createXZOutputStream(check, bos, lzmaOptions);
                         } else {
                             FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
-                            xzOutputStream = new XZOutputStream(bos, optionsChain, check);
+                            xzOutputStream = createXZOutputStream(check, bos, optionsChain);
                         }
                         return factory().createLZMACompressor(cls, xzOutputStream, bos);
 
@@ -350,13 +358,13 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         LZMAOutputStream lzmaOutputStream;
                         if (isNoneOrNoValue(filters)) {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
-                            lzmaOutputStream = new LZMAOutputStream(bos, lzmaOptions, check);
+                            lzmaOutputStream = createLZMAOutputStream(check, bos, lzmaOptions);
                         } else {
                             FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
                             if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
                                 throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
                             }
-                            lzmaOutputStream = new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], check);
+                            lzmaOutputStream = createLZMAOutputStream(check, bos, optionsChain);
                         }
                         return factory().createLZMACompressor(cls, lzmaOutputStream, bos);
 
@@ -370,6 +378,26 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 // TODO throw LZMAError
                 throw raise(ValueError, "%m", e);
             }
+        }
+
+        @TruffleBoundary
+        private static XZOutputStream createXZOutputStream(int check, ByteArrayOutputStream bos, FilterOptions[] optionsChain) throws IOException {
+            return new XZOutputStream(bos, optionsChain, check);
+        }
+
+        @TruffleBoundary
+        private static XZOutputStream createXZOutputStream(int check, ByteArrayOutputStream bos, LZMA2Options lzmaOptions) throws IOException {
+            return new XZOutputStream(bos, lzmaOptions, check);
+        }
+
+        @TruffleBoundary
+        private static LZMAOutputStream createLZMAOutputStream(int check, ByteArrayOutputStream bos, FilterOptions[] optionsChain) throws IOException {
+            return new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], check);
+        }
+
+        @TruffleBoundary
+        private static LZMAOutputStream createLZMAOutputStream(int check, ByteArrayOutputStream bos, LZMA2Options lzmaOptions) throws IOException {
+            return new LZMAOutputStream(bos, lzmaOptions, check);
         }
     }
 
@@ -424,6 +452,41 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                     throw raise(ValueError, "Invalid container format: %d", format);
             }
         }
+    }
+
+    @Builtin(name = "is_check_supported", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class IsCheckSupportedNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        boolean doInt(int checkID) {
+            try {
+                return Check.getInstance(checkID) != null;
+            } catch (UnsupportedOptionsException e) {
+                return false;
+            }
+        }
+
+        @Specialization
+        boolean doLong(long checkID) {
+            try {
+                return doInt(PInt.intValueExact(checkID));
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+
+        @Specialization
+        boolean doLong(PInt checkID) {
+            try {
+                return doInt(checkID.intValueExact());
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+
     }
 
 }

@@ -58,6 +58,8 @@ public class PLZMADecompressor extends PythonObject {
 
     private final int memlimit;
     private int format;
+    private boolean eof;
+    private boolean needsInput;
 
     public PLZMADecompressor(LazyPythonClass clazz, int format, int memlimit) {
         super(clazz);
@@ -72,17 +74,19 @@ public class PLZMADecompressor extends PythonObject {
     @TruffleBoundary
     public byte[] decompress(byte[] data) throws IOException {
         try {
-            return doDecompression(create(data));
+            ByteArrayInputStream bis = new ByteArrayInputStream(data);
+            return doDecompression(create(bis), bis);
         } catch (XZFormatException xze) {
             // only retry if format was AUTO because we first tried XZ and now we try LZMA
             if (format == LZMAModuleBuiltins.FORMAT_AUTO) {
-                return doDecompression(createLZMA(data));
+                ByteArrayInputStream bis = new ByteArrayInputStream(data);
+                return doDecompression(createLZMA(bis), bis);
             }
             throw xze;
         }
     }
 
-    private static byte[] doDecompression(InputStream is) throws IOException {
+    private byte[] doDecompression(InputStream is, ByteArrayInputStream bis) throws IOException {
         int n = is.available();
         ByteArrayOutputStream bos = new ByteArrayOutputStream(n);
         byte[] result = new byte[4096];
@@ -91,18 +95,20 @@ public class PLZMADecompressor extends PythonObject {
         while ((read = is.read(result)) > 0) {
             bos.write(result, 0, read);
         }
+        eof = read == -1;
+        needsInput = is.available() == 0 && bis.available() > 0;
 
         return bos.toByteArray();
     }
 
-    private InputStream create(byte[] data) throws IOException {
+    private InputStream create(ByteArrayInputStream bis) throws IOException {
         switch (format) {
             case LZMAModuleBuiltins.FORMAT_AUTO:
             case LZMAModuleBuiltins.FORMAT_XZ:
-                return createXZ(data);
+                return createXZ(bis);
 
             case LZMAModuleBuiltins.FORMAT_ALONE:
-                return createLZMA(data);
+                return createLZMA(bis);
 
             case LZMAModuleBuiltins.FORMAT_RAW:
             default:
@@ -110,11 +116,19 @@ public class PLZMADecompressor extends PythonObject {
         }
     }
 
-    private XZInputStream createXZ(byte[] data) throws IOException {
-        return new XZInputStream(new ByteArrayInputStream(data), memlimit);
+    private XZInputStream createXZ(ByteArrayInputStream bis) throws IOException {
+        return new XZInputStream(bis, memlimit);
     }
 
-    private LZMAInputStream createLZMA(byte[] data) throws IOException {
-        return new LZMAInputStream(new ByteArrayInputStream(data), memlimit);
+    private LZMAInputStream createLZMA(ByteArrayInputStream bis) throws IOException {
+        return new LZMAInputStream(bis, memlimit);
+    }
+
+    public boolean getEof() {
+        return eof;
+    }
+
+    public boolean isNeedsInput() {
+        return needsInput;
     }
 }

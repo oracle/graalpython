@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -57,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -131,6 +133,56 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
             self.getLzmaStream().write(data);
             return self.getBos().toByteArray();
         }
+    }
+
+    @Builtin(name = "eof", minNumOfPositionalArgs = 1, parameterNames = {"self"}, isGetter = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class EofNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        boolean doEof(PLZMADecompressor self) {
+            return self.getEof();
+        }
+
+    }
+
+    @Builtin(name = "needs_input", minNumOfPositionalArgs = 1, parameterNames = {"self"}, isGetter = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class NeedsInputNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        boolean doNeedsInput(PLZMADecompressor self) {
+            return self.isNeedsInput();
+        }
+
+    }
+
+    @Builtin(name = "check", minNumOfPositionalArgs = 1, parameterNames = {"self"}, isGetter = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class CheckNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        int doCheck(@SuppressWarnings("unused") PLZMADecompressor self) {
+            // TODO implement
+            return LZMAModuleBuiltins.LZMA_CHECK_UNKNOWN;
+        }
+
+    }
+
+    @Builtin(name = "unused_data", minNumOfPositionalArgs = 1, parameterNames = {"self"}, isGetter = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PBytes doUnusedData(@SuppressWarnings("unused") PLZMADecompressor self) {
+            // TODO implement
+            return factory().createBytes(new byte[0]);
+        }
+
     }
 
 }
