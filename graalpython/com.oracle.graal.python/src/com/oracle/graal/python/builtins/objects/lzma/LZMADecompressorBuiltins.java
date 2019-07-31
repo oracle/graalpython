@@ -53,11 +53,18 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -87,6 +94,36 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raise(OSError, e);
             }
+        }
+
+        @Specialization
+        PBytes doBytesLikeWithMaxLengthI(PLZMADecompressor self, PIBytesLike bytesLike, int maxLength,
+                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
+                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+            SequenceStorage storage = getSequenceStorageNode.execute(bytesLike);
+            int len = lenNode.execute((PSequence) bytesLike);
+            byte[] compressed = new byte[Math.max(len, maxLength)];
+            for (int i = 0; i < compressed.length; i++) {
+                castToByteNode.execute(getItemNode.execute(storage, i));
+            }
+
+            try {
+                return factory().createBytes(self.decompress(compressed));
+            } catch (IOException e) {
+                throw raise(OSError, e);
+            }
+        }
+
+        @Specialization
+        PBytes doBytesLikeWithMaxLength(PLZMADecompressor self, PIBytesLike bytesLike, Object maxLength,
+                        @Cached CastToIndexNode castToIntNode,
+                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
+                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+            return doBytesLikeWithMaxLengthI(self, bytesLike, castToIntNode.execute(maxLength), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
         }
 
         @TruffleBoundary
