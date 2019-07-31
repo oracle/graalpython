@@ -982,6 +982,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     name='Graal.Python license files',
     short_name='pynl',
     dir_name='python',
+    dependencies=[],
     license_files=['LICENSE_GRAALPYTHON.txt'],
     third_party_license_files=['3rd_party_licenses_graalpython.txt'],
     truffle_jars=[],
@@ -999,6 +1000,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     dir_name='python',
     license_files=[],
     third_party_license_files=[],
+    dependencies=['pynl', 'Truffle', 'Sulong', 'TRegex'],
     truffle_jars=[
         'graalpython:GRAALPYTHON',
     ],
