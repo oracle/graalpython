@@ -358,18 +358,28 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         LZMAOutputStream lzmaOutputStream;
                         if (isNoneOrNoValue(filters)) {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
-                            lzmaOutputStream = createLZMAOutputStream(check, bos, lzmaOptions);
+                            lzmaOutputStream = createLZMAOutputStream(bos, lzmaOptions);
                         } else {
                             FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
                             if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
                                 throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
                             }
-                            lzmaOutputStream = createLZMAOutputStream(check, bos, optionsChain);
+                            lzmaOutputStream = createLZMAOutputStream(bos, optionsChain);
                         }
                         return factory().createLZMACompressor(cls, lzmaOutputStream, bos);
 
                     case FORMAT_RAW:
-                        throw raise(ValueError, "RAW format unsupported");
+                        if (isNoneOrNoValue(filters)) {
+                            LZMA2Options lzmaOptions = parseLZMAOptions(preset);
+                            lzmaOutputStream = createLZMAOutputStream(bos, lzmaOptions);
+                        } else {
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
+                            if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
+                                throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
+                            }
+                            lzmaOutputStream = createRawLZMAOutputStream(bos, optionsChain);
+                        }
+                        return factory().createLZMACompressor(cls, lzmaOutputStream, bos);
 
                     default:
                         throw raise(ValueError, "Invalid container format: %d", format);
@@ -391,13 +401,18 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static LZMAOutputStream createLZMAOutputStream(int check, ByteArrayOutputStream bos, FilterOptions[] optionsChain) throws IOException {
-            return new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], check);
+        private static LZMAOutputStream createLZMAOutputStream(ByteArrayOutputStream bos, FilterOptions[] optionsChain) throws IOException {
+            return new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], -1);
         }
 
         @TruffleBoundary
-        private static LZMAOutputStream createLZMAOutputStream(int check, ByteArrayOutputStream bos, LZMA2Options lzmaOptions) throws IOException {
-            return new LZMAOutputStream(bos, lzmaOptions, check);
+        private static LZMAOutputStream createRawLZMAOutputStream(ByteArrayOutputStream bos, FilterOptions[] optionsChain) throws IOException {
+            return new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], true);
+        }
+
+        @TruffleBoundary
+        private static LZMAOutputStream createLZMAOutputStream(ByteArrayOutputStream bos, LZMA2Options lzmaOptions) throws IOException {
+            return new LZMAOutputStream(bos, lzmaOptions, -1);
         }
     }
 
