@@ -133,6 +133,9 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         // as defined in '_lzmamodule.c'
         builtinConstants.put("CHECK_UNKNOWN", LZMA_CHECK_ID_MAX + 1);
 
+        builtinConstants.put("FILTER_LZMA1", FILTER_LZMA1);
+        builtinConstants.put("FILTER_LZMA2", FILTER_LZMA2);
+        builtinConstants.put("FILTER_DELTA", FILTER_DELTA);
         builtinConstants.put("FILTER_X86", FILTER_X86);
         builtinConstants.put("FILTER_POWERPC", FILTER_POWERPC);
         builtinConstants.put("FILTER_IA64", FILTER_IA64);
@@ -147,6 +150,15 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
         builtinConstants.put("PRESET_DEFAULT", LZMA2Options.PRESET_DEFAULT);
         builtinConstants.put("PRESET_EXTREME", LZMA2Options.PRESET_MAX);
+
+        builtinConstants.put("MODE_FAST", LZMA2Options.MODE_FAST);
+        builtinConstants.put("MODE_NORMAL", LZMA2Options.MODE_NORMAL);
+
+        builtinConstants.put("MF_BT2", LZMA2Options.MF_BT4 - 2);
+        builtinConstants.put("MF_BT3", LZMA2Options.MF_BT4 - 1);
+        builtinConstants.put("MF_BT4", LZMA2Options.MF_BT4);
+        builtinConstants.put("MF_HC3", LZMA2Options.MF_HC4 - 1);
+        builtinConstants.put("MF_HC4", LZMA2Options.MF_HC4);
 
         super.initialize(core);
     }
