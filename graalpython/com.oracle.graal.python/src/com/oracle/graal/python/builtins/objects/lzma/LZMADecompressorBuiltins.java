@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.lzma;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 
 import java.io.IOException;
 import java.util.List;
@@ -49,12 +49,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -64,61 +64,36 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PLZMACompressor)
-public class LZMACompressorBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PLZMADecompressor)
+public class LZMADecompressorBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return LZMACompressorBuiltinsFactory.getFactories();
+        return LZMADecompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "compress", minNumOfPositionalArgs = 2)
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 2, parameterNames = {"self", "data", "max_length"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class CompressNode extends PythonBinaryBuiltinNode {
+    abstract static class DecompressNode extends PythonTernaryBuiltinNode {
 
-        @Specialization
-        PBytes doBytesLike(VirtualFrame frame, PLZMACompressor self, PIBytesLike bytesLike,
+        @Specialization(guards = "isNoValue(maxLength)")
+        PBytes doBytesLike(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, @SuppressWarnings("unused") PNone maxLength,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
-            byte[] compressed;
+            byte[] decompress;
             try {
-                compressed = addBytes(self, toBytesNode.execute(frame, bytesLike));
+                decompress = self.decompress(toBytesNode.execute(frame, bytesLike));
+                return factory().createBytes(decompress);
             } catch (IOException e) {
-                // TODO raise LZMAError
-                throw raise(ValueError, e.getMessage());
-
+                throw raise(OSError, e);
             }
-            return factory().createBytes(compressed);
         }
 
         @TruffleBoundary
         private static byte[] addBytes(PLZMACompressor self, byte[] data) throws IOException {
             self.getLzmaStream().write(data);
-            byte[] result = self.getBos().toByteArray();
-            self.getBos().reset();
-            return result;
-        }
-    }
-
-    @Builtin(name = "flush", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FlushNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        PBytes doBytesLike(PLZMACompressor self) {
-            try {
-                return factory().createBytes(finish(self));
-            } catch (IOException e) {
-                // TODO raise LZMAError
-                throw raise(ValueError, e.getMessage());
-            }
-        }
-
-        @TruffleBoundary
-        private static byte[] finish(PLZMACompressor self) throws IOException {
-            self.getLzmaStream().finish();
             return self.getBos().toByteArray();
         }
     }
+
 }

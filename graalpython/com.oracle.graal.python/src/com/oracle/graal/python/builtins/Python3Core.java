@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.lzma.LZMACompressorBuiltins;
+import com.oracle.graal.python.builtins.objects.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
@@ -356,7 +357,8 @@ public final class Python3Core implements PythonCore {
                         new ResourceModuleBuiltins(),
                         new ContextvarsModuleBuiltins(),
                         new LZMAModuleBuiltins(),
-                        new LZMACompressorBuiltins()));
+                        new LZMACompressorBuiltins(),
+                        new LZMADecompressorBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {

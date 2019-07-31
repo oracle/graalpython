@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
+import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -834,5 +835,9 @@ public abstract class PythonObjectFactory extends Node {
 
     public PLZMACompressor createLZMACompressor(LazyPythonClass clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
         return trace(new PLZMACompressor(clazz, lzmaStream, bos));
+    }
+
+    public PLZMADecompressor createLZMADecompressor(LazyPythonClass clazz, int format, int memlimit) {
+        return trace(new PLZMADecompressor(clazz, format, memlimit));
     }
 }

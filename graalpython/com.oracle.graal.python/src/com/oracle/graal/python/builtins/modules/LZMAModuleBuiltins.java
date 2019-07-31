@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMACompressor;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMADecompressor;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.io.ByteArrayOutputStream;
@@ -67,6 +68,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
+import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
@@ -110,10 +112,10 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     private static final int FILTER_SPARC = 0x9;
 
     // defined in '_lzmamodule.c'
-    private static final int FORMAT_AUTO = 0;
-    private static final int FORMAT_XZ = 1;
-    private static final int FORMAT_ALONE = 2;
-    private static final int FORMAT_RAW = 3;
+    public static final int FORMAT_AUTO = 0;
+    public static final int FORMAT_XZ = 1;
+    public static final int FORMAT_ALONE = 2;
+    public static final int FORMAT_RAW = 3;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
@@ -149,95 +151,15 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "LZMACompressor", parameterNames = {"cls", "format", "check", "preset", "filters"}, constructsClass = PLZMACompressor)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class LZMACompressorNode extends PythonBuiltinNode {
-
-        // as define in '_lzmamodule.c'
-        private static final int INITIAL_BUFFER_SIZE = 8192;
+    abstract static class LZMANode extends PythonBuiltinNode {
 
         @Child private IsSequenceNode isSequenceNode;
         @Child private GetItemNode getItemNode;
         @Child private CastToIndexNode castToLongNode;
         @Child private BuiltinFunctions.LenNode lenNode;
-
         @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
 
-        @Specialization
-        PLZMACompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object checkObj, Object presetObj, Object filters,
-                        @Cached CastToIndexNode castFormatToIntNode,
-                        @Cached CastToIndexNode castCheckToIntNode,
-                        @Cached CastToIndexNode castToIntNode) {
-
-            int format = FORMAT_XZ;
-            int check = -1;
-            int preset = LZMA2Options.PRESET_DEFAULT;
-
-            if (!PGuards.isNoValue(formatObj)) {
-                format = castFormatToIntNode.execute(formatObj);
-            }
-
-            if (!PGuards.isNoValue(checkObj)) {
-                check = castCheckToIntNode.execute(checkObj);
-            }
-
-            if (format != FORMAT_XZ && check != -1 && check != XZ.CHECK_NONE) {
-                throw raise(ValueError, "Integrity checks are only supported by FORMAT_XZ");
-            }
-            if (!PGuards.isNoValue(presetObj) && !PGuards.isNoValue(filters)) {
-                throw raise(ValueError, "Cannot specify both preset and filter chain");
-            }
-
-            if (!PGuards.isNoValue(presetObj)) {
-                preset = castToIntNode.execute(presetObj);
-            }
-
-            try {
-                ByteArrayOutputStream bos = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE);
-                switch (format) {
-                    case FORMAT_XZ:
-                        if (check == -1) {
-                            check = XZ.CHECK_CRC64;
-                        }
-
-                        XZOutputStream xzOutputStream;
-                        if (PGuards.isNoValue(filters)) {
-                            LZMA2Options lzmaOptions = parseLZMAOptions(preset);
-                            xzOutputStream = new XZOutputStream(bos, lzmaOptions, check);
-                        } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
-                            xzOutputStream = new XZOutputStream(bos, optionsChain, check);
-                        }
-                        return factory().createLZMACompressor(cls, xzOutputStream, bos);
-
-                    case FORMAT_ALONE:
-                        LZMAOutputStream lzmaOutputStream;
-                        if (PGuards.isNoValue(filters)) {
-                            LZMA2Options lzmaOptions = parseLZMAOptions(preset);
-                            lzmaOutputStream = new LZMAOutputStream(bos, lzmaOptions, check);
-                        } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
-                            if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
-                                throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
-                            }
-                            lzmaOutputStream = new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], check);
-                        }
-                        return factory().createLZMACompressor(cls, lzmaOutputStream, bos);
-
-                    case FORMAT_RAW:
-                        throw raise(ValueError, "RAW format unsupported");
-
-                    default:
-                        throw raise(ValueError, "Invalid container format: %d", format);
-                }
-            } catch (IOException e) {
-                // TODO throw LZMAError
-                throw raise(ValueError, "%m", e);
-            }
-        }
-
-        private static LZMA2Options parseLZMAOptions(int preset) {
+        protected static LZMA2Options parseLZMAOptions(int preset) {
             // the easy one; uses 'preset'
             LZMA2Options lzmaOptions = null;
             try {
@@ -252,7 +174,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         }
 
         // corresponds to 'parse_filter_chain_spec' in '_lzmamodule.c'
-        private FilterOptions[] parseFilterChainSpec(VirtualFrame frame, Object filters) {
+        protected FilterOptions[] parseFilterChainSpec(VirtualFrame frame, Object filters) {
             int n = len(frame, filters);
             FilterOptions[] optionsChain = new FilterOptions[n];
             for (int i = 0; i < n; i++) {
@@ -349,6 +271,142 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
             }
             return asInt(lenNode.execute(frame, obj));
+        }
+
+    }
+
+    @Builtin(name = "LZMACompressor", parameterNames = {"cls", "format", "check", "preset", "filters"}, constructsClass = PLZMACompressor)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class LZMACompressorNode extends LZMANode {
+
+        // as define in '_lzmamodule.c'
+        private static final int INITIAL_BUFFER_SIZE = 8192;
+
+        @Specialization
+        PLZMACompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object checkObj, Object presetObj, Object filters,
+                        @Cached CastToIndexNode castFormatToIntNode,
+                        @Cached CastToIndexNode castCheckToIntNode,
+                        @Cached CastToIndexNode castToIntNode) {
+
+            int format = FORMAT_XZ;
+            int check = -1;
+            int preset = LZMA2Options.PRESET_DEFAULT;
+
+            if (!PGuards.isNoValue(formatObj)) {
+                format = castFormatToIntNode.execute(formatObj);
+            }
+
+            if (!PGuards.isNoValue(checkObj)) {
+                check = castCheckToIntNode.execute(checkObj);
+            }
+
+            if (format != FORMAT_XZ && check != -1 && check != XZ.CHECK_NONE) {
+                throw raise(ValueError, "Integrity checks are only supported by FORMAT_XZ");
+            }
+            if (!PGuards.isNoValue(presetObj) && !PGuards.isNoValue(filters)) {
+                throw raise(ValueError, "Cannot specify both preset and filter chain");
+            }
+
+            if (!PGuards.isNoValue(presetObj)) {
+                preset = castToIntNode.execute(presetObj);
+            }
+
+            try {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE);
+                switch (format) {
+                    case FORMAT_XZ:
+                        if (check == -1) {
+                            check = XZ.CHECK_CRC64;
+                        }
+
+                        XZOutputStream xzOutputStream;
+                        if (PGuards.isNoValue(filters)) {
+                            LZMA2Options lzmaOptions = parseLZMAOptions(preset);
+                            xzOutputStream = new XZOutputStream(bos, lzmaOptions, check);
+                        } else {
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
+                            xzOutputStream = new XZOutputStream(bos, optionsChain, check);
+                        }
+                        return factory().createLZMACompressor(cls, xzOutputStream, bos);
+
+                    case FORMAT_ALONE:
+                        LZMAOutputStream lzmaOutputStream;
+                        if (PGuards.isNoValue(filters)) {
+                            LZMA2Options lzmaOptions = parseLZMAOptions(preset);
+                            lzmaOutputStream = new LZMAOutputStream(bos, lzmaOptions, check);
+                        } else {
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
+                            if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
+                                throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
+                            }
+                            lzmaOutputStream = new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], check);
+                        }
+                        return factory().createLZMACompressor(cls, lzmaOutputStream, bos);
+
+                    case FORMAT_RAW:
+                        throw raise(ValueError, "RAW format unsupported");
+
+                    default:
+                        throw raise(ValueError, "Invalid container format: %d", format);
+                }
+            } catch (IOException e) {
+                // TODO throw LZMAError
+                throw raise(ValueError, "%m", e);
+            }
+        }
+    }
+
+    @Builtin(name = "LZMADecompressor", parameterNames = {"cls", "format", "memlimit", "filters"}, constructsClass = PLZMADecompressor)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class LZMADecompressorNode extends LZMANode {
+
+        @Child private IsSequenceNode isSequenceNode;
+        @Child private GetItemNode getItemNode;
+        @Child private CastToIndexNode castToLongNode;
+        @Child private BuiltinFunctions.LenNode lenNode;
+
+        @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
+
+        @Specialization
+        PLZMADecompressor doCreate(LazyPythonClass cls, Object formatObj, Object memlimitObj, Object filters,
+                        @Cached CastToIndexNode castFormatToIntNode,
+                        @Cached CastToIndexNode castCheckToIntNode) {
+
+            int format = FORMAT_AUTO;
+            int memlimit = Integer.MAX_VALUE;
+
+            if (!PGuards.isNoValue(formatObj)) {
+                format = castFormatToIntNode.execute(formatObj);
+            }
+
+            if (!PGuards.isNoValue(memlimitObj)) {
+                if (format == FORMAT_RAW) {
+                    throw raise(ValueError, "Cannot specify memory limit with FORMAT_RAW");
+                }
+                memlimit = castCheckToIntNode.execute(memlimitObj);
+            }
+
+            if (format == FORMAT_RAW && PGuards.isNoValue(filters)) {
+                throw raise(ValueError, "Must specify filters for FORMAT_RAW");
+            } else if (format != FORMAT_RAW && !PGuards.isNoValue(filters)) {
+                throw raise(ValueError, "Cannot specify filters except with FORMAT_RAW");
+            }
+
+            // this switch is just to validate the 'format' argument
+            switch (format) {
+                case FORMAT_AUTO:
+                case FORMAT_XZ:
+                case FORMAT_ALONE:
+                    return factory().createLZMADecompressor(cls, format, memlimit);
+
+                case FORMAT_RAW:
+                    throw raise(ValueError, "RAW format unsupported");
+
+                default:
+                    throw raise(ValueError, "Invalid container format: %d", format);
+            }
         }
     }
 

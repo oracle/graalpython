@@ -40,34 +40,81 @@
  */
 package com.oracle.graal.python.builtins.objects.lzma;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
-import org.tukaani.xz.FinishableOutputStream;
+import org.tukaani.xz.LZMAInputStream;
+import org.tukaani.xz.XZFormatException;
+import org.tukaani.xz.XZInputStream;
 
+import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public class PLZMACompressor extends PythonObject {
+public class PLZMADecompressor extends PythonObject {
 
-    private FinishableOutputStream lzmaStream;
-    private ByteArrayOutputStream bos;
+    private final int memlimit;
+    private int format;
 
-    public PLZMACompressor(LazyPythonClass clazz) {
+    public PLZMADecompressor(LazyPythonClass clazz, int format, int memlimit) {
         super(clazz);
+        this.format = format;
+        this.memlimit = memlimit;
     }
 
-    public PLZMACompressor(LazyPythonClass clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        super(clazz);
-        this.lzmaStream = lzmaStream;
-        this.bos = bos;
+    public int getMemlimit() {
+        return memlimit;
     }
 
-    public FinishableOutputStream getLzmaStream() {
-        return lzmaStream;
+    @TruffleBoundary
+    public byte[] decompress(byte[] data) throws IOException {
+        try {
+            return doDecompression(create(data));
+        } catch (XZFormatException xze) {
+            // only retry if format was AUTO because we first tried XZ and now we try LZMA
+            if (format == LZMAModuleBuiltins.FORMAT_AUTO) {
+                return doDecompression(createLZMA(data));
+            }
+            throw xze;
+        }
     }
 
-    public ByteArrayOutputStream getBos() {
-        return bos;
+    private static byte[] doDecompression(InputStream is) throws IOException {
+        int n = is.available();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(n);
+        byte[] result = new byte[4096];
+        int read = -1;
+
+        while ((read = is.read(result)) > 0) {
+            bos.write(result, 0, read);
+        }
+
+        return bos.toByteArray();
     }
 
+    private InputStream create(byte[] data) throws IOException {
+        switch (format) {
+            case LZMAModuleBuiltins.FORMAT_AUTO:
+            case LZMAModuleBuiltins.FORMAT_XZ:
+                return createXZ(data);
+
+            case LZMAModuleBuiltins.FORMAT_ALONE:
+                return createLZMA(data);
+
+            case LZMAModuleBuiltins.FORMAT_RAW:
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    private XZInputStream createXZ(byte[] data) throws IOException {
+        return new XZInputStream(new ByteArrayInputStream(data), memlimit);
+    }
+
+    private LZMAInputStream createLZMA(byte[] data) throws IOException {
+        return new LZMAInputStream(new ByteArrayInputStream(data), memlimit);
+    }
 }
