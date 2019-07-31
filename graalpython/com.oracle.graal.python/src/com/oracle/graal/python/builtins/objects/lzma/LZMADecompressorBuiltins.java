@@ -108,7 +108,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(bytesLike);
             int len = lenNode.execute((PSequence) bytesLike);
-            byte[] compressed = new byte[Math.max(len, maxLength)];
+            byte[] compressed = new byte[Math.min(len, maxLength)];
             for (int i = 0; i < compressed.length; i++) {
                 castToByteNode.execute(getItemNode.execute(storage, i));
             }
