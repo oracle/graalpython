@@ -1021,15 +1021,19 @@ public abstract class SequenceStorageNodes {
         protected static SequenceStorage doSlice(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, PSlice slice, Object iterable,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
-                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode) {
+                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
             SliceInfo info = slice.computeIndices(storage.length());
+            // We need to construct the list eagerly because if a SequenceStoreException occurs, we
+            // must not use iterable again. It could have sice-effects.
+            PList values = constructListNode.execute(iterable);
             try {
-                setItemSliceNode.execute(storage, info, iterable);
+                setItemSliceNode.execute(storage, info, values);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
-                setItemSliceNode.execute(generalized, info, iterable);
+                setItemSliceNode.execute(generalized, info, values);
                 return generalized;
             }
         }
@@ -1158,15 +1162,20 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected SequenceStorage doSlice(SequenceStorage storage, PSlice slice, Object iterable,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
-                        @Cached SetItemSliceNode setItemSliceNode) {
+                        @Cached SetItemSliceNode setItemSliceNode,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
             SliceInfo info = slice.computeIndices(storage.length());
+
+            // We need to construct the list eagerly because if a SequenceStoreException occurs, we
+            // must not use iterable again. It could have sice-effects.
+            PList values = constructListNode.execute(iterable);
             try {
-                setItemSliceNode.execute(storage, info, iterable);
+                setItemSliceNode.execute(storage, info, values);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
-                setItemSliceNode.execute(generalized, info, iterable);
+                setItemSliceNode.execute(generalized, info, values);
                 return generalized;
             }
         }
