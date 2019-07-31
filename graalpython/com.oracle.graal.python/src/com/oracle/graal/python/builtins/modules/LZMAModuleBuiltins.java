@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LZMAError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMACompressor;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMADecompressor;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -385,8 +386,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         throw raise(ValueError, "Invalid container format: %d", format);
                 }
             } catch (IOException e) {
-                // TODO throw LZMAError
-                throw raise(ValueError, "%m", e);
+                throw raise(LZMAError, "%m", e);
             }
         }
 

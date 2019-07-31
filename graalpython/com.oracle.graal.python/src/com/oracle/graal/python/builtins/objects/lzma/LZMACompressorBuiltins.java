@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.lzma;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LZMAError;
 
 import java.io.IOException;
 import java.util.List;
@@ -84,8 +84,7 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
             try {
                 compressed = addBytes(self, toBytesNode.execute(frame, bytesLike));
             } catch (IOException e) {
-                // TODO raise LZMAError
-                throw raise(ValueError, e.getMessage());
+                throw raise(LZMAError, e.getMessage());
 
             }
             return factory().createBytes(compressed);
@@ -110,8 +109,7 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
             try {
                 return factory().createBytes(finish(self));
             } catch (IOException e) {
-                // TODO raise LZMAError
-                throw raise(ValueError, e.getMessage());
+                throw raise(LZMAError, e.getMessage());
             }
         }
 

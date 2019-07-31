@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.lzma;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import java.io.IOException;
 import java.util.List;
@@ -67,6 +68,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -126,6 +128,11 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
             return doBytesLikeWithMaxLengthI(self, bytesLike, castToIntNode.execute(maxLength), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
+        }
+
+        @Fallback
+        PBytes doError(@SuppressWarnings("unused") Object self, Object obj, @SuppressWarnings("unused") Object maxLength) {
+            throw raise(TypeError, "a bytes-like object is required, not '%p'", obj);
         }
 
         @TruffleBoundary
