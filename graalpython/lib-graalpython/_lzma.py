@@ -56,7 +56,7 @@ def _encode_filter_properties(filter):
 
 
 
-def _decode_filter_properties(filter):
+def _decode_filter_properties(filters, bytesLike):
     pass
 
 class LZMAError(Exception):
