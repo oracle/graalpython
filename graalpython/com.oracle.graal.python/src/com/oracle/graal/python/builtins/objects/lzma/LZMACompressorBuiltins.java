@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.lzma;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LZMAError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import java.io.IOException;
 import java.util.List;
@@ -58,6 +59,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -88,6 +90,11 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
 
             }
             return factory().createBytes(compressed);
+        }
+
+        @Fallback
+        PBytes doError(@SuppressWarnings("unused") Object self, Object obj) {
+            throw raise(TypeError, "a bytes-like object is required, not '%p'", obj);
         }
 
         @TruffleBoundary
