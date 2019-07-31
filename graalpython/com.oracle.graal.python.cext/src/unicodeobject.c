@@ -387,3 +387,8 @@ int PyUnicode_Compare(PyObject *left, PyObject *right) {
 int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
 	return UPCALL_CEXT_I(_jls_PyUnicode_Compare, native_to_java(left), polyglot_from_string(right, SRC_CS)) == 0;
 }
+
+UPCALL_ID(PyUnicode_AsUnicodeEscapeString);
+PyObject * PyUnicode_AsUnicodeEscapeString(PyObject *unicode) {
+	return UPCALL_CEXT_O(_jls_PyUnicode_AsUnicodeEscapeString, native_to_java(unicode));
+}

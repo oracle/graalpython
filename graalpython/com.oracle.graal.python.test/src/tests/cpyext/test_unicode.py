@@ -70,6 +70,11 @@ def _reference_findchar(args):
         return string.rfind(char, start, end)
 
 
+def _reference_unicode_escape(args):
+    import _codecs
+    return _codecs.unicode_escape_encode(args[0])[0]
+
+
 class CustomString(str):
     pass
 
@@ -462,5 +467,17 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="O",
         argspec='OO',
         arguments=["PyObject* str", "PyObject* seq"],
+        cmpfunc=unhandled_error_compare
+    )
+    
+    test_PyUnicode_AsUnicodeEscapeString = CPyExtFunction(
+        _reference_unicode_escape,
+        lambda: (
+            ("abcd", ),
+            ("öüä", ),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* str"],
         cmpfunc=unhandled_error_compare
     )
