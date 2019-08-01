@@ -1015,6 +1015,19 @@ index d527af6..773cfe0 100644
      #define __Pyx_sst_abs(value) abs(value)
  #elif SIZEOF_LONG >= SIZEOF_SIZE_T
      #define __Pyx_sst_abs(value) labs(value)
+diff --git a/pandas/core/window.py b/pandas/core/window.py
+index 8657420..f7b3f08 100644
+--- a/pandas/core/window.py
++++ b/pandas/core/window.py
+@@ -10,7 +10,7 @@ import warnings
+ 
+ import numpy as np
+ 
+-import pandas._libs.window as libwindow
++libwindow = None
+ from pandas.compat._optional import import_optional_dependency
+ from pandas.compat.numpy import function as nv
+ from pandas.util._decorators import Appender, Substitution, cache_readonly
 '''
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
