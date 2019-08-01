@@ -115,7 +115,7 @@ local const = import 'constants.libsonnet';
             BENCH_RESULTS_FILE_PATH: "bench-results.json",
         },
         logs +: [
-            "results.json",
+            "bench-results.json",
         ],
     },
     bench:: bench,
