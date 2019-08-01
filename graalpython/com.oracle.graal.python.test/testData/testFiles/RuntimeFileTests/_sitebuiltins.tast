@@ -1217,4 +1217,3 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
               ReadLocalVariableNode SourceSection: None
                 Frame: [2,<>temp2,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                                              

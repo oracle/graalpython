@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'try01'> SourceSection: [0,60]`def gen(x):↵  try:
         WriteNameNodeGen SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
+            FrameDescriptor: 2 slots [x, <return_val>]
+            Active Flags: 5
+            For Nodes: 0
+            Block Nodes: 1
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty
@@ -32,7 +36,7 @@ ModuleRootNode Name: <module 'try01'> SourceSection: [0,60]`def gen(x):↵  try:
                 CellVarsSlots: None
               InnerRootNode SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
                 GeneratorReturnTargetNode SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
-                  flagSlot: 3
+                  flagSlot: 4
                   GeneratorTryFinallyNode SourceSection: [14,60]`try:↵    pass↵  exce...`
                     GeneratorTryExceptNode SourceSection: None
                       ExpressionStatementNode SourceSection: [23,27]`pass`

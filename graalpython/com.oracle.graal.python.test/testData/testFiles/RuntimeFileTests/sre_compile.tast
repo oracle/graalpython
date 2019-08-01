@@ -10164,4 +10164,3 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
               GetCallAttributeNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [26892,26896]`_sre`
                   Identifier: _sre
-                                                                                                                                                          

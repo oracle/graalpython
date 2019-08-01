@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'yeild06'> SourceSection: [0,18]`def f(): x = yield
         WriteNameNodeGen SourceSection: [0,18]`def f(): x = yield`
           Identifier: f
           GeneratorFunctionDefinitionNode Name: f SourceSection: None
+            FrameDescriptor: 2 slots [x, <return_val>]
+            Active Flags: 2
+            For Nodes: 0
+            Block Nodes: 0
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

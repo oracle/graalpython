@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
         WriteNameNodeGen SourceSection: [0,49]`def f():↵    for x i...`
           Identifier: f
           GeneratorFunctionDefinitionNode Name: f SourceSection: None
+            FrameDescriptor: 2 slots [x, <return_val>]
+            Active Flags: 2
+            For Nodes: 1
+            Block Nodes: 0
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'generator04'> SourceSection: [0,29]`def fn():↵  
         WriteNameNodeGen SourceSection: [0,29]`def fn():↵  yield 1↵...`
           Identifier: fn
           GeneratorFunctionDefinitionNode Name: fn SourceSection: None
+            FrameDescriptor: 1 slots [<return_val>]
+            Active Flags: 3
+            For Nodes: 0
+            Block Nodes: 1
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

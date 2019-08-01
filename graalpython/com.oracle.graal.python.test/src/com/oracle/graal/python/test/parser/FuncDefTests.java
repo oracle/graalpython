@@ -164,6 +164,13 @@ public class FuncDefTests extends ParserTestBase{
     }
     
     @Test
+    public void functionDef18() throws Exception {
+        checkScopeAndTree(
+                "def __new__(_cls, hits, misses, maxsize, currsize):\n" +
+                "  return _tuple_new(_cls, (hits, misses, maxsize, currsize))");
+    }
+    
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree();
     }

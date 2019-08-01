@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
         WriteNameNodeGen SourceSection: [0,104]`def merge(h):↵    fo...`
           Identifier: merge
           GeneratorFunctionDefinitionNode Name: merge SourceSection: None
+            FrameDescriptor: 7 slots [h, value, order, it, <>temp4, <>temp5, <return_val>]
+            Active Flags: 3
+            For Nodes: 0
+            Block Nodes: 1
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

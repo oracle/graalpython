@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
         WriteNameNodeGen SourceSection: [0,118]`def walk_stack(f):â†µ ...`
           Identifier: walk_stack
           GeneratorFunctionDefinitionNode Name: walk_stack SourceSection: None
+            FrameDescriptor: 2 slots [f, <return_val>]
+            Active Flags: 3
+            For Nodes: 0
+            Block Nodes: 1
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: `Documentation`

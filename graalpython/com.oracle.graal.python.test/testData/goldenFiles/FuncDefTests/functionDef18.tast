@@ -1,0 +1,98 @@
+ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__(_cls, hi...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,112]`def __new__(_cls, hi...`
+    ExpressionWithSideEffect SourceSection: [0,112]`def __new__(_cls, hi...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,112]`def __new__(_cls, hi...`
+          Identifier: __new__
+          FunctionDefinitionNode Name: __new__ SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,112]`def __new__(_cls, hi...`
+              Name: __new__
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: _cls, hits, misses, maxsize, currsize
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 6 slots [_cls, hits, misses, maxsize, currsize, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,112]`def __new__(_cls, hi...`
+                ReturnTargetNode SourceSection: [0,112]`def __new__(_cls, hi...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: _cls
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,_cls,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: hits
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,hits,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: misses
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,misses,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: maxsize
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [3,maxsize,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: currsize
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [4,currsize,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                    FrameReturnNode SourceSection: [54,112]`return _tuple_new(_c...`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <return_val>
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [5,<return_val>,Illegal]
+                        PythonCallNodeGen SourceSection: [61,112]`_tuple_new(_cls, (hi...`
+                          CachedCallNodeGen SourceSection: None
+                            CreateArgumentsNodeGen SourceSection: None
+                            CallDispatchNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [72,76]`_cls`
+                            Frame: [0,_cls,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`
+                            PythonObjectFactoryNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [79,83]`hits`
+                              Frame: [1,hits,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [85,91]`misses`
+                              Frame: [2,misses,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [93,100]`maxsize`
+                              Frame: [3,maxsize,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [102,110]`currsize`
+                              Frame: [4,currsize,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: _tuple_new
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [5,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

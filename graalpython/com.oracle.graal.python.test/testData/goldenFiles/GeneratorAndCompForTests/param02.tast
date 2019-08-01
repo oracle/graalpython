@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'param02'> SourceSection: [0,33]`def fn(a, b):↵  
         WriteNameNodeGen SourceSection: [0,33]`def fn(a, b):↵  yiel...`
           Identifier: fn
           GeneratorFunctionDefinitionNode Name: fn SourceSection: None
+            FrameDescriptor: 3 slots [a, b, <return_val>]
+            Active Flags: 3
+            For Nodes: 0
+            Block Nodes: 1
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

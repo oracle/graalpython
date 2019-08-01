@@ -100,4 +100,21 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         }
         return generatorCallTarget;
     }
+
+    public int getNumOfActiveFlags() {
+        return numOfActiveFlags;
+    }
+
+    public int getNumOfGeneratorBlockNode() {
+        return numOfGeneratorBlockNode;
+    }
+
+    public int getNumOfGeneratorForNode() {
+        return numOfGeneratorForNode;
+    }
+
+    public FrameDescriptor getFrameDescriptor() {
+        return frameDescriptor;
+    }
+    
 }

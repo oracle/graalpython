@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
         WriteNameNodeGen SourceSection: [0,302]`def format_exception...`
           Identifier: format_exception_only
           GeneratorFunctionDefinitionNode Name: format_exception_only SourceSection: None
+            FrameDescriptor: 3 slots [self, caretspace, <return_val>]
+            Active Flags: 11
+            For Nodes: 0
+            Block Nodes: 4
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

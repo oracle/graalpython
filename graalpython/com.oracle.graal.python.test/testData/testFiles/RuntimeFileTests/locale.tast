@@ -489,6 +489,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
       WriteNameNodeGen SourceSection: [3450,3952]`def _grouping_interv...`
         Identifier: _grouping_intervals
         GeneratorFunctionDefinitionNode Name: _grouping_intervals SourceSection: None
+          FrameDescriptor: 4 slots [grouping, last_interval, interval, <return_val>]
+          Active Flags: 6
+          For Nodes: 1
+          Block Nodes: 3
           Arguments: None
           KwArguments: None
           Documentation: StringLiteralNode: Empty

@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
         WriteNameNodeGen SourceSection: [0,92]`def gen(c, b):↵  if ...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
+            FrameDescriptor: 3 slots [c, b, <return_val>]
+            Active Flags: 8
+            For Nodes: 0
+            Block Nodes: 1
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

@@ -2540,6 +2540,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
       WriteNameNodeGen SourceSection: [10444,10824]`def walk_stack(f):↵ ...`
         Identifier: walk_stack
         GeneratorFunctionDefinitionNode Name: walk_stack SourceSection: None
+          FrameDescriptor: 2 slots [f, <return_val>]
+          Active Flags: 3
+          For Nodes: 0
+          Block Nodes: 2
           Arguments: None
           KwArguments: None
           Documentation: StringLiteralNode: `Walk a stack yieldin...`
@@ -2652,6 +2656,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
       WriteNameNodeGen SourceSection: [10824,11144]`def walk_tb(tb):↵   ...`
         Identifier: walk_tb
         GeneratorFunctionDefinitionNode Name: walk_tb SourceSection: None
+          FrameDescriptor: 2 slots [tb, <return_val>]
+          Active Flags: 3
+          For Nodes: 0
+          Block Nodes: 1
           Arguments: None
           KwArguments: None
           Documentation: StringLiteralNode: `Walk a traceback yie...`
@@ -4862,6 +4870,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 ReadIndexedArgumentNodeGen SourceSection: None
                               StringLiteralNode SourceSection: None
                               GeneratorFunctionDefinitionNode Name: format_exception_only SourceSection: None
+                                FrameDescriptor: 11 slots [self, stype, smod, filename, lineno, badline, offset, caretspace, msg, __class__, <return_val>]
+                                Active Flags: 15
+                                For Nodes: 0
+                                Block Nodes: 5
                                 Arguments: None
                                 KwArguments: None
                                 Documentation: StringLiteralNode: `Format the exception...`
@@ -5375,6 +5387,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 ReadIndexedArgumentNodeGen SourceSection: None
                               StringLiteralNode SourceSection: None
                               GeneratorFunctionDefinitionNode Name: format SourceSection: None
+                                FrameDescriptor: 5 slots [self, *, chain, __class__, <return_val>]
+                                Active Flags: 16
+                                For Nodes: 4
+                                Block Nodes: 3
                                 Arguments: None
                                 KwArguments:KwDefaultExpressionNode SourceSection: None
                                     BooleanLiteralNode SourceSection: [22081,22085]`True`

@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'while06'> SourceSection: [0,110]`def gen(x):↵   
         WriteNameNodeGen SourceSection: [0,110]`def gen(x):↵   while...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
+            FrameDescriptor: 2 slots [x, <return_val>]
+            Active Flags: 3
+            For Nodes: 0
+            Block Nodes: 1
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

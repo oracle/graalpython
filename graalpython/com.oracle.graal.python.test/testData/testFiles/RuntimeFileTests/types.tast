@@ -139,6 +139,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
       WriteNameNodeGen SourceSection: [565,587]`def _g():↵    yield ...`
         Identifier: _g
         GeneratorFunctionDefinitionNode Name: _g SourceSection: None
+          FrameDescriptor: 1 slots [<return_val>]
+          Active Flags: 2
+          For Nodes: 0
+          Block Nodes: 0
           Arguments: None
           KwArguments: None
           Documentation: StringLiteralNode: Empty
@@ -246,6 +250,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
       WriteNameNodeGen SourceSection: [716,737]`def _ag():↵    yield...`
         Identifier: _ag
         GeneratorFunctionDefinitionNode Name: _ag SourceSection: None
+          FrameDescriptor: 1 slots [<return_val>]
+          Active Flags: 2
+          For Nodes: 0
+          Block Nodes: 0
           Arguments: None
           KwArguments: None
           Documentation: StringLiteralNode: Empty

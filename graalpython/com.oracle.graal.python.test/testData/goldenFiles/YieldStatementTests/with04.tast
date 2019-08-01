@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
         WriteNameNodeGen SourceSection: [0,49]`def gen():↵  with A(...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
+            FrameDescriptor: 3 slots [b, a, <return_val>]
+            Active Flags: 6
+            For Nodes: 2
+            Block Nodes: 0
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

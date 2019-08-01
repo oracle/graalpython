@@ -1490,6 +1490,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
       WriteNameNodeGen SourceSection: [13287,18959]`def merge(*iterables...`
         Identifier: merge
         GeneratorFunctionDefinitionNode Name: merge SourceSection: None
+          FrameDescriptor: 36 slots [iterables, key, reverse, h, h_append, _heapify, _heappop, _heapreplace, direction, next, order, it, value, s, key_value, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <return_val>, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35]
+          Active Flags: 23
+          For Nodes: 2
+          Block Nodes: 8
           Arguments: None
           KwArguments:KwDefaultExpressionNode SourceSection: None
               ObjectLiteralNode SourceSection: [13313,13317]`None`
@@ -1513,7 +1517,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
               CellVarsSlots: None
             InnerRootNode SourceSection: [13287,18959]`def merge(*iterables...`
               GeneratorReturnTargetNode SourceSection: [13287,18959]`def merge(*iterables...`
-                flagSlot: 20
+                flagSlot: 22
                 GeneratorBlockNode SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: [13970,13976]`h = []`
                     Identifier: h
@@ -1929,7 +1933,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               PythonObjectFactoryNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [15062,15073]`yield value`
                             YieldNode SourceSection: [15062,15073]`yield value`
-                              flagSlot: 5
+                              flagSlot: 6
                               WriteGeneratorFrameVariableNodeGen SourceSection: None
                                 Identifier: <return_val>
                                 WriteGeneraterFrameSlotNodeGen SourceSection: None
@@ -2183,7 +2187,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 ExpressionStatementNode SourceSection: [15514,15525]`yield value`
                                   YieldNode SourceSection: [15514,15525]`yield value`
-                                    flagSlot: 11
+                                    flagSlot: 12
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: <return_val>
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
@@ -2348,7 +2352,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [15772,15783]`yield value`
                         YieldNode SourceSection: [15772,15783]`yield value`
-                          flagSlot: 16
+                          flagSlot: 18
                           WriteGeneratorFrameVariableNodeGen SourceSection: None
                             Identifier: <return_val>
                             WriteGeneraterFrameSlotNodeGen SourceSection: None

@@ -680,6 +680,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             } else {
                 if (st.length == 2) {
                     body = st[1];
+                    if (scopeEnvironment.isInGeneratorScope()) {
+                        generatorFactory.decreaseNumOfGeneratorBlockNode();
+                    }
                 } else {
                     // TODO this is not nice. We create the block twice. Should be created just one?
                     body = body instanceof GeneratorBlockNode 
@@ -697,7 +700,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         ExpressionNode returnTarget;
         
         if(scopeEnvironment.isInGeneratorScope()) {
-            returnTarget = new GeneratorReturnTargetNode(argumentNodes, body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()), generatorFactory.getNumOfActiveFlags());
+            returnTarget = new GeneratorReturnTargetNode(argumentNodes, body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()), generatorFactory.getNextNumOfActiveFlags());
         } else {
             body = nodeFactory.createBlock(argumentNodes, body);
             returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));

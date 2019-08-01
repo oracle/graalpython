@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'doc01'> SourceSection: [0,42]`def fn():↵  "This 
         WriteNameNodeGen SourceSection: [0,42]`def fn():↵  "This is...`
           Identifier: fn
           GeneratorFunctionDefinitionNode Name: fn SourceSection: None
+            FrameDescriptor: 1 slots [<return_val>]
+            Active Flags: 2
+            For Nodes: 0
+            Block Nodes: 0
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: `This is a doc`

@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
+import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
@@ -127,9 +128,7 @@ public class ParserTreePrinter implements NodeVisitor {
             return true;
         }
         
-        public boolean visit(FunctionDefinitionNode node) {
-            nodeHeader(node, node.getFunctionName());
-            level++;
+        private void addFunctionDefinitionNode( FunctionDefinitionNode node) {
             indent(level); sb.append("Arguments:"); 
             if(node.getDefaults() == null || node.getDefaults().length == 0) {
                 sb.append(" None"); newLine();
@@ -166,6 +165,24 @@ public class ParserTreePrinter implements NodeVisitor {
             indent(level); sb.append("FreeVarSlots: "); add(node.getFreeVarDefinitionSlots()); newLine();
             add(node.getExecutionCellSlots());
             visit(node.getFunctionRoot());
+        }
+        
+        public boolean visit(GeneratorFunctionDefinitionNode node) {
+            nodeHeader(node, node.getFunctionName());
+            level++;
+            addFrameDescriptor(node.getFrameDescriptor());
+            indent(level); sb.append("Active Flags: ").append(node.getNumOfActiveFlags()); newLine();
+            indent(level); sb.append("For Nodes: ").append(node.getNumOfGeneratorForNode()); newLine();
+            indent(level); sb.append("Block Nodes: ").append(node.getNumOfGeneratorBlockNode()); newLine();
+            addFunctionDefinitionNode(node);
+            level--;
+            return false;
+        }
+        
+        public boolean visit(FunctionDefinitionNode node) {
+            nodeHeader(node, node.getFunctionName());
+            level++;
+            addFunctionDefinitionNode(node);
             level--;
             return false;
         }
@@ -440,6 +457,8 @@ public class ParserTreePrinter implements NodeVisitor {
             boolean visitChildren = true;
             if (node instanceof ModuleRootNode) {
                 visitChildren = visit((ModuleRootNode) node);
+            } else if (node instanceof GeneratorFunctionDefinitionNode) {
+                visitChildren = visit((GeneratorFunctionDefinitionNode) node);
             } else if (node instanceof FunctionDefinitionNode) {
                 visitChildren = visit((FunctionDefinitionNode) node);
             } else if (node instanceof FunctionRootNode) {

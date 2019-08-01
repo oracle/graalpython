@@ -54,6 +54,10 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                               ReadIndexedArgumentNodeGen SourceSection: None
                             StringLiteralNode SourceSection: None
                             GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
+                              FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
+                              Active Flags: 3
+                              For Nodes: 0
+                              Block Nodes: 2
                               Arguments: None
                               KwArguments: None
                               Documentation: StringLiteralNode: Empty

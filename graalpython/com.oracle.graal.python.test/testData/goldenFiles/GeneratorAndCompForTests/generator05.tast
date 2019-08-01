@@ -12,6 +12,10 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
         WriteNameNodeGen SourceSection: [0,85]`def fn(self):â†µ    ca...`
           Identifier: fn
           GeneratorFunctionDefinitionNode Name: fn SourceSection: None
+            FrameDescriptor: 3 slots [self, caretspace, <return_val>]
+            Active Flags: 2
+            For Nodes: 0
+            Block Nodes: 1
             Arguments: None
             KwArguments: None
             Documentation: StringLiteralNode: Empty

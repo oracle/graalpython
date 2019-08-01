@@ -313,6 +313,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadIndexedArgumentNodeGen SourceSection: None
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
+                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                            Active Flags: 2
+                            For Nodes: 1
+                            Block Nodes: 0
                             Arguments: None
                             KwArguments: None
                             Documentation: StringLiteralNode: Empty
@@ -434,6 +438,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadIndexedArgumentNodeGen SourceSection: None
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
+                            FrameDescriptor: 4 slots [self, key, __class__, <return_val>]
+                            Active Flags: 2
+                            For Nodes: 1
+                            Block Nodes: 0
                             Arguments: None
                             KwArguments: None
                             Documentation: StringLiteralNode: Empty
@@ -582,6 +590,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadIndexedArgumentNodeGen SourceSection: None
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
+                            FrameDescriptor: 4 slots [self, key, __class__, <return_val>]
+                            Active Flags: 2
+                            For Nodes: 1
+                            Block Nodes: 0
                             Arguments: None
                             KwArguments: None
                             Documentation: StringLiteralNode: Empty
@@ -1457,6 +1469,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadIndexedArgumentNodeGen SourceSection: None
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
+                            FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
+                            Active Flags: 3
+                            For Nodes: 0
+                            Block Nodes: 2
                             Arguments: None
                             KwArguments: None
                             Documentation: StringLiteralNode: `od.__iter__() <==> i...`
@@ -1562,6 +1578,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadIndexedArgumentNodeGen SourceSection: None
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
+                            FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
+                            Active Flags: 3
+                            For Nodes: 0
+                            Block Nodes: 2
                             Arguments: None
                             KwArguments: None
                             Documentation: StringLiteralNode: `od.__reversed__() <=...`

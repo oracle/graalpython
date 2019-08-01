@@ -122,6 +122,10 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     public int getNextNumOfGeneratorBlockNode() {
         return numOfGeneratorBlockNode++;
     }
+    
+    public void decreaseNumOfGeneratorBlockNode() {
+        numOfGeneratorBlockNode--;
+    }
 
     public int getNextNumOfGeneratorForNode() {
         return numOfGeneratorForNode++;
@@ -368,7 +372,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             result = nodeFactory.createTryExceptElseFinallyNode(body, exceptNodes, elseStatement, finalyStatement);
         } else {
             result = new GeneratorTryExceptNode(body, exceptNodes, elseStatement, numOfActiveFlags++, numOfActiveFlags++, numOfGeneratorBlockNode++);
-            result = new GeneratorTryFinallyNode(result, finalyStatement, numOfActiveFlags);
+            result = new GeneratorTryFinallyNode(result, finalyStatement, numOfActiveFlags++);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
