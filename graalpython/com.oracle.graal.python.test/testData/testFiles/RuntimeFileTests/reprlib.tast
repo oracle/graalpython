@@ -70,6 +70,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [321,1150]`def decorating_funct...`
                       Identifier: decorating_function
@@ -104,6 +105,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 BlockNode SourceSection: None
                                   WriteLocalCellNodeGen SourceSection: [369,389]`repr_running = set()...`
                                     Identifier: repr_running
@@ -149,6 +151,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                   Frame: [0,self,Illegal]
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                                    Index: 0
                                               BlockNode SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [430,457]`key = id(self), get_...`
                                                   Identifier: key
@@ -408,11 +411,13 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [1195,1509]`def __init__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -442,6 +447,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [1223,1240]`self.maxlevel = 6`
                                         Attribute: maxlevel
@@ -515,6 +521,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [1509,1577]`def repr(self, x):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr SourceSection: None
                             Arguments: None
@@ -545,12 +552,14 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     FrameReturnNode SourceSection: [1536,1571]`return self.repr1(x,...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -581,6 +590,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [1577,1920]`def repr1(self, x, l...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr1 SourceSection: None
                             Arguments: None
@@ -611,18 +621,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [1612,1639]`typename = type(x)._...`
                                         Identifier: typename
@@ -756,6 +769,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [1920,2400]`def _repr_iterable(s...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: _repr_iterable SourceSection: None
                             Arguments:
@@ -787,42 +801,49 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: left
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,left,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 3
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: right
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,right,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 4
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: maxiter
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,maxiter,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 5
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: trail
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [6,trail,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 6
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [1996,2006]`n = len(x)`
                                         Identifier: n
@@ -945,6 +966,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                             Frame: [0,elem,Illegal]
                                                         ArgumentExpressionNode SourceSection: None
                                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                                            Index: 0
                                                         GetNextCachedNode SourceSection: None
                                                           LookupAndCallUnaryNodeGen SourceSection: None
                                                             Op: __next__
@@ -1063,6 +1085,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [2400,2512]`def repr_tuple(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_tuple SourceSection: None
                             Arguments: None
@@ -1093,18 +1116,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     FrameReturnNode SourceSection: [2440,2506]`return self._repr_it...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -1141,6 +1167,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [2512,2617]`def repr_list(self, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_list SourceSection: None
                             Arguments: None
@@ -1171,18 +1198,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     FrameReturnNode SourceSection: [2551,2611]`return self._repr_it...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -1218,6 +1248,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [2617,2838]`def repr_array(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_array SourceSection: None
                             Arguments: None
@@ -1248,18 +1279,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [2657,2721]`if not x:↵          ...`
                                         NotNodeGen SourceSection: [2660,2665]`not x`
@@ -1337,6 +1371,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [2838,3018]`def repr_set(self, x...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_set SourceSection: None
                             Arguments: None
@@ -1367,18 +1402,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [2876,2921]`if not x:↵          ...`
                                         NotNodeGen SourceSection: [2879,2884]`not x`
@@ -1441,6 +1479,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [3018,3262]`def repr_frozenset(s...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_frozenset SourceSection: None
                             Arguments: None
@@ -1471,18 +1510,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [3062,3113]`if not x:↵          ...`
                                         NotNodeGen SourceSection: [3065,3070]`not x`
@@ -1545,6 +1587,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [3262,3376]`def repr_deque(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_deque SourceSection: None
                             Arguments: None
@@ -1575,18 +1618,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     FrameReturnNode SourceSection: [3302,3370]`return self._repr_it...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -1622,6 +1668,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [3376,3893]`def repr_dict(self, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_dict SourceSection: None
                             Arguments: None
@@ -1652,18 +1699,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [3415,3425]`n = len(x)`
                                         Identifier: n
@@ -1897,6 +1947,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [3893,4213]`def repr_str(self, x...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_str SourceSection: None
                             Arguments: None
@@ -1927,18 +1978,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [3931,3968]`s = builtins.repr(x[...`
                                         Identifier: s
@@ -2161,6 +2215,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [4213,4492]`def repr_int(self, x...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_int SourceSection: None
                             Arguments: None
@@ -2191,18 +2246,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [4251,4271]`s = builtins.repr(x)...`
                                         Identifier: s
@@ -2362,6 +2420,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                         SetItemNodeGen SourceSection: [4492,4965]`def repr_instance(se...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: repr_instance SourceSection: None
                             Arguments: None
@@ -2392,18 +2451,21 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       TryFinallyNode SourceSection: [4535,4787]`try:↵            s =...`
                                         TryExceptNode SourceSection: None
@@ -2643,6 +2705,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                       Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   TryFinallyNode SourceSection: [5158,5234]`try:↵        return ...`
                     TryExceptNode SourceSection: None
                       FrameReturnNode SourceSection: [5171,5187]`return sorted(x)`

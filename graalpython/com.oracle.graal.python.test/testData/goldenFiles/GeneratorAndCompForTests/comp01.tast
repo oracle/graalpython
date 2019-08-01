@@ -112,6 +112,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                                 Frame: [0,j,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                             GetNextCachedNode SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
@@ -152,6 +153,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                           Frame: [1,t,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                       GetNextCachedNode SourceSection: None
                         LookupAndCallUnaryNodeGen SourceSection: None
                           Op: __next__

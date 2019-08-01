@@ -170,6 +170,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       Frame: [0,name,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     IfNode SourceSection: [1749,2168]`if name in _collecti...`
                       YesNodeGen SourceSection: None
@@ -306,11 +307,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [2479,2547]`def __reversed__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                             FrameDescriptor: 3 slots [self, __class__, <return_val>]
@@ -373,6 +376,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Frame: [0,self,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -431,11 +435,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [2609,2722]`def __reversed__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                             FrameDescriptor: 4 slots [self, key, __class__, <return_val>]
@@ -525,6 +531,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Frame: [0,self,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -583,11 +590,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [2786,2892]`def __reversed__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                             FrameDescriptor: 4 slots [self, key, __class__, <return_val>]
@@ -672,6 +681,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Frame: [0,self,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -730,11 +740,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [2917,2965]`__slots__ = 'prev', ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           TupleLiteralNode SourceSection: [2929,2965]`'prev', 'next', 'key...`
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -793,16 +805,19 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [2996,3039]`'Dictionary that rem...`
                         SetItemNodeGen SourceSection: [3841,4579]`def __init__(*args, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -1055,6 +1070,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [4579,5195]`def __setitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __setitem__ SourceSection: None
                             Arguments:
@@ -1067,6 +1083,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   GetItemNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     StringLiteralNode SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: dict
@@ -1075,6 +1092,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   StringLiteralNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: _proxy
@@ -1083,6 +1101,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   StringLiteralNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: _Link
@@ -1114,36 +1133,42 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: key
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: value
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,value,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: dict_setitem
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,dict_setitem,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 3
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: proxy
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,proxy,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 4
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: Link
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,Link,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 5
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [4901,5159]`if key not in self:↵...`
                                         NotNodeGen SourceSection: [4904,4919]`key not in self`
@@ -1319,6 +1344,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [5195,5709]`def __delitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __delitem__ SourceSection: None
                             Arguments:
@@ -1331,6 +1357,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   GetItemNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     StringLiteralNode SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: dict
@@ -1362,18 +1389,21 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: key
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: dict_delitem
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,dict_delitem,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [5465,5488]`dict_delitem(self, k...`
                                         PythonCallNodeGen SourceSection: [5465,5488]`dict_delitem(self, k...`
@@ -1467,6 +1497,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [5709,5957]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
                             FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
@@ -1571,11 +1602,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Frame: [0,self,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [5957,6225]`def __reversed__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                             FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
@@ -1680,11 +1713,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Frame: [0,self,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [6225,6420]`def clear(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: clear SourceSection: None
                             Arguments: None
@@ -1714,6 +1749,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [6307,6325]`root = self.__root`
                                         Identifier: root
@@ -1783,6 +1819,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [6420,7123]`def popitem(self, la...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: popitem SourceSection: None
                             Arguments:
@@ -1814,12 +1851,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: last
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,last,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [6622,6693]`if not self:↵       ...`
                                         NotNodeGen SourceSection: [6625,6633]`not self`
@@ -1997,6 +2036,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [7123,7871]`def move_to_end(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: move_to_end SourceSection: None
                             Arguments:
@@ -2028,18 +2068,21 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: key
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: last
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,last,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [7317,7339]`link = self.__map[ke...`
                                         Identifier: link
@@ -2222,6 +2265,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [7871,8311]`def __sizeof__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __sizeof__ SourceSection: None
                             Arguments: None
@@ -2251,6 +2295,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [7901,7924]`sizeof = _sys.getsiz...`
                                         Identifier: sizeof
@@ -2416,6 +2461,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   GetItemNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     StringLiteralNode SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: _collections_abc
@@ -2423,6 +2469,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           SetItemNodeGen SourceSection: None
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                             StringLiteralNode SourceSection: None
                             ReadLocalVariableNode SourceSection: None
                               Frame: [24,<>temp24,Illegal]
@@ -2430,6 +2477,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           SetItemNodeGen SourceSection: None
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                             StringLiteralNode SourceSection: None
                             ReadLocalVariableNode SourceSection: None
                               Frame: [24,<>temp24,Illegal]
@@ -2437,6 +2485,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [8375,8507]`def keys(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: keys SourceSection: None
                             Arguments: None
@@ -2466,6 +2515,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [8468,8501]`return _OrderedDictK...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -2487,6 +2537,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [8507,8643]`def items(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: items SourceSection: None
                             Arguments: None
@@ -2516,6 +2567,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [8603,8637]`return _OrderedDictI...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -2537,6 +2589,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [8643,8775]`def values(self):↵  ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: values SourceSection: None
                             Arguments: None
@@ -2566,6 +2619,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [8734,8769]`return _OrderedDictV...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -2587,6 +2641,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [8775,8822]`__ne__ = _collection...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [8784,8822]`_collections_abc.Mut...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -2602,6 +2657,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   StringLiteralNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: _collections_abc
@@ -2609,6 +2665,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [8828,8847]`__marker = object()`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [8839,8847]`object()`
                             CachedCallNodeGen SourceSection: None
@@ -2618,6 +2675,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: object
@@ -2625,6 +2683,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [8853,9288]`def pop(self, key, d...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: pop SourceSection: None
                             Arguments:
@@ -2632,6 +2691,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   StringLiteralNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: __marker
@@ -2663,18 +2723,21 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: key
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: default
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,default,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [9092,9199]`if key in self:↵    ...`
                                         YesNodeGen SourceSection: None
@@ -2757,6 +2820,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [9288,9606]`def setdefault(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: setdefault SourceSection: None
                             Arguments:
@@ -2788,18 +2852,21 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: key
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: default
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,default,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [9505,9558]`if key in self:↵    ...`
                                         YesNodeGen SourceSection: None
@@ -2850,6 +2917,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [9606,9840]`@_recursive_repr()↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [9606,9624]`@_recursive_repr()`
                             CachedCallNodeGen SourceSection: None
@@ -2883,6 +2951,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [9695,9771]`if not self:↵       ...`
                                           NotNodeGen SourceSection: [9698,9706]`not self`
@@ -2964,6 +3033,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   StringLiteralNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: _recursive_repr
@@ -2971,6 +3041,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [9840,10105]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __reduce__ SourceSection: None
                             Arguments: None
@@ -3000,6 +3071,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [9918,9947]`inst_dict = vars(sel...`
                                         Identifier: inst_dict
@@ -3104,6 +3176,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [10105,10206]`def copy(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: copy SourceSection: None
                             Arguments: None
@@ -3133,6 +3206,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [10173,10200]`return self.__class_...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -3155,6 +3229,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [10206,10473]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [10206,10218]`@classmethod`
                             CachedCallNodeGen SourceSection: None
@@ -3190,18 +3265,21 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,cls,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: iterable
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,iterable,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 1
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: value
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,value,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 2
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [10376,10388]`self = cls()`
                                           Identifier: self
@@ -3254,6 +3332,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: classmethod
@@ -3261,6 +3340,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [10473,10820]`def __eq__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __eq__ SourceSection: None
                             Arguments: None
@@ -3291,12 +3371,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: other
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,other,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [10668,10786]`if isinstance(other,...`
                                         YesNodeGen SourceSection: None
@@ -3419,12 +3501,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         Identifier: namedtuple
         FunctionDefinitionNode Name: namedtuple SourceSection: None
           Arguments: None
-          KwArguments:KwDefaultExpressionNode SourceSection: None
-              BooleanLiteralNode SourceSection: [11191,11196]`False`
+          KwArguments:
             KwDefaultExpressionNode SourceSection: None
-              ObjectLiteralNode SourceSection: [11207,11211]`None`
+              Name: rename
+              Value: BooleanLiteralNode SourceSection: [11191,11196]`False`
             KwDefaultExpressionNode SourceSection: None
-              ObjectLiteralNode SourceSection: [11220,11224]`None`
+              Name: defaults
+              Value: ObjectLiteralNode SourceSection: [11207,11211]`None`
+            KwDefaultExpressionNode SourceSection: None
+              Name: module
+              Value: ObjectLiteralNode SourceSection: [11220,11224]`None`
           Documentation: StringLiteralNode: `Returns a new subcla...`
           FreeVarSlots: None
           ExecutionSlots:
@@ -3452,6 +3538,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [0,typename,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: field_names
                       ReadLocalVariableNode SourceSection: None
@@ -3459,24 +3546,28 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: rename
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,rename,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: defaults
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,defaults,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: module
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,module,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 4
                   BlockNode SourceSection: None
                     IfNode SourceSection: [12231,12328]`if isinstance(field_...`
                       YesNodeGen SourceSection: None
@@ -4151,6 +4242,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,name,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                       GetNextCachedNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
@@ -4310,12 +4402,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [0,cls,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: iterable
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,iterable,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 1
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [14765,14798]`result = tuple_new(c...`
                                       Identifier: result
@@ -4428,6 +4522,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Frame: [0,_self,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: kwds
                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4536,6 +4631,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     Frame: [0,self,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 FrameReturnNode SourceSection: [15502,15550]`return self.__class_...`
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
@@ -4603,6 +4699,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     Frame: [0,self,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 FrameReturnNode SourceSection: [15658,15701]`return OrderedDict(z...`
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
@@ -4668,6 +4765,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     Frame: [0,self,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 FrameReturnNode SourceSection: [15807,15825]`return tuple(self)`
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
@@ -5067,12 +5165,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [0,mapping,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: iterable
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,iterable,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [17825,17850]`mapping_get = mappin...`
                       Identifier: mapping_get
@@ -5186,16 +5286,19 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 Identifier: __name__
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                               SetItemIfNotPresentNodeGen SourceSection: None
                                 SetItemNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               StringLiteralNode SourceSection: [18105,19806]`'''Dict subclass for...`
                             SetItemNodeGen SourceSection: [20140,21061]`def __init__(*args, ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __init__ SourceSection: None
                                 Arguments: None
@@ -5371,6 +5474,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [21061,21239]`def __missing__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __missing__ SourceSection: None
                                 Arguments: None
@@ -5401,12 +5505,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: key
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,key,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         FrameReturnNode SourceSection: [21225,21233]`return 0`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -5419,6 +5525,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [21239,21745]`def most_common(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: most_common SourceSection: None
                                 Arguments:
@@ -5450,12 +5557,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: n
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,n,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [21584,21680]`if n is None:↵      ...`
                                             YesNodeGen SourceSection: None
@@ -5543,6 +5652,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [21745,22609]`def elements(self):↵...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: elements SourceSection: None
                                 Arguments: None
@@ -5572,6 +5682,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                         FrameReturnNode SourceSection: [22498,22558]`return _chain.from_i...`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -5609,6 +5720,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [22609,22923]`@classmethod↵    def...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               PythonCallNodeGen SourceSection: [22609,22621]`@classmethod`
                                 CachedCallNodeGen SourceSection: None
@@ -5644,18 +5756,21 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [0,cls,Illegal]
                                               ArgumentExpressionNode SourceSection: None
                                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 0
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: iterable
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [1,iterable,Illegal]
                                               ArgumentExpressionNode SourceSection: None
                                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 1
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: v
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [2,v,Illegal]
                                               ArgumentExpressionNode SourceSection: None
                                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 2
                                           RaiseNodeGen SourceSection: [22811,22917]`raise NotImplemented...`
                                             PythonCallNodeGen SourceSection: [22817,22917]`NotImplementedError(...`
                                               CachedCallNodeGen SourceSection: None
@@ -5673,6 +5788,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   GetItemNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     StringLiteralNode SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: classmethod
@@ -5680,6 +5796,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [22923,24706]`def update(*args, **...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: update SourceSection: None
                                 Arguments: None
@@ -6002,6 +6119,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [24706,26171]`def subtract(*args, ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: subtract SourceSection: None
                                 Arguments: None
@@ -6320,6 +6438,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [26171,26261]`def copy(self):↵    ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: copy SourceSection: None
                                 Arguments: None
@@ -6349,6 +6468,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                         FrameReturnNode SourceSection: [26228,26255]`return self.__class_...`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -6371,6 +6491,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [26261,26333]`def __reduce__(self)...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __reduce__ SourceSection: None
                                 Arguments: None
@@ -6400,6 +6521,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                         FrameReturnNode SourceSection: [26291,26327]`return self.__class_...`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -6433,6 +6555,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [26333,26512]`def __delitem__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __delitem__ SourceSection: None
                                 Arguments: None
@@ -6463,12 +6586,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: elem
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,elem,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         IfNode SourceSection: [26452,26512]`if elem in self:↵   ...`
                                           YesNodeGen SourceSection: None
                                             ContainsNodeGen SourceSection: [26455,26467]`elem in self`
@@ -6504,6 +6629,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [26512,27260]`def __repr__(self):↵...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __repr__ SourceSection: None
                                 Arguments: None
@@ -6533,6 +6659,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [26540,26613]`if not self:↵       ...`
                                             NotNodeGen SourceSection: [26543,26551]`not self`
@@ -6669,6 +6796,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [27260,27838]`def __add__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __add__ SourceSection: None
                                 Arguments: None
@@ -6699,12 +6827,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: other
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [27436,27513]`if not isinstance(ot...`
                                             NotNodeGen SourceSection: [27439,27469]`not isinstance(other...`
@@ -6920,6 +7050,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [27838,28445]`def __sub__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __sub__ SourceSection: None
                                 Arguments: None
@@ -6950,12 +7081,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: other
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [28039,28116]`if not isinstance(ot...`
                                             NotNodeGen SourceSection: [28042,28072]`not isinstance(other...`
@@ -7175,6 +7308,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [28445,29119]`def __or__(self, oth...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __or__ SourceSection: None
                                 Arguments: None
@@ -7205,12 +7339,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: other
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [28653,28730]`if not isinstance(ot...`
                                             NotNodeGen SourceSection: [28656,28686]`not isinstance(other...`
@@ -7441,6 +7577,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [29119,29643]`def __and__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __and__ SourceSection: None
                                 Arguments: None
@@ -7471,12 +7608,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: other
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [29303,29380]`if not isinstance(ot...`
                                             NotNodeGen SourceSection: [29306,29336]`not isinstance(other...`
@@ -7627,6 +7766,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [29643,29900]`def __pos__(self):↵ ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __pos__ SourceSection: None
                                 Arguments: None
@@ -7656,6 +7796,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [29750,29768]`result = Counter()`
                                             Identifier: result
@@ -7749,6 +7890,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [29900,30219]`def __neg__(self):↵ ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __neg__ SourceSection: None
                                 Arguments: None
@@ -7778,6 +7920,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [30065,30083]`result = Counter()`
                                             Identifier: result
@@ -7875,6 +8018,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [30219,30486]`def _keep_positive(s...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: _keep_positive SourceSection: None
                                 Arguments: None
@@ -7904,6 +8048,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [30331,30400]`nonpositive = [elem ...`
                                             Identifier: nonpositive
@@ -7992,6 +8137,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                             PythonObjectFactoryNodeGen SourceSection: None
                                                         ArgumentExpressionNode SourceSection: None
                                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                                            Index: 0
                                                         GetNextCachedNode SourceSection: None
                                                           LookupAndCallUnaryNodeGen SourceSection: None
                                                             Op: __next__
@@ -8052,6 +8198,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [30486,30838]`def __iadd__(self, o...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __iadd__ SourceSection: None
                                 Arguments: None
@@ -8082,12 +8229,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: other
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           ElseNode SourceSection: [30730,30804]`for elem, count in o...`
                                             ForNode SourceSection: None
@@ -8173,6 +8322,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [30838,31190]`def __isub__(self, o...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __isub__ SourceSection: None
                                 Arguments: None
@@ -8203,12 +8353,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: other
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           ElseNode SourceSection: [31082,31156]`for elem, count in o...`
                                             ForNode SourceSection: None
@@ -8294,6 +8446,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [31190,31618]`def __ior__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __ior__ SourceSection: None
                                 Arguments: None
@@ -8324,12 +8477,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: other
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           ElseNode SourceSection: [31428,31584]`for elem, other_coun...`
                                             ForNode SourceSection: None
@@ -8431,6 +8586,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             SetItemNodeGen SourceSection: [31618,32029]`def __iand__(self, o...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __iand__ SourceSection: None
                                 Arguments: None
@@ -8461,12 +8617,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: other
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           ElseNode SourceSection: [31843,31999]`for elem, count in s...`
                                             ForNode SourceSection: None

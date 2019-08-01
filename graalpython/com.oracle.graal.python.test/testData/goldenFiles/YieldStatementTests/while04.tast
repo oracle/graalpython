@@ -101,5 +101,6 @@ ModuleRootNode Name: <module 'while04'> SourceSection: [0,81]`def gen(x):↵   w
                       Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

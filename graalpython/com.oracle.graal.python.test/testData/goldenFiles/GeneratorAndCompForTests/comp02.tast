@@ -41,6 +41,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                           Frame: [0,cls,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalCellNodeGen SourceSection: None
                         Identifier: abcs
                         ReadLocalVariableNode SourceSection: None
@@ -48,6 +49,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     BlockNode SourceSection: None
                       ElseNode SourceSection: [29,155]`for base in abcs:↵  ...`
                         ForNode SourceSection: None
@@ -117,6 +119,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                                   Frame: [0,b,Illegal]
                                               ArgumentExpressionNode SourceSection: None
                                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 0
                                               GetNextCachedNode SourceSection: None
                                                 LookupAndCallUnaryNodeGen SourceSection: None
                                                   Op: __next__
@@ -229,6 +232,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                         Frame: [0,base,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     GetNextCachedNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__

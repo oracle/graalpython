@@ -41,18 +41,21 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                           Frame: [0,self,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: msg
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,msg,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: offset
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,offset,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 2
                     FrameReturnNode SourceSection: [35,67]`return test(msg, sel...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>

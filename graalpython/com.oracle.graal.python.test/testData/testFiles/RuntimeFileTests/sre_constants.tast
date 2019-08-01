@@ -61,21 +61,25 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [543,910]`"""Exception raised ...`
                         SetItemNodeGen SourceSection: [916,933]`__module__ = 're'`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [929,933]`'re'`
                         SetItemNodeGen SourceSection: [939,1619]`def __init__(self, m...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments:
@@ -108,24 +112,28 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: msg
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,msg,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: pattern
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,pattern,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: pos
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,pos,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 3
                                     BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [996,1010]`self.msg = msg`
                                         Attribute: msg
@@ -394,11 +402,13 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [1653,1799]`def __new__(cls, val...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __new__ SourceSection: None
                             Arguments: None
@@ -429,18 +439,21 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                           Frame: [0,cls,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: value
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,value,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: name
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,name,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [1692,1748]`self = super(_NamedI...`
                                         Identifier: self
@@ -492,6 +505,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                         SetItemNodeGen SourceSection: [1799,1848]`def __str__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __str__ SourceSection: None
                             Arguments: None
@@ -521,6 +535,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [1826,1842]`return self.name`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -540,11 +555,13 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                         SetItemNodeGen SourceSection: [1848,1866]`__repr__ = __str__`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [1859,1866]`__str__`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: __str__
@@ -603,6 +620,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                       Frame: [0,names,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [1950,1979]`names = names.strip(...`
                       Identifier: names
@@ -706,6 +724,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                       PythonObjectFactoryNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -791,6 +810,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                         Frame: [0,item,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     GetNextCachedNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
@@ -1091,18 +1111,21 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                 Frame: [0,f,Illegal]
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: d
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,d,Illegal]
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 1
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: prefix
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [2,prefix,Illegal]
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 2
                           BlockNode SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: [5644,5661]`items = sorted(d)`
                               Identifier: items

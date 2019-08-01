@@ -13,8 +13,10 @@ ModuleRootNode Name: <module 'functionDefCPT22'> SourceSection: [0,25]`def f(*ar
           Identifier: f
           FunctionDefinitionNode Name: f SourceSection: None
             Arguments: None
-            KwArguments:KwDefaultExpressionNode SourceSection: None
-                IntegerLiteralNode SourceSection: [17,18]`5`
+            KwArguments:
+              KwDefaultExpressionNode SourceSection: None
+                Name: a
+                Value: IntegerLiteralNode SourceSection: [17,18]`5`
             Documentation: StringLiteralNode: Empty
             FreeVarSlots: None
             ExecutionSlots:
@@ -48,6 +50,7 @@ ModuleRootNode Name: <module 'functionDefCPT22'> SourceSection: [0,25]`def f(*ar
                           Frame: [1,a,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                     ExpressionStatementNode SourceSection: [21,25]`pass`
                       EmptyNode SourceSection: [21,25]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

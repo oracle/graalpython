@@ -106,12 +106,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1119,1131]`return a < b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -160,12 +162,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1173,1186]`return a <= b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -214,12 +218,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1228,1241]`return a == b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -268,12 +274,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1283,1296]`return a != b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -322,12 +330,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1338,1351]`return a >= b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -376,12 +386,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1392,1404]`return a > b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -429,6 +441,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                       Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [1526,1538]`return not a`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -471,6 +484,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                       Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [1607,1634]`return True if a els...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -517,12 +531,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1677,1690]`return a is b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -569,12 +585,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1740,1757]`return a is not b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -621,6 +639,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                       Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [1879,1893]`return _abs(a)`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -670,12 +689,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1935,1947]`return a + b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -724,12 +745,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1990,2002]`return a & b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -778,12 +801,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2050,2063]`return a // b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -831,6 +856,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                       Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [2112,2132]`return a.__index__()...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -877,6 +903,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                       Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [2168,2177]`return ~a`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -926,12 +953,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2236,2249]`return a << b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -980,12 +1009,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2291,2303]`return a % b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1034,12 +1065,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2345,2357]`return a * b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1088,12 +1121,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2402,2414]`return a @ b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1141,6 +1176,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                       Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [2450,2459]`return -a`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1186,12 +1222,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2501,2513]`return a | b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1239,6 +1277,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                       Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [2549,2558]`return +a`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1284,12 +1323,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2601,2614]`return a ** b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1338,12 +1379,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2660,2673]`return a >> b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1392,12 +1435,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2715,2727]`return a - b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1446,12 +1491,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2773,2785]`return a / b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1500,12 +1547,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [2827,2839]`return a ^ b`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1554,12 +1603,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [2989,3125]`if not hasattr(a, '_...`
                       NotNodeGen SourceSection: [2992,3021]`not hasattr(a, '__ge...`
@@ -1659,12 +1710,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [3210,3223]`return b in a`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1714,12 +1767,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [3296,3305]`count = 0`
                       Identifier: count
@@ -1804,12 +1859,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   DeleteItemNodeGen SourceSection: [3429,3437]`del a[b]`
                     ReadLocalVariableNode SourceSection: None
                       Frame: [0,a,Illegal]
@@ -1851,12 +1908,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [3482,3493]`return a[b]`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1903,12 +1962,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   ElseNode SourceSection: [3558,3700]`for i, j in enumerat...`
                     ForNode SourceSection: None
                       DefaultLoopNode SourceSection: None
@@ -2021,18 +2082,21 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: c
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,c,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   SetItemNodeGen SourceSection: [3750,3758]`a[b] = c`
                     ReadLocalVariableNode SourceSection: None
                       Frame: [0,a,Illegal]
@@ -2078,12 +2142,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,obj,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: default
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,default,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [4114,4287]`if not isinstance(de...`
                       NotNodeGen SourceSection: [4117,4145]`not isinstance(defau...`
@@ -2374,16 +2440,19 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [4959,5307]`"""↵    Return a cal...`
                         SetItemNodeGen SourceSection: [5312,5343]`__slots__ = ('_attrs...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           TupleLiteralNode SourceSection: [5324,5343]`('_attrs', '_call')`
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -2392,6 +2461,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [5349,5988]`def __init__(self, a...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -2422,12 +2492,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: attr
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,attr,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: attrs
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2523,6 +2595,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                                         Frame: [0,obj,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     BlockNode SourceSection: None
                                                       ElseNode SourceSection: [5627,5707]`for name in names:↵ ...`
                                                         ForNode SourceSection: None
@@ -2657,6 +2730,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     FrameReturnNode SourceSection: [5905,5952]`return tuple(getter(...`
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <return_val>
@@ -2715,6 +2789,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                                                         Frame: [0,getter,Illegal]
                                                                     ArgumentExpressionNode SourceSection: None
                                                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                                                        Index: 0
                                                                     GetNextCachedNode SourceSection: None
                                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                                         Op: __next__
@@ -2753,6 +2828,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [5988,6049]`def __call__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __call__ SourceSection: None
                             Arguments: None
@@ -2783,12 +2859,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: obj
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,obj,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     FrameReturnNode SourceSection: [6021,6043]`return self._call(ob...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -2811,6 +2889,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [6049,6255]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __repr__ SourceSection: None
                             Arguments: None
@@ -2840,6 +2919,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [6077,6249]`return '%s.%s(%s)' %...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -2907,6 +2987,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [6255,6321]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __reduce__ SourceSection: None
                             Arguments: None
@@ -2936,6 +3017,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [6285,6319]`return self.__class_...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -3011,16 +3093,19 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [6343,6565]`"""↵    Return a cal...`
                         SetItemNodeGen SourceSection: [6570,6601]`__slots__ = ('_items...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           TupleLiteralNode SourceSection: [6582,6601]`('_items', '_call')`
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -3029,6 +3114,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [6607,6965]`def __init__(self, i...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -3059,6 +3145,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalCellNodeGen SourceSection: None
                                         Identifier: item
                                         ReadLocalVariableNode SourceSection: None
@@ -3066,6 +3153,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalCellNodeGen SourceSection: None
                                         Identifier: items
                                         ReadLocalVariableNode SourceSection: None
@@ -3126,6 +3214,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                                         Frame: [0,obj,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     FrameReturnNode SourceSection: [6740,6756]`return obj[item]`
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <return_val>
@@ -3221,6 +3310,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     FrameReturnNode SourceSection: [6894,6929]`return tuple(obj[i] ...`
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <return_val>
@@ -3276,6 +3366,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                                                         Frame: [0,i,Illegal]
                                                                     ArgumentExpressionNode SourceSection: None
                                                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                                                        Index: 0
                                                                     GetNextCachedNode SourceSection: None
                                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                                         Op: __next__
@@ -3314,6 +3405,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [6965,7026]`def __call__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __call__ SourceSection: None
                             Arguments: None
@@ -3344,12 +3436,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: obj
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,obj,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     FrameReturnNode SourceSection: [6998,7020]`return self._call(ob...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -3372,6 +3466,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [7026,7228]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __repr__ SourceSection: None
                             Arguments: None
@@ -3401,6 +3496,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [7054,7222]`return '%s.%s(%s)' %...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -3468,6 +3564,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [7228,7294]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __reduce__ SourceSection: None
                             Arguments: None
@@ -3497,6 +3594,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [7258,7292]`return self.__class_...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -3572,16 +3670,19 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [7318,7570]`"""↵    Return a cal...`
                         SetItemNodeGen SourceSection: [7575,7616]`__slots__ = ('_name'...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           TupleLiteralNode SourceSection: [7587,7616]`('_name', '_args', '...`
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -3591,6 +3692,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [7622,8011]`def __init__(*args, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -3743,6 +3845,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [8011,8110]`def __call__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __call__ SourceSection: None
                             Arguments: None
@@ -3773,12 +3876,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: obj
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,obj,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     FrameReturnNode SourceSection: [8044,8104]`return getattr(obj, ...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -3833,6 +3938,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [8110,8442]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __repr__ SourceSection: None
                             Arguments: None
@@ -3862,6 +3968,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [8138,8163]`args = [repr(self._n...`
                                         Identifier: args
@@ -3992,6 +4099,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                                        Index: 0
                                                     GetNextCachedNode SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
@@ -4074,6 +4182,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         SetItemNodeGen SourceSection: [8442,8778]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __reduce__ SourceSection: None
                             Arguments: None
@@ -4103,6 +4212,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     IfNode SourceSection: [8472,8778]`if not self._kwargs:...`
                                       NotNodeGen SourceSection: [8475,8491]`not self._kwargs`
                                         GetAttributeNodeGen SourceSection: [8479,8491]`self._kwargs`
@@ -4255,12 +4365,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8820,8826]`a += b`
                       Identifier: a
@@ -4315,12 +4427,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8883,8889]`a &= b`
                       Identifier: a
@@ -4375,12 +4489,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [8972,9108]`if not hasattr(a, '_...`
                       NotNodeGen SourceSection: [8975,9004]`not hasattr(a, '__ge...`
@@ -4485,12 +4601,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9177,9184]`a //= b`
                       Identifier: a
@@ -4545,12 +4663,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9245,9252]`a <<= b`
                       Identifier: a
@@ -4605,12 +4725,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9309,9315]`a %= b`
                       Identifier: a
@@ -4665,12 +4787,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9372,9378]`a *= b`
                       Identifier: a
@@ -4725,12 +4849,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9438,9444]`a @= b`
                       Identifier: a
@@ -4785,12 +4911,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9500,9506]`a |= b`
                       Identifier: a
@@ -4845,12 +4973,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9564,9570]`a **=b`
                       Identifier: a
@@ -4905,12 +5035,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9631,9638]`a >>= b`
                       Identifier: a
@@ -4965,12 +5097,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9695,9701]`a -= b`
                       Identifier: a
@@ -5025,12 +5159,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9762,9768]`a /= b`
                       Identifier: a
@@ -5085,12 +5221,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9825,9831]`a ^= b`
                       Identifier: a

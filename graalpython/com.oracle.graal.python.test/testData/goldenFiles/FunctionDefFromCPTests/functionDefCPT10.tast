@@ -40,12 +40,14 @@ ModuleRootNode Name: <module 'functionDefCPT10'> SourceSection: [0,24]`def f(a, 
                           Frame: [0,a,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,b,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: args
                         WriteLocalFrameSlotNodeGen SourceSection: None

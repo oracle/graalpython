@@ -395,6 +395,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [1961,1965]`pass`
@@ -450,11 +451,13 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [2049,2206]`def __init__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -484,6 +487,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [2077,2091]`self.flags = 0`
                                         Attribute: flags
@@ -518,6 +522,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [2206,2279]`@property↵    def gr...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [2206,2215]`@property`
                             CachedCallNodeGen SourceSection: None
@@ -551,6 +556,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [2246,2274]`return len(self.grou...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -578,6 +584,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: property
@@ -585,6 +592,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [2279,2767]`def opengroup(self, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: opengroup SourceSection: None
                             Arguments:
@@ -616,12 +624,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: name
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,name,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [2319,2336]`gid = self.groups`
                                         Identifier: gid
@@ -768,6 +778,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [2767,2846]`def closegroup(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: closegroup SourceSection: None
                             Arguments: None
@@ -798,18 +809,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: gid
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,gid,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: p
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,p,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     SetItemNodeGen SourceSection: [2805,2841]`self.groupwidths[gid...`
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
@@ -836,6 +850,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [2846,2949]`def checkgroup(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: checkgroup SourceSection: None
                             Arguments: None
@@ -866,12 +881,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: gid
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,gid,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     FrameReturnNode SourceSection: [2881,2943]`return gid < self.gr...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -914,6 +931,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [2949,3335]`def checklookbehindg...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: checklookbehindgroup SourceSection: None
                             Arguments: None
@@ -944,18 +962,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: gid
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,gid,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: source
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,source,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     IfNode SourceSection: [3002,3335]`if self.lookbehindgr...`
                                       NotNodeGen SourceSection: [3005,3038]`self.lookbehindgroup...`
                                         IsNodeGen SourceSection: None
@@ -1075,11 +1096,13 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [3398,3572]`def __init__(self, p...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments:
@@ -1111,18 +1134,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: pattern
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,pattern,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: data
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,data,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [3446,3468]`self.pattern = patte...`
                                         Attribute: pattern
@@ -1166,6 +1192,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [3572,4983]`def dump(self, level...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: dump SourceSection: None
                             Arguments:
@@ -1197,12 +1224,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: level
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,level,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [3605,3614]`nl = True`
                                         Identifier: nl
@@ -1797,6 +1826,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [4983,5038]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __repr__ SourceSection: None
                             Arguments: None
@@ -1826,6 +1856,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [5011,5033]`return repr(self.dat...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -1852,6 +1883,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [5038,5091]`def __len__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __len__ SourceSection: None
                             Arguments: None
@@ -1881,6 +1913,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [5065,5086]`return len(self.data...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -1907,6 +1940,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [5091,5154]`def __delitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __delitem__ SourceSection: None
                             Arguments: None
@@ -1937,12 +1971,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: index
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,index,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     DeleteItemNodeGen SourceSection: [5129,5149]`del self.data[index]...`
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
@@ -1961,6 +1997,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [5154,5319]`def __getitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __getitem__ SourceSection: None
                             Arguments: None
@@ -1991,12 +2028,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: index
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,index,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5192,5291]`if isinstance(index,...`
                                         YesNodeGen SourceSection: None
@@ -2069,6 +2108,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [5319,5391]`def __setitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __setitem__ SourceSection: None
                             Arguments: None
@@ -2099,18 +2139,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: index
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,index,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: code
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,code,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     SetItemNodeGen SourceSection: [5363,5386]`self.data[index] = c...`
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
@@ -2132,6 +2175,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [5391,5464]`def insert(self, ind...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: insert SourceSection: None
                             Arguments: None
@@ -2162,18 +2206,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: index
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,index,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: code
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,code,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     ExpressionStatementNode SourceSection: [5430,5459]`self.data.insert(ind...`
                                       PythonCallNodeGen SourceSection: [5430,5459]`self.data.insert(ind...`
                                         CachedCallNodeGen SourceSection: None
@@ -2200,6 +2247,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [5464,5523]`def append(self, cod...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: append SourceSection: None
                             Arguments: None
@@ -2230,12 +2278,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: code
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,code,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     ExpressionStatementNode SourceSection: [5496,5518]`self.data.append(cod...`
                                       PythonCallNodeGen SourceSection: [5496,5518]`self.data.append(cod...`
                                         CachedCallNodeGen SourceSection: None
@@ -2259,6 +2309,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [5523,7119]`def getwidth(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: getwidth SourceSection: None
                             Arguments: None
@@ -2288,6 +2339,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5612,5677]`if self.width is not...`
                                         NotNodeGen SourceSection: [5615,5637]`self.width is not No...`
@@ -3175,11 +3227,13 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [7140,7425]`def __init__(self, s...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -3210,12 +3264,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: string
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,string,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [7176,7213]`self.istext = isinst...`
                                         Attribute: istext
@@ -3304,6 +3360,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [7425,7943]`def __next(self):↵  ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __next SourceSection: None
                             Arguments: None
@@ -3333,6 +3390,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [7451,7469]`index = self.index`
                                         Identifier: index
@@ -3489,6 +3547,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [7943,8071]`def match(self, char...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: match SourceSection: None
                             Arguments: None
@@ -3519,12 +3578,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: char
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,char,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [7974,8054]`if char == self.next...`
                                         YesNodeGen SourceSection: None
@@ -3571,6 +3632,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [8071,8157]`def get(self):↵     ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: get SourceSection: None
                             Arguments: None
@@ -3600,6 +3662,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [8094,8110]`this = self.next`
                                         Identifier: this
@@ -3636,6 +3699,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [8157,8393]`def getwhile(self, n...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: getwhile SourceSection: None
                             Arguments: None
@@ -3666,18 +3730,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: n
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,n,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: charset
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,charset,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [8197,8208]`result = ''`
                                         Identifier: result
@@ -3767,6 +3834,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [8393,8955]`def getuntil(self, t...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: getuntil SourceSection: None
                             Arguments: None
@@ -3797,12 +3865,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: terminator
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,terminator,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [8433,8444]`result = ''`
                                         Identifier: result
@@ -3948,6 +4018,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [8955,9037]`@property↵    def po...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [8955,8964]`@property`
                             CachedCallNodeGen SourceSection: None
@@ -3981,6 +4052,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [8992,9032]`return self.index - ...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -4022,6 +4094,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: property
@@ -4029,6 +4102,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [9037,9106]`def tell(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: tell SourceSection: None
                             Arguments: None
@@ -4058,6 +4132,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [9061,9101]`return self.index - ...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -4098,6 +4173,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [9106,9183]`def seek(self, index...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: seek SourceSection: None
                             Arguments: None
@@ -4128,12 +4204,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: index
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,index,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [9137,9155]`self.index = index`
                                         Attribute: index
@@ -4158,6 +4236,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         SetItemNodeGen SourceSection: [9183,9277]`def error(self, msg,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: error SourceSection: None
                             Arguments:
@@ -4189,18 +4268,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: msg
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,msg,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: offset
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,offset,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     FrameReturnNode SourceSection: [9223,9275]`return error(msg, se...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -4283,12 +4365,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         Frame: [0,source,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: escape
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,escape,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9364,9390]`code = ESCAPES.get(e...`
                       Identifier: code
@@ -4987,18 +5071,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         Frame: [0,source,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: escape
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,escape,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: state
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,state,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [11296,11325]`code = CATEGORIES.ge...`
                       Identifier: code
@@ -5935,6 +6022,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                       Frame: [0,items,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     IfNode SourceSection: [14072,14131]`if len(set(items)) =...`
                       YesNodeGen SourceSection: None
@@ -6065,24 +6153,28 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         Frame: [0,source,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: state
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,state,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: verbose
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,verbose,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: nested
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,nested,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14343,14353]`items = []`
                       Identifier: items
@@ -6563,30 +6655,35 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         Frame: [0,source,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: state
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,state,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: verbose
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,verbose,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: nested
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,nested,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: first
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,first,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 4
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15950,15980]`subpattern = SubPatt...`
                       Identifier: subpattern
@@ -10621,18 +10718,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         Frame: [0,source,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: state
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,state,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: char
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,char,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [31719,31741]`sourceget = source.g...`
                       Identifier: sourceget
@@ -11318,12 +11418,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         Frame: [0,src,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [34158,34745]`if isinstance(src, s...`
                       YesNodeGen SourceSection: None
@@ -11507,18 +11609,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         Frame: [0,str,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [34867,34890]`source = Tokenizer(s...`
                       Identifier: source
@@ -11802,6 +11907,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         Frame: [0,source,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: pattern
                       ReadLocalVariableNode SourceSection: None
@@ -11809,6 +11915,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [35766,35787]`s = Tokenizer(source...`
                       Identifier: s
@@ -11907,12 +12014,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                       Frame: [0,index,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: pos
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [1,pos,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 1
                                 BlockNode SourceSection: None
                                   IfNode SourceSection: [35923,36027]`if index > pattern.g...`
                                     YesNodeGen SourceSection: None
@@ -12908,6 +13017,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [0,s,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     GetNextCachedNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
@@ -12985,12 +13095,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                             Frame: [0,template,Illegal]
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: match
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,match,Illegal]
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 1
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [38995,39010]`g = match.group`
                           Identifier: g

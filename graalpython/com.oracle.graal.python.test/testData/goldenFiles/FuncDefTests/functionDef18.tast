@@ -40,30 +40,35 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                           Frame: [0,_cls,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: hits
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,hits,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: misses
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,misses,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 2
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: maxsize
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,maxsize,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 3
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: currsize
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,currsize,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 4
                     FrameReturnNode SourceSection: [54,112]`return _tuple_new(_c...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>

@@ -40,12 +40,14 @@ ModuleRootNode Name: <module 'functionDef04'> SourceSection: [0,31]`def foo(a, b
                           Frame: [0,a,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,b,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     FrameReturnNode SourceSection: [18,30]`return a + b`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>

@@ -345,11 +345,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [795,814]`def _m(self): pass↵`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: _m SourceSection: None
                             Arguments: None
@@ -379,6 +381,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     ExpressionStatementNode SourceSection: [809,813]`pass`
                                       EmptyNode SourceSection: [809,813]`pass`
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -644,24 +647,28 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         Frame: [0,name,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: bases
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,bases,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: kwds
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,kwds,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: exec_body
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,exec_body,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [1740,1777]`resolved_bases = res...`
                       Identifier: resolved_bases
@@ -832,6 +839,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                       Frame: [0,bases,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2114,2137]`new_bases = list(bas...`
                       Identifier: new_bases
@@ -1106,18 +1114,21 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         Frame: [0,name,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: bases
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,bases,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: kwds
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,kwds,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     IfNode SourceSection: [3130,3240]`if kwds is None:↵   ...`
                       YesNodeGen SourceSection: None
@@ -1323,12 +1334,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         Frame: [0,meta,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: bases
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,bases,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [3841,3854]`winner = meta`
                       Identifier: winner
@@ -1469,16 +1482,19 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [4363,4885]`"""Route attribute a...`
                         SetItemNodeGen SourceSection: [4890,5320]`def __init__(self, f...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments:
@@ -1513,30 +1529,35 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: fget
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,fget,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: fset
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,fset,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: fdel
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,fdel,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 3
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: doc
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,doc,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 4
                                     BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [4961,4977]`self.fget = fget`
                                         Attribute: fget
@@ -1620,6 +1641,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [5320,5629]`def __get__(self, in...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __get__ SourceSection: None
                             Arguments:
@@ -1651,18 +1673,21 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: instance
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,instance,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: ownerclass
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,ownerclass,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5374,5597]`if instance is None:...`
                                         YesNodeGen SourceSection: None
@@ -1745,6 +1770,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [5629,5791]`def __set__(self, in...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __set__ SourceSection: None
                             Arguments: None
@@ -1775,18 +1801,21 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: instance
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,instance,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: value
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,value,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5673,5759]`if self.fset is None...`
                                         YesNodeGen SourceSection: None
@@ -1832,6 +1861,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [5791,5945]`def __delete__(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __delete__ SourceSection: None
                             Arguments: None
@@ -1862,12 +1892,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: instance
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,instance,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5831,5920]`if self.fdel is None...`
                                         YesNodeGen SourceSection: None
@@ -1910,6 +1942,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [5945,6184]`def getter(self, fge...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: getter SourceSection: None
                             Arguments: None
@@ -1940,12 +1973,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: fget
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,fget,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [5977,6028]`fdoc = fget.__doc__ ...`
                                         Identifier: fdoc
@@ -2047,6 +2082,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [6184,6355]`def setter(self, fse...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: setter SourceSection: None
                             Arguments: None
@@ -2077,12 +2113,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: fset
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,fset,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [6216,6277]`result = type(self)(...`
                                         Identifier: result
@@ -2156,6 +2194,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [6355,6524]`def deleter(self, fd...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: deleter SourceSection: None
                             Arguments: None
@@ -2186,12 +2225,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: fdel
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,fdel,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [6388,6449]`result = type(self)(...`
                                         Identifier: result
@@ -2311,11 +2352,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [6586,6816]`def __init__(self, g...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -2346,12 +2389,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: gen
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,gen,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [6619,6639]`self.__wrapped = gen...`
                                         Attribute: __wrapped
@@ -2418,6 +2463,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [6816,6881]`def send(self, val):...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: send SourceSection: None
                             Arguments: None
@@ -2448,12 +2494,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: val
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,val,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     FrameReturnNode SourceSection: [6845,6876]`return self.__wrappe...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -2481,6 +2529,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [6881,6960]`def throw(self, tp, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: throw SourceSection: None
                             Arguments: None
@@ -2511,12 +2560,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: tp
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,tp,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: rest
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2556,6 +2607,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [6960,7019]`def close(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: close SourceSection: None
                             Arguments: None
@@ -2585,6 +2637,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [6985,7014]`return self.__wrappe...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -2609,6 +2662,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7019,7094]`@property↵    def gi...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [7019,7028]`@property`
                             CachedCallNodeGen SourceSection: None
@@ -2642,6 +2696,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [7060,7089]`return self.__wrappe...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -2667,6 +2722,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: property
@@ -2674,6 +2730,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7094,7171]`@property↵    def gi...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [7094,7103]`@property`
                             CachedCallNodeGen SourceSection: None
@@ -2707,6 +2764,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [7136,7166]`return self.__wrappe...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -2732,6 +2790,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: property
@@ -2739,6 +2798,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7171,7252]`@property↵    def gi...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [7171,7180]`@property`
                             CachedCallNodeGen SourceSection: None
@@ -2772,6 +2832,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [7215,7247]`return self.__wrappe...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -2797,6 +2858,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: property
@@ -2804,6 +2866,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7252,7337]`@property↵    def gi...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [7252,7261]`@property`
                             CachedCallNodeGen SourceSection: None
@@ -2837,6 +2900,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [7298,7332]`return self.__wrappe...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -2862,6 +2926,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: property
@@ -2869,11 +2934,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7337,7354]`cr_code = gi_code`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7347,7354]`gi_code`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: gi_code
@@ -2881,11 +2948,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7359,7378]`cr_frame = gi_frame`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7370,7378]`gi_frame`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: gi_frame
@@ -2893,11 +2962,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7383,7406]`cr_running = gi_runn...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7396,7406]`gi_running`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: gi_running
@@ -2905,11 +2976,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7411,7434]`cr_await = gi_yieldf...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7422,7434]`gi_yieldfrom`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: gi_yieldfrom
@@ -2917,6 +2990,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7439,7499]`def __next__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __next__ SourceSection: None
                             Arguments: None
@@ -2946,6 +3020,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [7467,7494]`return next(self.__w...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -2972,6 +3047,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7499,7602]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __iter__ SourceSection: None
                             Arguments: None
@@ -3001,6 +3077,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [7527,7586]`if self.__isgen:↵   ...`
                                         YesNodeGen SourceSection: None
@@ -3040,11 +3117,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         SetItemNodeGen SourceSection: [7602,7622]`__await__ = __iter__...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7614,7622]`__iter__`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: __iter__
@@ -3091,6 +3170,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     IfNode SourceSection: [7711,7803]`if not callable(func...`
                       NotNodeGen SourceSection: [7714,7732]`not callable(func)`
@@ -3676,6 +3756,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                             Frame: [0,n,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                         GetNextCachedNode SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__

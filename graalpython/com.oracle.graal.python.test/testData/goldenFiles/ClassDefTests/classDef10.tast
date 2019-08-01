@@ -49,11 +49,13 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                   Identifier: __name__
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                                 SetItemIfNotPresentNodeGen SourceSection: None
                                   SetItemNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: [40,83]`def test(self, arg):...`
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                                 FunctionDefinitionNode Name: test SourceSection: None
                                   Arguments: None
@@ -84,12 +86,14 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                                 Frame: [0,self,Illegal]
                                               ArgumentExpressionNode SourceSection: None
                                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 0
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: arg
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [1,arg,Illegal]
                                               ArgumentExpressionNode SourceSection: None
                                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 1
                                           FrameReturnNode SourceSection: [65,83]`return test(arg+1)`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
@@ -154,6 +158,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                         Frame: [0,arg,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     ExpressionStatementNode SourceSection: [17,21]`pass`
                       EmptyNode SourceSection: [17,21]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

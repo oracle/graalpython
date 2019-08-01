@@ -39,6 +39,7 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                         Frame: [0,marks,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     AssertNode SourceSection: [20,59]`assert len(marks) !=...`
                       YesNodeGen SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [27,42]`len(marks) != 0`

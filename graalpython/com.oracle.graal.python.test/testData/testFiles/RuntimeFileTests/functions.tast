@@ -41,12 +41,14 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                           Frame: [0,obj,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: key
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,key,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [2039,2057]`default = object()`
                         Identifier: default
@@ -124,6 +126,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                         Frame: [0,iterable,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     BlockNode SourceSection: None
                       ElseNode SourceSection: [2149,2210]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
@@ -197,6 +200,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                         Frame: [0,iterable,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     BlockNode SourceSection: None
                       ElseNode SourceSection: [2261,2327]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
@@ -271,12 +275,14 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                           Frame: [0,func,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: iterable
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,iterable,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [2386,2397]`result = []`
                         Identifier: result
@@ -326,6 +332,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                         Frame: [0,a,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -401,8 +408,10 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
         Identifier: __build_class__
         FunctionDefinitionNode Name: __build_class__ SourceSection: None
           Arguments: None
-          KwArguments:KwDefaultExpressionNode SourceSection: None
-              ObjectLiteralNode SourceSection: [2668,2672]`None`
+          KwArguments:
+            KwDefaultExpressionNode SourceSection: None
+              Name: metaclass
+              Value: ObjectLiteralNode SourceSection: [2668,2672]`None`
           Documentation: StringLiteralNode: `↵    Stage 1 helper ...`
           FreeVarSlots: None
           ExecutionSlots:
@@ -430,12 +439,14 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                         Frame: [0,func,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: name
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,name,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: bases
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -449,6 +460,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                         Frame: [3,metaclass,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: kwargs
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -591,11 +603,13 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [3030,3240]`def __init__(self, f...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -626,18 +640,21 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: func
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,func,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: iterable
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,iterable,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: args
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -718,6 +735,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                         SetItemNodeGen SourceSection: [3240,3387]`def __next__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __next__ SourceSection: None
                             Arguments: None
@@ -747,6 +765,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [3268,3277]`args = []`
                                         Identifier: args
@@ -817,6 +836,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                         SetItemNodeGen SourceSection: [3387,3432]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __iter__ SourceSection: None
                             Arguments: None
@@ -846,6 +866,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [3415,3426]`return self`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -860,6 +881,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                         SetItemNodeGen SourceSection: [3432,3588]`def __contains__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __contains__ SourceSection: None
                             Arguments: None
@@ -890,12 +912,14 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: x
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,x,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       ElseNode SourceSection: [3467,3572]`for i in map(self.__...`
                                         ForNode SourceSection: None
@@ -1153,12 +1177,14 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                           Frame: [0,value,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: format_spec
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,format_spec,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     FrameReturnNode SourceSection: [4451,4500]`return type(value)._...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -1231,18 +1257,21 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                               Frame: [0,iterable,Illegal]
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: key
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,key,Illegal]
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 1
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: reverse
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [2,reverse,Illegal]
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 2
                         BlockNode SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [4810,4833]`result = list(iterab...`
                             Identifier: result

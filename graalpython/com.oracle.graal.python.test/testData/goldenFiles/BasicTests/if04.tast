@@ -47,6 +47,7 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                           Frame: [0,a,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       FrameReturnNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>

@@ -67,6 +67,7 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                                       Frame: [0,foo,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: z
                                     WriteLocalFrameSlotNodeGen SourceSection: None

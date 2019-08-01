@@ -253,6 +253,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                               Frame: [0,j,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                           GetNextCachedNode SourceSection: None
                                             LookupAndCallUnaryNodeGen SourceSection: None
                                               Op: __next__
@@ -293,6 +294,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [1,t,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                     GetNextCachedNode SourceSection: None
                       LookupAndCallUnaryNodeGen SourceSection: None
                         Op: __next__
@@ -349,24 +351,28 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: add_flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,add_flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: del_flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,del_flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: TYPE_FLAGS
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,TYPE_FLAGS,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   BlockNode SourceSection: None
                     IfNode SourceSection: [2379,2439]`if add_flags & TYPE_...`
                       YesNodeGen SourceSection: None
@@ -451,18 +457,21 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,code,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2559,2577]`emit = code.append`
                       Identifier: emit
@@ -2865,18 +2874,21 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,charset,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: code
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,code,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8993,9011]`emit = code.append`
                       Identifier: emit
@@ -3212,24 +3224,28 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,charset,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: iscased
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,iscased,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: fixup
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,fixup,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: fixes
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,fixes,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9844,9852]`out = []`
                       Identifier: out
@@ -4485,6 +4501,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,bits,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: _CODEBITS
                       ReadLocalVariableNode SourceSection: None
@@ -4492,6 +4509,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: _int
                       ReadLocalVariableNode SourceSection: None
@@ -4499,6 +4517,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [14814,14851]`s = bits.translate(_...`
                       Identifier: s
@@ -4604,6 +4623,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                         Frame: [0,i,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     GetNextCachedNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
@@ -4681,6 +4701,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                       Frame: [0,b,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15015,15042]`a = memoryview(b).ca...`
                       Identifier: a
@@ -4805,6 +4826,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                       Frame: [0,p,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     IfNode SourceSection: [15220,15261]`if len(p) != 1:↵    ...`
                       YesNodeGen SourceSection: None
@@ -4952,6 +4974,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                       Frame: [0,prefix,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15793,15818]`table = [0] * len(pr...`
                       Identifier: table
@@ -5132,6 +5155,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                       Frame: [0,flags,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   IfNode SourceSection: [16123,16326]`if not flags & SRE_F...`
                     NotNodeGen SourceSection: [16126,16157]`not flags & SRE_FLAG...`
                       BinaryArithmeticExpression SourceSection: [16130,16157]`flags & SRE_FLAG_IGN...`
@@ -5232,12 +5256,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [16401,16412]`prefix = []`
                       Identifier: prefix
@@ -5666,12 +5692,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     BreakTargetNode SourceSection: [17448,17804]`while True:↵        ...`
                       WhileNode SourceSection: None
@@ -6287,18 +6315,21 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,code,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     DestructuringAssignmentNode SourceSection: [18957,18984]`lo, hi = pattern.get...`
                       PythonCallNodeGen SourceSection: [18966,18984]`pattern.getwidth()`
@@ -6915,6 +6946,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                       Frame: [0,obj,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [20614,20650]`return isinstance(ob...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -6972,12 +7004,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,p,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [20678,20709]`flags = p.pattern.fl...`
                       Identifier: flags
@@ -7100,6 +7134,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                       Frame: [0,code,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [20914,20987]`return '[%s]' % ', '...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -7175,6 +7210,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                         Frame: [0,x,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     GetNextCachedNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
@@ -7227,6 +7263,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [21015,21018]`sys`
                       Identifier: sys
@@ -7324,6 +7361,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   WriteLocalCellNodeGen SourceSection: None
                                     Identifier: end
                                     ReadLocalVariableNode SourceSection: None
@@ -7331,6 +7369,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 1
                                 BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [21131,21446]`def print_(*args, to...`
                                     Identifier: print_
@@ -7338,8 +7377,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                       Frame: [2,print_,Illegal]
                                     FunctionDefinitionNode Name: print_ SourceSection: None
                                       Arguments: None
-                                      KwArguments:KwDefaultExpressionNode SourceSection: None
-                                          ObjectLiteralNode SourceSection: [21152,21156]`None`
+                                      KwArguments:
+                                        KwDefaultExpressionNode SourceSection: None
+                                          Name: to
+                                          Value: ObjectLiteralNode SourceSection: [21152,21156]`None`
                                       Documentation: StringLiteralNode: Empty
                                       FreeVarSlots: end, , labels, , level, , offset_width, , start, 
                                       ExecutionSlots:
@@ -7373,6 +7414,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                                     Frame: [1,to,Illegal]
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                                      Index: 0
                                               BlockNode SourceSection: None
                                                 IfNode SourceSection: [21171,21278]`if to is not None:↵ ...`
                                                   NotNodeGen SourceSection: [21174,21188]`to is not None`
@@ -8380,6 +8422,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                                                                   Frame: [0,x,Illegal]
                                                                               ArgumentExpressionNode SourceSection: None
                                                                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                                                                  Index: 0
                                                                               GetNextCachedNode SourceSection: None
                                                                                 LookupAndCallUnaryNodeGen SourceSection: None
                                                                                   Op: __next__
@@ -9599,6 +9642,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                                                                                                       Frame: [0,x,Illegal]
                                                                                                   ArgumentExpressionNode SourceSection: None
                                                                                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                                                                                      Index: 0
                                                                                                   GetNextCachedNode SourceSection: None
                                                                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                                                                       Op: __next__
@@ -9873,12 +9917,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
                         Frame: [0,p,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [26357,26469]`if isstring(p):↵    ...`
                       YesNodeGen SourceSection: None
@@ -10164,3 +10210,4 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Int
               GetCallAttributeNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [26892,26896]`_sre`
                   Identifier: _sre
+                                                                                                                                                          

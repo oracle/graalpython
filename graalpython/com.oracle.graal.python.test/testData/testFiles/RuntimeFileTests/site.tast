@@ -700,18 +700,21 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         Frame: [0,sitedir,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: name
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,name,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: known_paths
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,known_paths,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     IfNode SourceSection: [5609,5729]`if known_paths is No...`
                       YesNodeGen SourceSection: None
@@ -1228,12 +1231,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         Frame: [0,sitedir,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: known_paths
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,known_paths,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [7013,7133]`if known_paths is No...`
                       YesNodeGen SourceSection: None
@@ -1433,6 +1438,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Frame: [0,name,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -1973,6 +1979,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Frame: [0,userbase,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9178,9204]`version = sys.versio...`
                       Identifier: version
@@ -2243,6 +2250,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Frame: [0,known_paths,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [10512,10545]`user_site = getusers...`
                       Identifier: user_site
@@ -2335,6 +2343,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Frame: [0,prefixes,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [11005,11022]`sitepackages = []`
                       Identifier: sitepackages
@@ -2601,12 +2610,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         Frame: [0,known_paths,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: prefixes
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,prefixes,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     ElseNode SourceSection: [11955,12082]`for sitedir in getsi...`
                       ForNode SourceSection: None
@@ -3347,6 +3358,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Frame: [0,known_paths,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [15702,15735]`global PREFIXES, ENA...`
                       EmptyNode SourceSection: [15702,15735]`global PREFIXES, ENA...`
@@ -3571,6 +3583,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Frame: [0,conffile,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__

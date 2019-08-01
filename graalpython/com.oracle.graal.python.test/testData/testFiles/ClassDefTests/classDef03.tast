@@ -47,21 +47,25 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                               Identifier: __name__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                             SetItemIfNotPresentNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: None
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                             StringLiteralNode SourceSection: None
                             StringLiteralNode SourceSection: [19,47]`"""A simple example ...`
                           SetItemNodeGen SourceSection: [52,61]`i = 12345`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                             StringLiteralNode SourceSection: None
                             IntegerLiteralNode SourceSection: [56,61]`12345`
                           SetItemNodeGen SourceSection: [67,108]`def f(self):↵       ...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                             StringLiteralNode SourceSection: None
                             FunctionDefinitionNode Name: f SourceSection: None
                               Arguments: None
@@ -91,6 +95,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [88,108]`return 'hello world'...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>

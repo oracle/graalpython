@@ -40,12 +40,14 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                           Frame: [0,x,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: y
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,y,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     TryFinallyNode SourceSection: [22,214]`try:â†µ        result ...`
                       TryExceptNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [35,49]`result = x / y`

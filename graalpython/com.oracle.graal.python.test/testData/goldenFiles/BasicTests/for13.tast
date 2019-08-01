@@ -39,6 +39,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     ElseNode SourceSection: [22,186]`for frame in self:â†µ ...`
                       ForNode SourceSection: None
                         DefaultLoopNode SourceSection: None

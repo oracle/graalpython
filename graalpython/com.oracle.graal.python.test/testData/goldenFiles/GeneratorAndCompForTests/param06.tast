@@ -41,12 +41,14 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: dirs
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,dirs,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     WriteLocalVariableNodeGen SourceSection: [23,78]`a = [join(dir, file)...`
                       Identifier: a
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -121,6 +123,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                       Frame: [1,dir,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__

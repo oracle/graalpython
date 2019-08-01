@@ -93,11 +93,13 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
                         Frame: [0,c,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

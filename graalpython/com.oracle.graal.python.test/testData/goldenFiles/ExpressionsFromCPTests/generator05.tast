@@ -64,6 +64,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
                     Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
                 GetNextCachedNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__

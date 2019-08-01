@@ -54,12 +54,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,heap,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: item
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,item,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [6305,6322]`heap.append(item)`
                       PythonCallNodeGen SourceSection: [6305,6322]`heap.append(item)`
@@ -132,6 +134,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Frame: [0,heap,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [6461,6481]`lastelt = heap.pop()...`
                       Identifier: lastelt
@@ -231,12 +234,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,heap,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: item
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,item,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [7151,7171]`returnitem = heap[0]...`
                       Identifier: returnitem
@@ -309,12 +314,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,heap,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: item
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,item,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [7380,7475]`if heap and heap[0] ...`
                       YesNodeGen SourceSection: None
@@ -431,6 +438,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [7575,7585]`n = len(x)`
                       Identifier: n
@@ -526,6 +534,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Frame: [0,heap,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8084,8104]`lastelt = heap.pop()...`
                       Identifier: lastelt
@@ -625,12 +634,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,heap,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: item
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,item,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8401,8421]`returnitem = heap[0]...`
                       Identifier: returnitem
@@ -702,6 +713,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8636,8646]`n = len(x)`
                       Identifier: n
@@ -798,18 +810,21 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,heap,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: startpos
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,startpos,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pos
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,pos,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8919,8938]`newitem = heap[pos]`
                       Identifier: newitem
@@ -941,12 +956,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,heap,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pos
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,pos,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [11371,11389]`endpos = len(heap)`
                       Identifier: endpos
@@ -1158,18 +1175,21 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,heap,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: startpos
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,startpos,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pos
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,pos,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12156,12175]`newitem = heap[pos]`
                       Identifier: newitem
@@ -1301,12 +1321,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,heap,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pos
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,pos,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12580,12598]`endpos = len(heap)`
                       Identifier: endpos
@@ -1495,10 +1517,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
           For Nodes: 2
           Block Nodes: 8
           Arguments: None
-          KwArguments:KwDefaultExpressionNode SourceSection: None
-              ObjectLiteralNode SourceSection: [13313,13317]`None`
+          KwArguments:
             KwDefaultExpressionNode SourceSection: None
-              BooleanLiteralNode SourceSection: [13327,13332]`False`
+              Name: key
+              Value: ObjectLiteralNode SourceSection: [13313,13317]`None`
+            KwDefaultExpressionNode SourceSection: None
+              Name: reverse
+              Value: BooleanLiteralNode SourceSection: [13327,13332]`False`
           Documentation: StringLiteralNode: `Merge multiple sorte...`
           FreeVarSlots: None
           ExecutionSlots:
@@ -2400,12 +2425,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Frame: [1,key,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: reverse
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [2,reverse,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 1
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [18959,20826]`def nsmallest(n, ite...`
@@ -2440,12 +2467,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,n,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: iterable
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,iterable,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: key
                       ReadLocalVariableNode SourceSection: None
@@ -2453,6 +2482,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     IfNode SourceSection: [19152,19467]`if n == 1:↵        i...`
                       YesNodeGen SourceSection: None
@@ -2747,6 +2777,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                       GetNextCachedNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
@@ -3010,6 +3041,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         GetNextCachedNode SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
@@ -3136,6 +3168,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       PythonObjectFactoryNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -3441,6 +3474,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     GetNextCachedNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
@@ -3495,12 +3529,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Frame: [0,n,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: iterable
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,iterable,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: key
                       ReadLocalVariableNode SourceSection: None
@@ -3508,6 +3544,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     IfNode SourceSection: [21031,21346]`if n == 1:↵        i...`
                       YesNodeGen SourceSection: None
@@ -3804,6 +3841,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                       GetNextCachedNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
@@ -4084,6 +4122,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         GetNextCachedNode SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
@@ -4210,6 +4249,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       PythonObjectFactoryNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -4532,6 +4572,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     GetNextCachedNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__

@@ -224,9 +224,10 @@ public final class ArgDefListBuilder {
         
         String[] kwId = kwarIndex == -1 ? new String[0] : new String[kwargsLen - (kwarIndex == -1 ? 0 : 1)];
         delta = argsLen - delta;
+        int starMarkerDelta = starMarker ? 0 : 1;
         for (int i = 0; i < kwargsLen; i++) {
             if (i != kwarIndex) {
-                nodes[i + delta] = scopeEnvironment.getWriteArgumentToLocal(kwargs.get(i).name, i + delta);
+                nodes[i + delta] = scopeEnvironment.getWriteArgumentToLocal(kwargs.get(i).name, i + delta - starMarkerDelta);
                 if (kwarIndex != -1) {
                     kwId[i] = kwargs.get(i).name;
                 }

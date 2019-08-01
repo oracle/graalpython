@@ -72,6 +72,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [35,94]`def inner_inner():↵ ...`
                                       Identifier: inner_inner

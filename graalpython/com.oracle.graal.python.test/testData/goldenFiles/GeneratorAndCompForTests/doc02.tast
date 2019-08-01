@@ -88,5 +88,6 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                       Frame: [0,f,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

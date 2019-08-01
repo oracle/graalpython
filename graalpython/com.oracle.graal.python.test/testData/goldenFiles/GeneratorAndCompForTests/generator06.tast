@@ -137,6 +137,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                             Frame: [0,c,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         GetNextCachedNode SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
@@ -187,5 +188,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                       Frame: [0,self,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

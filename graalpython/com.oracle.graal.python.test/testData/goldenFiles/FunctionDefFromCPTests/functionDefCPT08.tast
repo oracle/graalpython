@@ -43,6 +43,7 @@ ModuleRootNode Name: <module 'functionDefCPT08'> SourceSection: [0,26]`def f(foo
                           Frame: [0,foo,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: kw
                         WriteLocalFrameSlotNodeGen SourceSection: None

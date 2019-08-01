@@ -56,6 +56,7 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
                     Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
                 GetNextCachedNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__

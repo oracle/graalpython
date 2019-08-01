@@ -64,6 +64,7 @@ ModuleRootNode Name: <module 'lambda12'> SourceSection: [0,32]`def fn():↵  lam
                                       Frame: [0,x,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: y
                                     WriteLocalFrameSlotNodeGen SourceSection: None

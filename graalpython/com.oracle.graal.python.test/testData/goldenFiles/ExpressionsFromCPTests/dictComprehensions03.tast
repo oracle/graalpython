@@ -85,6 +85,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     Frame: [1,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
                 GetNextCachedNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__

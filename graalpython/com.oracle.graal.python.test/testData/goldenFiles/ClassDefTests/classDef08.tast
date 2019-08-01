@@ -47,11 +47,13 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                               Identifier: __name__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                             SetItemIfNotPresentNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [18,70]`def fn1(format):â†µ   ...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                             StringLiteralNode SourceSection: None
                             FunctionDefinitionNode Name: fn1 SourceSection: None
                               Arguments: None
@@ -81,6 +83,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                           Frame: [0,format,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [43,65]`return (format % arg...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -101,6 +104,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                           SetItemNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                             StringLiteralNode SourceSection: None
                             FunctionDefinitionNode Name: fn2 SourceSection: None
                               Arguments: None

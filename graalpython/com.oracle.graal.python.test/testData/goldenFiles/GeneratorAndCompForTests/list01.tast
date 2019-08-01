@@ -55,6 +55,7 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
                     Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
                 GetNextCachedNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__

@@ -37,6 +37,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [28,138]`def wrap(fn):↵      ...`
                       Identifier: wrap
@@ -71,6 +72,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [50,117]`def wrapped_f(*args)...`
                                     Identifier: wrapped_f

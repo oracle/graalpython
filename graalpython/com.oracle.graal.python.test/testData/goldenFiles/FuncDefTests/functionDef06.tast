@@ -41,12 +41,14 @@ ModuleRootNode Name: <module 'functionDef06'> SourceSection: [0,47]`def foo(par1
                           Frame: [0,par1,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: par2
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,par2,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     FrameReturnNode SourceSection: [29,47]`return par1 * par2`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>

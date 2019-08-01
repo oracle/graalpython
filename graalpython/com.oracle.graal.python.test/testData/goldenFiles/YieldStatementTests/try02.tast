@@ -67,5 +67,6 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
                       Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

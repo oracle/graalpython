@@ -67,6 +67,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                       Frame: [0,arg,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   FrameReturnNode SourceSection: [44,74]`return recursionInne...`
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <return_val>

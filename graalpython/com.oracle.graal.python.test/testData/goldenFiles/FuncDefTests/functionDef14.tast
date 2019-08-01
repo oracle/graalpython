@@ -43,6 +43,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                             Frame: [0,extra_opts,Illegal]
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                         ExpressionStatementNode SourceSection: [67,71]`pass`
                           EmptyNode SourceSection: [67,71]`pass`
                       Return Expresssion: ReadLocalVariableNode SourceSection: None

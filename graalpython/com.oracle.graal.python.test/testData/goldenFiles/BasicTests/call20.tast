@@ -39,6 +39,7 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                         Frame: [0,name,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     ExpressionStatementNode SourceSection: [14,36]`"in".format(name=nam...`
                       PythonCallNodeGen SourceSection: [14,36]`"in".format(name=nam...`
                         CachedCallNodeGen SourceSection: None

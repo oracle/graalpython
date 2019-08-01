@@ -34,12 +34,14 @@ ModuleRootNode Name: <module 'lambda06'> SourceSection: [0,14]`lambda x, y: 0`
                     Frame: [0,x,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 0
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: y
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [1,y,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 1
               FrameReturnNode SourceSection: None
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: <return_val>

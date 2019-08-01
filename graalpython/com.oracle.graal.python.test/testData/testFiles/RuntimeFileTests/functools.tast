@@ -126,24 +126,28 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,wrapper,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: wrapped
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,wrapped,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: assigned
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,assigned,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: updated
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,updated,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   BlockNode SourceSection: None
                     ElseNode SourceSection: [2059,2245]`for attr in assigned...`
                       ForNode SourceSection: None
@@ -306,18 +310,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,wrapped,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: assigned
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,assigned,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: updated
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,updated,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   FrameReturnNode SourceSection: [3099,3201]`return partial(updat...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -385,18 +392,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [3831,3861]`op_result = self.__l...`
                       Identifier: op_result
@@ -487,18 +497,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [4108,4138]`op_result = self.__l...`
                       Identifier: op_result
@@ -570,18 +583,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [4311,4341]`op_result = self.__l...`
                       Identifier: op_result
@@ -661,18 +677,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [4575,4605]`op_result = self.__l...`
                       Identifier: op_result
@@ -763,18 +782,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [4852,4882]`op_result = self.__l...`
                       Identifier: op_result
@@ -864,18 +886,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [5117,5147]`op_result = self.__l...`
                       Identifier: op_result
@@ -955,18 +980,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [5380,5410]`op_result = self.__g...`
                       Identifier: op_result
@@ -1057,18 +1085,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [5657,5687]`op_result = self.__g...`
                       Identifier: op_result
@@ -1140,18 +1171,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [5860,5890]`op_result = self.__g...`
                       Identifier: op_result
@@ -1231,18 +1265,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [6124,6154]`op_result = self.__g...`
                       Identifier: op_result
@@ -1333,18 +1370,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [6401,6431]`op_result = self.__g...`
                       Identifier: op_result
@@ -1434,18 +1474,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: other
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,other,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: NotImplemented
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,NotImplemented,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [6666,6696]`op_result = self.__g...`
                       Identifier: op_result
@@ -1599,6 +1642,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [7448,7538]`roots = {op for op i...`
                       Identifier: roots
@@ -1684,6 +1728,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       Frame: [0,op,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -1864,6 +1909,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8164,8715]`class K(object):↵   ...`
                       Identifier: K
@@ -1905,11 +1951,13 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Identifier: __name__
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                         SetItemIfNotPresentNodeGen SourceSection: None
                                           SetItemNodeGen SourceSection: None
                                       SetItemNodeGen SourceSection: [8189,8208]`__slots__ = ['obj']`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         StringLiteralNode SourceSection: None
                                         ListLiteralNode SourceSection: [8201,8208]`['obj']`
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -1917,6 +1965,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       SetItemNodeGen SourceSection: [8217,8277]`def __init__(self, o...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         StringLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: __init__ SourceSection: None
                                           Arguments: None
@@ -1947,12 +1996,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         Frame: [0,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: obj
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,obj,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 1
                                                   SetAttributeNodeGen SourceSection: [8254,8268]`self.obj = obj`
                                                     Attribute: obj
                                                     ReadLocalVariableNode SourceSection: [8254,8258]`self`
@@ -1967,6 +2018,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       SetItemNodeGen SourceSection: [8277,8360]`def __lt__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         StringLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: __lt__ SourceSection: None
                                           Arguments: None
@@ -1997,12 +2049,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         Frame: [0,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: other
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,other,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 1
                                                   FrameReturnNode SourceSection: [8314,8351]`return mycmp(self.ob...`
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
@@ -2043,6 +2097,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       SetItemNodeGen SourceSection: [8360,8443]`def __gt__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         StringLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: __gt__ SourceSection: None
                                           Arguments: None
@@ -2073,12 +2128,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         Frame: [0,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: other
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,other,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 1
                                                   FrameReturnNode SourceSection: [8397,8434]`return mycmp(self.ob...`
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
@@ -2119,6 +2176,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       SetItemNodeGen SourceSection: [8443,8527]`def __eq__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         StringLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: __eq__ SourceSection: None
                                           Arguments: None
@@ -2149,12 +2207,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         Frame: [0,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: other
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,other,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 1
                                                   FrameReturnNode SourceSection: [8480,8518]`return mycmp(self.ob...`
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
@@ -2195,6 +2255,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       SetItemNodeGen SourceSection: [8527,8611]`def __le__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         StringLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: __le__ SourceSection: None
                                           Arguments: None
@@ -2225,12 +2286,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         Frame: [0,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: other
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,other,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 1
                                                   FrameReturnNode SourceSection: [8564,8602]`return mycmp(self.ob...`
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
@@ -2271,6 +2334,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       SetItemNodeGen SourceSection: [8611,8695]`def __ge__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         StringLiteralNode SourceSection: None
                                         FunctionDefinitionNode Name: __ge__ SourceSection: None
                                           Arguments: None
@@ -2301,12 +2365,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         Frame: [0,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: other
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,other,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 1
                                                   FrameReturnNode SourceSection: [8648,8686]`return mycmp(self.ob...`
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
@@ -2347,6 +2413,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       SetItemNodeGen SourceSection: [8695,8710]`__hash__ = None`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         StringLiteralNode SourceSection: None
                                         ObjectLiteralNode SourceSection: [8706,8710]`None`
                                     Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -2430,16 +2497,19 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [9061,9150]`"""New function with...`
                         SetItemNodeGen SourceSection: [9156,9221]`__slots__ = "func", ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           TupleLiteralNode SourceSection: [9168,9221]`"func", "args", "key...`
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -2451,6 +2521,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [9227,10003]`def __new__(*args, *...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __new__ SourceSection: None
                             Arguments: None
@@ -2770,6 +2841,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [10003,10310]`def __call__(*args, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __call__ SourceSection: None
                             Arguments: None
@@ -2930,6 +3002,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [10310,10710]`@recursive_repr()↵  ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [10310,10327]`@recursive_repr()`
                             CachedCallNodeGen SourceSection: None
@@ -2963,6 +3036,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [10360,10394]`qualname = type(self...`
                                           Identifier: qualname
@@ -3056,6 +3130,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                           Frame: [0,x,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                       GetNextCachedNode SourceSection: None
                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                           Op: __next__
@@ -3151,6 +3226,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                       GetNextCachedNode SourceSection: None
                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                           Op: __next__
@@ -3226,6 +3302,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   StringLiteralNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: recursive_repr
@@ -3233,6 +3310,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [10710,10862]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __reduce__ SourceSection: None
                             Arguments: None
@@ -3262,6 +3340,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [10740,10856]`return type(self), (...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -3335,6 +3414,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [10862,11795]`def __setstate__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __setstate__ SourceSection: None
                             Arguments: None
@@ -3365,12 +3445,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: state
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,state,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [10901,11014]`if not isinstance(st...`
                                         NotNodeGen SourceSection: [10904,10932]`not isinstance(state...`
@@ -3743,16 +3825,19 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [11919,12119]`"""Method descriptor...`
                         SetItemNodeGen SourceSection: [12125,13009]`def __init__(self, f...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
@@ -3784,12 +3869,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: func
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,func,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: args
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3965,6 +4052,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [13009,13563]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __repr__ SourceSection: None
                             Arguments: None
@@ -3994,6 +4082,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [13037,13075]`args = ", ".join(map...`
                                         Identifier: args
@@ -4107,6 +4196,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                                        Index: 0
                                                     GetNextCachedNode SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
@@ -4208,6 +4298,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [13563,14019]`def _make_unbound_me...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: _make_unbound_method SourceSection: None
                             Arguments: None
@@ -4238,6 +4329,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [13603,13896]`def _method(*args, *...`
                                         Identifier: _method
@@ -4450,6 +4542,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [14019,14798]`def __get__(self, ob...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __get__ SourceSection: None
                             Arguments: None
@@ -4480,18 +4573,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: obj
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,obj,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: cls
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,cls,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [14056,14097]`get = getattr(self.f...`
                                         Identifier: get
@@ -4664,6 +4760,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [14798,15107]`@property↵    def __...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [14798,14807]`@property`
                             CachedCallNodeGen SourceSection: None
@@ -4697,6 +4794,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       FrameReturnNode SourceSection: [14852,14908]`return getattr(self....`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -4726,6 +4824,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: property
@@ -4796,21 +4895,25 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [15216,15417]`""" This class guara...`
                         SetItemNodeGen SourceSection: [15423,15446]`__slots__ = 'hashval...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [15435,15446]`'hashvalue'`
                         SetItemNodeGen SourceSection: [15452,15550]`def __init__(self, t...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments:
@@ -4818,6 +4921,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   StringLiteralNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: hash
@@ -4849,18 +4953,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: tup
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,tup,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: hash
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,hash,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 2
                                     BlockNode SourceSection: None
                                       SetItemNodeGen SourceSection: [15496,15509]`self[:] = tup`
                                         ReadLocalVariableNode SourceSection: None
@@ -4895,6 +5002,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         SetItemNodeGen SourceSection: [15550,15601]`def __hash__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: __hash__ SourceSection: None
                             Arguments: None
@@ -4924,6 +5032,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     FrameReturnNode SourceSection: [15578,15599]`return self.hashvalu...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -5013,36 +5122,42 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,args,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: kwds
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,kwds,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: typed
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,typed,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: kwd_mark
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,kwd_mark,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: fasttypes
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,fasttypes,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 4
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: tuple
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,tuple,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 5
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: type
                       ReadLocalVariableNode SourceSection: None
@@ -5050,12 +5165,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 6
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: len
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [7,len,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 7
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [16493,16503]`key = args`
                       Identifier: key
@@ -5180,6 +5297,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             Frame: [0,v,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                         GetNextCachedNode SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
@@ -5265,6 +5383,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [0,v,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
                                           GetNextCachedNode SourceSection: None
                                             LookupAndCallUnaryNodeGen SourceSection: None
                                               Op: __next__
@@ -5392,6 +5511,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: typed
                       ReadLocalVariableNode SourceSection: None
@@ -5399,6 +5519,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [18016,18147]`if maxsize is not No...`
                       YesNodeGen SourceSection: None
@@ -5471,6 +5592,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Frame: [0,user_function,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [18195,18266]`wrapper = _lru_cache...`
                                     Identifier: wrapper
@@ -5563,6 +5685,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: maxsize
                       ReadLocalVariableNode SourceSection: None
@@ -5570,6 +5693,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: typed
                       ReadLocalVariableNode SourceSection: None
@@ -5577,6 +5701,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: _CacheInfo
                       ReadLocalVariableNode SourceSection: None
@@ -5584,6 +5709,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   BlockNode SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [18476,18495]`sentinel = object()`
                       Identifier: sentinel
@@ -6973,6 +7099,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       Frame: [0,sequences,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [23696,23707]`result = []`
                       Identifier: result
@@ -7042,6 +7169,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Frame: [0,s,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                             GetNextCachedNode SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
@@ -7241,6 +7369,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,cls,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: abcs
                       ReadLocalVariableNode SourceSection: None
@@ -7248,6 +7377,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     BreakTargetNode SourceSection: [25371,25630]`for i, base in enume...`
                       ForNode SourceSection: None
@@ -7529,6 +7659,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     Frame: [0,b,Illegal]
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                                    Index: 0
                                                 GetNextCachedNode SourceSection: None
                                                   LookupAndCallUnaryNodeGen SourceSection: None
                                                     Op: __next__
@@ -7674,6 +7805,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       Frame: [0,base,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -7758,6 +7890,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       Frame: [0,base,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -7842,6 +7975,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       Frame: [0,base,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -7957,6 +8091,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: types
                       ReadLocalVariableNode SourceSection: None
@@ -7964,6 +8099,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [26819,26843]`bases = set(cls.__mr...`
                       Identifier: bases
@@ -8020,6 +8156,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Frame: [0,typ,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 FrameReturnNode SourceSection: [26953,27064]`return (typ not in b...`
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
@@ -8136,6 +8273,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       Frame: [0,n,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -8190,6 +8328,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Frame: [0,typ,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 BlockNode SourceSection: None
                                   ElseNode SourceSection: [27254,27364]`for other in types:↵...`
                                     ForNode SourceSection: None
@@ -8318,6 +8457,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       Frame: [0,n,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                   GetNextCachedNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
@@ -8485,6 +8625,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               Frame: [0,s,Illegal]
                                                           ArgumentExpressionNode SourceSection: None
                                                             ReadIndexedArgumentNodeGen SourceSection: None
+                                                              Index: 0
                                                           GetNextCachedNode SourceSection: None
                                                             LookupAndCallUnaryNodeGen SourceSection: None
                                                               Op: __next__
@@ -8686,12 +8827,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         Frame: [0,cls,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: registry
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,registry,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [28550,28590]`mro = _compose_mro(c...`
                       Identifier: mro
@@ -8905,6 +9048,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           Frame: [0,func,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [29812,29817]`types`
                           Identifier: types
@@ -8979,6 +9123,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         Frame: [0,cls,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
                                     BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [30169,30189]`nonlocal cache_token...`
                                         EmptyNode SourceSection: [30169,30189]`nonlocal cache_token...`
@@ -9159,12 +9304,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: func
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,func,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 1
                                     BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [30857,30877]`nonlocal cache_token...`
                                         EmptyNode SourceSection: [30857,30877]`nonlocal cache_token...`
@@ -9226,6 +9373,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               Frame: [0,f,Illegal]
                                                             ArgumentExpressionNode SourceSection: None
                                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                                Index: 0
                                                           FrameReturnNode SourceSection: None
                                                             WriteLocalVariableNodeGen SourceSection: None
                                                               Identifier: <return_val>

@@ -62,6 +62,7 @@ ModuleRootNode Name: <module 'lambda02'> SourceSection: [0,23]`def fn():↵  lam
                                     Frame: [0,x,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 FrameReturnNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>

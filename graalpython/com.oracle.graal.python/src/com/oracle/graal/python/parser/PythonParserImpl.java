@@ -234,11 +234,11 @@ public final class PythonParserImpl implements PythonParser {
     
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         if (source.getPath() == null) {
-                System.out.print("Parsing source without path\n" + source.getCharacters());
+                System.out.print("Parsing source without path\n" /*+ source.getCharacters()*/);
             } else {
                 System.out.print("Parsing: " + source.getPath());
             }
-        if (useNewParser && PythonLanguage.getCore().isInitialized()) {
+        if (useNewParser /*&& PythonLanguage.getCore().isInitialized()*/) {
             System.out.println(" with new parser.");
             return parseN(mode, errors, source, currentFrame);
         } else {

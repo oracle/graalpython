@@ -87,5 +87,6 @@ ModuleRootNode Name: <module 'while05'> SourceSection: [0,78]`def gen(x):↵   w
                       Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

@@ -117,11 +117,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [6999,7033]`ASCII = sre_compile....`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7007,7033]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -132,6 +134,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -139,6 +142,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7062,7106]`IGNORECASE = sre_com...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7075,7106]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -149,6 +153,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -156,6 +161,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7125,7161]`LOCALE = sre_compile...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7134,7161]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -166,6 +172,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -173,6 +180,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7196,7234]`UNICODE = sre_compil...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7206,7234]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -183,6 +191,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -190,6 +199,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7265,7307]`MULTILINE = sre_comp...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7277,7307]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -200,6 +210,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -207,6 +218,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7344,7380]`DOTALL = sre_compile...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7353,7380]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -217,6 +229,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -224,6 +237,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7410,7448]`VERBOSE = sre_compil...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7420,7448]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -234,6 +248,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -241,11 +256,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7486,7495]`A = ASCII`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7490,7495]`ASCII`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: ASCII
@@ -253,11 +270,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7500,7514]`I = IGNORECASE`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7504,7514]`IGNORECASE`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: IGNORECASE
@@ -265,11 +284,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7519,7529]`L = LOCALE`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7523,7529]`LOCALE`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: LOCALE
@@ -277,11 +298,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7534,7545]`U = UNICODE`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7538,7545]`UNICODE`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: UNICODE
@@ -289,11 +312,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7550,7563]`M = MULTILINE`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7554,7563]`MULTILINE`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: MULTILINE
@@ -301,11 +326,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7568,7578]`S = DOTALL`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7572,7578]`DOTALL`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: DOTALL
@@ -313,11 +340,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7583,7594]`X = VERBOSE`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7587,7594]`VERBOSE`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: VERBOSE
@@ -325,6 +354,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7656,7696]`TEMPLATE = sre_compi...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7667,7696]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -335,6 +365,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -342,11 +373,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7724,7736]`T = TEMPLATE`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7728,7736]`TEMPLATE`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: TEMPLATE
@@ -354,6 +387,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         SetItemNodeGen SourceSection: [7741,7775]`DEBUG = sre_compile....`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [7749,7775]`sre_compile.SRE_FLAG...`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -364,6 +398,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: sre_compile
@@ -446,18 +481,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   FrameReturnNode SourceSection: [8149,8194]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -519,18 +557,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   FrameReturnNode SourceSection: [8359,8408]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -592,18 +633,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   FrameReturnNode SourceSection: [8579,8625]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -666,30 +710,35 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: repl
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,repl,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: count
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,count,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 4
                   FrameReturnNode SourceSection: [9038,9094]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -758,30 +807,35 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: repl
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,repl,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: count
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,count,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 4
                   FrameReturnNode SourceSection: [9637,9694]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -850,24 +904,28 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: maxsplit
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,maxsplit,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   FrameReturnNode SourceSection: [10169,10224]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -932,18 +990,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   FrameReturnNode SourceSection: [10554,10601]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1005,18 +1066,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   FrameReturnNode SourceSection: [10829,10877]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1078,12 +1142,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [10986,11017]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1183,12 +1249,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [11223,11256]`return _compile(patt...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -1278,6 +1346,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,i,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                     GetNextCachedNode SourceSection: None
                       LookupAndCallUnaryNodeGen SourceSection: None
                         Op: __next__
@@ -1326,6 +1395,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                       Frame: [0,pattern,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   IfNode SourceSection: [11607,11811]`if isinstance(patter...`
                     YesNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [11610,11634]`isinstance(pattern, ...`
@@ -1476,12 +1546,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [12097,12162]`if isinstance(flags,...`
                       YesNodeGen SourceSection: None
@@ -1773,12 +1845,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                           Frame: [0,repl,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: pattern
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,pattern,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                     FrameReturnNode SourceSection: [13021,13067]`return sre_parse.par...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -1841,18 +1915,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: match
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,match,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: template
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,template,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [13161,13215]`template = sre_parse...`
                       Identifier: template
@@ -1925,12 +2002,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                         Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: template
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,template,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [13360,13403]`template = _compile_...`
                       Identifier: template
@@ -2024,12 +2103,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                       Frame: [0,match,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: template
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [1,template,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 1
                                 FrameReturnNode SourceSection: [13564,13613]`return sre_parse.exp...`
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
@@ -2098,6 +2179,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                       Frame: [0,p,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [13701,13738]`return _compile, (p....`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -2185,11 +2267,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                 Identifier: __name__
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                               SetItemIfNotPresentNodeGen SourceSection: None
                                 SetItemNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: [13937,14612]`def __init__(self, l...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: __init__ SourceSection: None
                                 Arguments:
@@ -2221,18 +2305,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: lexicon
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,lexicon,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: flags
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,flags,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 2
                                         BlockNode SourceSection: None
                                           ImportFromNode SourceSection: [13983,14027]`from sre_constants i...`
                                             Importee: sre_constants
@@ -2485,6 +2572,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                             SetItemNodeGen SourceSection: [14612,15192]`def scan(self, strin...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: scan SourceSection: None
                                 Arguments: None
@@ -2515,12 +2603,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                               Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: string
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,string,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [14644,14655]`result = []`
                                             Identifier: result

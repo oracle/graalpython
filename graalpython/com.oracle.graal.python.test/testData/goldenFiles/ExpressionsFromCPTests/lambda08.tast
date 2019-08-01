@@ -43,12 +43,14 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
                     Frame: [0,foo,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 0
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: spaz
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [1,spaz,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 1
               FrameReturnNode SourceSection: None
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: <return_val>

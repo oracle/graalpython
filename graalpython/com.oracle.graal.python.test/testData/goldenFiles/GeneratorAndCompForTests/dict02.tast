@@ -93,6 +93,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                               PythonObjectFactoryNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                           GetNextCachedNode SourceSection: None
                             LookupAndCallUnaryNodeGen SourceSection: None
                               Op: __next__

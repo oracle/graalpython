@@ -43,18 +43,21 @@ ModuleRootNode Name: <module 'functionDefCPT25'> SourceSection: [0,32]`def f(a, 
                           Frame: [0,a,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,b,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: foo
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,foo,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 2
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: kw
                         WriteLocalFrameSlotNodeGen SourceSection: None

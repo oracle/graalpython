@@ -87,5 +87,6 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                       Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

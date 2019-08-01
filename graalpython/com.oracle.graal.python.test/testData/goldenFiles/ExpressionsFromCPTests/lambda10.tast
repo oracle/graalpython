@@ -43,12 +43,14 @@ ModuleRootNode Name: <module 'lambda10'> SourceSection: [0,35]`lambda foo=bar, b
                     Frame: [0,foo,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 0
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: blaz
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [1,blaz,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 1
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: z
                   WriteLocalFrameSlotNodeGen SourceSection: None

@@ -53,6 +53,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                     Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
                 GetNextCachedNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__

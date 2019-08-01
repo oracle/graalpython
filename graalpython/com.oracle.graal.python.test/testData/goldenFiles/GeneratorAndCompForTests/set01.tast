@@ -55,6 +55,7 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
                     Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
                 GetNextCachedNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__

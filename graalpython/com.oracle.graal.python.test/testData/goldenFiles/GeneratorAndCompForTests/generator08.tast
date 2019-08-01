@@ -135,5 +135,6 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                       Frame: [0,h,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

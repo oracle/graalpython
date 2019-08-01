@@ -71,11 +71,13 @@ ModuleRootNode Name: <module 'param02'> SourceSection: [0,33]`def fn(a, b):↵  
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

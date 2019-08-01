@@ -47,11 +47,13 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                               Identifier: __name__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                             SetItemIfNotPresentNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [25,208]`def _keep_positive(s...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
                             StringLiteralNode SourceSection: None
                             FunctionDefinitionNode Name: _keep_positive SourceSection: None
                               Arguments: None
@@ -81,6 +83,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                           Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [59,128]`nonpositive = [elem ...`
                                           Identifier: nonpositive
@@ -169,6 +172,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
                                                       GetNextCachedNode SourceSection: None
                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                           Op: __next__

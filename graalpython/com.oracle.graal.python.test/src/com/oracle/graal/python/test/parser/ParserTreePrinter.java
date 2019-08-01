@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -58,6 +59,7 @@ import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
@@ -144,6 +146,7 @@ public class ParserTreePrinter implements NodeVisitor {
             if(node.getKwDefaults() == null || node.getKwDefaults().length == 0) {
                 sb.append(" None\n");
             } else {
+                newLine();
                 level++;
                 for (ExpressionNode arg : node.getKwDefaults()) {
                     visit(arg);
@@ -259,6 +262,16 @@ public class ParserTreePrinter implements NodeVisitor {
             indent(level); sb.append("Op: ").append(node.getMethodName()); newLine();
             level--;
             return true;
+        }
+        
+        public boolean visit(KwDefaultExpressionNode node) {
+            nodeHeader(node);
+            level++;
+            indent(level); sb.append("Name: ").append(node.name); newLine();
+            indent(level); sb.append("Value: ");
+            visit(node.exprNode);
+            level--;
+            return false;
         }
         
         public boolean visit(SetAttributeNode node) {
@@ -477,6 +490,8 @@ public class ParserTreePrinter implements NodeVisitor {
                 visitChildren = visit((LookupAndCallBinaryNode)node); 
             } else if (node instanceof LookupAndCallUnaryNode) {
                 visitChildren = visit((LookupAndCallUnaryNode)node); 
+            } else if (node instanceof KwDefaultExpressionNode) {
+                visitChildren = visit((KwDefaultExpressionNode)node); 
             } else if (node instanceof SetAttributeNode) {
                 visitChildren = visit((SetAttributeNode)node); 
             } else if (node instanceof GeneratorExpressionNode) {
@@ -501,6 +516,9 @@ public class ParserTreePrinter implements NodeVisitor {
                 }
                 if (node instanceof WriteGlobalNode) {
                     indent(level); sb.append("Identifier: ").append(((WriteGlobalNode)node).getAttributeId()); newLine();
+                }
+                if (node instanceof ReadIndexedArgumentNode) {
+                    indent(level); sb.append("Index: ").append(((ReadIndexedArgumentNode)node).getIndex()); newLine();
                 }
                 
                 level--;

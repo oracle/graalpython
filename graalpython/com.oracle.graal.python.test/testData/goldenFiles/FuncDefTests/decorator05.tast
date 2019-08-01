@@ -66,6 +66,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                       Frame: [0,fn,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                   ExpressionStatementNode SourceSection: [39,43]`pass`
                                     EmptyNode SourceSection: [39,43]`pass`
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None

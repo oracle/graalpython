@@ -39,6 +39,7 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                         Frame: [0,sequences,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     BreakTargetNode SourceSection: [26,165]`for s1 in sequences:...`
                       ForNode SourceSection: None
                         DefaultLoopNode SourceSection: None

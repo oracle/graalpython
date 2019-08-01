@@ -80,6 +80,7 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                                     Frame: [0,x,Illegal]
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
                                 GetNextCachedNode SourceSection: None
                                   LookupAndCallUnaryNodeGen SourceSection: None
                                     Op: __next__

@@ -89,5 +89,6 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                       Frame: [0,h,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

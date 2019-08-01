@@ -171,6 +171,11 @@ public class FuncDefTests extends ParserTestBase{
     }
     
     @Test
+    public void functionDef19() throws Exception {
+        checkScopeAndTree("def __build_class__(func, name, *bases, metaclass=None, **kwargs): pass");
+    }
+    
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree();
     }

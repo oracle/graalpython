@@ -105,12 +105,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [1286,1310]`return (a > b) - (a ...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -170,6 +172,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,s,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [1436,1444]`return s`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -319,12 +322,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [0,category,Illegal]
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: value
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,value,Illegal]
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 1
                           BlockNode SourceSection: None
                             IfNode SourceSection: [2713,2824]`if value not in (Non...`
                               NotNodeGen SourceSection: [2716,2744]`value not in (None, ...`
@@ -627,6 +632,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     Frame: [0,grouping,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 0
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3952,4916]`def _group(s, moneta...`
@@ -661,12 +667,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,s,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: monetary
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,monetary,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [3987,4006]`conv = localeconv()`
                       Identifier: conv
@@ -1021,12 +1029,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,s,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: amount
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,amount,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [4951,4959]`lpos = 0`
                       Identifier: lpos
@@ -1201,24 +1211,28 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,percent,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: value
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,value,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: grouping
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,grouping,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: monetary
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,monetary,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: additional
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1561,24 +1575,28 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,f,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: val
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,val,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: grouping
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,grouping,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: monetary
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,monetary,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [6546,6586]`percents = list(_per...`
                       Identifier: percents
@@ -1968,24 +1986,28 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,percent,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: value
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,value,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: grouping
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,grouping,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: monetary
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,monetary,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: additional
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2161,24 +2183,28 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,val,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: symbol
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,symbol,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: grouping
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,grouping,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: international
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,international,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 3
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8332,8351]`conv = localeconv()`
                       Identifier: conv
@@ -2629,6 +2655,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,val,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [9788,9816]`return _format("%.12...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -2678,6 +2705,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,string,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9926,9945]`conv = localeconv()`
                       Identifier: conv
@@ -2796,12 +2824,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: func
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,func,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   FrameReturnNode SourceSection: [10317,10348]`return func(delocali...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -2857,6 +2887,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,string,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   FrameReturnNode SourceSection: [10444,10474]`return int(delocaliz...`
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
@@ -3027,12 +3058,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,code,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: encoding
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,encoding,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [10959,11120]`if '.' in code:↵    ...`
                       YesNodeGen SourceSection: None
@@ -3267,12 +3300,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,code,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: modifier
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,modifier,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [11940,12245]`if modifier == 'euro...`
                       YesNodeGen SourceSection: None
@@ -3458,6 +3493,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,localename,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12780,12805]`code = localename.lo...`
                       Identifier: code
@@ -4197,6 +4233,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,localename,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15671,15699]`code = normalize(loc...`
                       Identifier: code
@@ -4402,6 +4439,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,localetuple,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   TryFinallyNode SourceSection: [16429,16838]`try:↵        languag...`
                     TryExceptNode SourceSection: None
                       BlockNode SourceSection: None
@@ -4545,6 +4583,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,envvars,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     TryFinallyNode SourceSection: [17911,18503]`try:↵        # check...`
                       TryExceptNode SourceSection: None
@@ -4821,6 +4860,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,category,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [19243,19276]`localename = _setloc...`
                       Identifier: localename
@@ -4918,12 +4958,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,category,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: locale
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,locale,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
                   BlockNode SourceSection: None
                     IfNode SourceSection: [19832,19970]`if locale and not is...`
                       YesNodeGen SourceSection: None
@@ -5021,6 +5063,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [0,category,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
                   ExpressionStatementNode SourceSection: [20227,20286]`_setlocale(category,...`
                     PythonCallNodeGen SourceSection: [20227,20286]`_setlocale(category,...`
                       CachedCallNodeGen SourceSection: None
@@ -5095,6 +5138,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [0,do_setlocale,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
                     BlockNode SourceSection: None
                       IfNode SourceSection: [20498,20557]`if sys.flags.utf8_mo...`
                         YesNodeGen SourceSection: None
@@ -5190,6 +5234,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [0,do_setlocale,Illegal]
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                             FrameReturnNode SourceSection: [20986,21000]`return 'UTF-8'`
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <return_val>
@@ -5230,6 +5275,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [0,do_setlocale,Illegal]
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
                             BlockNode SourceSection: None
                               IfNode SourceSection: [21276,21351]`if sys.flags.utf8_mo...`
                                 YesNodeGen SourceSection: None
@@ -5323,6 +5369,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Frame: [0,do_setlocale,Illegal]
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
                         BlockNode SourceSection: None
                           IfNode SourceSection: [21736,21803]`if sys.flags.utf8_mo...`
                             YesNodeGen SourceSection: None
@@ -7271,6 +7318,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [0,categories,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
                                 ElseNode SourceSection: [76185,76284]`for k,v in globals()...`
                                   ForNode SourceSection: None
                                     DefaultLoopNode SourceSection: None
