@@ -331,11 +331,7 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
         return v;
     }
 
-	PyObject* result = UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
-	if (result == NULL) {
-		PyErr_SetString(PyExc_TypeError, m);
-	}
-	return result;
+	return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
 }
 
 UPCALL_ID(PyObject_GetItem);
