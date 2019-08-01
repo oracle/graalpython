@@ -759,7 +759,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     @Override
     public PNode visit(ImportFromSSTNode node) {
-        ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope);
         String from = node.from;
         int level = 0;
@@ -793,19 +792,24 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     
     @Override
     public PNode visit(ImportSSTNode node) {
-        ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope);
         ExpressionNode importNode = nodeFactory.createImport(node.name).asExpression();
+        PNode result;
+        int dotIndex = node.name.indexOf('.');
         if (node.asName == null) {
-            PNode result = scopeEnvironment.findVariable(node.name).makeWriteNode(importNode);
-            result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-            return result;
+            String moduleName = dotIndex == -1 ? node.name : node.name.substring(0, dotIndex);
+            result = scopeEnvironment.findVariable(moduleName).makeWriteNode(importNode);
         } else {
-            PNode result = scopeEnvironment.findVariable(node.asName).makeWriteNode(importNode);
-            result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-            return result;
+            if (dotIndex != -1) {
+                String[] parts = node.name.split("\\.");
+                for(int i = 1; i < parts.length; i++) {
+                    importNode = nodeFactory.createGetAttribute(importNode, parts[i]);
+                }
+            }
+            result = scopeEnvironment.findVariable(node.asName).makeWriteNode(importNode);
         }
-        
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
     }
 
     

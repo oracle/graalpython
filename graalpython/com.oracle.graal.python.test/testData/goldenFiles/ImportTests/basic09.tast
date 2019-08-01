@@ -1,0 +1,26 @@
+ModuleRootNode Name: <module 'basic09'> SourceSection: [0,39]`import encodings.ali...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,39]`import encodings.ali...`
+    ExpressionWithSideEffect SourceSection: [0,39]`import encodings.ali...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [7,39]`encodings.aliases.so...`
+          Identifier: a
+          GetAttributeNodeGen SourceSection: None
+            GetFixedAttributeNodeGen SourceSection: None
+              Key: something
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
+            GetAttributeNodeGen SourceSection: None
+              GetFixedAttributeNodeGen SourceSection: None
+                Key: aliases
+                LookupAndCallBinaryNodeGen SourceSection: None
+                  Op: __getattribute__
+              ImportExpression SourceSection: None
+                ImportNode SourceSection: None
+                  Module: encodings.aliases.something

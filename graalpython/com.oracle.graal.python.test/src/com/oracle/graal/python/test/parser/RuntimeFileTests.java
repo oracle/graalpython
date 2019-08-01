@@ -29,6 +29,11 @@ public class RuntimeFileTests extends ParserTestBase {
     }
     
     @Test
+    public void collections__init__() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
     public void enumt() throws Exception {
         checkScopeAndTree();
     }
@@ -59,7 +64,27 @@ public class RuntimeFileTests extends ParserTestBase {
     }
     
     @Test
+    public void keyword() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void locale() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void operator() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
     public void re() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void reprlib() throws Exception {
         checkScopeAndTree();
     }
     
@@ -85,6 +110,11 @@ public class RuntimeFileTests extends ParserTestBase {
     
     @Test
     public void traceback() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void types() throws Exception {
         checkScopeAndTree();
     }
     
@@ -149,6 +179,10 @@ public class RuntimeFileTests extends ParserTestBase {
                     corrected.append(correctFrameDesc(oldLine, newLine)).append(LINE_TEXT);
                     oldLineIndex++;
                     newLineIndex++;
+                } else if (oldLine.contains("Identifier:") && newLine.contains("Identifier:")) {
+                    corrected.append(correctIdentifier(oldLine, newLine)).append(LINE_TEXT);
+                    oldLineIndex++;
+                    newLineIndex++;
                 } else {
                     ssIndex = oldLine.indexOf(SS_TEXT);
                     if (ssIndex != -1) { 
@@ -201,7 +235,7 @@ public class RuntimeFileTests extends ParserTestBase {
         int newComma = newLine.indexOf(',', oldStart);
         String oldRest = oldLine.substring(oldComma);
         String newRest = newLine.substring(newComma);
-        if (oldRest.equals(newRest)) {
+        if (oldRest.equals(newRest) || (oldRest.contains("<>temp") && newRest.contains("<>temp"))) {
             return newLine;
         }
         return oldLine;
@@ -227,6 +261,18 @@ public class RuntimeFileTests extends ParserTestBase {
         String oldPart = oldLine.substring(0, oldBracket);
         String newPart = newLine.substring(0, newBracket);
         if (oldPart.equals(newPart)) {
+            return newLine;
+        }
+        return oldLine;
+    }
+    
+    private String correctIdentifier(String oldLine, String newLine) {
+        int oldStart = oldLine.indexOf("Identifier:");
+        int newStart = newLine.indexOf("Identifier:");
+        if (oldStart != newStart) {
+            return oldLine;
+        }
+        if (oldLine.contains("Identifier: <>temp") && newLine.contains("Identifier: <>temp")) {
             return newLine;
         }
         return oldLine;

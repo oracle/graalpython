@@ -71,6 +71,26 @@ public class ImportTests extends ParserTestBase {
     }
     
     @Test
+    public void basic06() throws Exception {
+        checkTreeResult("import encodings.aliases");
+    }
+    
+    @Test
+    public void basic07() throws Exception {
+        checkTreeResult("import encodings.aliases as a");
+    }
+    
+    @Test
+    public void basic08() throws Exception {
+        checkTreeResult("import encodings.aliases.something");
+    }
+    
+    @Test
+    public void basic09() throws Exception {
+        checkTreeResult("import encodings.aliases.something as a");
+    }
+    
+    @Test
     public void basicInFn01() throws Exception {
         checkScopeAndTree("def fn():\n  import sys");
     }
