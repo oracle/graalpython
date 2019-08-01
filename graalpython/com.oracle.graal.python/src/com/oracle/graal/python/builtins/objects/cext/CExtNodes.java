@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpca
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -355,9 +354,26 @@ public abstract class CExtNodes {
             return DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createLong(l);
         }
 
-        @Specialization
+        @Specialization(guards = "!isNaN(d)")
         Object doDouble(double d) {
             return DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createDouble(d);
+        }
+
+        @Specialization(guards = "isNaN(d)")
+        Object doDouble(@SuppressWarnings("unused") double d,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
+            PFloat boxed = context.getCore().getNaN();
+            DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
+            // Use a counting profile since we should enter the branch just once per context.
+            if (noWrapperProfile.profile(nativeWrapper == null)) {
+                // This deliberately uses 'CompilerDirectives.transferToInterpreter()' because this
+                // code will happen just once per context.
+                CompilerDirectives.transferToInterpreter();
+                nativeWrapper = DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createDouble(Double.NaN);
+                boxed.setNativeWrapper(nativeWrapper);
+            }
+            return nativeWrapper;
         }
 
         @Specialization
@@ -413,42 +429,16 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        // TODO(fa): Workaround for DSL bug: did not import factory at users
+        protected static boolean isNaN(double d) {
+            return Double.isNaN(d);
+        }
+
         public static ToSulongNode create() {
             return CExtNodesFactory.ToSulongNodeGen.create();
         }
 
-        // TODO(fa): Workaround for DSL bug: did not import factory at users
         public static ToSulongNode getUncached() {
             return CExtNodesFactory.ToSulongNodeGen.getUncached();
-        }
-
-        @TruffleBoundary
-        public static Object doSlowPath(Object o) {
-            if (o instanceof String) {
-                return PythonObjectNativeWrapper.wrapSlowPath(PythonLanguage.getCore().factory().createString((String) o));
-            } else if (o instanceof Integer) {
-                return PrimitiveNativeWrapper.createInt((Integer) o);
-            } else if (o instanceof Long) {
-                return PrimitiveNativeWrapper.createLong((Long) o);
-            } else if (o instanceof Double) {
-                return PrimitiveNativeWrapper.createDouble((Double) o);
-            } else if (PythonNativeClass.isInstance(o)) {
-                return ((PythonNativeClass) o).getPtr();
-            } else if (PythonNativeObject.isInstance(o)) {
-                return PythonNativeObject.cast(o).getPtr();
-            } else if (o instanceof PythonNativeNull) {
-                return ((PythonNativeNull) o).getPtr();
-            } else if (o instanceof PythonManagedClass) {
-                return wrapNativeClass((PythonManagedClass) o);
-            } else if (o instanceof PythonAbstractObject) {
-                assert !PGuards.isClass(o);
-                return PythonObjectNativeWrapper.wrapSlowPath((PythonAbstractObject) o);
-            } else if (PGuards.isForeignObject(o)) {
-                return TruffleObjectNativeWrapper.wrap((TruffleObject) o);
-            }
-            assert o != null : "Java 'null' cannot be a Sulong value";
-            return o;
         }
     }
 
@@ -610,9 +600,13 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isMaterialized(object)", "object.isBool()"})
         PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
+            // Special case for True and False: use singletons
             PythonCore core = context.getCore();
             PInt materializedInt = object.getBool() ? core.getTrue() : core.getFalse();
             object.setMaterializedObject(materializedInt);
+
+            // If the singleton already has a native wrapper, we may need to update the pointer
+            // of wrapper 'object' since the native could code see the same pointer.
             if (materializedInt.getNativeWrapper() != null) {
                 object.setNativePointer(materializedInt.getNativeWrapper().getNativePointer());
             } else {
@@ -623,7 +617,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isByte()"})
         PInt doByteNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getByte());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
@@ -632,7 +626,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isInt()"})
         PInt doIntNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getInt());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
@@ -641,20 +635,37 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isLong()"})
         PInt doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getLong());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
-        @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()"})
+        @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()", "!isNaN(object)"})
         PFloat doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             PFloat materializedInt = factory.createFloat(object.getDouble());
-            object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
+            object.setMaterializedObject(materializedInt);
             return materializedInt;
+        }
+
+        @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()", "isNaN(object)"})
+        PFloat doDoubleNativeWrapperNaN(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            // Special case for double NaN: use singleton
+            PFloat materializedFloat = context.getCore().getNaN();
+            object.setMaterializedObject(materializedFloat);
+
+            // If the NaN singleton already has a native wrapper, we may need to update the pointer
+            // of wrapper 'object' since the native code should see the same pointer.
+            if (materializedFloat.getNativeWrapper() != null) {
+                object.setNativePointer(materializedFloat.getNativeWrapper().getNativePointer());
+            } else {
+                materializedFloat.setNativeWrapper(object);
+            }
+            return materializedFloat;
         }
 
         @Specialization(guards = {"object.getClass() == cachedClass", "isMaterialized(object)"})
@@ -676,6 +687,11 @@ public abstract class CExtNodes {
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
             return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+        }
+
+        protected static boolean isNaN(PrimitiveNativeWrapper object) {
+            assert object.isDouble();
+            return Double.isNaN(object.getDouble());
         }
     }
 

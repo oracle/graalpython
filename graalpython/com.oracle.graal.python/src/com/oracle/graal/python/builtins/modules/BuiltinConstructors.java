@@ -679,6 +679,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
 
         private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
+        @CompilationFinal private ConditionProfile isNanProfile;
 
         public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg);
 
@@ -687,7 +688,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromInt(LazyPythonClass cls, int arg) {
+        Object floatFromInt(LazyPythonClass cls, int arg) {
             if (isPrimitiveFloat(cls)) {
                 return (double) arg;
             }
@@ -695,7 +696,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromBoolean(LazyPythonClass cls, boolean arg) {
+        Object floatFromBoolean(LazyPythonClass cls, boolean arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg ? 1d : 0d;
             }
@@ -703,7 +704,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromLong(LazyPythonClass cls, long arg) {
+        Object floatFromLong(LazyPythonClass cls, long arg) {
             if (isPrimitiveFloat(cls)) {
                 return (double) arg;
             }
@@ -711,7 +712,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromPInt(LazyPythonClass cls, PInt arg) {
+        Object floatFromPInt(LazyPythonClass cls, PInt arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg.doubleValue();
             }
@@ -719,34 +720,33 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromFloat(LazyPythonClass cls, double arg) {
+        Object floatFromDouble(LazyPythonClass cls, double arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg;
             }
-            return factory().createFloat(cls, arg);
+            return factoryCreateFloat(cls, arg);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromString(LazyPythonClass cls, String arg) {
+        Object floatFromString(LazyPythonClass cls, String arg) {
             double value = convertStringToDouble(arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
-            return factory().createFloat(cls, value);
+            return factoryCreateFloat(cls, value);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromBytes(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg) {
+        Object floatFromBytes(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg) {
             double value = convertBytesToDouble(frame, arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
-            return factory().createFloat(cls, value);
+            return factoryCreateFloat(cls, value);
         }
 
         private double convertBytesToDouble(VirtualFrame frame, PIBytesLike arg) {
-            double value = convertStringToDouble(createString(getByteArray(frame, arg)));
-            return value;
+            return convertStringToDouble(createString(getByteArray(frame, arg)));
         }
 
         @TruffleBoundary
@@ -796,7 +796,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromNone(LazyPythonClass cls, @SuppressWarnings("unused") PNone arg) {
+        Object floatFromNone(LazyPythonClass cls, @SuppressWarnings("unused") PNone arg) {
             if (isPrimitiveFloat(cls)) {
                 return 0.0;
             }
@@ -836,7 +836,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doPythonObject(VirtualFrame frame, LazyPythonClass cls, Object obj,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException) {
-            return floatFromFloat(cls, doubleFromObject(frame, cls, obj, callFloatNode, gotException));
+            return floatFromDouble(cls, doubleFromObject(frame, cls, obj, callFloatNode, gotException));
         }
 
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
@@ -854,7 +854,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         @TruffleBoundary
-        public Object floatFromObject(@SuppressWarnings("unused") Object cls, Object arg) {
+        Object floatFromObject(@SuppressWarnings("unused") Object cls, Object arg) {
             throw raise(TypeError, "can't convert %s to float", arg.getClass().getSimpleName());
         }
 
@@ -868,6 +868,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
             return toByteArrayNode.execute(frame, pByteArray);
+        }
+
+        private PFloat factoryCreateFloat(LazyPythonClass cls, double arg) {
+            if (isNaN(arg)) {
+                return getCore().getNaN();
+            }
+            return factory().createFloat(cls, arg);
+        }
+
+        private boolean isNaN(double d) {
+            if (isNanProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isNanProfile = ConditionProfile.createBinaryProfile();
+            }
+            return isNanProfile.profile(Double.isNaN(d));
         }
     }
 

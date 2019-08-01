@@ -174,7 +174,9 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         @Specialization
         boolean doDD(double left, double right) {
-            return left == right;
+            // n.b. we simulate that the primitive NaN is a singleton; this is required to make
+            // 'nan = float("nan"); nan is nan' work
+            return left == right || (Double.isNaN(left) && Double.isNaN(right));
         }
 
         @Specialization
