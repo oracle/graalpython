@@ -989,11 +989,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private Object toInt(LazyPythonClass cls, Object number) {
-            Object value = toIntInternal(number);
-            return convertToIntInternal(cls, value, number, 10);
-        }
-
         private Object toInt(LazyPythonClass cls, Object number, int base) {
             Object value = toIntInternal(number, base);
             return convertToIntInternal(cls, value, number, base);
@@ -1226,13 +1221,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        public Object createInt(LazyPythonClass cls, String number, Object keywordArg) {
-            if (keywordArg instanceof PNone) {
-                return toInt(cls, number);
-            } else {
-                CompilerDirectives.transferToInterpreter();
-                throw new RuntimeException("Not implemented integer with base: " + keywordArg);
+        @Specialization(guards = "!isNoValue(base)", rewriteOn = NumberFormatException.class)
+        public Object parsePIntWithBaseObject(LazyPythonClass cls, String number, Object base,
+                        @Cached CastToIndexNode castToIndexNode) {
+            return toInt(cls, number, castToIndexNode.execute(base));
+        }
+
+        @Specialization(guards = "!isNoValue(base)", replaces = "parsePIntWithBaseObject")
+        public Object createIntError(LazyPythonClass cls, String number, Object base,
+                        @Cached CastToIndexNode castToIndexNode) {
+            try {
+                return toInt(cls, number, castToIndexNode.execute(base));
+            } catch (NumberFormatException e) {
+                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
             }
         }
 
