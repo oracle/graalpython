@@ -14,7 +14,7 @@ import org.junit.Test;
 public class RuntimeFileTests extends ParserTestBase {
     
     @Test
-    public void builtins() throws Exception {
+    public void _collections_abc() throws Exception {
         checkScopeAndTree();
     }
     
@@ -24,27 +24,12 @@ public class RuntimeFileTests extends ParserTestBase {
     }
     
     @Test
-    public void site() throws Exception {
+    public void builtins() throws Exception {
         checkScopeAndTree();
     }
     
     @Test
-    public void initCollectionsPart1() throws Exception {
-        checkScopeAndTree();
-    }
-    
-    @Test
-    public void initCollectionsPart2() throws Exception {
-        checkScopeAndTree();
-    }
-    
-    @Test
-    public void sre_compile() throws Exception {
-        checkScopeAndTree();
-    }
-    
-    @Test
-    public void heapq() throws Exception {
+    public void enumt() throws Exception {
         checkScopeAndTree();
     }
     
@@ -59,7 +44,17 @@ public class RuntimeFileTests extends ParserTestBase {
     }
     
     @Test
-    public void traceback() throws Exception {
+    public void heapq() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void initCollectionsPart1() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void initCollectionsPart2() throws Exception {
         checkScopeAndTree();
     }
     
@@ -69,14 +64,30 @@ public class RuntimeFileTests extends ParserTestBase {
     }
     
     @Test
-    public void enumt() throws Exception {
+    public void site() throws Exception {
         checkScopeAndTree();
     }
     
     @Test
-    public void _collections_abc() throws Exception {
+    public void sre_compile() throws Exception {
         checkScopeAndTree();
     }
+    
+    @Test
+    public void sre_constants() throws Exception {
+        checkScopeAndTree();
+    }
+    
+   @Test
+    public void sre_parse() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    @Test
+    public void traceback() throws Exception {
+        checkScopeAndTree();
+    }
+    
     
     private void checkScopeAndTree()  throws Exception{
         File testFile = getTestFileFromTestAndTestMethod();

@@ -102,6 +102,16 @@ public class ClassDefTests extends ParserTestBase {
     }
 
     @Test
+    public void classDef10() throws Exception {
+        checkScopeAndTree(
+                "def test(arg):\n" +
+                "  pass\n" +
+                "class FalseRec:\n" +
+                "  def test(self, arg):\n" +
+                "    return test(arg+1)");
+    }
+    
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree("@class_decorator\n" +
                          "class foo():pass");

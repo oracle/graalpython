@@ -197,6 +197,22 @@ public class FuncDefTests extends ParserTestBase{
                 "  def inner(): pass");
     }
     
+    @Test
+    public void recursion01() throws Exception {
+        checkScopeAndTree(
+                "def test(self, msg, offset=0):\n" +
+                "    return test(msg, self.string, 1)");
+    }
+    
+    @Test
+    public void recursion02() throws Exception {
+        checkScopeAndTree(
+                "def outer():\n" +
+                "  def recursionInner(arg):\n" +
+                "    return recursionInner(arg + 1)\n" +
+                "  recursionInner(0)");
+    }
+                
     private void checkScopeAndTree()  throws Exception{
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);

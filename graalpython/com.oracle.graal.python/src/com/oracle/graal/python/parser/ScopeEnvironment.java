@@ -106,6 +106,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         ScopeInfo definingScope = currentScope;
         Set<Object> identifiers = definingScope.getFrameDescriptor().getIdentifiers();
         Set<String> localySeenVars = definingScope.getSeenVars();
+        ScopeInfo.ScopeKind definingScopeKind = definingScope.getScopeKind();
         if (localySeenVars != null || !unresolvedVars.isEmpty()) {
             for (Object identifier : identifiers) {
                 String name = (String)identifier;
@@ -117,7 +118,9 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
                 List<ScopeInfo> usedInScopes = unresolvedVars.get(name);
                 // was the declared varibale seen before?
-                if (usedInScopes != null && !(definingScope.getScopeKind() == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) { 
+                if (usedInScopes != null 
+                        && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)
+                        && definingScopeKind != ScopeInfo.ScopeKind.Class) { 
                     // make the varible freevar and cellvar in scopes, where is used
                     List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
                     for (ScopeInfo scope : copy) {
@@ -146,7 +149,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         }
             
         // are in current scope used variables that are not defined
-        if ((localySeenVars != null && !localySeenVars.isEmpty()) && definingScope.getScopeKind() != ScopeInfo.ScopeKind.Module) {
+        if ((localySeenVars != null && !localySeenVars.isEmpty()) && definingScopeKind != ScopeInfo.ScopeKind.Module) {
             // note this scope in global unresolved vars
             List<ScopeInfo> usedInScopes;
             for (String varName: localySeenVars) {
