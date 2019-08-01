@@ -349,6 +349,27 @@ def test_create_int_from_string():
         assert False, "expected TypeError"
 
 
+def test_create_int_from_float():
+    assert int(123.0) == 123
+    assert int(123.4) == 123
+    try:
+        int(float('nan'))
+    except ValueError:
+        assert True
+    else:
+        assert False, "expected ValueError"
+        
+    class FloatSub(float):
+        pass
+    
+    try:
+        int(FloatSub(float('nan')))
+    except ValueError:
+        assert True
+    else:
+        assert False, "expected ValueError"
+
+
 class FromBytesTests(unittest.TestCase):
 
     def check(self, tests, byteorder, signed=False):

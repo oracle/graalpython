@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
@@ -58,6 +59,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.nio.ByteOrder;
 import java.util.List;
@@ -233,7 +235,9 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class IntNode extends PythonUnaryBuiltinNode {
+    public abstract static class IntNode extends PythonUnaryBuiltinNode {
+
+        public abstract Object executeWithDouble(double self);
 
         @Specialization(guards = "fitInt(self)")
         int doIntRange(double self) {
@@ -245,10 +249,23 @@ public final class FloatBuiltins extends PythonBuiltins {
             return (long) self;
         }
 
-        @Specialization(guards = "!fitLong(self)")
-        @TruffleBoundary
-        PInt doGeneric(double self) {
-            return factory().createInt(BigDecimal.valueOf(self).toBigInteger());
+        @Specialization(guards = "!fitLong(self)", rewriteOn = NumberFormatException.class)
+        PInt doDoubleGeneric(double self) {
+            return factory().createInt(fromDouble(self));
+        }
+
+        @Specialization(guards = "!fitLong(self)", replaces = "doDoubleGeneric")
+        PInt doDoubleGenericError(double self) {
+            try {
+                return factory().createInt(fromDouble(self));
+            } catch (NumberFormatException e) {
+                throw raise(ValueError, "cannot convert float %f to integer", self);
+            }
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private static BigInteger fromDouble(double self) {
+            return BigDecimal.valueOf(self).toBigInteger();
         }
     }
 

@@ -102,6 +102,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGe
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -928,7 +930,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object keywordArg);
 
         @TruffleBoundary(transferToInterpreterOnException = false)
-        private Object stringToIntInternal(String num, int base) {
+        private Object stringToIntInternal(String num, int base) throws NumberFormatException {
             String s = num.replace("_", "");
             if ((base >= 2 && base <= 32) || base == 0) {
                 BigInteger bi = asciiToBigInteger(s, base, false);
@@ -942,7 +944,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private Object convertToIntInternal(LazyPythonClass cls, Object value, Object number, int base) {
+        private Object convertToIntInternal(LazyPythonClass cls, Object value, Object number, int base) throws NumberFormatException {
             if (value == null) {
                 throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
             } else if (value instanceof BigInteger) {
@@ -959,29 +961,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return convertToIntInternal(cls, value, number, base);
         }
 
-        private static Object doubleToIntInternal(double num) {
-            if (num > Integer.MAX_VALUE || num < Integer.MIN_VALUE) {
-                return BigInteger.valueOf((long) num);
-            } else {
-                return (int) num;
-            }
-        }
-
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private Object toIntInternal(Object number) {
-            if (number instanceof Integer || number instanceof BigInteger) {
-                return number;
-            } else if (number instanceof Boolean) {
-                return (boolean) number ? 1 : 0;
-            } else if (number instanceof Double) {
-                return doubleToIntInternal((Double) number);
-            } else if (number instanceof String) {
-                return stringToIntInternal((String) number, 10);
-            }
-            return null;
-        }
-
-        private Object toIntInternal(Object number, Object base) {
+        private Object toIntInternal(Object number, Object base) throws NumberFormatException {
             if (number instanceof String && base instanceof Integer) {
                 return stringToIntInternal((String) number, (Integer) base);
             } else {
@@ -989,14 +969,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private Object toInt(LazyPythonClass cls, Object number, int base) {
+        private Object toInt(LazyPythonClass cls, Object number, int base) throws NumberFormatException {
             Object value = toIntInternal(number, base);
             return convertToIntInternal(cls, value, number, base);
         }
 
         // Copied directly from Jython
         @TruffleBoundary(transferToInterpreterOnException = false)
-        private static BigInteger asciiToBigInteger(String str, int possibleBase, boolean isLong) {
+        private static BigInteger asciiToBigInteger(String str, int possibleBase, boolean isLong) throws NumberFormatException {
             int base = possibleBase;
             int b = 0;
             int e = str.length();
@@ -1090,7 +1070,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(LazyPythonClass cls, int arg, @SuppressWarnings("unused") PNone keywordArg) {
+        Object createInt(LazyPythonClass cls, int arg, @SuppressWarnings("unused") PNone keywordArg) {
             if (isPrimitiveInt(cls)) {
                 return arg;
             }
@@ -1098,7 +1078,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(LazyPythonClass cls, long arg, @SuppressWarnings("unused") PNone keywordArg,
+        Object createInt(LazyPythonClass cls, long arg, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
             if (isPrimitiveInt(cls)) {
                 int intValue = (int) arg;
@@ -1112,7 +1092,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(LazyPythonClass cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone keywordArg) {
+        Object createInt(LazyPythonClass cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone keywordArg) {
             if (isPrimitiveInt(cls)) {
                 return arg;
             } else {
@@ -1122,16 +1102,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(LazyPythonClass cls, double arg, @SuppressWarnings("unused") PNone keywordArg,
-                        @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
-            if (isPrimitiveInt(cls) && isIntProfile.profile(arg >= Integer.MIN_VALUE && arg <= Integer.MAX_VALUE)) {
-                return (int) arg;
-            }
-            return factory().createInt(cls, (long) arg);
+        Object createInt(VirtualFrame frame, LazyPythonClass cls, double arg, @SuppressWarnings("unused") PNone keywordArg,
+                        @Cached("createFloatInt()") FloatBuiltins.IntNode intNode,
+                        @Cached("createGeneric()") CreateIntFromObjectNode createIntFromObjectNode) {
+            Object result = intNode.executeWithDouble(arg);
+            return createIntFromObjectNode.execute(frame, cls, result);
         }
 
         @Specialization
-        public Object createInt(LazyPythonClass cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone keywordArg) {
+        Object createInt(LazyPythonClass cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone keywordArg) {
             if (isPrimitiveInt(cls)) {
                 return 0;
             }
@@ -1139,7 +1118,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone keywordArg) {
+        Object createInt(LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone keywordArg) {
             try {
                 return stringToInt(cls, arg, 10);
             } catch (NumberFormatException e) {
@@ -1222,13 +1201,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(base)", rewriteOn = NumberFormatException.class)
-        public Object parsePIntWithBaseObject(LazyPythonClass cls, String number, Object base,
+        Object parsePIntWithBaseObject(LazyPythonClass cls, String number, Object base,
                         @Cached CastToIndexNode castToIndexNode) {
             return toInt(cls, number, castToIndexNode.execute(base));
         }
 
         @Specialization(guards = "!isNoValue(base)", replaces = "parsePIntWithBaseObject")
-        public Object createIntError(LazyPythonClass cls, String number, Object base,
+        Object createIntError(LazyPythonClass cls, String number, Object base,
                         @Cached CastToIndexNode castToIndexNode) {
             try {
                 return toInt(cls, number, castToIndexNode.execute(base));
@@ -1244,7 +1223,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)", "!isHandledType(obj)"})
-        public Object createInt(VirtualFrame frame, LazyPythonClass cls, Object obj, @SuppressWarnings("unused") PNone keywordArg,
+        Object createInt(VirtualFrame frame, LazyPythonClass cls, Object obj, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createGeneric()") CreateIntFromObjectNode createIntFromObjectNode) {
             return createIntFromObjectNode.execute(frame, cls, obj);
         }
@@ -1255,6 +1234,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         protected static CreateIntFromObjectNode createGeneric() {
             return CreateIntFromObjectNode.create(true, () -> LookupAndCallUnaryNode.create(SpecialMethodNames.__INT__));
+        }
+
+        protected static FloatBuiltins.IntNode createFloatInt() {
+            return FloatBuiltinsFactory.IntNodeFactory.create();
         }
 
         private String toString(VirtualFrame frame, PIBytesLike pByteArray) {
