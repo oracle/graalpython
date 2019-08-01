@@ -999,6 +999,22 @@ index d6c871c..5853474 100644
      #define __Pyx_sst_abs(value) abs(value)
  #elif SIZEOF_LONG >= SIZEOF_SIZE_T
      #define __Pyx_sst_abs(value) labs(value)
+diff --git a/pandas/_libs/window.cpp b/pandas/_libs/window.cpp
+index d527af6..773cfe0 100644
+--- a/pandas/_libs/window.cpp
++++ b/pandas/_libs/window.cpp
+@@ -705,10 +705,7 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+ static CYTHON_INLINE int __Pyx_is_valid_index(Py_ssize_t i, Py_ssize_t limit) {
+     return (size_t) i < (size_t) limit;
+ }
+-#if defined (__cplusplus) && __cplusplus >= 201103L
+-    #include <cstdlib>
+-    #define __Pyx_sst_abs(value) std::abs(value)
+-#elif SIZEOF_INT >= SIZEOF_SIZE_T
++#if SIZEOF_INT >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) abs(value)
+ #elif SIZEOF_LONG >= SIZEOF_SIZE_T
+     #define __Pyx_sst_abs(value) labs(value)
 '''
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
