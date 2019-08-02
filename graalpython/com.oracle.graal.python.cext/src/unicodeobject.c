@@ -438,3 +438,35 @@ PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
 PyObject * PyUnicode_FromOrdinal(int ordinal) {
     return UPCALL_O(PY_BUILTIN, polyglot_from_string("chr", SRC_CS), ordinal);
 }
+
+// taken from CPython "Python/Objects/unicodeobject.c"
+PyObject * PyUnicode_DecodeUTF8(const char *s, Py_ssize_t size, const char *errors) {
+    return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
+}
+
+UPCALL_ID(PyUnicode_DecodeUTF8Stateful);
+PyObject * PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const char *errors, Py_ssize_t *consumed) {
+	PyObject* result = UPCALL_CEXT_O(_jls_PyUnicode_DecodeUTF8Stateful, polyglot_from_i8_array(s, size), polyglot_from_string(errors, SRC_CS), consumed != NULL ? 1 : 0);
+	if (result != NULL) {
+		if (consumed != NULL) {
+			*consumed = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
+		}
+		return PyTuple_GetItem(result, 0);
+	}
+	PyErr_SetString(PyExc_SystemError, "expected tuple but got NULL");
+	return NULL;
+}
+
+// partially taken from CPython "Python/Objects/unicodeobject.c"
+PyObject * _PyUnicode_FromId(_Py_Identifier *id) {
+    if (!id->object) {
+        id->object = PyUnicode_DecodeUTF8Stateful(id->string, strlen(id->string), NULL, NULL);
+        if (!id->object) {
+            return NULL;
+        }
+        PyUnicode_InternInPlace(&id->object);
+        assert(!id->next);
+        id->next = NULL;
+    }
+    return id->object;
+}

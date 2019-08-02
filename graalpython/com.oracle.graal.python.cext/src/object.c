@@ -500,3 +500,13 @@ int PyCallable_Check(PyObject *x) {
 PyObject * PyObject_Dir(PyObject *obj) {
 	return UPCALL_O(PY_BUILTIN, polyglot_from_string("dir", SRC_CS), native_to_java(obj));
 }
+
+// taken from CPython 3.6.4 "Objects/object.c"
+PyObject * _PyObject_GetAttrId(PyObject *v, _Py_Identifier *name) {
+    PyObject *result;
+    PyObject *oname = _PyUnicode_FromId(name);
+    if (!oname)
+        return NULL;
+    result = PyObject_GetAttr(v, oname);
+    return result;
+}

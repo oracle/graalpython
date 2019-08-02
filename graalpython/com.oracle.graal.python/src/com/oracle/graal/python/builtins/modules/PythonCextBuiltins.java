@@ -54,6 +54,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -77,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
@@ -2506,4 +2508,49 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return doStrings(prefix, msg, status);
         }
     }
+
+    @Builtin(name = "PyUnicode_DecodeUTF8Stateful", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyUnicode_DecodeUTF8Stateful extends NativeUnicodeBuiltin {
+
+        @Specialization
+        Object doUtf8Decode(VirtualFrame frame, Object module, Object cByteArray, String errors, @SuppressWarnings("unused") int reportConsumed,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+
+            try {
+                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(frame, cByteArray, -1));
+                int n = remaining(inputBuffer);
+                CharBuffer resultBuffer = allocateCharBuffer(n * 4);
+                decodeUTF8(resultBuffer, inputBuffer, errors);
+                return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
+            } catch (InteropException e) {
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
+            }
+        }
+
+        @TruffleBoundary
+        private static CharBuffer allocateCharBuffer(int cap) {
+            return CharBuffer.allocate(cap);
+        }
+
+        @TruffleBoundary
+        private static String toString(CharBuffer cb) {
+            return cb.toString();
+        }
+
+        @TruffleBoundary
+        private static int remaining(ByteBuffer cb) {
+            return cb.remaining();
+        }
+
+        @TruffleBoundary
+        private CoderResult decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, String errors) {
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
+            return decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
+        }
+    }
+
 }
