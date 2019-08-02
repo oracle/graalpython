@@ -344,6 +344,14 @@ PyObject * PyMapping_Keys(PyObject *o) {
     return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));
 }
 
+UPCALL_ID(PyMapping_Values);
+PyObject * PyMapping_Values(PyObject *o) {
+    if (o == NULL) {
+        return null_error();
+    }
+    return UPCALL_CEXT_O(_jls_PyMapping_Values, native_to_java(o));
+}
+
 // taken from CPython "Objects/abstract.c"
 int PyMapping_Check(PyObject *o) {
     return o && o->ob_type->tp_as_mapping && o->ob_type->tp_as_mapping->mp_subscript;
@@ -492,4 +500,22 @@ int PyBuffer_IsContiguous(const Py_buffer *view, char order) {
     return 0;
 }
 
+// partially taken from CPython "Objects/abstract.c"
+Py_ssize_t PyMapping_Size(PyObject *o) {
+    PyMappingMethods *m;
 
+    if (o == NULL) {
+        null_error();
+        return -1;
+    }
+
+    m = o->ob_type->tp_as_mapping;
+    if (m && m->mp_length) {
+        Py_ssize_t len = m->mp_length(o);
+        assert(len >= 0 || PyErr_Occurred());
+        return len;
+    }
+
+    PyErr_Format(PyExc_TypeError, "object of type '%s' has no len()", Py_TYPE(o)->tp_name);
+    return -1;
+}

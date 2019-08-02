@@ -1385,6 +1385,11 @@ def PyMapping_Keys(obj):
 
 
 @may_raise
+def PyMapping_Values(obj):
+    return list(obj.values())
+
+
+@may_raise
 def PyState_FindModule(module_name):
     return sys.modules[module_name]
 
