@@ -133,6 +133,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1103,6 +1104,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raise(OSError, e);
             }
             return PNone.NONE;
+        }
+
+        @Specialization
+        Object unlink(VirtualFrame frame, Object pathLike,
+                        @Cached("createFspath()") LookupAndCallUnaryNode callFspathNode,
+                        @Cached CastToStringNode castToStringNode) {
+            try {
+                Object fsPathObj = callFspathNode.executeObject(frame, pathLike);
+                getContext().getEnv().getTruffleFile(castToStringNode.execute(frame, fsPathObj)).delete();
+            } catch (RuntimeException | IOException e) {
+                gotException.enter();
+                throw raise(OSError, e);
+            }
+            return PNone.NONE;
+        }
+
+        protected static LookupAndCallUnaryNode createFspath() {
+            return LookupAndCallUnaryNode.create(__FSPATH__);
         }
     }
 

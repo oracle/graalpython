@@ -127,6 +127,11 @@ class BasicTests(unittest.TestCase):
             f = float(input)
             self.assertEqual(toHex(f), expected);
 
+    def test_nan(self):
+        self.assertNotEqual(NAN, NAN)
+        self.assertNotEqual(float('nan'), float('nan'))
+        self.assertTrue(NAN is NAN)
+
 
 fromHex = float.fromhex
 

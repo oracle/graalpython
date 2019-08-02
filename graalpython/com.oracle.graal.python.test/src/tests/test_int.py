@@ -336,7 +336,38 @@ def test_create_int_from_bool():
     assert int(SpecInt0()) == 0
 
 def test_create_int_from_string():
-  assert int("5c7920a80f5261a2e5322163c79b71a25a41f414", 16) == 527928385865769069253929759180846776123316630548
+    assert int("5c7920a80f5261a2e5322163c79b71a25a41f414", 16) == 527928385865769069253929759180846776123316630548
+    class IndexLike:
+        def __index__(self):
+            return 16
+    assert int("123ff", IndexLike()) == 0x123ff
+    try:
+        int("123ff", None)
+    except TypeError:
+        assert True
+    else:
+        assert False, "expected TypeError"
+
+
+def test_create_int_from_float():
+    assert int(123.0) == 123
+    assert int(123.4) == 123
+    try:
+        int(float('nan'))
+    except ValueError:
+        assert True
+    else:
+        assert False, "expected ValueError"
+        
+    class FloatSub(float):
+        pass
+    
+    try:
+        int(FloatSub(float('nan')))
+    except ValueError:
+        assert True
+    else:
+        assert False, "expected ValueError"
 
 
 class FromBytesTests(unittest.TestCase):

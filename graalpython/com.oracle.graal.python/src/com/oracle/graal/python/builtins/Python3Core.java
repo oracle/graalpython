@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
@@ -109,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
@@ -125,6 +127,8 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.lzma.LZMACompressorBuiltins;
+import com.oracle.graal.python.builtins.objects.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
@@ -235,7 +239,8 @@ public final class Python3Core implements PythonCore {
                         "pyio_patches",
                         "pwd",
                         "resource",
-                        "_contextvars"));
+                        "_contextvars",
+                        "_lzma"));
         // must be last
         coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -351,7 +356,10 @@ public final class Python3Core implements PythonCore {
                         new RLockBuiltins(),
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
-                        new ContextvarsModuleBuiltins()));
+                        new ContextvarsModuleBuiltins(),
+                        new LZMAModuleBuiltins(),
+                        new LZMACompressorBuiltins(),
+                        new LZMADecompressorBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
@@ -369,6 +377,7 @@ public final class Python3Core implements PythonCore {
 
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
+    @CompilationFinal private PFloat pyNaN;
 
     private final PythonParser parser;
 
@@ -521,8 +530,9 @@ public final class Python3Core implements PythonCore {
             }
         }
         // now initialize well-known objects
-        pyTrue = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ONE);
-        pyFalse = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
+        pyTrue = new PInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
+        pyFalse = new PInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
+        pyNaN = new PFloat(PythonBuiltinClassType.PFloat, Double.NaN);
     }
 
     private void populateBuiltins() {
@@ -636,6 +646,10 @@ public final class Python3Core implements PythonCore {
 
     public PInt getFalse() {
         return pyFalse;
+    }
+
+    public PFloat getNaN() {
+        return pyNaN;
     }
 
     public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {

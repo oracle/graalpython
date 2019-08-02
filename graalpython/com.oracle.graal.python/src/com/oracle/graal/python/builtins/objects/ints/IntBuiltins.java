@@ -2361,7 +2361,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__INT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class IntNode extends PythonBuiltinNode {
+    abstract static class IntNode extends PythonUnaryBuiltinNode {
         @Child private GetLazyClassNode getClassNode;
 
         protected LazyPythonClass getClass(Object value) {
@@ -2411,7 +2411,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__FLOAT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FloatNode extends PythonBuiltinNode {
+    abstract static class FloatNode extends PythonUnaryBuiltinNode {
         @Specialization
         double doBoolean(boolean self) {
             return self ? 1.0 : 0.0;

@@ -372,6 +372,10 @@ class ListTest(list_tests.CommonTest):
             self.assertEqual([1, 2, 3, 4], a)
         else:
             assert False, "expected ValueError"
+            
+        a = [1, 2, 3, 4]
+        a[:] = map(next, [iter([None,]), iter([None,])])
+        self.assertEqual([None, None], a)
 
 
     def test_set_slice_class_iter(self):

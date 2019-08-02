@@ -76,9 +76,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -263,7 +263,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "unicode_escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
-    @ImportStatic(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UnicodeEscapeEncode extends PythonBinaryBuiltinNode {
         static final byte[] hexdigits = "0123456789abcdef".getBytes();
 

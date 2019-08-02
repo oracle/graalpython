@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -331,11 +331,7 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
         return v;
     }
 
-	PyObject* result = UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
-	if (result == NULL) {
-		PyErr_SetString(PyExc_TypeError, m);
-	}
-	return result;
+	return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
 }
 
 UPCALL_ID(PyObject_GetItem);
@@ -346,6 +342,11 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
 UPCALL_ID(PyMapping_Keys);
 PyObject * PyMapping_Keys(PyObject *o) {
     return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));
+}
+
+// taken from CPython "Objects/abstract.c"
+int PyMapping_Check(PyObject *o) {
+    return o && o->ob_type->tp_as_mapping && o->ob_type->tp_as_mapping->mp_subscript;
 }
 
 // taken from CPython "Objects/abstract.c"

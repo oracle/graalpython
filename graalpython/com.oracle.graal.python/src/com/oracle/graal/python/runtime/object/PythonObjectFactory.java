@@ -25,11 +25,14 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.Map;
+
+import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -81,6 +84,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
+import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -826,5 +831,13 @@ public abstract class PythonObjectFactory extends Node {
 
     public PMMap createMMap(LazyPythonClass clazz, SeekableByteChannel channel, long length, long offset) {
         return trace(new PMMap(clazz, channel, length, offset));
+    }
+
+    public PLZMACompressor createLZMACompressor(LazyPythonClass clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+        return trace(new PLZMACompressor(clazz, lzmaStream, bos));
+    }
+
+    public PLZMADecompressor createLZMADecompressor(LazyPythonClass clazz, int format, int memlimit) {
+        return trace(new PLZMADecompressor(clazz, format, memlimit));
     }
 }

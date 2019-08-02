@@ -108,6 +108,8 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PClassmethod("classmethod", "builtins"),
     PScandirIterator("ScandirIterator", "posix"),
     PDirEntry("DirEntry", "posix"),
+    PLZMACompressor("LZMACompressor", "_lzma"),
+    PLZMADecompressor("LZMADecompressor", "_lzma"),
 
     // Errors and exceptions:
 
@@ -152,6 +154,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     TimeoutError("TimeoutError", "builtins"),
     ZipImportError("ZipImportError", "zipimport"),
     ZLibError("error", "zlib"),
+    LZMAError("LZMAError", "_lzma"),
 
     // todo: all OS errors
 
@@ -282,6 +285,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         TimeoutError.base = OSError;
         ZipImportError.base = ImportError;
         ZLibError.base = Exception;
+        LZMAError.base = Exception;
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;
