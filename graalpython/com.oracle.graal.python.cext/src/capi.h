@@ -329,7 +329,7 @@ extern PyObject* wrapped_null;
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
 /* STR */
-PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
+__attribute__((always_inline)) PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc);
 
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
