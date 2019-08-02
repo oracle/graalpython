@@ -400,6 +400,78 @@ static int win32_can_symlink = 0;
 # include <sanitizer/msan_interface.h>
 #endif
 
+// TODO: TRUFFLE CHANGE BEGIN
+// We define dummies for following functions just to have them defined. They should eventually be implemented.
+PyObject* PyUnicode_DecodeFSDefaultAndSize(const char *s, Py_ssize_t size) {
+	return NULL;
+}
+
+int _Py_set_blocking(int fd, int blocking) {
+	return -1;
+}
+
+int _Py_get_blocking(int fd) {
+	return -1;
+}
+
+Py_ssize_t _Py_write(int fd, const void *buf, size_t count) {
+	return -1;
+}
+
+Py_ssize_t _Py_read(int fd, void *buf, size_t count) {
+	return -1;
+}
+
+int _Py_dup(int fd) {
+	return -1;
+}
+
+PyObject * _Py_device_encoding(int fd) {
+	return NULL;
+}
+
+int _Py_set_inheritable(int fd, int inheritable, int *atomic_flag_works) {
+	return -1;
+}
+
+int _Py_get_inheritable(int fd) {
+	return -1;
+}
+
+PyObject* PyUnicode_DecodeLocale(const char *str, const char *errors) {
+	return NULL;
+}
+
+int PyUnicode_FSConverter(PyObject* arg, void* addr) {
+	return -1;
+}
+
+PyObject * _PyObject_LookupSpecial(PyObject *self, _Py_Identifier *attrid) {
+	return NULL;
+}
+
+int PyObject_CallFinalizerFromDealloc(PyObject *self) {
+	return -1;
+}
+
+int _PyTime_ObjectToTimespec(PyObject *obj, time_t *sec, long *nsec, _PyTime_round_t round) {
+	return -1;
+}
+
+PyObject* PyUnicode_DecodeFSDefault(const char *s) {
+	return NULL;
+}
+
+time_t _PyLong_AsTime_t(PyObject *obj) {
+	return -1;
+
+}
+
+int _PyOS_URandom(void *buffer, Py_ssize_t size) {
+	return -1;
+}
+// TODO: TRUFFLE CHANGE END
+
 #ifdef HAVE_FORK
 static void
 run_at_forkers(PyObject *lst, int reverse)
