@@ -112,6 +112,21 @@ public class ClassDefTests extends ParserTestBase {
     }
     
     @Test
+    public void classDef11() throws Exception {
+        checkScopeAndTree(
+                "def make_named_tuple_class(name, fields):\n" +
+                "    class named_tuple(tuple):\n" +
+                "        __name__ = name\n" +
+                "        n_sequence_fields = len(fields)\n" +
+                "        fields = fields\n" +
+                "        def __repr__(self):\n" +
+                "            sb = name\n" +
+                "            for f in fields:\n" +
+                "                pass\n" +
+                "    return named_tuple");
+    }
+    
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree("@class_decorator\n" +
                          "class foo():pass");

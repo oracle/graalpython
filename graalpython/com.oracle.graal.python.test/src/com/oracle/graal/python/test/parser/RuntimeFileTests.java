@@ -19,6 +19,12 @@ public class RuntimeFileTests extends ParserTestBase {
     }
     
     @Test
+    public void _descriptor() throws Exception {
+        checkScopeAndTree();
+    }
+    
+    
+    @Test
     public void _sitebuiltins() throws Exception {
         checkScopeAndTree();
     }
@@ -55,7 +61,7 @@ public class RuntimeFileTests extends ParserTestBase {
     
     @Test
     public void initCollectionsPart1() throws Exception {
-        checkScopeAndTree();
+        checkScopeAndTreeWithCorrections();
     }
     
     @Test
@@ -105,6 +111,11 @@ public class RuntimeFileTests extends ParserTestBase {
     
    @Test
     public void sre_parse() throws Exception {
+        checkScopeAndTree();
+    }
+   
+    @Test
+    public void sys() throws Exception {
         checkScopeAndTree();
     }
     

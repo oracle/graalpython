@@ -65,6 +65,8 @@ import org.antlr.v4.runtime.ParserRuleContext;
 
 public class ScopeEnvironment implements CellFrameSlotSupplier {
 
+    public static String CLASS_VAR_PREFIX = "<>class";
+    
     private final NodeFactory factory;
 
     private ScopeInfo currentScope;
@@ -119,8 +121,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                 List<ScopeInfo> usedInScopes = unresolvedVars.get(name);
                 // was the declared varibale seen before?
                 if (usedInScopes != null 
-                        && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)
-                        && definingScopeKind != ScopeInfo.ScopeKind.Class) { 
+                        && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) { 
                     // make the varible freevar and cellvar in scopes, where is used
                     List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
                     for (ScopeInfo scope : copy) {
@@ -164,6 +165,16 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             }
             // clean the variables
             localySeenVars.clear();
+        }
+        if (definingScopeKind == ScopeInfo.ScopeKind.Class) {
+            for (Object identifier : identifiers) {
+                String name = (String)identifier;
+                if (name.startsWith("<>class")) {
+                    definingScope.getFrameDescriptor().removeFrameSlot(identifier);
+                    name = name.substring(7);
+                    definingScope.createSlotIfNotPresent(name);
+                }
+            }
         }
         currentScope = currentScope.getParent();
         return definingScope;

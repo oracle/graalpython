@@ -91,6 +91,7 @@ public final class PythonNodeFactory {
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
     
+    
     public PythonNodeFactory(PythonLanguage language, Source source) {
         this.language = language;
         this.nodeFactory = NodeFactory.create(language);
@@ -237,7 +238,11 @@ public final class PythonNodeFactory {
         if (value instanceof VarLookupSSTNode) {
             String name = ((VarLookupSSTNode)value).getName();
             if (!scopeEnvironment.isNonlocal(name)) {
-                scopeEnvironment.createLocal(name);
+                scopeEnvironment.createLocal(
+                        scopeEnvironment.getCurrentScope().getScopeKind() != ScopeKind.Class
+                        ? name
+                        : ScopeEnvironment.CLASS_VAR_PREFIX + name
+                );
             }
         } else if (value instanceof CollectionSSTNode) {
             CollectionSSTNode collection = (CollectionSSTNode) value;
@@ -315,7 +320,9 @@ public final class PythonNodeFactory {
     public ScopeInfo createScope(String name, ScopeKind kind) {
         log(kind, null);
         if (kind == ScopeKind.Function && !name.equals("lambda")) {
-            scopeEnvironment.createLocal(name);
+            scopeEnvironment.createLocal(scopeEnvironment.getCurrentScope().getScopeKind() == ScopeKind.Class
+                    ? ScopeEnvironment.CLASS_VAR_PREFIX + name
+                    : name);
         }
         return scopeEnvironment.pushScope(name, kind, null);
     }
