@@ -811,3 +811,21 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyMapping_Check = CPyExtFunction(
+        lambda args: 1 if isinstance(args[0], (dict, str, tuple, list)) else 0,
+        lambda: (
+            (dict(), ),
+            ("not a number", ),
+            ({}, ),
+            ({"a": "yes"}, ),
+            (tuple(), ),
+            (list(), ),
+            (1, ),
+            (None, ),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )

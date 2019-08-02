@@ -498,7 +498,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         try {
             environment.pushScope(compctx.scope);
             ExpressionNode block = getBlock.apply(ctx);
-            ExpressionNode yield = factory.createYield(block, environment.getReturnSlot());
+            ExpressionNode yield = factory.createYield(block);
             yield.assignSourceSection(block.getSourceSection());
             StatementNode body = createGeneratorExpression(ctx.getChild(Python3Parser.Comp_forContext.class, 0), asBlock(yield));
             SourceSection srcSection = body.getSourceSection();
@@ -1355,12 +1355,12 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             } else {
                 assert ctx.yield_arg().test() != null;
                 right = (ExpressionNode) ctx.yield_arg().test().accept(this);
-                return factory.createYieldFrom(right, environment.getReturnSlot());
+                return factory.createYieldFrom(right);
             }
         } else {
             right = EmptyNode.create();
         }
-        return factory.createYield(right, environment.getReturnSlot());
+        return factory.createYield(right);
     }
 
     @Override

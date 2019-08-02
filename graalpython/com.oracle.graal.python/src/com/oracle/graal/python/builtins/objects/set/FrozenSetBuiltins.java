@@ -72,6 +72,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -489,7 +490,15 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean isSuperSet(VirtualFrame frame, PBaseSet self, String other,
+        boolean isSuperSetPSequence(VirtualFrame frame, PBaseSet self, PSequence other,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+            PSet otherSet = constructSetNode.executeWith(frame, other);
+            return isSupersetNode.execute(frame, self.getDictStorage(), otherSet.getDictStorage());
+        }
+
+        @Specialization
+        boolean isSuperSetString(VirtualFrame frame, PBaseSet self, String other,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
                         @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
             PSet otherSet = constructSetNode.executeWith(frame, other);

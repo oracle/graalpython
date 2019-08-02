@@ -470,3 +470,8 @@ PyObject * _PyUnicode_FromId(_Py_Identifier *id) {
     }
     return id->object;
 }
+
+UPCALL_ID(PyUnicode_AsUnicodeEscapeString);
+PyObject * PyUnicode_AsUnicodeEscapeString(PyObject *unicode) {
+	return UPCALL_CEXT_O(_jls_PyUnicode_AsUnicodeEscapeString, native_to_java(unicode));
+}

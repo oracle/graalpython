@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,26 +40,38 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
-public abstract class IsSequenceNode extends PDataModelEmulationNode {
+public abstract class IsMappingTypeNode extends PDataModelEmulationNode {
 
     @Specialization
-    public boolean isSequence(Object object,
-                    @Cached GetLazyClassNode getClassNode,
-                    @Cached IsSequenceTypeNode isSequenceTypeNode) {
-        return isSequenceTypeNode.execute(getClassNode.execute(object));
+    boolean isMapping(LazyPythonClass type,
+                    @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
+                    @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
+                    @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
+                    @Cached IsSequenceTypeNode isSequence,
+                    @Cached("createBinaryProfile()") ConditionProfile profile) {
+        if (isSequence.execute(type)) {
+            return profile.profile(hasKeysNode.execute(type, KEYS) != PNone.NO_VALUE &&
+                            hasItemsNode.execute(type, ITEMS) != PNone.NO_VALUE &&
+                            hasValuesNode.execute(type, VALUES) != PNone.NO_VALUE);
+        }
+        return false;
     }
 
-    public static IsSequenceNode create() {
-        return IsSequenceNodeGen.create();
-    }
-
-    public static IsSequenceNode getUncached() {
-        return IsSequenceNodeGen.getUncached();
+    @Specialization(guards = "!isClass(obj)")
+    boolean isSequence(@SuppressWarnings("unused") Object obj) {
+        return false;
     }
 }

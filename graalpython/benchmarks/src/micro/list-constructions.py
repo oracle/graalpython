@@ -37,43 +37,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AF_UNSPEC = 0
-AF_INET = 2
-AF_INET6 = 23
 
-AI_PASSIVE = 1
-
-SOCK_DGRAM = 1
-SOCK_STREAM = 2
-SOCK_RAW = 3
-SOCK_RDM = 4
-SOCK_SEQPACKET = 5
-
-IPPROTO_TCP = 6
-TCP_NODELAY = 1
-
-has_ipv6 = False  #: TODO implement me
-error = OSError
-
-class timeout(OSError):
-    pass
-
-__default_timeout = None
+def measure(l1, l2, l3, num):
+    flag = False
+    for i in range(num):
+        for l in [l1, l2, l3]:
+            flag = type(l)
+    return flag
 
 
-def getdefaulttimeout():
-    return __default_timeout
-
-
-def setdefaulttimeout(timeout):
-    global __default_timeout
-    __default_timeout = timeout
-
-
-try:
-    _sock = socket()
-    SocketType = type(_sock)
-    del _sock
-except:
-    pass
-
+def __benchmark__(num=5000):
+    l1 = [1000] * num
+    l2 = list(range(num))
+    l3 = [x for x in range(num)]
+    measure(l1, l2, l3, num)

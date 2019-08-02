@@ -143,7 +143,8 @@ public abstract class PRaiseNode extends Node {
 
     @TruffleBoundary
     private static final String getMessage(Exception e) {
-        return e.getMessage();
+        String msg = e.getMessage();
+        return msg != null ? msg : e.getClass().getSimpleName();
     }
 
     public static PRaiseNode create() {

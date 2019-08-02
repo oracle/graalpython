@@ -161,6 +161,11 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         return sourceSection;
     }
 
+    @Override
+    public boolean isInternal() {
+        return sourceSection != null && sourceSection.getSource().isInternal();
+    }
+
     public boolean isRewritten() {
         return isRewritten;
     }

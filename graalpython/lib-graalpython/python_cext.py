@@ -675,6 +675,15 @@ def PyUnicode_Compare(left, right):
         return -1
     else:
         return 1
+    
+_codecs_module = None
+
+@may_raise
+def PyUnicode_AsUnicodeEscapeString(string):
+    global _codecs_module
+    if not _codecs_module:
+        import _codecs as _codecs_module 
+    return _codecs_module.unicode_escape_encode(string)[0]
 
 
 ##################### CAPSULE

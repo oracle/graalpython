@@ -37,43 +37,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AF_UNSPEC = 0
-AF_INET = 2
-AF_INET6 = 23
+CHECK_NONE = 0
+CHECK_CRC32 = 1
+CHECK_CRC64 = 4
+CHECK_SHA256 = 10
 
-AI_PASSIVE = 1
+def _encode_filter_properties(filter):
+    try:
+        id = int(filter["id"])
+    except TypeError:
+        # thrown if 'filter' is not subscriptable
+        raise TypeError("Filter specifier must be a dict or dict-like object")
+    except KeyError:
+        # thrown if 'filter' has no key 'id'
+        raise ValueError("Filter specifier must be a dict or dict-like object")
+    
+    
 
-SOCK_DGRAM = 1
-SOCK_STREAM = 2
-SOCK_RAW = 3
-SOCK_RDM = 4
-SOCK_SEQPACKET = 5
 
-IPPROTO_TCP = 6
-TCP_NODELAY = 1
 
-has_ipv6 = False  #: TODO implement me
-error = OSError
-
-class timeout(OSError):
+def _decode_filter_properties(filters, bytesLike):
     pass
-
-__default_timeout = None
-
-
-def getdefaulttimeout():
-    return __default_timeout
-
-
-def setdefaulttimeout(timeout):
-    global __default_timeout
-    __default_timeout = timeout
-
-
-try:
-    _sock = socket()
-    SocketType = type(_sock)
-    del _sock
-except:
-    pass
-

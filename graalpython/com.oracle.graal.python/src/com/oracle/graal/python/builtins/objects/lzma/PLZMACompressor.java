@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,28 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.lzma;
 
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import java.io.ByteArrayOutputStream;
 
-@GenerateUncached
-public abstract class IsSequenceNode extends PDataModelEmulationNode {
+import org.tukaani.xz.FinishableOutputStream;
 
-    @Specialization
-    public boolean isSequence(Object object,
-                    @Cached GetLazyClassNode getClassNode,
-                    @Cached IsSequenceTypeNode isSequenceTypeNode) {
-        return isSequenceTypeNode.execute(getClassNode.execute(object));
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+
+public class PLZMACompressor extends PythonObject {
+
+    private FinishableOutputStream lzmaStream;
+    private ByteArrayOutputStream bos;
+
+    public PLZMACompressor(LazyPythonClass clazz) {
+        super(clazz);
     }
 
-    public static IsSequenceNode create() {
-        return IsSequenceNodeGen.create();
+    public PLZMACompressor(LazyPythonClass clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+        super(clazz);
+        this.lzmaStream = lzmaStream;
+        this.bos = bos;
     }
 
-    public static IsSequenceNode getUncached() {
-        return IsSequenceNodeGen.getUncached();
+    public FinishableOutputStream getLzmaStream() {
+        return lzmaStream;
     }
+
+    public ByteArrayOutputStream getBos() {
+        return bos;
+    }
+
 }

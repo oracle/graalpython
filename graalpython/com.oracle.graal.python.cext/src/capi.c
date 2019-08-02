@@ -312,6 +312,11 @@ allocfunc get_tp_alloc(PyTypeObject* obj) {
 	return obj->tp_alloc;
 }
 
+/** to be used from Java code only; reads native 'tp_flags' field */
+unsigned long get_tp_flags(PyTypeObject* obj) {
+	return obj->tp_flags;
+}
+
 /** to be used from Java code only; returns the type ID for a byte array */
 polyglot_typeid get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);

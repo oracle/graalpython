@@ -104,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -1873,6 +1874,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             // cast ensured by guard
             PFunction fun = (PFunction) method.getFunction();
             return NodeUtil.printTreeToString(fun.getCallTarget().getRootNode());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doIt(PGenerator gen) {
+            return NodeUtil.printTreeToString(gen.getCallTarget().getRootNode());
         }
 
         @Specialization

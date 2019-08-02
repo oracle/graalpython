@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -80,6 +81,8 @@ public interface PythonCore extends ParserErrorCallback {
     public PInt getTrue();
 
     public PInt getFalse();
+
+    public PFloat getNaN();
 
     public PythonModule getBuiltins();
 
