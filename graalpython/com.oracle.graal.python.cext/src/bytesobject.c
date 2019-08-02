@@ -285,3 +285,8 @@ UPCALL_ID(_PyBytes_Resize);
 int _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize) {
     return UPCALL_CEXT_I(_jls__PyBytes_Resize, native_to_java(*pv), newsize);
 }
+
+UPCALL_ID(PyBytes_FromObject);
+PyObject * PyBytes_FromObject(PyObject *x) {
+    return UPCALL_CEXT_O(_jls_PyBytes_FromObject, native_to_java(x));
+}

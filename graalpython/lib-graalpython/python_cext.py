@@ -283,6 +283,11 @@ def PyBytes_Join(sep, iterable):
     return sep.join(iterable)
 
 
+@may_raise
+def PyBytes_FromObject(iterable):
+    return bytes(iterable)
+
+
 ##################### LIST
 
 @may_raise
