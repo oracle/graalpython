@@ -26,30 +26,35 @@
 package com.oracle.graal.python.builtins.objects.module;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PythonModule extends PythonObject {
-    private final String name;
-
-    public PythonModule(LazyPythonClass clazz, String name) {
+    public PythonModule(LazyPythonClass clazz) {
         super(clazz);
-        this.name = name;
-        addDefaultConstants(name);
     }
 
-    private void addDefaultConstants(String moduleName) {
+    private PythonModule(String moduleName) {
+        super(PythonBuiltinClassType.PythonModule);
         setAttribute(__NAME__, moduleName);
         setAttribute(__DOC__, PNone.NONE);
         setAttribute(__PACKAGE__, PNone.NONE);
+        setAttribute(__LOADER__, PNone.NONE);
+        setAttribute(__SPEC__, PNone.NONE);
     }
 
-    public String getModuleName() {
-        return name;
+    /**
+     * Only to be used during context creation
+     */
+    public static PythonModule createInternal(String moduleName) {
+        return new PythonModule(moduleName);
     }
 
     @Override

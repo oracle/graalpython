@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -217,7 +218,7 @@ abstract class ReadBuiltinNode extends Node {
         if (ensureIsCoreInitializedProfile().profile(core.isInitialized())) {
             return context.getBuiltins();
         } else {
-            return core.lookupBuiltinModule("builtins");
+            return core.lookupBuiltinModule(BuiltinNames.BUILTINS);
         }
     }
 

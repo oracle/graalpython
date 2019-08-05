@@ -54,7 +54,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -132,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -142,7 +142,6 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -199,7 +198,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(defineModule = "builtins")
+@CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinConstructors extends PythonBuiltins {
 
     @Override
@@ -2391,22 +2390,26 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = MODULE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PythonModule, isPublic = false)
+    @Builtin(name = MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject, isPublic = false)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
-        @Child private WriteAttributeToObjectNode writeFile = WriteAttributeToObjectNode.create();
-
         @Specialization
-        public PythonModule module(LazyPythonClass cls, String name, @SuppressWarnings("unused") PNone path) {
-            return factory().createPythonModule(cls, name);
+        @SuppressWarnings("unused")
+        Object doType(PythonBuiltinClass self, Object[] varargs, PKeyword[] kwargs) {
+            return factory().createPythonModule(self.getType());
+        }
+
+        @Specialization(guards = "!isPythonBuiltinClass(self)")
+        @SuppressWarnings("unused")
+        Object doManaged(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
+            return factory().createPythonModule(self);
         }
 
         @Specialization
-        public PythonModule module(LazyPythonClass cls, String name, String path) {
-            PythonModule module = factory().createPythonModule(cls, name);
-            writeFile.execute(module, __FILE__, path);
-            return module;
+        @SuppressWarnings("unused")
+        Object doType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs) {
+            return factory().createPythonModule(self);
         }
     }
 

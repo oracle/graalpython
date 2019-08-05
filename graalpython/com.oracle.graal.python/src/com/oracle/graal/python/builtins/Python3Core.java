@@ -40,9 +40,6 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
@@ -78,6 +75,7 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
@@ -163,15 +161,16 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -181,6 +180,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -428,11 +429,11 @@ public final class Python3Core implements PythonCore {
         initializeTypes();
         populateBuiltins();
         publishBuiltinModules();
-        builtinsModule = builtinModules.get("builtins");
+        builtinsModule = builtinModules.get(BuiltinNames.BUILTINS);
     }
 
     private void initializePythonCore(String coreHome) {
-        loadFile("builtins", coreHome);
+        loadFile(BuiltinNames.BUILTINS, coreHome);
         for (String s : coreFiles) {
             loadFile(s, coreHome);
         }

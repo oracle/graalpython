@@ -200,7 +200,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
-@CoreFunctions(defineModule = "builtins")
+@CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinFunctions extends PythonBuiltins {
 
     @Override
@@ -211,7 +211,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Override
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
-        PythonModule builtinsModule = core.lookupBuiltinModule("builtins");
+        PythonModule builtinsModule = core.lookupBuiltinModule(BuiltinNames.BUILTINS);
         builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(core.getContext(), PythonOptions.PythonOptimizeFlag));
     }
 
