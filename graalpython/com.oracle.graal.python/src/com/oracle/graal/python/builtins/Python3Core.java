@@ -598,11 +598,11 @@ public final class Python3Core implements PythonCore {
     }
 
     @TruffleBoundary
-    private Source getSource(String basename, String prefix) {
+    private Source getInternalSource(String basename, String prefix) {
         PythonContext ctxt = getContext();
         Env env = ctxt.getEnv();
-        String suffix = env.getFileNameSeparator() + basename + ".py";
-        TruffleFile file = env.getTruffleFile(prefix + suffix);
+        String suffix = env.getFileNameSeparator() + basename + PythonLanguage.EXTENSION;
+        TruffleFile file = env.getInternalTruffleFile(prefix + suffix);
         String errorMessage;
         try {
             return PythonLanguage.newSource(ctxt, file, basename);
@@ -619,7 +619,7 @@ public final class Python3Core implements PythonCore {
 
     private void loadFile(String s, String prefix) {
         Supplier<CallTarget> getCode = () -> {
-            Source source = getSource(s, prefix);
+            Source source = getInternalSource(s, prefix);
             return Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null));
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);

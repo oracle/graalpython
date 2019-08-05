@@ -225,7 +225,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         if (args.length > 0) {
             String argv0 = args[0];
             if (argv0 != null && !argv0.startsWith("-") && !argv0.isEmpty()) {
-                TruffleFile scriptFile = env.getTruffleFile(argv0);
+                TruffleFile scriptFile = env.getPublicTruffleFile(argv0);
                 try {
                     scriptPath = scriptFile.getAbsoluteFile().getParent().getPath();
                 } catch (SecurityException e) {

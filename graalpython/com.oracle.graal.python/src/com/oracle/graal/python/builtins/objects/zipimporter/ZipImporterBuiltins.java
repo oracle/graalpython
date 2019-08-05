@@ -201,7 +201,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.ZipImportError, "archive path is empty");
             }
 
-            TruffleFile tfile = getContext().getEnv().getTruffleFile(path);
+            TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(path);
             String prefix = "";
             String archive = "";
             while (true) {
@@ -494,7 +494,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
             long streamPosition = (long) tocEntry.getArray()[6];
             ZipInputStream zis = null;
-            TruffleFile tfile = getContext().getEnv().getTruffleFile(archive);
+            TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(archive);
             try (InputStream in = tfile.newInputStream(StandardOpenOption.READ)) {
                 in.skip(streamPosition); // we can fast skip bytes, because there is cached position
                                          // of the zip entry

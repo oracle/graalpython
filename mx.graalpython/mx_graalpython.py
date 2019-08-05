@@ -464,7 +464,7 @@ def run_embedded_native_python_test(args=None):
             """)
         out = mx.OutputCapture()
         mx.run([graalvm_javac, filename])
-        mx.run([graalvm_native_image, "--initialize-at-build-time", "--language:python", "HelloWorld"])
+        mx.run([graalvm_native_image, "-H:+ReportExceptionStackTraces", "--initialize-at-build-time", "--language:python", "HelloWorld"])
         mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
         assert "abc" in out.data
         assert "xyz" in out.data
