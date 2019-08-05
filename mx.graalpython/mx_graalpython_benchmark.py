@@ -260,6 +260,10 @@ class GraalPythonVm(GuestVm):
             "-Dpython.home=%s" % join(SUITE.dir, "graalpython"),
             "com.oracle.graal.python.shell.GraalPythonMain"
         ]
+        for a in args[:]:
+            if a.startswith("-D") or a.startswith("-XX"):
+                vm_args.insert(0, a)
+                args.remove(a)
         cmd = truffle_options + vm_args + extra_polyglot_args + args
 
         host_vm = self.host_vm()
@@ -361,31 +365,37 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         return results
 
     def postprocess_run_args(self, run_args):
-        parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument("-i", default=None)
-        parser.add_argument("--cpusampler", action="store_true")
-        parser.add_argument("--memtracer", action="store_true")
-        parser.add_argument("-dump", action="store_true")
-        args, remaining = parser.parse_known_args(run_args)
-
         vm_options = []
-        if args.cpusampler:
-            vm_options.append("--cpusampler")
-        if args.memtracer:
-            vm_options.append("--memtracer")
-        if args.dump:
-            vm_options.append("-dump")
+        remaining = []
+        i = 0
 
-        if args.i:
-            if args.i.isdigit():
-                return vm_options, (["-i", args.i] + remaining)
-            if args.i == "-1":
-                return vm_options, remaining
-        else:
+        while i < len(run_args):
+            arg = run_args[i]
+            if not arg.startswith("-"):
+                remaining = run_args[i:]
+                break
+            elif arg.startswith("-i"):
+                if len(run_args) >= i and run_args[i + 1] == "-1":
+                    pass
+                else:
+                    remaining = run_args[i:]
+                    break
+            else:
+                vm_options.append(arg)
+            i += 1
+
+        if not (remaining and remaining[0] == "-i"):
             iterations = DEFAULT_ITERATIONS + self.getExtraIterationCount(DEFAULT_ITERATIONS)
-            return vm_options, (["-i", str(iterations)] + remaining)
+            remaining = ["-i", str(iterations)] + remaining
 
-    def createVmCommandLineArgs(self, benchmarks, run_args):
+        return vm_options, remaining
+
+    def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        return self.createVmCommandLineArgs(benchmarks, bmSuiteArgs)
+
+    def createVmCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        vm_args = self.vmArgs(bmSuiteArgs)
+        run_args = self.runArgs(bmSuiteArgs)
         if not benchmarks or len(benchmarks) != 1:
             mx.abort("Please run a specific benchmark (mx benchmark {}:<benchmark-name>) or all the benchmarks "
                      "(mx benchmark {}:*)".format(self.name(), self.name()))
@@ -412,7 +422,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             run_args += self._benchmarks[benchmark]
         vm_options, run_args = self.postprocess_run_args(run_args)
         cmd_args.extend(run_args)
-        return vm_options + cmd_args
+        return vm_options + vm_args + cmd_args
 
     def benchmarkList(self, bm_suite_args):
         return self._benchmarks.keys()
