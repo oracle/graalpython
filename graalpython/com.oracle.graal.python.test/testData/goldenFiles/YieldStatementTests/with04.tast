@@ -50,12 +50,9 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                               ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
+                        Identifier: b
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [2,<return_val>,Illegal]
-                        ReadGeneratorFrameVariableNode SourceSection: [35,36]`b`
                           Frame: [0,b,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [28,31]`B()`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
@@ -81,12 +78,9 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                       CachedNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <return_val>
+                      Identifier: a
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [2,<return_val>,Illegal]
-                      ReadGeneratorFrameVariableNode SourceSection: [25,26]`a`
                         Frame: [1,a,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                     PythonCallNodeGen SourceSection: [18,21]`A()`
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None

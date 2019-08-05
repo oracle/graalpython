@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.test.parser;
 
+import com.oracle.graal.python.runtime.PythonParser;
 import java.io.File;
 import org.junit.*;
 
@@ -131,6 +132,11 @@ public class BasicTests extends ParserTestBase {
     @Test
     public void simpleExpression07() throws Exception {
         checkTreeResult("");
+    }
+    
+    @Test
+    public void simpleExpression08() throws Exception {
+        checkTreeResult("\"\\uD800\"", PythonParser.ParserMode.Eval);
     }
     
     @Test

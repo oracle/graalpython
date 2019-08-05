@@ -673,23 +673,27 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             body = (StatementNode)node.body.accept(this);
         }
         ExpressionNode doc = (new PythonNodeFactory.DocExtractor()).extract(body);
-        if (doc != null && body instanceof BaseBlockNode) {
-            StatementNode[] st = ((BaseBlockNode)body).getStatements();
-            if (st.length == 1) {
-                body = BlockNode.create();
-            } else {
-                if (st.length == 2) {
-                    body = st[1];
-                    if (scopeEnvironment.isInGeneratorScope()) {
-                        generatorFactory.decreaseNumOfGeneratorBlockNode();
-                    }
+        if (doc != null) {
+            if (body instanceof BaseBlockNode) {
+                StatementNode[] st = ((BaseBlockNode)body).getStatements();
+                if (st.length == 1) {
+                    body = BlockNode.create();
                 } else {
-                    // TODO this is not nice. We create the block twice. Should be created just one?
-                    body = body instanceof GeneratorBlockNode 
-                            ? GeneratorBlockNode.create(Arrays.copyOfRange(st, 1, st.length), ((GeneratorBlockNode)body).getIndexSlot())
-                            : BlockNode.create(Arrays.copyOfRange(st, 1, st.length));
+                    if (st.length == 2) {
+                        body = st[1];
+                        if (scopeEnvironment.isInGeneratorScope()) {
+                            generatorFactory.decreaseNumOfGeneratorBlockNode();
+                        }
+                    } else {
+                        // TODO this is not nice. We create the block twice. Should be created just one?
+                        body = body instanceof GeneratorBlockNode 
+                                ? GeneratorBlockNode.create(Arrays.copyOfRange(st, 1, st.length), ((GeneratorBlockNode)body).getIndexSlot())
+                                : BlockNode.create(Arrays.copyOfRange(st, 1, st.length));
+                    }
+
                 }
-                
+            } else {
+                body = BlockNode.create();
             }
         }
         if (doc == null) {

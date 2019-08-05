@@ -1,0 +1,131 @@
+ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty_lines(...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,155]`def non_empty_lines(...`
+    ExpressionWithSideEffect SourceSection: [0,155]`def non_empty_lines(...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,155]`def non_empty_lines(...`
+          Identifier: non_empty_lines
+          GeneratorFunctionDefinitionNode Name: non_empty_lines SourceSection: None
+            FrameDescriptor: 4 slots [path, line, f, <return_val>]
+            Active Flags: 6
+            For Nodes: 2
+            Block Nodes: 1
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,155]`def non_empty_lines(...`
+              Name: non_empty_lines
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: path
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 4 slots [path, line, f, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,155]`def non_empty_lines(...`
+                GeneratorReturnTargetNode SourceSection: [0,155]`def non_empty_lines(...`
+                  flagSlot: 5
+                  GeneratorWithNode SourceSection: [31,155]`with open(path) as f...`
+                    ElseNode SourceSection: [61,155]`for line in f:↵     ...`
+                      GeneratorForNode SourceSection: None
+                        GeneratorBlockNode SourceSection: None
+                          WriteGeneratorFrameVariableNodeGen SourceSection: [88,107]`line = line.strip()`
+                            Identifier: line
+                            WriteGeneraterFrameSlotNodeGen SourceSection: None
+                              Frame: [1,line,Illegal]
+                            PythonCallNodeGen SourceSection: [95,107]`line.strip()`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              GetCallAttributeNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNode SourceSection: [95,99]`line`
+                                  Frame: [1,line,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                          GeneratorIfNode SourceSection: [120,155]`if line:↵           ...`
+                            GeneratorAccessNode SourceSection: None
+                            YesNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [123,127]`line`
+                                Frame: [1,line,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ExpressionStatementNode SourceSection: [145,155]`yield line`
+                              YieldNode SourceSection: [145,155]`yield line`
+                                flagSlot: 0
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: <return_val>
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [3,<return_val>,Illegal]
+                                  ReadGeneratorFrameVariableNode SourceSection: [151,155]`line`
+                                    Frame: [1,line,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                GeneratorAccessNode SourceSection: None
+                            BlockNode SourceSection: None
+                          GeneratorAccessNode SourceSection: None
+                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                          Identifier: line
+                          WriteGeneraterFrameSlotNodeGen SourceSection: None
+                            Frame: [1,line,Illegal]
+                        GetIteratorExpressionNodeGen SourceSection: [73,74]`f`
+                          GetIteratorNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [73,74]`f`
+                            Frame: [2,f,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        GetNextCachedNode SourceSection: None
+                          LookupAndCallUnaryNodeGen SourceSection: None
+                            Op: __next__
+                        GeneratorAccessNode SourceSection: None
+                      BlockNode SourceSection: None
+                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                      Identifier: f
+                      WriteGeneraterFrameSlotNodeGen SourceSection: None
+                        Frame: [2,f,Illegal]
+                    PythonCallNodeGen SourceSection: [36,46]`open(path)`
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      ReadGeneratorFrameVariableNode SourceSection: [41,45]`path`
+                        Frame: [0,path,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        Identifier: open
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    LookupInheritedAttributeNode SourceSection: None
+                      LookupAttributeInMRONodeGen SourceSection: None
+                        IsSameTypeNodeGen SourceSection: None
+                      GetLazyClassCachedNodeGen SourceSection: None
+                    LookupInheritedAttributeNode SourceSection: None
+                      LookupAttributeInMRONodeGen SourceSection: None
+                        IsSameTypeNodeGen SourceSection: None
+                      GetLazyClassCachedNodeGen SourceSection: None
+                    CachedCallNodeGen SourceSection: None
+                      CreateArgumentsNodeGen SourceSection: None
+                      CallDispatchNodeGen SourceSection: None
+                    CachedCallNodeGen SourceSection: None
+                      CreateArgumentsNodeGen SourceSection: None
+                      CallDispatchNodeGen SourceSection: None
+                    YesNodeGen SourceSection: None
+                    CachedNodeGen SourceSection: None
+                    GeneratorAccessNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [3,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                    Identifier: path
+                    WriteGeneraterFrameSlotNodeGen SourceSection: None
+                      Frame: [0,path,Illegal]
+                    ArgumentExpressionNode SourceSection: None
+                      ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

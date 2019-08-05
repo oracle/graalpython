@@ -139,6 +139,15 @@ public class ClassDefTests extends ParserTestBase {
                         "class foo():pass");
     }
 
+    @Test
+    public void classDoc01() throws Exception {
+        checkTreeResult(
+                "class Test():\n" +
+                "    \"\"\"Class doc\"\"\"\n" +
+                "    def method():\n" +
+                "        \"\"\"Method doc\"\"\"");
+    }
+    
     private void checkScopeAndTree()  throws Exception{
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);

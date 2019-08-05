@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.test.parser;
 
+import java.io.File;
 import org.junit.Test;
 
 public class GeneratorAndCompForTests extends ParserTestBase {
@@ -160,6 +161,17 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     }
     
     @Test
+    public void generator10() throws Exception {
+        checkScopeAndTree(
+                "def non_empty_lines(path):\n" +
+                "    with open(path) as f:\n" +
+                "        for line in f:\n" +
+                "            line = line.strip()\n" +
+                "            if line:\n" +
+                "                yield line");
+    }
+    
+    @Test
     public void param01() throws Exception {
         checkScopeAndTree(
                 "def fn(a):\n" +
@@ -264,4 +276,10 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                 "    other = [mro(base, abcs=abcs) for base in other]");
     }
     
+    @Test
+    public void genFromPip() throws Exception {
+        File testFile = getTestFileFromTestAndTestMethod();
+        checkScopeFromFile(testFile, true);
+        checkTreeFromFile(testFile, true);
+    }
 }

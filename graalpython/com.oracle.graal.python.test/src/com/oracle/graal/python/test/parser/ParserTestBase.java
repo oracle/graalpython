@@ -80,32 +80,32 @@ public class ParserTestBase {
     }
     
     
-    protected RootNode parseOld(String src, String moduleName) {
+    protected RootNode parseOld(String src, String moduleName, PythonParser.ParserMode mode) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
         PythonParser parser = context.getCore().getParser();
-        RootNode result = (RootNode) parser.parse(PythonParser.ParserMode.File, context.getCore(), source, null);
+        RootNode result = (RootNode) parser.parse(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
     }
     
-    protected RootNode parseOld(Source source) {
+    protected RootNode parseOld(Source source, PythonParser.ParserMode mode) {
         PythonParser parser = context.getCore().getParser();
-        RootNode result = (RootNode) parser.parse(PythonParser.ParserMode.File, context.getCore(), source, null);
+        RootNode result = (RootNode) parser.parse(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
     }
     
-    protected Node parseNew(String src, String moduleName) {
+    protected Node parseNew(String src, String moduleName, PythonParser.ParserMode mode) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
         PythonParser parser = context.getCore().getParser();
-        Node result = ((PythonParserImpl)parser).parseN(PythonParser.ParserMode.File, context.getCore(), source, null);
+        Node result = ((PythonParserImpl)parser).parseN(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
     }
     
-    protected Node parseNew(Source source) {
+    protected Node parseNew(Source source, PythonParser.ParserMode mode) {
         PythonParser parser = context.getCore().getParser();
-        Node result = ((PythonParserImpl)parser).parseN(PythonParser.ParserMode.File, context.getCore(), source, null);
+        Node result = ((PythonParserImpl)parser).parseN(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
     }
@@ -117,7 +117,7 @@ public class ParserTestBase {
     public void checkSyntaxError(String source) throws Exception {
         boolean thrown = false;
         try {
-            Node resultNew = parseNew(source, name.getMethodName());
+            Node resultNew = parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
         } catch (PException e) {
             thrown = e.isSyntaxError();
         }
@@ -129,7 +129,7 @@ public class ParserTestBase {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
         Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
-        Node resultNew = parseNew(source);
+        Node resultNew = parseNew(source, PythonParser.ParserMode.File);
         String tree = printTreeToString(resultNew);
         File newGoldenFile = goldenFileNextToTestFile 
                 ? new File(testFile.getParentFile(), getFileName(testFile) + NEW_GOLDEN_FILE_EXT)
@@ -150,7 +150,7 @@ public class ParserTestBase {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
         Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
-        Node resultNew = parseNew(source);
+        Node resultNew = parseNew(source, PythonParser.ParserMode.File);
         String tree = printTreeToString(resultNew);
         File goldenFile = goldenFileNextToTestFile 
                 ? new File(testFile.getParentFile(), getFileName(testFile) + GOLDEN_FILE_EXT)
@@ -158,7 +158,7 @@ public class ParserTestBase {
         if (!goldenFile.exists()) {
             // parse it with old parser and create golden file with this result
             // TODO, when the new parser will work, it has to be removed
-            RootNode resultOld = parseOld(source);
+            RootNode resultOld = parseOld(source, PythonParser.ParserMode.File);
             String oldTree = printTreeToString(resultOld);
             FileWriter fw = new FileWriter(goldenFile);
             try {
@@ -176,7 +176,7 @@ public class ParserTestBase {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
         Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
-        parseNew(source);
+        parseNew(source, PythonParser.ParserMode.File);
         ScopeInfo scopeNew = getLastGlobalScope();
         StringBuilder scopes = new StringBuilder();
         scopeNew.debugPrint(scopes, 0);
@@ -198,7 +198,7 @@ public class ParserTestBase {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
         Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
-        parseNew(source);
+        parseNew(source, PythonParser.ParserMode.File);
         ScopeInfo scopeNew = getLastGlobalScope();
         StringBuilder scopes = new StringBuilder();
         scopeNew.debugPrint(scopes, 0);
@@ -206,7 +206,7 @@ public class ParserTestBase {
                 ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
                 : getGoldenFile(SCOPE_FILE_EXT);
         if (!goldenScopeFile.exists()) {
-            parseOld(source);
+            parseOld(source, PythonParser.ParserMode.File);
             StringBuilder oldScope = new StringBuilder();
             getLastGlobalScope().debugPrint(oldScope, 0);
             FileWriter fw = new FileWriter(goldenScopeFile);
@@ -221,14 +221,14 @@ public class ParserTestBase {
         assertDescriptionMatches(scopes.toString(), goldenScopeFile);
     }
     
-    public void checkTreeResult(String source) throws Exception {
-        Node resultNew = parseNew(source, name.getMethodName());
+    public void checkTreeResult(String source, PythonParser.ParserMode mode) throws Exception {
+        Node resultNew = parseNew(source, name.getMethodName(), mode);
         String tree = printTreeToString(resultNew);
         File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
         if (!goldenFile.exists()) {
             // parse it with old parser and create golden file with this result
             // TODO, when the new parser will work, it has to be removed
-            RootNode resultOld = parseOld(source, name.getMethodName());
+            RootNode resultOld = parseOld(source, name.getMethodName(), mode);
             String oldTree = printTreeToString(resultOld);
             FileWriter fw = new FileWriter(goldenFile);
             try {
@@ -242,14 +242,14 @@ public class ParserTestBase {
         assertDescriptionMatches(tree, goldenFile);
     }
     
-    public void checkScopeResult(String source) throws Exception {
-        parseNew(source, name.getMethodName());
+    public void checkScopeResult(String source, PythonParser.ParserMode mode) throws Exception {
+        parseNew(source, name.getMethodName(), mode);
         ScopeInfo scopeNew = getLastGlobalScope();
         StringBuilder scopes = new StringBuilder();
         scopeNew.debugPrint(scopes, 0);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
         if (!goldenScopeFile.exists()) {
-            parseOld(source, name.getMethodName());
+            parseOld(source, name.getMethodName(), mode);
             StringBuilder oldScope = new StringBuilder();
             getLastGlobalScope().debugPrint(oldScope, 0);
             FileWriter fw = new FileWriter(goldenScopeFile);
@@ -440,9 +440,17 @@ public class ParserTestBase {
         return lineSeparator;
     }
     
-    public void checkScopeAndTree(String source) throws Exception{
-        checkScopeResult(source);
-        checkTreeResult(source);
+    public void checkScopeAndTree(String source, PythonParser.ParserMode mode) throws Exception{
+        checkScopeResult(source, mode);
+        checkTreeResult(source, mode);
+    }
+    
+    public void checkScopeAndTree (String source) throws Exception {
+        checkScopeAndTree(source, PythonParser.ParserMode.File);
+    }
+    
+    public void checkTreeResult (String source) throws Exception {
+        checkTreeResult(source, PythonParser.ParserMode.File);
     }
     
     public void checkScopeAndTreeFromFile(File testFile) throws Exception{

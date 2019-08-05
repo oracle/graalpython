@@ -41,12 +41,13 @@
 
 package com.oracle.graal.python.test.parser;
 
+import com.oracle.graal.python.runtime.PythonParser;
 import static com.oracle.graal.python.test.parser.ParserTestBase.readFile;
 import java.io.File;
 import org.junit.Test;
 
 public class PerformanceTests extends ParserTestBase {
-    int count = 100;
+    int count = 1;
     
     @Test
     public void assignment01() throws Exception {
@@ -66,19 +67,19 @@ public class PerformanceTests extends ParserTestBase {
         System.out.println(name.getMethodName() + " count:" + count);
         long start = System.currentTimeMillis();
         for(int i = 0; i < count; i++) {
-            parseOld(source, name.getMethodName());
+            parseOld(source, name.getMethodName(), PythonParser.ParserMode.File);
         }
         
         long end = System.currentTimeMillis();
         System.out.println(name.getMethodName() + " old parsing took: " + (end - start));
 
         for(int i = 0; i < 30; i++) {
-            parseNew(source,name.getMethodName());
+            parseNew(source,name.getMethodName(), PythonParser.ParserMode.File);
         }
         System.out.println(name.getMethodName() + " count:" + count);
         start = System.currentTimeMillis();
         for(int i = 0; i < count; i++) {
-            parseNew(source, name.getMethodName());
+            parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
         }
         end = System.currentTimeMillis();
         System.out.println(name.getMethodName() + " new parsing took: " + (end - start));

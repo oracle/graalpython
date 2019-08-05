@@ -5,6 +5,7 @@
  */
 package com.oracle.graal.python.test.parser;
 
+import com.oracle.graal.python.runtime.PythonParser;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ public class PyhtonRuntimeTests extends ParserTestBase {
         String path = "/home/petr/labs/sstparser/graalpython/graalpython/lib-graalpython/functions.py";
         File file = new File(path);
         String source = readFile(file);
-        parseNew(source,file.getName());
+        parseNew(source,file.getName(), PythonParser.ParserMode.File);
     }
     
 //    @Test
@@ -69,7 +70,7 @@ public class PyhtonRuntimeTests extends ParserTestBase {
                     String source = readFile(file);
                     
                     try {
-                        parseNew(source,file.getName());
+                        parseNew(source,file.getName(), PythonParser.ParserMode.File);
 //                        parseOld(source,file.getName());
                     } catch (Exception se) {
                         failingFiles.add(file.getAbsolutePath());

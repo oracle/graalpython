@@ -382,8 +382,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     public PNode visit(WithSSTNode node) {
         int oldNumOfActiveFlags = numOfActiveFlags;
         StatementNode body = (StatementNode)node.body.accept(this);
-        WriteNode asName = node.target == null ? null 
-                : (WriteNode)createWriteLocal((ExpressionNode)node.target.accept(this), scopeEnvironment.getReturnSlot());
+        WriteNode asName = node.target == null ? null : (WriteNode)makeWriteNode((ExpressionNode)node.target.accept(this));
         ExpressionNode expression = (ExpressionNode)node.expression.accept(this);
         PNode result = oldNumOfActiveFlags != numOfActiveFlags 
                 // if the body contains yield -> create Generator control node. 

@@ -231,18 +231,31 @@ public final class PythonParserImpl implements PythonParser {
     }
     
     private boolean useNewParser = false;
+    private boolean logFiles = true;
     
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
-        if (source.getPath() == null) {
-                System.out.print("Parsing source without path\n" /*+ source.getCharacters()*/);
-            } else {
-                System.out.print("Parsing: " + source.getPath());
-            }
+        if (logFiles) {
+            if (source.getPath() == null) {
+                    System.out.println("Parsing source without path " + source.getCharacters().length());
+                    CharSequence chars = source.getCharacters();
+                    System.out.println(chars.length() < 200 
+                        ? chars.toString() 
+                        : chars.subSequence(0, 197).toString() + "...");
+                } else {
+                    System.out.print("Parsing: " + source.getPath());
+                }
+        }
+        
         if (useNewParser /*&& PythonLanguage.getCore().isInitialized()*/) {
-            System.out.println(" with new parser.");
-            return parseN(mode, errors, source, currentFrame);
+            if(logFiles) {
+                System.out.println(" with new parser.");
+            }
+            Node result = parseN(mode, errors, source, currentFrame);
+            return result;
         } else {
-            System.out.println(" with old parser.");
+            if (logFiles) {
+                System.out.println(" with old parser.");
+            }
             return parseO(mode, errors, source, currentFrame);
         }
     }
@@ -295,37 +308,30 @@ public final class PythonParserImpl implements PythonParser {
 //    @Override
     @TruffleBoundary
     public Node parseO(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
-        FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         // ANTLR parsing
-        long start = System.currentTimeMillis();
         Python3Parser parser = getPython3Parser(source.getCharacters().toString());
-        ParserRuleContext input = null;
-        Node result;
+        ParserRuleContext input;
         try {
             switch (mode) {
                 case Eval:
                     input = parser.eval_input();
                     break;
                 case File:
-//                    start = System.currentTimeMillis();
                     input = parser.file_input();
-//                    long end = System.currentTimeMillis();
-//                    System.out.println("old just antlr parsing took: " + (end - start));
-                    // System.out.println("===\n" + source.getCharacters() + "\n---\n");
-                    // newParser.file_input();
                     break;
                 case InteractiveStatement:
                 case InlineEvaluation:
                 case Statement:
                     input = parser.single_input();
-//                    input = parser.single_input(source.isInteractive(), inlineLocals);
                     break;
                 default:
                     throw new RuntimeException("unexpected mode: " + mode);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            if (mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement || mode == ParserMode.InlineEvaluation) {
+            if ((mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement) && e instanceof PIncompleteSourceException) {
+                ((PIncompleteSourceException) e).setSource(source);
+                throw e;
+            } else if (mode == ParserMode.InlineEvaluation) {
                 try {
                     parser.reset();
                     input = parser.eval_input();
@@ -336,42 +342,19 @@ public final class PythonParserImpl implements PythonParser {
                 throw handleParserError(errors, source, e);
             }
         }
-        lastTree = input;
-        long startTranslate = System.currentTimeMillis();
+
         // prepare scope translator
         TranslationEnvironment environment = new TranslationEnvironment(errors.getLanguage());
+        FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         ScopeTranslator<Object> defineScopes = new ScopeTranslator<>(errors, environment, source.isInteractive(), inlineLocals);
         // first pass of the scope translator -> define the scopes
         input.accept(defineScopes);
         // create frame slots for cell and free vars
         defineScopes.setFreeVarsInRootScope(currentFrame);
         defineScopes.createFrameSlotsForCellAndFreeVars();
-        long endPreparing = System.currentTimeMillis();
+
         // create Truffle ASTs
-        Node translate = PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode);
-        long end = System.currentTimeMillis();
-        lastGlobalScope = environment.getGlobalScope();
-        parsedCount++;
-        parsedTime += (end - start);
-        translateTime += (end - startTranslate);
-        prepareTranslationTime =+ endPreparing - startTranslate;
-        if (source.getPath() != null) {
-            parsedFileCount++;
-            parsedFileTime += (end - start);
-            translateFileTime += (end - startTranslate);
-            if (cache.contains(source.getPath())) {
-                cachedFiles++;
-                System.out.println("cached " + source.getPath());
-            } else {
-                cache.add(source.getPath());
-            }
-        }
-        if (parsedCount % 10 == 0) {
-//            System.out.println("Parsed " + parsedCount + " codes took " + parsedTime + "ms  avarage parse time per code: " + (parsedTime/parsedCount) + ", translattion time: " + translateTime + ", per one parsing: " +(translateTime/parsedCount));
-//            System.out.println("    from these " + parsedFileCount + " files parsed took " + parsedFileTime + "ms, avarage parse time per file: " + (parsedFileTime / parsedFileCount) + ", translation time: " + (translateFileTime/parsedFileCount));
-//            System.out.println("    cached results: " + cachedFiles);
-        }
-        return translate;
+        return PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode);
     }
 
     @Override
