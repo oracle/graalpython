@@ -211,7 +211,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         String cextModuleHome = String.join(env.getFileNameSeparator(), context.getCoreHome(), "modules", toolchain.getIdentifier());
         String cextHome = String.join(env.getFileNameSeparator(), context.getCoreHome(), toolchain.getIdentifier());
-        String capiSrc = String.join(env.getFileNameSeparator(), context.getCAPIHome());
+        String capiSrc = context.getCAPIHome();
 
         Object[] path;
         int pathIdx = 0;

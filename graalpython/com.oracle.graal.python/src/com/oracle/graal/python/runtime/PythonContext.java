@@ -379,7 +379,8 @@ public final class PythonContext {
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
-                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
+                        "\n\tStdLibHome: {4}" +
+                        "\n\tC API: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -452,7 +453,8 @@ public final class PythonContext {
                             "\n\tSysBasePrefix: {2}" +
                             "\n\tCoreHome: {3}" +
                             "\n\tStdLibHome: {4}" +
-                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
+                            "\n\tC API: {5}" +
+                            "\n\tExecutable: {6}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, newEnv.getOptions().get(PythonOptions.Executable))));
         }
     }
 
