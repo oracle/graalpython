@@ -176,6 +176,12 @@ public class FuncDefTests extends ParserTestBase{
     }
     
     @Test
+    public void functionDef20() throws Exception {
+        checkScopeAndTree("def __init__(self, max_size=0, *, ctx, pending_work_items): pass");
+    }
+    
+    
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree();
     }

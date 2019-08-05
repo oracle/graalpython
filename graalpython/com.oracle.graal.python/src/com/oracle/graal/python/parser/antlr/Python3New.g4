@@ -435,7 +435,7 @@ defparameter [ArgDefListBuilder args]
 	( ':' test { type = $test.result; } )?
 	( '=' test { defValue = $test.result; } )?
 	{ 
-            if (defValue == null && args.hasDefaultParameter()) {
+            if (defValue == null && args.hasDefaultParameter()  && !args.hasSplatStarMarker()) {
                 throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());
             }
             args.addParam($NAME.text, type, defValue); 

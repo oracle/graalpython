@@ -231,7 +231,11 @@ public final class PythonParserImpl implements PythonParser {
     }
     
     private boolean useNewParser = false;
-    private boolean logFiles = true;
+    private boolean logFiles = false;
+    private boolean timeMeasure = true;
+    private long timeInParser = 0;
+    private long numberOfFiles = 0;
+    private long lastMeasurement = System.currentTimeMillis();
     
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         if (logFiles) {
@@ -246,18 +250,30 @@ public final class PythonParserImpl implements PythonParser {
                 }
         }
         
+        long start = System.currentTimeMillis();
+        Node result;
         if (useNewParser /*&& PythonLanguage.getCore().isInitialized()*/) {
             if(logFiles) {
                 System.out.println(" with new parser.");
             }
-            Node result = parseN(mode, errors, source, currentFrame);
-            return result;
+            result = parseN(mode, errors, source, currentFrame);
         } else {
             if (logFiles) {
                 System.out.println(" with old parser.");
             }
-            return parseO(mode, errors, source, currentFrame);
+            result = parseO(mode, errors, source, currentFrame);
         }
+        long end = System.currentTimeMillis();
+        if (timeMeasure) {
+            timeInParser = timeInParser + (end - start);
+            numberOfFiles++;
+            if ((end - lastMeasurement) > 2000 || numberOfFiles % 50 == 0) {
+                System.out.println("Parsed " + numberOfFiles + " in " + timeInParser + "ms.");
+                
+            }
+            lastMeasurement = end;
+        }
+        return result;
     }
     
 //    @Override

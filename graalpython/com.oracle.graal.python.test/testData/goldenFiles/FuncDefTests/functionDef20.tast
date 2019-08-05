@@ -1,0 +1,71 @@
+ModuleRootNode Name: <module 'functionDef20'> SourceSection: [0,64]`def __init__(self, m...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,64]`def __init__(self, m...`
+    ExpressionWithSideEffect SourceSection: [0,64]`def __init__(self, m...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,64]`def __init__(self, m...`
+          Identifier: __init__
+          FunctionDefinitionNode Name: __init__ SourceSection: None
+            Arguments:
+              IntegerLiteralNode SourceSection: [28,29]`0`
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,64]`def __init__(self, m...`
+              Name: __init__
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+                Param Names: self, max_size
+                Keyword Names: ctx, pending_work_items
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 6 slots [self, max_size, *, ctx, pending_work_items, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,64]`def __init__(self, m...`
+                ReturnTargetNode SourceSection: [0,64]`def __init__(self, m...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: self
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,self,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: max_size
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,max_size,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: ctx
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [3,ctx,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 2
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: pending_work_items
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [4,pending_work_items,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 3
+                    ExpressionStatementNode SourceSection: [60,64]`pass`
+                      EmptyNode SourceSection: [60,64]`pass`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [5,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

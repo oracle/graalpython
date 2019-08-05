@@ -198,7 +198,7 @@ public final class ArgDefListBuilder {
 //        signature = new Signature(takesVarKeywordArgs, takesVarArgs, varArgsMarker, parametersId, keyWordNames);
     }
 
-    private boolean hasSplatStarMarker() {
+    public boolean hasSplatStarMarker() {
         return splatIndex > -1 && args != null && args.get(splatIndex).name == null;
     }
     
