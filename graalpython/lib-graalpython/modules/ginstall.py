@@ -54,6 +54,78 @@ def system(cmd, msg=""):
 
 
 def known_packages():
+    def pytest(**kwargs):
+        wcwidth(**kwargs)
+        importlib_metadata(**kwargs)
+        pluggy(**kwargs)
+        atomicwrites(**kwargs)
+        more_itertools(**kwargs)
+        attrs(**kwargs)
+        packaging(**kwargs)
+        py(**kwargs)
+        install_from_pypi("pytest==5.0.1", **kwargs)
+
+    def py(**kwargs):
+        install_from_pypi("py==1.8.0", **kwargs)
+
+    def attrs(**kwargs):
+        patch = """
+--- a/setup.py
++++ b/setup.py
+@@ -96,7 +96,6 @@
+     ).group(1)
+     + "\\n\\n`Full changelog "
+     + "<{url}en/stable/changelog.html>`_.\\n\\n".format(url=URL)
+-    + read("AUTHORS.rst")
+ )
+
+
+"""
+        install_from_pypi("attrs==19.1.0", patch=patch, **kwargs)
+
+    def pyparsing(**kwargs):
+        install_from_pypi("pyparsing==2.4.2", **kwargs)
+
+    def packaging(**kwargs):
+        six(**kwargs)
+        pyparsing(**kwargs)
+        install_from_pypi("packaging==19.0", **kwargs)
+
+    def more_itertools(**kwargs):
+        install_from_pypi("more-itertools==7.0.0", **kwargs)
+
+    def atomicwrites(**kwargs):
+        patch = """
+--- a/setup.py
++++ b/setup.py
+@@ -12,7 +12,6 @@
+
+
+ with open('atomicwrites/__init__.py', 'rb') as f:
+-    version = str(ast.literal_eval(_version_re.search(
+-        f.read().decode('utf-8')).group(1)))
++    version = "1.3.0"
+
+ setup(
+     name='atomicwrites',
+"""
+        install_from_pypi("atomicwrites==1.3.0", patch=patch, **kwargs)
+
+    def pluggy(**kwargs):
+        zipp(**kwargs)
+        install_from_pypi("pluggy==0.12.0", **kwargs)
+
+    def zipp(**kwargs):
+        setuptools_scm(**kwargs)
+        install_from_pypi("zipp==0.5.0", **kwargs)
+
+    def importlib_metadata(**kwargs):
+        zipp(**kwargs)
+        install_from_pypi("importlib-metadata==0.19", **kwargs)
+
+    def wcwidth(**kwargs):
+        install_from_pypi("wcwidth==0.1.7", **kwargs)
+
     def PyYAML(**kwargs):
         install_from_pypi("PyYAML==3.13", **kwargs)
 
@@ -115,7 +187,7 @@ def known_packages():
     #     install_from_pypi("Keras-Applications==1.0.6", **kwargs)
 
     def setuptools_scm(**kwargs):
-        install_from_pypi("setuptools_scm==1.15.0rc1", **kwargs)
+        install_from_pypi("setuptools_scm==1.15.0", **kwargs)
 
     def numpy(**kwargs):
         try:
@@ -148,7 +220,7 @@ index 0852b1e..cf4dc6f 100644
  """
 -import _ctypes
  import ctypes
- 
+
  import numpy as np
 diff --git a/numpy/core/_internal.py b/numpy/core/_internal.py
 index 1d3bb55..202c63b 100644
@@ -169,7 +241,7 @@ index 544b8b3..799f669 100644
 @@ -154,87 +154,6 @@ def _register_known_types():
      _register_type(float64_ma, b'\x9a\x99\x99\x99\x99\x99\xb9\xbf')
      _float_ma[64] = float64_ma
- 
+
 -    # Known parameters for IEEE 754 128-bit binary float
 -    ld = ntypes.longdouble
 -    epsneg_f128 = exp2(ld(-113))
@@ -251,7 +323,7 @@ index 544b8b3..799f669 100644
 -        b'\x9a\x99\x99\x99\x99\x99\xb9\xbf\x9a\x99\x99\x99\x99\x99Y<')
 -    _float_ma['dd'] = float_dd_ma
 -
- 
+
  def _get_machar(ftype):
      """ Get MachAr instance or MachAr-like instance
 diff --git a/numpy/core/include/numpy/ndarraytypes.h b/numpy/core/include/numpy/ndarraytypes.h
@@ -261,10 +333,10 @@ index b0b749c..2d8e8c0 100644
 @@ -412,7 +412,7 @@ typedef int (PyArray_ScanFunc)(FILE *fp, void *dptr,
  typedef int (PyArray_FromStrFunc)(char *s, void *dptr, char **endptr,
                                    struct _PyArray_Descr *);
- 
+
 -typedef int (PyArray_FillFunc)(void *, npy_intp, void *);
 +typedef void (PyArray_FillFunc)(void *, npy_intp, void *);
- 
+
  typedef int (PyArray_SortFunc)(void *, npy_intp, void *);
  typedef int (PyArray_ArgSortFunc)(void *, npy_intp *, npy_intp, void *);
 diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
@@ -307,12 +379,12 @@ index 14c4f27..c5a72b1 100644
 +++ b/numpy/core/src/multiarray/typeinfo.c
 @@ -105,8 +105,7 @@ PyArray_typeinforanged(
  }
- 
+
  /* Python version only needed for backport to 2.7 */
 -#if (PY_VERSION_HEX < 0x03040000) \
 -    || (defined(PYPY_VERSION_NUM) && (PYPY_VERSION_NUM < 0x07020000))
 +#if (PY_VERSION_HEX < 0x03040000)
- 
+
      static int
      PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) {
 diff --git a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee754.c.src
@@ -321,7 +393,7 @@ index d960838..56a8056 100644
 +++ b/numpy/core/src/npymath/ieee754.c.src
 @@ -558,12 +558,10 @@ npy_longdouble npy_nextafterl(npy_longdouble x, npy_longdouble y)
  #endif
- 
+
  int npy_clear_floatstatus() {
 -    char x=0;
 -    return npy_clear_floatstatus_barrier(&x);
@@ -332,10 +404,10 @@ index d960838..56a8056 100644
 -    return npy_get_floatstatus_barrier(&x);
 +    return 0;
  }
- 
+
  /*
 @@ -593,45 +591,32 @@ int npy_get_floatstatus() {
- 
+
  int npy_get_floatstatus_barrier(char * param)
  {
 -    int fpstatus = fpgetsticky();
@@ -351,7 +423,7 @@ index d960838..56a8056 100644
 -           ((FP_X_INV & fpstatus) ? NPY_FPE_INVALID : 0);
 +    return 0;
  }
- 
+
  int npy_clear_floatstatus_barrier(char * param)
  {
 -    int fpstatus = npy_get_floatstatus_barrier(param);
@@ -360,34 +432,34 @@ index d960838..56a8056 100644
 -    return fpstatus;
 +    return 0;
  }
- 
+
  void npy_set_floatstatus_divbyzero(void)
  {
 -    fpsetsticky(FP_X_DZ);
 +    return;
  }
- 
+
  void npy_set_floatstatus_overflow(void)
  {
 -    fpsetsticky(FP_X_OFL);
 +    return;
  }
- 
+
  void npy_set_floatstatus_underflow(void)
  {
 -    fpsetsticky(FP_X_UFL);
 +    return;
  }
- 
+
  void npy_set_floatstatus_invalid(void)
  {
 -    fpsetsticky(FP_X_INV);
 +    return;
  }
- 
+
  #elif defined(_AIX)
 @@ -640,45 +625,32 @@ void npy_set_floatstatus_invalid(void)
- 
+
  int npy_get_floatstatus_barrier(char *param)
  {
 -    int fpstatus = fp_read_flag();
@@ -403,7 +475,7 @@ index d960838..56a8056 100644
 -           ((FP_INVALID & fpstatus) ? NPY_FPE_INVALID : 0);
 +    return 0;
  }
- 
+
  int npy_clear_floatstatus_barrier(char * param)
  {
 -    int fpstatus = npy_get_floatstatus_barrier(param);
@@ -412,62 +484,62 @@ index d960838..56a8056 100644
 -    return fpstatus;
 +    return 0;
  }
- 
+
  void npy_set_floatstatus_divbyzero(void)
  {
 -    fp_raise_xcp(FP_DIV_BY_ZERO);
 +    return;
  }
- 
+
  void npy_set_floatstatus_overflow(void)
  {
 -    fp_raise_xcp(FP_OVERFLOW);
 +    return;
  }
- 
+
  void npy_set_floatstatus_underflow(void)
  {
 -    fp_raise_xcp(FP_UNDERFLOW);
 +    return;
  }
- 
+
  void npy_set_floatstatus_invalid(void)
  {
 -    fp_raise_xcp(FP_INVALID);
 +    return;
  }
- 
+
  #elif defined(_MSC_VER) || (defined(__osf__) && defined(__alpha))
 @@ -698,23 +670,22 @@ static volatile double _npy_floatstatus_x,
- 
+
  void npy_set_floatstatus_divbyzero(void)
  {
 -    _npy_floatstatus_x = 1.0 / _npy_floatstatus_zero;
 +    return;
  }
- 
+
  void npy_set_floatstatus_overflow(void)
  {
 -    _npy_floatstatus_x = _npy_floatstatus_big * 1e300;
 +    return;
  }
- 
+
  void npy_set_floatstatus_underflow(void)
  {
 -    _npy_floatstatus_x = _npy_floatstatus_small * 1e-300;
 +    return;
  }
- 
+
  void npy_set_floatstatus_invalid(void)
  {
 -    _npy_floatstatus_inf = NPY_INFINITY;
 -    _npy_floatstatus_x = _npy_floatstatus_inf - NPY_INFINITY;
 +    return;
  }
- 
+
  /* MS Windows -----------------------------------------------------*/
 @@ -724,32 +695,12 @@ void npy_set_floatstatus_invalid(void)
- 
+
  int npy_get_floatstatus_barrier(char *param)
  {
 -    /*
@@ -490,7 +562,7 @@ index d960838..56a8056 100644
 -           ((SW_INVALID & fpstatus) ? NPY_FPE_INVALID : 0);
 +    return 0;
  }
- 
+
  int npy_clear_floatstatus_barrier(char *param)
  {
 -    int fpstatus = npy_get_floatstatus_barrier(param);
@@ -499,10 +571,10 @@ index d960838..56a8056 100644
 -    return fpstatus;
 +    return 0;
  }
- 
+
  /*  OSF/Alpha (Tru64)  ---------------------------------------------*/
 @@ -759,26 +710,12 @@ int npy_clear_floatstatus_barrier(char *param)
- 
+
  int npy_get_floatstatus_barrier(char *param)
  {
 -    unsigned long fpstatus = ieee_get_fp_control();
@@ -518,7 +590,7 @@ index d960838..56a8056 100644
 -            ((IEEE_STATUS_INV & fpstatus) ? NPY_FPE_INVALID : 0);
 +    return 0;
  }
- 
+
  int npy_clear_floatstatus_barrier(char *param)
  {
 -    int fpstatus = npy_get_floatstatus_barrier(param);
@@ -528,10 +600,10 @@ index d960838..56a8056 100644
 -    return fpstatus;
 +    return 0;
  }
- 
+
  #endif
 @@ -790,52 +727,33 @@ int npy_clear_floatstatus_barrier(char *param)
- 
+
  int npy_get_floatstatus_barrier(char* param)
  {
 -    int fpstatus = fetestexcept(FE_DIVBYZERO | FE_OVERFLOW |
@@ -549,7 +621,7 @@ index d960838..56a8056 100644
 -           ((FE_INVALID    & fpstatus) ? NPY_FPE_INVALID : 0);
 +    return 0;
  }
- 
+
  int npy_clear_floatstatus_barrier(char * param)
  {
 -    /* testing float status is 50-100 times faster than clearing on x86 */
@@ -562,32 +634,32 @@ index d960838..56a8056 100644
 -    return fpstatus;
 +    return 0;
  }
- 
- 
+
+
  void npy_set_floatstatus_divbyzero(void)
  {
 -    feraiseexcept(FE_DIVBYZERO);
 +    return;
  }
- 
+
  void npy_set_floatstatus_overflow(void)
  {
 -    feraiseexcept(FE_OVERFLOW);
 +    return;
  }
- 
+
  void npy_set_floatstatus_underflow(void)
  {
 -    feraiseexcept(FE_UNDERFLOW);
 +    return;
  }
- 
+
  void npy_set_floatstatus_invalid(void)
  {
 -    feraiseexcept(FE_INVALID);
 +    return;
  }
- 
+
  #endif
 diff --git a/numpy/core/src/umath/extobj.c b/numpy/core/src/umath/extobj.c
 index aea1815..b83fab9 100644
@@ -614,7 +686,7 @@ index 975a5e6..55f3a46 100644
 +    npy_clear_floatstatus_barrier("");
  }
  /**end repeat1**/
- 
+
 @@ -1932,7 +1932,7 @@ NPY_NO_EXPORT void
              *((@type@ *)op1) = in1;
          }
@@ -623,7 +695,7 @@ index 975a5e6..55f3a46 100644
 +    npy_clear_floatstatus_barrier("");
  }
  /**end repeat1**/
- 
+
 @@ -1960,7 +1960,7 @@ NPY_NO_EXPORT void
              *((@type@ *)op1) = (in1 @OP@ in2 || npy_isnan(in2)) ? in1 : in2;
          }
@@ -632,7 +704,7 @@ index 975a5e6..55f3a46 100644
 +    npy_clear_floatstatus_barrier("");
  }
  /**end repeat1**/
- 
+
 @@ -2050,7 +2050,7 @@ NPY_NO_EXPORT void
              *((@type@ *)op1) = tmp + 0;
          }
@@ -640,7 +712,7 @@ index 975a5e6..55f3a46 100644
 -    npy_clear_floatstatus_barrier((char*)dimensions);
 +    npy_clear_floatstatus_barrier("");
  }
- 
+
  NPY_NO_EXPORT void
 @@ -2236,7 +2236,7 @@ HALF_@kind@(char **args, npy_intp *dimensions, npy_intp *steps, void *NPY_UNUSED
          const npy_half in1 = *(npy_half *)ip1;
@@ -650,7 +722,7 @@ index 975a5e6..55f3a46 100644
 +    npy_clear_floatstatus_barrier("");
  }
  /**end repeat**/
- 
+
 @@ -2741,7 +2741,7 @@ NPY_NO_EXPORT void
          const @ftype@ in1i = ((@ftype@ *)ip1)[1];
          *((npy_bool *)op1) = @func@(in1r) @OP@ @func@(in1i);
@@ -659,7 +731,7 @@ index 975a5e6..55f3a46 100644
 +    npy_clear_floatstatus_barrier("");
  }
  /**end repeat1**/
- 
+
 @@ -2848,7 +2848,7 @@ NPY_NO_EXPORT void
          ((@ftype@ *)op1)[0] = in1r;
          ((@ftype@ *)op1)[1] = in1i;
@@ -668,7 +740,7 @@ index 975a5e6..55f3a46 100644
 +    npy_clear_floatstatus_barrier("");
  }
  /**end repeat1**/
- 
+
 @@ -2873,7 +2873,7 @@ NPY_NO_EXPORT void
              ((@ftype@ *)op1)[1] = in2i;
          }
@@ -677,18 +749,18 @@ index 975a5e6..55f3a46 100644
 +    npy_clear_floatstatus_barrier("");
  }
  /**end repeat1**/
- 
+
 diff --git a/numpy/core/src/umath/reduction.c b/numpy/core/src/umath/reduction.c
 index 791d369..317ee71 100644
 --- a/numpy/core/src/umath/reduction.c
 +++ b/numpy/core/src/umath/reduction.c
 @@ -534,7 +534,7 @@ PyUFunc_ReduceWrapper(PyArrayObject *operand, PyArrayObject *out,
      }
- 
+
      /* Start with the floating-point exception flags cleared */
 -    npy_clear_floatstatus_barrier((char*)&iter);
 +    npy_clear_floatstatus_barrier("");
- 
+
      if (NpyIter_GetIterSize(iter) != 0) {
          NpyIter_IterNextFunc *iternext;
 diff --git a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalarmath.c.src
@@ -697,15 +769,15 @@ index a7987ac..aae7c30 100644
 +++ b/numpy/core/src/umath/scalarmath.c.src
 @@ -846,7 +846,7 @@ static PyObject *
      }
- 
+
  #if @fperr@
 -    npy_clear_floatstatus_barrier((char*)&out);
 +    npy_clear_floatstatus_barrier("");
  #endif
- 
+
      /*
 @@ -861,7 +861,7 @@ static PyObject *
- 
+
  #if @fperr@
      /* Check status flag.  If it is set, then look up what to do */
 -    retstatus = npy_get_floatstatus_barrier((char*)&out);
@@ -716,15 +788,15 @@ index a7987ac..aae7c30 100644
 @@ -991,7 +991,7 @@ static PyObject *
          return Py_NotImplemented;
      }
- 
+
 -    npy_clear_floatstatus_barrier((char*)&out);
 +    npy_clear_floatstatus_barrier("");
- 
+
      /*
       * here we do the actual calculation with arg1 and arg2
 @@ -1006,7 +1006,7 @@ static PyObject *
      }
- 
+
      /* Check status flag.  If it is set, then look up what to do */
 -    retstatus = npy_get_floatstatus_barrier((char*)&out);
 +    retstatus = npy_get_floatstatus_barrier("");
@@ -734,24 +806,24 @@ index a7987ac..aae7c30 100644
 @@ -1070,7 +1070,7 @@ static PyObject *
          return Py_NotImplemented;
      }
- 
+
 -    npy_clear_floatstatus_barrier((char*)&out);
 +    npy_clear_floatstatus_barrier("");
- 
+
      /*
       * here we do the actual calculation with arg1 and arg2
 @@ -1134,7 +1134,7 @@ static PyObject *
          return Py_NotImplemented;
      }
- 
+
 -    npy_clear_floatstatus_barrier((char*)&out);
 +    npy_clear_floatstatus_barrier("");
- 
+
      /*
       * here we do the actual calculation with arg1 and arg2
 @@ -1148,7 +1148,7 @@ static PyObject *
      }
- 
+
      /* Check status flag.  If it is set, then look up what to do */
 -    retstatus = npy_get_floatstatus_barrier((char*)&out);
 +    retstatus = npy_get_floatstatus_barrier("");
@@ -764,7 +836,7 @@ index 4bb8569..8b120d7 100644
 +++ b/numpy/core/src/umath/simd.inc.src
 @@ -1047,7 +1047,7 @@ sse2_@kind@_@TYPE@(@type@ * ip, @type@ * op, const npy_intp n)
          i += 2 * stride;
- 
+
          /* minps/minpd will set invalid flag if nan is encountered */
 -        npy_clear_floatstatus_barrier((char*)&c1);
 +        npy_clear_floatstatus_barrier("");
@@ -774,7 +846,7 @@ index 4bb8569..8b120d7 100644
 @@ -1056,7 +1056,7 @@ sse2_@kind@_@TYPE@(@type@ * ip, @type@ * op, const npy_intp n)
          }
          c1 = @vpre@_@VOP@_@vsuf@(c1, c2);
- 
+
 -        if (npy_get_floatstatus_barrier((char*)&c1) & NPY_FPE_INVALID) {
 +        if (npy_get_floatstatus_barrier("") & NPY_FPE_INVALID) {
              *op = @nan@;
@@ -788,7 +860,7 @@ index 4bb8569..8b120d7 100644
 +    npy_clear_floatstatus_barrier("");
  }
  /**end repeat1**/
- 
+
 diff --git a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_object.c
 index d1b029c..2bdff3d 100644
 --- a/numpy/core/src/umath/ufunc_object.c
@@ -800,7 +872,7 @@ index d1b029c..2bdff3d 100644
 -    return npy_clear_floatstatus_barrier(&param);
 +    return npy_clear_floatstatus_barrier("");
  }
- 
+
  #define HANDLEIT(NAME, str) {if (retstatus & NPY_FPE_##NAME) {          \
 @@ -141,7 +141,7 @@ PyUFunc_checkfperr(int errmask, PyObject *errobj, int *first)
  {
@@ -808,7 +880,7 @@ index d1b029c..2bdff3d 100644
      int retstatus;
 -    retstatus = npy_clear_floatstatus_barrier((char*)&retstatus);
 +    retstatus = npy_clear_floatstatus_barrier("");
- 
+
      return PyUFunc_handlefperr(errmask, errobj, retstatus, first);
  }
 @@ -153,7 +153,7 @@ NPY_NO_EXPORT void
@@ -818,21 +890,21 @@ index d1b029c..2bdff3d 100644
 -    npy_clear_floatstatus_barrier(&param);
 +    npy_clear_floatstatus_barrier("");
  }
- 
+
  /*
 @@ -2979,7 +2979,7 @@ PyUFunc_GeneralizedFunction(PyUFuncObject *ufunc,
  #endif
- 
+
      /* Start with the floating-point exception flags cleared */
 -    npy_clear_floatstatus_barrier((char*)&iter);
 +    npy_clear_floatstatus_barrier("");
- 
+
      NPY_UF_DBG_PRINT("Executing inner loop\n");
- 
+
 @@ -3237,7 +3237,7 @@ PyUFunc_GenericFunction(PyUFuncObject *ufunc,
- 
+
          /* Set up the flags */
- 
+
 -        npy_clear_floatstatus_barrier((char*)&ufunc);
 +        npy_clear_floatstatus_barrier("");
          retval = execute_fancy_ufunc_loop(ufunc, wheremask,
@@ -840,11 +912,11 @@ index d1b029c..2bdff3d 100644
                              buffersize, arr_prep, full_args, op_flags);
 @@ -3257,7 +3257,7 @@ PyUFunc_GenericFunction(PyUFuncObject *ufunc,
          }
- 
+
          /* check_for_trivial_loop on half-floats can overflow */
 -        npy_clear_floatstatus_barrier((char*)&ufunc);
 +        npy_clear_floatstatus_barrier("");
- 
+
          retval = execute_legacy_ufunc_loop(ufunc, trivial_loop_ok,
                              op, dtypes, order,
 diff --git a/numpy/ctypeslib.py b/numpy/ctypeslib.py
@@ -853,20 +925,20 @@ index 535ea76..2ecf3a2 100644
 +++ b/numpy/ctypeslib.py
 @@ -61,7 +61,7 @@ from numpy import (
  from numpy.core.multiarray import _flagdict, flagsobj
- 
+
  try:
 -    import ctypes
 +    ctypes = None # Truffle: use the mock ctypes
  except ImportError:
      ctypes = None
- 
+
 diff --git a/numpy/linalg/setup.py b/numpy/linalg/setup.py
 index 66c07c9..847116f 100644
 --- a/numpy/linalg/setup.py
 +++ b/numpy/linalg/setup.py
 @@ -29,6 +29,7 @@ def configuration(parent_package='', top_path=None):
      lapack_info = get_info('lapack_opt', 0)  # and {}
- 
+
      def get_lapack_lite_sources(ext, build_dir):
 +        return all_sources
          if not lapack_info:
@@ -884,7 +956,7 @@ index 9fc68a7..6c04f96 100644
 +    status = npy_clear_floatstatus_barrier("");
      return !!(status & NPY_FPE_INVALID);
  }
- 
+
 @@ -397,7 +397,7 @@ set_fp_invalid_or_clear(int error_occurred)
          npy_set_floatstatus_invalid();
      }
@@ -893,14 +965,14 @@ index 9fc68a7..6c04f96 100644
 +        npy_clear_floatstatus_barrier("");
      }
  }
- 
+
 diff --git a/numpy/tests/test_ctypeslib.py b/numpy/tests/test_ctypeslib.py
 index 521208c..b9fa4c3 100644
 --- a/numpy/tests/test_ctypeslib.py
 +++ b/numpy/tests/test_ctypeslib.py
 @@ -10,6 +10,7 @@ from numpy.distutils.misc_util import get_shared_lib_extension
  from numpy.testing import assert_, assert_array_equal, assert_raises, assert_equal
- 
+
  try:
 +    import _ctypes
      import ctypes
@@ -1024,9 +1096,9 @@ index 8657420..f7b3f08 100644
 --- a/pandas/core/window.py
 +++ b/pandas/core/window.py
 @@ -10,7 +10,7 @@ import warnings
- 
+
  import numpy as np
- 
+
 -import pandas._libs.window as libwindow
 +libwindow = None
  from pandas.compat._optional import import_optional_dependency
