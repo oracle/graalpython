@@ -79,3 +79,8 @@ class TestSubprocess(unittest.TestCase):
                     stdout=sys.stdout)
             self.fail("Expected ValueError when stdout arg supplied.")
         self.assertIn('stdout', c.exception.args[0])
+
+    def test_kill(self):
+        p = subprocess.Popen([sys.executable, "-c", "print('oh no')"])
+        p.kill()
+        assert True

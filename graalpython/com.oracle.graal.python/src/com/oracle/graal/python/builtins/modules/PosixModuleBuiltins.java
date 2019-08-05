@@ -124,7 +124,9 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -150,6 +152,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -1967,6 +1970,62 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         String ctermid() {
             return "/dev/tty";
+        }
+    }
+
+    @Builtin(name = "kill", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class KillNode extends PythonBinaryBuiltinNode {
+        private static final String[] KILL_SIGNALS = new String[] { "SIGKILL", "SIGQUIT", "SIGTRAP", "SIGABRT" };
+        private static final String[] TERMINATION_SIGNALS = new String[] { "SIGTERM", "SIGINT" };
+
+        @Specialization
+        PNone kill(VirtualFrame frame, int pid, int signal,
+                        @Shared("readSignalNode") @Cached ReadAttributeFromObjectNode readSignalNode,
+                        @Shared("isNode") @Cached IsNode isNode) {
+            PythonContext context = getContext();
+            PythonModule signalModule = context.getCore().lookupBuiltinModule("_signal");
+            for (String name : TERMINATION_SIGNALS) {
+                Object value = readSignalNode.execute(signalModule, name);
+                if (isNode.execute(signal, value)) {
+                    try {
+                        context.getResources().sigterm(pid);
+                    } catch (ArrayIndexOutOfBoundsException e) {
+                        throw raiseOSError(frame, OSErrorEnum.ESRCH.getNumber());
+                    }
+                    return PNone.NONE;
+                }
+            }
+            for (String name : KILL_SIGNALS) {
+                Object value = readSignalNode.execute(signalModule, name);
+                if (isNode.execute(signal, value)) {
+                    try {
+                        context.getResources().sigkill(pid);
+                    } catch (ArrayIndexOutOfBoundsException e) {
+                        throw raiseOSError(frame, OSErrorEnum.ESRCH.getNumber());
+                    }
+                    return PNone.NONE;
+                }
+            }
+            Object dfl = readSignalNode.execute(signalModule, "SIG_DFL");
+            if (isNode.execute(signal, dfl)) {
+                try {
+                    context.getResources().sigdfl(pid);
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    throw raiseOSError(frame, OSErrorEnum.ESRCH.getNumber());
+                }
+                return PNone.NONE;
+            }
+            throw raise(PythonBuiltinClassType.NotImplementedError, "Sending arbitrary signals to child processes. Can only send some kill and term signals.");
+        }
+
+        @Specialization
+        PNone killFallback(VirtualFrame frame, Object pid, Object signal,
+                        @Cached CastToIndexNode castInt,
+                        @Shared("readSignalNode") @Cached ReadAttributeFromObjectNode readSignalNode,
+                        @Shared("isNode") @Cached IsNode isNode) {
+            return kill(frame, castInt.execute(pid), castInt.execute(signal), readSignalNode, isNode);
         }
     }
 }

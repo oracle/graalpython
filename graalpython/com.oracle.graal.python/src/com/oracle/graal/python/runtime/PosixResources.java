@@ -48,13 +48,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import java.util.Locale;
 
 /**
  * This class manages the set of file descriptors and child PIDs of a context. File descriptors are
@@ -88,6 +88,7 @@ public class PosixResources {
         files.add(null);
         files.add(null);
         files.add(null);
+        children.add(null); // PID 0 is special, don't hand it out
         inodes = new HashMap<>();
     }
 
@@ -196,6 +197,23 @@ public class PosixResources {
             children.add(null);
             return children.size() - 1;
         }
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void sigdfl(int pid) throws ArrayIndexOutOfBoundsException {
+        children.get(pid); // just for the side-effect
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void sigterm(int pid) throws ArrayIndexOutOfBoundsException {
+        Process process = children.get(pid);
+        process.destroy();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void sigkill(int pid) throws ArrayIndexOutOfBoundsException {
+        Process process = children.get(pid);
+        process.destroyForcibly();
     }
 
     @TruffleBoundary(allowInlining = true)
