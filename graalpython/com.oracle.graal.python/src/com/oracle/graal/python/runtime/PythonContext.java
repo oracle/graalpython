@@ -436,14 +436,28 @@ public final class PythonContext {
             }
 
             if (capiHome.isEmpty()) {
+                // first, try dev home layout
                 try {
-                    for (TruffleFile f : newEnv.getTruffleFile(coreHome).list()) {
-                        if (f.getName().equals("capi") && f.isDirectory()) {
+                    for (TruffleFile f : home.list()) {
+                        if (f.getName().equals("com.oracle.graal.python.cext") && f.isDirectory()) {
                             capiHome = f.getPath();
                             break;
                         }
                     }
                 } catch (SecurityException | IOException e) {
+                }
+
+                // second, try dist home layout
+                if (capiHome == null) {
+                    try {
+                        for (TruffleFile f : newEnv.getTruffleFile(coreHome).list()) {
+                            if (f.getName().equals("capi") && f.isDirectory()) {
+                                capiHome = f.getPath();
+                                break;
+                            }
+                        }
+                    } catch (SecurityException | IOException e) {
+                    }
                 }
             }
 
