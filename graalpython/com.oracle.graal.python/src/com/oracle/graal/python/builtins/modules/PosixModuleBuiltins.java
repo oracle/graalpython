@@ -2042,4 +2042,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return kill(frame, castInt.execute(pid), castInt.execute(signal), readSignalNode, isNode);
         }
     }
+
+    @Builtin(name = "fsync", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class FSyncNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone fsync(VirtualFrame frame, int fd) {
+            try {
+                getContext().getResources().fsync(fd);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw raiseOSError(frame, OSErrorEnum.ENOENT.getNumber());
+            }
+            return PNone.NONE;
+        }
+    }
 }

@@ -209,6 +209,10 @@ public class PosixResources {
         return dupFd;
     }
 
+    public void fsync(int fd) throws ArrayIndexOutOfBoundsException {
+        files.get(fd); // for the side-effect
+    }
+
     @TruffleBoundary(allowInlining = true)
     public int[] pipe() throws IOException {
         Pipe pipe = Pipe.open();
