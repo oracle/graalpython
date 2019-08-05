@@ -55,13 +55,13 @@ class VenvTest():
         shutil.rmtree(self.env_dir2)
 
     def test_create_and_use_basic_venv(self):
-        log = subprocess.check_output([sys.executable, "--experimental-options", "--python.CAPI=" + sys.graal_python_cext_src, "-m", "venv", self.env_dir, "--without-pip"])
+        subprocess.check_output([sys.executable, "-m", "venv", self.env_dir, "--without-pip"])
         run = subprocess.getoutput(". %s/bin/activate; python -m site" % self.env_dir)
         assert "ENABLE_USER_SITE: False" in run, run
         assert self.env_dir in run, run
 
     def test_create_and_use_venv_with_pip(self):
-        subprocess.check_output([sys.executable, "--experimental-options", "--python.CAPI=" + sys.graal_python_cext_src, "-m", "venv", self.env_dir2])
+        subprocess.check_output([sys.executable, "-m", "venv", self.env_dir2])
         run = subprocess.getoutput("%s/bin/python -m pip list" % self.env_dir2)
         assert "pip" in run, run
         assert "setuptools" in run, run
