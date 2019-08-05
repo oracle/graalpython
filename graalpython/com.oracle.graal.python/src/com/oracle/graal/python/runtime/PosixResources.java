@@ -41,6 +41,8 @@
 package com.oracle.graal.python.runtime;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
 import java.nio.channels.Pipe;
@@ -71,6 +73,68 @@ public class PosixResources {
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
 
+    private static class ProcessGroup extends Process {
+        private final List<Process> children;
+
+        ProcessGroup(List<Process> children) {
+            this.children = children;
+        }
+
+        @Override
+        public int waitFor() throws InterruptedException {
+            for (Process child : children) {
+                if (child != null) {
+                    return child.waitFor();
+                }
+            }
+            return 0;
+        }
+
+        @Override
+        public OutputStream getOutputStream() {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public InputStream getInputStream() {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public InputStream getErrorStream() {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public int exitValue() {
+            for (Process child : children) {
+                if (!child.isAlive()) {
+                    return child.exitValue();
+                }
+            }
+            throw new IllegalThreadStateException();
+        }
+
+        @Override
+        public void destroy() {
+            for (Process child : children) {
+                if (child != null) {
+                    child.destroy();
+                }
+            }
+        }
+
+        @Override
+        public Process destroyForcibly() {
+            for (Process child : children) {
+                if (child != null) {
+                    child.destroyForcibly();
+                }
+            }
+            return this;
+        }
+    }
+
     public PosixResources() {
         files = Collections.synchronizedList(new ArrayList<>());
         filePaths = Collections.synchronizedList(new ArrayList<>());
@@ -88,7 +152,7 @@ public class PosixResources {
         files.add(null);
         files.add(null);
         files.add(null);
-        children.add(null); // PID 0 is special, don't hand it out
+        children.add(new ProcessGroup(children)); // PID 0 is special, and refers to all processes in the process group
         inodes = new HashMap<>();
     }
 
@@ -222,6 +286,16 @@ public class PosixResources {
         int exitStatus = process.waitFor();
         children.set(pid, null);
         return exitStatus;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public int exitStatus(int pid) throws ArrayIndexOutOfBoundsException {
+        Process process = children.get(pid);
+        if (process.isAlive()) {
+            return Integer.MIN_VALUE;
+        } else {
+            return process.exitValue();
+        }
     }
 
     @TruffleBoundary(allowInlining = true)

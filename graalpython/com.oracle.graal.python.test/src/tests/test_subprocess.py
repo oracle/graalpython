@@ -84,3 +84,11 @@ class TestSubprocess(unittest.TestCase):
         p = subprocess.Popen([sys.executable, "-c", "print('oh no')"])
         p.kill()
         assert True
+
+    def test_waitpid(self):
+        import os
+        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2); 42"])
+        try:
+            assert os.waitpid(p.pid, os.WNOHANG) == (0, 0)
+        finally:
+            p.kill()

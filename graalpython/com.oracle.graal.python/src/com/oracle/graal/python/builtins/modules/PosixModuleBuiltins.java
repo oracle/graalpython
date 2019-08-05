@@ -1478,21 +1478,35 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WaitpidNode extends PythonFileNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = {"options == 0"})
-        @TruffleBoundary
-        PTuple waitpid(int pid, int options) {
+        @Specialization
+        PTuple waitpid(VirtualFrame frame, int pid, int options) {
             try {
-                int exitStatus = getResources().waitpid(pid);
-                return factory().createTuple(new Object[]{pid, exitStatus});
-            } catch (ArrayIndexOutOfBoundsException | InterruptedException e) {
-                throw raise(OSError, "not a valid child pid");
+                if (options == 0) {
+                    int exitStatus = getResources().waitpid(pid);
+                    return factory().createTuple(new Object[]{pid, exitStatus});
+                } else if (options == WNOHANG) {
+                    int exitStatus = getResources().exitStatus(pid);
+                    if (exitStatus == Integer.MIN_VALUE) {
+                        // not terminated, yet, we should return 0
+                        return factory().createTuple(new Object[]{0, 0});
+                    } else {
+                        return factory().createTuple(new Object[]{pid, exitStatus});
+                    }
+                } else {
+                    throw raise(PythonBuiltinClassType.NotImplementedError, "Only 0 or WNOHANG are supported for waitpid");
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw raiseOSError(frame, OSErrorEnum.ESRCH.getNumber());
+            } catch (InterruptedException e) {
+                throw raiseOSError(frame, OSErrorEnum.EINTR.getNumber());
             }
         }
 
         @SuppressWarnings("unused")
-        @Fallback
-        PTuple waitpid(Object pid, Object options) {
-            throw raise(NotImplementedError, "waitpid");
+        @Specialization
+        PTuple waitpidFallback(VirtualFrame frame, Object pid, Object options,
+                       @Cached CastToIndexNode castToInt) {
+            return waitpid(frame, castToInt.execute(pid), castToInt.execute(options));
         }
     }
 
