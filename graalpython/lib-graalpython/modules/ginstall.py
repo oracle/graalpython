@@ -84,7 +84,7 @@ def known_packages():
     def astor(**kwargs):
         install_from_pypi("astor==0.8.0", **kwargs)
 
-    def absl_py(**kwargs):
+    def absl-py(**kwargs):
         install_from_pypi("absl-py==0.7.1", **kwargs)
 
     def mock(**kwargs):
