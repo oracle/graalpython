@@ -294,8 +294,8 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object mul(PBytes self, Object times,
-                          @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
-                          @Cached("create()") CastToIndexNode castToInt) {
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached("create()") CastToIndexNode castToInt) {
             SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), castToInt.execute(times));
             return factory().createBytes(res);
         }
