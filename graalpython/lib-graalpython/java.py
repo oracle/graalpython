@@ -40,63 +40,64 @@ import sys
 import _frozen_importlib
 
 
-class JavaPackageLoader:
-    @staticmethod
-    def _make_getattr(modname):
-        if modname.startswith("java."):
-            modname_wo = modname[len("java."):] + "."
-        else:
-            modname_wo = None
-        modname = modname + "."
-        def __getattr__(key, default=None):
-            try:
-                return type(modname + key)
-            except KeyError:
-                pass
-            if modname_wo:
-                try:
-                    return type(modname_wo + key)
-                except KeyError:
-                    pass
-            raise AttributeError(key)
-        return __getattr__
+if sys.graal_python_host_import_enabled:
+    class JavaPackageLoader:
+        @staticmethod
+        def is_java_package(name):
+            return any(p.getName().startswith(name) for p in type("java.lang.Package").getPackages())
 
-    @staticmethod
-    def create_module(spec):
-        newmod = _frozen_importlib._new_module(spec.name)
-        newmod.__getattr__ = JavaPackageLoader._make_getattr(spec.name)
-        newmod.__path__ = __path__
-        return newmod
+        @staticmethod
+        def _make_getattr(modname):
+            modname = modname + "."
+            def __getattr__(key, default=None):
+                loadname = modname + key
+                if JavaPackageLoader.is_java_package(loadname):
+                    return JavaPackageLoader._create_module(loadname)
+                else:
+                    try:
+                        return type(modname + key)
+                    except KeyError:
+                        raise AttributeError(key)
+            return __getattr__
 
-    @staticmethod
-    def exec_module(module):
-        pass
+        @staticmethod
+        def create_module(spec):
+            return JavaPackageLoader._create_module(spec.name)
+
+        @staticmethod
+        def _create_module(name):
+            newmod = _frozen_importlib._new_module(name)
+            newmod.__getattr__ = JavaPackageLoader._make_getattr(name)
+            newmod.__path__ = __path__
+            return newmod
+
+        @staticmethod
+        def exec_module(module):
+            pass
 
 
-class JavaTypeLoader:
-    @staticmethod
-    def create_module(spec):
-        pass
+    class JavaTypeLoader:
+        @staticmethod
+        def create_module(spec):
+            pass
 
-    @staticmethod
-    def exec_module(module):
-        try:
+        @staticmethod
+        def exec_module(module):
             sys.modules[module.__name__] = type(module.__name__)
-        except KeyError:
-            if module.__name__.startswith("java."):
-                sys.modules[module.__name__] = type(module.__name__[len("java."):])
-            else:
-                raise
 
 
-class JavaImportFinder:
-    @staticmethod
-    def find_spec(fullname, path, target=None):
-        if path and path == __path__:
-            if fullname.rpartition('.')[2].islower():
+    class JavaImportFinder:
+        @staticmethod
+        def find_spec(fullname, path, target=None):
+            if JavaPackageLoader.is_java_package(fullname):
                 return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
             else:
-                return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
+                try:
+                    type(fullname)
+                    return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
+                except KeyError:
+                    pass
 
 
-sys.meta_path.append(JavaImportFinder)
+    sys.meta_path.append(JavaImportFinder)
+    __getattr__ = JavaPackageLoader._make_getattr("java")
