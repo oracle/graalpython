@@ -86,7 +86,7 @@ def ccompile(self, name):
     cur_checksum = m.hexdigest()
     
     # see if there is already a checksum file
-    checksum_file = '%s/%s%s.sha256' % (__dir__, EXT_SUFFIX, name)
+    checksum_file = '%s/%s%s.sha256' % (__dir__, name, EXT_SUFFIX)
     available_checksum = ""
     if os.path.exists(checksum_file):
         # read checksum file
