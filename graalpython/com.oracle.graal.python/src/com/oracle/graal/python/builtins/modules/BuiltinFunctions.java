@@ -449,7 +449,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         public String charFromInt(int arg) {
-            if (arg >= 0 && arg < 1114111) {
+            if (arg >= 0 && arg <= 1114111) {
                 return Character.toString((char) arg);
             } else {
                 throw raise(ValueError, "chr() arg not in range(0x110000)");
