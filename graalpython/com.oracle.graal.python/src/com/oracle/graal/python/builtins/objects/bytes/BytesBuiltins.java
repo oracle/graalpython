@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -292,16 +293,10 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object mul(PBytes self, double times,
-                          @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), (int) times);
-            return factory().createBytes(res);
-        }
-
-        @Specialization
-        public Object mul(PBytes self, long times,
-                          @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), (int) times);
+        public Object mul(PBytes self, Object times,
+                          @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
+                          @Cached("create()") CastToIndexNode castToInt) {
+            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), castToInt.execute(times));
             return factory().createBytes(res);
         }
 
