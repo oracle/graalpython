@@ -523,7 +523,7 @@ public abstract class HashingStorageNodes {
             if (profileKey instanceof String) {
                 return storage.hasKey(profileKey, DEFAULT_EQIVALENCE);
             } else if (profileKey instanceof PString) {
-                if(wrappedString((PString) profileKey) || lookupHash.execute(key, __HASH__) == lookupStringHash.execute(PythonBuiltinClassType.PString, __HASH__)){
+                if (wrappedString((PString) profileKey) || lookupHash.execute(key, __HASH__) == lookupStringHash.execute(PythonBuiltinClassType.PString, __HASH__)) {
                     return storage.hasKey(((PString) profileKey).getValue(), DEFAULT_EQIVALENCE);
                 }
                 CompilerDirectives.transferToInterpreter();

@@ -123,8 +123,8 @@ public class StringFormatter {
         } else if (arg instanceof Double) {
             // A common case where it is safe to return arg.__int__()
             return ((Double) arg).intValue();
-        } else if(arg instanceof Boolean) {
-            return (Boolean)arg ? 1 : 0;
+        } else if (arg instanceof Boolean) {
+            return (Boolean) arg ? 1 : 0;
         } else if (arg instanceof PFloat) {
             return (int) ((PFloat) arg).getValue();
         } else if (arg instanceof PythonAbstractObject) {

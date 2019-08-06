@@ -31,7 +31,6 @@ import re
 import shutil
 import sys
 import tempfile
-import time
 from argparse import ArgumentParser
 
 import mx
@@ -1041,13 +1040,13 @@ def python_build_watch(args):
     if sum([args.full, args.graalvm, args.no_java]) > 1:
         mx.abort("Only one of --full, --graalvm, --no-java can be specified")
     if args.full:
-        suffixes = [".c", ".h", ".class", ".jar", ".java"]
+        # suffixes = [".c", ".h", ".class", ".jar", ".java"]
         excludes = [".*\\.py$"]
     elif args.graalvm:
-        suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
+        # suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
         excludes = ["mx_.*\\.py$"]
     else:
-        suffixes = [".c", ".h", ".class", ".jar"]
+        # suffixes = [".c", ".h", ".class", ".jar"]
         excludes = [".*\\.py$", ".*\\.java$"]
 
     cmd = ["inotifywait", "-q", "-e", "close_write,moved_to", "-r", "--format=%f"]
