@@ -44,6 +44,20 @@ from distutils import sysconfig
 
 logger = logging.getLogger(__name__)
 
+def needs_update(module, source_files):
+    if not os.path.exists(module):
+        logger.info("Module %s does not exist" % (source_file, module))
+        return True
+    
+    module_mtime = os.path.getmtime(module)
+    for source_file in source_files:
+        # if any source file is newer than the module file
+        if os.path.getmtime(source_file) >= module_mtime:
+            logger.info("Source file %s is newer than %s" % (source_file, module))
+            return True
+
+    return False
+
 def build_capi():
     def create_if_needed(d):
         if not os.path.exists(d):
@@ -55,10 +69,13 @@ def build_capi():
         ld = sysconfig.get_config_vars()["LDSHARED"]
         cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + cflags + f)
         logger.debug(cmd_line)
+        logger.info("Building %s" % module)
         res = os.system(cmd_line)
         if res:
             logger.fatal("compilation failed: '%s' returned with %r" % (cmd_line, res))
             raise BaseException
+
+
 
     create_if_needed(sys.graal_python_cext_module_home)
     create_if_needed(sys.graal_python_cext_home)
@@ -67,22 +84,29 @@ def build_capi():
     so_ext = sysconfig.get_config_var("EXT_SUFFIX")
 
     cext_src_path = os.path.join(sys.graal_python_cext_src, "src")
-    files = [os.path.join(cext_src_path, f) for f in os.listdir(cext_src_path) if f.endswith(".c")]
+    files = [os.path.abspath(os.path.join(cext_src_path, f)) for f in os.listdir(cext_src_path) if f.endswith(".c")]
+    logger.debug("Found C API source files: %r" % files)
     capi_module = os.path.abspath(os.path.join(sys.graal_python_cext_home, "libpython" + so_ext))
-    if not os.path.exists(capi_module):
+    if needs_update(capi_module, files):
         cflags = ["-lpolyglot-mock", "-Wl,-install_name=@rpath/libpython" + so_ext] if darwin_native else []
-        compile([os.path.abspath(f) for f in files], capi_module, cflags)
+        compile(files, capi_module, cflags)
         
 
     cext_module_src_path = os.path.join(sys.graal_python_cext_src, "modules")
     files = [os.path.join(cext_module_src_path, f) for f in os.listdir(cext_module_src_path) if f.endswith(".c")]
+    logger.debug("Found native builtin modules: %r" % files)
     for f in files:
         f_basename = os.path.splitext(os.path.basename(f))[0]
-        module = os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext)
-        if not os.path.exists(module):
+        f_abs = os.path.abspath(f)
+        module = os.path.abspath(os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext))
+        if needs_update(module, [f_abs]):
             cflags = ["-lbz2", "-lpolyglot-mock", "-lpython" + so_ext, "-Wl,-rpath=" + capi_module] if darwin_native else []
-            compile([os.path.abspath(f)], os.path.abspath(module), cflags)
+            compile([f_abs], module, cflags)
 
 
 if __name__ == "__main__":
+    if "-v" in sys.argv or "--verbose" in sys.argv:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
     build_capi()
