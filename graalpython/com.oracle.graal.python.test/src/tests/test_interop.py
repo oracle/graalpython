@@ -340,6 +340,13 @@ if sys.implementation.name == "graalpython":
 
             assert java.util.ArrayList == ArrayList
 
+            import sun
+            assert type(sun.misc) is type(java)
+
+            import sun.misc.Signal
+            assert sun.misc.Signal is not None
+
+
     def test_foreign_object_does_not_leak_Javas_toString():
         try:
             from java.util import ArrayList
