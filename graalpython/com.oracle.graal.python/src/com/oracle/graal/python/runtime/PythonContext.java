@@ -33,11 +33,13 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.LinkOption;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -381,13 +383,13 @@ public final class PythonContext {
 
         TruffleFile home = null;
         if (languageHome != null) {
-            home = newEnv.getTruffleFile(languageHome);
+            home = newEnv.getInternalTruffleFile(languageHome);
         }
 
         try {
             String envHome = System.getenv("GRAAL_PYTHONHOME");
             if (envHome != null) {
-                TruffleFile envHomeFile = newEnv.getTruffleFile(envHome);
+                TruffleFile envHomeFile = newEnv.getInternalTruffleFile(envHome);
                 if (envHomeFile.isDirectory()) {
                     home = envHomeFile;
                 }
@@ -617,5 +619,55 @@ public final class PythonContext {
     @TruffleBoundary
     public void createInteropLock() {
         interopLock = new ReentrantLock();
+    }
+
+    /**
+     * This is like {@code Env#getPublicTruffleFile(String)} but also allows access to files in the
+     * language home directory matching one of the given file extensions. This is mostly useful to
+     * access files of the {@code stdlib}, {@code core} or similar.
+     */
+    @TruffleBoundary
+    public TruffleFile getPublicTruffleFileRelaxed(String path, String... allowedSuffixes) {
+        TruffleFile f = env.getInternalTruffleFile(path);
+        // 'isDirectory' does deliberately not follow symlinks because otherwise this could allow to
+        // escape the language home directory.
+        // Also, during image build time, we allow full internal access.
+        if (ImageInfo.inImageBuildtimeCode() || isPyFileInLanguageHome(f) && (f.isDirectory(LinkOption.NOFOLLOW_LINKS) || hasAllowedSuffix(path, allowedSuffixes))) {
+            return f;
+        } else {
+            return env.getPublicTruffleFile(path);
+        }
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static boolean hasAllowedSuffix(String path, String[] allowedSuffixes) {
+        for (String suffix : allowedSuffixes) {
+            if (path.endsWith(suffix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Tests if the given {@code TruffleFile} is located in the language home directory.
+     */
+    @TruffleBoundary
+    public boolean isPyFileInLanguageHome(TruffleFile path) {
+        assert !ImageInfo.inImageBuildtimeCode() : "language home won't be available during image build time";
+        String languageHome = language.getHome();
+
+        // The language home may be 'null' if an embedder uses Python. In this case, IO must just be
+        // allowed.
+        if (languageHome != null) {
+            // This deliberately uses 'getAbsoluteFile' and not 'getCanonicalFile' because if, e.g.,
+            // 'path' is a symlink outside of the language home, the user should not be able to read
+            // the symlink if 'allowIO' is false.
+            TruffleFile coreHomePath = env.getInternalTruffleFile(languageHome).getAbsoluteFile();
+            TruffleFile absolutePath = path.getAbsoluteFile();
+            return absolutePath.startsWith(coreHomePath);
+        }
+        PythonLanguage.getLogger().log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
+        return false;
     }
 }

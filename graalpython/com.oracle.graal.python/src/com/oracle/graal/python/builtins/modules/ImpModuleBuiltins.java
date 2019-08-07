@@ -200,7 +200,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String basename = name.substring(name.lastIndexOf('.') + 1);
             TruffleObject sulongLibrary;
             try {
-                CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, env.getTruffleFile(path)).build());
+                CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, getContext().getPublicTruffleFileRelaxed(path, ".bc")).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
                 throw raise(ImportError, "cannot load %s: %m", path, e);
@@ -243,7 +243,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (!ctxt.capiWasLoaded()) {
                 Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                TruffleFile capiFile = env.getTruffleFile(getContext().getCoreHome() + env.getFileNameSeparator() + "capi.bc");
+                TruffleFile capiFile = env.getInternalTruffleFile(getContext().getCoreHome() + env.getFileNameSeparator() + "capi.bc");
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
