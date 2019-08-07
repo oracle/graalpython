@@ -43,20 +43,25 @@ import _frozen_importlib
 class JavaPackageLoader:
     @staticmethod
     def is_java_package(name):
-        return any(p.getName().startswith(name) for p in type("java.lang.Package").getPackages())
+        try:
+            package = type("java.lang.Package")
+            return any(p.getName().startswith(name) for p in package.getPackages())
+        except KeyError:
+            return False
 
     @staticmethod
     def _make_getattr(modname):
         modname = modname + "."
         def __getattr__(key, default=None):
-            loadname = modname + key
-            if JavaPackageLoader.is_java_package(loadname):
-                return JavaPackageLoader._create_module(loadname)
-            else:
-                try:
-                    return type(modname + key)
-                except KeyError:
-                    raise AttributeError(key)
+            if sys.graal_python_host_import_enabled:
+                loadname = modname + key
+                if JavaPackageLoader.is_java_package(loadname):
+                    return JavaPackageLoader._create_module(loadname)
+                else:
+                    try:
+                        return type(modname + key)
+                    except KeyError:
+                        raise AttributeError(key)
         return __getattr__
 
     @staticmethod
