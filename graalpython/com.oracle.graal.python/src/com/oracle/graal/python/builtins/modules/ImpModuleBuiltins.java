@@ -552,7 +552,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         Object run(
                         @CachedContext(PythonLanguage.class) PythonContext ctxt) {
             String soAbi = getSoAbi(ctxt);
-            return factory().createList(new Object[]{soAbi, ".so", ".dylib", ".su", ".bc"});
+            return factory().createList(new Object[]{soAbi, ".so", ".dylib", ".su"});
         }
 
         @TruffleBoundary
