@@ -486,10 +486,23 @@ class EncodedString(str):
         return bytes_literal(self.utf8encode(), 'utf8')
 
 
-def test_wrapped_string_contains():
-    testString = EncodedString('something')
+def test_wrapped_string_contains1():
+    test_string = EncodedString('something')
     dict = {'something': (1, 0), 'nothing': (2, 0)}
     reached = False
-    if testString in dict:
+    if test_string in dict:
         reached = True
     assert reached
+
+def test_wrapped_string_contains2():
+    test_string = EncodedString('something')
+    dict = {'something', 'nothing'}
+    reached = False
+    if test_string in dict:
+        reached = True
+    assert reached
+
+def test_wrapped_string_get():
+    a = 'test'
+    dict = locals()
+    assert dict['a']

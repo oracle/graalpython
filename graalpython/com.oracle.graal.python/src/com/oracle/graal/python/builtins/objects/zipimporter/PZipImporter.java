@@ -33,6 +33,7 @@ import java.util.EnumSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -126,7 +127,7 @@ public class PZipImporter extends PythonBuiltinObject {
         return new SearchOrderEntry[]{
                         new SearchOrderEntry(joinStrings(separator, "__init__.py"),
                                         enumSetOf(EntryType.IS_PACKAGE, EntryType.IS_SOURCE)),
-                        new SearchOrderEntry(".py", enumSetOf(EntryType.IS_SOURCE))
+                        new SearchOrderEntry(PythonLanguage.EXTENSION, enumSetOf(EntryType.IS_SOURCE))
         };
     }
 

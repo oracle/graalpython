@@ -112,6 +112,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
+    public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
@@ -461,7 +462,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             SourceBuilder sourceBuilder = null;
             if (mayBeFile) {
                 try {
-                    TruffleFile truffleFile = ctxt.getEnv().getTruffleFile(name);
+                    TruffleFile truffleFile = ctxt.getEnv().getInternalTruffleFile(name);
                     if (truffleFile.exists()) {
                         // XXX: (tfel): We don't know if the expression has anything to do with the
                         // filename that's given. We would really have to compare the entire
@@ -551,4 +552,5 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void initializeThread(PythonContext context, Thread thread) {
         super.initializeThread(context, thread);
     }
+
 }

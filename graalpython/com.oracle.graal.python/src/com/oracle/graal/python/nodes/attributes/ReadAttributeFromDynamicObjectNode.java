@@ -133,7 +133,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         if (loc == null) {
             return PNone.NO_VALUE;
         } else {
-            return loc.get(dynamicObject);
+            return loc.get(dynamicObject, cachedShape);
         }
     }
 

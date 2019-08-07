@@ -199,11 +199,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) {
             ensureCapiWasLoaded();
-            Env env = getContext().getEnv();
+            PythonContext context = getContext();
+            Env env = context.getEnv();
             String basename = name.substring(name.lastIndexOf('.') + 1);
             TruffleObject sulongLibrary;
             try {
-                CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, env.getTruffleFile(path)).build());
+                String extSuffix = ExtensionSuffixesNode.getSoAbi(context);
+                CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
                 throw raise(ImportError, "cannot load %s: %m", path, e);
@@ -228,7 +230,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 } else {
                     ((PythonObject) result).setAttribute(__FILE__, path);
                     // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
-                    PDict sysModules = getContext().getSysModules();
+                    PDict sysModules = context.getSysModules();
                     getSetItemNode().execute(null, sysModules, name, result);
                     return result;
                 }
@@ -260,7 +262,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // TODO(fa): should we try all extension suffixes?
                 String extSuffix = ExtensionSuffixesNode.getSoAbi(ctxt);
 
-                TruffleFile capiFile = env.getTruffleFile(String.join(env.getFileNameSeparator(), capiHome, "libpython" + extSuffix));
+                TruffleFile capiFile = env.getInternalTruffleFile(String.join(env.getFileNameSeparator(), capiHome, "libpython" + extSuffix));
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);

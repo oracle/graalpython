@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "a6500775eb4e7b07c7041dfa3911af4cf54b17df",
+                "version": "17b272f9e2bb634c4544ffacfced6d4fcc6654bb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "a6500775eb4e7b07c7041dfa3911af4cf54b17df",
+                "version": "17b272f9e2bb634c4544ffacfced6d4fcc6654bb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -91,15 +91,14 @@ suite = {
             ],
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
         },
-        "XZ-1.8" : { 
-            "sha1" : "c4f7d054303948eb6a4066194253886c8af07128",
-            "maven" : { 
-            "groupId" : "org.tukaani",
-            "artifactId" : "xz",
-            "version" : "1.8",
-        },  
-    },
-
+        "XZ-1.8": {
+            "sha1": "c4f7d054303948eb6a4066194253886c8af07128",
+            "maven": {
+                "groupId": "org.tukaani",
+                "artifactId": "xz",
+                "version": "1.8",
+            },
+        },
 
     },
 
@@ -160,7 +159,6 @@ suite = {
         },
     },
 
-
     "projects": {
         # GRAALPYTHON ANTLR
         "com.oracle.graal.python.parser.antlr": {
@@ -204,11 +202,11 @@ suite = {
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
-            "javaCompliance" : "8+",
-            "checkstyleVersion" : "8.8",
+            "javaCompliance": "8+",
+            "checkstyleVersion": "8.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
-            "spotbugsIgnoresGenerated" : True,
+            "spotbugsIgnoresGenerated": True,
         },
 
         # GRAALPYTHON TEST
@@ -241,7 +239,6 @@ suite = {
             "workingSets": "Truffle,Python",
             "testProject": True,
         },
-
 
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",

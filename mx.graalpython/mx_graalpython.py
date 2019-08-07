@@ -31,7 +31,6 @@ import re
 import shutil
 import sys
 import tempfile
-import time
 from argparse import ArgumentParser
 
 import mx
@@ -275,7 +274,7 @@ def python_gvm(args=None):
 
 def python_svm(args=None):
     "Build and run the native graalpython image"
-    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher(args or [])
 
 
@@ -471,7 +470,7 @@ def run_embedded_native_python_test(args=None):
             """)
         out = mx.OutputCapture()
         mx.run([graalvm_javac, filename])
-        mx.run([graalvm_native_image, "--initialize-at-build-time", "--language:python", "HelloWorld"])
+        mx.run([graalvm_native_image, "-H:+ReportExceptionStackTraces", "--initialize-at-build-time", "--language:python", "HelloWorld"])
         mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
         assert "abc" in out.data
         assert "xyz" in out.data
@@ -1048,13 +1047,13 @@ def python_build_watch(args):
     if sum([args.full, args.graalvm, args.no_java]) > 1:
         mx.abort("Only one of --full, --graalvm, --no-java can be specified")
     if args.full:
-        suffixes = [".c", ".h", ".class", ".jar", ".java"]
+        # suffixes = [".c", ".h", ".class", ".jar", ".java"]
         excludes = [".*\\.py$"]
     elif args.graalvm:
-        suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
+        # suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
         excludes = ["mx_.*\\.py$"]
     else:
-        suffixes = [".c", ".h", ".class", ".jar"]
+        # suffixes = [".c", ".h", ".class", ".jar"]
         excludes = [".*\\.py$", ".*\\.java$"]
 
     cmd = ["inotifywait", "-q", "-e", "close_write,moved_to", "-r", "--format=%f"]

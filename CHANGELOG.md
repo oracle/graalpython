@@ -3,6 +3,19 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 19.3.0
+
+* Implement `charmap_build` function
+* Implement `hexversion` in sys module
+* Implement `_lzma` module
+* Fix printing of Pandas data frames
+* Fix a bug in `bytes.startswith` for tuple arguments
+* Fix destructuring assignments of arbitrary iterators
+* Fix `dict.__contains__` for dictionaries with only `str` keys for subclasses of `str`
+* Support NumPy 1.16.4 and Pandas 0.25.0
+* Support importing Java classes using normal Python import syntax when the package is known
+* Improve performance across many Python benchmarks
+
 ## Version 19.2.0
 
 * Implement PyStructSequence_* C API functions

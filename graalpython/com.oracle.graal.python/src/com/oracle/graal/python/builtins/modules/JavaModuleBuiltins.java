@@ -124,7 +124,9 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             for (Object arg : args) {
                 String entry = castToString.execute(frame, arg);
                 try {
-                    env.addToHostClassPath(env.getTruffleFile(entry));
+                    // Always allow accessing JAR files in the language home; folders are allowed
+                    // implicitly
+                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, ".jar"));
                 } catch (SecurityException e) {
                     throw raise(TypeError, "invalid or unreadable classpath: '%s' - %m", entry, e);
                 }

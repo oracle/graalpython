@@ -103,7 +103,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         Env env = context.getEnv();
         String coreHome = context.getCoreHome();
         try {
-            TruffleFile coreDir = env.getTruffleFile(coreHome);
+            TruffleFile coreDir = env.getInternalTruffleFile(coreHome);
             TruffleFile docDir = coreDir.resolveSibling("doc");
             if (docDir.exists() || docDir.getParent() != null && (docDir = coreDir.getParent().resolveSibling("doc")).exists()) {
                 builtinConstants.put(SpecialAttributeNames.__DOC__, new String(docDir.resolve("INTEROP.md").readAllBytes()));
@@ -172,7 +172,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
                 raiseIfInternal(env, lang);
-                SourceBuilder newBuilder = Source.newBuilder(lang, env.getTruffleFile(path));
+                SourceBuilder newBuilder = Source.newBuilder(lang, env.getPublicTruffleFile(path));
                 if (mimeType) {
                     newBuilder = newBuilder.mimeType(langOrMimeType);
                 }
@@ -192,7 +192,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.NotImplementedError, "polyglot access is not allowed");
             }
             try {
-                return getContext().getEnv().parsePublic(Source.newBuilder(PythonLanguage.ID, env.getTruffleFile(path)).name(path).build()).call();
+                return getContext().getEnv().parsePublic(Source.newBuilder(PythonLanguage.ID, env.getPublicTruffleFile(path)).name(path).build()).call();
             } catch (IOException e) {
                 throw raise(OSError, "%s", e);
             } catch (RuntimeException e) {

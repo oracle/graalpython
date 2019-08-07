@@ -166,7 +166,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
 
             try {
-                if (getContext().getEnv().getTruffleFile(cwd).exists()) {
+                if (getContext().getEnv().getPublicTruffleFile(cwd).exists()) {
                     pb.directory(new File(cwd));
                 } else {
                     throw raise(PythonBuiltinClassType.OSError, "working directory %s is not accessible", cwd);
