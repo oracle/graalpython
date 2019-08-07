@@ -83,7 +83,7 @@ public class ModuleBuiltins extends PythonBuiltins {
         return ModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__ , minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {

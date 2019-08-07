@@ -152,7 +152,8 @@ public class PosixResources {
         files.add(null);
         files.add(null);
         files.add(null);
-        children.add(new ProcessGroup(children)); // PID 0 is special, and refers to all processes in the process group
+        children.add(new ProcessGroup(children)); // PID 0 is special, and refers to all processes
+                                                  // in the process group
         inodes = new HashMap<>();
     }
 

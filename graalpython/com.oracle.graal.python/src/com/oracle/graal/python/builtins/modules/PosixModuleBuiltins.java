@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.TempFileUtils.getRandomFilePath;
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
 import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
 import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
@@ -541,7 +542,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doStatPath(VirtualFrame frame, Object path, boolean followSymlinks,
-                          @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             return stat(cast.execute(frame, path), followSymlinks);
         }
 
@@ -845,7 +846,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, LazyPythonClass cls, Object pathArg,
-                    @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             String path = cast.execute(frame, pathArg);
             try {
                 TruffleFile file = getContext().getEnv().getPublicTruffleFile(path);
@@ -865,7 +866,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, LazyPythonClass cls, String name, Object pathArg,
-                    @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             String path = cast.execute(frame, pathArg);
             try {
                 TruffleFile dir = getContext().getEnv().getPublicTruffleFile(path);
@@ -912,19 +913,26 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
         Object open(VirtualFrame frame, Object pathname, int flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd,
-                    @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             return openMode(frame, pathname, flags, 0777, dir_fd, cast);
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
         Object openMode(VirtualFrame frame, Object pathArg, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd,
-                    @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             String pathname = cast.execute(frame, pathArg);
             Set<StandardOpenOption> options = flagsToOptions(flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes(fileMode);
-            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            TruffleFile truffleFile;
             try {
-                SeekableByteChannel fc = truffleFile.newByteChannel(options, attributes);
+                SeekableByteChannel fc;
+                if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
+                    // TODO: (cbas) remove patch once the TruffleFile API supports temp file
+                    // creation -> GR-17515
+                    pathname = getRandomFilePath(pathname, options);
+                }
+                truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+                fc = truffleFile.newByteChannel(options, attributes);
                 return getResources().open(truffleFile, fc);
             } catch (NoSuchFileException e) {
                 gotException.enter();
@@ -1076,7 +1084,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object unlink(VirtualFrame frame, Object pathArg,
-                      @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             String path = cast.execute(frame, pathArg);
             try {
                 getContext().getEnv().getPublicTruffleFile(path).delete();
@@ -1106,13 +1114,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object mkdir(VirtualFrame frame, Object path, @SuppressWarnings("unused") PNone mode, PNone dirFd,
-                     @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             return mkdirMode(frame, path, 511, dirFd, cast);
         }
 
         @Specialization
         Object mkdirMode(VirtualFrame frame, Object pathArg, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd,
-                     @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             String path = cast.execute(frame, pathArg);
             try {
                 getContext().getEnv().getPublicTruffleFile(path).createDirectory();
@@ -1263,13 +1271,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object chmod(VirtualFrame frame, Object path, long mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks,
-                     @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             return chmodFollow(frame, path, mode, dir_fd, true, cast);
         }
 
         @Specialization
         Object chmodFollow(VirtualFrame frame, Object pathArg, long mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks,
-                           @Cached CastToPathNode cast) {
+                        @Cached CastToPathNode cast) {
             String path = cast.execute(frame, pathArg);
             Set<PosixFilePermission> permissions = modeToPermissions(mode);
             try {
@@ -1472,7 +1480,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         PTuple waitpidFallback(VirtualFrame frame, Object pid, Object options,
-                       @Cached CastToIndexNode castToInt) {
+                        @Cached CastToIndexNode castToInt) {
             return waitpid(frame, castToInt.execute(pid), castToInt.execute(options));
         }
     }
@@ -1908,8 +1916,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class KillNode extends PythonBinaryBuiltinNode {
-        private static final String[] KILL_SIGNALS = new String[] { "SIGKILL", "SIGQUIT", "SIGTRAP", "SIGABRT" };
-        private static final String[] TERMINATION_SIGNALS = new String[] { "SIGTERM", "SIGINT" };
+        private static final String[] KILL_SIGNALS = new String[]{"SIGKILL", "SIGQUIT", "SIGTRAP", "SIGABRT"};
+        private static final String[] TERMINATION_SIGNALS = new String[]{"SIGTERM", "SIGINT"};
 
         @Specialization
         PNone kill(VirtualFrame frame, int pid, int signal,

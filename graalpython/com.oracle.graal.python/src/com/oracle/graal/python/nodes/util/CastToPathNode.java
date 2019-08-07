@@ -125,6 +125,7 @@ public abstract class CastToPathNode extends Node {
     protected LookupAndCallUnaryNode createFsPathCall() {
         return LookupAndCallUnaryNode.create(SpecialMethodNames.__FSPATH__, () -> new NoAttributeHandler() {
             @Child PRaiseNode raise = PRaiseNode.create();
+
             @Override
             public Object execute(Object receiver) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ERROR_MESSAGE, receiver);
