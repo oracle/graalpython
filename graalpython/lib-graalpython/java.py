@@ -61,7 +61,8 @@ class JavaPackageLoader:
                     try:
                         return type(modname + key)
                     except KeyError:
-                        raise AttributeError(key)
+                        pass
+            raise AttributeError(key)
         return __getattr__
 
     @staticmethod
