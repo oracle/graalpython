@@ -47,6 +47,9 @@ class JavaPackageLoader:
             package = type("java.lang.Package")
             return any(p.getName().startswith(name) for p in package.getPackages())
         except KeyError:
+            if sys.flags.verbose:
+                from _warnings import _warn
+                _warn("Host lookup allowed, but java.lang.Package not available. Importing from Java cannot work.")
             return False
 
     @staticmethod
