@@ -249,6 +249,7 @@ suite = {
             "buildDependencies": [
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
+                "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_HOME>/include",
