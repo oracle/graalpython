@@ -25,10 +25,6 @@
  */
 package com.oracle.graal.python.parser;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -38,8 +34,6 @@ import com.oracle.graal.python.parser.antlr.BuilderNew;
 import com.oracle.graal.python.parser.antlr.Python3NewLexer;
 import com.oracle.graal.python.parser.antlr.Python3NewParser;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
-import com.oracle.graal.python.parser.sst.BlockSSTNode;
-import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -50,7 +44,6 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import java.util.HashSet;
 
 public final class PythonParserImpl implements PythonParser {
 
@@ -76,146 +69,6 @@ public final class PythonParserImpl implements PythonParser {
         parser.addErrorListener(Builder.ERROR_LISTENER);
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
-    }
-    
-    public static void main(String[] args) {
-
-        System.out.println(Integer.MAX_VALUE);
-        System.out.println(-Integer.MAX_VALUE);
-//        System.out.println(--Integer.MAX_VALUE);
-        String source = "1234 + 4321 + 1234.44 + 0x1f + 0xffffffffffffffff1 + 0o0 + 0O1 + 0b1010101 + 1234j + 4321J\n";
-//        getPython3NewParser(source).single_input(false, null);
-        source = "raise 'asdf'\n";
-//        getPython3NewParser(source).single_input(false, null);
-    
-//        PythonParserImpl parserImpl = new PythonParserImpl();
-//        Python3Core core = new Python3Core(parserImpl);
-//        Python3Parser parser = getPython3Parser("help('modules')");
-//        ParserRuleContext input = parser.single_input();
-//        // prepare scope translator
-//        TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
-//        FrameDescriptor inlineLocals =  null;
-//        ScopeTranslator<Object> defineScopes = new ScopeTranslator<>(core, environment, false, inlineLocals);
-//        // first pass of the scope translator -> define the scopes
-//        input.accept(defineScopes);
-//        // create frame slots for cell and free vars
-//        
-//        defineScopes.setFreeVarsInRootScope(null);
-//        defineScopes.createFrameSlotsForCellAndFreeVars();
-//
-//        // create Truffle ASTs
-//        long startTranslate = System.currentTimeMillis();
-//        Node translate = PythonTreeTranslator.translate(core, "AHoj", input, environment, null, ParserMode.File);
-//        long end = System.currentTimeMillis();
-////        
-////        String source = "1234 + 4321 + 1234.44 + 0x1f + 0xffffffffffffffff1 + 0o0 + 0O1 + 0b1010101 + 1234j + 4321J\n";
-////        getPython3NewParser(source).single_input(false, null);
-////        source = "raise 'asdf'\n";
-////        getPython3NewParser(source).single_input(false, null);
-        
-    }
-    
-    private static int parsedCount = 0;
-    private static int parsedFileCount = 0;
-    private static long parsedTime = 0;
-    private static long parsedFileTime = 0;
-    private static long translateTime = 0;
-    private static long translateFileTime = 0;
-    private static long prepareTranslationTime = 0;
-    private static HashSet<String> cache= new HashSet<String>();
-    private static int cachedFiles = 0;
-    
-    @TruffleBoundary
-    public Node parseWithNew(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
-        FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
-        // ANTLR parsing
-//        long start = System.currentTimeMillis();
-//        Python3NewParser newParser = getPython3NewParser(source.getCharacters().toString());
-        Python3NewParser newParser = getPython3NewParser(source, errors);
-        ParserRuleContext input;
-        SSTNode parserResult;
-        try {
-            switch (mode) {
-                case Eval:
-//                    parserResult = newParser.eval_input().result;
-                    break;
-                case File:
-            // System.out.println("===\n" + source.getCharacters() + "\n---\n");
-
-                    Python3NewParser.File_inputContext file_input = newParser.file_input();
-                    parserResult = file_input.result;
-                    PythonLanguage lang = errors.getLanguage();
-                    PythonNodeFactory factory = newParser.factory;
-                    lastGlobalScope = factory.getScopeEnvironment().getGlobalScope();
-                    factory.getScopeEnvironment().setCurrentScope(lastGlobalScope);
-                    FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, factory.getScopeEnvironment(), lang.getNodeFactory(), source);
-                    ExpressionNode body = factoryVisitor.asExpression((BlockSSTNode)parserResult);
-                    ModuleRootNode mrn = lang.getNodeFactory().createModuleRoot(source.getName(), factory.getModuleDoc(body), body, file_input.scope.getFrameDescriptor());
-                    
-//                    long start = System.currentTimeMillis();
-//                    parser.file_input();
-//                    long end = System.currentTimeMillis();
-//                    System.out.println("parsing wiht new tooks: " + (end - start));
-                    return mrn;
-                case InteractiveStatement:
-                case InlineEvaluation:
-                case Statement:
-//                    parserResult = newParser.single_input(source.isInteractive(), inlineLocals).result;
-                    break;
-                default:
-                    throw new RuntimeException("unexpected mode: " + mode);
-            }
-            
-        } catch (Exception e) {
-//            e.printStackTrace();
-            if (mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement || mode == ParserMode.InlineEvaluation) {
-                try {
-                    newParser.reset();
-                    input = newParser.eval_input();
-                } catch (Exception e2) {
-                    throw handleParserError(errors, source, e);
-                }
-            } else {
-                throw handleParserError(errors, source, e);
-            }
-        }
-        
-//        long startTranslate = System.currentTimeMillis();
-//        // prepare scope translator
-//        TranslationEnvironment environment = new TranslationEnvironment(errors.getLanguage());
-//        ScopeTranslator<Object> defineScopes = new ScopeTranslator<>(errors, environment, source.isInteractive(), inlineLocals);
-//        // first pass of the scope translator -> define the scopes
-//        input.accept(defineScopes);
-//        // create frame slots for cell and free vars
-//        defineScopes.setFreeVarsInRootScope(currentFrame);
-//        defineScopes.createFrameSlotsForCellAndFreeVars();
-//        long endPreparing = System.currentTimeMillis();
-//        // create Truffle ASTs
-//        Node translate = PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode);
-//        long end = System.currentTimeMillis();
-//        
-//        parsedCount++;
-//        parsedTime += (end - start);
-//        translateTime += (end - startTranslate);
-//        prepareTranslationTime =+ endPreparing - startTranslate;
-//        if (source.getPath() != null) {
-//            parsedFileCount++;
-//            parsedFileTime += (end - start);
-//            translateFileTime += (end - startTranslate);
-//            if (cache.contains(source.getPath())) {
-//                cachedFiles++;
-//                System.out.println("cached " + source.getPath());
-//            } else {
-//                cache.add(source.getPath());
-//            }
-//        }
-//        if (parsedCount % 10 == 0) {
-//            System.out.println("Parsed " + parsedCount + " codes took " + parsedTime + "ms  avarage parse time per code: " + (parsedTime/parsedCount) + ", translattion time: " + translateTime + ", per one parsing: " +(translateTime/parsedCount));
-//            System.out.println("    from these " + parsedFileCount + " files parsed took " + parsedFileTime + "ms, avarage parse time per file: " + (parsedFileTime / parsedFileCount) + ", translation time: " + (translateFileTime/parsedFileCount));
-//            System.out.println("    cached results: " + cachedFiles);
-//        }
-//        return translate;
-        return null;
     }
     
     private ParserRuleContext lastTree;
@@ -276,12 +129,10 @@ public final class PythonParserImpl implements PythonParser {
         return result;
     }
     
-//    @Override
     @TruffleBoundary
     public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         // ANTLR parsing
-//        Python3NewParser parser = getPython3NewParser(source.getCharacters().toString());
         Python3NewParser parser = getPython3NewParser(source, errors);
         parser.factory = new PythonNodeFactory(errors.getLanguage(), source);
         SSTNode parserSSTResult = null;
