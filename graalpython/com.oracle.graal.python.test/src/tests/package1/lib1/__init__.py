@@ -37,8 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""PACKAGE DOC"""
+lib1_hello = "hello"
+def lib1_world(*args):
+    pass
 
-from .lib import *
-from .lib1 import *
-from . import exported
+def __lib1_hidden(*args):
+    pass
+
+__all__ = [s for s in dir() if not s.startswith("__")]

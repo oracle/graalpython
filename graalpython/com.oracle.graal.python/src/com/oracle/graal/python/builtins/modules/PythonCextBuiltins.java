@@ -291,6 +291,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Type extends NativeBuiltin {
+
+        private static final String[] LOOKUP_MODULES = new String[]{
+                        PythonCextBuiltins.PYTHON_CEXT,
+                        "_weakref",
+                        "builtins"
+        };
+
         @Specialization
         @TruffleBoundary
         Object doI(String typeName) {
@@ -300,13 +307,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     return core.lookupType(type);
                 }
             }
-            Object attribute = core.lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT).getAttribute(typeName);
-            if (attribute != PNone.NO_VALUE) {
-                return attribute;
-            }
-            attribute = core.lookupBuiltinModule("builtins").getAttribute(typeName);
-            if (attribute != PNone.NO_VALUE) {
-                return attribute;
+            for (String module : LOOKUP_MODULES) {
+                Object attribute = core.lookupBuiltinModule(module).getAttribute(typeName);
+                if (attribute != PNone.NO_VALUE) {
+                    return attribute;
+                }
             }
             throw raise(PythonErrorType.KeyError, "'%s'", typeName);
         }
@@ -2435,6 +2440,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(mroTuple)")
+        Object doIt(PythonNativeClass clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
+            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+            if (nativeClassStableAssumption != null) {
+                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") (without MRO) called");
+            }
+            return PNone.NONE;
+        }
 
         @Specialization
         Object doIt(PythonNativeClass clazz, String name, PTuple mroTuple,

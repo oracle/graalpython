@@ -153,6 +153,7 @@ declare_type(PyMethod_Type, method, PyMethodObject);
 declare_type(PyCode_Type, code, PyCodeObject);
 declare_type(PyFrame_Type, frame, PyFrameObject);
 declare_type(PyTraceBack_Type, traceback, PyTracebackObject);
+declare_type(_PyWeakref_RefType, ReferenceType, PyWeakReference);
 // Below types use the same object structure as others, and thus
 // POLYGLOT_DECLARE_TYPE should not be called again
 initialize_type(PySuper_Type, super, _object);
@@ -162,6 +163,8 @@ initialize_type(PyBool_Type, bool, _longobject);
 initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
 initialize_type(PyDictProxy_Type, mappingproxy, _object);
 initialize_type(PyEllipsis_Type, ellipsis, _object);
+initialize_type(_PyWeakref_ProxyType, ProxyType, PyWeakReference);
+initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference);
 
 POLYGLOT_DECLARE_TYPE(PyThreadState);
 

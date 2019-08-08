@@ -874,7 +874,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 if (translated != null) {
                     int oldlen = translatedChars.length;
                     translatedChars = spliceNode.execute(translatedChars, i + offset, translated);
-                    offset = translatedChars.length - oldlen;
+                    offset += translatedChars.length - oldlen;
                 } else {
                     translatedChars[i + offset] = original;
                 }
