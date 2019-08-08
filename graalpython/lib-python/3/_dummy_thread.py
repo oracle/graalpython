@@ -169,6 +169,8 @@ class RLock(LockType):
             self._levels += 1
         return locked
 
+    __enter__ = acquire
+
     def release(self):
         """Release needs to be called once for every call to acquire().
         """
