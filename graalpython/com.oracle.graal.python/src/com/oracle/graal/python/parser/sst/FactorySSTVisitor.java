@@ -295,12 +295,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         return callNode;
     }
 
-    @Override
-    public PNode visit(ClassSSTNode node) {
-        ScopeInfo classScope = node.classScope;
-        scopeEnvironment.setCurrentScope(classScope);
-        StringBuilder qualifiedName = new StringBuilder(node.name);
-        ScopeInfo scope = node.classScope.getParent();
+    private String getQualifiedName(ScopeInfo scope, String name) {
+        StringBuilder qualifiedName = new StringBuilder(name);
+        scope = scope.getParent();
         while (scope != null) {
             
             switch (scope.getScopeKind()) {
@@ -320,6 +317,14 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             }
             
         }
+        return qualifiedName.toString();
+    }
+    
+    @Override
+    public PNode visit(ClassSSTNode node) {
+        ScopeInfo classScope = node.classScope;
+        scopeEnvironment.setCurrentScope(classScope);
+        String qualifiedName = getQualifiedName(classScope, node.name);
         
         // 1) create a cellvar in the class body (__class__), the class itself is stored here
         classScope.addCellVar(__CLASS__, true);
@@ -336,7 +341,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         SSTNode[] bodyNodes = ((BlockSSTNode)node.body).statements;
         
         StatementNode[] bodyStatements = new StatementNode[bodyNodes.length + 1];
-        bodyStatements[0] = new ClassDefinitionPrologueNode(qualifiedName.toString());
+        bodyStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
         for (int i = 0; i < bodyNodes.length; i++) {
             bodyStatements[i+1] = (StatementNode)bodyNodes[i].accept(this);
         }

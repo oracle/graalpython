@@ -64,7 +64,7 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 
 public class ParserTestBase {
-    private PythonContext context;
+    protected PythonContext context;
     protected final static String GOLDEN_FILE_EXT = ".tast";
     protected final static String NEW_GOLDEN_FILE_EXT = ".new.tast";
     private final static String SCOPE_FILE_EXT = ".scope";
@@ -83,14 +83,14 @@ public class ParserTestBase {
     protected RootNode parseOld(String src, String moduleName, PythonParser.ParserMode mode) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
         PythonParser parser = context.getCore().getParser();
-        RootNode result = (RootNode) parser.parse(mode, context.getCore(), source, null);
+        RootNode result = (RootNode)((PythonParserImpl)parser).parseO(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
     }
     
     protected RootNode parseOld(Source source, PythonParser.ParserMode mode) {
         PythonParser parser = context.getCore().getParser();
-        RootNode result = (RootNode) parser.parse(mode, context.getCore(), source, null);
+        RootNode result = (RootNode) ((PythonParserImpl)parser).parseO(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
     }

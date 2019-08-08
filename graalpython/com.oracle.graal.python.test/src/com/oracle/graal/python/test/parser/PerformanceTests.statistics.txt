@@ -1,0 +1,65 @@
+Old parser (28 was parsed with and error)
+When                            folders01   folders02
+2019-08-07 at 14:13:01 CEST:     11 183      9 505
+2019-08-07 at 14:19:24 CEST      11 767      9 708
+2019-08-07 at 14:20:20 CEST:     11 544      9 453
+2019-08-07 at 14:21:31 CEST:     11 114      9 416
+2019-08-07 at 14:22:49 CEST:     11 687      9 548
+2019-08-07 at 14:31:09 CEST: folders01 - 1673 (29 was parsed with and error ) in 7820ms.
+2019-08-07 at 14:31:18 CEST: folders02 - 1673 (29 was parsed with and error ) in 5463ms.
+2019-08-07 at 14:32:23 CEST: folders01 - 1673 (29 was parsed with and error ) in 7840ms.
+2019-08-07 at 14:32:32 CEST: folders02 - 1673 (29 was parsed with and error ) in 5503ms.
+2019-08-07 at 14:32:57 CEST: folders01 - 1673 (29 was parsed with and error ) in 7986ms.
+2019-08-07 at 14:33:07 CEST: folders02 - 1673 (29 was parsed with and error ) in 5925ms.
+2019-08-07 at 14:33:35 CEST: folders01 - 1673 (29 was parsed with and error ) in 7591ms.
+2019-08-07 at 14:33:44 CEST: folders02 - 1673 (29 was parsed with and error ) in 5677ms.
+2019-08-07 at 14:34:09 CEST: folders01 - 1673 (29 was parsed with and error ) in 8175ms.
+2019-08-07 at 14:34:18 CEST: folders02 - 1673 (29 was parsed with and error ) in 5592ms.
+2019-08-07 at 14:35:21 CEST: folders01 - 1673 (29 was parsed with and error ) in 8185ms.
+2019-08-07 at 14:35:29 CEST: folders02 - 1673 (29 was parsed with and error ) in 5416ms.
+2019-08-07 at 14:36:02 CEST: folders01 - 1673 (29 was parsed with and error ) in 7924ms.
+2019-08-07 at 14:36:11 CEST: folders02 - 1673 (29 was parsed with and error ) in 5533ms.
+2019-08-07 at 14:45:24 CEST: folders01 - 1673 (29 was parsed with and error ) in 7021ms.
+2019-08-07 at 14:45:33 CEST: folders02 - 1673 (29 was parsed with and error ) in 5127ms.
+2019-08-07 at 14:46:58 CEST: folders01 - 1673 (29 was parsed with and error ) in 7831ms.
+2019-08-07 at 14:47:07 CEST: folders02 - 1673 (29 was parsed with and error ) in 5649ms.
+2019-08-07 at 14:47:43 CEST: folders01 - 1673 (29 was parsed with and error ) in 7801ms.
+2019-08-07 at 14:47:52 CEST: folders02 - 1673 (29 was parsed with and error ) in 5181ms.
+2019-08-07 at 14:48:23 CEST: folders01 - 1673 (29 was parsed with and error ) in 7348ms.
+2019-08-07 at 14:48:31 CEST: folders02 - 1673 (29 was parsed with and error ) in 4834ms.
+2019-08-07 at 14:48:58 CEST: folders01 - 1673 (29 was parsed with and error ) in 7236ms.
+2019-08-07 at 14:49:06 CEST: folders02 - 1673 (29 was parsed with and error ) in 4994ms.
+2019-08-07 at 14:49:33 CEST: folders01 - 1673 (29 was parsed with and error ) in 7090ms.
+2019-08-07 at 14:49:42 CEST: folders02 - 1673 (29 was parsed with and error ) in 5111ms.
+2019-08-07 at 14:50:09 CEST: folders01 - 1673 (29 was parsed with and error ) in 7274ms.
+2019-08-07 at 14:50:18 CEST: folders02 - 1673 (29 was parsed with and error ) in 5155ms.
+2019-08-07 at 15:01:17 CEST: folders01 - 1673 (29 was parsed with and error ) in 8015ms.
+2019-08-07 at 15:01:26 CEST: folders02 - 1673 (29 was parsed with and error ) in 5663ms.
+2019-08-07 at 17:12:20 CEST: folders01 - 1673 (29 was parsed with and error ) in 6981ms.
+2019-08-07 at 17:12:29 CEST: folders02 - 1673 (29 was parsed with and error ) in 5105ms.
+2019-08-07 at 17:12:56 CEST: folders01 - 1673 (29 was parsed with and error ) in 7607ms.
+2019-08-07 at 17:13:05 CEST: folders02 - 1673 (29 was parsed with and error ) in 5436ms.
+2019-08-07 at 17:13:26 CEST: folders01 - 1673 (29 was parsed with and error ) in 8096ms.
+2019-08-07 at 17:13:35 CEST: folders02 - 1673 (29 was parsed with and error ) in 5746ms.
+2019-08-07 at 17:21:15 CEST: folders01 - 1673 (29 was parsed with and error ) in 7245ms.
+2019-08-07 at 17:21:23 CEST: folders02 - 1673 (29 was parsed with and error ) in 5369ms.
+2019-08-07 at 17:21:44 CEST: folders01 - 1673 (29 was parsed with and error ) in 7426ms.
+2019-08-07 at 17:21:52 CEST: folders02 - 1673 (29 was parsed with and error ) in 5445ms.
+2019-08-08 at 14:09:39 CEST: folders01 - 1673 (29 was parsed with and error ) in 8796ms.
+2019-08-08 at 14:09:48 CEST: folders02 - 1673 (29 was parsed with and error ) in 6085ms.
+2019-08-08 at 14:10:37 CEST: folders01 - 1673 (29 was parsed with and error ) in 7641ms.
+2019-08-08 at 14:10:46 CEST: folders02 - 1673 (29 was parsed with and error ) in 5487ms.
+2019-08-08 at 14:11:28 CEST: folders01 - 1673 (29 was parsed with and error ) in 7594ms.
+2019-08-08 at 14:13:22 CEST: folders02 - 1673 (29 was parsed with and error ) in 110402ms.
+2019-08-08 at 14:22:06 CEST: folders01 - 1673 (29 was parsed with and error ) in 8198ms.
+2019-08-08 at 14:22:17 CEST: folders02 - 1673 (29 was parsed with and error ) in 7579ms.
+2019-08-08 at 14:28:31 CEST: folders01 - 1673 (29 was parsed with and error ) in 8564ms.
+2019-08-08 at 14:28:40 CEST: folders02 - 1673 (29 was parsed with and error ) in 6355ms.
+2019-08-08 at 14:29:15 CEST: folders01 - 1673 (29 was parsed with and error ) in 8689ms.
+2019-08-08 at 14:29:26 CEST: folders02 - 1673 (29 was parsed with and error ) in 6777ms.
+2019-08-08 at 14:47:37 CEST: folders01 - 1673 (29 was parsed with and error ) in 7837ms.
+2019-08-08 at 14:47:46 CEST: folders02 - 1673 (29 was parsed with and error ) in 5514ms.
+2019-08-08 at 14:49:26 CEST: folders01 - 1673 (29 was parsed with and error ) in 7222ms.
+2019-08-08 at 14:49:34 CEST: folders02 - 1673 (29 was parsed with and error ) in 5363ms.
+2019-08-08 at 14:49:49 CEST: folders01 - 1673 (29 was parsed with and error ) in 7364ms.
+2019-08-08 at 14:49:58 CEST: folders02 - 1673 (29 was parsed with and error ) in 5294ms.

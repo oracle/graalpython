@@ -230,9 +230,9 @@ public final class PythonParserImpl implements PythonParser {
         return lastGlobalScope;
     }
     
-    private boolean useNewParser = false;
+    private boolean useNewParser = true;
     private boolean logFiles = false;
-    private boolean timeMeasure = true;
+    private boolean timeMeasure = false;
     private long timeInParser = 0;
     private long numberOfFiles = 0;
     private long lastMeasurement = System.currentTimeMillis();

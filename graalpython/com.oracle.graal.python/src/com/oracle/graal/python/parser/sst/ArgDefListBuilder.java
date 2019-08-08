@@ -78,7 +78,7 @@ public final class ArgDefListBuilder {
     
     private final ScopeEnvironment scopeEnvironment;
     
-    private ExpressionNode[] EMPTY = new ExpressionNode[0];
+    private static ExpressionNode[] EMPTY = new ExpressionNode[0];
     private List<Parameter> args;
     private List<ParameterWithDefValue> argsWithDefValue;
     private List<Parameter> kwargs;

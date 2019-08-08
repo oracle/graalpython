@@ -51,8 +51,8 @@ import java.util.List;
 
 public final class ArgListBuilder {
 
-    private final SSTNode[] EMPTY_SSTN = new SSTNode[0];
-    private final ExpressionNode[] EMPTY = new ExpressionNode[0];
+    private static final SSTNode[] EMPTY_SSTN = new SSTNode[0];
+    private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
 
     private List<SSTNode> args;
     private List<SSTNode> nameArgNodes;

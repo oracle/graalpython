@@ -42,7 +42,7 @@
 package com.oracle.graal.python.parser.sst;
 
 public class SimpleSSTNode extends SSTNode {
-    public enum Type {BREAK, CONTINUE,  PASS, NONE, ELLIPSIS, EMPTY };
+    public static enum Type {BREAK, CONTINUE,  PASS, NONE, ELLIPSIS, EMPTY };
     
     protected final Type type;
 
