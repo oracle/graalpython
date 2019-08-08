@@ -30,15 +30,16 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.oracle.graal.python.parser.antlr.Builder;
-import com.oracle.graal.python.parser.antlr.BuilderNew;
 import com.oracle.graal.python.parser.antlr.Python3NewLexer;
 import com.oracle.graal.python.parser.antlr.Python3NewParser;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
@@ -46,19 +47,25 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PythonParserImpl implements PythonParser {
-
+    
+    private final boolean useExperimentalParser;
+    private final boolean logFiles;
+    private final int timeStatistics;
+    private long timeInParser = 0;
+    private long numberOfFiles = 0;
+    
+    public PythonParserImpl(Env env) {
+        this.useExperimentalParser = env.getOptions().get(PythonOptions.UseExperimentalParser);
+        this.logFiles = env.getOptions().get(PythonOptions.ParserLogFiles);
+        this.timeStatistics = env.getOptions().get(PythonOptions.ParserStatistics);
+    }
+    
     private static Python3Parser getPython3Parser(String string) {
         Python3Parser parser = Builder.createParser(CharStreams.fromString(string));
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
     }
     
-    private static Python3NewParser getPython3NewParser(String string) {
-        Python3NewParser parser = BuilderNew.createParser(CharStreams.fromString(string));
-        parser.setErrorHandler(new PythonErrorStrategy());
-        return parser;
-    }
-
     private static Python3NewParser getPython3NewParser(Source source, ParserErrorCallback errors) {
         Python3NewLexer lexer = new Python3NewLexer(CharStreams.fromString(source.getCharacters().toString()));
         lexer.removeErrorListeners();
@@ -70,7 +77,7 @@ public final class PythonParserImpl implements PythonParser {
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
     }
-    
+
     private ParserRuleContext lastTree;
     
     public ParserRuleContext getLastAntlrTree() {
@@ -83,13 +90,7 @@ public final class PythonParserImpl implements PythonParser {
         return lastGlobalScope;
     }
     
-    private boolean useNewParser = true;
-    private boolean logFiles = false;
-    private boolean timeMeasure = false;
-    private long timeInParser = 0;
-    private long numberOfFiles = 0;
-    private long lastMeasurement = System.currentTimeMillis();
-    
+    @Override
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         if (logFiles) {
             if (source.getPath() == null) {
@@ -103,28 +104,43 @@ public final class PythonParserImpl implements PythonParser {
                 }
         }
         
-        long start = System.currentTimeMillis();
         Node result;
-        if (useNewParser /*&& PythonLanguage.getCore().isInitialized()*/) {
-            if(logFiles) {
-                System.out.println(" with new parser.");
+        if (timeStatistics <= 0) {
+            if (useExperimentalParser) {
+                if(logFiles) {
+                    System.out.println(" with experimental parser.");
+                }
+                result = parseN(mode, errors, source, currentFrame);
+            } else {
+                if (logFiles) {
+                    System.out.println(" with old parser.");
+                }
+                result = parseO(mode, errors, source, currentFrame);
             }
-            result = parseN(mode, errors, source, currentFrame);
         } else {
-            if (logFiles) {
-                System.out.println(" with old parser.");
+            long start = System.currentTimeMillis();
+            if (useExperimentalParser) {
+                if(logFiles) {
+                    System.out.print(" with experimental parser");
+                }
+                result = parseN(mode, errors, source, currentFrame);
+            } else {
+                if (logFiles) {
+                    System.out.print(" with old parser");
+                }
+                result = parseO(mode, errors, source, currentFrame);
             }
-            result = parseO(mode, errors, source, currentFrame);
-        }
-        long end = System.currentTimeMillis();
-        if (timeMeasure) {
-            timeInParser = timeInParser + (end - start);
-            numberOfFiles++;
-            if ((end - lastMeasurement) > 2000 || numberOfFiles % 50 == 0) {
-                System.out.println("Parsed " + numberOfFiles + " in " + timeInParser + "ms.");
-                
+            long end = System.currentTimeMillis();
+            if (timeStatistics > 0) {
+                timeInParser = timeInParser + (end - start);
+                if (logFiles) {
+                    System.out.println(" took " + timeInParser + "ms.");
+                }
+                numberOfFiles++;
+                if (numberOfFiles % timeStatistics == 0) {
+                    System.out.println("Parsed " + numberOfFiles + " in " + timeInParser + "ms.");
+                }
             }
-            lastMeasurement = end;
         }
         return result;
     }
