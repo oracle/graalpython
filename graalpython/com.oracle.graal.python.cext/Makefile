@@ -36,83 +36,17 @@
 # SOFTWARE.
 
 QUIETLY$(MX_VERBOSE) = @
+.PHONY: default clean
 
-ifndef PLATFORM
-  $(error PLATFORM is undefined)
-endif
-
-ifndef ARCH
-  $(error ARCH is undefined)
-endif
-
-# to comply with CPython's designation
-ifeq ($(ARCH), amd64)
-ARCH=x86_64
-endif
-
-SO_ABI=.graalpython-${PLATFORM}-${ARCH}-${OS}
-
-ifeq ($(OS), darwin)
-SO_EXT=${SO_ABI}.dylib
-else
-SO_EXT=${SO_ABI}.so
-endif
-
-LIBDIR=../lib-graalpython
-TARGET_LIB=${LIBDIR}/${PLATFORM}/libpython${SO_EXT}
-
-SOURCE_FILES=$(wildcard src/*.c)
-OBJ_FILES=${SOURCE_FILES:%.c=%.o}
-OBJ_FILES=${SOURCE_FILES:src/%.c=${PLATFORM}/%.o}
 INCLUDE_FILES=$(wildcard include/*.h)
 LEGACY_INCLUDES=$(wildcard $(TRUFFLE_H_INC)/*.h)
-
-MODULE_SOURCES=$(wildcard modules/*.c)
-MODULE_OBJ_FILES=$(MODULE_SOURCES:modules/%.c=modules/${PLATFORM}/%.o})
-MODULE_TARGETS=$(MODULE_SOURCES:modules/%.c=${LIBDIR}/modules/${PLATFORM}/%${SO_EXT})
 
 # These are just needed to allow compilation from source, because include needs
 # to be next to lib-graalpython
 HEADER_TARGETS=$(INCLUDE_FILES:include/%.h=../include/%.h) 
 LEGACY_TARGETS=$(LEGACY_INCLUDES:$(TRUFFLE_H_INC)/%.h=../include/%.h)
 
-.PHONY: default clean
-default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS} ${LEGACY_TARGETS} compile_flags.txt
-
-
-CFLAGS=${LLVM_TARGET_FLAGS} -fPIC
-WARNINGS=-Wno-int-to-pointer-cast -Wno-int-conversion -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
-INCLUDES=-I${POLYGLOT_INC} -I${TRUFFLE_H_INC} -Iinclude
-
-CLANG?=clang
-
-rebuild:
-	$(MAKE) clean
-	$(MAKE) default
-
-${TARGET_LIB}: ${OBJ_FILES}
-	$(QUIETLY) mkdir -p $(dir $@)
-ifeq ($(OS), darwin)
-	$(QUIETLY) ${CLANG} -fPIC -shared -lpolyglot-mock -Wl,-install_name,@rpath/libpython${SO_EXT} -o $@ $+
-else
-	$(QUIETLY) ${CLANG} -fPIC -shared -o $@ $+
-endif
-
-${PLATFORM}/%.o: src/%.c Makefile src/capi.h ${INCLUDE_FILES} ${LEGACY_INCLUDES}
-	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) ${CLANG} ${CFLAGS} ${WARNINGS} ${INCLUDES} -c -o $@ -c $<
-
-modules/${PLATFORM}/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES} ${LEGACY_INCLUDES}
-	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) ${CLANG} ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-
-${LIBDIR}/modules/${PLATFORM}/%${SO_EXT}: modules/${PLATFORM}/%.o ${TARGET_LIB}
-	$(QUIETLY) mkdir -p $(dir $@)
-ifeq ($(OS), darwin)
-	$(QUIETLY) ${CLANG} -fPIC -shared -lbz2 -lpolyglot-mock -lpython${SO_ABI} -L$(dir ${TARGET_LIB}) -Wl,-rpath,@loader_path/../../${PLATFORM} ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $<
-else
-	$(QUIETLY) ${CLANG} -fPIC -shared ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $<
-endif
+default: ${HEADER_TARGETS} ${LEGACY_TARGETS}
 
 $(HEADER_TARGETS): ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p ../include/
@@ -123,18 +57,5 @@ $(LEGACY_TARGETS): ${LEGACY_INCLUDES}
 	$(QUIETLY) cp $(@:../include/%.h=$(TRUFFLE_H_INC)/%.h) $@
 
 clean:
-	$(QUIETLY) rm -f ${TARGET_LIB}
-	$(QUIETLY) rm -f ${OBJ_FILES}
-	$(QUIETLY) rm -f ${MODULE_TARGETS}
-	$(QUIETLY) rm -f ${MODULE_OBJ_FILES}
 	$(QUIETLY) rm -f ${HEADER_TARGETS}
-	$(QUIETLY) rm -f compile_flags.txt
-ifeq ($(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.so),)
-	rm -f $(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.so)
-endif
-
-# compile_flags.txt is useful with clangd as language server
-compile_flags.txt: Makefile
-	$(QUIETLY) $(file > $@,-O1)
-	$(QUIETLY) $(foreach var,$(WARNINGS),$(file >> $@,$(var)))
-	$(QUIETLY) $(foreach var,$(INCLUDES),$(file >> $@,$(var)))
+	$(QUIETLY) rm -f $(LEGACY_TARGETS)
