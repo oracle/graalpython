@@ -54,7 +54,7 @@ final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode
     public boolean executeRepeating(VirtualFrame frame) {
         if (conditionProfile.profile(condition.executeBoolean(frame))) {
             body.executeVoid(frame);
-            contextRef.get().triggerAsyncActions();
+            contextRef.get().triggerAsyncActions(frame, this);
             return true;
         }
         return false;

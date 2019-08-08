@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -75,6 +76,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
@@ -115,18 +117,18 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
-        public boolean eq(PBytes self, PByteArray other) {
-            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
+        boolean eq(VirtualFrame frame, PBytes self, PByteArray other) {
+            return getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Specialization
-        public boolean eq(PBytes self, PBytes other) {
-            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
+        boolean eq(VirtualFrame frame, PBytes self, PBytes other) {
+            return getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object eq(Object self, Object other) {
+        Object eq(Object self, Object other) {
             if (self instanceof PBytes) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -148,18 +150,18 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
-        public boolean ne(PBytes self, PByteArray other) {
-            return !getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
+        boolean ne(VirtualFrame frame, PBytes self, PByteArray other) {
+            return !getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Specialization
-        public boolean ne(PBytes self, PBytes other) {
-            return !getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
+        boolean ne(VirtualFrame frame, PBytes self, PBytes other) {
+            return !getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object eq(Object self, Object other) {
+        Object eq(Object self, Object other) {
             if (self instanceof PBytes) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -260,12 +262,12 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object add(PBytes self, PMemoryView other,
+        public Object add(VirtualFrame frame, PBytes self, PMemoryView other,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
 
-            Object bytesObj = toBytesNode.executeObject(other);
+            Object bytesObj = toBytesNode.executeObject(frame, other);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
                 return factory().createByteArray(res);
@@ -287,6 +289,14 @@ public class BytesBuiltins extends PythonBuiltins {
         public Object mul(PBytes self, int times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
             SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), times);
+            return factory().createBytes(res);
+        }
+
+        @Specialization
+        public Object mul(PBytes self, Object times,
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached("create()") CastToIndexNode castToInt) {
+            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), castToInt.execute(times));
             return factory().createBytes(res);
         }
 
@@ -325,10 +335,10 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PBytes join(PBytes bytes, Object iterable,
+        PBytes join(VirtualFrame frame, PBytes bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createBytes(bytesJoinNode.execute(toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
+            return factory().createBytes(bytesJoinNode.execute(frame, toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
@@ -518,24 +528,28 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "replace", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class ReplaceNode extends PythonTernaryBuiltinNode {
-        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+        @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
 
         @Specialization
-        @TruffleBoundary
-        PBytes replace(PBytes self, PBytes substr, PBytes replacement) {
-            byte[] bytes = toBytes.execute(self);
-            byte[] subBytes = toBytes.execute(substr);
-            byte[] replacementBytes = toBytes.execute(replacement);
+        PBytes replace(VirtualFrame frame, PBytes self, PBytes substr, PBytes replacement) {
+            byte[] bytes = toBytes.execute(frame, self);
+            byte[] subBytes = toBytes.execute(frame, substr);
+            byte[] replacementBytes = toBytes.execute(frame, replacement);
             try {
-                String string = new String(bytes, "ASCII");
-                String subString = new String(subBytes, "ASCII");
-                String replacementString = new String(replacementBytes, "ASCII");
-                byte[] newBytes = string.replace(subString, replacementString).getBytes("ASCII");
+                byte[] newBytes = doReplace(bytes, subBytes, replacementBytes);
                 return factory().createBytes(newBytes);
             } catch (UnsupportedEncodingException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException();
             }
+        }
+
+        @TruffleBoundary
+        private static byte[] doReplace(byte[] bytes, byte[] subBytes, byte[] replacementBytes) throws UnsupportedEncodingException {
+            String string = new String(bytes, "ASCII");
+            String subString = new String(subBytes, "ASCII");
+            String replacementString = new String(replacementBytes, "ASCII");
+            return string.replace(subString, replacementString).getBytes("ASCII");
         }
     }
 }

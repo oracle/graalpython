@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.DEFAULT_BLOCKING;
-import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.DEFAULT_TIMEOUT;
+import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.UNSET_TIMEOUT;
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
@@ -71,6 +71,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PLock, PythonBuiltinClassType.PRLock})
@@ -105,21 +106,23 @@ public class LockBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doAcquire(AbstractPythonLock self, Object blocking, Object timeout) {
+        boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout) {
             // args setup
-            boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeWith(blocking);
-            double timeoutSeconds = DEFAULT_TIMEOUT;
+            boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeBoolean(frame, blocking);
+            double timeoutSeconds = UNSET_TIMEOUT;
             if (!(timeout instanceof PNone)) {
-                if (!isBlocking) {
-                    throw raise(ValueError, "can't specify a timeout for a non-blocking call");
-                }
+                timeoutSeconds = getCastToDoubleNode().execute(frame, timeout);
 
-                timeoutSeconds = getCastToDoubleNode().execute(timeout);
+                if (timeoutSeconds != UNSET_TIMEOUT) {
+                    if (!isBlocking) {
+                        throw raise(ValueError, "can't specify a timeout for a non-blocking call");
+                    }
 
-                if (timeoutSeconds < 0) {
-                    throw raise(ValueError, "timeout value must be positive");
-                } else if (timeoutSeconds > TIMEOUT_MAX) {
-                    throw raise(OverflowError, "timeout value is too large");
+                    if (timeoutSeconds < 0) {
+                        throw raise(ValueError, "timeout value must be positive");
+                    } else if (timeoutSeconds > TIMEOUT_MAX) {
+                        throw raise(OverflowError, "timeout value is too large");
+                    }
                 }
             }
 
@@ -127,7 +130,7 @@ public class LockBuiltins extends PythonBuiltins {
             if (isBlockingProfile.profile(!isBlocking)) {
                 return self.acquireNonBlocking();
             } else {
-                if (defaultTimeoutProfile.profile(timeoutSeconds == DEFAULT_TIMEOUT)) {
+                if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
                     return self.acquireBlocking();
                 } else {
                     return self.acquireTimeout(timeoutSeconds);
@@ -144,9 +147,9 @@ public class LockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object acquire(PLock self, Object blocking, Object timeout,
+        Object acquire(VirtualFrame frame, PLock self, Object blocking, Object timeout,
                         @Cached("create()") AcquireLockNode acquireLockNode) {
-            return acquireLockNode.execute(self, blocking, timeout);
+            return acquireLockNode.execute(frame, self, blocking, timeout);
         }
     }
 
@@ -154,9 +157,9 @@ public class LockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object acquire(AbstractPythonLock self, Object blocking, Object timeout,
+        Object acquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
                         @Cached("create()") AcquireLockNode acquireLockNode) {
-            return acquireLockNode.execute(self, blocking, timeout);
+            return acquireLockNode.execute(frame, self, blocking, timeout);
         }
     }
 

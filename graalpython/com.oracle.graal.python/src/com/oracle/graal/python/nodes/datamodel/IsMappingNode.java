@@ -40,32 +40,19 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
-
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class IsMappingNode extends PDataModelEmulationNode {
 
     @Specialization
     public boolean isMapping(Object object,
-                    @Cached HasInheritedAttributeNode.Dynamic hasKeysNode,
-                    @Cached HasInheritedAttributeNode.Dynamic hasItemsNode,
-                    @Cached HasInheritedAttributeNode.Dynamic hasValuesNode,
-                    @Cached IsSequenceNode isSequence,
-                    @Cached("createBinaryProfile()") ConditionProfile profile) {
-        if (isSequence.execute(object)) {
-            return profile.profile((hasKeysNode.execute(object, KEYS)) &&
-                            (hasItemsNode.execute(object, ITEMS)) &&
-                            (hasValuesNode.execute(object, VALUES)));
-        }
-        return false;
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsMappingTypeNode isMappingTypeNode) {
+        return isMappingTypeNode.execute(getClassNode.execute(object));
     }
 
     public static IsMappingNode create() {

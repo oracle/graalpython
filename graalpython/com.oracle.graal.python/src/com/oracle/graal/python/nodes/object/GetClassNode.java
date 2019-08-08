@@ -46,11 +46,11 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -66,6 +66,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -220,10 +222,12 @@ public abstract class GetClassNode extends PNodeWithContext {
             return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PString);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         protected PythonAbstractClass getIt(PythonAbstractNativeObject object,
-                        @Cached("create()") GetNativeClassNode getNativeClassNode) {
-            return getNativeClassNode.execute(object);
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            // n.b.: native objects never store lazy enum class values, they
+            // always store resolved classes
+            return (PythonAbstractClass) lib.getLazyPythonClass(object);
         }
 
         @Specialization(assumptions = "singleContextAssumption()")
@@ -259,43 +263,57 @@ public abstract class GetClassNode extends PNodeWithContext {
         @SuppressWarnings("unused")
         @Specialization(guards = "isForeignObject(object)")
         protected PythonBuiltinClass getIt(TruffleObject object) {
-            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.TruffleObject);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.ForeignObject);
         }
     }
 
     private static final class UncachedNode extends GetClassNode {
         private static final UncachedNode INSTANCE = new UncachedNode();
 
+        private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
+
         @Override
         public PythonBuiltinClass execute(boolean object) {
-            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.Boolean);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.Boolean);
         }
 
         @Override
         public PythonBuiltinClass execute(int object) {
-            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.PInt);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PInt);
         }
 
         @Override
         public PythonBuiltinClass execute(long object) {
-            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.PInt);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PInt);
         }
 
         @Override
         public PythonBuiltinClass execute(double object) {
-            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.PFloat);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PFloat);
         }
 
         @Override
         protected PythonAbstractClass executeGetClass(Object object) {
-            return GetClassNode.getItSlowPath(object);
+            return GetClassNode.getItSlowPath(contextRef, object);
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
     }
 
-    private static PythonAbstractClass getItSlowPath(Object o) {
-        PythonCore core = PythonLanguage.getContextRef().get().getCore();
+    private static PythonAbstractClass getItSlowPath(ContextReference<PythonContext> contextRef, Object o) {
+        PythonCore core = contextRef.get().getCore();
         if (PGuards.isForeignObject(o)) {
-            return core.lookupType(PythonBuiltinClassType.TruffleObject);
+            return core.lookupType(PythonBuiltinClassType.ForeignObject);
+        } else if (o instanceof PCell) {
+            return core.lookupType(PythonBuiltinClassType.PCell);
         } else if (o instanceof String) {
             return core.lookupType(PythonBuiltinClassType.PString);
         } else if (o instanceof Boolean) {
@@ -307,7 +325,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getPythonClass();
         } else if (o instanceof PythonAbstractNativeObject) {
-            return GetNativeClassNode.getUncached().execute((PythonAbstractNativeObject) o);
+            return (PythonAbstractClass) PythonObjectLibrary.getUncached().getLazyPythonClass((PythonAbstractNativeObject) o);
         } else if (o instanceof PEllipsis) {
             return core.lookupType(PythonBuiltinClassType.PEllipsis);
         } else if (o instanceof PNotImplemented) {

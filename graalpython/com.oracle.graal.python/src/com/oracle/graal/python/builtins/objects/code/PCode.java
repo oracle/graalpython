@@ -169,7 +169,10 @@ public final class PCode extends PythonBuiltinObject {
         RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
         SourceSection src = funcRootNode.getSourceSection();
         if (src != null) {
-            return src.getSource().getName();
+            if (src.getSource().getPath() == null) {
+                return src.getSource().getName();
+            }
+            return src.getSource().getPath();
         } else if (funcRootNode instanceof ModuleRootNode) {
             return funcRootNode.getName();
         } else {

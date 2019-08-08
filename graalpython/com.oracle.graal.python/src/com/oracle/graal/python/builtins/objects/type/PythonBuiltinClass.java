@@ -39,7 +39,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
     public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(PythonBuiltinClassType.PythonClass, builtinClass.getName(), builtinClass.getInstanceShape(), base);
+        super(PythonBuiltinClassType.PythonClass, builtinClass.getName(), base);
         this.type = builtinClass;
     }
 

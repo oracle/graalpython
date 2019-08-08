@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -69,14 +68,13 @@ public final class DictConcatNode extends ExpressionNode {
                 first = expectDict(n.execute(frame));
             } else {
                 other = expectDict(n.execute(frame));
-                addAllToDict(first, other);
+                addAllToDict(frame, first, other);
             }
         }
         return first;
     }
 
-    @TruffleBoundary
-    private void addAllToDict(PDict dict, PDict other) {
+    private void addAllToDict(VirtualFrame frame, PDict dict, PDict other) {
         if (setItemNode == null || getItemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             setItemNode = insert(HashingStorageNodes.SetItemNode.create());
@@ -84,7 +82,7 @@ public final class DictConcatNode extends ExpressionNode {
         }
         HashingStorage dictStorage = dict.getDictStorage();
         for (Object key : other.keys()) {
-            setItemNode.execute(dictStorage, key, getItemNode.execute(other.getDictStorage(), key));
+            setItemNode.execute(frame, dictStorage, key, getItemNode.execute(frame, other.getDictStorage(), key));
         }
     }
 

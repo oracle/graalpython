@@ -53,7 +53,7 @@ public class PFunction extends PythonObject {
     private final Assumption codeStableAssumption;
     private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
-    private final PCell[] closure;
+    @CompilationFinal(dimensions = 1) private final PCell[] closure;
     private final boolean isStatic;
     @CompilationFinal private PCode code;
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;

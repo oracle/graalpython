@@ -80,13 +80,12 @@ PyInit__mmap(void)
     PyObject *dict, *module;
 
     module = PyModule_Create(&mmapmodule);
-    if (module == NULL) {
+    if (module == NULL)
         return NULL;
-    }
     dict = PyModule_GetDict(module);
-    if (!dict) {
+    if (!dict)
         return NULL;
-    }
+    PyDict_SetItemString(dict, "error", PyExc_OSError);
 
     return module;
 }

@@ -40,28 +40,19 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class IsSequenceNode extends PDataModelEmulationNode {
 
     @Specialization
     public boolean isSequence(Object object,
-                    @Cached HasInheritedAttributeNode.Dynamic hasGetItemNode,
-                    @Cached HasInheritedAttributeNode.Dynamic hasLenNode,
-                    @Cached("createBinaryProfile()") ConditionProfile lenProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
-        if (lenProfile.profile(hasLenNode.execute(object, __LEN__))) {
-            return getItemProfile.profile(hasGetItemNode.execute(object, __GETITEM__));
-        }
-        return false;
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsSequenceTypeNode isSequenceTypeNode) {
+        return isSequenceTypeNode.execute(getClassNode.execute(object));
     }
 
     public static IsSequenceNode create() {

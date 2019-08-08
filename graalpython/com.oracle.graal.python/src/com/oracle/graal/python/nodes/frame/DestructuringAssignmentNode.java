@@ -25,56 +25,43 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
-public final class DestructuringAssignmentNode extends StatementNode implements WriteNode {
-    @Child private PythonObjectFactory factory;
+public abstract class DestructuringAssignmentNode extends StatementNode implements WriteNode {
+    /* Lazily initialized helpers, also acting as branch profiles */
     @Child private PRaiseNode raiseNode;
+    @Child private PythonObjectFactory factory;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
+    /* Syntactic children */
     @Child private ExpressionNode rhs;
     @Children private final WriteNode[] slots;
     @Children private final StatementNode[] assignments;
 
-    @Child private GetItemNode getItem = GetItemNodeGen.create();
-    @Child private GetItemNode getNonExistingItem = GetItemNodeGen.create();
-    @Child private BuiltinFunctions.LenNode lenNode;
-    @Child private LookupInheritedAttributeNode lookupGetItemNode = LookupInheritedAttributeNode.create(__GETITEM__);
-    @Child private TupleNodes.ConstructTupleNode constructTupleNode = TupleNodes.ConstructTupleNode.create();
-
-    private final IsBuiltinClassProfile notEnoughValuesProfile = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile tooManyValuesErrorProfile = IsBuiltinClassProfile.create();
-    private final BranchProfile tooManyValuesProfile = BranchProfile.create();
-
-    private final IsBuiltinClassProfile errorProfile1 = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile errorProfile2 = IsBuiltinClassProfile.create();
-    private final int starredIndex;
+    protected final int starredIndex;
 
     public DestructuringAssignmentNode(ExpressionNode rhs, ReadNode[] slots, int starredIndex, StatementNode[] assignments) {
         this.rhs = rhs;
@@ -84,137 +71,114 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         for (int i = 0; i < slots.length; i++) {
             this.slots[i] = (WriteNode) slots[i].makeWriteNode(null);
         }
-        this.lenNode = starredIndex == -1 ? null : BuiltinFunctionsFactory.LenNodeFactory.create();
     }
 
     public static DestructuringAssignmentNode create(ExpressionNode rhs, ReadNode[] slots, int starredIndex, StatementNode[] assignments) {
-        return new DestructuringAssignmentNode(rhs, slots, starredIndex, assignments);
+        return DestructuringAssignmentNodeGen.create(rhs, slots, starredIndex, assignments);
     }
 
-    @ExplodeLoop
-    private void fillSlots(VirtualFrame frame, Object rhsValue, int stop) {
-        for (int i = 0; i < stop; i++) {
-            Object value = getItem.execute(rhsValue, i);
-            slots[i].doWrite(frame, value);
-        }
-    }
-
-    @ExplodeLoop
-    private int fillRest(VirtualFrame frame, Object rhsValue, int pos) {
-        int current = pos;
-        for (int i = starredIndex + 1; i < slots.length; i++) {
-            Object value = getItem.execute(rhsValue, current++);
-            slots[i].doWrite(frame, value);
-        }
-        return current;
-    }
-
-    @ExplodeLoop
-    private int fillFromArray(VirtualFrame frame, Object[] array, int startIndex) {
-        int index = startIndex;
-        for (int i = starredIndex + 1; i < slots.length; i++) {
-            slots[i].doWrite(frame, array[index++]);
-        }
-        return index;
-    }
-
-    private int fillStarred(VirtualFrame frame, Object rhsValue) {
-        int pos = starredIndex;
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
-        }
-        try {
-            // TODO(ls): proper cast to int
-            // TODO(ls): the result of the len call doesn't seem to be used in Python
-            int length = (int) lenNode.executeWith(rhsValue);
-            int starredLength = length - (slots.length - 1);
-            Object[] array = new Object[starredLength];
-            for (int i = 0; i < starredLength; i++) {
-                array[i] = getItem.execute(rhsValue, pos++);
-            }
-            slots[starredIndex].doWrite(frame, factory.createList(array));
-            return fillRest(frame, rhsValue, pos);
-        } catch (PException e) {
-            e.expectAttributeError(errorProfile1);
-            // __len__ is not implemented
-            Object[] array = new Object[2];
-            int length = 0;
-            while (true) {
-                try {
-                    if (length + 1 > array.length) {
-                        array = Arrays.copyOf(array, array.length << 1);
-                    }
-                    array[length] = getItem.execute(rhsValue, pos);
-                    length++;
-                    pos++;
-                } catch (PException e2) {
-                    e2.expect(IndexError, errorProfile2);
-                    // expected, fall through
-                    break;
-                }
-            }
-            int rest = slots.length - starredIndex - 1;
-            fillFromArray(frame, array, length - rest);
-            slots[starredIndex].doWrite(frame, factory.createList(Arrays.copyOf(array, length - rest)));
-        }
-        return pos;
-    }
+    public abstract void executeWith(VirtualFrame frame, Object rhsValue);
 
     @Override
-    public void executeVoid(VirtualFrame frame) {
+    public final void executeVoid(VirtualFrame frame) {
         Object rhsValue = rhs.execute(frame);
-        Object getItemAttribute = lookupGetItemNode.execute(rhsValue);
-        if (getItemAttribute == NO_VALUE) {
-            rhsValue = constructTupleNode.execute(rhsValue);
-        }
-        doWrite(frame, rhsValue);
+        executeWith(frame, rhsValue);
+    }
+
+    public final void doWrite(VirtualFrame frame, Object rhsValue) {
+        executeWith(frame, rhsValue);
     }
 
     public ExpressionNode getRhs() {
         return rhs;
     }
 
-    public void doWrite(VirtualFrame frame, Object rhsValue) {
-        int nonExistingItem;
-        try {
-            if (starredIndex == -1) {
-                fillSlots(frame, rhsValue, slots.length);
-                nonExistingItem = slots.length;
-            } else {
-                fillSlots(frame, rhsValue, starredIndex);
-                nonExistingItem = fillStarred(frame, rhsValue);
-            }
-        } catch (PException e) {
-            if (notEnoughValuesProfile.profileException(e, IndexError)) {
-                if (lenNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
-                    raiseNode = insert(PRaiseNode.create());
-                }
-                throw raiseNode.raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(rhsValue));
-            } else {
-                throw e;
-            }
-        }
-        try {
-            getNonExistingItem.execute(rhsValue, nonExistingItem);
-            tooManyValuesProfile.enter();
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = PythonLanguage.getContextRef();
-            }
-            throw contextRef.get().getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)",
-                            nonExistingItem);
-        } catch (PException e) {
-            if (tooManyValuesErrorProfile.profileException(e, IndexError)) {
-                // expected, fall through
-            } else {
-                throw e;
-            }
-        }
+    protected static boolean isBuiltinList(Object object, IsBuiltinClassProfile profile) {
+        return object instanceof PList && profile.profileObject((PList) object, PythonBuiltinClassType.PList);
+    }
 
+    protected static boolean isBuiltinTuple(Object object, IsBuiltinClassProfile profile) {
+        return object instanceof PTuple && profile.profileObject((PTuple) object, PythonBuiltinClassType.PTuple);
+    }
+
+    @Specialization(guards = {"isBuiltinList(rhsVal, isBuiltinClass)", "starredIndex < 0"})
+    public void writeList(VirtualFrame frame, PList rhsVal,
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+        SequenceStorage sequenceStorage = rhsVal.getSequenceStorage();
+        writeSequenceStorage(frame, sequenceStorage, lenNode, getItemNode);
         performAssignments(frame);
+    }
+
+    @Specialization(guards = {"isBuiltinTuple(rhsVal, isBuiltinClass)", "starredIndex < 0"})
+    public void writeTuple(VirtualFrame frame, PTuple rhsVal,
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+        SequenceStorage sequenceStorage = rhsVal.getSequenceStorage();
+        writeSequenceStorage(frame, sequenceStorage, lenNode, getItemNode);
+        performAssignments(frame);
+    }
+
+    @ExplodeLoop
+    private void writeSequenceStorage(VirtualFrame frame, SequenceStorage sequenceStorage, SequenceStorageNodes.LenNode lenNode, SequenceStorageNodes.GetItemNode getItemNode) {
+        int len = lenNode.execute(sequenceStorage);
+        if (len > slots.length) {
+            throw getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)", slots.length);
+        } else if (len < slots.length) {
+            throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);
+        } else {
+            for (int i = 0; i < slots.length; i++) {
+                Object value = getItemNode.execute(sequenceStorage, i);
+                slots[i].doWrite(frame, value);
+            }
+        }
+    }
+
+    @Specialization(guards = {"isBuiltinList(rhsVal, isBuiltinClass)", "starredIndex >= 0"})
+    public void writeListStarred(VirtualFrame frame, PList rhsVal,
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+        SequenceStorage sequenceStorage = rhsVal.getSequenceStorage();
+        writeSequenceStorageStarred(frame, sequenceStorage, lenNode, getItemNode);
+        performAssignments(frame);
+    }
+
+    @Specialization(guards = {"isBuiltinTuple(rhsVal, isBuiltinClass)", "starredIndex >= 0"})
+    public void writeTupleStarred(VirtualFrame frame, PTuple rhsVal,
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+        SequenceStorage sequenceStorage = rhsVal.getSequenceStorage();
+        writeSequenceStorageStarred(frame, sequenceStorage, lenNode, getItemNode);
+        performAssignments(frame);
+    }
+
+    @ExplodeLoop
+    private void writeSequenceStorageStarred(VirtualFrame frame, SequenceStorage sequenceStorage, SequenceStorageNodes.LenNode lenNode, SequenceStorageNodes.GetItemNode getItemNode) {
+        int len = lenNode.execute(sequenceStorage);
+        if (len < slots.length - 1) {
+            throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);
+        } else {
+            for (int i = 0; i < starredIndex; i++) {
+                Object value = getItemNode.execute(sequenceStorage, i);
+                slots[i].doWrite(frame, value);
+            }
+            final int starredLength = len - (slots.length - 1);
+            Object[] array = new Object[starredLength];
+            CompilerAsserts.partialEvaluationConstant(starredLength);
+            int pos = starredIndex;
+            for (int i = 0; i < starredLength; i++) {
+                array[i] = getItemNode.execute(sequenceStorage, pos++);
+            }
+            slots[starredIndex].doWrite(frame, factory().createList(array));
+            for (int i = starredIndex + 1; i < slots.length; i++) {
+                Object value = getItemNode.execute(sequenceStorage, pos++);
+                slots[i].doWrite(frame, value);
+            }
+        }
     }
 
     @ExplodeLoop
@@ -222,5 +186,55 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         for (int i = 0; i < assignments.length; i++) {
             assignments[i].executeVoid(frame);
         }
+    }
+
+    @Specialization(guards = {"!isBuiltinTuple(iterable, tupleProfile)", "!isBuiltinList(iterable, listProfile)", "starredIndex < 0"})
+    public void writeIterable(VirtualFrame frame, Object iterable,
+                    @Cached TupleNodes.ConstructTupleNode constructTupleNode,
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile tupleProfile,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile listProfile) {
+        PTuple rhsValue = constructTupleNode.execute(frame, iterable);
+        SequenceStorage sequenceStorage = rhsValue.getSequenceStorage();
+        writeSequenceStorage(frame, sequenceStorage, lenNode, getItemNode);
+        performAssignments(frame);
+    }
+
+    @Specialization(guards = {"!isBuiltinTuple(iterable, tupleProfile)", "!isBuiltinList(iterable, listProfile)", "starredIndex >= 0"})
+    public void writeIterableStarred(VirtualFrame frame, Object iterable,
+                    @Cached TupleNodes.ConstructTupleNode constructTupleNode,
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile tupleProfile,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile listProfile) {
+        PTuple rhsValue = constructTupleNode.execute(frame, iterable);
+        SequenceStorage sequenceStorage = rhsValue.getSequenceStorage();
+        writeSequenceStorageStarred(frame, sequenceStorage, lenNode, getItemNode);
+        performAssignments(frame);
+    }
+
+    private PythonCore getCore() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = PythonLanguage.getContextRef();
+        }
+        return contextRef.get().getCore();
+    }
+
+    private PRaiseNode ensureRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
+    }
+
+    private PythonObjectFactory factory() {
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
+        return factory;
     }
 }

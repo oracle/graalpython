@@ -81,7 +81,7 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
             throw raise.raise(StopIteration);
         } catch (YieldException eye) {
             yieldProfile.enter();
-            return returnValue.execute(frame);
+            return eye.getValue();
         } catch (ReturnException ire) {
             // return statement in generators throws StopIteration with the return value
             returnProfile.enter();

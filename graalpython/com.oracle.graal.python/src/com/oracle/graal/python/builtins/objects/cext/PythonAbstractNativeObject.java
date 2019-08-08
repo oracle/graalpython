@@ -40,14 +40,43 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT;
+
 import java.util.Objects;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ImportCAPISymbolNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final TruffleObject object;
@@ -94,9 +123,104 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
         return Objects.equals(object, other.object);
     }
 
+    public boolean equalsProfiled(Object obj, ValueProfile profile) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
+        return Objects.equals(profile.profile(object), profile.profile(other.object));
+    }
+
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return String.format("PythonAbstractNativeObject(%s)", object);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean hasDict() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void setDict(PHashingCollection value) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @GenerateUncached
+    public abstract static class GetDict {
+        @Specialization
+        public static PHashingCollection getNativeDictionary(PythonAbstractNativeObject self,
+                        @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached ToSulongNode toSulong,
+                        @Exclusive @Cached ToJavaNode toJava,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+            try {
+                Object func = importCAPISymbolNode.execute(FUN_PY_OBJECT_GENERIC_GET_DICT);
+                Object javaDict = toJava.execute(interopLibrary.execute(func, toSulong.execute(self)));
+                if (javaDict instanceof PHashingCollection) {
+                    return (PHashingCollection) javaDict;
+                } else if (javaDict == PNone.NO_VALUE) {
+                    return null;
+                } else {
+                    throw raiseNode.raise(PythonBuiltinClassType.TypeError, "__dict__ must have been set to a dictionary, not a '%p'", javaDict);
+                }
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException("could not run our core function to get the dict of a native object", e);
+            }
+        }
+    }
+
+    @ExportMessage
+    @GenerateUncached
+    @SuppressWarnings("unused")
+    public abstract static class GetLazyPythonClass {
+        public static Assumption getSingleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "singleContextAssumption")
+        public static PythonAbstractClass getNativeClassCachedIdentity(PythonAbstractNativeObject object,
+                        @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
+                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
+                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
+            // TODO: (tfel) is this really something we can do? It's so rare for this class to
+            // change that it shouldn't be worth the effort, but in native code, anything can
+            // happen. OTOH, CPython also has caches that can become invalid when someone just
+            // goes and changes the ob_type of an object.
+            return cachedClass;
+        }
+
+        @Specialization(guards = "cachedObject.equals(object)", limit = "1", assumptions = "singleContextAssumption")
+        public static PythonAbstractClass getNativeClassCached(PythonAbstractNativeObject object,
+                        @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
+                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
+                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
+            // TODO same as for 'getNativeClassCachedIdentity'
+            return cachedClass;
+        }
+
+        @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"})
+        public static PythonAbstractClass getNativeClass(PythonAbstractNativeObject object,
+                        @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
+                        @Exclusive @Cached ToJavaNode toJavaNode) {
+            // do not convert wrap 'object.object' since that is really the native pointer
+            // object
+            return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
+        }
+
+        public static PythonAbstractClass getNativeClassUncached(PythonAbstractNativeObject object) {
+            // do not convert wrap 'object.object' since that is really the native pointer
+            // object
+            return getNativeClass(object, PCallCapiFunction.getUncached(), ToJavaNode.getUncached());
+        }
     }
 }

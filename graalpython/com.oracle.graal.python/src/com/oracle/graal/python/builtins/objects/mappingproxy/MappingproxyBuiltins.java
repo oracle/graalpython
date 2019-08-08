@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMappingproxy)
 public final class MappingproxyBuiltins extends PythonBuiltins {
@@ -128,14 +129,14 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
 
         @Specialization(guards = "!isNoValue(defaultValue)")
-        public Object doWithDefault(PMappingproxy self, Object key, Object defaultValue) {
-            final Object value = getGetItemNode().execute(self.getDictStorage(), key);
+        public Object doWithDefault(VirtualFrame frame, PMappingproxy self, Object key, Object defaultValue) {
+            final Object value = getGetItemNode().execute(frame, self.getDictStorage(), key);
             return value != null ? value : defaultValue;
         }
 
         @Specialization
-        public Object doNoDefault(PMappingproxy self, Object key, @SuppressWarnings("unused") PNone defaultValue) {
-            final Object value = getGetItemNode().execute(self.getDictStorage(), key);
+        public Object doNoDefault(VirtualFrame frame, PMappingproxy self, Object key, @SuppressWarnings("unused") PNone defaultValue) {
+            final Object value = getGetItemNode().execute(frame, self.getDictStorage(), key);
             return value != null ? value : PNone.NONE;
         }
 
@@ -152,9 +153,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getItem(PMappingproxy self, Object key,
+        Object getItem(VirtualFrame frame, PMappingproxy self, Object key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-            final Object result = getItemNode.execute(self.getDictStorage(), key);
+            final Object result = getItemNode.execute(frame, self.getDictStorage(), key);
             if (result == null) {
                 throw raise(KeyError, "%s", key);
             }
@@ -177,9 +178,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class ContainsNode extends PythonBuiltinNode {
 
         @Specialization
-        boolean run(PMappingproxy self, Object key,
+        boolean run(VirtualFrame frame, PMappingproxy self, Object key,
                         @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
-            return containsKeyNode.execute(self.getDictStorage(), key);
+            return containsKeyNode.execute(frame, self.getDictStorage(), key);
         }
     }
 
@@ -206,15 +207,15 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doProxyProxy(PMappingproxy self, PMappingproxy other,
+        Object doProxyProxy(VirtualFrame frame, PMappingproxy self, PMappingproxy other,
                         @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
-            return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
+            return equalsNode.execute(frame, self.getDictStorage(), other.getDictStorage());
         }
 
         @Specialization
-        Object doProxDict(PMappingproxy self, PDict other,
+        Object doProxDict(VirtualFrame frame, PMappingproxy self, PDict other,
                         @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
-            return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
+            return equalsNode.execute(frame, self.getDictStorage(), other.getDictStorage());
         }
 
         @Fallback

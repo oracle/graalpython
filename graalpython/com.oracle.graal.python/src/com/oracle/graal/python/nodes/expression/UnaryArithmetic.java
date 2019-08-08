@@ -92,7 +92,7 @@ public enum UnaryArithmetic {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callNode.executeObject(operand.execute(frame));
+            return callNode.executeObject(frame, operand.execute(frame));
         }
 
         @Override

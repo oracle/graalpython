@@ -68,7 +68,8 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
     }
 
     Object getLocalsDict(VirtualFrame frame) {
-        PFrame pFrame = PArguments.getPFrame(frame);
+        assert !PArguments.isGeneratorFrame(frame);
+        PFrame pFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
         if (pFrame != null) {
             return pFrame.getLocalsDict();
         }
@@ -80,7 +81,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
                     @Cached("getLocalsDict(frame)") Object localsDict,
                     @Cached("create()") DeleteItemNode delItemNode) {
         // class namespace overrides closure
-        delItemNode.executeWith(localsDict, identifier);
+        delItemNode.executeWith(frame, localsDict, identifier);
     }
 
     @Specialization

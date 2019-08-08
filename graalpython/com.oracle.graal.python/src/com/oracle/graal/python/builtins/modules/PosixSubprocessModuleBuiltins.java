@@ -51,6 +51,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -61,8 +63,9 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
-import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -75,8 +78,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-
-import org.graalvm.nativeimage.ImageInfo;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
@@ -90,11 +92,24 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"})
     @GenerateNodeFactory
     abstract static class ForkExecNode extends PythonBuiltinNode {
-        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+        @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
 
         @Specialization
+        @SuppressWarnings("try")
+        int forkExec(VirtualFrame frame, PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
+                        @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
+                        int p2cread, int p2cwrite, int c2pread, int c2pwrite,
+                        int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
+                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
+
+            try (DefaultContextManager cm = withGlobalState(frame)) {
+                return forkExec(args, execList, closeFds, fdsToKeep, cwd, env, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, errpipe_read, errpipe_write, restore_signals, call_setsid,
+                                preexec_fn);
+            }
+        }
+
         @TruffleBoundary
-        synchronized int forkExec(PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
+        private synchronized int forkExec(PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
                         @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
                         int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
@@ -151,7 +166,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
 
             try {
-                if (getContext().getEnv().getTruffleFile(cwd).exists()) {
+                if (getContext().getEnv().getPublicTruffleFile(cwd).exists()) {
                     pb.directory(new File(cwd));
                 } else {
                     throw raise(PythonBuiltinClassType.OSError, "working directory %s is not accessible", cwd);
@@ -163,7 +178,9 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             Map<String, String> environment = pb.environment();
             for (Object keyValue : env.getSequenceStorage().getInternalArray()) {
                 if (keyValue instanceof PBytes) {
-                    String[] string = new String(toBytes.execute(keyValue)).split("=", 2);
+                    // NOTE: passing 'null' frame means we took care of the global state in the
+                    // callers
+                    String[] string = new String(toBytes.execute(null, keyValue)).split("=", 2);
                     if (string.length == 2) {
                         environment.put(string[0], string[1]);
                     }
@@ -207,7 +224,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "forkExec")
-        int forkExecDefault(Object args, Object executable_list, Object close_fds,
+        int forkExecDefault(VirtualFrame frame, Object args, Object executable_list, Object close_fds,
                         Object fdsToKeep, Object cwd, Object env,
                         Object p2cread, Object p2cwrite, Object c2pread, Object c2pwrite,
                         Object errread, Object errwrite, Object errpipe_read, Object errpipe_write,
@@ -233,21 +250,21 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             if (cwd instanceof PNone) {
                 actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
             } else {
-                actualCwd = castCwd.execute(cwd);
+                actualCwd = castCwd.execute(frame, cwd);
             }
 
             PList actualEnv;
             if (env instanceof PNone) {
                 actualEnv = factory().createList();
             } else {
-                actualEnv = castEnv.executeWith(env);
+                actualEnv = castEnv.execute(frame, env);
             }
 
-            return forkExec(castArgs.executeWith(args), castExecList.executeWith(executable_list), castCloseFds.executeWith(close_fds),
-                            castFdsToKeep.executeWith(fdsToKeep), actualCwd, actualEnv,
+            return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list), castCloseFds.executeBoolean(frame, close_fds),
+                            castFdsToKeep.execute(frame, fdsToKeep), actualCwd, actualEnv,
                             castP2cread.execute(p2cread), castP2cwrite.execute(p2cwrite), castC2pread.execute(c2pread), castC2pwrite.execute(c2pwrite),
                             castErrread.execute(errread), castErrwrite.execute(errwrite), castErrpipeRead.execute(errpipe_read), castErrpipeWrite.execute(errpipe_write),
-                            castRestoreSignals.executeWith(restore_signals), castSetsid.executeWith(call_setsid), preexec_fn);
+                            castRestoreSignals.executeBoolean(frame, restore_signals), castSetsid.executeBoolean(frame, call_setsid), preexec_fn);
         }
     }
 }

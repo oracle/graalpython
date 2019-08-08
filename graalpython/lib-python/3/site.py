@@ -443,7 +443,16 @@ def enablerlcompleter():
                 readline.read_history_file(history)
             except OSError:
                 pass
-            atexit.register(readline.write_history_file, history)
+
+            def write_history():
+                try:
+                    readline.write_history_file(history)
+                except (FileNotFoundError, PermissionError):
+                    # home directory does not exist or is not writable
+                    # https://bugs.python.org/issue19891
+                    pass
+
+            atexit.register(write_history)
 
     sys.__interactivehook__ = register_readline
 
@@ -452,7 +461,7 @@ def venv(known_paths):
 
     env = os.environ
     if sys.platform == 'darwin' and '__PYVENV_LAUNCHER__' in env:
-        executable = os.environ['__PYVENV_LAUNCHER__']
+        executable = sys._base_executable = os.environ['__PYVENV_LAUNCHER__']
     else:
         executable = sys.executable
     exe_dir, _ = os.path.split(os.path.abspath(executable))

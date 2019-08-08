@@ -112,12 +112,12 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
             return getNsItem.execute(frame);
         } catch (PException pe) {
             // class namespace overrides closure
-            PFrame pFrame = PArguments.getPFrame(frame);
+            PFrame pFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
             if (pFrame != null) {
                 Object localsDict = pFrame.getLocalsDict();
                 if (localsDict != null) {
                     try {
-                        return getItemNode.execute(localsDict, identifier);
+                        return getItemNode.execute(frame, localsDict, identifier);
                     } catch (PException e) {
                     }
                 }

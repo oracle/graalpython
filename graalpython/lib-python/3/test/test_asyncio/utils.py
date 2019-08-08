@@ -40,7 +40,7 @@ def data_file(filename):
         fullname = os.path.join(support.TEST_HOME_DIR, filename)
         if os.path.isfile(fullname):
             return fullname
-    fullname = os.path.join(os.path.dirname(__file__), filename)
+    fullname = os.path.join(os.path.dirname(__file__), '..', filename)
     if os.path.isfile(fullname):
         return fullname
     raise FileNotFoundError(filename)
@@ -57,9 +57,9 @@ PEERCERT = {
     'issuer': ((('countryName', 'XY'),),
             (('organizationName', 'Python Software Foundation CA'),),
             (('commonName', 'our-ca-server'),)),
-    'notAfter': 'Nov 28 19:09:06 2027 GMT',
-    'notBefore': 'Jan 19 19:09:06 2018 GMT',
-    'serialNumber': '82EDBF41C880919C',
+    'notAfter': 'Jul  7 14:23:16 2028 GMT',
+    'notBefore': 'Aug 29 14:23:16 2018 GMT',
+    'serialNumber': 'CB2D80995A69525C',
     'subject': ((('countryName', 'XY'),),
              (('localityName', 'Castle Anthrax'),),
              (('organizationName', 'Python Software Foundation'),),
@@ -107,10 +107,10 @@ def run_briefly(loop):
 
 
 def run_until(loop, pred, timeout=30):
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     while not pred():
         if timeout is not None:
-            timeout = deadline - time.time()
+            timeout = deadline - time.monotonic()
             if timeout <= 0:
                 raise futures.TimeoutError()
         loop.run_until_complete(tasks.sleep(0.001, loop=loop))
@@ -156,14 +156,8 @@ class SSLWSGIServerMixin:
         # contains the ssl key and certificate files) differs
         # between the stdlib and stand-alone asyncio.
         # Prefer our own if we can find it.
-        here = os.path.join(os.path.dirname(__file__), '..', 'tests')
-        if not os.path.isdir(here):
-            here = os.path.join(os.path.dirname(os.__file__),
-                                'test', 'test_asyncio')
-        keyfile = os.path.join(here, 'ssl_key.pem')
-        certfile = os.path.join(here, 'ssl_cert.pem')
         context = ssl.SSLContext()
-        context.load_cert_chain(certfile, keyfile)
+        context.load_cert_chain(ONLYCERT, ONLYKEY)
 
         ssock = context.wrap_socket(request, server_side=True)
         try:

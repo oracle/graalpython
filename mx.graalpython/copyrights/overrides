@@ -61,6 +61,7 @@ graalpython/com.oracle.graal.python.cext/include/datetime.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/descrobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/dictobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/fileobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/fileutils.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/floatobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/frameobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/funcobject.h,python.copyright
@@ -97,12 +98,15 @@ graalpython/com.oracle.graal.python.cext/include/setobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sliceobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structmember.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structseq.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/sysmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/traceback.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/truffle.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/typeslots.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/ucnhash.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/unicodeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/warnings.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/weakrefobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_bz2module.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_sre.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
@@ -214,9 +218,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_euler31.py,benchmarks.co
 graalpython/com.oracle.graal.python.test/src/tests/test_exception.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-accumulator.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-continue.py,zippy.copyright
-graalpython/com.oracle.graal.python.test/src/tests/test_generator-expression-next.py,zippy.copyright
-graalpython/com.oracle.graal.python.test/src/tests/test_generator-expression-sum-2.py,zippy.copyright
-graalpython/com.oracle.graal.python.test/src/tests/test_generator-expression-sum.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_generator-expressions.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-if-and-loop.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-inline-genexp-builtin.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-inline-genexp-localvar.py,zippy.copyright
@@ -301,7 +303,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/exception/BaseExceptionBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/floats/FloatBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/floats/PFloat.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/foreign/TruffleObjectBuiltins.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/foreign/ForeignObjectBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/frame/FrameBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/AbstractFunctionBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/BuiltinFunctionBuiltins.java,zippy.copyright
@@ -520,3 +522,4 @@ mx.graalpython/mx_graalpython.py,zippy.copyright
 mx.graalpython/mx_graalpython_bench_param.py,zippy.copyright
 mx.graalpython/mx_graalpython_benchmark.py,zippy.copyright
 mx.graalpython/suite.py,no.copyright
+

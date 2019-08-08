@@ -60,12 +60,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private final FlagsContainer flags;
 
     /** {@code true} if the MRO contains a native class. */
-    private boolean needsNativeAllocation;
+    private final boolean needsNativeAllocation;
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    public PythonManagedClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonAbstractClass... baseClasses) {
-        super(typeClass, PythonLanguage.freshShape() /* do not inherit layout from the TypeClass */);
+    public PythonManagedClass(LazyPythonClass typeClass, String name, PythonAbstractClass... baseClasses) {
+        super(typeClass);
         this.className = name;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
@@ -80,13 +80,17 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         // Compute MRO
         this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
-        computeNeedsNativeAllocation();
+        this.needsNativeAllocation = computeNeedsNativeAllocation();
 
         setAttribute(__NAME__, getBaseName(name));
         setAttribute(__QUALNAME__, className);
         setAttribute(__DOC__, PNone.NONE);
         // provide our instances with a fresh shape tree
-        this.instanceShape = instanceShape;
+        if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+            this.instanceShape = PythonObject.freshShape(this);
+        } else {
+            this.instanceShape = PythonObject.freshShape();
+        }
     }
 
     private static String getBaseName(String qname) {
@@ -130,14 +134,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return className;
     }
 
-    private void computeNeedsNativeAllocation() {
+    private boolean computeNeedsNativeAllocation() {
         for (PythonAbstractClass cls : getMethodResolutionOrder().getInternalClassArray()) {
             if (PGuards.isNativeClass(cls)) {
-                needsNativeAllocation = true;
-                return;
+                return true;
             }
         }
-        needsNativeAllocation = false;
+        return false;
     }
 
     @Override
@@ -217,8 +220,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
     }
 
-    @Override
-    public PythonClassNativeWrapper getNativeWrapper() {
+    public PythonClassNativeWrapper getClassNativeWrapper() {
         return (PythonClassNativeWrapper) super.getNativeWrapper();
     }
 

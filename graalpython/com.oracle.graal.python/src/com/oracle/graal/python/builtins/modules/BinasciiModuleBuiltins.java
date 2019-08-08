@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
@@ -59,8 +60,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -70,7 +71,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -79,6 +79,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
@@ -111,9 +112,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes doBytesLike(PIBytesLike data,
+        PBytes doBytesLike(VirtualFrame frame, PIBytesLike data,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return factory().createBytes(b64decode(toBytesNode.execute(data)));
+            return factory().createBytes(b64decode(toBytesNode.execute(frame, data)));
         }
 
         @TruffleBoundary
@@ -235,8 +236,8 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes b2aBytesLike(PIBytesLike data, Object newline) {
-            return (PBytes) getRecursiveNode().execute(data, getCastToIntNode().execute(newline));
+        PBytes b2aBytesLike(VirtualFrame frame, PIBytesLike data, Object newline) {
+            return (PBytes) getRecursiveNode().execute(frame, data, getCastToIntNode().execute(newline));
         }
 
         @Specialization(guards = "isNoValue(newline)")
@@ -255,22 +256,22 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes b2aArray(PArray data, Object newline) {
-            return (PBytes) getRecursiveNode().execute(data, getCastToIntNode().execute(newline));
+        PBytes b2aArray(VirtualFrame frame, PArray data, Object newline) {
+            return (PBytes) getRecursiveNode().execute(frame, data, getCastToIntNode().execute(newline));
         }
 
         @Specialization(guards = "isNoValue(newline)")
-        PBytes b2aMmeory(PMemoryView data, @SuppressWarnings("unused") PNone newline,
+        PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, @SuppressWarnings("unused") PNone newline,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
-            return b2aMemory(data, 1, toBytesNode, isBytesProfile);
+            return b2aMemory(frame, data, 1, toBytesNode, isBytesProfile);
         }
 
         @Specialization
-        PBytes b2aMemory(PMemoryView data, long newline,
+        PBytes b2aMemory(VirtualFrame frame, PMemoryView data, long newline,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
-            Object bytesObj = toBytesNode.executeObject(data);
+            Object bytesObj = toBytesNode.executeObject(frame, data);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 return b2aBytesLike((PBytes) bytesObj, newline);
             }
@@ -278,15 +279,15 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes b2aMmeory(PMemoryView data, PInt newline,
+        PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, PInt newline,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
-            return b2aMemory(data, newline.isZero() ? 0 : 1, toBytesNode, isBytesProfile);
+            return b2aMemory(frame, data, newline.isZero() ? 0 : 1, toBytesNode, isBytesProfile);
         }
 
         @Specialization
-        PBytes b2aMmeory(PMemoryView data, Object newline) {
-            return (PBytes) getRecursiveNode().execute(data, getCastToIntNode().execute(newline));
+        PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, Object newline) {
+            return (PBytes) getRecursiveNode().execute(frame, data, getCastToIntNode().execute(newline));
         }
 
         @Fallback

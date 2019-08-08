@@ -25,17 +25,20 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
 public class TryFinallyNode extends StatementNode {
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
+    @Child private SaveExceptionStateNode getCaughtExceptionNode;
+    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
 
     public TryFinallyNode(StatementNode body, StatementNode finalbody) {
         this.body = body;
@@ -44,23 +47,42 @@ public class TryFinallyNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        PException exceptionState = contextRef.get().getCaughtException();
-        try {
-            body.executeVoid(frame);
-        } catch (PException e) {
-            // any thrown Python exception is visible in the finally block
-            contextRef.get().setCaughtException(e);
-            throw e;
-        } finally {
+        ExceptionState exceptionState = ensureGetCaughtExceptionNode().execute(frame);
+        if (finalbody == null) {
             try {
-                finalbody.executeVoid(frame);
-            } catch (ControlFlowException e) {
+                body.executeVoid(frame);
+            } finally {
                 // restore
-                contextRef.get().setCaughtException(exceptionState);
-                throw e;
+                restoreExceptionState(frame, exceptionState);
             }
-            // restore
-            contextRef.get().setCaughtException(exceptionState);
+        } else {
+            try {
+                body.executeVoid(frame);
+            } catch (PException e) {
+                // any thrown Python exception is visible in the finally block
+                SetCaughtExceptionNode.execute(frame, e);
+                throw e;
+            } finally {
+                try {
+                    finalbody.executeVoid(frame);
+                } catch (ControlFlowException e) {
+                    // restore
+                    restoreExceptionState(frame, exceptionState);
+                    throw e;
+                }
+                // restore
+                restoreExceptionState(frame, exceptionState);
+            }
+        }
+    }
+
+    private void restoreExceptionState(VirtualFrame frame, ExceptionState exceptionState) {
+        if (exceptionState != null) {
+            if (restoreExceptionStateNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+            }
+            restoreExceptionStateNode.execute(frame, exceptionState);
         }
     }
 
@@ -71,4 +93,13 @@ public class TryFinallyNode extends StatementNode {
     public StatementNode getFinalbody() {
         return finalbody;
     }
+
+    private SaveExceptionStateNode ensureGetCaughtExceptionNode() {
+        if (getCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getCaughtExceptionNode = insert(SaveExceptionStateNode.create());
+        }
+        return getCaughtExceptionNode;
+    }
+
 }

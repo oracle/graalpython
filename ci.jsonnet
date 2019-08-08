@@ -1,300 +1,55 @@
+local utils = import 'ci_common/utils.libsonnet';
+local const = import 'ci_common/constants.libsonnet';
+local builder = import 'ci_common/builder.libsonnet';
+
 {
-  overlay: "627f30447cbecc2e4f5d16553cbfc6b669396c5d",
+    overlay: "9c948fac4c5424a79d957f0e62bed7cc71489ed2",
 
-  // ======================================================================================================
-  //
-  // help:
-  //  1) to get the json out of the jsonnet configuration make sure the `jsonnet` executable is in path
-  //  2) execute the following command: jsonnet ci.jsonnet > ci.json
-  //  3) a helper script which does just that is located in: ./scripts/jsonnet_json.sh
-  //
-  // ======================================================================================================
+    // ======================================================================================================
+    //
+    // help:
+    //  1) to get the json out of the jsonnet configuration make sure the `jsonnet` executable is in path
+    //  2) execute the following command: jsonnet ci.jsonnet > ci.json
+    //  3) a helper script which does just that is located in: ./scripts/jsonnet_json.sh
+    //
+    // ======================================================================================================
 
-  // ======================================================================================================
-  //
-  // locals (will not appear in the generated json)
-  //
-  // ======================================================================================================
+    // ------------------------------------------------------------------------------------------------------
+    //
+    // the gates
+    //
+    // ------------------------------------------------------------------------------------------------------
+    local gates = [
+        // unittests
+        builder.testGate(type="unittest", platform="linux"),
+        builder.testGate(type="unittest", platform="darwin"),
+        builder.testGateTime(type="tagged-unittest", platform="linux", timelimit=const.TIME_LIMIT["2h"]),
+        builder.testGateTime(type="tagged-unittest", platform="darwin", timelimit=const.TIME_LIMIT["2h"]),
+        builder.testGate(type="svm-unittest", platform="linux"),
+        builder.testGate(type="svm-unittest", platform="darwin"),
 
-  // timelimit
-  local TIME_LIMIT = {
-    "30m": "00:30:00",
-    "1h": "1:00:00",
-    "2h": "2:00:00",
-    "3h": "3:00:00",
-    "4h": "4:00:00",
-    "8h": "8:00:00",
-    "10h": "10:00:00",
-    "16h": "16:00:00",
-    "20h": "20:00:00",
-  },
-  TIME_LIMIT: TIME_LIMIT,
+        // junit
+        builder.testGate(type="junit", platform="linux"),
+        builder.testGate(type="junit", platform="darwin"),
 
-  // targets
-  local TARGET = {
-    onDemand: ["bench"],
-    postMerge: ["post-merge"],
-    weekly: ["weekly"],
-    gate: ["gate"],
-  },
-  TARGET: TARGET,
+        // style
+        builder.styleGate,
 
-  // ------------------------------------------------------------------------------------------------------
-  //
-  // utility funcs
-  //
-  // ------------------------------------------------------------------------------------------------------
-  local utils = {
-    download: function(name, version, platformSpecific = true)
-      {name: name, version: version, platformspecific: platformSpecific},
+        // coverage
+        builder.coverageGate,
 
-    getValue: function(object, field)
-      if (!std.objectHas(object, field)) then
-        error "unknown field: "+field+" in "+object+", valid choices are: "+std.objectFields(object)
-      else
-        object[field],
+        // graalvm gates
+        builder.graalVmGate,
 
-    graalOption: function(name, value)
-      ["--Ja", "@-Dgraal."+name+"="+value],
-  },
+        // deploy binaries
+        builder.deployGate(platform="linux"),
+        builder.deployGate(platform="darwin"),
+    ],
 
-  // ------------------------------------------------------------------------------------------------------
-  //
-  // platform mixins
-  //
-  // ------------------------------------------------------------------------------------------------------
-  local linuxMixin = {
-    capabilities +: ["linux", "amd64"],
-    packages +: {
-      "maven": "==3.3.9",
-      "git": ">=1.8.3",
-      "mercurial": ">=3.2.4",
-      "gcc": "==4.9.1",
-      "llvm": "==4.0.1",
-      "python": "==3.6.5",
-      "libffi": ">=3.2.1",
-      "bzip2": ">=1.0.6",
-    },
-    downloads +: {
-      LIBGMP: utils.download("libgmp", "6.1.0"),
-    },
-  },
-  linuxMixin: linuxMixin,
-
-  local linuxBenchMixin = linuxMixin + {
-    capabilities +: ["no_frequency_scaling", "tmpfs25g", "x52"],
-  },
-  linuxBenchMixin: linuxBenchMixin,
-
-  local darwinMixin = {
-    capabilities +: ["darwin_sierra", "amd64"],
-    timelimit: TIME_LIMIT["1h"],
-    packages +: {
-      "pip:astroid": "==1.1.0",
-      "pip:pylint": "==1.1.0",
-      "llvm": "==4.0.1",
-    },
-  },
-
-  local getPlatform = function(platform)
-    local PLATFORMS = {
-      "linux": linuxMixin,
-      "linuxBench": linuxBenchMixin,
-      "darwin": darwinMixin,
-    };
-    utils.getValue(PLATFORMS, platform),
-
-  // ------------------------------------------------------------------------------------------------------
-  //
-  // mixins
-  //
-  // ------------------------------------------------------------------------------------------------------
-  local pypyMixin = {
-    downloads +: {
-      PYPY_HOME: utils.download("pypy3", "7.1.0.beta"),
-    },
-  },
-  pypyMixin: pypyMixin,
-
-  local eclipseMixin = {
-    downloads +: {
-      ECLIPSE: utils.download("eclipse", "4.5.2.1"),
-      JDT: utils.download("ecj", "4.6.1", false),
-    },
-    environment +: {
-      ECLIPSE_EXE: "$ECLIPSE/eclipse",
-    },
-  },
-
-  local labsjdk8Mixin = {
-    downloads +: {
-      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.59"),
-      EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+28")] },
-    },
-    environment +: {
-      CI: "true",
-      GRAALVM_CHECK_EXPERIMENTAL_OPTIONS: "true",
-      PATH: "$JAVA_HOME/bin:$PATH",
-    },
-  },
-  labsjdk8Mixin: labsjdk8Mixin,
-
-  local graalMixin = labsjdk8Mixin + {
-    environment +: {
-      HOST_VM: "server",
-    },
-  },
-
-  local graalCoreMixin = graalMixin + {
-    environment +: {
-      HOST_VM_CONFIG: "graal-core",
-    },
-  },
-  graalCoreMixin:  graalCoreMixin,
-
-  local sulongMixin = labsjdk8Mixin + {
-    environment +: {
-      CPPFLAGS: "-I$LIBGMP/include",
-      LD_LIBRARY_PATH: "$LIBGMP/lib:$LLVM/lib:$LD_LIBRARY_PATH",
-    }
-  },
-  sulongMixin: sulongMixin,
-
-  // ------------------------------------------------------------------------------------------------------
-  //
-  // the build templates
-  //
-  // ------------------------------------------------------------------------------------------------------
-  local baseBuilder = {
-    downloads: {},
-    environment: {},
-    setup: [],
-    logs: ["dumps/*/*"],
-    timelimit: TIME_LIMIT["30m"],
-    packages: {},
-    capabilities: [],
-    name: null,
-    targets: [],
-    run: [],
-  },
-
-  local commonBuilder = baseBuilder + labsjdk8Mixin + {
-    dynamicImports:: "sulong,/compiler",
-
-    setup +: [
-      ["mx", "sforceimports"],
-      ["mx", "--dynamicimports", self.dynamicImports, "build"],
-    ]
-  },
-  commonBuilder: commonBuilder,
-
-  // ------------------------------------------------------------------------------------------------------
-  //
-  // the gate templates
-  //
-  // ------------------------------------------------------------------------------------------------------
-  local baseGate = commonBuilder + {
-    tags: "tags must be defined",
-
-//    local truffleDebugFlags = utils.graalOption("TraceTruffleCompilation", "true"),
-//    local truffleDebugFlags = utils.graalOption("TraceTruffleCompilationDetails", "true"),
-    local truffleDebugFlags = [],
-    targets: TARGET.gate,
-    run +: [
-      ["mx"] + truffleDebugFlags + ["--strict-compliance", "--dynamicimports", super.dynamicImports, "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning-for-dependencies"],
-    ]
-  },
-
-  local baseGraalGate = baseGate + sulongMixin + graalCoreMixin,
-  baseGraalGate: baseGraalGate,
-
-  // specific gates
-  local testGate = function(type, platform)
-    baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform},
-
-  local testGateTime = function(type, platform, timelimit)
-    baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform} + {timelimit: timelimit},
-
-  local styleGate = baseGraalGate + eclipseMixin + linuxMixin + {
-    tags:: "style,fullbuild,python-license",
-    name: "python-style",
-
-    timelimit: TIME_LIMIT["1h"],
-  },
-
-  local graalVmGate = baseGraalGate + linuxMixin {
-    tags:: "python-graalvm",
-    name: "python-graalvm",
-
-    timelimit: TIME_LIMIT["1h"],
-  },
-
-  // ------------------------------------------------------------------------------------------------------
-  //
-  // the deploy templates
-  //
-  // ------------------------------------------------------------------------------------------------------
-  local deployGate = function(platform)
-    baseBuilder + graalCoreMixin + sulongMixin + getPlatform(platform) + {
-      targets: TARGET.postMerge,
-      setup +: [
-        ["mx", "sversions"],
-        ["mx", "build", "--force-javac"],
-      ],
-      run +: [
-        ["mx", "deploy-binary-if-master", "python-public-snapshots"],
-      ],
-      name: "deploy-binaries-"+platform,
-    },
-
-  local coverageGate = commonBuilder + {
-      targets: TARGET.weekly,
-      timelimit: TIME_LIMIT["4h"],
-      run +: [
-          // cannot run with excluded "GeneratedBy" since that would lead to "command line too long"
-          // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-junit", '--jacocout', 'html'],
-          // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated'],
-          ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-unittest,python-tagged-unittest,python-junit", '--jacocout', 'html'],
-          ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated'],
-      ],
-      name: "python-coverage"
-    } + getPlatform(platform="linux"),
-  // ------------------------------------------------------------------------------------------------------
-  //
-  // the gates
-  //
-  // ------------------------------------------------------------------------------------------------------
-  local gates = [
-    // unittests
-    testGate(type="unittest", platform="linux"),
-    testGate(type="unittest", platform="darwin"),
-    testGateTime(type="tagged-unittest", platform="linux", timelimit=TIME_LIMIT["2h"]),
-    testGateTime(type="tagged-unittest", platform="darwin", timelimit=TIME_LIMIT["2h"]),
-    testGate(type="svm-unittest", platform="linux"),
-    testGate(type="svm-unittest", platform="darwin"),
-
-    // junit
-    testGate(type="junit", platform="linux"),
-    testGate(type="junit", platform="darwin"),
-
-    // style
-    styleGate,
-
-    // coverage
-    coverageGate,
-
-    // graalvm gates
-    graalVmGate,
-
-    // deploy binaries
-    deployGate(platform="linux"),
-    deployGate(platform="darwin"),
-  ],
-
-  // ======================================================================================================
-  //
-  // the builds (the public section)
-  //
-  // ======================================================================================================
-  builds: gates,
+    // ======================================================================================================
+    //
+    // the builds (the public section)
+    //
+    // ======================================================================================================
+    builds: gates,
 }

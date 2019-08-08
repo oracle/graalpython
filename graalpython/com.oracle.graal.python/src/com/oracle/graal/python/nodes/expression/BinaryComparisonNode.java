@@ -32,9 +32,12 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -48,6 +51,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     @Child private LookupAndCallBinaryNode callNode;
     @Child private CastToBooleanNode castToBoolean;
     @Child private PRaiseNode raiseNode;
+    @Child private IsNode isNode;
 
     BinaryComparisonNode(String magicMethod, String magicReverseMethod, String operation) {
         this.magicMethod = magicMethod;
@@ -64,15 +68,15 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         return create(magicMethod, magicReverseMethod, operation, null, null);
     }
 
-    public abstract boolean executeBool(Object left, Object right);
+    public abstract boolean executeBool(VirtualFrame frame, Object left, Object right);
 
     private Object handleNotImplemented(Object left, Object right) {
         // just like python, if no implementation is available, do something sensible for
         // == and !=
         if (magicMethod == __EQ__) {
-            return left == right;
+            return ensureIsNode().execute(left, right);
         } else if (magicMethod == __NE__) {
-            return left != right;
+            return !ensureIsNode().execute(left, right);
         } else {
             if (raiseNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -94,7 +98,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         return profile.profile(value);
     }
 
-    private UnexpectedResultException handleUnexpectedResult(Object result, Object left, Object right) throws UnexpectedResultException {
+    private UnexpectedResultException handleUnexpectedResult(VirtualFrame frame, Object result, Object left, Object right) throws UnexpectedResultException {
         CompilerAsserts.neverPartOfCompilation();
         if (castToBoolean == null) {
             castToBoolean = insert(CastToBooleanNode.createIfTrueNode());
@@ -103,161 +107,169 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
             value = handleNotImplemented(left, right);
         } else {
-            value = castToBoolean.executeWith(result);
+            value = castToBoolean.executeBoolean(frame, result);
         }
         throw new UnexpectedResultException(value);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBB(boolean left, boolean right) throws UnexpectedResultException {
+    boolean doBB(VirtualFrame frame, boolean left, boolean right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBI(boolean left, int right) throws UnexpectedResultException {
+    boolean doBI(VirtualFrame frame, boolean left, int right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(asInt(left), right));
+            return profileCondition(callNode.executeBool(frame, asInt(left), right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBL(boolean left, long right) throws UnexpectedResultException {
+    boolean doBL(VirtualFrame frame, boolean left, long right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(asInt(left), right));
+            return profileCondition(callNode.executeBool(frame, asInt(left), right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBD(boolean left, double right) throws UnexpectedResultException {
+    boolean doBD(VirtualFrame frame, boolean left, double right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(asDouble(left), right));
+            return profileCondition(callNode.executeBool(frame, asDouble(left), right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doIB(int left, boolean right) throws UnexpectedResultException {
+    boolean doIB(VirtualFrame frame, int left, boolean right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, asInt(right)));
+            return profileCondition(callNode.executeBool(frame, left, asInt(right)));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doII(int left, int right) throws UnexpectedResultException {
+    boolean doII(VirtualFrame frame, int left, int right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doIL(int left, long right) throws UnexpectedResultException {
+    boolean doIL(VirtualFrame frame, int left, long right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doID(int left, double right) throws UnexpectedResultException {
+    boolean doID(VirtualFrame frame, int left, double right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLB(long left, boolean right) throws UnexpectedResultException {
+    boolean doLB(VirtualFrame frame, long left, boolean right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, asInt(right)));
+            return profileCondition(callNode.executeBool(frame, left, asInt(right)));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLI(long left, int right) throws UnexpectedResultException {
+    boolean doLI(VirtualFrame frame, long left, int right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLI(long left, long right) throws UnexpectedResultException {
+    boolean doLI(VirtualFrame frame, long left, long right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLI(long left, double right) throws UnexpectedResultException {
+    boolean doLI(VirtualFrame frame, long left, double right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDB(double left, boolean right) throws UnexpectedResultException {
+    boolean doDB(VirtualFrame frame, double left, boolean right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, asDouble(right)));
+            return profileCondition(callNode.executeBool(frame, left, asDouble(right)));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDI(double left, int right) throws UnexpectedResultException {
+    boolean doDI(VirtualFrame frame, double left, int right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDL(double left, long right) throws UnexpectedResultException {
+    boolean doDL(VirtualFrame frame, double left, long right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDD(double left, double right) throws UnexpectedResultException {
+    boolean doDD(VirtualFrame frame, double left, double right) throws UnexpectedResultException {
         try {
-            return profileCondition(callNode.executeBool(left, right));
+            return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(e.getResult(), left, right);
+            throw handleUnexpectedResult(frame, e.getResult(), left, right);
         }
     }
 
     @Specialization
-    Object doGeneric(Object left, Object right) {
-        Object result = callNode.executeObject(left, right);
+    Object doGeneric(VirtualFrame frame, Object left, Object right) {
+        Object result = callNode.executeObject(frame, left, right);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
             return handleNotImplemented(left, right);
         }
         return result;
+    }
+
+    private IsNode ensureIsNode() {
+        if (isNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isNode = insert(IsNodeGen.create());
+        }
+        return isNode;
     }
 }

@@ -117,7 +117,7 @@ def vars(*obj):
     called with no argument, return the variables bound in local scope."""
     if len(obj) == 0:
         # TODO inlining _caller_locals().items() in the dict comprehension does not work for now, investigate!
-        return __getframe__(1).f_locals
+        return __getframe__(0).f_locals
     elif len(obj) != 1:
         raise TypeError("vars() takes at most 1 argument.")
     try:

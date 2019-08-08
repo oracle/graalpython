@@ -50,6 +50,9 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -83,15 +86,12 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -160,6 +160,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private LookupAndCallBinaryNode getAttrNode;
         @Child private CellBuiltins.GetRefNode getRefNode;
         @Child private TypeNodes.IsTypeNode isTypeNode;
+        @Child private HashingStorageNodes.GetItemNode getItemNode;
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -196,9 +197,9 @@ public final class SuperBuiltins extends PythonBuiltins {
         protected abstract Object execute(VirtualFrame frame, Object self, Object cls, Object obj);
 
         @Specialization(guards = {"!isNoValue(cls)", "!isNoValue(obj)"})
-        PNone init(SuperObject self, Object cls, Object obj) {
+        PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj) {
             if (obj != PNone.NONE) {
-                PythonAbstractClass type = supercheck(cls, obj);
+                PythonAbstractClass type = supercheck(frame, cls, obj);
                 self.init(cls, type, obj);
             } else {
                 self.init(cls, null, null);
@@ -237,7 +238,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             if (cls == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
             }
-            return init(self, cls, obj);
+            return init(frame, self, cls, obj);
         }
 
         /**
@@ -245,44 +246,37 @@ public final class SuperBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Cached("create(0)") ReadCallerFrameNode readCaller) {
-            Frame target = readCaller.executeWith(frame);
+                        @Cached ReadCallerFrameNode readCaller) {
+            PFrame target = readCaller.executeWith(frame, 0);
             if (target == null) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no current frame");
             }
             Object[] arguments = target.getArguments();
-            if (arguments.length <= PArguments.USER_ARGUMENTS_OFFSET) {
+            if (PArguments.getUserArgumentLength(arguments) == 0) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }
-            Object obj = arguments[PArguments.USER_ARGUMENTS_OFFSET];
+            Object obj = PArguments.getArgument(arguments, 0);
             if (obj == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }
 
-            return initFromFrame(self, target, obj);
+            Object cls = getClassFromTarget(frame, target);
+            return init(frame, self, cls, obj);
         }
 
-        @TruffleBoundary
-        private PNone initFromFrame(SuperObject self, Frame target, Object obj) {
+        private Object getClassFromTarget(VirtualFrame frame, PFrame target) {
             // TODO: remove me
             // TODO: do it properly via the python API in super.__init__ :
             // sys._getframe(1).f_code.co_closure?
-            FrameSlot classSlot = target.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
-            Object cls = PNone.NONE;
-            if (classSlot != null) {
-                try {
-                    cls = target.getObject(classSlot);
-                    if (cls instanceof PCell) {
-                        cls = getGetRefNode().execute((PCell) cls);
-                    }
-                } catch (FrameSlotTypeException e) {
-                    // fallthrough
+            PDict locals = (PDict) target.getLocalsDict();
+            Object cls = getItemNode.execute(frame, locals.getDictStorage(), SpecialAttributeNames.__CLASS__);
+            if (cls instanceof PCell) {
+                cls = getGetRefNode().execute((PCell) cls);
+                if (cls == null) {
+                    throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
                 }
             }
-            if (cls == null) {
-                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
-            }
-            return init(self, cls, obj);
+            return cls != null ? cls : PNone.NONE;
         }
 
         private CellBuiltins.GetRefNode getGetRefNode() {
@@ -339,7 +333,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getAttrNode;
         }
 
-        private PythonAbstractClass supercheck(Object cls, Object object) {
+        private PythonAbstractClass supercheck(VirtualFrame frame, Object cls, Object object) {
             /*
              * Check that a super() call makes sense. Return a type object.
              *
@@ -356,18 +350,18 @@ public final class SuperBuiltins extends PythonBuiltins {
              * proxy for obj.
              */
             if (ensureIsTypeNode().execute(object)) {
-                if (getIsSubtype().execute(object, cls)) {
+                if (getIsSubtype().execute(frame, object, cls)) {
                     return (PythonAbstractClass) object;
                 }
             }
 
-            if (getIsInstance().executeWith(object, cls)) {
+            if (getIsInstance().executeWith(frame, object, cls)) {
                 return getGetClass().execute(object);
             } else {
                 try {
-                    Object classObject = getGetAttr().executeObject(object, SpecialAttributeNames.__CLASS__);
+                    Object classObject = getGetAttr().executeObject(frame, object, SpecialAttributeNames.__CLASS__);
                     if (ensureIsTypeNode().execute(classObject)) {
-                        if (getIsSubtype().execute(classObject, cls)) {
+                        if (getIsSubtype().execute(frame, classObject, cls)) {
                             return (PythonAbstractClass) classObject;
                         }
                     }
@@ -409,7 +403,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
-        @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
+        @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.createForceType();
         @Child private LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
         @Child private GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
         @Child private GetTypeNode getType;
@@ -419,19 +413,19 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private GetMroNode getMroNode;
         @Child private IsSameTypeNode isSameTypeNode;
 
-        private Object genericGetAttr(Object object, Object attr) {
+        private Object genericGetAttr(VirtualFrame frame, Object object, Object attr) {
             if (objectGetattributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 objectGetattributeNode = insert(ObjectBuiltinsFactory.GetAttributeNodeFactory.create());
             }
-            return objectGetattributeNode.execute(object, attr);
+            return objectGetattributeNode.execute(frame, object, attr);
         }
 
         @Specialization
-        public Object get(SuperObject self, Object attr) {
+        public Object get(VirtualFrame frame, SuperObject self, Object attr) {
             PythonAbstractClass startType = getObjectType.execute(self);
             if (startType == null) {
-                return genericGetAttr(self, attr);
+                return genericGetAttr(frame, self, attr);
             }
 
             /*
@@ -446,7 +440,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             if (stringAttr != null) {
                 if (stringAttr.equals(SpecialAttributeNames.__CLASS__)) {
-                    return genericGetAttr(self, SpecialAttributeNames.__CLASS__);
+                    return genericGetAttr(frame, self, SpecialAttributeNames.__CLASS__);
                 }
             }
 
@@ -467,7 +461,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             i++; /* skip su->type (if any) */
             if (i >= n) {
-                return genericGetAttr(self, attr);
+                return genericGetAttr(frame, self, attr);
             }
 
             for (; i < n; i++) {
@@ -485,13 +479,13 @@ public final class SuperBuiltins extends PythonBuiltins {
                             getObject = insert(GetObjectNodeGen.create());
                             callGet = insert(CallTernaryMethodNode.create());
                         }
-                        res = callGet.execute(get, res, getObject.execute(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
+                        res = callGet.execute(frame, get, res, getObject.execute(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
                     }
                     return res;
                 }
             }
 
-            return genericGetAttr(self, attr);
+            return genericGetAttr(frame, self, attr);
         }
 
         private boolean isSameType(Object execute, PythonAbstractClass abstractPythonClass) {

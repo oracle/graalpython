@@ -51,6 +51,6 @@ public class ClassBodyRootNode extends FunctionRootNode {
     private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"namespace"}, new String[0]);
 
     public ClassBodyRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots executionCellSlots) {
-        super(language, sourceSection, functionName, false, frameDescriptor, body, executionCellSlots, SIGNATURE);
+        super(language, sourceSection, functionName, false, false, frameDescriptor, body, executionCellSlots, SIGNATURE);
     }
 }

@@ -50,22 +50,28 @@ import java.util.function.Function;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.NodeContextManager;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode.CastToIndexContextManager;
 import com.oracle.graal.python.nodes.util.CastToIndexNodeFactory.CachedNodeGen;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
  */
 @TypeSystemReference(PythonArithmeticTypes.class)
-public abstract class CastToIndexNode extends PNodeWithContext {
+public abstract class CastToIndexNode extends PNodeWithGlobalState<CastToIndexContextManager> {
 
     private static final UncachedNode UNCACHED = new UncachedNode();
 
@@ -78,6 +84,16 @@ public abstract class CastToIndexNode extends PNodeWithContext {
     public abstract int execute(long x);
 
     public abstract int execute(boolean x);
+
+    @Override
+    public CastToIndexContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+        return new CastToIndexContextManager(this, contextRef.get(), frame);
+    }
+
+    @Override
+    public CastToIndexContextManager passState() {
+        return new CastToIndexContextManager(this, null, null);
+    }
 
     abstract static class CachedNode extends CastToIndexNode {
 
@@ -153,7 +169,9 @@ public abstract class CastToIndexNode extends PNodeWithContext {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
                 }
-                Object result = callIndexNode.executeObject(x);
+                // note: it's fine to pass 'null' because this node has an uncached version an so
+                // the caller must already take care of the global state
+                Object result = callIndexNode.executeObject(null, x);
                 if (result == PNone.NO_VALUE) {
                     return handleError("'%p' object cannot be interpreted as an integer", x);
                 }
@@ -177,6 +195,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
     private static final class UncachedNode extends CastToIndexNode {
 
         @Override
+        @TruffleBoundary
         public int execute(Object x) {
             if (x instanceof Integer) {
                 return execute((int) x);
@@ -185,7 +204,9 @@ public abstract class CastToIndexNode extends PNodeWithContext {
             } else if (x instanceof Boolean) {
                 return execute((boolean) x);
             } else {
-                Object result = LookupAndCallUnaryDynamicNode.getUncached().executeObject(x, __INDEX__);
+                // NOTE: since this is an uncached node, any of the callers must already have taken
+                // care of the exception state
+                Object result = LookupAndCallUnaryDynamicNode.getUncached().passState().executeObject(x, __INDEX__);
                 if (result == PNone.NO_VALUE) {
                     throw PRaiseNode.getUncached().raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
                 }
@@ -199,6 +220,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
         }
 
         @Override
+        @TruffleBoundary
         public int execute(long x) {
             try {
                 return PInt.intValueExact(x);
@@ -228,5 +250,32 @@ public abstract class CastToIndexNode extends PNodeWithContext {
 
     public static CastToIndexNode getUncached() {
         return UNCACHED;
+    }
+
+    public static final class CastToIndexContextManager extends NodeContextManager {
+
+        private final CastToIndexNode delegate;
+
+        private CastToIndexContextManager(CastToIndexNode delegate, PythonContext context, VirtualFrame frame) {
+            super(context, frame, delegate);
+            this.delegate = delegate;
+        }
+
+        public int execute(Object x) {
+            return delegate.execute(x);
+        }
+
+        public int execute(int x) {
+            return delegate.execute(x);
+        }
+
+        public int execute(long x) {
+            return delegate.execute(x);
+        }
+
+        public int execute(boolean x) {
+            return delegate.execute(x);
+
+        }
     }
 }

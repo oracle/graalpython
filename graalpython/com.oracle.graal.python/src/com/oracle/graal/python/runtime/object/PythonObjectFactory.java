@@ -25,11 +25,14 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.Map;
+
+import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -81,6 +84,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
+import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -116,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -131,14 +137,15 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class PythonObjectFactory extends Node {
@@ -177,8 +184,20 @@ public abstract class PythonObjectFactory extends Node {
      * Python objects
      */
 
-    public PythonObject createPythonObject(LazyPythonClass cls, Shape instanceShape) {
-        return trace(new PythonObject(cls, instanceShape));
+    /**
+     * Creates a PythonObject for the given class. This is potentially slightly slower than if the
+     * shape had been cached, due to the additional shape lookup.
+     */
+    public PythonObject createPythonObject(LazyPythonClass cls) {
+        return trace(new PythonObject(cls));
+    }
+
+    /**
+     * Creates a Python object with the given shape. Python object shapes store the class in the
+     * ObjectType.
+     */
+    public PythonObject createPythonObject(LazyPythonClass klass, Shape instanceShape) {
+        return trace(new PythonObject(klass, instanceShape));
     }
 
     public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {
@@ -325,7 +344,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PythonClass createPythonClass(LazyPythonClass metaclass, String name, PythonAbstractClass[] bases) {
-        return trace(new PythonClass(metaclass, name, PythonLanguage.freshShape(), bases));
+        return trace(new PythonClass(metaclass, name, bases));
     }
 
     public PythonNativeClass createNativeClassWrapper(TruffleObject ptr) {
@@ -471,8 +490,12 @@ public abstract class PythonObjectFactory extends Node {
         return createDict(new HashMapStorage(map));
     }
 
-    public PDict createDictLocals(Frame frame, boolean skipCells) {
-        return createDict(new LocalsStorage(frame, skipCells));
+    public PDict createDictLocals(MaterializedFrame frame) {
+        return createDict(new LocalsStorage(frame));
+    }
+
+    public PDict createDictLocals(FrameDescriptor fd) {
+        return createDict(new LocalsStorage(fd));
     }
 
     public PDict createDict(DynamicObject dynamicObject) {
@@ -480,7 +503,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PDict createDictFixedStorage(PythonObject pythonObject) {
-        return createDict(new PythonObjectDictStorage(pythonObject.getStorage(), pythonObject.getDictUnsetOrSameAsStorageAssumption()));
+        return createDict(new PythonObjectDictStorage(pythonObject.getStorage()));
     }
 
     public PDict createDict(HashingStorage storage) {
@@ -506,7 +529,7 @@ public abstract class PythonObjectFactory extends Node {
     public PGenerator createGenerator(String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots, int numOfActiveFlags,
                     int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTarget, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode));
+                        numOfGeneratorForNode, this));
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,
@@ -515,7 +538,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption())));
+        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(HashingStorage storage) {
@@ -523,7 +546,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption())));
+        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(LazyPythonClass cls, HashingStorage storage) {
@@ -542,32 +565,24 @@ public abstract class PythonObjectFactory extends Node {
      * Frames, traces and exceptions
      */
 
-    public PFrame createPFrame(Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, locals));
+    public PFrame createPFrame(PFrame.Reference frameInfo, Node location, boolean inClassBody) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frameInfo, location, inClassBody));
     }
 
-    public PFrame createPFrame(Frame frame) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame));
-    }
-
-    public PFrame createPFrame(Frame frame, Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, locals));
-    }
-
-    public PFrame createPFrame(PBaseException exception, int index) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index));
-    }
-
-    public PFrame createPFrame(PBaseException exception, int index, Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index, locals));
+    public PFrame createPFrame(PFrame.Reference frameInfo, Node location, Object locals, boolean inClassBody) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frameInfo, location, locals, inClassBody));
     }
 
     public PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, threadState, code, globals, locals));
     }
 
-    public PTraceback createTraceback(PBaseException exception, int index) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, exception, index));
+    public PTraceback createTraceback(PFrame frame, PException exception) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, exception));
+    }
+
+    public PTraceback createTraceback(PFrame frame, PTraceback next) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, next));
     }
 
     public PBaseException createBaseException(LazyPythonClass cls, PTuple args) {
@@ -683,9 +698,9 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSequenceReverseIterator(cls, sequence, lengthHint));
     }
 
-    public PIntegerIterator createRangeIterator(int start, int stop, int step) {
+    public PIntegerIterator createRangeIterator(int start, int stop, int step, ConditionProfile stepPositiveProfile) {
         PIntegerIterator object;
-        if (step > 0) {
+        if (stepPositiveProfile.profile(step > 0)) {
             object = new PRangeIterator(PythonBuiltinClassType.PIterator, start, stop, step);
         } else {
             object = new PRangeReverseIterator(PythonBuiltinClassType.PIterator, start, stop, -step);
@@ -754,8 +769,8 @@ public abstract class PythonObjectFactory extends Node {
                         filename, name, firstlineno, lnotab));
     }
 
-    public PZipImporter createZipImporter(LazyPythonClass cls, PDict zipDirectoryCache) {
-        return trace(new PZipImporter(cls, zipDirectoryCache));
+    public PZipImporter createZipImporter(LazyPythonClass cls, PDict zipDirectoryCache, String separator) {
+        return trace(new PZipImporter(cls, zipDirectoryCache, separator));
     }
 
     /*
@@ -816,5 +831,13 @@ public abstract class PythonObjectFactory extends Node {
 
     public PMMap createMMap(LazyPythonClass clazz, SeekableByteChannel channel, long length, long offset) {
         return trace(new PMMap(clazz, channel, length, offset));
+    }
+
+    public PLZMACompressor createLZMACompressor(LazyPythonClass clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+        return trace(new PLZMACompressor(clazz, lzmaStream, bos));
+    }
+
+    public PLZMADecompressor createLZMADecompressor(LazyPythonClass clazz, int format, int memlimit) {
+        return trace(new PLZMADecompressor(clazz, format, memlimit));
     }
 }

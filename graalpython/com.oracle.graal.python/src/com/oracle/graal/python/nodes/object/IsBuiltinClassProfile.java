@@ -42,8 +42,8 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -57,8 +57,10 @@ public final class IsBuiltinClassProfile {
     @CompilationFinal private boolean match;
     @CompilationFinal private boolean noMatch;
 
+    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile();
+
+    /* private constructor */
     private IsBuiltinClassProfile() {
-        // private constructor
     }
 
     public static IsBuiltinClassProfile create() {
@@ -66,11 +68,7 @@ public final class IsBuiltinClassProfile {
     }
 
     public static IsBuiltinClassProfile getUncached() {
-        return new IsBuiltinClassProfile();
-    }
-
-    public boolean profileIsAnyBuiltinException(PException object) {
-        return profileIsAnyBuiltinClass(object.getExceptionObject().getLazyPythonClass());
+        return UNCACHED;
     }
 
     public boolean profileIsAnyBuiltinObject(PythonObject object) {

@@ -25,11 +25,12 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
+import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -49,10 +50,12 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator})
@@ -133,10 +136,21 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object next(PBaseSetIterator self) {
-            if (self.hasNext()) {
-                return self.next();
+            Iterator<Object> iterator = self.getIterator();
+            if (hasNext(iterator)) {
+                return getNext(iterator);
             }
             throw raise(StopIteration);
+        }
+
+        @TruffleBoundary
+        private static Object getNext(Iterator<Object> iterator) {
+            return iterator.next();
+        }
+
+        @TruffleBoundary
+        private static boolean hasNext(Iterator<Object> iterator) {
+            return iterator.hasNext();
         }
 
         @Specialization(guards = "self.isPList()")
@@ -174,11 +188,11 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isPSequence()")
-        public Object next(PSequenceIterator self,
+        public Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
                         @Cached("create()") IsBuiltinClassProfile profile) {
             try {
-                return callGetItem.executeObject(self.getObject(), self.index++);
+                return callGetItem.executeObject(frame, self.getObject(), self.index++);
             } catch (PException e) {
                 e.expectIndexError(profile);
                 throw raise(StopIteration);
@@ -246,10 +260,10 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isPSequence()")
-        public Object lengthHint(PSequenceIterator self,
+        public Object lengthHint(VirtualFrame frame, PSequenceIterator self,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__SUB__, __RSUB__)") LookupAndCallBinaryNode callSub) {
-            return callSub.executeObject(callLen.executeObject(self.getObject()), self.index);
+            return callSub.executeObject(frame, callLen.executeObject(frame, self.getObject()), self.index);
         }
     }
 }

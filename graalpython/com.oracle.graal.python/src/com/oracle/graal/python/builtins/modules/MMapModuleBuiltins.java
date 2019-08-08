@@ -115,7 +115,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             checkLength(length);
 
             String path = getContext().getResources().getFilePath(fd);
-            TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
+            TruffleFile truffleFile = getContext().getEnv().getPublicTruffleFile(path);
 
             // TODO(fa) correctly honor access flags
             Set<StandardOpenOption> options = set(StandardOpenOption.READ, StandardOpenOption.WRITE);

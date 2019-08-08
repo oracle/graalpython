@@ -443,6 +443,16 @@ def test_startswith():
     assert not b.startswith(b"hellow")
     assert not b.startswith(b"ha")
 
+    assert b.startswith((b"hellow", b"he"))
+    assert not b.startswith((b"hellow", b"ha"))
+
+    try:
+        assert b.startswith(("hel", "hello"))
+    except TypeError:
+        assert True
+    else:
+        assert False
+
 
 def test_endswith():
     b = b'hello'
@@ -460,6 +470,18 @@ def test_endswith():
     assert b.endswith(b"o")
     assert not b.endswith(b"whello")
     assert not b.endswith(b"no")
+
+
+def test_ord():
+    b = b"123"
+    assert ord(b[0:1]) == 49
+    assert ord(bytearray(b)[0:1]) == 49
+    try:
+        ord(b)
+    except TypeError as e:
+        assert "expected a character" in str(e), str(e)
+    else:
+        assert False
 
 
 def test_find():
@@ -538,7 +560,7 @@ def test_strip_bytes():
     assert b'abc'.rstrip(b'ac') == b'ab'
 
 class BaseTestSplit:
-    
+
     def test_string_error(self):
         self.assertRaises(TypeError, self.type2test(b'a b').split, ' ')
         self.assertRaises(TypeError, self.type2test(b'a b').rsplit, ' ')
@@ -601,10 +623,10 @@ class BaseTestSplit:
                 self.value = value
             def __index__(self):
                 return self.value
-        
+
         self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=MyIndexable(1)), [b'ahoj', b'jak\tse\nmas'])
         self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=MyIndexable(1)), [b'ahoj jak\tse', b'mas'])
-        
+
 class BytesSplitTest(BaseTestSplit, unittest.TestCase):
     type2test = bytes
 

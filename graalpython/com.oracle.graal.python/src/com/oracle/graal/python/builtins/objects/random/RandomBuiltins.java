@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
@@ -80,25 +81,25 @@ public class RandomBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public PNone seed(PRandom random, @SuppressWarnings("unused") PNone none) {
+        PNone seed(PRandom random, @SuppressWarnings("unused") PNone none) {
             random.setSeed(System.currentTimeMillis());
             return PNone.NONE;
         }
 
         @Specialization
-        public PNone seed(PRandom random, long inputSeed) {
+        PNone seed(PRandom random, long inputSeed) {
             random.setSeed(inputSeed);
             return PNone.NONE;
         }
 
         @Specialization
-        public PNone seed(PRandom random, PInt inputSeed) {
+        PNone seed(PRandom random, PInt inputSeed) {
             random.setSeed(inputSeed.longValue());
             return PNone.NONE;
         }
 
         @Specialization
-        public PNone seed(PRandom random, double inputSeed) {
+        PNone seed(PRandom random, double inputSeed) {
             random.setSeed((long) ((Long.MAX_VALUE - inputSeed) * 412316924));
             return PNone.NONE;
         }
@@ -107,7 +108,7 @@ public class RandomBuiltins extends PythonBuiltins {
         @Child LookupAndCallUnaryNode callHash;
 
         @Fallback
-        public PNone seedNonLong(Object random, Object inputSeed) {
+        PNone seedNonLong(VirtualFrame frame, Object random, Object inputSeed) {
             if (random instanceof PRandom) {
                 if (callHash == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -116,7 +117,7 @@ public class RandomBuiltins extends PythonBuiltins {
                 Object hashResult = null;
                 if (!gotUnexpectedHashResult) {
                     try {
-                        long hash = callHash.executeLong(inputSeed);
+                        long hash = callHash.executeLong(frame, inputSeed);
                         ((PRandom) random).setSeed(hash);
                         return PNone.NONE;
                     } catch (UnexpectedResultException e) {
@@ -127,7 +128,7 @@ public class RandomBuiltins extends PythonBuiltins {
                 }
                 if (gotUnexpectedHashResult) {
                     if (hashResult == null) {
-                        hashResult = callHash.executeObject(inputSeed);
+                        hashResult = callHash.executeObject(frame, inputSeed);
                     }
                     if (PGuards.isInteger(hashResult)) {
                         ((PRandom) random).setSeed(((Number) hashResult).intValue());

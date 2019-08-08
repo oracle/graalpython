@@ -63,7 +63,7 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.IsNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryIfNode;
@@ -140,7 +140,7 @@ public class NodeFactory {
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots cellSlots, Signature signature) {
-        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots, signature);
+        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, false, frameDescriptor, body, cellSlots, signature);
     }
 
     public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {
@@ -216,12 +216,12 @@ public class NodeFactory {
         return new BreakTargetNode(forNode, orelse);
     }
 
-    public YieldNode createYield(ExpressionNode right, FrameSlot returnSlot) {
-        return new YieldNode(createWriteLocal(right, returnSlot));
+    public YieldNode createYield(ExpressionNode right) {
+        return new YieldNode(right);
     }
 
-    public YieldFromNode createYieldFrom(ExpressionNode right, FrameSlot returnSlot) {
-        return new YieldFromNode(right, (WriteNode) createWriteLocal(null, returnSlot));
+    public YieldFromNode createYieldFrom(ExpressionNode right) {
+        return new YieldFromNode(right);
     }
 
     public ExpressionNode createIntegerLiteral(int value) {
@@ -397,9 +397,9 @@ public class NodeFactory {
             case "notin":
                 return CastToBooleanNode.createIfFalseNode(ContainsNode.create(right, left));
             case "is":
-                return IsNode.create(left, right);
+                return IsExpressionNode.create(left, right);
             case "isnot":
-                return CastToBooleanNode.createIfFalseNode(IsNode.create(left, right));
+                return CastToBooleanNode.createIfFalseNode(IsExpressionNode.create(left, right));
             default:
                 throw new RuntimeException("unexpected operation: " + operator);
         }
@@ -515,10 +515,6 @@ public class NodeFactory {
 
     public CastToBooleanNode createYesNode(ExpressionNode operand) {
         return CastToBooleanNode.createIfTrueNode(operand);
-    }
-
-    public StatementNode createTryFinallyNode(StatementNode body, StatementNode finalbody) {
-        return new TryFinallyNode(body, finalbody);
     }
 
     public StatementNode createTryExceptElseFinallyNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode elseNode, StatementNode finalbody) {

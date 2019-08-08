@@ -44,6 +44,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -95,8 +97,29 @@ public abstract class PRaiseNode extends Node {
         }
     }
 
+    @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType == cachedType"}, limit = "8")
+    PException doPythonBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
+                    @SuppressWarnings("unused") Object[] arguments,
+                    @Cached("exceptionType") PythonBuiltinClassType cachedType,
+                    @Cached PythonObjectFactory factory) {
+        throw raise(factory.createBaseException(cachedType));
+    }
+
+    @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"}, replaces = "doPythonBuiltinTypeCached")
+    PException doPythonBuiltinType(PythonBuiltinClassType exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
+                    @SuppressWarnings("unused") Object[] arguments,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        throw raise(factory.createBaseException(exceptionType));
+    }
+
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"})
-    PException doPythonType(LazyPythonClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
+    PException doPythonBuiltinClass(PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        throw raise(factory.createBaseException(exceptionType));
+    }
+
+    @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"})
+    PException doPythonManagedClass(PythonManagedClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         throw raise(factory.createBaseException(exceptionType));
     }
@@ -120,7 +143,8 @@ public abstract class PRaiseNode extends Node {
 
     @TruffleBoundary
     private static final String getMessage(Exception e) {
-        return e.getMessage();
+        String msg = e.getMessage();
+        return msg != null ? msg : e.getClass().getSimpleName();
     }
 
     public static PRaiseNode create() {

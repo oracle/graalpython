@@ -47,7 +47,7 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
     public static final double TIMEOUT_MAX = 2 ^ 31;
     public static final boolean DEFAULT_BLOCKING = true;
-    public static final double DEFAULT_TIMEOUT = -1.0;
+    public static final double UNSET_TIMEOUT = -1.0;
 
     AbstractPythonLock(LazyPythonClass cls) {
         super(cls);

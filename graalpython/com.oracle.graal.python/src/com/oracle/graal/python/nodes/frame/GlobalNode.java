@@ -48,20 +48,22 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public interface GlobalNode {
-    default boolean isInModule(VirtualFrame frame) {
-        return PArguments.getGlobals(frame) instanceof PythonModule;
+    default Object getGlobals(VirtualFrame frame) {
+        return PArguments.getGlobals(frame);
     }
 
-    default boolean isInBuiltinDict(VirtualFrame frame, IsBuiltinClassProfile profile) {
-        Object globals = PArguments.getGlobals(frame);
+    default boolean isModule(Object globals) {
+        return globals instanceof PythonModule;
+    }
+
+    default boolean isBuiltinDict(Object globals, IsBuiltinClassProfile profile) {
         if (globals instanceof PDict) {
             return profile.profileObject((PDict) globals, PythonBuiltinClassType.PDict);
         }
         return false;
     }
 
-    default boolean isInDict(VirtualFrame frame) {
-        Object globals = PArguments.getGlobals(frame);
+    default boolean isDict(Object globals) {
         return globals instanceof PDict;
     }
 }

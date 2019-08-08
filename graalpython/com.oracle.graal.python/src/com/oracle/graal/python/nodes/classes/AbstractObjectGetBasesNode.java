@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_get_bases")
@@ -61,12 +62,12 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
         return AbstractObjectGetBasesNodeGen.create();
     }
 
-    public abstract PTuple execute(Object cls);
+    public abstract PTuple execute(VirtualFrame frame, Object cls);
 
     @Specialization
-    public PTuple getBases(Object cls) {
+    PTuple getBases(VirtualFrame frame, Object cls) {
         try {
-            Object bases = getAttributeNode.executeObject(cls, __BASES__);
+            Object bases = getAttributeNode.executeObject(frame, cls, __BASES__);
             if (bases instanceof PTuple) {
                 return (PTuple) bases;
             }

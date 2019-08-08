@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -122,8 +122,8 @@ public abstract class ManagedMethodWrappers {
         public Object execute(Object[] arguments,
                         @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Exclusive @Cached CallNode dispatch,
-                        @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
+                        @Exclusive @Cached CallNode callNode,
+                        @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
                         @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
@@ -134,12 +134,12 @@ public abstract class ManagedMethodWrappers {
             Object starArgs = toJavaNode.execute(arguments[1]);
             Object kwArgs = toJavaNode.execute(arguments[2]);
 
-            Object[] starArgsArray = posStarargsNode.executeWith(starArgs);
+            Object[] starArgsArray = posStarargsNode.passState().executeWith(starArgs);
             Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
             PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
 
             // execute
-            return toSulongNode.execute(dispatch.execute(null, getDelegate(), pArgs, kwArgsArray));
+            return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
         }
     }
 

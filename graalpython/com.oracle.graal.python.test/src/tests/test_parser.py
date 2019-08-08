@@ -114,3 +114,10 @@ def test_single_input_non_interactive():
         assert got_value == 6
     finally:
         sys.displayhook = oldhook
+
+
+def test_underscore_in_numbers():
+    assert eval('1_0') == 10
+    assert eval('0b1_1') == 0b11
+    assert eval('0o1_7') == 0o17
+    assert eval('0x1_f') == 0x1f

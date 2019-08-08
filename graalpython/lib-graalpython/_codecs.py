@@ -282,11 +282,6 @@ def charmap_decode(string, errors=None, mapping=None):
 
 
 @__builtin__
-def charmap_build(mapping):
-    raise NotImplementedError("charmap_build")
-
-
-@__builtin__
 def readbuffer_encode(data, errors=None):
     raise NotImplementedError("readbuffer_encode")
 
@@ -327,6 +322,10 @@ import sys
 sys.path.append(sys.graal_python_stdlib_home)
 try:
     import encodings
+    # we import the below two encodings, because they are often used so it's
+    # useful to have them available preloaded
+    import encodings.ascii
+    import encodings.utf_8
 finally:
     assert len(sys.path) == 1
     sys.path.pop()

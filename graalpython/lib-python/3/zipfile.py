@@ -159,6 +159,29 @@ _CD64_NUMBER_ENTRIES_TOTAL = 7
 _CD64_DIRECTORY_SIZE = 8
 _CD64_OFFSET_START_CENTDIR = 9
 
+_DD_SIGNATURE = 0x08074b50
+
+_EXTRA_FIELD_STRUCT = struct.Struct('<HH')
+
+def _strip_extra(extra, xids):
+    # Remove Extra Fields with specified IDs.
+    unpack = _EXTRA_FIELD_STRUCT.unpack
+    modified = False
+    buffer = []
+    start = i = 0
+    while i + 4 <= len(extra):
+        xid, xlen = unpack(extra[i : i + 4])
+        j = i + 4 + xlen
+        if xid in xids:
+            if i != start:
+                buffer.append(extra[start : i])
+            start = j
+            modified = True
+        i = j
+    if not modified:
+        return extra
+    return b''.join(buffer)
+
 def _check_zipfile(fp):
     try:
         if _EndRecData(fp):
@@ -201,7 +224,7 @@ def _EndRecData64(fpin, offset, endrec):
     if sig != stringEndArchive64Locator:
         return endrec
 
-    if diskno != 0 or disks != 1:
+    if diskno != 0 or disks > 1:
         raise BadZipFile("zipfiles that span multiple disks are not supported")
 
     # Assume no 'zip64 extensible data'
@@ -379,7 +402,7 @@ class ZipInfo (object):
         return ''.join(result)
 
     def FileHeader(self, zip64=None):
-        """Return the per-file header as a string."""
+        """Return the per-file header as a bytes object."""
         dt = self.date_time
         dosdate = (dt[0] - 1980) << 9 | dt[1] << 5 | dt[2]
         dostime = dt[3] << 11 | dt[4] << 5 | (dt[5] // 2)
@@ -701,11 +724,11 @@ class _SharedFile:
 
     def seek(self, offset, whence=0):
         with self._lock:
-            if self.writing():
+            if self._writing():
                 raise ValueError("Can't reposition in the ZIP file while "
                         "there is an open writing handle on it. "
                         "Close the writing handle before trying to read.")
-            self._file.seek(self._pos)
+            self._file.seek(offset, whence)
             self._pos = self._file.tell()
             return self._pos
 
@@ -852,7 +875,7 @@ class ZipExtFile(io.BufferedIOBase):
 
     def read(self, n=-1):
         """Read and return up to n bytes.
-        If the argument is omitted, None, or negative, data is read and returned until EOF is reached..
+        If the argument is omitted, None, or negative, data is read and returned until EOF is reached.
         """
         if n is None or n < 0:
             buf = self._readbuffer[self._offset:]
@@ -1021,14 +1044,13 @@ class ZipExtFile(io.BufferedIOBase):
             read_offset = 0
         elif read_offset < 0:
             # Position is before the current position. Reset the ZipExtFile
-
             self._fileobj.seek(self._orig_compress_start)
             self._running_crc = self._orig_start_crc
             self._compress_left = self._orig_compress_size
             self._left = self._orig_file_size
             self._readbuffer = b''
             self._offset = 0
-            self._decompressor = zipfile._get_decompressor(self._compress_type)
+            self._decompressor = _get_decompressor(self._compress_type)
             self._eof = False
             read_offset = new_pos
 
@@ -1079,47 +1101,50 @@ class _ZipWriteFile(io.BufferedIOBase):
     def close(self):
         if self.closed:
             return
-        super().close()
-        # Flush any data from the compressor, and update header info
-        if self._compressor:
-            buf = self._compressor.flush()
-            self._compress_size += len(buf)
-            self._fileobj.write(buf)
-            self._zinfo.compress_size = self._compress_size
-        else:
-            self._zinfo.compress_size = self._file_size
-        self._zinfo.CRC = self._crc
-        self._zinfo.file_size = self._file_size
+        try:
+            super().close()
+            # Flush any data from the compressor, and update header info
+            if self._compressor:
+                buf = self._compressor.flush()
+                self._compress_size += len(buf)
+                self._fileobj.write(buf)
+                self._zinfo.compress_size = self._compress_size
+            else:
+                self._zinfo.compress_size = self._file_size
+            self._zinfo.CRC = self._crc
+            self._zinfo.file_size = self._file_size
 
-        # Write updated header info
-        if self._zinfo.flag_bits & 0x08:
-            # Write CRC and file sizes after the file data
-            fmt = '<LQQ' if self._zip64 else '<LLL'
-            self._fileobj.write(struct.pack(fmt, self._zinfo.CRC,
-                self._zinfo.compress_size, self._zinfo.file_size))
-            self._zipfile.start_dir = self._fileobj.tell()
-        else:
-            if not self._zip64:
-                if self._file_size > ZIP64_LIMIT:
-                    raise RuntimeError('File size unexpectedly exceeded ZIP64 '
-                                       'limit')
-                if self._compress_size > ZIP64_LIMIT:
-                    raise RuntimeError('Compressed size unexpectedly exceeded '
-                                       'ZIP64 limit')
-            # Seek backwards and write file header (which will now include
-            # correct CRC and file sizes)
+            # Write updated header info
+            if self._zinfo.flag_bits & 0x08:
+                # Write CRC and file sizes after the file data
+                fmt = '<LLQQ' if self._zip64 else '<LLLL'
+                self._fileobj.write(struct.pack(fmt, _DD_SIGNATURE, self._zinfo.CRC,
+                    self._zinfo.compress_size, self._zinfo.file_size))
+                self._zipfile.start_dir = self._fileobj.tell()
+            else:
+                if not self._zip64:
+                    if self._file_size > ZIP64_LIMIT:
+                        raise RuntimeError(
+                            'File size unexpectedly exceeded ZIP64 limit')
+                    if self._compress_size > ZIP64_LIMIT:
+                        raise RuntimeError(
+                            'Compressed size unexpectedly exceeded ZIP64 limit')
+                # Seek backwards and write file header (which will now include
+                # correct CRC and file sizes)
 
-            # Preserve current position in file
-            self._zipfile.start_dir = self._fileobj.tell()
-            self._fileobj.seek(self._zinfo.header_offset)
-            self._fileobj.write(self._zinfo.FileHeader(self._zip64))
-            self._fileobj.seek(self._zipfile.start_dir)
+                # Preserve current position in file
+                self._zipfile.start_dir = self._fileobj.tell()
+                self._fileobj.seek(self._zinfo.header_offset)
+                self._fileobj.write(self._zinfo.FileHeader(self._zip64))
+                self._fileobj.seek(self._zipfile.start_dir)
 
-        self._zipfile._writing = False
+            # Successfully written: Add file to our caches
+            self._zipfile.filelist.append(self._zinfo)
+            self._zipfile.NameToInfo[self._zinfo.filename] = self._zinfo
+        finally:
+            self._zipfile._writing = False
 
-        # Successfully written: Add file to our caches
-        self._zipfile.filelist.append(self._zinfo)
-        self._zipfile.NameToInfo[self._zinfo.filename] = self._zinfo
+
 
 class ZipFile:
     """ Class with methods to open, read, write, close, list zip files.
@@ -1402,7 +1427,7 @@ class ZipFile:
         self._didModify = True
 
     def read(self, name, pwd=None):
-        """Return file bytes (as a string) for name."""
+        """Return file bytes for name."""
         with self.open(name, "r", pwd) as fp:
             return fp.read()
 
@@ -1814,6 +1839,7 @@ class ZipFile:
             min_version = 0
             if extra:
                 # Append a ZIP64 field to the extra's
+                extra_data = _strip_extra(extra_data, (1,))
                 extra_data = struct.pack(
                     '<HH' + 'Q'*len(extra),
                     1, 8*len(extra), *extra) + extra_data

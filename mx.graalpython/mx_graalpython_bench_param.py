@@ -21,6 +21,7 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import os
 
 import mx
@@ -85,6 +86,7 @@ MICRO_BENCHMARKS = {
     'list-iterating-explicit': ITER_25 + ['1000000'],
     'list-iterating': ITER_25 + ['1000000'],
     'list-iterating-obj': ITER_15 + ['50000000'],
+    'list-constructions': ITER_25 + ['500000'],
     'math-sqrt': ITER_15 + ['500000000'],
     'object-allocate': ITER_10 + ['5000'],
     'object-layout-change': ITER_15 + ['1000000'],
@@ -99,6 +101,8 @@ MICRO_BENCHMARKS = {
     'mmap-anonymous': ITER_15 + ['1000'],
     'mmap-file': ITER_15 + ['1000'],
     'generate-functions': ITER_15 + ['10000000'],
+    'try-except': ITER_15 + ['1000000'],
+    'try-except-store': ITER_15 + ['1000000'],
 }
 
 
@@ -124,7 +128,7 @@ MESO_BENCHMARKS = {
     'pads-eratosthenes': ITER_10 + ['100000'],
     'pads-integerpartitions': ITER_10 + ['700'],
     'pads-bipartite': ITER_10 + ['10000'],
-    'pads-lyndon': ITER_10 + ['10000000'],
+    'pads-lyndon': ITER_25 + ['10000000'],
     # -------------------------------------------------------
     # object benchmarks
     # -------------------------------------------------------

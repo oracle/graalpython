@@ -14,6 +14,24 @@ To try it, you can use the bundled releases from
 some examples of what you can do with it, check out the
 [reference](https://www.graalvm.org/docs/reference-manual/languages/python/).
 
+### Create a virtual environment
+
+The best way of using the GraalVM implementation of Python is out of a virtual environment. This generates 
+wrapper scripts and makes the implementation usable from shell as standard Python interpreter. To do so
+execute the following command in the project directory:
+
+```
+mx graalpython -m venv <dir-to-venv>
+```
+
+To activate the environment in your shell session call:
+
+```
+source <dir-to-venv>/bin/activate
+```
+
+In the venv multiple executables are available, like `python`, `python3` and `graalpython`. 
+
 ### Installing packages
 
 At the moment not enough of the standard library is implemented to run the
@@ -47,7 +65,7 @@ but this version is what we're testing with in our CI.
 
 ### Polyglot Usage
 
-We have a [document](doc/INTEROP.md) describing how we implement the
+We have a [document](doc/POLYGLOT.md) describing how we implement the
 cross-language interop. This will hopefully give you an idea how to use it.
 
 ### Contributing
@@ -58,7 +76,7 @@ Agreement](http://www.graalvm.org/community/contributors/) for us to able to
 merge your work. Please also take note of our [code of
 conduct](http://www.graalvm.org/community/conduct/) for contributors.
 
-To get you started, we have [written](docs/CONTRIBUTING.md) a bit about the
+To get you started, we have [written a bit](doc/CONTRIBUTING.md) about the
 structure of this interpreter that should show how to fix things or add
 features.
 

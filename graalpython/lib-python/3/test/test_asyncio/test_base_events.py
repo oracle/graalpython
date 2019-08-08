@@ -93,11 +93,11 @@ class BaseEventTests(test_utils.TestCase):
             base_events._ipaddr_info('1.2.3.4', 1, INET6, STREAM, TCP))
 
         self.assertEqual(
-            (INET6, STREAM, TCP, '', ('::3', 1)),
+            (INET6, STREAM, TCP, '', ('::3', 1, 0, 0)),
             base_events._ipaddr_info('::3', 1, INET6, STREAM, TCP))
 
         self.assertEqual(
-            (INET6, STREAM, TCP, '', ('::3', 1)),
+            (INET6, STREAM, TCP, '', ('::3', 1, 0, 0)),
             base_events._ipaddr_info('::3', 1, UNSPEC, STREAM, TCP))
 
         # IPv6 address with family IPv4.
@@ -272,7 +272,7 @@ class BaseEventLoopTests(test_utils.TestCase):
         loop.set_debug(debug)
         if debug:
             msg = ("Non-thread-safe operation invoked on an event loop other "
-                  "than the current one")
+                   "than the current one")
             with self.assertRaisesRegex(RuntimeError, msg):
                 loop.call_soon(cb)
             with self.assertRaisesRegex(RuntimeError, msg):
@@ -907,6 +907,74 @@ class BaseEventLoopTests(test_utils.TestCase):
         self.loop.run_forever()
         self.loop._selector.select.assert_called_once_with(0)
 
+    async def leave_unfinalized_asyncgen(self):
+        # Create an async generator, iterate it partially, and leave it
+        # to be garbage collected.
+        # Used in async generator finalization tests.
+        # Depends on implementation details of garbage collector. Changes
+        # in gc may break this function.
+        status = {'started': False,
+                  'stopped': False,
+                  'finalized': False}
+
+        async def agen():
+            status['started'] = True
+            try:
+                for item in ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR']:
+                    yield item
+            finally:
+                status['finalized'] = True
+
+        ag = agen()
+        ai = ag.__aiter__()
+
+        async def iter_one():
+            try:
+                item = await ai.__anext__()
+            except StopAsyncIteration:
+                return
+            if item == 'THREE':
+                status['stopped'] = True
+                return
+            asyncio.create_task(iter_one())
+
+        asyncio.create_task(iter_one())
+        return status
+
+    def test_asyncgen_finalization_by_gc(self):
+        # Async generators should be finalized when garbage collected.
+        self.loop._process_events = mock.Mock()
+        self.loop._write_to_self = mock.Mock()
+        with support.disable_gc():
+            status = self.loop.run_until_complete(self.leave_unfinalized_asyncgen())
+            while not status['stopped']:
+                test_utils.run_briefly(self.loop)
+            self.assertTrue(status['started'])
+            self.assertTrue(status['stopped'])
+            self.assertFalse(status['finalized'])
+            support.gc_collect()
+            test_utils.run_briefly(self.loop)
+            self.assertTrue(status['finalized'])
+
+    def test_asyncgen_finalization_by_gc_in_other_thread(self):
+        # Python issue 34769: If garbage collector runs in another
+        # thread, async generators will not finalize in debug
+        # mode.
+        self.loop._process_events = mock.Mock()
+        self.loop._write_to_self = mock.Mock()
+        self.loop.set_debug(True)
+        with support.disable_gc():
+            status = self.loop.run_until_complete(self.leave_unfinalized_asyncgen())
+            while not status['stopped']:
+                test_utils.run_briefly(self.loop)
+            self.assertTrue(status['started'])
+            self.assertTrue(status['stopped'])
+            self.assertFalse(status['finalized'])
+            self.loop.run_until_complete(
+                self.loop.run_in_executor(None, support.gc_collect))
+            test_utils.run_briefly(self.loop)
+            self.assertTrue(status['finalized'])
+
 
 class MyProto(asyncio.Protocol):
     done = None
@@ -1073,6 +1141,26 @@ class BaseEventLoopWithSelectorTests(test_utils.TestCase):
             srv.close()
             self.loop.run_until_complete(srv.wait_closed())
 
+    @unittest.skipUnless(hasattr(socket, 'AF_INET6'), 'no IPv6 support')
+    def test_create_server_ipv6(self):
+        async def main():
+            srv = await asyncio.start_server(
+                lambda: None, '::1', 0, loop=self.loop)
+            try:
+                self.assertGreater(len(srv.sockets), 0)
+            finally:
+                srv.close()
+                await srv.wait_closed()
+
+        try:
+            self.loop.run_until_complete(main())
+        except OSError as ex:
+            if (hasattr(errno, 'EADDRNOTAVAIL') and
+                    ex.errno == errno.EADDRNOTAVAIL):
+                self.skipTest('failed to bind to ::1')
+            else:
+                raise
+
     def test_create_datagram_endpoint_wrong_sock(self):
         sock = socket.socket(socket.AF_INET)
         with sock:
@@ -1197,6 +1285,28 @@ class BaseEventLoopWithSelectorTests(test_utils.TestCase):
             host, port = address[:2]
             self.assertRegex(host, r'::(0\.)*1')
             self.assertEqual(port, 80)
+            _, kwargs = m_socket.socket.call_args
+            self.assertEqual(kwargs['family'], m_socket.AF_INET6)
+            self.assertEqual(kwargs['type'], m_socket.SOCK_STREAM)
+        finally:
+            t.close()
+            test_utils.run_briefly(self.loop)  # allow transport to close
+
+    @patch_socket
+    def test_create_connection_ipv6_scope(self, m_socket):
+        m_socket.getaddrinfo = socket.getaddrinfo
+        sock = m_socket.socket.return_value
+        sock.family = socket.AF_INET6
+
+        self.loop._add_reader = mock.Mock()
+        self.loop._add_reader._is_coroutine = False
+        self.loop._add_writer = mock.Mock()
+        self.loop._add_writer._is_coroutine = False
+
+        coro = self.loop.create_connection(asyncio.Protocol, 'fe80::1%1', 80)
+        t, p = self.loop.run_until_complete(coro)
+        try:
+            sock.connect.assert_called_with(('fe80::1', 80, 0, 1))
             _, kwargs = m_socket.socket.call_args
             self.assertEqual(kwargs['family'], m_socket.AF_INET6)
             self.assertEqual(kwargs['type'], m_socket.SOCK_STREAM)
@@ -1480,6 +1590,23 @@ class BaseEventLoopWithSelectorTests(test_utils.TestCase):
             asyncio.DatagramProtocol, remote_addr=('127.0.0.1', 0))
         self.assertRaises(
             OSError, self.loop.run_until_complete, coro)
+
+    def test_create_datagram_endpoint_allow_broadcast(self):
+        protocol = MyDatagramProto(create_future=True, loop=self.loop)
+        self.loop.sock_connect = sock_connect = mock.Mock()
+        sock_connect.return_value = []
+
+        coro = self.loop.create_datagram_endpoint(
+            lambda: protocol,
+            remote_addr=('127.0.0.1', 0),
+            allow_broadcast=True)
+
+        transport, _ = self.loop.run_until_complete(coro)
+        self.assertFalse(sock_connect.called)
+
+        transport.close()
+        self.loop.run_until_complete(protocol.done)
+        self.assertEqual('CLOSED', protocol.state)
 
     @patch_socket
     def test_create_datagram_endpoint_socket_err(self, m_socket):
@@ -1966,6 +2093,32 @@ class BaseLoopSockSendfileTests(test_utils.TestCase):
         with self.assertRaisesRegex(ValueError,
                                     "offset must be a non-negative integer"):
             self.run_loop(self.loop.sock_sendfile(sock, self.file, -1))
+
+
+class TestSelectorUtils(test_utils.TestCase):
+    def check_set_nodelay(self, sock):
+        opt = sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY)
+        self.assertFalse(opt)
+
+        base_events._set_nodelay(sock)
+
+        opt = sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY)
+        self.assertTrue(opt)
+
+    @unittest.skipUnless(hasattr(socket, 'TCP_NODELAY'),
+                         'need socket.TCP_NODELAY')
+    def test_set_nodelay(self):
+        sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM,
+                             proto=socket.IPPROTO_TCP)
+        with sock:
+            self.check_set_nodelay(sock)
+
+        sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM,
+                             proto=socket.IPPROTO_TCP)
+        with sock:
+            sock.setblocking(False)
+            self.check_set_nodelay(sock)
+
 
 
 if __name__ == '__main__':

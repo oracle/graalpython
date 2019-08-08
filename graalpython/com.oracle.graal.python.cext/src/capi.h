@@ -43,6 +43,7 @@
 
 #define MUST_INLINE __attribute__((always_inline)) inline
 
+#include "polyglot.h"
 #include "Python.h"
 
 #define SRC_CS "utf-8"
@@ -83,10 +84,31 @@ extern void *Py_NoValue;
 extern init_upcall upcalls[];
 extern unsigned init_upcall_n;
 
+/* upcall helpers */
+MUST_INLINE
+PyObject* polyglot_ensure_ptr(void *obj) {
+	return polyglot_fits_in_i64(obj) ? (PyObject*) polyglot_as_i64(obj) : (PyObject*) obj;
+}
+
+MUST_INLINE
+int32_t polyglot_ensure_i32(void *obj) {
+	return polyglot_fits_in_i32(obj) ? polyglot_as_i32(obj) : (int32_t) obj;
+}
+
+MUST_INLINE
+int64_t polyglot_ensure_i64(void *obj) {
+	return polyglot_fits_in_i64(obj) ? polyglot_as_i64(obj) : (int64_t) obj;
+}
+
+MUST_INLINE
+double polyglot_ensure_double(void *obj) {
+	return polyglot_fits_in_double(obj) ? polyglot_as_double(obj) : (double) ((int64_t)obj);
+}
+
 /* upcall functions for calling into Python */
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
-extern PyObject*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
-extern PyObject*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
+extern uint64_t(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
+extern double(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
 extern PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
 extern uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
@@ -100,16 +122,16 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), __name__, ##__VA_ARGS__))
 
 /* Call function with return type 'int'; no polyglot cast but error handling */
-#define UPCALL_I(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+#define UPCALL_I(__recv__, __name__, ...) (polyglot_ensure_i32(UPCALL_P(__recv__, __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'long'; no polyglot cast but error handling */
-#define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+#define UPCALL_L(__recv__, __name__, ...) (polyglot_ensure_i64(UPCALL_P(__recv__, __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_D(__recv__, __name__, ...) PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__)
+#define UPCALL_D(__recv__, __name__, ...) (polyglot_ensure_double(PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'void*'; no polyglot cast and no error handling */
-#define UPCALL_PTR(__name__, ...) (PY_TRUFFLE_LANDING_PTR(__name__, ##__VA_ARGS__))
+#define UPCALL_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_LANDING_PTR(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
 #define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
@@ -121,19 +143,19 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_CEXT_NOCAST(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
 
 /* Call function of 'python_cext' module with return type 'void*'; no polyglot cast and no error handling */
-#define UPCALL_CEXT_PTR(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with a primitive return; no polyglot cast but error handling */
 #define UPCALL_CEXT_P(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_L(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'int'; no polyglot cast but error handling */
-#define UPCALL_CEXT_I(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_I(__name__, ...) (polyglot_ensure_i32(UPCALL_CEXT_P(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'long'; no polyglot cast but error handling */
-#define UPCALL_CEXT_L(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_L(__name__, ...) (polyglot_ensure_i64(UPCALL_CEXT_P(__name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_CEXT_D(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_D(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_D(__name__, ...) (polyglot_ensure_double(PY_TRUFFLE_CEXT_LANDING_D(__name__, ##__VA_ARGS__)))
 
 #define UPCALL_ID(name)                                                 \
     static void* _jls_ ## name;                                         \
@@ -241,7 +263,7 @@ void* wrap_unsupported(void *fun, ...);
            wrap_direct :                                                                 \
            wrap_unsupported))))))))
 
-#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
+#define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
@@ -278,11 +300,13 @@ void* wrap_unsupported(void *fun, ...);
     0,                                          /* tp_descr_set */\
     0,                                          /* tp_dictoffset */\
     0,                                          /* tp_init */\
-    0,                                          /* tp_alloc */\
+    (__ALLOC__),                                /* tp_alloc */\
     0,                                          /* tp_new */\
     0,                                          /* tp_free */\
     0,                                          /* tp_is_gc */\
 }
+
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0)
 
 /** to be used from Java code only; returns a type's basic size */
 #define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \
@@ -303,8 +327,8 @@ extern PyObject* wrapped_null;
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
-/* DICT */
-void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
+/* STR */
+PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
 
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
@@ -315,5 +339,36 @@ int bytes_copy2mem(char* target, char* source, size_t nbytes);
 
 /* MEMORYVIEW, BUFFERDECORATOR */
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
+
+#if 1
+/*
+ * (tfel): On native Sulong, using va_list will force all arguments to native
+ * memory, which hinders escape analysis and PE in a big way. To avoid this,
+ * when we have function called with var args (rather than already with a
+ * va_list), we allocate a managed array of void*, fill it with the arguments,
+ * and pass that one on. In the target functions, we use the macros below to
+ * access the variable arguments part depending on whether it is a va_list or a
+ * managed void* array. The assumption is that once everything is compiled
+ * together, the managed array with arguments will be escape analyzed away.
+ */
+#define CallWithPolyglotArgs(result, last, off, function, ...)          \
+    int __poly_argc = polyglot_get_arg_count();                         \
+    int __poly_args_s = sizeof(void*) * (__poly_argc - off);            \
+    void **__poly_args = truffle_managed_malloc(__poly_args_s);         \
+    for (int i = off; i < __poly_argc; i++) {                           \
+        __poly_args[i - off] = polyglot_get_arg(i);                     \
+    }                                                                   \
+    result = function(__VA_ARGS__, NULL, __poly_args, 0)
+#else
+/*
+ * (tfel): Just skip the optimization with using a managed malloc and use
+ * va_list always.
+ */
+#define CallWithPolyglotArgs(result, last, off, function, ...)          \
+    va_list __poly_args;                                                \
+    va_start(__poly_args, last);                                        \
+    result = function(__VA_ARGS__, __poly_args, NULL, 0);               \
+    va_end(__poly_args)
+#endif
 
 #endif

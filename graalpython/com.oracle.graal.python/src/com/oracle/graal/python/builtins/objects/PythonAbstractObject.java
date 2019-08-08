@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -78,7 +79,8 @@ import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
-import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
+import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -108,11 +110,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
 
-    public DynamicObjectNativeWrapper getNativeWrapper() {
+    public final DynamicObjectNativeWrapper getNativeWrapper() {
         return nativeWrapper;
     }
 
-    public void setNativeWrapper(DynamicObjectNativeWrapper nativeWrapper) {
+    public final void setNativeWrapper(DynamicObjectNativeWrapper nativeWrapper) {
         assert this.nativeWrapper == null;
         this.nativeWrapper = nativeWrapper;
     }
@@ -144,7 +146,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return;
                 }
             }
-            if (isMapping.execute(this)) {
+            if (check(isMapping, this)) {
                 setItemNode.execute(this, key, value);
             } else {
                 writeNode.execute(this, key, value);
@@ -189,7 +191,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } catch (PException e) {
             // pass
         }
-        if (isSequenceNode.execute(this)) {
+        if (check(isSequenceNode, this)) {
             try {
                 return toForeign.executeConvert(getItemNode.execute(this, key));
             } catch (PException e) {
@@ -205,7 +207,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Shared("isIterableNode") @Cached IsIterableNode isIterableNode) {
-        return (isSequenceNode.execute(this) || isIterableNode.execute(this)) && !isMapping.execute(this);
+        return (check(isSequenceNode, this) || check(isIterableNode, this)) && !check(isMapping, this);
     }
 
     @ExportMessage
@@ -219,11 +221,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached CallNode callIterNode,
                     @Exclusive @Cached CallNode callNextNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (isSequenceNode.execute(this)) {
+        if (check(isSequenceNode, this)) {
             try {
                 return toForeign.executeConvert(getItemNode.execute(this, key));
             } catch (PException e) {
-                if (isMapping.execute(this)) {
+                if (check(isMapping, this)) {
                     throw UnsupportedMessageException.create();
                 } else {
                     // TODO(fa) refine exception handling
@@ -233,7 +235,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
 
-        if (isIterableNode.execute(this)) {
+        if (check(isIterableNode, this)) {
             Object attrIter = lookupIterNode.execute(this, SpecialMethodNames.__ITER__);
             Object iter = callIterNode.execute(null, attrIter, this);
             if (iter != this) {
@@ -255,7 +257,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public void writeArrayElement(long key, Object value,
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (isSequenceNode.execute(this)) {
+        if (check(isSequenceNode, this)) {
             try {
                 setItemNode.execute(this, key, value);
             } catch (PException e) {
@@ -263,16 +265,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 // it's a sequence, so we assume the index is wrong
                 throw InvalidArrayIndexException.create(key);
             }
+        } else {
+            throw UnsupportedMessageException.create();
         }
-
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     public void removeArrayElement(long key,
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (isSequenceNode.execute(this)) {
+        if (check(isSequenceNode, this)) {
             try {
                 deleteItemNode.execute(this, key);
             } catch (PException e) {
@@ -280,9 +282,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 // it's a sequence, so we assume the index is wrong
                 throw InvalidArrayIndexException.create(key);
             }
+        } else {
+            throw UnsupportedMessageException.create();
         }
-
-        throw UnsupportedMessageException.create();
     }
 
     private static Object iterateToKey(LookupInheritedAttributeNode.Dynamic lookupNextNode, CallNode callNextNode, Object iter, long key) {
@@ -350,7 +352,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     private long getArraySizeSafe(LookupAndCallUnaryDynamicNode callLenNode) {
-        Object lenObj = callLenNode.executeObject(this, SpecialMethodNames.__LEN__);
+        Object lenObj = callLenNode.passState().executeObject(this, SpecialMethodNames.__LEN__);
         if (lenObj instanceof Number) {
             return ((Number) lenObj).longValue();
         } else if (lenObj instanceof PInt) {
@@ -433,7 +435,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public boolean isExecutable(
                     @Cached IsCallableNode isCallableNode) {
-        return isCallableNode.execute(this);
+        return check(isCallableNode, this);
     }
 
     @ExportMessage
@@ -446,7 +448,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @TruffleBoundary
     public Object getMembers(boolean includeInternal,
                     @Exclusive @Cached LookupAndCallUnaryDynamicNode keysNode,
-                    @Cached CastToListNode castToList,
+                    @Cached CastToListInteropNode castToList,
                     @Cached GetClassNode getClass,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
@@ -466,8 +468,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
         if (includeInternal) {
             // we use the internal flag to also return dictionary keys for mappings
-            if (isMapping.execute(this)) {
-                PList mapKeys = castToList.executeWith(keysNode.executeObject(this, SpecialMethodNames.KEYS));
+            if (check(isMapping, this)) {
+                PList mapKeys = castToList.passState().execute(keysNode.passState().executeObject(this, SpecialMethodNames.KEYS));
                 int len = lenNode.execute(mapKeys);
                 for (int i = 0; i < len; i++) {
                     Object key = getItemNode.execute(mapKeys, i);
@@ -511,7 +513,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return;
                 }
             }
-            if (isMapping.execute(this) && getDelItemNode.execute(this, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE) {
+            if (check(isMapping, this) && getDelItemNode.execute(this, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE) {
                 delItemNode.execute(this, member);
             } else {
                 deleteAttributeNode.execute(this, member);
@@ -566,7 +568,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         @Specialization
         int access(Object object, String fieldName,
-                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
+                        @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @Cached IsCallableNode isCallableNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
@@ -595,7 +598,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
 
             for (PythonAbstractClass c : getMroNode.execute(klass)) {
-                attr = readNode.execute(c, attrKeyName);
+                // n.b. we need to use a different node because it makes a difference if the type is
+                // native
+                attr = readTypeAttrNode.execute(c, attrKeyName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
                     break;
@@ -603,7 +608,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
 
             if (attr == PNone.NO_VALUE) {
-                attr = readNode.execute(owner, attrKeyName);
+                attr = readObjectAttrNode.execute(owner, attrKeyName);
             }
 
             if (attr != PNone.NO_VALUE) {
@@ -631,12 +636,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 if (!isImmutable.execute(owner)) {
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
-                } else if (isMapping.execute(object)) {
-                    // Even if the attribute's owner is immutable, if the object is a mapping, it
-                    // may be inserted.
-                    info |= INSERTABLE;
                 }
-            } else if (!isImmutable.execute(object) || isMapping.execute(object)) {
+            } else if (!isImmutable.execute(object) || check(isMapping, object)) {
                 // If the member does not exist yet, it is insertable if this object is mutable,
                 // i.e., it's not a builtin object or it is a mapping.
                 info |= INSERTABLE;
@@ -645,7 +646,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             if ((info & READ_SIDE_EFFECTS) == 0 && (info & INVOCABLE) == 0) {
                 // if this is not a getter, we check if the value inherits a __call__ attr
                 // if it is a getter, we just cannot really tell if the attr is invocable
-                if (isCallableNode.execute(attr)) {
+                if (check(isCallableNode, attr)) {
                     info |= INVOCABLE;
                 }
             }
@@ -674,7 +675,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             // 'type'
             if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
                 return true;
-            } else if (object instanceof PythonClass) {
+            } else if (object instanceof PythonClass || object instanceof PythonModule) {
                 return false;
             } else {
                 LazyPythonClass klass = getClass.execute(object);
@@ -770,6 +771,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @GenerateUncached
     public abstract static class PExecuteNode extends Node {
+
         public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;
 
         @Specialization
@@ -1049,6 +1051,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @TruffleBoundary
     private static boolean objectHasAttribute(Object object, Object field) {
         return ((PythonObject) object).getAttributeNames().contains(field);
+    }
+
+    public static boolean check(PDataModelEmulationNode isMapping, Object obj) {
+        return isMapping.passState().execute(obj);
     }
 
 }

@@ -56,13 +56,14 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToDoubleNode extends PNodeWithContext {
     @Child private LookupAndCallUnaryNode callFloatNode;
 
-    public abstract double execute(Object x);
+    public abstract double execute(VirtualFrame frame, Object x);
 
     public static CastToDoubleNode create() {
         return CastToDoubleNodeGen.create();
@@ -84,13 +85,13 @@ public abstract class CastToDoubleNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isNumber(x)")
-    public double toDouble(Object x,
+    public double toDouble(VirtualFrame frame, Object x,
                     @Cached PRaiseNode raise) {
         if (callFloatNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callFloatNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
         }
-        Object result = callFloatNode.executeObject(x);
+        Object result = callFloatNode.executeObject(frame, x);
         if (result == PNone.NO_VALUE) {
             throw raise.raise(TypeError, "must be real number, not %p", x);
         }

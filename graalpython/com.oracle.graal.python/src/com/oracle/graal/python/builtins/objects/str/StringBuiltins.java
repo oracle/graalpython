@@ -54,10 +54,15 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -75,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StringLenNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -94,23 +98,27 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -785,9 +793,9 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class JoinNode extends PythonBuiltinNode {
 
         @Specialization
-        protected String join(Object self, Object iterable,
+        protected String join(VirtualFrame frame, Object self, Object iterable,
                         @Cached("create()") JoinInternalNode join) {
-            return join.execute(self, iterable);
+            return join.execute(frame, self, iterable);
         }
     }
 
@@ -811,7 +819,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
         @Specialization
-        public PDict maketrans(String from, String to,
+        public PDict maketrans(VirtualFrame frame, String from, String to,
                         @Cached("create()") SetItemNode setItemNode) {
             if (from.length() != to.length()) {
                 throw new RuntimeException("maketrans arguments must have same length");
@@ -821,7 +829,7 @@ public final class StringBuiltins extends PythonBuiltins {
             for (int i = 0; i < from.length(); i++) {
                 int key = from.charAt(i);
                 int value = to.charAt(i);
-                translation.setDictStorage(setItemNode.execute(translation.getDictStorage(), key, value));
+                translation.setDictStorage(setItemNode.execute(frame, translation.getDictStorage(), key, value));
             }
 
             return translation;
@@ -835,7 +843,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class TranslateNode extends PythonBuiltinNode {
         @Specialization
-        public String translate(String self, String table) {
+        String translate(String self, String table) {
             char[] translatedChars = new char[self.length()];
 
             for (int i = 0; i < self.length(); i++) {
@@ -848,7 +856,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String translate(String self, PDict table,
+        String translate(VirtualFrame frame, String self, PDict table,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") SpliceNode spliceNode) {
@@ -859,7 +867,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 char original = self.charAt(i);
                 Object translated = null;
                 try {
-                    translated = getItemNode.executeObject(table, (int) original);
+                    translated = getItemNode.executeObject(frame, table, (int) original);
                 } catch (PException e) {
                     e.expect(KeyError, errorProfile);
                 }
@@ -891,15 +899,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String translate(String self, PIBytesLike table,
+        String translate(VirtualFrame frame, String self, PIBytesLike table,
                         @Cached("create()") BytesNodes.ToBytesNode getBytesNode) {
-            return translateFromByteTable(self, getBytesNode.execute(table));
+            return translateFromByteTable(self, getBytesNode.execute(frame, table));
         }
 
         @Specialization
-        public String translate(String self, PMemoryView table,
+        String translate(VirtualFrame frame, String self, PMemoryView table,
                         @Cached("create()") BytesNodes.ToBytesNode getBytesNode) {
-            return translateFromByteTable(self, getBytesNode.execute(table));
+            return translateFromByteTable(self, getBytesNode.execute(frame, table));
         }
 
     }
@@ -1187,17 +1195,17 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        public PList doSplit(String self, PNone sep, PNone maxsplit) {
-            return rsplitfields(self, -1);
+        PList doSplit(VirtualFrame frame, String self, PNone sep, PNone maxsplit) {
+            return rsplitfields(frame, self, -1);
         }
 
         @Specialization
-        public PList doSplit(String self, String sep, @SuppressWarnings("unused") PNone maxsplit) {
-            return doSplit(self, sep, Integer.MAX_VALUE);
+        PList doSplit(VirtualFrame frame, String self, String sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return doSplit(frame, self, sep, Integer.MAX_VALUE);
         }
 
         @Specialization
-        public PList doSplit(String self, String sep, int maxsplit) {
+        PList doSplit(VirtualFrame frame, String self, String sep, int maxsplit) {
             if (sep.length() == 0) {
                 throw raise(ValueError, "empty separator");
             }
@@ -1220,13 +1228,13 @@ public final class StringBuiltins extends PythonBuiltins {
             }
 
             getAppendNode().execute(list, remainder);
-            getReverseNode().execute(list);
+            getReverseNode().execute(frame, list);
             return list;
         }
 
         @Specialization
-        public PList doSplit(String self, @SuppressWarnings("unused") PNone sep, int maxsplit) {
-            return rsplitfields(self, maxsplit);
+        public PList doSplit(VirtualFrame frame, String self, @SuppressWarnings("unused") PNone sep, int maxsplit) {
+            return rsplitfields(frame, self, maxsplit);
         }
 
         @TruffleBoundary
@@ -1235,7 +1243,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         // See {@link PyString}
-        private PList rsplitfields(String s, int maxsplit) {
+        private PList rsplitfields(VirtualFrame frame, String s, int maxsplit) {
             /*
              * Result built here is a list of split parts, exactly as required for s.split(None,
              * maxsplit). If there are to be n splits, there will be n+1 elements in L.
@@ -1291,7 +1299,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 end = index - 1;
             }
 
-            getReverseNode().execute(list);
+            getReverseNode().execute(frame, list);
             return list;
         }
     }
@@ -1407,29 +1415,11 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class StringLenNode extends PythonUnaryBuiltinNode {
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(String self) {
-            return self.length();
-        }
-
-        @Specialization
-        public int len(PString self,
-                        @Cached("createClassProfile()") ValueProfile classProfile,
-                        @Cached("create()") BranchProfile uncommonStringTypeProfile) {
-            Object profiled = classProfile.profile(self.getCharSequence());
-            if (profiled instanceof String) {
-                return ((String) profiled).length();
-            } else if (profiled instanceof LazyString) {
-                return ((LazyString) profiled).length();
-            } else {
-                uncommonStringTypeProfile.enter();
-                return ((CharSequence) profiled).length();
-            }
-        }
-
-        public static StringLenNode create() {
-            return StringLenNodeFactory.create();
+        public int len(Object self,
+                        @Cached StringLenNode stringLenNode) {
+            return stringLenNode.execute(self);
         }
     }
 
@@ -1472,6 +1462,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // This is only used during bootstrap and then replaced with Python code
     @Builtin(name = "encode", minNumOfPositionalArgs = 1, parameterNames = {"self", "encoding", "errors"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1512,15 +1503,18 @@ public final class StringBuiltins extends PythonBuiltins {
                     break;
             }
 
+            Charset cs;
             try {
-                Charset cs = Charset.forName(encoding);
+                cs = Charset.forName(encoding);
+            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
+                throw raise(LookupError, "unknown encoding: %s", encoding);
+            }
+            try {
                 ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
                 int n = encoded.remaining();
                 byte[] data = new byte[n];
                 encoded.get(data);
                 return factory().createBytes(data);
-            } catch (IllegalArgumentException e) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeEncodeError, e);
             }
@@ -1602,13 +1596,32 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class ModNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        Object doGeneric(String left, Object right,
+        Object doGeneric(VirtualFrame frame, String left, Object right,
                         @Cached("create()") CallNode callNode,
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
-            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+
+            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+            try {
+                return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
+            } finally {
+                IndirectCallContext.exit(context, savedExceptionState);
+            }
+        }
+    }
+
+    @Builtin(name = "isascii", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class IsAsciiNode extends PythonUnaryBuiltinNode {
+        private static final CharsetEncoder asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
+
+        @Specialization
+        @TruffleBoundary
+        boolean doString(String self) {
+            return asciiEncoder.canEncode(self);
         }
     }
 
@@ -1829,24 +1842,24 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ZFillNode extends PythonBinaryBuiltinNode {
 
-        public abstract String executeObject(String self, Object x);
+        public abstract String executeObject(VirtualFrame frame, String self, Object x);
 
         @Specialization
-        public String doString(String self, long width) {
+        String doString(String self, long width) {
             return zfill(self, (int) width);
         }
 
         @Specialization
-        public String doString(String self, PInt width,
+        String doString(String self, PInt width,
                         @Cached("create()") CastToIndexNode toIndexNode) {
             return zfill(self, toIndexNode.execute(width));
         }
 
         @Specialization
-        public String doString(String self, Object width,
+        String doString(VirtualFrame frame, String self, Object width,
                         @Cached("create()") CastToIntegerFromIndexNode widthCast,
                         @Cached("create()") ZFillNode recursiveNode) {
-            return recursiveNode.executeObject(self, widthCast.execute(width));
+            return recursiveNode.executeObject(frame, self, widthCast.execute(frame, width));
         }
 
         private static String zfill(String self, int width) {

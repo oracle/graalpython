@@ -37,9 +37,11 @@ from test.test_asyncio import utils as test_utils
 from test import support
 
 
-def osx_tiger():
+def broken_unix_getsockname():
     """Return True if the platform is Mac OS 10.4 or older."""
-    if sys.platform != 'darwin':
+    if sys.platform.startswith("aix"):
+        return True
+    elif sys.platform != 'darwin':
         return False
     version = platform.mac_ver()[0]
     version = tuple(map(int, version.split('.')))
@@ -572,6 +574,7 @@ class EventLoopTestsMixin:
         self.loop.add_signal_handler(signal.SIGALRM, my_handler)
 
         signal.setitimer(signal.ITIMER_REAL, 0.01, 0)  # Send SIGALRM once.
+        self.loop.call_later(60, self.loop.stop)
         self.loop.run_forever()
         self.assertEqual(caught, 1)
 
@@ -584,11 +587,12 @@ class EventLoopTestsMixin:
             nonlocal caught
             caught += 1
             self.assertEqual(args, some_args)
+            self.loop.stop()
 
         self.loop.add_signal_handler(signal.SIGALRM, my_handler, *some_args)
 
         signal.setitimer(signal.ITIMER_REAL, 0.1, 0)  # Send SIGALRM once.
-        self.loop.call_later(0.5, self.loop.stop)
+        self.loop.call_later(60, self.loop.stop)
         self.loop.run_forever()
         self.assertEqual(caught, 1)
 
@@ -613,7 +617,7 @@ class EventLoopTestsMixin:
     def test_create_unix_connection(self):
         # Issue #20682: On Mac OS X Tiger, getsockname() returns a
         # zero-length address for UNIX socket.
-        check_sockname = not osx_tiger()
+        check_sockname = not broken_unix_getsockname()
 
         with test_utils.run_test_unix_server() as httpd:
             conn_fut = self.loop.create_unix_connection(
@@ -744,7 +748,7 @@ class EventLoopTestsMixin:
     def test_create_ssl_unix_connection(self):
         # Issue #20682: On Mac OS X Tiger, getsockname() returns a
         # zero-length address for UNIX socket.
-        check_sockname = not osx_tiger()
+        check_sockname = not broken_unix_getsockname()
 
         with test_utils.run_test_unix_server(use_ssl=True) as httpd:
             create_connection = functools.partial(
@@ -2113,7 +2117,8 @@ class SubprocessTestsMixin:
 
 class SendfileBase:
 
-    DATA = b"SendfileBaseData" * (1024 * 8)  # 128 KiB
+    # 128 KiB plus small unaligned to buffer chunk
+    DATA = b"SendfileBaseData" * (1024 * 8 + 1)
 
     # Reduce socket buffer size to test on relative small data sets.
     BUF_SIZE = 4 * 1024   # 4 KiB

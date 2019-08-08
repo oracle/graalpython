@@ -61,7 +61,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -74,6 +76,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -102,7 +105,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object run(String code,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return getContext().getEnv().parse(Source.newBuilder("regex", code, "build-regex-engine").build()).call();
+            return getContext().getEnv().parseInternal(Source.newBuilder("regex", code, "build-regex-engine").build()).call();
         }
     }
 
@@ -142,8 +145,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(PMemoryView memoryView) {
-            byte[] bytes = doBytes(getToBytesNode().execute(memoryView));
+        Object run(VirtualFrame frame, PMemoryView memoryView) {
+            byte[] bytes = doBytes(getToBytesNode().execute(frame, memoryView));
             if (bytes != null) {
                 return factory().createByteArray(bytes);
             }
@@ -198,10 +201,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class TRegexCallCompile extends PythonTernaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object call(Object callable, Object arg1, Object arg2,
+        Object call(VirtualFrame frame, Object callable, Object arg1, Object arg2,
                         @Cached("create()") BranchProfile syntaxError,
                         @Cached("create()") BranchProfile typeError,
-                        @CachedLibrary("callable") InteropLibrary interop) {
+                        @CachedLibrary("callable") InteropLibrary interop,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
             try {
                 return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
@@ -214,6 +219,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 }
                 // just re-throw
                 throw e;
+            } finally {
+                IndirectCallContext.exit(context, savedExceptionState);
             }
         }
     }
@@ -224,14 +231,18 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class TRegexCallExec extends PythonTernaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object call(Object callable, Object arg1, Number arg2,
+        Object call(VirtualFrame frame, Object callable, Object arg1, Number arg2,
                         @Cached("create()") BranchProfile typeError,
-                        @CachedLibrary("callable") InteropLibrary interop) {
+                        @CachedLibrary("callable") InteropLibrary interop,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
             try {
                 return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
+            } finally {
+                IndirectCallContext.exit(context, savedExceptionState);
             }
         }
     }

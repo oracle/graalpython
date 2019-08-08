@@ -661,6 +661,15 @@ def PyUnicode_Compare(left, right):
         return -1
     else:
         return 1
+    
+_codecs_module = None
+
+@may_raise
+def PyUnicode_AsUnicodeEscapeString(string):
+    global _codecs_module
+    if not _codecs_module:
+        import _codecs as _codecs_module 
+    return _codecs_module.unicode_escape_encode(string)[0]
 
 
 ##################### CAPSULE
@@ -724,9 +733,28 @@ def PyModule_AddObject(m, k, v):
     return None
 
 
-from posix import stat_result
+@may_raise
 def PyStructSequence_New(typ):
-    return stat_result([None] * stat_result.n_sequence_fields * 2)
+    n = len(typ._fields)
+    return typ(*([None]*n))
+
+
+namedtuple_type = None
+@may_raise
+def PyStructSequence_InitType2(type_name, type_doc, field_names, field_docs):
+    assert len(field_names) == len(field_docs)
+    global namedtuple_type
+    if not namedtuple_type:
+        from collections import namedtuple as namedtuple_type
+    new_type = namedtuple_type(type_name, field_names)
+    new_type.__doc__ = type_doc
+    for i in range(len(field_names)):
+        prop = getattr(new_type, field_names[i])
+        assert isinstance(prop, property)
+        prop.__doc__ = field_docs[i]
+    # ensure '_fields' attribute; required in 'PyStructSequence_New'
+    assert hasattr(new_type, "_fields")
+    return new_type
 
 
 def METH_UNSUPPORTED(fun):
@@ -860,10 +888,6 @@ def PyObject_Repr(o):
     return repr(o)
 
 
-def PyTuple_New(size):
-    return (None,) * size
-
-
 @may_raise(-1)
 def PyTuple_Size(t):
     if not isinstance(t, tuple):
@@ -895,6 +919,7 @@ def PyObject_Size(obj):
         return -1
 
 
+@may_raise
 def PyObject_Call(callee, args, kwargs):
     return callee(*args, **kwargs)
 
@@ -1176,9 +1201,14 @@ tbtype = type(sys._getframe(0).f_trace)
 
 @may_raise(-1)
 def PyTraceBack_Here(frame):
-    # skip this, the may_raise wrapper, the upcall wrapper, and PyTraceBack_Here itself
-    parentframe = sys._getframe(4)
-    return PyTruffleTraceBack_Here(parentframe.f_trace, frame)
+    exc, val, tb = sys.exc_info()
+    if val:
+        # CPython does a PyErr_Fetch and then PyErr_Restore with the newly
+        # created traceback. So if val is None, the restore would just do
+        # nothing. But if it is available, we basically just set the current
+        # __traceback__ to a traceback object wrapped around the exception here.
+        exc.__traceback__ = PyTruffleTraceBack_Here(frame, tb);
+    return 0
 
 
 ##################### C EXT HELPERS

@@ -80,7 +80,7 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
 
     public static PythonClassNativeWrapper wrap(PythonManagedClass obj, String name) {
         // important: native wrappers are cached
-        PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        PythonClassNativeWrapper nativeWrapper = obj.getClassNativeWrapper();
         if (nativeWrapper == null) {
             nativeWrapper = new PythonClassNativeWrapper(obj, name);
             obj.setNativeWrapper(nativeWrapper);

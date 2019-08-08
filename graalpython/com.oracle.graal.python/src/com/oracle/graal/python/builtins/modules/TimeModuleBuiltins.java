@@ -189,6 +189,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "perf_counter", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PythonPerfCounterNode extends PythonClockNode {
+    }
+
     // time.clock()
     @Builtin(name = "clock", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory

@@ -41,6 +41,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PEnumerate)
 public final class EnumerateBuiltins extends PythonBuiltins {
@@ -55,9 +56,9 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object __next__(PEnumerate self,
+        Object doNext(VirtualFrame frame, PEnumerate self,
                         @Cached("create()") GetNextNode next) {
-            return factory().createTuple((new Object[]{self.getAndIncrementIndex(), next.execute(self.getIterator())}));
+            return factory().createTuple((new Object[]{self.getAndIncrementIndex(), next.execute(frame, self.getIterator())}));
         }
     }
 

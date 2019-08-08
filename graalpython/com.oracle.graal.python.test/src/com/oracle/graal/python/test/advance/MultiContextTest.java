@@ -68,6 +68,23 @@ public class MultiContextTest extends PythonTests {
         }
     }
 
+    @Test
+    public void testTryCatch() {
+        Engine engine = Engine.newBuilder().build();
+        for (int i = 0; i < 10; i++) {
+            try (Context context = newContext(engine)) {
+                context.eval("python", "last_val = -1\n" +
+                                "try:\n" +
+                                "    riter = iter(range(1000000))\n" +
+                                "    while True:\n" +
+                                "        last_val = next(riter)\n" +
+                                "except StopIteration:\n" +
+                                "    pass\n" +
+                                "last_val");
+            }
+        }
+    }
+
     private static Context newContext(Engine engine) {
         return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
     }

@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class HashingCollectionNodes {
 
@@ -85,19 +86,19 @@ public abstract class HashingCollectionNodes {
 
     @ImportStatic(PGuards.class)
     public abstract static class SetItemNode extends PNodeWithContext {
-        public abstract void execute(PHashingCollection c, Object key, Object value);
+        public abstract void execute(VirtualFrame frame, PHashingCollection c, Object key, Object value);
 
         @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        void doSetItemCached(PHashingCollection c, Object key, Object value,
+        void doSetItemCached(VirtualFrame frame, PHashingCollection c, Object key, Object value,
                         @Cached HashingStorageNodes.SetItemNode setItemNode,
                         @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            cachedClass.cast(c).setDictStorage(setItemNode.execute(cachedClass.cast(c).getDictStorage(), key, value));
+            cachedClass.cast(c).setDictStorage(setItemNode.execute(frame, cachedClass.cast(c).getDictStorage(), key, value));
         }
 
         @Specialization(replaces = "doSetItemCached")
-        void doSetItemGeneric(PHashingCollection c, Object key, Object value,
+        void doSetItemGeneric(VirtualFrame frame, PHashingCollection c, Object key, Object value,
                         @Cached HashingStorageNodes.SetItemNode setItemNode) {
-            c.setDictStorage(setItemNode.execute(c.getDictStorage(), key, value));
+            c.setDictStorage(setItemNode.execute(frame, c.getDictStorage(), key, value));
         }
 
         public static SetItemNode create() {

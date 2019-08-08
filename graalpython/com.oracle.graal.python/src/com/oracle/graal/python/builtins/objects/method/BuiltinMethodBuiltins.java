@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinMethod})
 public class BuiltinMethodBuiltins extends PythonBuiltins {
@@ -75,38 +76,44 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
-        @TruffleBoundary
-        Object reprBuiltinFunction(PMethod self,
+        Object reprBuiltinFunction(VirtualFrame frame, PMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
             // (tfel): this only happens for builtin modules ... I think
-            return String.format("<built-in function %s>", getNameNode.executeObject(self.getFunction()));
+            return strFormat("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
-        @TruffleBoundary
-        String reprBuiltinFunction(PBuiltinMethod self,
+        String reprBuiltinFunction(VirtualFrame frame, PBuiltinMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
-            return String.format("<built-in function %s>", getNameNode.executeObject(self.getFunction()));
+            return strFormat("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)")
-        @TruffleBoundary
-        Object reprBuiltinMethod(PBuiltinMethod self,
+        Object reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
-            return String.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(self.getFunction()), typeName, self.hashCode());
+            return strFormat("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)")
-        @TruffleBoundary
-        Object reprBuiltinMethod(PMethod self,
+        Object reprBuiltinMethod(VirtualFrame frame, PMethod self,
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
-            return String.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(self.getFunction()), typeName, self.hashCode());
+            return strFormat("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, hashCode(self));
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static int hashCode(Object self) {
+            return self.hashCode();
+        }
+
+        @TruffleBoundary
+        private static String strFormat(String fmt, Object... objects) {
+            return String.format(fmt, objects);
         }
 
         protected static GetAttributeNode createGetAttributeNode() {
@@ -118,18 +125,18 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String doBuiltinMethod(PBuiltinMethod self,
+        String doBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") CastToStringNode castToStringNode) {
-            String name = castToStringNode.execute(getNameNode.executeObject(self.getFunction()));
+            String name = castToStringNode.execute(frame, getNameNode.executeObject(frame, self.getFunction()));
             return doMethod(name, self.getSelf());
         }
 
         @Specialization
-        String doBuiltinMethod(PMethod self,
+        String doBuiltinMethod(VirtualFrame frame, PMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") CastToStringNode castToStringNode) {
-            return doMethod(castToStringNode.execute(getNameNode.executeObject(self.getFunction())), self.getSelf());
+            return doMethod(castToStringNode.execute(frame, getNameNode.executeObject(frame, self.getFunction())), self.getSelf());
         }
 
         private String doMethod(String name, Object owner) {
@@ -159,13 +166,13 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         @Child AbstractFunctionBuiltins.TextSignatureNode subNode = AbstractFunctionBuiltins.TextSignatureNode.create();
 
         @Specialization
-        Object getTextSignature(PBuiltinMethod self) {
-            return subNode.execute(self.getFunction());
+        Object getTextSignature(VirtualFrame frame, PBuiltinMethod self) {
+            return subNode.execute(frame, self.getFunction());
         }
 
         @Specialization
-        Object getTextSignature(PMethod self) {
-            return subNode.execute(self.getFunction());
+        Object getTextSignature(VirtualFrame frame, PMethod self) {
+            return subNode.execute(frame, self.getFunction());
         }
     }
 }

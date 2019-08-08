@@ -25,15 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import com.oracle.truffle.api.object.Shape;
-
 /**
  * Mutable class.
  */
 public final class PythonClass extends PythonManagedClass {
 
-    public PythonClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonAbstractClass[] baseClasses) {
-        super(typeClass, name, instanceShape, baseClasses);
+    public PythonClass(LazyPythonClass typeClass, String name, PythonAbstractClass[] baseClasses) {
+        super(typeClass, name, baseClasses);
     }
 
 }

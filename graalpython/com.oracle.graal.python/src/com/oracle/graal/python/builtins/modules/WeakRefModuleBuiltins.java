@@ -44,7 +44,6 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -184,8 +183,8 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                 ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
                 return queue;
             } else {
-                CompilerDirectives.transferToInterpreter();
-                if (PythonLanguage.getContextRef().get().getCore().isInitialized()) {
+                if (getContext().getCore().isInitialized()) {
+                    CompilerDirectives.transferToInterpreter();
                     throw new IllegalStateException("the weak reference queue was modified!");
                 } else {
                     // returning a null reference queue is fine, it just means

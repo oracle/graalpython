@@ -3,6 +3,55 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 19.3.0
+
+* Implement `charmap_build` function
+* Implement `hexversion` in sys module
+* Implement `_lzma` module
+* Fix printing of Pandas data frames
+* Fix a bug in `bytes.startswith` for tuple arguments
+* Fix destructuring assignments of arbitrary iterators
+* Fix `dict.__contains__` for dictionaries with only `str` keys for subclasses of `str`
+* Support NumPy 1.16.4 and Pandas 0.25.0
+* Support importing Java classes using normal Python import syntax when the package is known
+* Improve performance across many Python benchmarks
+
+## Version 19.2.0
+
+* Implement PyStructSequence_* C API functions
+* Implement `_functools.partial` as a class instead of a function
+* Implement `type.__base__`
+* Implement reading C API type attributes `nb_inplace_add`, `nb_remainder`, `nb_subtract`, and `nb_floor_divide` for builtin types
+* Implement C API functions `_PyObject_CallFunction_SizeT`, `PyEval_InitThreads`, and `PyEval_ThreadsInitialized`
+* Implement writing to a function's `__dict__` field
+* Implement the C API thread state fields `overflowed` and `recursion_depth`
+* Fix printing of errors in the REPL
+* Fix printing full paths in traceback
+* Support the C API varargs functions with arbitrary numbers of arguments instead of imposing an upper limit
+* Improve performance of attribute reads and reading closure variables
+
+## Version 19.1.0
+
+* Add `java.add_to_classpath` API to dynamically extend the host class path
+* Allow write access to main module bindings for embedder
+* Swap arguments for `polyglot.export_value` to use the more natural (name, value) order and deprecate the previous argument order.
+* Update Python standard library files to Python 3.7.3
+* Improve performance of exceptions that do not escape
+* Fix str(None) to print "None" instead of an empty string
+* Fix error messages on polyglot objects to not leak implementation class names of those objects
+* Fix erroneously frozen package paths in pre-initialized python modules
+* Fix caching of core sources in a native image with a preinitialized context for pre-built images and libpolyglot fast startup
+* Implement pwd.getpwuid
+* Implement os.exec, os.execv, and os.execl
+* Add some missing C API headers needed for tensorflow compilation
+
+## Version 19.0.0
+
+* Fix an issue preventing use of encodings in the installable binary
+* Fix return value of process when `os.exit` is called with a boolean
+* Fix interpretation of foreign objects to prefer interpreting them as integer over double
+* Fix performance regression when repeatedly creating a new function in a loop
+
 ## Version 1.0.0 RC16
 
 * No user-facing changes

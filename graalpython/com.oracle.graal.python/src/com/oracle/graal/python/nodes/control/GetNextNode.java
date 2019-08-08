@@ -44,153 +44,118 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(cost = NONE)
-public abstract class GetNextNode extends PNodeWithContext {
-
-    private static final GetNextUncachedNode UNCACHED = new GetNextUncachedNode();
+public final class GetNextNode extends PNodeWithContext {
 
     public static GetNextNode create() {
-        return new GetNextCachedNode();
+        return new GetNextNode();
     }
 
-    public static GetNextNode getUncached() {
-        return UNCACHED;
+    @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__, () -> new NoAttributeHandler() {
+        @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
+        @Override
+        public Object execute(Object receiver) {
+            throw raiseNode.raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", receiver);
+        }
+    });
+
+    public Object execute(VirtualFrame frame, Object iterator) {
+        return nextCall.executeObject(frame, iterator);
     }
 
-    public abstract Object execute(Object iterator);
+    public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+        try {
+            return nextCall.executeBoolean(frame, iterator);
+        } catch (UnexpectedResultException e) {
+            throw new UnexpectedResultException(e.getResult());
+        }
+    }
 
-    public abstract boolean executeBoolean(Object iterator) throws UnexpectedResultException;
+    public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+        try {
+            return nextCall.executeInt(frame, iterator);
+        } catch (UnexpectedResultException e) {
+            throw new UnexpectedResultException(e.getResult());
+        }
+    }
 
-    public abstract int executeInt(Object iterator) throws UnexpectedResultException;
+    public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+        try {
+            return nextCall.executeLong(frame, iterator);
+        } catch (UnexpectedResultException e) {
+            throw new UnexpectedResultException(e.getResult());
+        }
+    }
 
-    public abstract long executeLong(Object iterator) throws UnexpectedResultException;
+    public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+        try {
+            return nextCall.executeDouble(frame, iterator);
+        } catch (UnexpectedResultException e) {
+            throw new UnexpectedResultException(e.getResult());
+        }
+    }
 
-    public abstract double executeDouble(Object iterator) throws UnexpectedResultException;
+    @GenerateUncached
+    public abstract static class GetNextWithoutFrameNode extends PNodeWithGlobalState<NodeContextManager> {
 
-    private static final class GetNextCachedNode extends GetNextNode {
+        protected abstract Object execute(Object iterator);
 
-        @Child private PRaiseNode raiseNode;
-        @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__);
-
-        private final ConditionProfile notAnIterator = ConditionProfile.createBinaryProfile();
-
-        private Object checkResult(Object result, Object iterator) {
+        private static Object checkResult(PRaiseNode raiseNode, ConditionProfile notAnIterator, Object result, Object iterator) {
             if (notAnIterator.profile(result == PNone.NO_VALUE)) {
-                // TODO: maybe this could be handled in LookupAndCallUnaryNode directly?
-                if (raiseNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    raiseNode = insert(PRaiseNode.create());
-                }
                 throw raiseNode.raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
             }
             return result;
         }
 
-        @Override
-        public Object execute(Object iterator) {
-            return checkResult(nextCall.executeObject(iterator), iterator);
+        @Specialization
+        Object doObject(Object iterator,
+                        @Cached LookupAndCallUnaryDynamicNode nextCall,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached("createBinaryProfile()") ConditionProfile notAnIterator) {
+            return checkResult(raiseNode, notAnIterator, nextCall.passState().executeObject(iterator, __NEXT__), iterator);
         }
 
-        @Override
-        public boolean executeBoolean(Object iterator) throws UnexpectedResultException {
-            try {
-                return nextCall.executeBoolean(iterator);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+        public static final class GetNextContextManager extends NodeContextManager {
+
+            private final GetNextWithoutFrameNode delegate;
+
+            private GetNextContextManager(GetNextWithoutFrameNode delegate, PythonContext context, VirtualFrame frame) {
+                super(context, frame, delegate);
+                this.delegate = delegate;
+            }
+
+            public Object execute(Object x) {
+                return delegate.execute(x);
             }
         }
 
         @Override
-        public int executeInt(Object iterator) throws UnexpectedResultException {
-            try {
-                return nextCall.executeInt(iterator);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
-            }
+        public GetNextContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+            return new GetNextContextManager(this, contextRef.get(), frame);
         }
 
         @Override
-        public long executeLong(Object iterator) throws UnexpectedResultException {
-            try {
-                return nextCall.executeLong(iterator);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
-            }
+        public GetNextContextManager passState() {
+            return new GetNextContextManager(this, null, null);
         }
-
-        @Override
-        public double executeDouble(Object iterator) throws UnexpectedResultException {
-            try {
-                return nextCall.executeDouble(iterator);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
-            }
-        }
-    }
-
-    private static final class GetNextUncachedNode extends GetNextNode {
-
-        private static Object checkResult(Object result, Object iterator) {
-            if (result == PNone.NO_VALUE) {
-                throw PRaiseNode.getUncached().raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
-            }
-            return result;
-        }
-
-        @Override
-        public Object execute(Object iterator) {
-            return checkResult(LookupAndCallUnaryDynamicNode.getUncached().executeObject(iterator, __NEXT__), iterator);
-        }
-
-        @Override
-        public boolean executeBoolean(Object iterator) throws UnexpectedResultException {
-            Object res = execute(iterator);
-            try {
-                return (boolean) res;
-            } catch (ClassCastException e) {
-                throw new UnexpectedResultException(checkResult(res, iterator));
-            }
-        }
-
-        @Override
-        public int executeInt(Object iterator) throws UnexpectedResultException {
-            Object res = execute(iterator);
-            try {
-                return (int) res;
-            } catch (ClassCastException e) {
-                throw new UnexpectedResultException(checkResult(res, iterator));
-            }
-        }
-
-        @Override
-        public long executeLong(Object iterator) throws UnexpectedResultException {
-            Object res = execute(iterator);
-            try {
-                return (long) res;
-            } catch (ClassCastException e) {
-                throw new UnexpectedResultException(checkResult(res, iterator));
-            }
-        }
-
-        @Override
-        public double executeDouble(Object iterator) throws UnexpectedResultException {
-            Object res = execute(iterator);
-            try {
-                return (double) res;
-            } catch (ClassCastException e) {
-                throw new UnexpectedResultException(checkResult(res, iterator));
-            }
-        }
-
     }
 }

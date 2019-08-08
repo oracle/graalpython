@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
@@ -74,7 +75,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclas
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeFastNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeSlowNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -90,18 +92,12 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -109,7 +105,6 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class TypeNodes {
 
-    // TODO qualified name is a workaround for a DSL bug
     public abstract static class GetTypeFlagsNode extends com.oracle.truffle.api.nodes.Node {
         private static final int HEAPTYPE = 1 << 9;
 
@@ -122,27 +117,17 @@ public abstract class TypeNodes {
             }
 
             @Specialization
-            long doGeneric(PythonManagedClass clazz,
-                            @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            long doGeneric(PythonManagedClass clazz) {
                 if (!isInitialized(clazz)) {
-                    try {
-                        return getValue(clazz, clazz.getFlagsContainer());
-                    } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                        throw raiseNode.raise(AttributeError, "object '%p' has no attribute %s", clazz, NativeMemberNames.TP_FLAGS);
-                    }
+                    return getValue(clazz, clazz.getFlagsContainer());
                 }
                 return clazz.getFlagsContainer().flags;
             }
 
-            @Specialization(limit = "1")
+            @Specialization
             long doNative(PythonNativeClass clazz,
-                            @CachedLibrary("clazz.getPtr()") InteropLibrary lib,
-                            @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-                try {
-                    return (long) lib.readMember(clazz.getPtr(), NativeMemberNames.TP_FLAGS);
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw raiseNode.raise(AttributeError, "object '%p' has no attribute %s", clazz, NativeMemberNames.TP_FLAGS);
-                }
+                            @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
+                return (long) getTpFlagsNode.execute(clazz, NativeMemberNames.TP_FLAGS);
             }
         }
 
@@ -151,17 +136,13 @@ public abstract class TypeNodes {
 
             @Override
             public long execute(PythonAbstractClass clazz) {
-                try {
-                    return doSlowPath(clazz);
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw PRaiseNode.getUncached().raise(AttributeError, "object '%p' has no attribute %s", clazz, NativeMemberNames.TP_FLAGS);
-                }
+                return doSlowPath(clazz);
             }
 
         }
 
         @TruffleBoundary
-        private static long getValue(PythonManagedClass clazz, FlagsContainer fc) throws UnsupportedMessageException, UnknownIdentifierException {
+        private static long getValue(PythonManagedClass clazz, FlagsContainer fc) {
             // This method is only called from C code, i.e., the flags of the initial super class
             // must be available.
             if (fc.initialDominantBase != null) {
@@ -176,7 +157,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static long doSlowPath(PythonAbstractClass clazz) throws UnsupportedMessageException, UnknownIdentifierException {
+        private static long doSlowPath(PythonAbstractClass clazz) {
             if (PGuards.isManagedClass(clazz)) {
                 PythonManagedClass mclazz = (PythonManagedClass) clazz;
                 if (isInitialized(mclazz)) {
@@ -185,14 +166,10 @@ public abstract class TypeNodes {
                     return getValue(mclazz, mclazz.getFlagsContainer());
                 }
             } else if (PGuards.isNativeClass(clazz)) {
-                return doNativeGeneric((PythonNativeClass) clazz, InteropLibrary.getFactory().getUncached(((PythonNativeClass) clazz).getPtr()));
+                return (long) CExtNodes.GetTypeMemberNode.getUncached().execute(clazz, NativeMemberNames.TP_FLAGS);
             }
             throw new IllegalStateException("unknown type");
 
-        }
-
-        static long doNativeGeneric(PythonNativeClass clazz, InteropLibrary lib) throws UnsupportedMessageException, UnknownIdentifierException {
-            return (long) lib.readMember(clazz.getPtr(), NativeMemberNames.TP_FLAGS);
         }
 
         protected static boolean isInitialized(PythonManagedClass clazz) {
@@ -461,7 +438,7 @@ public abstract class TypeNodes {
                     if (PGuards.isNativeClass(e)) {
                         dict.setItem(PythonNativeClass.cast(e).getPtr(), e);
                     }
-                    dict.setItem(new PythonNativeVoidPtr((TruffleObject) e), e);
+                    dict.setItem(new PythonNativeVoidPtr(e), e);
                     return true;
                 }
 
@@ -573,15 +550,51 @@ public abstract class TypeNodes {
 
     }
 
+    @ImportStatic(NativeMemberNames.class)
+    public abstract static class GetBaseClassNode extends PNodeWithContext {
+
+        public abstract PythonAbstractClass execute(Object obj);
+
+        @Specialization
+        PythonAbstractClass doPythonClass(PythonManagedClass obj,
+                        @Cached PRaiseNode raise) {
+            PythonAbstractClass[] baseClasses = obj.getBaseClasses();
+            if (baseClasses.length == 1) {
+                return baseClasses[0];
+            }
+            throw raise.raise(NotImplementedError, "get bestBase case not yet implemented");
+        }
+
+        @Specialization
+        PythonAbstractClass doPythonClass(PythonBuiltinClassType obj,
+                        @Cached PRaiseNode raise,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PythonAbstractClass[] baseClasses = context.getCore().lookupType(obj).getBaseClasses();
+            if (baseClasses.length == 1) {
+                return baseClasses[0];
+            }
+            throw raise.raise(NotImplementedError, "get bestBase case not yet implemented");
+        }
+
+        @Specialization
+        PythonAbstractClass doNative(PythonNativeClass obj,
+                        @Cached PRaiseNode raise,
+                        @Cached GetTypeMemberNode getTpBaseNode,
+                        @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
+            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE));
+            if (result instanceof PythonAbstractClass) {
+                return (PythonAbstractClass) result;
+            }
+            throw raise.raise(PythonBuiltinClassType.SystemError, "type does not provide __base__");
+        }
+
+        public static GetBaseClassNode create() {
+            return GetBaseClassNodeGen.create();
+        }
+    }
+
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class IsSameTypeNode extends PNodeWithContext {
-        @Child private CExtNodes.PointerCompareNode pointerCompareNode;
-
-        private final boolean fastCheck;
-
-        public IsSameTypeNode(boolean fastCheck) {
-            this.fastCheck = fastCheck;
-        }
 
         public abstract boolean execute(Object left, Object right);
 
@@ -607,7 +620,7 @@ public abstract class TypeNodes {
 
         @Specialization
         boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @Cached("createNativeEquals()") IsSameNativeObjectNode isSameNativeObjectNode) {
+                        @Cached(value = "createNativeEquals()", uncached = "getUncachedNativeEquals()") IsSameNativeObjectNode isSameNativeObjectNode) {
             return isSameNativeObjectNode.execute(left, right);
         }
 
@@ -617,10 +630,11 @@ public abstract class TypeNodes {
         }
 
         protected IsSameNativeObjectNode createNativeEquals() {
-            if (fastCheck) {
-                return IsSameNativeObjectFastNodeGen.create();
-            }
-            return IsSameNativeObjectSlowNodeGen.create();
+            throw new IllegalStateException();
+        }
+
+        protected IsSameNativeObjectNode getUncachedNativeEquals() {
+            throw new IllegalStateException();
         }
 
         @TruffleBoundary
@@ -634,11 +648,48 @@ public abstract class TypeNodes {
         }
 
         public static IsSameTypeNode create() {
-            return IsSameTypeNodeGen.create(false);
+            return IsSameTypeFastNodeGen.create();
+        }
+
+        public static IsSameTypeNode getUncached() {
+            return IsSameTypeSlowNodeGen.create();
         }
 
         public static IsSameTypeNode createFast() {
-            return IsSameTypeNodeGen.create(true);
+            return IsSameTypeSlowNodeGen.create();
+        }
+
+        public static IsSameTypeNode getUncachedFast() {
+            return IsSameTypeFastNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class IsSameTypeFastNode extends IsSameTypeNode {
+
+        @Override
+        protected IsSameNativeObjectNode createNativeEquals() {
+            return IsSameNativeObjectFastNodeGen.create();
+        }
+
+        @Override
+        protected IsSameNativeObjectNode getUncachedNativeEquals() {
+            return IsSameNativeObjectFastNodeGen.getUncached();
+        }
+
+    }
+
+    @GenerateUncached
+    abstract static class IsSameTypeSlowNode extends IsSameTypeNode {
+
+        @Override
+        protected IsSameNativeObjectNode createNativeEquals() {
+            return IsSameNativeObjectSlowNodeGen.create();
+        }
+
+        @Override
+        protected IsSameNativeObjectNode getUncachedNativeEquals() {
+            return IsSameNativeObjectSlowNodeGen.getUncached();
         }
 
     }

@@ -3,7 +3,7 @@ import collections
 import pickle
 import re
 import sys
-from unittest import TestCase, main, skipUnless, SkipTest, expectedFailure
+from unittest import TestCase, main, skipUnless, SkipTest, skip
 from copy import copy, deepcopy
 
 from typing import Any, NoReturn
@@ -651,9 +651,9 @@ class GenericTests(BaseTestCase):
 
     def test_repr(self):
         self.assertEqual(repr(SimpleMapping),
-                         "<class 'test.test_typing.SimpleMapping'>")
+                         f"<class '{__name__}.SimpleMapping'>")
         self.assertEqual(repr(MySimpleMapping),
-                         "<class 'test.test_typing.MySimpleMapping'>")
+                         f"<class '{__name__}.MySimpleMapping'>")
 
     def test_chain_repr(self):
         T = TypeVar('T')
@@ -1804,7 +1804,7 @@ class GetTypeHintTests(BaseTestCase):
         self.assertEqual(gth(ann_module2), {})
         self.assertEqual(gth(ann_module3), {})
 
-    @expectedFailure
+    @skip("known bug")
     def test_get_type_hints_modules_forwardref(self):
         # FIXME: This currently exposes a bug in typing. Cached forward references
         # don't account for the case where there are multiple types of the same
@@ -2074,6 +2074,22 @@ class CollectionsAbcTests(BaseTestCase):
 
         self.assertIsSubclass(MyDefDict, collections.defaultdict)
         self.assertNotIsSubclass(collections.defaultdict, MyDefDict)
+
+    def test_ordereddict_instantiation(self):
+        self.assertIs(type(typing.OrderedDict()), collections.OrderedDict)
+        self.assertIs(type(typing.OrderedDict[KT, VT]()), collections.OrderedDict)
+        self.assertIs(type(typing.OrderedDict[str, int]()), collections.OrderedDict)
+
+    def test_ordereddict_subclass(self):
+
+        class MyOrdDict(typing.OrderedDict[str, int]):
+            pass
+
+        od = MyOrdDict()
+        self.assertIsInstance(od, MyOrdDict)
+
+        self.assertIsSubclass(MyOrdDict, collections.OrderedDict)
+        self.assertNotIsSubclass(collections.OrderedDict, MyOrdDict)
 
     @skipUnless(sys.version_info >= (3, 3), 'ChainMap was added in 3.3')
     def test_chainmap_instantiation(self):
@@ -2648,6 +2664,30 @@ class AllTests(BaseTestCase):
         # Check previously missing classes.
         self.assertIn('SupportsBytes', a)
         self.assertIn('SupportsComplex', a)
+
+    def test_all_exported_names(self):
+        import typing
+
+        actual_all = set(typing.__all__)
+        computed_all = {
+            k for k, v in vars(typing).items()
+            # explicitly exported, not a thing with __module__
+            if k in actual_all or (
+                # avoid private names
+                not k.startswith('_') and
+                # avoid things in the io / re typing submodules
+                k not in typing.io.__all__ and
+                k not in typing.re.__all__ and
+                k not in {'io', 're'} and
+                # there's a few types and metaclasses that aren't exported
+                not k.endswith(('Meta', '_contra', '_co')) and
+                not k.upper() == k and
+                # but export all things that have __module__ == 'typing'
+                getattr(v, '__module__', None) == typing.__name__
+            )
+        }
+        self.assertSetEqual(computed_all, actual_all)
+
 
 
 if __name__ == '__main__':

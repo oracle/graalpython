@@ -78,10 +78,6 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
     @Override
     public abstract boolean executeBoolean(VirtualFrame frame);
 
-    public final boolean executeWith(Object value) {
-        return executeBoolean(null, value);
-    }
-
     public abstract static class YesNode extends CastToBooleanNode {
         @Child private HashingStorageNodes.LenNode lenNode;
 
@@ -126,10 +122,10 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         }
 
         @Specialization
-        boolean doObject(Object object,
+        boolean doObject(VirtualFrame frame, Object object,
                         @Cached PRaiseNode raise,
                         @Cached("create(__BOOL__)") LookupAndCallUnaryNode callBoolNode) {
-            Object value = callBoolNode.executeObject(object);
+            Object value = callBoolNode.executeObject(frame, object);
             if (value instanceof Boolean) {
                 return (boolean) value;
             } else if (value instanceof PInt && isBuiltinClassProfile.profileObject((PInt) value, PythonBuiltinClassType.Boolean)) {
@@ -199,16 +195,16 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         }
 
         @Specialization(guards = "isForeignObject(operand)")
-        boolean doForeignObject(TruffleObject operand,
+        boolean doForeignObject(VirtualFrame frame, TruffleObject operand,
                         @Cached("createIfTrueNode()") CastToBooleanNode yesNode) {
-            return !yesNode.executeWith(operand);
+            return !yesNode.executeBoolean(frame, operand);
         }
 
         @Specialization(guards = "!isForeignObject(object)")
-        boolean doObject(Object object,
+        boolean doObject(VirtualFrame frame, Object object,
                         @Cached PRaiseNode raise,
                         @Cached("create(__BOOL__)") LookupAndCallUnaryNode callBoolNode) {
-            Object value = callBoolNode.executeObject(object);
+            Object value = callBoolNode.executeObject(frame, object);
             if (value instanceof Boolean) {
                 return !((boolean) value);
             } else if (value instanceof PInt && isBuiltinClassProfile.profileObject((PInt) value, PythonBuiltinClassType.Boolean)) {

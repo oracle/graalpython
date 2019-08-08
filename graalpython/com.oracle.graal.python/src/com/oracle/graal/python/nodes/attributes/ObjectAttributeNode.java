@@ -40,10 +40,16 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMappingproxy;
+
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -61,8 +67,9 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         }
     }
 
-    protected static boolean isDictUnsetOrSameAsStorage(PythonObject object) {
-        return object.getDict() == null;
+    protected static boolean hasBuiltinDict(PythonObject object, PythonObjectLibrary lib, IsBuiltinClassProfile profileDict, IsBuiltinClassProfile profileMapping) {
+        PHashingCollection dict = lib.getDict(object);
+        return dict != null && (profileDict.profileObject(dict, PDict) || profileMapping.profileObject(dict, PMappingproxy));
     }
 
     protected static Location getLocationOrNull(Property prop) {

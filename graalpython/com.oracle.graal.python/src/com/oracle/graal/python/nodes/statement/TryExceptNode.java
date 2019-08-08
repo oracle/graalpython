@@ -42,6 +42,9 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -75,11 +78,15 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
     @Child private PythonObjectFactory ofactory;
-    @CompilationFinal private CatchesFunction catchesFunction;
-    @CompilationFinal boolean seenException;
+    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
+    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
+
     private final boolean shouldCatchAll;
     private final Assumption singleContextAssumption;
     private final ContextReference<PythonContext> contextRef;
+
+    @CompilationFinal private CatchesFunction catchesFunction;
+    @CompilationFinal boolean seenException;
 
     public TryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse) {
         this.body = body;
@@ -106,7 +113,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Override
     public void executeVoid(VirtualFrame frame) {
         // store current exception state for later restore
-        PException exceptionState = getContext().getCurrentException();
+        ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
@@ -152,7 +159,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @ExplodeLoop
-    private void catchException(VirtualFrame frame, PException exception, PException exceptionState) {
+    private void catchException(VirtualFrame frame, PException exception, ExceptionState exceptionState) {
         boolean wasHandled = false;
         for (ExceptNode exceptNode : exceptNodes) {
             // we want a constant loop iteration count for ExplodeLoop to work,
@@ -166,7 +173,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     } catch (ControlFlowException e) {
                         // restore previous exception state, this won't happen if the except block
                         // raises an exception
-                        getContext().setCaughtException(exceptionState);
+                        restoreExceptionState(frame, exceptionState);
                         throw e;
                     }
                 }
@@ -177,7 +184,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         }
         // restore previous exception state, this won't happen if the except block
         // raises an exception
-        getContext().setCaughtException(exceptionState);
+        restoreExceptionState(frame, exceptionState);
     }
 
     public StatementNode getBody() {
@@ -296,5 +303,15 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     public void setCatchesFunction(CatchesFunction catchesFunction) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         this.catchesFunction = catchesFunction;
+    }
+
+    private void restoreExceptionState(VirtualFrame frame, ExceptionState e) {
+        if (e != null) {
+            if (restoreExceptionStateNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+            }
+            restoreExceptionStateNode.execute(frame, e);
+        }
     }
 }

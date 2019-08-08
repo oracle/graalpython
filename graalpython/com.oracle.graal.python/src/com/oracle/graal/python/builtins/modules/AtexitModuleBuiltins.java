@@ -42,17 +42,22 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -70,7 +75,10 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonVarargsBuiltinNode {
         private static class AtExitCallTarget extends RootNode {
-            @Child CallNode callNode = CallNode.create();
+            @Child private CallNode callNode = CallNode.create();
+
+            private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
+
             private Object callable;
             private Object[] arguments;
             private PKeyword[] keywords;
@@ -83,8 +91,20 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             }
 
             @Override
+            @SuppressWarnings("try")
             public Object execute(VirtualFrame frame) {
-                return callNode.execute(frame, callable, arguments, keywords);
+                PythonContext context = contextRef.get();
+                context.setTopFrameInfo(PFrame.Reference.EMPTY);
+                context.setCaughtException(PException.NO_EXCEPTION);
+
+                // We deliberately pass 'null' frame here, the execution state will then be taken
+                // from the context.
+                try {
+                    return callNode.execute(null, callable, arguments, keywords);
+                } finally {
+                    context.popTopFrameInfo();
+                    context.setCaughtException(null);
+                }
             }
         }
 

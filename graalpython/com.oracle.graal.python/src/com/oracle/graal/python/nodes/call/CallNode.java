@@ -67,7 +67,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -179,7 +179,7 @@ public abstract class CallNode extends PNodeWithContext {
 
     private static final class UncachedCallNode extends CallNode {
         private final CreateArgumentsNode createArgs = CreateArgumentsNode.getUncached();
-        private final IndirectCallNode callNode = IndirectCallNode.getUncached();
+        private final GenericInvokeNode invokeNode = GenericInvokeNode.getUncached();
 
         @Override
         public Object execute(VirtualFrame frame, Object callableObject, Object[] args, PKeyword[] keywords) {
@@ -226,12 +226,21 @@ public abstract class CallNode extends PNodeWithContext {
                 }
                 return CallVarargsMethodNode.getUncached().execute(frame, attrCall, PositionalArgumentsNode.prependArgument(callableObject, args), keywords);
             } else {
-                PArguments.setCallerFrame(arguments, frame == null ? null : frame.materialize());
                 if (ct.getRootNode() instanceof ClassBodyRootNode) {
                     PArguments.setSpecialArgument(arguments, ct.getRootNode());
                 }
-                return callNode.call(ct, arguments);
+                return invokeNode.execute(frame, ct, arguments);
             }
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
     }
 }

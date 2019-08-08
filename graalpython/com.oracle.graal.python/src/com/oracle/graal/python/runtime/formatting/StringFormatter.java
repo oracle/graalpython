@@ -75,7 +75,8 @@ public class StringFormatter {
                 argIndex = -2;
                 return args;
             default:
-                ret = getItemNode.executeObject(args, argIndex++);
+                // NOTE: passing 'null' frame means we already took care of the global state earlier
+                ret = getItemNode.executeObject(null, args, argIndex++);
                 break;
         }
         if (ret == null) {
@@ -122,6 +123,8 @@ public class StringFormatter {
         } else if (arg instanceof Double) {
             // A common case where it is safe to return arg.__int__()
             return ((Double) arg).intValue();
+        } else if (arg instanceof Boolean) {
+            return (Boolean) arg ? 1 : 0;
         } else if (arg instanceof PFloat) {
             return (int) ((PFloat) arg).getValue();
         } else if (arg instanceof PythonAbstractObject) {
@@ -156,9 +159,6 @@ public class StringFormatter {
     /**
      * Main service of this class: format one or more arguments with the format string supplied at
      * construction.
-     *
-     * @param args1 tuple or map containing objects, or a single object, to convert
-     * @return result of formatting
      */
     @TruffleBoundary
     public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {

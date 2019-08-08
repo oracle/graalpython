@@ -67,7 +67,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PythonOptions.isWithThread() ? 1 : 0);
+        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PythonOptions.isWithThread(core.getContext().getEnv()) ? 1 : 0);
     }
 
     @Override

@@ -818,11 +818,10 @@ class SimpleServerTestCase(BaseServerTestCase):
                 # protocol error; provide additional information in test output
                 self.fail("%s\n%s" % (e, getattr(e, "headers", "")))
 
-    # [ch] The test 404 is causing lots of false alarms.
-    def XXXtest_404(self):
+    def test_404(self):
         # send POST with http.client, it should return 404 header and
         # 'Not Found' message.
-        conn = httplib.client.HTTPConnection(ADDR, PORT)
+        conn = http.client.HTTPConnection(ADDR, PORT)
         conn.request('POST', '/this-is-not-valid')
         response = conn.getresponse()
         conn.close()
@@ -946,7 +945,12 @@ class SimpleServerTestCase(BaseServerTestCase):
     def test_partial_post(self):
         # Check that a partial POST doesn't make the server loop: issue #14001.
         conn = http.client.HTTPConnection(ADDR, PORT)
-        conn.request('POST', '/RPC2 HTTP/1.0\r\nContent-Length: 100\r\n\r\nbye')
+        conn.send('POST /RPC2 HTTP/1.0\r\n'
+                  'Content-Length: 100\r\n\r\n'
+                  'bye HTTP/1.1\r\n'
+                  f'Host: {ADDR}:{PORT}\r\n'
+                  'Accept-Encoding: identity\r\n'
+                  'Content-Length: 0\r\n\r\n'.encode('ascii'))
         conn.close()
 
     def test_context_manager(self):

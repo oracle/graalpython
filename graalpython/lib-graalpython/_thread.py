@@ -54,11 +54,11 @@ def _set_sentinel():
     return LockType()
 
 
-if not _sysconfig.get_config_vars().get('WITH_THREAD'):
-    def load():
+def load():
+    if not _sysconfig.get_config_vars().get('WITH_THREAD'):
         import sys
         filename = sys.graal_python_stdlib_home + ("/_dummy_thread.py")
         _dummy_thread = __import__(filename, "_thread")
         sys.modules["_thread"] = _dummy_thread
-    load()
-    del load
+load()
+del load

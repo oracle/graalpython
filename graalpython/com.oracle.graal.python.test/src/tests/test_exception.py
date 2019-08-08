@@ -7,7 +7,62 @@ import unittest
 import sys
 import errno
 
+def fun0(test_obj, expected_error):
+    typ, val, tb = sys.exc_info()
+    test_obj.assertEqual(typ, expected_error)
+
+def fun1(test_obj, expected_error):
+    fun0(test_obj, expected_error)
+
+def fun2(test_obj, expected_error):
+    test_obj.assertNotEqual(sys._getframe(2), None)
+    typ, val, tb = sys.exc_info()
+    test_obj.assertEqual(typ, expected_error)
+
+def fun3(test_obj, expected_error):
+    fun2(test_obj, expected_error)
+
+def fun4(test_obj):
+    try:
+        raise ValueError
+    except:
+        fun3(test_obj, ValueError)
+
 class ExceptionTests(unittest.TestCase):
+
+    def test_exc_info(self):
+        typ, val, tb = (None,) * 3
+        try:
+            raise TypeError
+        except:
+            typ, val, tb = sys.exc_info()
+        self.assertEqual(typ, TypeError)
+
+        typ, val, tb = (None,) * 3
+        try:
+            raise ValueError
+        except:
+            fun1(self, ValueError)
+
+    def test_nested(self):
+        typ, val, tb = (None,) * 3
+        try:
+            raise TypeError
+        except:
+            typ, val, tb = sys.exc_info()
+            self.assertEqual(typ, TypeError)
+            try:
+                raise ValueError
+            except:
+                typ, val, tb = sys.exc_info()
+                self.assertEqual(typ, ValueError)
+            typ, val, tb = sys.exc_info()
+            self.assertEqual(typ, TypeError)
+
+    def test_exc_info_with_caller_frame(self):
+        # call twice because the first time, we do a stack walk
+        fun4(self)
+        fun4(self)
 
     def testInvalidTraceback(self):
         try:
@@ -60,7 +115,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertTrue(type(OSError(2)) is OSError)
         self.assertTrue(type(OSError(errno.EISDIR)) is OSError)
         self.assertTrue(type(OSError(2, "a message")) is FileNotFoundError)
-        
+
         self.assertTrue(type(OSError(errno.EISDIR, "a message")) is IsADirectoryError)
         self.assertTrue(type(OSError(errno.EAGAIN, "a message")) is BlockingIOError)
         self.assertTrue(type(OSError(errno.EALREADY, "a message")) is BlockingIOError)
@@ -108,3 +163,15 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(e.strerror, "message")
         self.assertEqual(e.filename, "file1")
         self.assertEqual(e.filename2, "file2")
+
+    def test_exception_cleared(self):
+        try:
+            raise ValueError
+        except ValueError as e:
+            pass
+        try:
+            e
+        except UnboundLocalError:
+            pass
+        else:
+            assert False, "named exception should be unbound after except block"

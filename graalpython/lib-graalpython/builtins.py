@@ -45,14 +45,28 @@ def __gr__(self, name, mode='r', closefd=True, opener=None):
     pass
 
 def __import__(filename, module_name):
-    import sys, posix
+    import sys, _imp, posix
     module = sys.modules[module_name]
     if filename.startswith("%s"):
-        filename = filename % sys.graal_python_core_home
-    fd = posix.open(filename, posix.O_RDONLY)
-    content = posix.read(fd, sys.maxsize)
-    posix.close(fd)
-    code = compile(content, filename, "exec")
+        full_filename = filename % sys.graal_python_core_home
+        filename = filename[len("%s"):]
+    elif filename.startswith(sys.graal_python_stdlib_home):
+        full_filename = filename
+        filename = filename[len(sys.graal_python_stdlib_home):]
+    else:
+        raise RuntimeError("There was an import during bootstrap outside the core or stdlib home.")
+
+    # If we can, avoid opening the file and use our cached code
+    if not _imp.graal_python_has_cached_code(filename):
+        fd = posix.open(full_filename, posix.O_RDONLY)
+        content = posix.read(fd, sys.maxsize)
+        posix.close(fd)
+        code = compile(content, filename, "exec")
+    else:
+        # n.b.: for these builtin modules, there's never a full path and none of
+        # them can be packages
+        code = _imp.graal_python_get_cached_code(filename)
+
     exec(code, module.__dict__)
     return module
 

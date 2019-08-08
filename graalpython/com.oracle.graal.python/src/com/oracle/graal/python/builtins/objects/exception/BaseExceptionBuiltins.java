@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -132,9 +132,9 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        public Object args(PBaseException self, Object value,
+        public Object args(VirtualFrame frame, PBaseException self, Object value,
                         @Cached("create()") CastToListNode castToList) {
-            PList list = castToList.executeWith(value);
+            PList list = castToList.execute(frame, value);
             self.setArgs(factory().createTuple(list.getSequenceStorage().getCopyOfInternalArray()));
             return PNone.NONE;
         }
@@ -164,12 +164,24 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTEXT__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        public Object context(PBaseException self, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode readContext) {
+            Object context = readContext.execute(self, __CONTEXT__);
+            if (context == PNone.NO_VALUE) {
+                return PNone.NONE;
+            } else {
+                return context;
+            }
+        }
 
         @Specialization
-        public Object context(@SuppressWarnings("unused") PBaseException self) {
+        public Object context(PBaseException self, PBaseException value,
+                        @Cached("create()") WriteAttributeToObjectNode writeContext) {
+            writeContext.execute(self, __CONTEXT__, value);
             return PNone.NONE;
         }
     }
@@ -189,8 +201,9 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class TracebackNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(tb)")
-        public Object getTraceback(PBaseException self, @SuppressWarnings("unused") Object tb) {
-            PTraceback traceback = self.getTraceback(factory());
+        public Object getTraceback(VirtualFrame frame, PBaseException self, @SuppressWarnings("unused") Object tb,
+                        @Cached GetTracebackNode getTracebackNode) {
+            PTraceback traceback = getTracebackNode.execute(frame, self);
             return traceback == null ? PNone.NONE : traceback;
         }
 

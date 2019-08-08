@@ -23,7 +23,6 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import print_function
 
-import argparse
 import os
 import re
 from abc import ABCMeta, abstractproperty, abstractmethod
@@ -33,6 +32,7 @@ import mx
 import mx_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
+from contextlib import contextmanager
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -50,12 +50,16 @@ ENV_PYPY_HOME = "PYPY_HOME"
 VM_NAME_GRAALPYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
 VM_NAME_PYPY = "pypy"
+VM_NAME_GRAALPYTHON_SVM = "graalpython-svm"
 GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
-CONFIG_EXPERIMENTAL_SPLITTING = "experimental_splitting"
+CONFIGURATION_DEFAULT_MULTI = "default-multi"
+CONFIGURATION_NATIVE = "native"
+CONFIGURATION_NATIVE_MULTI = "native-multi"
 CONFIGURATION_SANDBOXED = "sandboxed"
+CONFIGURATION_SANDBOXED_MULTI = "sandboxed-multi"
 
 DEFAULT_ITERATIONS = 10
 
@@ -71,6 +75,27 @@ def _check_vm_args(name, args):
                  "got {} instead".format(args))
 
 
+@contextmanager
+def environ(env):
+    def _handle_var((k, v)):
+        if v is None:
+            del os.environ[k]
+        else:
+            os.environ[k] = str(v)
+
+    if env:
+        prev_env = {v: os.getenv(v) for v in env}
+        map(_handle_var, env.items())
+    else:
+        prev_env = None
+
+    try:
+        yield
+    finally:
+        if prev_env:
+            map(_handle_var, prev_env.items())
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # the vm definitions
@@ -79,10 +104,11 @@ def _check_vm_args(name, args):
 class AbstractPythonVm(Vm):
     __metaclass__ = ABCMeta
 
-    def __init__(self, config_name, options=None):
+    def __init__(self, config_name, options=None, env=None):
         super(AbstractPythonVm, self).__init__()
         self._config_name = config_name
         self._options = options
+        self._env = env
 
     @property
     def options(self):
@@ -121,15 +147,15 @@ class AbstractPythonVm(Vm):
         _check_vm_args(self.name(), args)
         out = mx.OutputCapture()
         stdout_capture = mx.TeeOutputCapture(out)
-        ret_code = mx.run([self.interpreter] + args, out=stdout_capture, err=stdout_capture)
+        ret_code = mx.run([self.interpreter] + args, out=stdout_capture, err=stdout_capture, env=self._env)
         return ret_code, out.data
 
 
 class AbstractPythonIterationsControlVm(AbstractPythonVm):
     __metaclass__ = ABCMeta
 
-    def __init__(self, config_name, options=None, iterations=None):
-        super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
+    def __init__(self, config_name, options=None, env=None, iterations=None):
+        super(AbstractPythonIterationsControlVm, self).__init__(config_name, options=options, env=env)
         try:
             self._iterations = int(iterations)
         except:
@@ -156,8 +182,8 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
 class CPythonVm(AbstractPythonIterationsControlVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None, iterations=None):
-        super(CPythonVm, self).__init__(config_name, options=options, iterations=iterations)
+    def __init__(self, config_name, options=None, env=None, virtualenv=None, iterations=0):
+        super(CPythonVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
         self._virtualenv = virtualenv
 
     @property
@@ -173,8 +199,8 @@ class CPythonVm(AbstractPythonIterationsControlVm):
 class PyPyVm(AbstractPythonIterationsControlVm):
     PYPY_INTERPRETER = "pypy3"
 
-    def __init__(self, config_name, options=None, iterations=None):
-        super(PyPyVm, self).__init__(config_name, options=options, iterations=iterations)
+    def __init__(self, config_name, options=None, env=None, iterations=None):
+        super(PyPyVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
 
     @property
     def interpreter(self):
@@ -189,7 +215,7 @@ class PyPyVm(AbstractPythonIterationsControlVm):
 
 class GraalPythonVm(GuestVm):
     def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
-                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None):
+                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
         super(GraalPythonVm, self).__init__(host_vm=host_vm)
         self._config_name = config_name
         self._distributions = distributions
@@ -197,6 +223,7 @@ class GraalPythonVm(GuestVm):
         self._cp_prefix = cp_prefix
         self._extra_vm_args = extra_vm_args
         self._extra_polyglot_args = extra_polyglot_args
+        self._env = env
 
     def hosting_registry(self):
         return java_vm_registry
@@ -215,6 +242,8 @@ class GraalPythonVm(GuestVm):
             dists += self._distributions
 
         extra_polyglot_args = self._extra_polyglot_args if isinstance(self._extra_polyglot_args, list) else []
+        if mx.suite("tools", fatalIfMissing=False):
+            dists.append('CHROMEINSPECTOR')
         if mx.suite("sulong", fatalIfMissing=False):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
@@ -223,7 +252,6 @@ class GraalPythonVm(GuestVm):
             else:
                 extra_polyglot_args += ["--experimental-options"]
 
-
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
             vm_args += self._extra_vm_args
@@ -231,8 +259,18 @@ class GraalPythonVm(GuestVm):
             "-Dpython.home=%s" % join(SUITE.dir, "graalpython"),
             "com.oracle.graal.python.shell.GraalPythonMain"
         ]
+        for a in args[:]:
+            if a.startswith("-D") or a.startswith("-XX"):
+                vm_args.insert(0, a)
+                args.remove(a)
         cmd = truffle_options + vm_args + extra_polyglot_args + args
-        return self.host_vm().run(cwd, cmd)
+
+        host_vm = self.host_vm()
+        with environ(self._env):
+            if hasattr(host_vm, 'run_lang'):
+                return host_vm.run_lang('graalpython', extra_polyglot_args + args, cwd)
+            else:
+                return host_vm.run(cwd, cmd)
 
     def name(self):
         return VM_NAME_GRAALPYTHON
@@ -243,7 +281,8 @@ class GraalPythonVm(GuestVm):
     def with_host_vm(self, host_vm):
         return self.__class__(config_name=self._config_name, distributions=self._distributions,
                               cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix, host_vm=host_vm,
-                              extra_vm_args=self._extra_vm_args, extra_polyglot_args=self._extra_polyglot_args)
+                              extra_vm_args=self._extra_vm_args, extra_polyglot_args=self._extra_polyglot_args,
+                              env=self._env)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -270,6 +309,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = os.path.basename(os.path.splitext(benchmarks[0])[0])
         arg = " ".join(self._benchmarks[bench_name])
+
         return [
             # warmup curves
             StdOutRule(
@@ -303,25 +343,58 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             ),
         ]
 
+    def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
+        # host-vm rewrite rules
+        ret_code, out, dims = super(PythonBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
+
+        def _replace_host_vm(key):
+            host_vm = dims.get("host-vm")
+            if host_vm and host_vm.startswith(key):
+                dims['host-vm'] = key
+                mx.logv("[DEBUG] replace 'host-vm': '{key}-python' -> '{key}'".format(key=key))
+
+        _replace_host_vm('graalvm-ce')
+        _replace_host_vm('graalvm-ee')
+
+        return ret_code, out, dims
+
     def run(self, benchmarks, bm_suite_args):
         results = super(PythonBenchmarkSuite, self).run(benchmarks, bm_suite_args)
         self.addAverageAcrossLatestResults(results)
         return results
 
     def postprocess_run_args(self, run_args):
-        parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument("-i", default=None)
-        args, remaining = parser.parse_known_args(run_args)
-        if args.i:
-            if args.i.isdigit():
-                return ["-i", args.i] + remaining
-            if args.i == "-1":
-                return remaining
-        else:
-            iterations = DEFAULT_ITERATIONS + self.getExtraIterationCount(DEFAULT_ITERATIONS)
-            return ["-i", str(iterations)] + remaining
+        vm_options = []
+        remaining = []
+        i = 0
 
-    def createVmCommandLineArgs(self, benchmarks, run_args):
+        while i < len(run_args):
+            arg = run_args[i]
+            if not arg.startswith("-"):
+                remaining = run_args[i:]
+                break
+            elif arg.startswith("-i"):
+                if len(run_args) >= i and run_args[i + 1] == "-1":
+                    pass
+                else:
+                    remaining = run_args[i:]
+                    break
+            else:
+                vm_options.append(arg)
+            i += 1
+
+        if not (remaining and remaining[0] == "-i"):
+            iterations = DEFAULT_ITERATIONS + self.getExtraIterationCount(DEFAULT_ITERATIONS)
+            remaining = ["-i", str(iterations)] + remaining
+
+        return vm_options, remaining
+
+    def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        return self.createVmCommandLineArgs(benchmarks, bmSuiteArgs)
+
+    def createVmCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        vm_args = self.vmArgs(bmSuiteArgs)
+        run_args = self.runArgs(bmSuiteArgs)
         if not benchmarks or len(benchmarks) != 1:
             mx.abort("Please run a specific benchmark (mx benchmark {}:<benchmark-name>) or all the benchmarks "
                      "(mx benchmark {}:*)".format(self.name(), self.name()))
@@ -344,11 +417,11 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         # the benchmark
         cmd_args += [join(self._bench_path, "{}.py".format(benchmark))]
 
-        if len(run_args) == 0:
-            run_args = self._benchmarks[benchmark]
-        run_args = self.postprocess_run_args(run_args)
+        if "-i" not in run_args:
+            run_args += self._benchmarks[benchmark]
+        vm_options, run_args = self.postprocess_run_args(run_args)
         cmd_args.extend(run_args)
-        return cmd_args
+        return vm_options + vm_args + cmd_args
 
     def benchmarkList(self, bm_suite_args):
         return self._benchmarks.keys()

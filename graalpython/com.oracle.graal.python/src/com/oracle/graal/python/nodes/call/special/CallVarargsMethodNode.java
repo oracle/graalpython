@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNodeFactory.CallCachedVarargsMethodNodeGen;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -53,8 +54,12 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
+
+    private static final CallUncachedVarargsMethodNode UNCACHED = new CallUncachedVarargsMethodNode();
+
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments, PKeyword[] keywords);
 
     public static CallVarargsMethodNode create() {
@@ -62,7 +67,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     }
 
     public static CallVarargsMethodNode getUncached() {
-        return new CallUncachedVarargsMethodNode();
+        return UNCACHED;
     }
 
     abstract static class CallCachedVarargsMethodNode extends CallVarargsMethodNode {
@@ -76,26 +81,34 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
 
         @Specialization(guards = {"arguments.length == 1", "keywords.length == 0", "func == cachedFunc",
                         "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-        Object callUnary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        Object callUnary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
                         @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) {
-            return builtinNode.execute(arguments[0]);
+            return builtinNode.execute(frame, arguments[0]);
         }
 
         @Specialization(guards = {"arguments.length == 2", "keywords.length == 0", "func == cachedFunc",
                         "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-        Object callBinary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        Object callBinary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
                         @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) {
-            return builtinNode.execute(arguments[0], arguments[1]);
+            return builtinNode.execute(frame, arguments[0], arguments[1]);
         }
 
         @Specialization(guards = {"arguments.length == 3", "keywords.length == 0", "func == cachedFunc",
                         "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-        Object callTernary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        Object callTernary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
                         @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
-            return builtinNode.execute(arguments[0], arguments[1], arguments[2]);
+            return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2]);
+        }
+
+        @Specialization(guards = {"arguments.length == 4", "keywords.length == 0", "func == cachedFunc",
+                        "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        Object callQuaternary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
+                        @Cached("getQuaternary(func)") PythonQuaternaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2], arguments[3]);
         }
 
         @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
@@ -106,24 +119,31 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         }
 
         @Specialization(guards = {"arguments.length == 1", "keywords.length == 0", "func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        Object callUnary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        Object callUnary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                         @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) {
-            return builtinNode.execute(arguments[0]);
+            return builtinNode.execute(frame, arguments[0]);
         }
 
         @Specialization(guards = {"arguments.length == 2", "keywords.length == 0", "func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        Object callBinary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        Object callBinary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                         @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) {
-            return builtinNode.execute(arguments[0], arguments[1]);
+            return builtinNode.execute(frame, arguments[0], arguments[1]);
         }
 
         @Specialization(guards = {"arguments.length == 3", "keywords.length == 0", "func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        Object callTernary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        Object callTernary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                         @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
-            return builtinNode.execute(arguments[0], arguments[1], arguments[2]);
+            return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2]);
+        }
+
+        @Specialization(guards = {"arguments.length == 4", "keywords.length == 0", "func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object callQuaternary(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                        @Cached("getQuaternary(func)") PythonQuaternaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, arguments[0], arguments[1], arguments[2], arguments[3]);
         }
 
         @Specialization
@@ -134,12 +154,21 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
 
     }
 
-    static class CallUncachedVarargsMethodNode extends CallVarargsMethodNode {
-        private final CallNode callNode = CallNode.getUncached();
+    private static final class CallUncachedVarargsMethodNode extends CallVarargsMethodNode {
 
         @Override
         public Object execute(VirtualFrame frame, Object callable, Object[] arguments, PKeyword[] keywords) {
-            return callNode.execute(frame, callable, arguments, keywords);
+            return CallNode.getUncached().execute(frame, callable, arguments, keywords);
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
     }
 }

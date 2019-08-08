@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptors;
@@ -109,10 +110,10 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
-    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(3);
+    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(5);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
-    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(3);
+    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(4);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);
@@ -156,6 +157,12 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
     public static final OptionKey<String> ExecutableList = new OptionKey<>("");
 
+    @Option(category = OptionCategory.EXPERT, help = "Determines wether context startup tries to re-use previously cached sources of the core library.") //
+    public static final OptionKey<Boolean> WithCachedSources = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.EXPERT, help = "Embedder option: what to print in response to PythonLanguage#toString.") //
+    public static final OptionKey<Boolean> UseReprForPrintString = new OptionKey<>(true);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
@@ -166,6 +173,11 @@ public final class PythonOptions {
             return key.getDefaultValue();
         }
         return context.getOptions().get(key);
+    }
+
+    @TruffleBoundary
+    public static <T> T getOption(Env env, OptionKey<T> key) {
+        return env.getOptions().get(key);
     }
 
     @TruffleBoundary
@@ -204,8 +216,8 @@ public final class PythonOptions {
         return getOption(PythonLanguage.getContextRef().get(), MinLazyStringLength);
     }
 
-    public static boolean isWithThread() {
-        return getOption(PythonLanguage.getContextRef().get(), WithThread);
+    public static boolean isWithThread(Env env) {
+        return getOption(env, WithThread);
     }
 
     public static boolean getEnableForcedSplits() {

@@ -40,6 +40,8 @@
 #!/usr/bin/env mx python
 import _io
 import sys
+import time
+import _thread
 
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
@@ -50,6 +52,49 @@ ENDC = '\033[0m'
 BOLD = '\033[1m'
 
 verbose = False
+
+print_lock = _thread.RLock()
+class ThreadPool():
+    cnt_lock = _thread.RLock()
+    cnt = 0
+    if os.environ.get(b"ENABLE_THREADED_GRAALPYTEST") == b"true":
+        maxcnt = min(os.cpu_count(), 16)
+        sleep = time.sleep
+        print("Running with %d threads" % maxcnt)
+    else:
+        sleep = lambda x: x
+        maxcnt = 1
+
+    @classmethod
+    def start(self, function):
+        self.acquire_token()
+        def runner():
+            try:
+                function()
+            finally:
+                self.release_token()
+        _thread.start_new_thread(runner, ())
+        self.sleep(0.5)
+
+    @classmethod
+    def acquire_token(self):
+        while True:
+            with self.cnt_lock:
+                if self.cnt < self.maxcnt:
+                    self.cnt += 1
+                    break
+            self.sleep(1)
+
+    @classmethod
+    def release_token(self):
+        with self.cnt_lock:
+            self.cnt -= 1
+
+    @classmethod
+    def shutdown(self):
+        self.sleep(2)
+        while self.cnt > 0:
+            self.sleep(2)
 
 
 def dump_truffle_ast(func):
@@ -72,7 +117,8 @@ class TestCase(object):
 
     def run_safely(self, func, print_immediately=False):
         if verbose:
-            print(u"\n\t\u21B3 ", func.__name__, " ", end="")
+            with print_lock:
+                print(u"\n\t\u21B3 ", func.__name__, " ", end="")
         try:
             func()
         except BaseException as e:
@@ -102,10 +148,12 @@ class TestCase(object):
             pass
         elif not hasattr(func, "__call__"):
             pass
-        elif self.run_safely(func):
-            self.success()
         else:
-            self.failure()
+            def do_run():
+                r = self.run_safely(func)
+                with print_lock:
+                    self.success() if r else self.failure()
+            ThreadPool.start(do_run)
 
     def success(self):
         self.passed += 1
@@ -318,6 +366,7 @@ class TestRunner(object):
                 self.failed += testcase.failed
             if verbose:
                 print()
+        ThreadPool.shutdown()
         print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
         for e in self.exceptions:
             print(e)
@@ -347,6 +396,11 @@ def skipUnless(boolean, msg=""):
         def decorator(f):
             return f
     return decorator
+
+
+class TextTestResult():
+    "Just a dummy to satisfy the unittest.support import"
+    pass
 
 
 if __name__ == "__main__":

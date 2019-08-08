@@ -51,16 +51,23 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFrameNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.truffle.api.CallTarget;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.Node.Child;
-import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -127,9 +134,15 @@ public class AsyncHandler {
         }
     }
 
-    private static class CallRootNode extends RootNode {
-        @Child CallNode callNode = CallNode.create();
-        @Child GetFrameNode getFrameNode = GetFrameNode.create();
+    private static class CallRootNode extends PRootNode {
+        static final int ASYNC_ARGS = 4;
+
+        @Child private CallNode callNode = CallNode.create();
+        @Child private MaterializeFrameNode materializeNode = MaterializeFrameNodeGen.create();
+        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        @Child private CalleeContext calleeContext = CalleeContext.create();
+
+        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
 
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);
@@ -137,18 +150,39 @@ public class AsyncHandler {
 
         @Override
         public Object execute(VirtualFrame frame) {
+            CalleeContext.enter(frame, profile);
             Object[] frameArguments = frame.getArguments();
-            Object callable = frameArguments[0];
-            int frameIndex = (int) frameArguments[1];
-            Object[] arguments = Arrays.copyOfRange(frameArguments, 2, frameArguments.length);
+            Object callable = PArguments.getArgument(frameArguments, 0);
+            int frameIndex = (int) PArguments.getArgument(frameArguments, 1);
+            Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARGS, frameArguments.length);
+
             if (frameIndex >= 0) {
-                arguments[frameIndex] = getFrameNode.execute(1);
+                arguments[frameIndex] = readCallerFrameNode.executeWith(frame, 0);
             }
-            return callNode.execute(frame, callable, arguments);
+            try {
+                return callNode.execute(frame, callable, arguments);
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+        }
+
+        @Override
+        public Signature getSignature() {
+            return Signature.EMPTY;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
+        }
+
+        @Override
+        public boolean isInternal() {
+            return true;
         }
     }
 
-    private final CallTarget callTarget;
+    private final RootCallTarget callTarget;
     @Child CallNode callNode = CallNode.create();
 
     AsyncHandler(PythonLanguage language) {
@@ -159,12 +193,12 @@ public class AsyncHandler {
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions() {
+    void triggerAsyncActions(VirtualFrame frame, Node location) {
         // Uses weakCompareAndSet because we just want to do it in a timely manner, but we don't
         // need the ordering guarantees.
         if (hasScheduledAction) {
             CompilerDirectives.transferToInterpreter();
-            processAsyncActions();
+            processAsyncActions(frame, location);
         }
     }
 
@@ -200,8 +234,7 @@ public class AsyncHandler {
      * async actions on the main thread, because there's only one per "type" of async thing (e.g. 1
      * for weakref finalizers, 1 for signals, 1 for destructors).
      */
-    @TruffleBoundary
-    private void processAsyncActions() {
+    private void processAsyncActions(VirtualFrame frame, Node location) {
         if (executingScheduledActions.tryLock()) {
             hasScheduledAction = false;
             try {
@@ -211,12 +244,15 @@ public class AsyncHandler {
                     Object callable = action.callable();
                     if (callable != null) {
                         Object[] arguments = action.arguments();
-                        Object[] args = new Object[arguments.length + 2];
-                        System.arraycopy(arguments, 0, args, 2, arguments.length);
-                        args[0] = callable;
-                        args[1] = action.frameIndex();
+                        Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARGS);
+                        System.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARGS, arguments.length);
+                        PArguments.setArgument(args, 0, callable);
+                        PArguments.setArgument(args, 1, action.frameIndex());
+                        PArguments.setArgument(args, 2, location);
+                        PArguments.setArgument(args, 3, frame);
+
                         try {
-                            callTarget.call(args);
+                            GenericInvokeNode.getUncached().execute(frame, callTarget, args);
                         } catch (RuntimeException e) {
                             // we cannot raise the exception here (well, we could, but CPython
                             // doesn't), so we do what they do and just print it

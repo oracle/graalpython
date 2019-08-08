@@ -35,6 +35,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNodeGen.GetCallAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -117,7 +118,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callUnary.executeObject(getCallable.execute(frame), argumentNode.execute(frame));
+            return callUnary.executeObject(frame, getCallable.execute(frame), argumentNode.execute(frame));
         }
     }
 
@@ -134,7 +135,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         @Override
         public Object execute(VirtualFrame frame) {
             Object[] evaluatedArguments = PositionalArgumentsNode.evaluateArguments(frame, argumentNodes);
-            return callBinary.executeObject(getCallable.execute(frame), evaluatedArguments[0], evaluatedArguments[1]);
+            return callBinary.executeObject(frame, getCallable.execute(frame), evaluatedArguments[0], evaluatedArguments[1]);
         }
     }
 
@@ -150,7 +151,24 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callTernary.execute(getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
+            return callTernary.execute(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
+        }
+    }
+
+    private static class PythonCallQuaternary extends ExpressionNode {
+        @Child CallQuaternaryMethodNode callQuaternary = CallQuaternaryMethodNode.create();
+        @Child ExpressionNode getCallable;
+        @Children final ExpressionNode[] argumentNodes;
+
+        PythonCallQuaternary(ExpressionNode getCallable, ExpressionNode[] argumentNodes) {
+            this.getCallable = getCallable;
+            this.argumentNodes = argumentNodes;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return callQuaternary.execute(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame),
+                            argumentNodes[3].execute(frame));
         }
     }
 
@@ -170,6 +188,8 @@ public abstract class PythonCallNode extends ExpressionNode {
                     return new PythonCallBinary(getCalleeNode(), argumentNodes);
                 case 3:
                     return new PythonCallTernary(getCalleeNode(), argumentNodes);
+                case 4:
+                    return new PythonCallQuaternary(getCalleeNode(), argumentNodes);
                 default:
                     return this;
             }
@@ -191,9 +211,9 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
 
         @Specialization(guards = "!isForeignObject(object)")
-        Object getCallAttribute(Object object,
+        Object getCallAttribute(VirtualFrame frame, Object object,
                         @Cached("create(key)") GetAttributeNode getAttributeNode) {
-            return getAttributeNode.executeObject(object);
+            return getAttributeNode.executeObject(frame, object);
         }
     }
 
@@ -247,7 +267,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             invokeError.enter();
             // the interop contract is to revert to readMember and then execute
-            Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);
+            Object member = getAttrNode.executeObject(frame, callable.receiver, callable.identifier);
             return callNode.execute(frame, member, arguments, keywords);
         }
     }

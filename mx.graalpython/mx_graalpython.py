@@ -42,7 +42,8 @@ import mx_subst
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
-    CONFIGURATION_DEFAULT, CONFIG_EXPERIMENTAL_SPLITTING, CONFIGURATION_SANDBOXED
+    CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
+    CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI
 
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
@@ -147,7 +148,9 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
 def punittest(args):
     if '--regex' not in args:
         args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
-    args += ["-Dgraal.TraceTruffleCompilation=true", "-Dgraal.TruffleCompilationExceptionsAreFatal=false", "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
+    args += ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
+             "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
+             "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
     mx_unittest.unittest(args)
 
 
@@ -195,6 +198,7 @@ class GraalPythonTags(object):
     graalvm = 'python-graalvm'
     graalvm_sandboxed = 'python-graalvm-sandboxed'
     svm = 'python-svm'
+    native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
 
 
@@ -266,7 +270,7 @@ def python_gvm(args=None):
 
 def python_svm(args=None):
     "Build and run the native graalpython image"
-    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher(args or [])
 
 
@@ -355,12 +359,12 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.sandboxed"])
+            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
-                run_python_unittests(python_gvm(), paths=["test_tagged_unittests.py"])
+            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
+                run_python_unittests(python_gvm(), args=["--python.WithThread=true"], paths=["test_tagged_unittests.py"])
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -369,11 +373,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_svm(["sandboxed"]), args=["--llvm.sandboxed"])
+            run_python_unittests(python_svm(["sandboxed"]), args=["--llvm.managed"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
-            python_checkcopyrights(["--fix"])
+            python_checkcopyrights([])
 
     with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm]) as task:
         if task:
@@ -388,15 +392,81 @@ def graalpython_gate_runner(args, tasks):
             svm_image = python_svm(["--version"])
             benchmark = os.path.join(PATH_MESO, "image-magix.py")
             out = mx.OutputCapture()
-            mx.run([svm_image, benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out))
             success = "\n".join([
                 "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+            # Test that stdlib paths are not cached on packages
+            out = mx.OutputCapture()
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__path__)"], out=mx.TeeOutputCapture(out))
+            if "/foobar" not in out.data:
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar"')
+            # Test that stdlib paths are not cached on modules
+            out = mx.OutputCapture()
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "--python.StdLibHome=/foobar", "-c", "import encodings; print(encodings.__file__)"], out=mx.TeeOutputCapture(out))
+            if "/foobar" not in out.data:
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not have patched std lib path "/foobar"')
+            # Finally, test that we can start even if the graalvm was moved
+            out = mx.OutputCapture()
+            graalvm_home = svm_image.replace(os.path.sep.join(["", "bin", "graalpython"]), "")
+            new_graalvm_home = graalvm_home + "_new"
+            shutil.move(graalvm_home, new_graalvm_home)
+            launcher = os.path.join(new_graalvm_home, "bin", "graalpython")
+            mx.log(launcher)
+            mx.run([launcher, "--log.python.level=FINE", "-S", "-c", "print(b'abc'.decode('ascii'))"], out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            assert "Using preinitialized context." in out.data
+
+    with Task('GraalPython GraalVM native embedding', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.native_image_embedder]) as task:
+        if task:
+            run_embedded_native_python_test()
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
+
+
+def run_embedded_native_python_test(args=None):
+    """
+    Test that embedding an engine where a context was initialized at native image
+    build-time is enough to create multiple contexts from that engine without
+    those contexts having access to the core files, due to caching in the shared
+    engine.
+    """
+    with mx.TempDirCwd(os.getcwd()) as dirname:
+        python_launcher = python_gvm()
+        graalvm_javac = os.path.join(os.path.dirname(python_launcher), "javac")
+        graalvm_native_image = os.path.join(os.path.dirname(python_launcher), "native-image")
+
+        filename = os.path.join(dirname, "HelloWorld.java")
+        with open(filename, "w") as f:
+            f.write("""
+            import org.graalvm.polyglot.*;
+
+            public class HelloWorld {
+                static final Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("log.python.level", "FINEST").build();
+                static {
+                   try (Context contextNull = Context.newBuilder("python").engine(engine).build()) {
+                       contextNull.initialize("python");
+                   }
+                }
+
+                public static void main(String[] args) {
+                    try (Context context1 = Context.newBuilder("python").engine(engine).build()) {
+                        context1.eval("python", "print(b'abc'.decode('ascii'))");
+                        try (Context context2 = Context.newBuilder("python").engine(engine).build()) {
+                            context2.eval("python", "print(b'xyz'.decode('ascii'))");
+                        }
+                    }
+                }
+            }
+            """)
+        out = mx.OutputCapture()
+        mx.run([graalvm_javac, filename])
+        mx.run([graalvm_native_image, "-H:+ReportExceptionStackTraces", "--initialize-at-build-time", "--language:python", "HelloWorld"])
+        mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
+        assert "abc" in out.data
+        assert "xyz" in out.data
 
 
 def run_shared_lib_test(args=None):
@@ -452,7 +522,7 @@ def run_shared_lib_test(args=None):
                 return status;
             }
         #if %s
-            status = poly_context_builder_option(isolate_thread, builder, "llvm.sandboxed", "true");
+            status = poly_context_builder_option(isolate_thread, builder, "llvm.managed", "true");
             if (status != poly_ok) {
                 return status;
             }
@@ -663,7 +733,7 @@ def update_import_cmd(args):
 
 def python_style_checks(args):
     "Check (and fix where possible) copyrights, eclipse formatting, and spotbugs"
-    python_checkcopyrights(["--fix"])
+    python_checkcopyrights(["--fix"] if "--fix" in args else [])
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
     if os.environ.get("ECLIPSE_EXE"):
@@ -702,6 +772,7 @@ def import_python_sources(args):
         "_cpython_sre.c": "_sre.c",
         "_cpython_unicodedata.c": "unicodedata.c",
         "_bz2.c": "_bz2module.c",
+        "_mmap.c": "mmapmodule.c",
     }
     extra_pypy_files = [
         "graalpython/lib-python/3/_md5.py",
@@ -778,6 +849,9 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
+    # re-copy lib-python
+    shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
+
     for inlined_file in pypy_files + extra_pypy_files:
         original_file = None
         name = os.path.basename(inlined_file)
@@ -821,9 +895,6 @@ def import_python_sources(args):
         if original_file is None:
             mx.warn("Could not update %s - original file not found" % inlined_file)
 
-    # re-copy lib-python
-    shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
-
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
     raw_input("Check that the updated files look as intended, then press RETURN...")
@@ -837,16 +908,46 @@ def import_python_sources(args):
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
+# add ci verification util
+#
+# ----------------------------------------------------------------------------------------------------------------------
+def verify_ci(dest_suite, common_ci_dir="ci_common", args=None, ext=('.jsonnet', '.libsonnet')):
+    """Verify CI configuration"""
+    base_suite = SUITE
+    assert isinstance(base_suite, mx.SourceSuite)
+
+    ci_files = mx.suite_ci_files(SUITE, common_ci_dir, extension=ext)
+    mx.log("CI setup checking common file(s): \n\t{0}".format('\n\t'.join(map(str, ci_files))))
+    mx.verify_ci(args, base_suite, dest_suite, common_file=ci_files)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+#
 # register as a GraalVM language
 #
 # ----------------------------------------------------------------------------------------------------------------------
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
+    name='Graal.Python license files',
+    short_name='pynl',
+    dir_name='python',
+    license_files=['LICENSE_GRAALPYTHON.txt'],
+    third_party_license_files=['3rd_party_licenses_graalpython.txt'],
+    truffle_jars=[],
+    support_distributions=[
+        'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
+    ],
+    priority=5
+))
+
+
+mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
+    suite=SUITE,
     name='Graal.Python',
     short_name='pyn',
     dir_name='python',
-    license_files=['LICENSE_GRAALPYTHON'],
-    third_party_license_files=['3rd_party_licenses_graalpython.txt'],
+    license_files=[],
+    third_party_license_files=[],
     truffle_jars=[
         'graalpython:GRAALPYTHON',
     ],
@@ -859,10 +960,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             destination='bin/<exe:graalpython>',
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
-            build_args=[
-                '--language:python',
-                '--language:llvm',
-            ]
+            build_args=[],
+            language='python',
         )
     ],
 ))
@@ -885,17 +984,29 @@ if not os.getenv("GRAAL_PYTHONHOME"):
 # post init
 #
 # ----------------------------------------------------------------------------------------------------------------------
-
 def _register_vms(namespace):
-    python_vm_registry.add_vm(CPythonVm(CONFIGURATION_DEFAULT), SUITE)
-    python_vm_registry.add_vm(PyPyVm(CONFIGURATION_DEFAULT), SUITE)
+    # cpython
+    python_vm_registry.add_vm(CPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE)
+
+    # pypy
+    python_vm_registry.add_vm(PyPyVm(config_name=CONFIGURATION_DEFAULT), SUITE)
+
+    # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIG_EXPERIMENTAL_SPLITTING, extra_vm_args=[
-        '-Dgraal.TruffleExperimentalSplitting=true',
-        '-Dgraal.TruffleExperimentalSplittingAllowForcedSplits=false'
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=[
-        '--llvm.sandboxed',
+        '--llvm.managed',
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
+        "--llvm.managed=false"
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context', '--llvm.managed',
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context', '--llvm.managed=false',
     ]), SUITE, 10)
 
 
@@ -916,6 +1027,70 @@ def python_coverage(args):
     mx.command_function("jacocoreport")(["--omit-excluded", "--format=html"])
 
 
+def python_build_watch(args):
+    """
+    Watch the suite and on any changes to .class, .jar, .h, or .c files rebuild.
+    By default, rebuilds only the archives and non-Java projects.
+    """
+    parser = ArgumentParser(prog='mx python-build-watch')
+    parser.add_argument('--full', action='store_true', help='Run a full mx build', required=False)
+    parser.add_argument('--graalvm', action='store_true', help='Build a graalvm', required=False)
+    parser.add_argument('--no-java', action='store_true', help='Build only archives and native projects [default]', required=False)
+    args = parser.parse_args(args)
+    if sum([args.full, args.graalvm, args.no_java]) > 1:
+        mx.abort("Only one of --full, --graalvm, --no-java can be specified")
+    if args.full:
+        # suffixes = [".c", ".h", ".class", ".jar", ".java"]
+        excludes = [".*\\.py$"]
+    elif args.graalvm:
+        # suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
+        excludes = ["mx_.*\\.py$"]
+    else:
+        # suffixes = [".c", ".h", ".class", ".jar"]
+        excludes = [".*\\.py$", ".*\\.java$"]
+
+    cmd = ["inotifywait", "-q", "-e", "close_write,moved_to", "-r", "--format=%f"]
+    for e in excludes:
+        cmd += ["--exclude", e]
+    cmd += ["@%s" % os.path.join(SUITE.dir, ".git"), SUITE.dir]
+    cmd_qq = cmd[:]
+    cmd_qq[1] = "-qq"
+    was_quiet = mx.get_opts().quiet
+
+    while True:
+        out = mx.OutputCapture()
+        if mx.run(cmd, out=out, nonZeroIsFatal=False) != 0:
+            continue
+        changed_file = out.data.strip()
+        mx.logv(changed_file)
+        if any(changed_file.endswith(ext) for ext in [".c", ".h", ".class", ".jar"]):
+            if not mx.get_opts().quiet:
+                sys.stdout.write("Build needed ")
+                sys.stdout.flush()
+            while True:
+                # re-run this until it times out, which we'll interpret as quiet
+                # time
+                if not mx.get_opts().quiet:
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+                mx.get_opts().quiet = True
+                try:
+                    retcode = mx.run(cmd_qq, timeout=3, nonZeroIsFatal=False)
+                finally:
+                    mx.get_opts().quiet = was_quiet
+                if retcode == mx.ERROR_TIMEOUT:
+                    if not mx.get_opts().quiet:
+                        sys.stdout.write("\n")
+                    break
+            mx.log("Building.")
+            if args.full:
+                mx.command_function("build")()
+            elif args.graalvm:
+                mx.log(python_gvm())
+            else:
+                nativebuild([])
+            mx.log("Build done.")
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -923,12 +1098,13 @@ def python_coverage(args):
 #
 # ----------------------------------------------------------------------------------------------------------------------
 mx.update_commands(SUITE, {
+    'python-build-watch': [python_build_watch, ''],
     'python': [python, '[Python args|@VM options]'],
     'python3': [python, '[Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_master, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[import-name, default: truffle]'],
-    'python-style': [python_style_checks, ''],
+    'python-style': [python_style_checks, '[--fix]'],
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],

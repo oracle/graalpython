@@ -68,60 +68,60 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
 
     @Override
     public void doWrite(VirtualFrame frame, boolean value) {
-        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
     public void doWrite(VirtualFrame frame, int value) {
-        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
     public void doWrite(VirtualFrame frame, long value) {
-        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
     public void doWrite(VirtualFrame frame, double value) {
-        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
     public void doWrite(VirtualFrame frame, Object value) {
-        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     public void executeWith(VirtualFrame frame, Object value) {
         doWrite(frame, value);
     }
 
-    public abstract void executeWith(Object primary, Object slice, boolean value);
+    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, boolean value);
 
-    public abstract void executeWith(Object primary, Object slice, int value);
+    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, int value);
 
-    public abstract void executeWith(Object primary, Object slice, long value);
+    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, long value);
 
-    public abstract void executeWith(Object primary, Object slice, double value);
+    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, double value);
 
-    public abstract void executeWith(Object primary, Object slice, Object value);
+    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, Object value);
 
     @Specialization
-    public void doSpecialObject(PythonObject primary, int index, Object value,
+    void doSpecialObject(VirtualFrame frame, PythonObject primary, int index, Object value,
                     @Cached("create()") GetattributeNode getSetitemNode,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") CallTernaryMethodNode callNode) {
         PythonAbstractClass primaryClass = getClassNode.execute(primary);
-        Object setItemMethod = getSetitemNode.execute(primaryClass, __SETITEM__);
-        callNode.execute(setItemMethod, primary, index, value);
+        Object setItemMethod = getSetitemNode.execute(frame, primaryClass, __SETITEM__);
+        callNode.execute(frame, setItemMethod, primary, index, value);
     }
 
     @Specialization
-    public void doSpecialObject1(Object primary, Object index, Object value,
+    void doSpecialObject1(VirtualFrame frame, Object primary, Object index, Object value,
                     @Cached("create()") GetattributeNode getSetitemNode,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") CallTernaryMethodNode callNode) {
         PythonAbstractClass primaryClass = getClassNode.execute(primary);
-        Object setItemMethod = getSetitemNode.execute(primaryClass, __SETITEM__);
-        callNode.execute(setItemMethod, primary, index, value);
+        Object setItemMethod = getSetitemNode.execute(frame, primaryClass, __SETITEM__);
+        callNode.execute(frame, setItemMethod, primary, index, value);
     }
 }

@@ -118,7 +118,7 @@ class TestParser(TestParserMixin, TestEmailBase):
                          '=?us-ascii?q?first?==?utf-8?q?second?=',
                          'first',
                          'first',
-                         [],
+                         [errors.InvalidHeaderDefect],
                          '=?utf-8?q?second?=')
 
     def test_get_encoded_word_sets_extra_attributes(self):
@@ -347,11 +347,39 @@ class TestParser(TestParserMixin, TestEmailBase):
              errors.InvalidBase64PaddingDefect],
             '')
 
+    def test_get_unstructured_invalid_base64_length(self):
+        # bpo-27397: Return the encoded string since there's no way to decode.
+        self._test_get_x(self._get_unst,
+            '=?utf-8?b?abcde?=',
+            'abcde',
+            'abcde',
+            [errors.InvalidBase64LengthDefect],
+            '')
+
     def test_get_unstructured_no_whitespace_between_ews(self):
         self._test_get_x(self._get_unst,
             '=?utf-8?q?foo?==?utf-8?q?bar?=',
             'foobar',
             'foobar',
+            [errors.InvalidHeaderDefect,
+            errors.InvalidHeaderDefect],
+            '')
+
+    def test_get_unstructured_ew_without_leading_whitespace(self):
+        self._test_get_x(
+            self._get_unst,
+            'nowhitespace=?utf-8?q?somevalue?=',
+            'nowhitespacesomevalue',
+            'nowhitespacesomevalue',
+            [errors.InvalidHeaderDefect],
+            '')
+
+    def test_get_unstructured_ew_without_trailing_whitespace(self):
+        self._test_get_x(
+            self._get_unst,
+            '=?utf-8?q?somevalue?=nowhitespace',
+            'somevaluenowhitespace',
+            'somevaluenowhitespace',
             [errors.InvalidHeaderDefect],
             '')
 
@@ -537,7 +565,8 @@ class TestParser(TestParserMixin, TestEmailBase):
             '"=?utf-8?Q?not_really_valid?="',
             '"not really valid"',
             'not really valid',
-            [errors.InvalidHeaderDefect],
+            [errors.InvalidHeaderDefect,
+             errors.InvalidHeaderDefect],
             '')
 
     # get_comment
@@ -2143,6 +2172,31 @@ class TestParser(TestParserMixin, TestEmailBase):
         self.assertEqual(group.mailboxes[1].local_part, 'x')
         self.assertIsNone(group.all_mailboxes[1].display_name)
 
+    def test_get_group_missing_final_semicol(self):
+        group = self._test_get_x(parser.get_group,
+            ('Monty Python:"Fred A. Bear" <dinsdale@example.com>,'
+             'eric@where.test,John <jdoe@test>'),
+            ('Monty Python:"Fred A. Bear" <dinsdale@example.com>,'
+             'eric@where.test,John <jdoe@test>;'),
+            ('Monty Python:"Fred A. Bear" <dinsdale@example.com>,'
+             'eric@where.test,John <jdoe@test>;'),
+            [errors.InvalidHeaderDefect],
+            '')
+        self.assertEqual(group.token_type, 'group')
+        self.assertEqual(group.display_name, 'Monty Python')
+        self.assertEqual(len(group.mailboxes), 3)
+        self.assertEqual(group.mailboxes,
+                         group.all_mailboxes)
+        self.assertEqual(group.mailboxes[0].addr_spec,
+                         'dinsdale@example.com')
+        self.assertEqual(group.mailboxes[0].display_name,
+                         'Fred A. Bear')
+        self.assertEqual(group.mailboxes[1].addr_spec,
+                         'eric@where.test')
+        self.assertEqual(group.mailboxes[2].display_name,
+                         'John')
+        self.assertEqual(group.mailboxes[2].addr_spec,
+                         'jdoe@test')
     # get_address
 
     def test_get_address_simple(self):

@@ -37,14 +37,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+MAX_WAIT_COUNT = 500
+
+import sys
 
 def test_weakref_finalizer():
     import gc, weakref
     class A(): pass
     for i in range(2):
         w = weakref.ref(A(), cleanup)
-    while not cleaned_up:
+    i = 0
+    while not cleaned_up and i < MAX_WAIT_COUNT:
         gc.collect()
+        i += 1
     assert not w()
     assert cleaned_up
 
@@ -52,4 +57,6 @@ def test_weakref_finalizer():
 cleaned_up = False
 def cleanup(ref):
     global cleaned_up
+    caller_code = sys._getframe(1).f_code
+    assert caller_code == test_weakref_finalizer.__code__, "expected: '%s' but was '%s'" % (test_weakref_finalizer.__code__, caller_code)
     cleaned_up = True

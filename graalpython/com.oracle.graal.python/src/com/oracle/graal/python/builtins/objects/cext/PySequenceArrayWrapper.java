@@ -69,6 +69,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -107,11 +108,34 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         return elementAccessSize;
     }
 
+    @Override
+    public int hashCode() {
+        CompilerAsserts.neverPartOfCompilation();
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + getDelegate().hashCode();
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        return getDelegate() == ((PySequenceArrayWrapper) obj).getDelegate();
+    }
+
     @ExportMessage
     final long getArraySize(
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
                     @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
-        return castToLongNode.execute(callLenNode.executeObject(getDelegate(), SpecialMethodNames.__LEN__));
+        return castToLongNode.execute(callLenNode.passState().executeObject(getDelegate(), SpecialMethodNames.__LEN__));
     }
 
     @ExportMessage

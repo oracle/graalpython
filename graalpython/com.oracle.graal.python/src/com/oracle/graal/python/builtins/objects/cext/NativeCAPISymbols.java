@@ -64,6 +64,8 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_TP_BASES = "get_tp_bases";
     public static final String FUN_GET_TP_NAME = "get_tp_name";
     public static final String FUN_GET_TP_MRO = "get_tp_mro";
+    public static final String FUN_GET_TP_ALLOC = "get_tp_alloc";
+    public static final String FUN_GET_TP_FLAGS = "get_tp_flags";
     public static final String FUN_GET_TP_SUBCLASSES = "get_tp_subclasses";
     public static final String FUN_GET_TP_DICTOFFSET = "get_tp_dictoffset";
     public static final String FUN_GET_TP_BASICSIZE = "get_tp_basicsize";
@@ -81,6 +83,9 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_OBJECT_GENERIC_NEW = "PyTruffle_Type_GenericNew";
     public static final String FUN_GET_THREAD_STATE_TYPE_ID = "get_thread_state_typeid";
     public static final String FUN_ADD_NATIVE_SLOTS = "PyTruffle_Type_AddSlots";
+    public static final String FUN_PY_TRUFFLE_TUPLE_SET_ITEM = "PyTruffle_Tuple_SetItem";
+    public static final String FUN_PY_TRUFFLE_TUPLE_GET_ITEM = "PyTruffle_Tuple_GetItem";
+    public static final String FUN_PY_TRUFFLE_OBJECT_SIZE = "PyTruffle_Object_Size";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {

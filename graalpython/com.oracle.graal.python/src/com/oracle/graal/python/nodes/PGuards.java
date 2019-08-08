@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -313,7 +315,7 @@ public abstract class PGuards {
     }
 
     public static boolean isForeignObject(Object obj) {
-        return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject);
+        return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
     }
 
     public static boolean isPInt(Object obj) {
@@ -336,12 +338,20 @@ public abstract class PGuards {
         return obj instanceof PTuple;
     }
 
+    public static boolean isPCode(Object obj) {
+        return obj instanceof PCode;
+    }
+
     public static boolean isInteger(Object obj) {
         return obj instanceof Long || obj instanceof Integer;
     }
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytes || obj instanceof PByteArray;
+    }
+
+    public static boolean isMemoryView(Object obj) {
+        return obj instanceof PMemoryView;
     }
 
     public static boolean isPSlice(Object obj) {

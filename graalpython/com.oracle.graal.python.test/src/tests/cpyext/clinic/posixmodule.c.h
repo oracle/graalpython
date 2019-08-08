@@ -14,7 +14,7 @@ PyDoc_STRVAR(os_stat__doc__,
 "Perform a stat system call on the given path.\n"
 "\n"
 "  path\n"
-"    Path to be examined; can be string, bytes, path-like object or\n"
+"    Path to be examined; can be string, bytes, a path-like object or\n"
 "    open-file-descriptor int.\n"
 "  dir_fd\n"
 "    If not None, it should be a file descriptor open to a directory,\n"
@@ -106,7 +106,7 @@ PyDoc_STRVAR(os_access__doc__,
 "Use the real uid/gid to test for access to a path.\n"
 "\n"
 "  path\n"
-"    Path to be tested; can be string or bytes\n"
+"    Path to be tested; can be string, bytes, or a path-like object.\n"
 "  mode\n"
 "    Operating-system mode bitfield.  Can be F_OK to test existence,\n"
 "    or the inclusive-OR of R_OK, W_OK, and X_OK.\n"
@@ -309,7 +309,7 @@ PyDoc_STRVAR(os_chmod__doc__,
 "Change the access permissions of a file.\n"
 "\n"
 "  path\n"
-"    Path to be modified.  May always be specified as a str or bytes.\n"
+"    Path to be modified.  May always be specified as a str, bytes, or a path-like object.\n"
 "    On some platforms, path may also be specified as an open file descriptor.\n"
 "    If this functionality is unavailable, using it raises an exception.\n"
 "  mode\n"
@@ -660,7 +660,7 @@ PyDoc_STRVAR(os_chown__doc__,
 "Change the owner and group id of path to the numeric uid and gid.\\\n"
 "\n"
 "  path\n"
-"    Path to be examined; can be string, bytes, or open-file-descriptor int.\n"
+"    Path to be examined; can be string, bytes, a path-like object, or open-file-descriptor int.\n"
 "  dir_fd\n"
 "    If not None, it should be a file descriptor open to a directory,\n"
 "    and path should be relative; path will then be relative to that\n"
@@ -894,7 +894,7 @@ PyDoc_STRVAR(os_listdir__doc__,
 "\n"
 "Return a list containing the names of the files in the directory.\n"
 "\n"
-"path can be specified as either str or bytes.  If path is bytes,\n"
+"path can be specified as either str, bytes, or a path-like object.  If path is bytes,\n"
 "  the filenames returned will also be bytes; in all other circumstances\n"
 "  the filenames returned will be str.\n"
 "If path is None, uses the path=\'.\'.\n"
@@ -1269,7 +1269,7 @@ PyDoc_STRVAR(os_replace__doc__,
 "  descriptor open to a directory, and the respective path string (src or dst)\n"
 "  should be relative; the path will then be relative to that directory.\n"
 "src_dir_fd and dst_dir_fd, may not be implemented on your platform.\n"
-"  If they are unavailable, using them will raise a NotImplementedError.\"");
+"  If they are unavailable, using them will raise a NotImplementedError.");
 
 #define OS_REPLACE_METHODDEF    \
     {"replace", (PyCFunction)os_replace, METH_FASTCALL|METH_KEYWORDS, os_replace__doc__},
@@ -1355,7 +1355,7 @@ PyDoc_STRVAR(os_system__doc__,
     {"system", (PyCFunction)os_system, METH_FASTCALL|METH_KEYWORDS, os_system__doc__},
 
 static long
-os_system_impl(PyObject *module, Py_UNICODE *command);
+os_system_impl(PyObject *module, const Py_UNICODE *command);
 
 static PyObject *
 os_system(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
@@ -1363,7 +1363,7 @@ os_system(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *k
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"command", NULL};
     static _PyArg_Parser _parser = {"u:system", _keywords, 0};
-    Py_UNICODE *command;
+    const Py_UNICODE *command;
     long _return_value;
 
     if (!_PyArg_ParseStackAndKeywords(args, nargs, kwnames, &_parser,
@@ -5206,7 +5206,8 @@ PyDoc_STRVAR(os_startfile__doc__,
     {"startfile", (PyCFunction)os_startfile, METH_FASTCALL|METH_KEYWORDS, os_startfile__doc__},
 
 static PyObject *
-os_startfile_impl(PyObject *module, path_t *filepath, Py_UNICODE *operation);
+os_startfile_impl(PyObject *module, path_t *filepath,
+                  const Py_UNICODE *operation);
 
 static PyObject *
 os_startfile(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
@@ -5215,7 +5216,7 @@ os_startfile(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject
     static const char * const _keywords[] = {"filepath", "operation", NULL};
     static _PyArg_Parser _parser = {"O&|u:startfile", _keywords, 0};
     path_t filepath = PATH_T_INITIALIZE("startfile", "filepath", 0, 0);
-    Py_UNICODE *operation = NULL;
+    const Py_UNICODE *operation = NULL;
 
     if (!_PyArg_ParseStackAndKeywords(args, nargs, kwnames, &_parser,
         path_converter, &filepath, &operation)) {
@@ -5411,7 +5412,7 @@ PyDoc_STRVAR(os_getxattr__doc__,
 "\n"
 "Return the value of extended attribute attribute on path.\n"
 "\n"
-"path may be either a string or an open file descriptor.\n"
+"path may be either a string, a path-like object, or an open file descriptor.\n"
 "If follow_symlinks is False, and the last element of the path is a symbolic\n"
 "  link, getxattr will examine the symbolic link itself instead of the file\n"
 "  the link points to.");
@@ -5459,7 +5460,7 @@ PyDoc_STRVAR(os_setxattr__doc__,
 "\n"
 "Set extended attribute attribute on path to value.\n"
 "\n"
-"path may be either a string or an open file descriptor.\n"
+"path may be either a string, a path-like object,  or an open file descriptor.\n"
 "If follow_symlinks is False, and the last element of the path is a symbolic\n"
 "  link, setxattr will modify the symbolic link itself instead of the file\n"
 "  the link points to.");
@@ -5512,7 +5513,7 @@ PyDoc_STRVAR(os_removexattr__doc__,
 "\n"
 "Remove extended attribute attribute on path.\n"
 "\n"
-"path may be either a string or an open file descriptor.\n"
+"path may be either a string, a path-like object, or an open file descriptor.\n"
 "If follow_symlinks is False, and the last element of the path is a symbolic\n"
 "  link, removexattr will modify the symbolic link itself instead of the file\n"
 "  the link points to.");
@@ -5559,7 +5560,7 @@ PyDoc_STRVAR(os_listxattr__doc__,
 "\n"
 "Return a list of extended attributes on path.\n"
 "\n"
-"path may be either None, a string, or an open file descriptor.\n"
+"path may be either None, a string, a path-like object, or an open file descriptor.\n"
 "if path is None, listxattr will examine the current directory.\n"
 "If follow_symlinks is False, and the last element of the path is a symbolic\n"
 "  link, listxattr will examine the symbolic link itself instead of the file\n"
@@ -5945,7 +5946,7 @@ PyDoc_STRVAR(os_scandir__doc__,
 "\n"
 "Return an iterator of DirEntry objects for given path.\n"
 "\n"
-"path can be specified as either str, bytes or path-like object.  If path\n"
+"path can be specified as either str, bytes, or a path-like object.  If path\n"
 "is bytes, the names of yielded DirEntry objects will also be bytes; in\n"
 "all other circumstances they will be str.\n"
 "\n"
@@ -6542,4 +6543,4 @@ exit:
 #ifndef OS_GETRANDOM_METHODDEF
     #define OS_GETRANDOM_METHODDEF
 #endif /* !defined(OS_GETRANDOM_METHODDEF) */
-/*[clinic end generated code: output=c966c821d557b7c0 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=32c935671ee020d5 input=a9049054013a1b77]*/

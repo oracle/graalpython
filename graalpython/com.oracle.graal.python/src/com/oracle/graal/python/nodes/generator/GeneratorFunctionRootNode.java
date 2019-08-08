@@ -41,11 +41,14 @@
 package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -59,7 +62,9 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final int numOfGeneratorForNode;
     private final ExecutionCellSlots cellSlots;
     private final String name;
+
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+    @Child private MaterializeFrameNode materializeNode;
 
     public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
@@ -75,6 +80,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
+        // TODO 'materialize' generator frame and create locals dict eagerly
         return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
                         numOfGeneratorForNode);
     }
@@ -89,7 +95,19 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     }
 
     @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return "<generator function " + name + ">";
+    }
+
+    @Override
     public void initializeFrame(VirtualFrame frame) {
         // nothing to do
+    }
+
+    @Override
+    public boolean isPythonInternal() {
+        RootNode rootNode = callTarget.getRootNode();
+        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
     }
 }

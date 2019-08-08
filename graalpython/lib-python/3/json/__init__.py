@@ -178,6 +178,7 @@ def dump(obj, fp, *, skipkeys=False, ensure_ascii=True, check_circular=True,
     # a debuggability cost
     for chunk in iterable:
         fp.write(chunk)
+    fp.flush()
 
 
 def dumps(obj, *, skipkeys=False, ensure_ascii=True, check_circular=True,

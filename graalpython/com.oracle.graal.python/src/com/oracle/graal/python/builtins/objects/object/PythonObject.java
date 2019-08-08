@@ -33,51 +33,52 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.Location;
+import com.oracle.truffle.api.object.DynamicObjectFactory;
+import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.object.dsl.Layout;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
-    @CompilationFinal private LazyPythonClass pythonClass;
-    private final Assumption classStable = Truffle.getRuntime().createAssumption("class unchanged");
-    private final Assumption dictUnsetOrSameAsStorage = Truffle.getRuntime().createAssumption("dict unset or same as instance attributes");
-    private final DynamicObject storage;
+    public static final HiddenKey HAS_DICT = new HiddenKey("has_dict");
+
+    private LazyPythonClass storedPythonClass;
     private PHashingCollection dict;
+    private final DynamicObject storage;
 
     public PythonObject(LazyPythonClass pythonClass) {
         assert pythonClass != null : getClass().getSimpleName();
-        this.pythonClass = pythonClass;
-        storage = TypeNodes.GetInstanceShape.doSlowPath(pythonClass).newInstance();
+        this.storedPythonClass = pythonClass;
+        this.storage = TypeNodes.GetInstanceShape.doSlowPath(pythonClass).newInstance();
+        assert getLazyPythonClass() == pythonClass;
     }
 
     public PythonObject(LazyPythonClass pythonClass, Shape instanceShape) {
-        if (pythonClass == null) {
-            CompilerDirectives.transferToInterpreter();
-            // special case for base type class
-            assert this instanceof PythonBuiltinClass;
-            this.pythonClass = (PythonBuiltinClass) this;
-        } else {
-            this.pythonClass = pythonClass;
-        }
-        storage = instanceShape.newInstance();
+        assert pythonClass != null;
+        this.storedPythonClass = pythonClass;
+        this.storage = instanceShape.newInstance();
     }
 
     public final PythonAbstractClass getPythonClass() {
         CompilerAsserts.neverPartOfCompilation();
-        assert pythonClass != null;
+        LazyPythonClass pythonClass = getLazyPythonClass();
         if (pythonClass instanceof PythonAbstractClass) {
             return (PythonAbstractClass) pythonClass;
         } else {
@@ -85,53 +86,42 @@ public class PythonObject extends PythonAbstractObject {
         }
     }
 
-    public final void setLazyPythonClass(PythonAbstractClass cls) {
-        pythonClass = cls;
-        classStable.invalidate();
+    @ExportMessage
+    @GenerateUncached
+    public abstract static class SetLazyPythonClass {
+        public static Assumption getSingleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        @Specialization(assumptions = "storingClassesInShapes")
+        public static void setSingle(PythonObject self, PythonAbstractClass cls,
+                        @SuppressWarnings("unused") @Cached(value = "getSingleContextAssumption()", allowUncached = true) Assumption storingClassesInShapes) {
+            self.storedPythonClass = cls;
+            PythonObjectLayoutImpl.INSTANCE.setLazyPythonClass(self.storage, cls);
+        }
+
+        @Specialization
+        public static void setMultiContext(PythonObject self, PythonAbstractClass cls) {
+            self.storedPythonClass = cls;
+            if (PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(self.storage) != null) {
+                // for the builtin class enums, we now should change the shape
+                // to the generic one that just doesn't store the class
+                Shape shape = self.storage.getShape();
+                self.storage.setShapeAndGrow(shape, shape.changeType(emptyShape.getObjectType()));
+            }
+        }
     }
 
     /**
-     * Generally reading this directly might not be safe, because the value is
-     * {@code @CompilationFinal}. It's fine, however, if the class is of a builtin type (because for
-     * objects of these types, we cannot write to the {@code __class__} field anyway.
+     * This is usually final, a fact may be optimized further if the storage turns into a constant.
      */
+    @ExportMessage
     public final LazyPythonClass getLazyPythonClass() {
-        assert (!CompilerDirectives.isCompilationConstant(this) ||
-                        CompilerDirectives.inInterpreter() ||
-                        pythonClass instanceof PythonBuiltinClassType ||
-                        pythonClass instanceof PythonBuiltinClass) : "user type object must not be compilation constant when reading the compilation final lazy python class in compiled code";
-        return pythonClass;
-    }
-
-    public final Assumption getClassStableAssumption() {
-        return classStable;
-    }
-
-    public final Assumption getDictUnsetOrSameAsStorageAssumption() {
-        return dictUnsetOrSameAsStorage;
+        return storedPythonClass;
     }
 
     public final DynamicObject getStorage() {
         return storage;
-    }
-
-    /**
-     * Does this object have an instance variable defined?
-     */
-    public final boolean isOwnAttribute(String name) {
-        return getStorage().containsKey(name);
-    }
-
-    public final Location getOwnValidLocation(String attributeId) {
-        if (!getStorage().getShape().isValid()) {
-            getStorage().updateShape();
-        }
-        Property property = getStorage().getShape().getProperty(attributeId);
-        if (property != null) {
-            return property.getLocation();
-        } else {
-            return null;
-        }
     }
 
     @TruffleBoundary
@@ -178,17 +168,90 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + GetNameNode.doSlowPath(getLazyPythonClass()) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        return "<" + TypeNodes.GetNameNode.doSlowPath(getLazyPythonClass()) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
-    /**
-     * Returns the dictionary backed by {@link #storage} (only available for user objects).
-     */
-    public final PHashingCollection getDict() {
-        return dict;
+    @ExportMessage
+    @SuppressWarnings("unused")
+    @GenerateUncached
+    public abstract static class HasDict {
+        @Specialization(guards = {"receiver.getStorage().getShape() == cachedShape", "prop == null"}, assumptions = "layoutAssumption", limit = "1")
+        public static boolean hasNoDict(PythonObject receiver,
+                        @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
+                        @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                        @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
+            return false;
+        }
+
+        @Specialization(guards = {"receiver.getStorage().getShape() == cachedShape", "prop != null"}, assumptions = "layoutAssumption", limit = "1")
+        public static boolean hasDict(PythonObject receiver,
+                        @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
+                        @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                        @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
+            return true;
+        }
+
+        @Specialization(replaces = {"hasDict", "hasNoDict"})
+        public static boolean mayHaveDict(PythonObject receiver) {
+            return receiver.dict != null;
+        }
     }
 
-    public final void setDict(PHashingCollection dict) {
+    @ExportMessage
+    @SuppressWarnings("unused")
+    @GenerateUncached
+    public abstract static class GetDict {
+        @Specialization(guards = {"receiver.getStorage().getShape() == cachedShape", "prop == null"}, assumptions = "layoutAssumption", limit = "1")
+        public static PHashingCollection getNoDict(PythonObject receiver,
+                        @Exclusive @Cached("receiver.getStorage().getShape()") Shape cachedShape,
+                        @Exclusive @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                        @Exclusive @Cached("cachedShape.getProperty(HAS_DICT)") Property prop) {
+            return null;
+        }
+
+        @Specialization(replaces = {"getNoDict"})
+        public static PHashingCollection getDict(PythonObject receiver) {
+            return receiver.dict;
+        }
+    }
+
+    @ExportMessage
+    public final void setDict(PHashingCollection dict,
+                    @Cached WriteAttributeToDynamicObjectNode writeNode) {
+        writeNode.execute(storage, HAS_DICT, true);
         this.dict = dict;
+    }
+
+    @Layout(implicitCastIntToLong = true, implicitCastIntToDouble = false)
+    protected static interface PythonObjectLayout {
+        DynamicObjectFactory createPythonObjectShape(LazyPythonClass lazyPythonClass);
+
+        DynamicObject createPythonObject(DynamicObjectFactory factory);
+
+        LazyPythonClass getLazyPythonClass(DynamicObjectFactory factory);
+
+        LazyPythonClass getLazyPythonClass(ObjectType objectType);
+
+        LazyPythonClass getLazyPythonClass(DynamicObject object);
+
+        void setLazyPythonClass(DynamicObject object, LazyPythonClass value);
+    }
+
+    private static final Shape emptyShape = PythonObjectLayoutImpl.INSTANCE.createPythonObjectShape(null).getShape();
+
+    public static Shape freshShape(LazyPythonClass klass) {
+        // GR-17243: I would like to enable this assertion, but it breaks
+        // building native images under some circumstances.
+        // assert (PythonLanguage.getCurrent().singleContextAssumption.isValid()
+        // && klass != null) || klass instanceof PythonBuiltinClassType;
+        return PythonObjectLayoutImpl.INSTANCE.createPythonObjectShape(klass).getShape();
+    }
+
+    public static Shape freshShape() {
+        return emptyShape;
+    }
+
+    public static LazyPythonClass getLazyClassFromObjectType(ObjectType type) {
+        return PythonObjectLayoutImpl.INSTANCE.getLazyPythonClass(type);
     }
 }

@@ -72,14 +72,14 @@ public class PRangeTests {
         TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
         GetIteratorNode getIter = GetIteratorNode.create();
         testRoot.doInsert(getIter);
-        Object iter = getIter.executeWith(range);
+        Object iter = getIter.executeWith(null, range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
         IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         while (true) {
             try {
-                int item = next.executeInt(iter);
+                int item = next.executeInt(null, iter);
                 assertEquals(index, item);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
@@ -96,14 +96,14 @@ public class PRangeTests {
         TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
         GetIteratorNode getIter = GetIteratorNode.create();
         testRoot.doInsert(getIter);
-        Object iter = getIter.executeWith(range);
+        Object iter = getIter.executeWith(null, range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
         IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         while (true) {
             try {
-                int item = next.executeInt(iter);
+                int item = next.executeInt(null, iter);
                 assertEquals(index, item);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);

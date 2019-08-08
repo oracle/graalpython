@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
@@ -41,6 +40,7 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -61,17 +61,20 @@ import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.InteropModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
@@ -84,7 +87,6 @@ import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
@@ -96,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
@@ -109,7 +110,8 @@ import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
-import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
@@ -125,6 +127,8 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.lzma.LZMACompressorBuiltins;
+import com.oracle.graal.python.builtins.objects.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
@@ -167,6 +171,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -209,7 +214,7 @@ public final class Python3Core implements PythonCore {
                         "set",
                         "itertools",
                         "base_exception",
-                        TruffleCextBuiltins.PYTHON_CEXT,
+                        PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
                         "memoryview",
                         "list",
@@ -232,8 +237,12 @@ public final class Python3Core implements PythonCore {
                         "_ast",
                         "java",
                         "pyio_patches",
-                        "_contextvars"));
-
+                        "pwd",
+                        "resource",
+                        "_contextvars",
+                        "_lzma"));
+        // must be last
+        coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
 
@@ -246,7 +255,7 @@ public final class Python3Core implements PythonCore {
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
                         new StaticmethodBuiltins(),
-                        new InteropModuleBuiltins(),
+                        new PolyglotModuleBuiltins(),
                         new ObjectBuiltins(),
                         new CellBuiltins(),
                         new BoolBuiltins(),
@@ -257,7 +266,7 @@ public final class Python3Core implements PythonCore {
                         new AbstractBytesBuiltins(),
                         new TypeBuiltins(),
                         new IntBuiltins(),
-                        new TruffleObjectBuiltins(),
+                        new ForeignObjectBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictViewBuiltins(),
@@ -301,7 +310,7 @@ public final class Python3Core implements PythonCore {
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
-                        new TruffleCextBuiltins(),
+                        new PythonCextBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new IOModuleBuiltins(),
@@ -345,7 +354,12 @@ public final class Python3Core implements PythonCore {
                         new ThreadBuiltins(),
                         new LockBuiltins(),
                         new RLockBuiltins(),
-                        new ContextvarsModuleBuiltins()));
+                        new PwdModuleBuiltins(),
+                        new ResourceModuleBuiltins(),
+                        new ContextvarsModuleBuiltins(),
+                        new LZMAModuleBuiltins(),
+                        new LZMACompressorBuiltins(),
+                        new LZMADecompressorBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
@@ -363,6 +377,7 @@ public final class Python3Core implements PythonCore {
 
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
+    @CompilationFinal private PFloat pyNaN;
 
     private final PythonParser parser;
 
@@ -405,7 +420,7 @@ public final class Python3Core implements PythonCore {
     public void initialize(PythonContext context) {
         singletonContext = context;
         initializeJavaCore();
-        initializePythonCore();
+        initializePythonCore(context.getCoreHomeOrFail());
         initialized = true;
     }
 
@@ -416,8 +431,7 @@ public final class Python3Core implements PythonCore {
         builtinsModule = builtinModules.get("builtins");
     }
 
-    private void initializePythonCore() {
-        String coreHome = PythonCore.getCoreHomeOrFail();
+    private void initializePythonCore(String coreHome) {
         loadFile("builtins", coreHome);
         for (String s : coreFiles) {
             loadFile(s, coreHome);
@@ -433,8 +447,6 @@ public final class Python3Core implements PythonCore {
             for (PythonBuiltins builtin : builtins) {
                 builtin.postInitialize(this);
             }
-
-            loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
 
             initialized = true;
         }
@@ -518,8 +530,9 @@ public final class Python3Core implements PythonCore {
             }
         }
         // now initialize well-known objects
-        pyTrue = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ONE);
-        pyFalse = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
+        pyTrue = new PInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
+        pyFalse = new PInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
+        pyNaN = new PFloat(PythonBuiltinClassType.PFloat, Double.NaN);
     }
 
     private void populateBuiltins() {
@@ -585,26 +598,31 @@ public final class Python3Core implements PythonCore {
     }
 
     @TruffleBoundary
-    private Source getSource(String basename, String prefix) {
+    private Source getInternalSource(String basename, String prefix) {
         PythonContext ctxt = getContext();
         Env env = ctxt.getEnv();
-        String suffix = env.getFileNameSeparator() + basename + ".py";
-        TruffleFile file = env.getTruffleFile(prefix + suffix);
+        String suffix = env.getFileNameSeparator() + basename + PythonLanguage.EXTENSION;
+        TruffleFile file = env.getInternalTruffleFile(prefix + suffix);
+        String errorMessage;
         try {
-            if (file.exists()) {
-                return getLanguage().newSource(ctxt, file, basename);
-            }
-        } catch (SecurityException | IOException t) {
-            // fall through;
+            return PythonLanguage.newSource(ctxt, file, basename);
+        } catch (IOException e) {
+            errorMessage = "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
+        } catch (SecurityException e) {
+            errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
-        PythonLanguage.getLogger().log(Level.SEVERE, "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.");
-        throw new RuntimeException();
+        PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
+        PException e = new PException(null, null);
+        e.setMessage(errorMessage);
+        throw e;
     }
 
     private void loadFile(String s, String prefix) {
-        Source source = getSource(s, prefix);
-        Supplier<PCode> getCode = () -> objectFactory.createCode(Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null)));
-        RootCallTarget callTarget = getLanguage().cacheCode(source.getName(), getCode).getRootCallTarget();
+        Supplier<CallTarget> getCode = () -> {
+            Source source = getInternalSource(s, prefix);
+            return Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null));
+        };
+        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
@@ -628,6 +646,10 @@ public final class Python3Core implements PythonCore {
 
     public PInt getFalse() {
         return pyFalse;
+    }
+
+    public PFloat getNaN() {
+        return pyNaN;
     }
 
     public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {

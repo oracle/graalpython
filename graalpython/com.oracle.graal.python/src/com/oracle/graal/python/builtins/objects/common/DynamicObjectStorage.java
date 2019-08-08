@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Layout;
@@ -155,25 +154,13 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         @Override
         @TruffleBoundary
         public HashingStorage copy(Equivalence eq) {
-            assert eq == HashingStorage.DEFAULT_EQIVALENCE;
             return new FastDictStorage(getStore().copy(getStore().getShape()));
         }
     }
 
     public static final class PythonObjectDictStorage extends DynamicObjectStorage {
-        private final Assumption dictUnsetOrSameAsStorage;
-
         public PythonObjectDictStorage(DynamicObject store) {
-            this(store, null);
-        }
-
-        public PythonObjectDictStorage(DynamicObject store, Assumption dictUnsetOrSameAsStorage) {
             super(store);
-            this.dictUnsetOrSameAsStorage = dictUnsetOrSameAsStorage;
-        }
-
-        public Assumption getDictUnsetOrSameAsStorage() {
-            return dictUnsetOrSameAsStorage;
         }
 
         @Override

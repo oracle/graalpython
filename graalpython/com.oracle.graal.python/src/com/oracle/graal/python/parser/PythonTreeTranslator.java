@@ -498,7 +498,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         try {
             environment.pushScope(compctx.scope);
             ExpressionNode block = getBlock.apply(ctx);
-            ExpressionNode yield = factory.createYield(block, environment.getReturnSlot());
+            ExpressionNode yield = factory.createYield(block);
             yield.assignSourceSection(block.getSourceSection());
             StatementNode body = createGeneratorExpression(ctx.getChild(Python3Parser.Comp_forContext.class, 0), asBlock(yield));
             SourceSection srcSection = body.getSourceSection();
@@ -791,7 +791,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         return sb.toString();
     }
 
-    private Object parseNumber(String text) {
+    private Object parseNumber(String inputText) {
+        String text = inputText.replace("_", "");
         if (text.endsWith("j") || text.endsWith("J") || text.contains(".")) {
             return parseDottedNumber(text);
         } else {
@@ -1354,12 +1355,12 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             } else {
                 assert ctx.yield_arg().test() != null;
                 right = (ExpressionNode) ctx.yield_arg().test().accept(this);
-                return factory.createYieldFrom(right, environment.getReturnSlot());
+                return factory.createYieldFrom(right);
             }
         } else {
             right = EmptyNode.create();
         }
-        return factory.createYield(right, environment.getReturnSlot());
+        return factory.createYield(right);
     }
 
     @Override
@@ -1390,7 +1391,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         StatementNode tryNode = asBlock(ctx.suite(0).accept(this));
         List<ExceptNode> exceptClauses = new ArrayList<>();
         StatementNode elseNode = factory.createBlock();
-        StatementNode finallyNode = factory.createBlock();
+        StatementNode finallyNode = null;
         int i = 3; // 0 == 'try', 1 == ':', 2 == tryNode
         boolean gotDefaultExcept = false;
         while (i < ctx.getChildCount()) {

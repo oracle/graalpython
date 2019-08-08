@@ -54,7 +54,7 @@ public final class SetLiteralNode extends LiteralNode {
             setItemNode = insert(HashingStorageNodes.SetItemNode.create());
         }
         for (ExpressionNode v : this.values) {
-            storage = setItemNode.execute(storage, v.execute(frame), PNone.NO_VALUE);
+            storage = setItemNode.execute(frame, storage, v.execute(frame), PNone.NO_VALUE);
         }
 
         return factory.createSet(storage);

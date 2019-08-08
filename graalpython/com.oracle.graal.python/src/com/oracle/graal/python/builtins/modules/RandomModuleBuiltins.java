@@ -39,6 +39,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "_random")
 public class RandomModuleBuiltins extends PythonBuiltins {
@@ -55,9 +56,9 @@ public class RandomModuleBuiltins extends PythonBuiltins {
         @Child LookupAndCallBinaryNode setSeed = LookupAndCallBinaryNode.create("seed");
 
         @Specialization
-        PRandom random(LazyPythonClass cls, Object seed) {
+        PRandom random(VirtualFrame frame, LazyPythonClass cls, Object seed) {
             PRandom random = factory().createRandom(cls);
-            setSeed.executeObject(random, seed);
+            setSeed.executeObject(frame, random, seed);
             return random;
         }
     }

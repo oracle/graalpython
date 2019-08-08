@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -125,7 +126,7 @@ abstract class AccessForeignItemNodes {
             try {
                 mslice = materializeSlice(idxSlice, object, lib);
             } catch (UnsupportedMessageException e) {
-                throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
+                throw raiseAttributeError(object);
             }
             Object[] values = new Object[mslice.length];
             for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
@@ -137,17 +138,19 @@ abstract class AccessForeignItemNodes {
         @Specialization
         public Object doForeignKey(Object object, String key,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return lib.readMember(object, key);
-            } catch (UnsupportedMessageException e) {
-                if (lib.hasArrayElements(object)) {
-                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
-                } else {
-                    throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
+            if (lib.hasMembers(object)) {
+                if (lib.isMemberReadable(object, key)) {
+                    try {
+                        return lib.readMember(object, key);
+                    } catch (UnsupportedMessageException e) {
+                        throw raiseAttributeErrorDisambiguated(object, key, lib);
+                    } catch (UnknownIdentifierException e) {
+                        // fall through
+                    }
                 }
-            } catch (UnknownIdentifierException e) {
                 throw raise(KeyError, key);
             }
+            throw raiseAttributeErrorDisambiguated(object, key, lib);
         }
 
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
@@ -157,14 +160,36 @@ abstract class AccessForeignItemNodes {
             return readForeignValue(object, castIndex.execute(idx), lib);
         }
 
-        private Object readForeignValue(Object object, long index, InteropLibrary lib) {
-            try {
-                return getToPythonNode().executeConvert(lib.readArrayElement(object, index));
-            } catch (UnsupportedMessageException ex) {
-                throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
-            } catch (InvalidArrayIndexException ex) {
-                throw raise(IndexError, "invalid index %s", index);
+        private PException raiseAttributeErrorDisambiguated(Object object, String key, InteropLibrary lib) {
+            if (lib.hasArrayElements(object)) {
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+            } else {
+                throw raiseAttributeError(object);
             }
+        }
+
+        private Object readForeignValue(Object object, long index, InteropLibrary lib) {
+            if (lib.hasArrayElements(object)) {
+                if (lib.isArrayElementReadable(object, index)) {
+                    try {
+                        return getToPythonNode().executeConvert(lib.readArrayElement(object, index));
+                    } catch (UnsupportedMessageException ex) {
+                        throw raiseAttributeError(object);
+                    } catch (InvalidArrayIndexException ex) {
+                        throw raiseIndexError(index);
+                    }
+                }
+                throw raiseIndexError(index);
+            }
+            throw raiseAttributeError(object);
+        }
+
+        private PException raiseIndexError(long index) {
+            return raise(IndexError, "invalid index %s", index);
+        }
+
+        private PException raiseAttributeError(Object object) {
+            return raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
         }
 
         private PForeignToPTypeNode getToPythonNode() {
@@ -184,17 +209,17 @@ abstract class AccessForeignItemNodes {
     @ImportStatic(SpecialMethodNames.class)
     protected abstract static class SetForeignItemNode extends AccessForeignItemBaseNode {
 
-        public abstract Object execute(Object object, Object idx, Object value);
+        public abstract Object execute(VirtualFrame frame, Object object, Object idx, Object value);
 
         @Specialization
-        public Object doForeignObjectSlice(Object object, PSlice idxSlice, PSequence pvalues,
+        public Object doForeignObjectSlice(VirtualFrame frame, Object object, PSlice idxSlice, PSequence pvalues,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("create()") PTypeToForeignNode valueToForeignNode) {
             try {
                 SliceInfo mslice = materializeSlice(idxSlice, object, lib);
                 for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
-                    Object convertedValue = valueToForeignNode.executeConvert(getItemNode.executeObject(pvalues, j));
+                    Object convertedValue = valueToForeignNode.executeConvert(getItemNode.executeObject(frame, pvalues, j));
                     writeForeignValue(object, i, convertedValue, lib);
                 }
                 return PNone.NONE;
@@ -206,20 +231,38 @@ abstract class AccessForeignItemNodes {
         @Specialization
         public Object doForeignKey(Object object, String key, Object value,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                lib.writeMember(object, key, value);
-                return PNone.NONE;
-            } catch (UnsupportedMessageException e) {
-                if (lib.hasArrayElements(object)) {
-                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
-                } else {
-                    throw raise(AttributeError, "attribute %s is read-only", key);
+            if (lib.hasMembers(object)) {
+                if (lib.isMemberWritable(object, key)) {
+                    try {
+                        lib.writeMember(object, key, value);
+                        return PNone.NONE;
+                    } catch (UnsupportedMessageException e) {
+                        throw raiseAttributeReadOnlyDisambiguated(object, key, lib);
+                    } catch (UnknownIdentifierException e) {
+                        throw raiseAttributeError(key);
+                    } catch (UnsupportedTypeException e) {
+                        throw raiseAttributeReadOnly(key);
+                    }
                 }
-            } catch (UnknownIdentifierException e) {
-                throw raise(AttributeError, "foreign object has no attribute '%s'", key);
-            } catch (UnsupportedTypeException e) {
-                throw raise(AttributeError, "attribute %s is read-only", key);
+                throw raiseAttributeReadOnlyDisambiguated(object, key, lib);
             }
+            throw raiseAttributeError(key);
+        }
+
+        private PException raiseAttributeReadOnlyDisambiguated(Object object, String key, InteropLibrary lib) {
+            if (lib.hasArrayElements(object)) {
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+            } else {
+                throw raiseAttributeReadOnly(key);
+            }
+        }
+
+        private PException raiseAttributeReadOnly(String key) {
+            return raise(AttributeError, "attribute %s is read-only", key);
+        }
+
+        private PException raiseAttributeError(String key) {
+            return raise(AttributeError, "foreign object has no attribute '%s'", key);
         }
 
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
@@ -238,13 +281,16 @@ abstract class AccessForeignItemNodes {
         }
 
         private void writeForeignValue(Object object, int idx, Object value, InteropLibrary lib) throws UnsupportedMessageException, UnsupportedTypeException {
-            if (lib.isArrayElementModifiable(object, idx)) {
-                try {
-                    lib.writeArrayElement(object, idx, value);
-                    return;
-                } catch (InvalidArrayIndexException ex) {
-                    throw raise(IndexError, "invalid index %s", idx);
+            if (lib.hasArrayElements(object)) {
+                if (lib.isArrayElementWritable(object, idx)) {
+                    try {
+                        lib.writeArrayElement(object, idx, value);
+                        return;
+                    } catch (InvalidArrayIndexException ex) {
+                        // fall through
+                    }
                 }
+                throw raise(IndexError, "invalid index %s", idx);
             }
             throw raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
         }
@@ -269,24 +315,38 @@ abstract class AccessForeignItemNodes {
                 }
                 return PNone.NONE;
             } catch (UnsupportedMessageException e) {
-                throw raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
+                throw raiseAttributeError(object);
             }
         }
 
         @Specialization
         public Object doForeignKey(Object object, String key,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                lib.removeMember(object, key);
-                return PNone.NONE;
-            } catch (UnsupportedMessageException e) {
-                if (lib.hasArrayElements(object)) {
-                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
-                } else {
-                    throw raise(AttributeError, "attribute %s is read-only", key);
+            if (lib.hasMembers(object)) {
+                if (lib.isMemberRemovable(object, key)) {
+                    try {
+                        lib.removeMember(object, key);
+                        return PNone.NONE;
+                    } catch (UnsupportedMessageException e) {
+                        throw raiseAttributeReadOnlyDisambiguated(object, key, lib);
+                    } catch (UnknownIdentifierException e) {
+                        throw raiseAttributeError(key);
+                    }
                 }
-            } catch (UnknownIdentifierException e) {
-                throw raise(AttributeError, "foreign object has no attribute '%s'", key);
+                throw raiseAttributeReadOnlyDisambiguated(object, key, lib);
+            }
+            throw raiseAttributeError(key);
+        }
+
+        private PException raiseAttributeError(String key) {
+            return raise(AttributeError, "foreign object has no attribute '%s'", key);
+        }
+
+        private PException raiseAttributeReadOnlyDisambiguated(Object object, String key, InteropLibrary lib) {
+            if (lib.hasArrayElements(object)) {
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+            } else {
+                throw raise(AttributeError, "attribute %s is read-only", key);
             }
         }
 
@@ -294,12 +354,19 @@ abstract class AccessForeignItemNodes {
         public Object doForeignObject(Object object, Object idx,
                         @Cached CastToIndexNode castIndex,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                int convertedIdx = castIndex.execute(idx);
-                return removeForeignValue(object, convertedIdx, lib);
-            } catch (UnsupportedMessageException e) {
-                throw raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
+            if (lib.hasArrayElements(object)) {
+                try {
+                    int convertedIdx = castIndex.execute(idx);
+                    return removeForeignValue(object, convertedIdx, lib);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
             }
+            throw raiseAttributeError(object);
+        }
+
+        private PException raiseAttributeError(Object object) {
+            return raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
         }
 
         private Object removeForeignValue(Object object, int idx, InteropLibrary lib) throws UnsupportedMessageException {
@@ -310,7 +377,7 @@ abstract class AccessForeignItemNodes {
                     throw raise(IndexError, "invalid index %s", idx);
                 }
             }
-            throw raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
+            throw raiseAttributeError(object);
         }
 
         public static RemoveForeignItemNode create() {

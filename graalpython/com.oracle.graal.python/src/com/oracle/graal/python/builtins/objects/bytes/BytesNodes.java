@@ -70,6 +70,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -77,20 +78,20 @@ public abstract class BytesNodes {
 
     public abstract static class BytesJoinNode extends PNodeWithContext {
 
-        public abstract byte[] execute(byte[] sep, Object iterable);
+        public abstract byte[] execute(VirtualFrame frame, byte[] sep, Object iterable);
 
         @Specialization
-        public byte[] join(byte[] sep, Object iterable,
+        byte[] join(VirtualFrame frame, byte[] sep, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") ToBytesNode toBytesNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
-            Object iterator = getIteratorNode.executeWith(iterable);
+            Object iterator = getIteratorNode.executeWith(frame, iterable);
             while (true) {
                 try {
-                    partsTotalSize += append(parts, toBytesNode.execute(getNextNode.execute(iterator)));
+                    partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
@@ -139,7 +140,7 @@ public abstract class BytesNodes {
             this.allowRecursive = allowRecursive;
         }
 
-        public abstract byte[] execute(Object obj);
+        public abstract byte[] execute(VirtualFrame frame, Object obj);
 
         @Specialization
         byte[] doBytes(PBytes bytes,
@@ -163,10 +164,10 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = "allowRecursive")
-        byte[] doMemoryView(PMemoryView memoryView,
+        byte[] doMemoryView(VirtualFrame frame, PMemoryView memoryView,
                         @Cached("createRecursive()") ToBytesNode recursive,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytesNode) {
-            return recursive.execute(callToBytesNode.executeObject(memoryView));
+            return recursive.execute(frame, callToBytesNode.executeObject(frame, memoryView));
         }
 
         @Fallback
@@ -223,9 +224,14 @@ public abstract class BytesNodes {
             // TODO implement a more efficient algorithm
             outer: for (int i = start; i < end; i++) {
                 for (int j = 0; j < len2; j++) {
+                    if (i + j >= end) {
+                        continue outer;
+                    }
+
                     int hb = getGetLeftItemNode().executeInt(haystack, i + j);
                     int nb = getGetRightItemNode().executeInt(needle, j);
-                    if (nb != hb || i + j >= end) {
+
+                    if (nb != hb) {
                         continue outer;
                     }
                 }
@@ -354,7 +360,7 @@ public abstract class BytesNodes {
 
         @Child private SequenceStorageNodes.AppendNode appendByteNode;
 
-        public abstract byte[] execute(Object iterator);
+        public abstract byte[] execute(VirtualFrame frame, Object iterator);
 
         public SequenceStorageNodes.AppendNode getAppendByteNode() {
             if (appendByteNode == null) {
@@ -365,13 +371,13 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        public byte[] doIt(Object iterObject,
+        byte[] doIt(VirtualFrame frame, Object iterObject,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             ByteSequenceStorage bss = new ByteSequenceStorage(16);
             while (true) {
                 try {
-                    getAppendByteNode().execute(bss, getNextNode.execute(iterObject), BytesLikeNoGeneralizationNode.SUPPLIER);
+                    getAppendByteNode().execute(bss, getNextNode.execute(frame, iterObject), BytesLikeNoGeneralizationNode.SUPPLIER);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return bss.getInternalByteArray();

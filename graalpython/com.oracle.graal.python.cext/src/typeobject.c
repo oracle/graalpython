@@ -95,6 +95,18 @@ static PyObject* wrap_setattrofunc(setattrofunc f, PyObject* obj, PyObject* key,
 	return PyLong_FromLong(f(obj, key, item));
 }
 
+/* Basically the same as 'wrap_setattrofunc' but has a different function type. */
+static PyObject* wrap_descrsetfunc(descrsetfunc f, PyObject* obj, PyObject* key, PyObject* item) {
+	if(f(obj, key, item) < 0) {
+		return NULL;
+	}
+	return Py_None;
+}
+
+static PyObject* wrap_descrgetfunc(descrgetfunc f, PyObject* self, PyObject* obj, PyObject* type) {
+	return native_to_java(f(self, obj, type));
+}
+
 static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObject* n) {
 	return f(a, b, (int)PyLong_AsLong(n));
 }
@@ -158,8 +170,12 @@ static PyObject* wrap_lenfunc(lenfunc f, PyObject* a) {
     return PyLong_FromSsize_t(f(a));
 }
 
-static Py_hash_t wrap_hashfunc(hashfunc f, PyObject* a) {
-    return PyLong_FromSsize_t(f(a));
+static PyObject* wrap_hashfunc(hashfunc f, PyObject* a) {
+    Py_hash_t res = f(a);
+    if (res == -1 && PyErr_Occurred()) {
+        return NULL;
+    }
+    return PyLong_FromSsize_t(res);
 }
 
 static PyObject* wrap_reverse_binop(binaryfunc f, PyObject* a, PyObject* b) {
@@ -424,8 +440,8 @@ int PyType_Ready(PyTypeObject* cls) {
     }
     ADD_SLOT("__iter__", cls->tp_iter, -1);
     ADD_SLOT("__next__", cls->tp_iternext, -1);
-    ADD_SLOT("__get__", cls->tp_descr_get, -3);
-    ADD_SLOT("__set__", cls->tp_descr_set, -3);
+    ADD_SLOT_CONV("__get__", wrap_descrgetfunc, cls->tp_descr_get, -3);
+    ADD_SLOT_CONV("__set__", wrap_descrsetfunc, cls->tp_descr_set, -3);
     ADD_SLOT_CONV("__init__", wrap_initproc, cls->tp_init, METH_KEYWORDS | METH_VARARGS);
     ADD_SLOT_CONV("__alloc__", wrap_allocfunc, cls->tp_alloc, -2);
     ADD_SLOT("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS);
@@ -440,7 +456,8 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__sub__", numbers->nb_subtract, -2);
         ADD_SLOT_CONV("__rsub__", wrap_reverse_binop, numbers->nb_subtract, -2);
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
-        ADD_SLOT("__rem__", numbers->nb_remainder, -2);
+        ADD_SLOT("__mod__", numbers->nb_remainder, -2);
+        ADD_SLOT_CONV("__rmod__", wrap_reverse_binop, numbers->nb_remainder, -2);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
         ADD_SLOT_CONV("__pow__", wrap_pow, numbers->nb_power, -3);
         ADD_SLOT("__neg__", numbers->nb_negative, -1);

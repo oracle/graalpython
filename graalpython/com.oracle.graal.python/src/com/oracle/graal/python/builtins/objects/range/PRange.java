@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,8 +28,8 @@ package com.oracle.graal.python.builtins.objects.range;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -55,7 +55,7 @@ public final class PRange extends PImmutableSequence {
         super(clazz);
         if (step == 0) {
             CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(ValueError, "range() arg 3 must not be zero");
+            throw PRaiseNode.getUncached().raise(ValueError, "range() arg 3 must not be zero");
         }
 
         int n;
@@ -82,7 +82,7 @@ public final class PRange extends PImmutableSequence {
             n = (int) ((diff / step) + 1);
             if (n < 0) {
                 CompilerDirectives.transferToInterpreter();
-                throw PythonLanguage.getCore().raise(OverflowError, "range() result has too many items");
+                throw PRaiseNode.getUncached().raise(OverflowError, "range() result has too many items");
             }
         }
         return n;

@@ -40,18 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import java.util.Iterator;
-import java.util.List;
-
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -59,11 +53,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleStackTrace;
-import com.oracle.truffle.api.TruffleStackTraceElement;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PBaseException extends PythonObject {
 
@@ -76,9 +65,10 @@ public final class PBaseException extends PythonObject {
     private final Object[] messageArgs;
 
     private PException exception;
+    private PTraceback traceback;
 
-    private List<TruffleStackTraceElement> stackTrace;
-    private PTraceback[] traceback;
+    /** The frame info of the Python frame that first caught the exception. */
+    private PFrame.Reference frameInfo;
 
     public PBaseException(LazyPythonClass cls, PTuple args) {
         super(cls);
@@ -102,37 +92,35 @@ public final class PBaseException extends PythonObject {
         this.exception = exception;
     }
 
-    public PTraceback getTraceback(PythonObjectFactory factory, int index) {
-        if (index < 0 || index >= traceback.length) {
-            return null;
-        }
-        if (traceback[index] == null) {
-            traceback[index] = factory.createTraceback(this, index);
-        }
-        return traceback[index];
-    }
-
-    public PTraceback getTraceback(PythonObjectFactory factory) {
-        reifyException();
-        return getTraceback(factory, traceback.length - 1);
+    /**
+     * use {@link GetTracebackNode}
+     */
+    PTraceback getTraceback() {
+        return traceback;
     }
 
     public void setTraceback(PTraceback traceback) {
-        this.traceback = traceback.getException().traceback;
+        this.traceback = traceback;
+        // Explicitly setting the traceback also makes the frame info for creating a lazy traceback
+        // obsolete or even incorrect. So it is cleared.
+        this.frameInfo = null;
     }
 
     public void clearTraceback() {
-        this.traceback = new PTraceback[0];
+        this.traceback = null;
     }
 
-    public PTraceback putTracebackOnTop(PythonObjectFactory factory) {
-        CompilerAsserts.neverPartOfCompilation();
-        PTraceback[] newTb = new PTraceback[this.traceback.length + 1];
-        System.arraycopy(this.traceback, 0, newTb, 0, this.traceback.length);
-        PTraceback tb = factory.createTraceback(this, traceback.length);
-        newTb[this.traceback.length] = tb;
-        this.traceback = newTb;
-        return tb;
+    /**
+     * It should usually not be necessary to use this method because that would mean that the
+     * exception wasn't correctly reified. But it can make sense to do reification at a later point
+     * for best-effort results.
+     */
+    public boolean hasTraceback() {
+        return this.traceback != null;
+    }
+
+    public PFrame.Reference getFrameInfo() {
+        return frameInfo;
     }
 
     /**
@@ -179,53 +167,47 @@ public final class PBaseException extends PythonObject {
         return getFormattedMessage(null);
     }
 
-    public List<TruffleStackTraceElement> getStackTrace() {
-        return stackTrace;
+    /**
+     * Create the traceback for this exception using the provided {@link PFrame} instance (which
+     * usually is the frame of the function that caught the exception).
+     * <p>
+     * This function (of {@link #reifyException(PFrame.Reference)} must be called before handing out
+     * exceptions into the Python value space because otherwise the stack will not be correct if the
+     * exception object escapes the current function.
+     * </p>
+     */
+    public void reifyException(PFrame pyFrame, PythonObjectFactory factory) {
+        traceback = factory.createTraceback(pyFrame, exception);
+        frameInfo = pyFrame.getRef();
+
+        // TODO: frames: provide legacy stack walk method via Python option
+        // TruffleStackTrace.fillIn(exception);
     }
 
     /**
-     * This function must be called before handing out exceptions into the Python value space,
-     * because otherwise the stack will not be correct if the exception object escapes the current
-     * function.
+     * Associate this exception with a frame info that represents the {@link PFrame} instance that
+     * caught the exception.<br>
+     * <p>
+     * In contrast to {@link #reifyException(PFrame, PythonObjectFactory)}, this method can be used
+     * if the {@link PFrame} instance isn't already available and if the Truffle frame is also not
+     * available to create the {@link PFrame} instance using the
+     * {@link com.oracle.graal.python.nodes.frame.MaterializeFrameNode}.
+     * </p>
+     * <p>
+     * The most common use case for calling this method is when an exception is thrown in some
+     * Python code but we catch the exception in some interop node (that is certainly adopted by
+     * some foreign language's root node). In this case, we do not want to eagerly create the
+     * {@link PFrame} instance when calling from Python to the foreign language since this could be
+     * expensive. The traceback can then be created lazily from the frame info.
+     * </p>
      */
-    @TruffleBoundary
-    public void reifyException() {
-        if (stackTrace == null && traceback == null) {
-            TruffleStackTrace.fillIn(exception);
-            stackTrace = TruffleStackTrace.getStackTrace(exception);
-            Iterator<TruffleStackTraceElement> iter = stackTrace.iterator();
-            while (iter.hasNext()) {
-                TruffleStackTraceElement element = iter.next();
-                // remove all top level exception handlers - they shouldn't show up
-                if (element.getTarget() != null) {
-                    RootNode rootNode = element.getTarget().getRootNode();
-                    if (rootNode instanceof TopLevelExceptionHandler || rootNode instanceof BuiltinFunctionRootNode) {
-                        iter.remove();
-                    }
-                }
-            }
+    public void reifyException(PFrame.Reference curFrameInfo) {
+        assert curFrameInfo != PFrame.Reference.EMPTY;
+        traceback = null;
+        curFrameInfo.markAsEscaped();
+        this.frameInfo = curFrameInfo;
 
-            traceback = new PTraceback[stackTrace.size()];
-        }
-    }
-
-    @TruffleBoundary
-    public PFrame getPFrame(PythonObjectFactory factory, int index) {
-        assert index >= 0 && index < stackTrace.size() : "PBaseException.getPFrame index out of bounds";
-        Frame frame = stackTrace.get(index).getFrame();
-        PFrame pFrame;
-        if (frame != null) {
-            // we have a frame, try to get the pFrame from the magic arguments first
-            pFrame = PArguments.getPFrame(frame);
-            if (pFrame == null) {
-                pFrame = factory.createPFrame(this, index);
-            } else if (pFrame.isIncomplete()) {
-                pFrame = factory.createPFrame(this, index, pFrame.getLocalsDict());
-            }
-            PArguments.setPFrame(frame, pFrame);
-        } else {
-            pFrame = factory.createPFrame(this, index);
-        }
-        return pFrame;
+        // TODO: frames: provide legacy stack walk method via Python option
+        // TruffleStackTrace.fillIn(exception);
     }
 }

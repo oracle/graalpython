@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDirEntry)
 public class DirEntryBuiltins extends PythonBuiltins {
@@ -128,10 +129,10 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean testAny(Object self, Object followSymlinks,
+        boolean testAny(VirtualFrame frame, Object self, Object followSymlinks,
                         @Cached("createIfTrueNode()") CastToBooleanNode isTrue) {
             if (self instanceof PDirEntry) {
-                return testBool((PDirEntry) self, isTrue.executeWith(followSymlinks));
+                return testBool((PDirEntry) self, isTrue.executeBoolean(frame, followSymlinks));
             } else {
                 throw raise(PythonBuiltinClassType.TypeError, "descriptor 'is_dir' requires a 'posix.DirEntry' object but received a '%p'", self);
             }
@@ -153,13 +154,13 @@ public class DirEntryBuiltins extends PythonBuiltins {
         private static final String STAT_RESULT = "__stat_result__";
 
         @Specialization
-        Object test(PDirEntry self,
+        Object test(VirtualFrame frame, PDirEntry self,
                         @Cached("create()") ReadAttributeFromObjectNode readNode,
                         @Cached("create()") WriteAttributeToObjectNode writeNode,
                         @Cached("create()") PosixModuleBuiltins.StatNode statNode) {
             Object stat_result = readNode.execute(self, STAT_RESULT);
             if (stat_result == PNone.NO_VALUE) {
-                stat_result = statNode.execute(self.getFile().getAbsoluteFile().getPath(), PNone.NO_VALUE);
+                stat_result = statNode.execute(frame, self.getFile().getAbsoluteFile().getPath(), PNone.NO_VALUE);
                 writeNode.execute(self, STAT_RESULT, stat_result);
             }
             return stat_result;

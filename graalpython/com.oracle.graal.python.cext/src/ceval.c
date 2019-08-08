@@ -50,6 +50,14 @@ PyObject* PyEval_CallObjectWithKeywords(PyObject *func, PyObject *args, PyObject
     return PyObject_Call(func, args, kwargs);
 }
 
+void PyEval_InitThreads() {
+    // Nothing to do
+}
+
+int PyEval_ThreadsInitialized() {
+    return 1;
+}
+
 PyThreadState* PyEval_SaveThread() {
     return NULL;
 }

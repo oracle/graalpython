@@ -411,7 +411,7 @@ BYTES_LITERAL
 
 /// decimalinteger ::=  nonzerodigit digit* | "0"+
 DECIMAL_INTEGER
- : NON_ZERO_DIGIT DIGIT*
+ : NON_ZERO_DIGIT DECIMAL_DIGIT*
  | '0'+
  ;
 
@@ -541,19 +541,24 @@ fragment DIGIT
  : [0-9]
  ;
 
+/// decimal integer digit    ::=  "0"..."9"
+fragment DECIMAL_DIGIT
+ : [0-9_]
+ ;
+
 /// octdigit       ::=  "0"..."7"
 fragment OCT_DIGIT
- : [0-7]
+ : [0-7_]
  ;
 
 /// hexdigit       ::=  digit | "a"..."f" | "A"..."F"
 fragment HEX_DIGIT
- : [0-9a-fA-F]
+ : [0-9a-fA-F_]
  ;
 
 /// bindigit       ::=  "0" | "1"
 fragment BIN_DIGIT
- : [01]
+ : [01_]
  ;
 
 /// pointfloat    ::=  [intpart] fraction | intpart "."

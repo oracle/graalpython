@@ -26,10 +26,10 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
@@ -85,14 +85,12 @@ import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.object.Layout;
-import com.oracle.truffle.api.object.ObjectType;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 
 import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionValues;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -109,21 +107,26 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String NAME = "Python";
     public static final int MAJOR = 3;
     public static final int MINOR = 7;
-    public static final int MICRO = 0;
+    public static final int MICRO = 4;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
 
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
+    public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     private final NodeFactory nodeFactory;
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
-    private static final Layout objectLayout = Layout.newLayout().build();
-    private static final Shape newShape = objectLayout.createShape(new ObjectType());
-
     private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
+
+    /*
+     * We need to store this here, because the check is on the language and can come from a thread
+     * that has no context, but we enable or disable threads with a context option. So we store this
+     * here when a context is created.
+     */
+    private Boolean isWithThread = null;
 
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
@@ -154,8 +157,29 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
+    protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
+        // internal sources were marked during context initialization
+        return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
+                        // we cache WithThread on the lanugage
+                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
+                        // we cache CatchAllExceptions hard on TryExceptNode
+                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)));
+    }
+
+    private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
+        return (areOptionsCompatible(firstOptions, newOptions) &&
+                        // disabling TRegex has an effect on the _sre Python functions that are
+                        // dynamically created
+                        firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
+    }
+
+    @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        ensureHomeInOptions(newEnv);
+        if (!areOptionsCompatibleWithPreinitializedContext(context.getEnv().getOptions(), newEnv.getOptions())) {
+            PythonCore.writeInfo("Cannot use preinitialized context.");
+            return false;
+        }
+        context.initializeHomeAndPrefixPaths(newEnv, getLanguageHome());
         PythonCore.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
         return true;
@@ -163,90 +187,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
-        ensureHomeInOptions(env);
+        assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
+        this.isWithThread = PythonOptions.isWithThread(env);
         Python3Core newCore = new Python3Core(new PythonParserImpl(env));
-        return new PythonContext(this, env, newCore);
-    }
-
-    private void ensureHomeInOptions(Env env) {
-        String languageHome = getLanguageHome();
-        String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
-        String basePrefix = env.getOptions().get(PythonOptions.SysBasePrefix);
-        String coreHome = env.getOptions().get(PythonOptions.CoreHome);
-        String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
-
-        PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
-                        "\n\tLanguage home: {0}" +
-                        "\n\tSysPrefix: {1}" +
-                        "\n\tBaseSysPrefix: {2}" +
-                        "\n\tCoreHome: {3}" +
-                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
-
-        TruffleFile home = null;
-        if (languageHome != null) {
-            home = env.getTruffleFile(languageHome);
-        }
-
-        try {
-            String envHome = System.getenv("GRAAL_PYTHONHOME");
-            if (envHome != null) {
-                TruffleFile envHomeFile = env.getTruffleFile(envHome);
-                if (envHomeFile.isDirectory()) {
-                    home = envHomeFile;
-                }
-            }
-        } catch (SecurityException e) {
-        }
-
-        if (home != null) {
-            if (sysPrefix.isEmpty()) {
-                sysPrefix = home.getAbsoluteFile().getPath();
-                env.getOptions().set(PythonOptions.SysPrefix, sysPrefix);
-            }
-
-            if (basePrefix.isEmpty()) {
-                basePrefix = home.getAbsoluteFile().getPath();
-                env.getOptions().set(PythonOptions.SysBasePrefix, basePrefix);
-            }
-
-            if (coreHome.isEmpty()) {
-                try {
-                    for (TruffleFile f : home.list()) {
-                        if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
-                            coreHome = f.getPath();
-                            break;
-                        }
-                    }
-                } catch (SecurityException | IOException e) {
-                }
-                env.getOptions().set(PythonOptions.CoreHome, coreHome);
-            }
-
-            if (stdLibHome.isEmpty()) {
-                try {
-                    outer: for (TruffleFile f : home.list()) {
-                        if (f.getName().equals("lib-python") && f.isDirectory()) {
-                            for (TruffleFile f2 : f.list()) {
-                                if (f2.getName().equals("3") && f.isDirectory()) {
-                                    stdLibHome = f2.getPath();
-                                    break outer;
-                                }
-                            }
-                        }
-                    }
-                } catch (SecurityException | IOException e) {
-                }
-                env.getOptions().set(PythonOptions.StdLibHome, stdLibHome);
-            }
-
-            PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
-                            "\n\tLanguage home: {0}" +
-                            "\n\tSysPrefix: {1}" +
-                            "\n\tSysBasePrefix: {2}" +
-                            "\n\tCoreHome: {3}" +
-                            "\n\tStdLibHome: {4}" +
-                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, env.getOptions().get(PythonOptions.Executable))));
-        }
+        final PythonContext context = new PythonContext(this, env, newCore);
+        context.initializeHomeAndPrefixPaths(env, getLanguageHome());
+        return context;
     }
 
     @Override
@@ -432,7 +378,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         ArrayList<Scope> scopes = new ArrayList<>();
         if (context.getBuiltins() != null) {
             // false during initialization
-            scopes.add(Scope.newBuilder("__main__", scopeFromObject(context.getMainModule())).build());
+            scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
             scopes.add(Scope.newBuilder("builtins", scopeFromObject(context.getBuiltins())).build());
         }
         return scopes;
@@ -463,30 +409,32 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected String toString(PythonContext context, Object value) {
-        final PythonModule builtins = context.getBuiltins();
-        if (builtins != null) {
-            // may be null during initialization
-            Object reprAttribute = builtins.getAttribute(BuiltinNames.REPR);
-            if (reprAttribute instanceof PBuiltinMethod) {
-                // may be false if e.g. someone accessed our builtins reflectively
-                Object reprFunction = ((PBuiltinMethod) reprAttribute).getFunction();
-                if (reprFunction instanceof PBuiltinFunction) {
-                    // may be false if our builtins were tampered with
-                    Object[] userArgs = PArguments.create(2);
-                    PArguments.setArgument(userArgs, 0, PNone.NONE);
-                    PArguments.setArgument(userArgs, 1, value);
-                    try {
-                        Object result = InvokeNode.invokeUncached((PBuiltinFunction) reprFunction, userArgs);
-                        if (result instanceof String) {
-                            return (String) result;
-                        } else if (result instanceof PString) {
-                            return ((PString) result).getValue();
-                        } else {
-                            // This is illegal for a repr implementation, we ignore the result.
-                            // At this point it's probably difficult to report this properly.
+        if (PythonOptions.getFlag(context, PythonOptions.UseReprForPrintString)) {
+            final PythonModule builtins = context.getBuiltins();
+            if (builtins != null) {
+                // may be null during initialization
+                Object reprAttribute = builtins.getAttribute(BuiltinNames.REPR);
+                if (reprAttribute instanceof PBuiltinMethod) {
+                    // may be false if e.g. someone accessed our builtins reflectively
+                    Object reprFunction = ((PBuiltinMethod) reprAttribute).getFunction();
+                    if (reprFunction instanceof PBuiltinFunction) {
+                        // may be false if our builtins were tampered with
+                        Object[] userArgs = PArguments.create(2);
+                        PArguments.setArgument(userArgs, 0, PNone.NONE);
+                        PArguments.setArgument(userArgs, 1, value);
+                        try {
+                            Object result = InvokeNode.invokeUncached((PBuiltinFunction) reprFunction, userArgs);
+                            if (result instanceof String) {
+                                return (String) result;
+                            } else if (result instanceof PString) {
+                                return ((PString) result).getValue();
+                            } else {
+                                // This is illegal for a repr implementation, we ignore the result.
+                                // At this point it's probably difficult to report this properly.
+                            }
+                        } catch (PException e) {
+                            // Fall through to default
                         }
-                    } catch (PException e) {
-                        // Fall through to default
                     }
                 }
             }
@@ -495,11 +443,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         // return a String
         if (value instanceof PythonAbstractObject) {
             return ((PythonAbstractObject) value).toString();
+        } else if (value instanceof String) {
+            return (String) value;
+        } else if (value instanceof Number) {
+            return ((Number) value).toString();
         } else {
-            return "illegal object";
+            return "not a Python object";
         }
     }
 
+    @TruffleBoundary
     public static TruffleLogger getLogger() {
         return TruffleLogger.getLogger(ID);
     }
@@ -509,7 +462,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             SourceBuilder sourceBuilder = null;
             if (mayBeFile) {
                 try {
-                    TruffleFile truffleFile = ctxt.getEnv().getTruffleFile(name);
+                    TruffleFile truffleFile = ctxt.getEnv().getInternalTruffleFile(name);
                     if (truffleFile.exists()) {
                         // XXX: (tfel): We don't know if the expression has anything to do with the
                         // filename that's given. We would really have to compare the entire
@@ -534,20 +487,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private final ConcurrentHashMap<Object, Source> cachedSources = new ConcurrentHashMap<>();
-
-    public Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
-        try {
-            return cachedSources.computeIfAbsent(src, t -> {
-                try {
-                    return newSource(ctxt, Source.newBuilder(ID, src).name(name));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (RuntimeException e) {
-            throw (IOException) e.getCause();
-        }
+    public static Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
+        return newSource(ctxt, Source.newBuilder(ID, src).name(name));
     }
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
@@ -565,14 +506,32 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         singleContextAssumption.invalidate();
     }
 
-    private final ConcurrentHashMap<String, PCode> cachedCode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String[]> cachedCodeModulePath = new ConcurrentHashMap<>();
 
-    public PCode cacheCode(String filename, Supplier<PCode> createCode) {
-        return cachedCode.computeIfAbsent(filename, f -> createCode.get());
+    @TruffleBoundary
+    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
+        return cachedCode.computeIfAbsent(filename, f -> {
+            PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+            return createCode.get();
+        });
     }
 
-    public static Shape freshShape() {
-        return newShape;
+    @TruffleBoundary
+    public String[] cachedCodeModulePath(String name) {
+        return cachedCodeModulePath.get(name);
+    }
+
+    @TruffleBoundary
+    public boolean hasCachedCode(String name) {
+        return cachedCode.get(name) != null;
+    }
+
+    @TruffleBoundary
+    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode, String[] modulepath) {
+        CallTarget ct = cacheCode(filename, createCode);
+        cachedCodeModulePath.computeIfAbsent(filename, t -> modulepath);
+        return ct;
     }
 
     @Override
@@ -580,16 +539,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (singleThreaded) {
             return super.isThreadAccessAllowed(thread, singleThreaded);
         }
-        return PythonOptions.isWithThread();
+        return isWithThread;
     }
 
     @Override
     protected void initializeMultiThreading(PythonContext context) {
-        PythonContext.getSingleThreadedAssumption().invalidate();
+        context.createInteropLock();
+        context.getSingleThreadedAssumption().invalidate();
     }
 
     @Override
     protected void initializeThread(PythonContext context, Thread thread) {
         super.initializeThread(context, thread);
     }
+
 }

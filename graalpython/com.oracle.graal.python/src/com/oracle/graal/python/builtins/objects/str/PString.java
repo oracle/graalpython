@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.str;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -90,5 +91,20 @@ public final class PString extends PImmutableSequence {
     @ExportMessage
     String asString() {
         return getValue();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int length(String s) {
+        return s.length();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String valueOf(char c) {
+        return String.valueOf(c);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static char charAt(String s, int i) {
+        return s.charAt(i);
     }
 }

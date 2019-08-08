@@ -41,14 +41,27 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class PRootNode extends RootNode {
-    @CompilationFinal private boolean needsCallerFrame = false;
+    private final BranchProfile exitedEscapedWithoutFrameProfile = BranchProfile.create();
+
+    @CompilationFinal private Assumption dontNeedCallerFrame = createCallerFrameAssumption();
+
+    /**
+     * Flag indicating if some child node of this root node (or a callee) eventually needs the
+     * exception state. Hence, the caller of this root node should provide the exception state in
+     * the arguments.
+     */
+    @CompilationFinal private Assumption dontNeedExceptionState = createExceptionStateAssumption();
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -58,15 +71,26 @@ public abstract class PRootNode extends RootNode {
         super(language, frameDescriptor);
     }
 
+    public BranchProfile getExitedEscapedWithoutFrameProfile() {
+        return exitedEscapedWithoutFrameProfile;
+    }
+
     public boolean needsCallerFrame() {
-        return needsCallerFrame;
+        return !dontNeedCallerFrame.isValid();
     }
 
     public void setNeedsCallerFrame() {
         CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
-        if (!this.needsCallerFrame) {
-            this.needsCallerFrame = true;
-        }
+        dontNeedCallerFrame.invalidate();
+    }
+
+    public boolean needsExceptionState() {
+        return !dontNeedExceptionState.isValid();
+    }
+
+    public void setNeedsExceptionState() {
+        CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
+        dontNeedExceptionState.invalidate();
     }
 
     @Override
@@ -79,5 +103,36 @@ public abstract class PRootNode extends RootNode {
         return true;
     }
 
+    @Override
+    public Node copy() {
+        PRootNode pRootNode = (PRootNode) super.copy();
+        // create new assumptions such that splits do not share them
+        pRootNode.dontNeedCallerFrame = createCallerFrameAssumption();
+        pRootNode.dontNeedExceptionState = createExceptionStateAssumption();
+        return pRootNode;
+    }
+
     public abstract Signature getSignature();
+
+    public final Assumption getDontNeedCallerFrame() {
+        return dontNeedCallerFrame;
+    }
+
+    public final Assumption getDontNeedExceptionState() {
+        return dontNeedExceptionState;
+    }
+
+    public abstract boolean isPythonInternal();
+
+    public static boolean isPythonInternal(RootNode rootNode) {
+        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
+    }
+
+    private static Assumption createCallerFrameAssumption() {
+        return Truffle.getRuntime().createAssumption("does not need caller frame");
+    }
+
+    private static Assumption createExceptionStateAssumption() {
+        return Truffle.getRuntime().createAssumption("does not need exception state");
+    }
 }

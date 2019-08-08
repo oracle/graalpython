@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,4 +28,12 @@ package com.oracle.graal.python.nodes.frame;
 public abstract class FrameSlotIDs {
     public static final String RETURN_SLOT_ID = "<return_val>";
     public static final String TEMP_LOCAL_PREFIX = "<>temp";
+
+    public static boolean isTempLocal(Object key) {
+        return key instanceof String && ((String) key).startsWith(TEMP_LOCAL_PREFIX);
+    }
+
+    public static boolean isUserFrameSlot(Object key) {
+        return key instanceof String && !RETURN_SLOT_ID.equals(key) && !isTempLocal(key);
+    }
 }

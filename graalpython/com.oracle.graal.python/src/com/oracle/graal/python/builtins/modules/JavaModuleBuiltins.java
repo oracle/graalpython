@@ -48,17 +48,22 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 @CoreFunctions(defineModule = "java")
@@ -103,6 +108,30 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object type(PString name) {
             return get(name.getValue());
+        }
+    }
+
+    @Builtin(name = "add_to_classpath", takesVarArgs = true, doc = "Add all arguments to the classpath.")
+    @GenerateNodeFactory
+    abstract static class AddToClassPathNode extends PythonBuiltinNode {
+        @Specialization
+        PNone add(VirtualFrame frame, Object[] args,
+                        @Cached CastToStringNode castToString) {
+            Env env = getContext().getEnv();
+            if (!env.isHostLookupAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "host access is not allowed");
+            }
+            for (Object arg : args) {
+                String entry = castToString.execute(frame, arg);
+                try {
+                    // Always allow accessing JAR files in the language home; folders are allowed
+                    // implicitly
+                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, ".jar"));
+                } catch (SecurityException e) {
+                    throw raise(TypeError, "invalid or unreadable classpath: '%s' - %m", entry, e);
+                }
+            }
+            return PNone.NONE;
         }
     }
 

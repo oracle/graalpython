@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "math")
@@ -109,7 +111,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     public abstract static class MathDoubleUnaryBuiltinNode extends MathUnaryBuiltinNode {
 
-        public abstract double executeObject(Object value);
+        public abstract double executeObject(VirtualFrame frame, Object value);
 
         public double count(@SuppressWarnings("unused") double value) {
             throw raise(NotImplementedError, "count function in Math");
@@ -131,9 +133,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double doGeneral(Object value,
+        public double doGeneral(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return count(convertToFloat.execute(value));
+            return count(convertToFloat.execute(frame, value));
         }
     }
 
@@ -179,9 +181,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             checkMathDomainError(value < 0);
+            return op(value);
+        }
+
+        @TruffleBoundary
+        private static double op(double value) {
             return Math.sqrt(value);
         }
     }
@@ -244,10 +250,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public Object ceil(PFloat value,
+        public Object ceil(VirtualFrame frame, PFloat value,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
-            Object result = dispatchCeil.executeObject(value);
+            Object result = dispatchCeil.executeObject(frame, value);
             if (PNone.NO_VALUE == result) {
                 if (MathGuards.fitLong(value.getValue())) {
                     return ceilLong(value.getValue());
@@ -259,18 +264,18 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object ceil(PInt value,
+        public Object ceil(VirtualFrame frame, PInt value,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
-            return dispatchCeil.executeObject(value);
+            return dispatchCeil.executeObject(frame, value);
         }
 
         @Specialization(guards = {"!isNumber(value)"})
-        public Object ceil(Object value,
+        public Object ceil(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
-            Object result = dispatchCeil.executeObject(value);
+            Object result = dispatchCeil.executeObject(frame, value);
             if (result == PNone.NO_VALUE) {
-                return ceil(convertToFloat.execute(value));
+                return ceil(convertToFloat.execute(frame, value));
             }
             return result;
         }
@@ -329,10 +334,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(magnitude) || !isNumber(sign)")
-        public double copySignOO(Object magnitude, Object sign,
+        public double copySignOO(VirtualFrame frame, Object magnitude, Object sign,
                         @Cached("create()") CastToDoubleNode castMagnitudeNode,
                         @Cached("create()") CastToDoubleNode castSignNode) {
-            return copySignDD(castMagnitudeNode.execute(magnitude), castSignNode.execute(sign));
+            return copySignDD(castMagnitudeNode.execute(frame, magnitude), castSignNode.execute(frame, sign));
         }
     }
 
@@ -490,10 +495,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public Object factorialObject(Object value,
+        public Object factorialObject(VirtualFrame frame, Object value,
                         @Cached("create()") CastToIntegerFromIntNode castNode,
                         @Cached("create()") FactorialNode recursiveNode) {
-            return recursiveNode.execute(castNode.execute(value));
+            return recursiveNode.execute(frame, castNode.execute(value));
         }
 
         protected boolean isInteger(double value) {
@@ -556,34 +561,43 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public Object floorPF(PFloat value,
+        public Object floorPF(VirtualFrame frame, PFloat value,
                         @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor) {
-            Object result = dispatchFloor.executeObject(value);
+            Object result = dispatchFloor.executeObject(frame, value);
             if (result == PNone.NO_VALUE) {
                 if (value.getValue() <= Long.MAX_VALUE) {
-                    result = Math.floor(value.getValue());
+                    result = floor(value.getValue());
                 } else {
-                    result = factory().createInt(BigDecimal.valueOf(Math.floor(value.getValue())).toBigInteger());
+                    result = factory().createInt(createBigInteger(value));
                 }
             }
             return result;
         }
 
+        @TruffleBoundary
+        private static BigInteger createBigInteger(PFloat value) {
+            return BigDecimal.valueOf(Math.floor(value.getValue())).toBigInteger();
+        }
+
+        @TruffleBoundary
+        private static double floor(double value) {
+            return Math.floor(value);
+        }
+
         @Specialization
-        public Object floorPI(PInt value,
+        public Object floorPI(VirtualFrame frame, PInt value,
                         @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor) {
-            return dispatchFloor.executeObject(value);
+            return dispatchFloor.executeObject(frame, value);
         }
 
         @Specialization(guards = {"!isNumber(value)"})
-        public Object floor(Object value,
+        public Object floor(VirtualFrame frame, Object value,
                         @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor,
                         @Cached("create()") CastToDoubleNode castNode,
                         @Cached("create()") FloorNode recursiveNode) {
-            Object result = dispatchFloor.executeObject(value);
+            Object result = dispatchFloor.executeObject(frame, value);
             if (PNone.NO_VALUE == result) {
-                return recursiveNode.execute(castNode.execute(value));
+                return recursiveNode.execute(frame, castNode.execute(frame, value));
             }
             return result;
         }
@@ -673,12 +687,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(left) || !isNumber(right)"})
-        public double fmodLO(Object left, Object right,
+        public double fmodLO(VirtualFrame frame, Object left, Object right,
                         @Cached("create()") CastToDoubleNode castLeftNode,
                         @Cached("create()") CastToDoubleNode castRightNode,
                         @Cached("createBinaryProfile()") ConditionProfile infProfile,
                         @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
-            return fmodDD(castLeftNode.execute(left), castRightNode.execute(right), infProfile, zeroProfile);
+            return fmodDD(castLeftNode.execute(frame, left), castRightNode.execute(frame, right), infProfile, zeroProfile);
         }
 
         protected void raiseMathDomainError(boolean con) {
@@ -757,9 +771,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public PTuple frexpO(Object value,
+        public PTuple frexpO(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return frexpD(convertToFloat.execute(value));
+            return frexpD(convertToFloat.execute(frame, value));
         }
     }
 
@@ -784,9 +798,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(Object value,
+        public boolean isinf(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return isNan(convertToFloat.execute(value));
+            return isNan(convertToFloat.execute(frame, value));
         }
     }
 
@@ -870,7 +884,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public boolean isClose(Object a, Object b, Object rel_tol, Object abs_tol) {
+        public boolean isClose(VirtualFrame frame, Object a, Object b, Object rel_tol, Object abs_tol) {
             if (castANode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castANode = insert(CastToDoubleNode.create());
@@ -878,10 +892,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 castRelNode = insert(CastToDoubleNode.create());
                 castAbsNode = insert(CastToDoubleNode.create());
             }
-            double a_value = castANode.execute(a);
-            double b_value = castBNode.execute(b);
-            double rel_tol_value = PGuards.isNoValue(rel_tol) ? DEFAULT_REL : castRelNode.execute(rel_tol);
-            double abs_tol_value = PGuards.isNoValue(abs_tol) ? DEFAULT_ABS : castAbsNode.execute(abs_tol);
+            double a_value = castANode.execute(frame, a);
+            double b_value = castBNode.execute(frame, b);
+            double rel_tol_value = PGuards.isNoValue(rel_tol) ? DEFAULT_REL : castRelNode.execute(frame, rel_tol);
+            double abs_tol_value = PGuards.isNoValue(abs_tol) ? DEFAULT_ABS : castAbsNode.execute(frame, abs_tol);
             return isCloseDouble(a_value, b_value, rel_tol_value, abs_tol_value);
         }
 
@@ -894,7 +908,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private static final String EXPECTED_INT_MESSAGE = "Expected an int as second argument to ldexp.";
 
-        abstract double execute(double mantissa, Object exp);
+        abstract double execute(VirtualFrame frame, double mantissa, Object exp);
 
         private static int makeInt(long x) {
             long result = x;
@@ -981,14 +995,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Child private LdexpNode recursiveNode;
 
         @Fallback
-        public double ldexpOO(Object mantissa, Object exp) {
+        public double ldexpOO(VirtualFrame frame, Object mantissa, Object exp) {
             if (PGuards.isInteger(exp) || PGuards.isPInt(exp) || (exp instanceof Boolean)) {
                 if (castNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castNode = insert(CastToDoubleNode.create());
                     recursiveNode = insert(LdexpNode.create());
                 }
-                return recursiveNode.execute(castNode.execute(mantissa), exp);
+                return recursiveNode.execute(frame, castNode.execute(frame, mantissa), exp);
             }
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
@@ -1006,7 +1020,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class ModfNode extends MathUnaryBuiltinNode {
 
         @Specialization
-        public PTuple modfD(double value) {
+        PTuple modfD(double value) {
             if (!Double.isFinite(value)) {
                 if (Double.isInfinite(value)) {
                     return factory().createTuple(new Object[]{Math.copySign(0., value), value});
@@ -1020,19 +1034,19 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PTuple modfL(long value) {
+        PTuple modfL(long value) {
             return modfD(value);
         }
 
         @Specialization
-        public PTuple modfPI(PInt value) {
+        PTuple modfPI(PInt value) {
             return modfD(value.doubleValue());
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public PTuple modfO(Object value,
+        PTuple modfO(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloatNode) {
-            return modfD(convertToFloatNode.execute(value));
+            return modfD(convertToFloatNode.execute(frame, value));
         }
     }
 
@@ -1040,6 +1054,19 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     @GenerateNodeFactory
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @SuppressWarnings("try")
+        double doIt(VirtualFrame frame, Object iterable,
+                        @Cached GetIteratorNode getIterator,
+                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
+                        @Cached CastToDoubleNode toFloat,
+                        @Cached IsBuiltinClassProfile stopProfile) {
+            Object iterator = getIterator.executeWith(frame, iterable);
+            try (DefaultContextManager cm = withGlobalState(frame)) {
+                return fsum(iterator, next, toFloat, stopProfile);
+            }
+        }
 
         /*
          * This implementation is taken from CPython. The performance is not good. Should be faster.
@@ -1051,21 +1078,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
          */
-        @Specialization
         @TruffleBoundary
-        public double doIt(Object iterable,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
-                        @Cached("create()") CastToDoubleNode toFloat,
-                        @Cached("create()") IsBuiltinClassProfile stopProfile) {
-            Object iterator = getIterator.executeWith(iterable);
+        private double fsum(Object iterator, LookupAndCallUnaryNode next, CastToDoubleNode toFloat, IsBuiltinClassProfile stopProfile) {
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
             int i, j, n = 0, arayLength = 32;
             double[] p = new double[arayLength];
             while (true) {
                 try {
-                    x = toFloat.execute(next.executeObject(iterator));
+                    // NOTE: passing 'null' frame is fine because we take care of the global state
+                    // in the caller
+                    x = toFloat.execute(null, next.executeObject(null, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(stopProfile);
                     break;
@@ -1217,13 +1240,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
-        Object gcd(Object x, Object y,
+        Object gcd(VirtualFrame frame, Object x, Object y,
                         @Cached("create()") CastToIntegerFromIndexNode xCast,
                         @Cached("create()") CastToIntegerFromIndexNode yCast,
                         @Cached("create()") GcdNode recursiveNode) {
-            Object xValue = xCast.execute(x);
-            Object yValue = yCast.execute(y);
-            return recursiveNode.execute(xValue, yValue);
+            Object xValue = xCast.execute(frame, x);
+            Object yValue = yCast.execute(frame, y);
+            return recursiveNode.execute(frame, xValue, yValue);
         }
 
         public static GcdNode create() {
@@ -1413,9 +1436,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(Object value,
+        public boolean isinf(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return isfinite(convertToFloat.execute(value));
+            return isfinite(convertToFloat.execute(frame, value));
         }
     }
 
@@ -1441,9 +1464,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(Object value,
+        public boolean isinf(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode convertToFloat) {
-            return isinf(convertToFloat.execute(value));
+            return isinf(convertToFloat.execute(frame, value));
         }
     }
 
@@ -1473,15 +1496,15 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return baseCastNode;
         }
 
-        private double executeRecursiveLogNode(Object value, Object base) {
+        private double executeRecursiveLogNode(VirtualFrame frame, Object value, Object base) {
             if (recLogNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recLogNode = insert(LogNode.create());
             }
-            return recLogNode.executeObject(value, base);
+            return recLogNode.executeObject(frame, value, base);
         }
 
-        public abstract double executeObject(Object value, Object base);
+        public abstract double executeObject(VirtualFrame frame, Object value, Object base);
 
         private static final double LOG2 = Math.log(2.0);
 
@@ -1613,28 +1636,28 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double logO(Object value, PNone novalue) {
-            return executeRecursiveLogNode(getValueCastNode().execute(value), novalue);
+        public double logO(VirtualFrame frame, Object value, PNone novalue) {
+            return executeRecursiveLogNode(frame, getValueCastNode().execute(frame, value), novalue);
         }
 
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
-        public double logOO(Object value, Object base) {
-            return executeRecursiveLogNode(getValueCastNode().execute(value), getBaseCastNode().execute(base));
+        public double logOO(VirtualFrame frame, Object value, Object base) {
+            return executeRecursiveLogNode(frame, getValueCastNode().execute(frame, value), getBaseCastNode().execute(frame, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logLO(long value, Object base) {
-            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
+        public double logLO(VirtualFrame frame, long value, Object base) {
+            return executeRecursiveLogNode(frame, value, getBaseCastNode().execute(frame, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logDO(double value, Object base) {
-            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
+        public double logDO(VirtualFrame frame, double value, Object base) {
+            return executeRecursiveLogNode(frame, value, getBaseCastNode().execute(frame, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logPIO(PInt value, Object base) {
-            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
+        public double logPIO(VirtualFrame frame, PInt value, Object base) {
+            return executeRecursiveLogNode(frame, value, getBaseCastNode().execute(frame, base));
         }
 
         private void raiseMathError(ConditionProfile doNotFit, boolean con) {
@@ -1770,9 +1793,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double fabs(Object value,
+        public double fabs(VirtualFrame frame, Object value,
                         @Cached("create()") CastToDoubleNode castValueNode) {
-            return fabs(castValueNode.execute(value));
+            return fabs(castValueNode.execute(frame, value));
         }
     }
 
@@ -1872,10 +1895,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(left)||!isNumber(right)"})
-        double pow(Object left, Object right,
+        double pow(VirtualFrame frame, Object left, Object right,
                         @Cached("create()") CastToDoubleNode convertLeftFloat,
                         @Cached("create()") CastToDoubleNode convertRightFloat) {
-            return pow(convertLeftFloat.execute(left), convertRightFloat.execute(right));
+            return pow(convertLeftFloat.execute(frame, left), convertRightFloat.execute(frame, right));
         }
     }
 
@@ -1884,9 +1907,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class TruncNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object trunc(Object obj,
+        Object trunc(VirtualFrame frame, Object obj,
                         @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTrunc) {
-            Object result = callTrunc.executeObject(obj);
+            Object result = callTrunc.executeObject(frame, obj);
             if (result == PNone.NO_VALUE) {
                 raise(TypeError, "type %p doesn't define __trunc__ method", obj);
             }
@@ -1946,10 +1969,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(left) || !isNumber(right)")
-        double atan2(Object left, Object right,
+        double atan2(VirtualFrame frame, Object left, Object right,
                         @Cached("create()") CastToDoubleNode convertLeftFloat,
                         @Cached("create()") CastToDoubleNode convertRightFloat) {
-            return atan2DD(convertLeftFloat.execute(left), convertRightFloat.execute(right));
+            return atan2DD(convertLeftFloat.execute(frame, left), convertRightFloat.execute(frame, right));
         }
     }
 
@@ -2034,10 +2057,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(objectX) || !isNumber(objectY)")
-        public double hypotOO(Object objectX, Object objectY,
+        public double hypotOO(VirtualFrame frame, Object objectX, Object objectY,
                         @Cached("create()") CastToDoubleNode xCastNode,
                         @Cached("create()") CastToDoubleNode yCastNode) {
-            return hypotDD(xCastNode.execute(objectX), yCastNode.execute(objectY));
+            return hypotDD(xCastNode.execute(frame, objectX), yCastNode.execute(frame, objectY));
         }
     }
 

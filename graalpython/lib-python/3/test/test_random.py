@@ -227,6 +227,14 @@ class TestBasicOps:
         with self.assertRaises(IndexError):
             choices([], cum_weights=[], k=5)
 
+    def test_choices_subnormal(self):
+        # Subnormal weights would occassionally trigger an IndexError
+        # in choices() when the value returned by random() was large
+        # enough to make `random() * total` round up to the total.
+        # See https://bugs.python.org/msg275594 for more detail.
+        choices = self.gen.choices
+        choices(population=[1, 2], weights=[1e-323, 1e-323], k=5000)
+
     def test_gauss(self):
         # Ensure that the seed() method initializes all the hidden state.  In
         # particular, through 2.2.1 it failed to reset a piece of state used
@@ -699,7 +707,7 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
         c = self.gen.choices(range(n), cum_weights=range(1, n+1), k=10000)
         self.assertEqual(a, c)
 
-        # Amerian Roulette
+        # American Roulette
         population = ['Red', 'Black', 'Green']
         weights = [18, 18, 2]
         cum_weights = [18, 36, 38]

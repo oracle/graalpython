@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonModule)
@@ -75,19 +76,19 @@ public class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleGetattritbuteNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object getattribute(PythonModule self, Object key,
+        Object getattribute(VirtualFrame frame, PythonModule self, Object key,
                         @Cached("create()") IsBuiltinClassProfile isAttrError,
                         @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached("create()") ReadAttributeFromObjectNode readGetattr,
                         @Cached("createBinaryProfile()") ConditionProfile customGetAttr,
                         @Cached("create()") CallNode callNode) {
             try {
-                return objectGetattrNode.execute(self, key);
+                return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, __GETATTR__);
                 if (customGetAttr.profile(getAttr != PNone.NO_VALUE)) {
-                    return callNode.execute(null, getAttr, key);
+                    return callNode.execute(frame, getAttr, key);
                 } else {
                     throw e;
                 }

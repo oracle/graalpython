@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -160,7 +159,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         builtinConstants.put("version", getUnicodeVersion());
         PythonBuiltinClass objectType = core.lookupType(PythonBuiltinClassType.PythonObject);
-        PythonObject ucd_3_2_0 = core.factory().createPythonObject(objectType, GetInstanceShape.doSlowPath(objectType));
+        PythonObject ucd_3_2_0 = core.factory().createPythonObject(objectType);
         ucd_3_2_0.setAttribute("unidata_version", "3.2.0");
         builtinConstants.put("ucd_3_2_0", ucd_3_2_0); // TODO this is a fake object, just satisfy
                                                       // pip installer import

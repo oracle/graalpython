@@ -62,6 +62,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateNodeFactory
 public abstract class TupleNodes {
@@ -79,19 +80,19 @@ public abstract class TupleNodes {
             return getClassNode.execute(value);
         }
 
-        public final PTuple execute(Object value) {
-            return execute(PythonBuiltinClassType.PTuple, value);
+        public final PTuple execute(VirtualFrame frame, Object value) {
+            return execute(frame, PythonBuiltinClassType.PTuple, value);
         }
 
-        public abstract PTuple execute(LazyPythonClass cls, Object value);
+        public abstract PTuple execute(VirtualFrame frame, LazyPythonClass cls, Object value);
 
         @Specialization(guards = "isNoValue(none)")
-        public PTuple tuple(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
+        PTuple tuple(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
             return factory.createEmptyTuple(cls);
         }
 
         @Specialization
-        public PTuple tuple(LazyPythonClass cls, String arg) {
+        PTuple tuple(LazyPythonClass cls, String arg) {
             Object[] values = new Object[arg.length()];
             for (int i = 0; i < arg.length(); i++) {
                 values[i] = String.valueOf(arg.charAt(i));
@@ -100,21 +101,21 @@ public abstract class TupleNodes {
         }
 
         @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(getClass(iterable))"})
-        public PTuple tuple(@SuppressWarnings("unused") LazyPythonClass cls, PTuple iterable) {
+        PTuple tuple(@SuppressWarnings("unused") LazyPythonClass cls, PTuple iterable) {
             return iterable;
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable)"})
-        public PTuple tuple(LazyPythonClass cls, Object iterable,
+        PTuple tuple(VirtualFrame frame, LazyPythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
-            Object iterator = getIterator.executeWith(iterable);
+            Object iterator = getIterator.executeWith(frame, iterable);
             ArrayList<Object> internalStorage = makeList();
             while (true) {
                 try {
-                    addToList(internalStorage, next.execute(iterator));
+                    addToList(internalStorage, next.execute(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return factory.createTuple(cls, listToArray(internalStorage));

@@ -40,27 +40,29 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
@@ -93,14 +95,16 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
+        @Child private GetCaughtExceptionNode getCaughtExceptionNode;
+
         private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
-        protected static DirectCallNode createDirectCall(CallTarget target) {
-            return Truffle.getRuntime().createDirectCallNode(target);
+        protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
+            return CallTargetInvokeNode.create(target, false, true);
         }
 
-        protected static IndirectCallNode createIndirectCall() {
-            return Truffle.getRuntime().createIndirectCallNode();
+        protected static GenericInvokeNode createIndirectCall() {
+            return GenericInvokeNode.create();
         }
 
         protected static boolean sameCallTarget(RootCallTarget target1, CallTarget target2) {
@@ -108,13 +112,14 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "sameCallTarget(self.getCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
-        public Object nextCached(PGenerator self,
-                        @Cached("createDirectCall(self.getCallTarget())") DirectCallNode call) {
+        public Object nextCached(VirtualFrame frame, PGenerator self,
+                        @Cached("createDirectCall(self.getCallTarget())") CallTargetInvokeNode call) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
             try {
-                return call.call(self.getArguments());
+                Object[] arguments = self.getArguments();
+                return call.execute(frame, null, null, arguments);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
@@ -123,13 +128,14 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "nextCached")
-        public Object next(PGenerator self,
-                        @Cached("createIndirectCall()") IndirectCallNode call) {
+        public Object next(VirtualFrame frame, PGenerator self,
+                        @Cached("createIndirectCall()") GenericInvokeNode call) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
             try {
-                return call.call(self.getCallTarget(), self.getArguments());
+                Object[] arguments = self.getArguments();
+                return call.execute(frame, self.getCallTarget(), arguments);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
@@ -156,7 +162,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(frame, typ, new Object[0]);
+            Object instance = callTyp.execute(frame, typ, new Object[]{typ});
             if (instance instanceof PBaseException) {
                 PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
@@ -169,7 +175,11 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(frame, typ, val.getArray());
+            Object[] array = val.getArray();
+            Object[] args = new Object[array.length + 1];
+            System.arraycopy(array, 0, args, 1, array.length);
+            args[0] = typ;
+            Object instance = callTyp.execute(frame, typ, args);
             if (instance instanceof PBaseException) {
                 PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
@@ -182,7 +192,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPNone(val)", "!isPTuple(val)"})
         Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, Object val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(frame, typ, new Object[]{val});
+            Object instance = callTyp.execute(frame, typ, new Object[]{typ, val});
             if (instance instanceof PBaseException) {
                 PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
@@ -193,8 +203,11 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object sendThrow(PGenerator self, PBaseException instance, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb) {
+        Object sendThrow(VirtualFrame frame, PGenerator self, PBaseException instance, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
+                        @Cached MaterializeFrameNode materializeNode) {
             PException pException = PException.fromObject(instance, this);
+            PFrame pyFrame = materializeNode.execute(frame, this, true, false);
+            pException.getExceptionObject().setTraceback(factory().createTraceback(pyFrame, pException));
             PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);
         }

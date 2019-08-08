@@ -49,14 +49,20 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
-public abstract class CastToByteNode extends PNodeWithContext {
+@ImportStatic(PGuards.class)
+public abstract class CastToByteNode extends Node {
     public static final CastToByteNode UNCACHED_INSTANCE = CastToByteNode.create();
 
     public static final String INVALID_BYTE_VALUE = "byte must be in range(0, 256)";
@@ -132,6 +138,19 @@ public abstract class CastToByteNode extends PNodeWithContext {
                     @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
                     @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
         return doIntOvf(getItemNode.executeInt(getStorageNode.execute(value), 0));
+    }
+
+    @Specialization(guards = "isForeignObject(value)", limit = "1")
+    protected byte doForeign(Object value,
+                    @CachedLibrary("value") InteropLibrary lib) {
+        if (lib.fitsInByte(value)) {
+            try {
+                return lib.asByte(value);
+            } catch (UnsupportedMessageException e) {
+                // fall through
+            }
+        }
+        return doGeneric(value);
     }
 
     @Fallback
