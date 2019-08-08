@@ -51,8 +51,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
