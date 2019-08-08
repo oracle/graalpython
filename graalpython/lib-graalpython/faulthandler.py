@@ -37,23 +37,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-def assert_raises(err, fn, *args, **kwargs):
-    raised = False
-    try:
-        fn(*args, **kwargs)
-    except err:
-        raised = True
-    assert raised
+_enabled = True
 
 
-def test_create():
-    from tempfile import TemporaryFile
-    try:
-        f = TemporaryFile()
-        assert f is not None
-        f.close()
-    except Exception as e:
-        print(e)
-        assert False
+@__builtin__
+def disable():
+    global _enabled
+    _enabled = False
 
+
+@__builtin__
+def is_enabled():
+    return _enabled

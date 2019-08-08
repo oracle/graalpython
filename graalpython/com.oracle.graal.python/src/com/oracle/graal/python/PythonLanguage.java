@@ -153,6 +153,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void finalizeContext(PythonContext context) {
         context.runShutdownHooks();
+        context.getResources().release();
         super.finalizeContext(context);
     }
 

@@ -40,54 +40,8 @@
  */
 package com.oracle.graal.python.util;
 
-import java.io.IOException;
-import java.nio.file.StandardOpenOption;
-import java.util.Random;
-import java.util.Set;
+import com.oracle.graal.python.runtime.PythonContext;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage;
-
-public final class TempFileUtils {
-    private static final String CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    private static final Random RANDOM = new Random(System.currentTimeMillis());
-
-    @TruffleBoundary
-    public static String getRandomString(int length) {
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(CHARS.charAt(RANDOM.nextInt(CHARS.length())));
-        }
-        return sb.toString();
-    }
-
-    public static String getRandomFilePath(String path, Set<StandardOpenOption> options, TruffleLanguage.Env env) throws IOException {
-        return getRandomFilePath(path, null, null, options, env);
-    }
-
-    @TruffleBoundary
-    public static String getRandomFilePath(String path, String prefix, String suffix, Set<StandardOpenOption> options, TruffleLanguage.Env env) throws IOException {
-        if (path == null) {
-            throw new IOException("TempFile path cannot be null!");
-        }
-        if (prefix == null) {
-            prefix = "";
-        }
-        if (suffix == null) {
-            suffix = "";
-        }
-
-        while (true) {
-            String tmpPath = path + env.getFileNameSeparator() + prefix + getRandomString(8) + suffix;
-            TruffleFile tmpFile = env.getTruffleFile(tmpPath);
-            if (!tmpFile.exists()) {
-                tmpFile.createFile();
-                options.remove(StandardOpenOption.CREATE_NEW);
-                options.remove(StandardOpenOption.DELETE_ON_CLOSE);
-                options.add(StandardOpenOption.CREATE);
-                return tmpPath;
-            }
-        }
-    }
+public interface ShutdownHook {
+    void call(PythonContext context);
 }

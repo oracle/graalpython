@@ -46,12 +46,15 @@ import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
 import java.nio.channels.Pipe;
+import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -68,6 +71,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public class PosixResources {
     /** Context-local file-descriptor mappings and PID mappings */
     private final List<Channel> files;
+    private final Set<Channel> closedFiles;
     private final List<String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
@@ -137,6 +141,7 @@ public class PosixResources {
 
     public PosixResources() {
         files = Collections.synchronizedList(new ArrayList<>());
+        closedFiles = Collections.synchronizedSet(new HashSet<>());
         filePaths = Collections.synchronizedList(new ArrayList<>());
         children = Collections.synchronizedList(new ArrayList<>());
         String osProperty = System.getProperty("os.name");
@@ -184,6 +189,7 @@ public class PosixResources {
     @TruffleBoundary(allowInlining = true)
     public void close(int fd) {
         if (filePaths.size() > fd) {
+            closedFiles.add(files.get(fd));
             files.set(fd, null);
             filePaths.set(fd, null);
         }
@@ -210,8 +216,26 @@ public class PosixResources {
         return dupFd;
     }
 
+    @TruffleBoundary(allowInlining = true)
+    public int dup2(int fd, int fd2) {
+        int dupFd = nextFreeFd();
+        files.set(dupFd, getFileChannel(fd));
+        filePaths.set(dupFd, getFilePath(fd));
+        return dupFd;
+    }
+
     public void fsync(int fd) throws ArrayIndexOutOfBoundsException {
         files.get(fd); // for the side-effect
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void ftruncate(int fd, long size) throws IOException {
+        if (filePaths.size() > fd) {
+            Channel channel = files.get(fd);
+            if (channel instanceof SeekableByteChannel) {
+                ((SeekableByteChannel) channel).truncate(size);
+            }
+        }
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -315,5 +339,16 @@ public class PosixResources {
             }
             return inodeId;
         }
+    }
+
+    @TruffleBoundary
+    public void release() {
+        // close all channels that have not been closed
+        for (Channel channel: closedFiles) {
+            try {
+                channel.close();
+            } catch (IOException ignored) {}
+        }
+        closedFiles.clear();
     }
 }

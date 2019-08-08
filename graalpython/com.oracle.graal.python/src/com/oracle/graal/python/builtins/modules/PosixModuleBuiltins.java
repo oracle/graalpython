@@ -142,6 +142,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -903,6 +904,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "dup2", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class Dup2Node extends PythonFileNode {
+        @Specialization
+        int dup(int fd, int fd2) {
+            return getResources().dup2(fd, fd2);
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        int dupPInt(PInt fd, PInt fd2) {
+            return getResources().dup2(fd.intValueExact(), fd2.intValueExact());
+        }
+
+        @Specialization(replaces = "dupPInt")
+        int dupOvf(PInt fd, PInt fd2) {
+            try {
+                return dupPInt(fd, fd2);
+            } catch (ArithmeticException e) {
+                throw raise(OSError, "invalid fd %r", fd);
+            }
+        }
+    }
+
     @Builtin(name = "open", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "flags", "mode", "dir_fd"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -929,7 +954,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
                     // TODO: (cbas) remove patch once the TruffleFile API supports temp file
                     // creation -> GR-17515
-                    pathname = getRandomFilePath(pathname, options);
+                    pathname = getRandomFilePath(pathname, options, getContext().getEnv());
+                    getContext().registerShutdownHook(new FileDeleteShutdownHook(pathname));
                 }
                 truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
                 fc = truffleFile.newByteChannel(options, attributes);
@@ -1060,12 +1086,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raise(OSError, "invalid fd");
             } else {
                 resources.close(fd);
-                try {
-                    closeChannel(channel);
-                } catch (IOException e) {
-                    gotException.enter();
-                    throw raise(OSError, e);
-                }
             }
             return PNone.NONE;
         }
@@ -1976,6 +1996,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 getContext().getResources().fsync(fd);
             } catch (ArrayIndexOutOfBoundsException e) {
+                throw raiseOSError(frame, OSErrorEnum.ENOENT.getNumber());
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "ftruncate", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class FTruncateNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PNone ftruncate(VirtualFrame frame, int fd, long length) {
+            try {
+                getContext().getResources().ftruncate(fd, length);
+            } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.ENOENT.getNumber());
             }
             return PNone.NONE;

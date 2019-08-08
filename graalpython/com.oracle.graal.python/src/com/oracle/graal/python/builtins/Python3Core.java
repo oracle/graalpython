@@ -214,6 +214,7 @@ public final class Python3Core implements PythonCore {
                         "_weakref",
                         "set",
                         "itertools",
+                        "faulthandler",
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
