@@ -44,9 +44,11 @@ from distutils import sysconfig
 
 logger = logging.getLogger(__name__)
 
+cflags_warnings = ["-Wno-int-to-pointer-cast", "-Wno-int-conversion", "-Wno-incompatible-pointer-types-discards-qualifiers", "-Wno-pointer-type-mismatch"]
+
 def needs_update(module, source_files):
     if not os.path.exists(module):
-        logger.info("Module %s does not exist" % (source_file, module))
+        logger.info("Module %s does not exist" % module)
         return True
     
     module_mtime = os.path.getmtime(module)
@@ -58,25 +60,26 @@ def needs_update(module, source_files):
 
     return False
 
-def build_capi():
-    def create_if_needed(d):
-        if not os.path.exists(d):
-            os.makedirs(d)
-        elif os.path.islink(d) or os.path.isfile(d):
-            raise ValueError('Unable to create directory %r' % d)
-
-    def compile(f, module, cflags=[]):
-        ld = sysconfig.get_config_vars()["LDSHARED"]
-        cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + cflags + f)
-        logger.debug(cmd_line)
-        logger.info("Building %s" % module)
-        res = os.system(cmd_line)
-        if res:
-            logger.fatal("compilation failed: '%s' returned with %r" % (cmd_line, res))
-            raise BaseException
+def compile(f, module, cflags=[]):
+    ld = sysconfig.get_config_vars()["LDSHARED"]
+    cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + cflags_warnings + cflags + f)
+    logger.debug(cmd_line)
+    logger.info("Building %s" % module)
+    res = os.system(cmd_line)
+    if res:
+        logger.fatal("compilation failed: '%s' returned with %r" % (cmd_line, res))
+        raise BaseException
 
 
+def create_if_needed(d):
+    if not os.path.exists(d):
+        os.makedirs(d)
+    elif os.path.islink(d) or os.path.isfile(d):
+        raise ValueError('Unable to create directory %r' % d)
 
+
+def build_capi(cflags=[]):
+    logger.info("Additional CFLAGS=%r" % cflags)
     create_if_needed(sys.graal_python_cext_module_home)
     create_if_needed(sys.graal_python_cext_home)
 
@@ -88,7 +91,7 @@ def build_capi():
     logger.debug("Found C API source files: %r" % files)
     capi_module = os.path.abspath(os.path.join(sys.graal_python_cext_home, "libpython" + so_ext))
     if needs_update(capi_module, files):
-        cflags = ["-lpolyglot-mock", "-Wl,-install_name=@rpath/libpython" + so_ext] if darwin_native else []
+        cflags += ["-lpolyglot-mock", "-Wl,-install_name=@rpath/libpython" + so_ext] if darwin_native else [] 
         compile(files, capi_module, cflags)
         
 
@@ -100,7 +103,7 @@ def build_capi():
         f_abs = os.path.abspath(f)
         module = os.path.abspath(os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext))
         if needs_update(module, [f_abs]):
-            cflags = ["-lbz2", "-lpolyglot-mock", "-lpython" + so_ext, "-Wl,-rpath=" + capi_module] if darwin_native else []
+            cflags += ["-lbz2", "-lpolyglot-mock", "-lpython" + so_ext, "-Wl,-rpath=" + capi_module] if darwin_native else []
             compile([f_abs], module, cflags)
 
 
@@ -109,4 +112,4 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-    build_capi()
+    build_capi([x for x in sys.argv if x.startswith("-I")])
