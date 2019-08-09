@@ -11,3 +11,4 @@ ModuleRootNode Name: <module 'simpleExpression02'> SourceSection: [0,9]`'ahoj'; 
       SideEffect:
         ExpressionStatementNode SourceSection: [0,6]`'ahoj'`
           StringLiteralNode SourceSection: [0,6]`'ahoj'`
+  CalleeContext SourceSection: None

@@ -21,3 +21,4 @@ ModuleRootNode Name: <module 'fromImport08'> SourceSection: [0,38]`from sys.path
             EmptyNode SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
+  CalleeContext SourceSection: None

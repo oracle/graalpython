@@ -59,3 +59,5 @@ ModuleRootNode Name: <module 'lambda12'> SourceSection: [0,20]`lambda x, *y, **z
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [3,<return_val>,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
+        CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

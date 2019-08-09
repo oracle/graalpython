@@ -104,6 +104,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2407,2450]`implementation = mak...`
         Identifier: implementation
         PythonCallNodeGen SourceSection: [2424,2450]`make_implementation_...`
@@ -308,6 +309,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                        CalleeContext SourceSection: None
                                   FrameReturnNode SourceSection: [3092,3103]`return func`
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <return_val>
@@ -319,12 +321,13 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [2,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     ElseNode SourceSection: [3109,3242]`for i, f in enumerat...`
                       ForNode SourceSection: None
                         DefaultLoopNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp7
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -347,14 +350,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<>temp8,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [3147,3236]`setattr(flags_class,...`
                               PythonCallNodeGen SourceSection: [3147,3236]`setattr(flags_class,...`
                                 CachedCallNodeGen SourceSection: None
@@ -423,6 +418,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [9,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3263,3291]`flags = make_flags_c...`
         Identifier: flags
         PythonCallNodeGen SourceSection: [3271,3291]`make_flags_class()()...`
@@ -502,6 +498,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3670,3718]`float_info = make_fl...`
         Identifier: float_info
         PythonCallNodeGen SourceSection: [3683,3718]`make_float_info_clas...`
@@ -581,6 +578,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4060,4180]`hash_info = make_has...`
         Identifier: hash_info
         PythonCallNodeGen SourceSection: [4072,4180]`make_hash_info_class...`
@@ -701,6 +699,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [4494,4506]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [4552,5557]`def make_excepthook(...`
@@ -797,7 +796,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                                       DefaultLoopNode SourceSection: None
                                         WhileRepeatingNode SourceSection: None
                                           NotNodeGen SourceSection: [4719,4733]`tb is not None`
-                                            IsNodeGen SourceSection: None
+                                            IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [4719,4721]`tb`
                                                 Frame: [1,tb,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -975,6 +974,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [5144,5528]`def __print_tracebac...`
                       Identifier: __print_traceback__
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -994,7 +994,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                           CelVars: None
                           FreeVars: simple_print_traceback
                           NeedsCellFrame: False
-                          FrameDescriptor: 6 slots [typ, value, tb, traceback, simple_print_traceback, <return_val>]
+                          FrameDescriptor: 7 slots [typ, value, tb, traceback, exc, simple_print_traceback, <return_val>]
                           ExecutionSlots:
                             FreeVarsSlots: simple_print_traceback, 
                             CellVarsSlots: None
@@ -1075,12 +1075,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                                             CachedCallNodeGen SourceSection: None
                                               CreateArgumentsNodeGen SourceSection: None
                                               CallDispatchNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [5414,5417]`exc`
-                                              Identifier: exc
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [5414,5417]`exc`
+                                              Frame: [4,exc,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: None
-                                                Frame: [4,simple_print_traceback,Illegal]
+                                                Frame: [5,simple_print_traceback,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [5431,5480]`print("\nOriginal ex...`
@@ -1110,19 +1110,22 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: None
-                                                Frame: [4,simple_print_traceback,Illegal]
+                                                Frame: [5,simple_print_traceback,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [5296,5309]`BaseException`
                                         Identifier: BaseException
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      WriteGlobalNodeGen SourceSection: None
+                                      WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: exc
+                                        WriteLocalFrameSlotNodeGen SourceSection: None
+                                          Frame: [4,exc,Illegal]
                                     BlockNode SourceSection: None
-                                  BlockNode SourceSection: None
+                                    SaveExceptionStateNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [5,<return_val>,Illegal]
+                                Frame: [6,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     FrameReturnNode SourceSection: [5528,5554]`return __print_trace...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -1134,6 +1137,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5557,5591]`__excepthook__ = mak...`
         Identifier: __excepthook__
         PythonCallNodeGen SourceSection: [5574,5591]`make_excepthook()`
@@ -1229,7 +1233,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                       IfNode SourceSection: [5773,6022]`if hookname is None ...`
                         YesNodeGen SourceSection: None
                           OrNode SourceSection: [5776,5814]`hookname is None or ...`
-                            IsNodeGen SourceSection: [5776,5792]`hookname is None`
+                            IsExpressionNodeGen SourceSection: [5776,5792]`hookname is None`
                               ReadLocalVariableNode SourceSection: [5776,5784]`hookname`
                                 Frame: [5,hookname,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1284,7 +1288,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                                 Frame: [11,<return_val>,Illegal]
                               ObjectLiteralNode SourceSection: [6013,6017]`None`
                           BlockNode SourceSection: None
-                      DestructuringAssignmentNode SourceSection: [6022,6071]`modname, dot, funcna...`
+                      DestructuringAssignmentNodeGen SourceSection: [6022,6071]`modname, dot, funcna...`
                         PythonCallNodeGen SourceSection: [6047,6071]`hookname.rpartition(...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
@@ -1327,14 +1331,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                           ReadLocalVariableNode SourceSection: None
                             Frame: [14,<>temp14,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                        GetItemNodeGen SourceSection: None
-                        GetItemNodeGen SourceSection: None
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassCachedNodeGen SourceSection: None
-                        ConstructTupleNodeGen SourceSection: None
-                          PythonObjectFactoryNodeGen SourceSection: None
                       IfNode SourceSection: [6076,6123]`if dot == '':↵      ...`
                         YesNodeGen SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [6079,6088]`dot == ''`
@@ -1408,7 +1404,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                                     Frame: [4,warnings,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                        BlockNode SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [6379,6404]`return hook(*args, *...`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
@@ -1435,6 +1431,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [11,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [5642,5654]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [6407,6442]`__breakpointhook__ =...`
@@ -1478,6 +1475,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [6445,6457]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [6501,7057]`@__builtin__↵def dis...`
@@ -1518,7 +1516,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                     BlockNode SourceSection: None
                       IfNode SourceSection: [6542,6579]`if value is None:↵  ...`
                         YesNodeGen SourceSection: None
-                          IsNodeGen SourceSection: [6545,6558]`value is None`
+                          IsExpressionNodeGen SourceSection: [6545,6558]`value is None`
                             ReadLocalVariableNode SourceSection: [6545,6550]`value`
                               Frame: [0,value,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1659,7 +1657,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                               Identifier: UnicodeEncodeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                        BlockNode SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [7013,7031]`stdout.write("\n")`
                         PythonCallNodeGen SourceSection: [7013,7031]`stdout.write("\n")`
                           CachedCallNodeGen SourceSection: None
@@ -1681,6 +1679,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [6501,6513]`@__builtin__`
             Identifier: __builtin__
       ExpressionWithSideEffect SourceSection: None
@@ -1691,3 +1690,4 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
             Identifier: __displayhook__
             ReadNameNodeGen SourceSection: [7075,7086]`displayhook`
               Identifier: displayhook
+  CalleeContext SourceSection: None

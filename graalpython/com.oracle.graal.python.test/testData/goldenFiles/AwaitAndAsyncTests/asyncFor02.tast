@@ -38,7 +38,7 @@ ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():â
                         DefaultLoopNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp2
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -61,14 +61,6 @@ ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():â
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<>temp3,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [38,42]`pass`
                               EmptyNode SourceSection: [38,42]`pass`
                         GetIteratorExpressionNodeGen SourceSection: [34,36]`()`
@@ -79,3 +71,5 @@ ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():â
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

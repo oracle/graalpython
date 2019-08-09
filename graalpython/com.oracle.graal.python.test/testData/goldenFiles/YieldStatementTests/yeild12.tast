@@ -39,18 +39,16 @@ ModuleRootNode Name: <module 'yeild12'> SourceSection: [0,21]`def f(): yield fro
                   ExpressionStatementNode SourceSection: [9,21]`yield from 1`
                     YieldFromNode SourceSection: [9,21]`yield from 1`
                       GetIteratorNodeGen SourceSection: None
-                      GetNextCachedNode SourceSection: None
+                      GetNextNode SourceSection: None
                         LookupAndCallUnaryNodeGen SourceSection: None
                           Op: __next__
                       GeneratorAccessNode SourceSection: None
                       IntegerLiteralNode SourceSection: [20,21]`1`
-                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [0,<return_val>,Illegal]
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

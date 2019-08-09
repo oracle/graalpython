@@ -19,3 +19,4 @@ ModuleRootNode Name: <module 'call12'> SourceSection: [0,25]`foo(**mydict1, **my
               Identifier: mydict2
       ReadNameNodeGen SourceSection: None
         Identifier: foo
+  CalleeContext SourceSection: None

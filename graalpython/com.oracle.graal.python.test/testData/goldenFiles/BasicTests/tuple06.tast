@@ -12,3 +12,4 @@ ModuleRootNode Name: <module 'tuple06'> SourceSection: [0,16]`t = ('strange,')`
         WriteNameNodeGen SourceSection: [0,16]`t = ('strange,')`
           Identifier: t
           StringLiteralNode SourceSection: [5,15]`'strange,'`
+  CalleeContext SourceSection: None

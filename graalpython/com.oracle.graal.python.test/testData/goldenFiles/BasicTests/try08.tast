@@ -20,4 +20,5 @@ ModuleRootNode Name: <module 'try08'> SourceSection: [0,53]`try:↵    pass↵ex
                 Identifier: OSError
             ExpressionStatementNode SourceSection: [49,53]`pass`
               EmptyNode SourceSection: [49,53]`pass`
-          BlockNode SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None
+  CalleeContext SourceSection: None

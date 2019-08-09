@@ -46,11 +46,7 @@ ModuleRootNode Name: <module 'yeild03'> SourceSection: [0,19]`def f(): x += yiel
                         ReadVariableFromFrameNodeGen SourceSection: None
                       YieldNode SourceSection: [14,19]`yield`
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [1,<return_val>,Illegal]
-                          EmptyNode SourceSection: None
+                        EmptyNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
@@ -58,3 +54,5 @@ ModuleRootNode Name: <module 'yeild03'> SourceSection: [0,19]`def f(): x += yiel
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

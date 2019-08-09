@@ -58,20 +58,12 @@ ModuleRootNode Name: <module 'if02'> SourceSection: [0,72]`def gen(c, b):↵  if
                       ExpressionStatementNode SourceSection: [43,51]`yield 12`
                         YieldNode SourceSection: [43,51]`yield 12`
                           flagSlot: 0
-                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [2,<return_val>,Illegal]
-                            IntegerLiteralNode SourceSection: [49,51]`12`
+                          IntegerLiteralNode SourceSection: [49,51]`12`
                           GeneratorAccessNode SourceSection: None
                       ExpressionStatementNode SourceSection: [64,72]`yield 13`
                         YieldNode SourceSection: [64,72]`yield 13`
                           flagSlot: 1
-                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [2,<return_val>,Illegal]
-                            IntegerLiteralNode SourceSection: [70,72]`13`
+                          IntegerLiteralNode SourceSection: [70,72]`13`
                           GeneratorAccessNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
@@ -94,3 +86,5 @@ ModuleRootNode Name: <module 'if02'> SourceSection: [0,72]`def gen(c, b):↵  if
                           Index: 1
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

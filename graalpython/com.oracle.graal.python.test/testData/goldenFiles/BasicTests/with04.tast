@@ -50,12 +50,12 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassCachedNodeGen SourceSection: None
+                            IsSameTypeSlowNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassCachedNodeGen SourceSection: None
+                            IsSameTypeSlowNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
@@ -64,6 +64,7 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                           CallDispatchNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                         CachedNodeGen SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -77,12 +78,12 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
@@ -91,6 +92,9 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       CachedNodeGen SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

@@ -6,3 +6,4 @@ ModuleRootNode Name: <module 'simpleExpression01'> SourceSection: [0,6]`'ahoj'`
   Documentation: `ahoj`
   InnerRootNode SourceSection: [0,6]`'ahoj'`
     StringLiteralNode SourceSection: [0,6]`'ahoj'`
+  CalleeContext SourceSection: None

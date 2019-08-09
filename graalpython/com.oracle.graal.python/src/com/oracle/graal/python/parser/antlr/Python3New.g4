@@ -875,7 +875,7 @@ except_clause returns [SSTNode result]
 		( 'as' NAME 
                     { 
                         asName = $NAME.text; 
-                        //factory.getScopeEnvironment().createLocal(asName);
+                        factory.getScopeEnvironment().createLocal(asName);
                     } 
                 )?
 	)?

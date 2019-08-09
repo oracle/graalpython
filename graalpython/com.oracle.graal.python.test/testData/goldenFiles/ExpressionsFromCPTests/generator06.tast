@@ -54,17 +54,13 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
                   ExpressionStatementNode SourceSection: [5,9]`x**3`
                     YieldNode SourceSection: [5,9]`x**3`
                       flagSlot: 0
-                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [1,<return_val>,Illegal]
-                        TernaryArithmeticExpression SourceSection: [5,9]`x**3`
-                          LookupAndCallTernaryNodeGen SourceSection: None
-                            CallTernaryMethodNodeGen SourceSection: None
-                          ReadGeneratorFrameVariableNode SourceSection: [5,6]`x`
-                            Frame: [0,x,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          IntegerLiteralNode SourceSection: [8,9]`3`
+                      TernaryArithmeticExpression SourceSection: [5,9]`x**3`
+                        LookupAndCallTernaryNodeGen SourceSection: None
+                          CallTernaryMethodNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [5,6]`x`
+                          Frame: [0,x,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        IntegerLiteralNode SourceSection: [8,9]`3`
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -74,7 +70,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextCachedNode SourceSection: None
+                GetNextNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
@@ -84,6 +80,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
+          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [19,28]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [19,28]`range(20)`
@@ -96,3 +93,4 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
         PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: None
         Identifier: list
+  CalleeContext SourceSection: None

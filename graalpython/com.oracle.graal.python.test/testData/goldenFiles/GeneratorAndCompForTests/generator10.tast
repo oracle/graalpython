@@ -62,13 +62,9 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                             ExpressionStatementNode SourceSection: [145,155]`yield line`
                               YieldNode SourceSection: [145,155]`yield line`
                                 flagSlot: 0
-                                WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                  Identifier: <return_val>
-                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
-                                  ReadGeneratorFrameVariableNode SourceSection: [151,155]`line`
-                                    Frame: [1,line,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNode SourceSection: [151,155]`line`
+                                  Frame: [1,line,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                             BlockNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
@@ -81,7 +77,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                           ReadGeneratorFrameVariableNode SourceSection: [73,74]`f`
                             Frame: [2,f,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                        GetNextCachedNode SourceSection: None
+                        GetNextNode SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
@@ -102,12 +98,12 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     LookupInheritedAttributeNode SourceSection: None
                       LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeNodeGen SourceSection: None
-                      GetLazyClassCachedNodeGen SourceSection: None
+                        IsSameTypeSlowNodeGen SourceSection: None
+                      GetLazyClassNodeGen SourceSection: None
                     LookupInheritedAttributeNode SourceSection: None
                       LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeNodeGen SourceSection: None
-                      GetLazyClassCachedNodeGen SourceSection: None
+                        IsSameTypeSlowNodeGen SourceSection: None
+                      GetLazyClassNodeGen SourceSection: None
                     CachedCallNodeGen SourceSection: None
                       CreateArgumentsNodeGen SourceSection: None
                       CallDispatchNodeGen SourceSection: None
@@ -116,6 +112,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                       CallDispatchNodeGen SourceSection: None
                     YesNodeGen SourceSection: None
                     CachedNodeGen SourceSection: None
+                    SaveExceptionStateNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
@@ -129,3 +126,5 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

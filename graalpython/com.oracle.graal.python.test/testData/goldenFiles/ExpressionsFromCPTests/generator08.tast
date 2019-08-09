@@ -35,13 +35,9 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
                 ExpressionStatementNode SourceSection: [4,5]`x`
                   YieldNode SourceSection: [4,5]`x`
                     flagSlot: 0
-                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <return_val>
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [1,<return_val>,Illegal]
-                      ReadGeneratorFrameVariableNode SourceSection: [4,5]`x`
-                        Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
+                    ReadGeneratorFrameVariableNode SourceSection: [4,5]`x`
+                      Frame: [0,x,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
@@ -50,7 +46,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextCachedNode SourceSection: None
+                GetNextNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
@@ -60,6 +56,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
+          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(10)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [15,24]`range(10)`
@@ -72,3 +69,4 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
         PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: None
         Identifier: foo
+  CalleeContext SourceSection: None

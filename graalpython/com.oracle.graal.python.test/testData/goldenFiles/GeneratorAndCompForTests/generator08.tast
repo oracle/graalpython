@@ -43,7 +43,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                         DefaultLoopNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: <>temp4
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
@@ -66,14 +66,6 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [5,<>temp5,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: [48,62]`value = next()`
                               Identifier: value
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
@@ -100,13 +92,9 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                         ExpressionStatementNode SourceSection: [93,104]`yield value`
                           YieldNode SourceSection: [93,104]`yield value`
                             flagSlot: 0
-                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [6,<return_val>,Illegal]
-                              ReadGeneratorFrameVariableNode SourceSection: [99,104]`value`
-                                Frame: [1,value,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [99,104]`value`
+                              Frame: [1,value,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [73,83]`len(h) > 1`
@@ -138,3 +126,5 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

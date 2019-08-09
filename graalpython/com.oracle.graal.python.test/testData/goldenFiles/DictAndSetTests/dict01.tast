@@ -7,3 +7,4 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,2]`{}`
   InnerRootNode SourceSection: [0,2]`{}`
     DictLiteralNode SourceSection: [0,2]`{}`
       PythonObjectFactoryNodeGen SourceSection: None
+  CalleeContext SourceSection: None

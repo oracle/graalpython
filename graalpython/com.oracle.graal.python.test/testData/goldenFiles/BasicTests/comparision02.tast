@@ -17,3 +17,4 @@ ModuleRootNode Name: <module 'comparision02'> SourceSection: [0,15]`1 < '10' > T
         StringLiteralNode SourceSection: [4,8]`'10'`
         BooleanLiteralNode SourceSection: [11,15]`True`
       YesNodeGen SourceSection: None
+  CalleeContext SourceSection: None

@@ -6,6 +6,7 @@ ModuleRootNode Name: <module 'star01'> SourceSection: [0,2]`*a`
   Documentation: None
   InnerRootNode SourceSection: [0,2]`*a`
     StarredExpressionNode SourceSection: [0,2]`*a`
-      CastToListNodeGen SourceSection: None
+      CastToListExpressionNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [1,2]`a`
           Identifier: a
+  CalleeContext SourceSection: None

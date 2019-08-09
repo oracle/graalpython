@@ -16,3 +16,4 @@ ModuleRootNode Name: <module 'getAttr02'> SourceSection: [0,5]`a().b`
           CallDispatchNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: None
           Identifier: a
+  CalleeContext SourceSection: None

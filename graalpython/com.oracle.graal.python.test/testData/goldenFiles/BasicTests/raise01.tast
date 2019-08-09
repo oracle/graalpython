@@ -12,3 +12,4 @@ ModuleRootNode Name: <module 'raise01'> SourceSection: [0,5]`raise`
         RaiseNodeGen SourceSection: [0,5]`raise`
           EmptyNode SourceSection: None
           EmptyNode SourceSection: None
+  CalleeContext SourceSection: None

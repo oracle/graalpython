@@ -61,13 +61,9 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                         ExpressionStatementNode SourceSection: [78,89]`yield value`
                           YieldNode SourceSection: [78,89]`yield value`
                             flagSlot: 0
-                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [2,<return_val>,Illegal]
-                              ReadGeneratorFrameVariableNode SourceSection: [84,89]`value`
-                                Frame: [1,value,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [84,89]`value`
+                              Frame: [1,value,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [63,68]`h > 1`
@@ -92,3 +88,5 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

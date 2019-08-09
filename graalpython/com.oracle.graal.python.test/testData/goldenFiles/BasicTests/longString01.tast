@@ -6,3 +6,4 @@ ModuleRootNode Name: <module 'longString01'> SourceSection: [0,10]`'''ahoj'''`
   Documentation: `ahoj`
   InnerRootNode SourceSection: [0,10]`'''ahoj'''`
     StringLiteralNode SourceSection: [0,10]`'''ahoj'''`
+  CalleeContext SourceSection: None

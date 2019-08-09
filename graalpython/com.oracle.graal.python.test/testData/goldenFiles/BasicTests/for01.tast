@@ -22,3 +22,4 @@ ModuleRootNode Name: <module 'for01'> SourceSection: [0,23]`for i in 'ahoj':↵ 
               GetIteratorNodeGen SourceSection: None
               StringLiteralNode SourceSection: [9,15]`'ahoj'`
           BlockNode SourceSection: None
+  CalleeContext SourceSection: None

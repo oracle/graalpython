@@ -112,18 +112,14 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                             ExpressionStatementNode SourceSection: [149,163]`yield curr.key`
                                               YieldNode SourceSection: [149,163]`yield curr.key`
                                                 flagSlot: 0
-                                                WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                  Identifier: <return_val>
-                                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                    Frame: [4,<return_val>,Illegal]
-                                                  GetAttributeNodeGen SourceSection: [155,163]`curr.key`
-                                                    GetFixedAttributeNodeGen SourceSection: None
-                                                      Key: key
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __getattribute__
-                                                    ReadGeneratorFrameVariableNode SourceSection: [155,159]`curr`
-                                                      Frame: [2,curr,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                GetAttributeNodeGen SourceSection: [155,163]`curr.key`
+                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                    Key: key
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __getattribute__
+                                                  ReadGeneratorFrameVariableNode SourceSection: [155,159]`curr`
+                                                    Frame: [2,curr,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                             WriteGeneratorFrameVariableNodeGen SourceSection: [176,192]`curr = curr.prev`
                                               Identifier: curr
@@ -139,7 +135,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [119,135]`curr is not root`
-                                            IsNodeGen SourceSection: None
+                                            IsExpressionNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [119,123]`curr`
                                                 Frame: [2,curr,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -161,7 +157,9 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                           Index: 0
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
+                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 ReadNameNodeGen SourceSection: [18,22]`dict`
                   Identifier: dict
@@ -174,3 +172,4 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
+  CalleeContext SourceSection: None

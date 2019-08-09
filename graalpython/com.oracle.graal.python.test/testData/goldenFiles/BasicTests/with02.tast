@@ -23,12 +23,12 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
                 Identifier: B
             LookupInheritedAttributeNode SourceSection: None
               LookupAttributeInMRONodeGen SourceSection: None
-                IsSameTypeNodeGen SourceSection: None
-              GetLazyClassCachedNodeGen SourceSection: None
+                IsSameTypeSlowNodeGen SourceSection: None
+              GetLazyClassNodeGen SourceSection: None
             LookupInheritedAttributeNode SourceSection: None
               LookupAttributeInMRONodeGen SourceSection: None
-                IsSameTypeNodeGen SourceSection: None
-              GetLazyClassCachedNodeGen SourceSection: None
+                IsSameTypeSlowNodeGen SourceSection: None
+              GetLazyClassNodeGen SourceSection: None
             CachedCallNodeGen SourceSection: None
               CreateArgumentsNodeGen SourceSection: None
               CallDispatchNodeGen SourceSection: None
@@ -37,6 +37,7 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
               CallDispatchNodeGen SourceSection: None
             YesNodeGen SourceSection: None
             CachedNodeGen SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: a
           PythonCallNodeGen SourceSection: [5,8]`A()`
@@ -47,12 +48,12 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
               Identifier: A
           LookupInheritedAttributeNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
-              IsSameTypeNodeGen SourceSection: None
-            GetLazyClassCachedNodeGen SourceSection: None
+              IsSameTypeSlowNodeGen SourceSection: None
+            GetLazyClassNodeGen SourceSection: None
           LookupInheritedAttributeNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
-              IsSameTypeNodeGen SourceSection: None
-            GetLazyClassCachedNodeGen SourceSection: None
+              IsSameTypeSlowNodeGen SourceSection: None
+            GetLazyClassNodeGen SourceSection: None
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
@@ -61,3 +62,5 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
             CallDispatchNodeGen SourceSection: None
           YesNodeGen SourceSection: None
           CachedNodeGen SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
+  CalleeContext SourceSection: None

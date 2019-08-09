@@ -6,3 +6,4 @@ ModuleRootNode Name: <module 'nonlocal02'> SourceSection: [0,10]`nonlocal x`
   Documentation: None
   InnerRootNode SourceSection: [0,10]`nonlocal x`
     EmptyNode SourceSection: [0,10]`nonlocal x`
+  CalleeContext SourceSection: None

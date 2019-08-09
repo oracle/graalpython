@@ -22,12 +22,12 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
               Identifier: A
           LookupInheritedAttributeNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
-              IsSameTypeNodeGen SourceSection: None
-            GetLazyClassCachedNodeGen SourceSection: None
+              IsSameTypeSlowNodeGen SourceSection: None
+            GetLazyClassNodeGen SourceSection: None
           LookupInheritedAttributeNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
-              IsSameTypeNodeGen SourceSection: None
-            GetLazyClassCachedNodeGen SourceSection: None
+              IsSameTypeSlowNodeGen SourceSection: None
+            GetLazyClassNodeGen SourceSection: None
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
@@ -36,3 +36,5 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
             CallDispatchNodeGen SourceSection: None
           YesNodeGen SourceSection: None
           CachedNodeGen SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
+  CalleeContext SourceSection: None

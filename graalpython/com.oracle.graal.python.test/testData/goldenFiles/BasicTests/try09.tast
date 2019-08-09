@@ -16,6 +16,7 @@ ModuleRootNode Name: <module 'try09'> SourceSection: [0,68]`try:↵   raise Keyb
                 Identifier: KeyboardInterrupt
               EmptyNode SourceSection: None
             BlockNode SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None
           ExpressionStatementNode SourceSection: [44,68]`print('Goodbye, worl...`
             PythonCallNodeGen SourceSection: [44,68]`print('Goodbye, worl...`
               CachedCallNodeGen SourceSection: None
@@ -24,3 +25,4 @@ ModuleRootNode Name: <module 'try09'> SourceSection: [0,68]`try:↵   raise Keyb
               StringLiteralNode SourceSection: [50,67]`'Goodbye, world!'`
               ReadNameNodeGen SourceSection: None
                 Identifier: print
+  CalleeContext SourceSection: None

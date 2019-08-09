@@ -10,3 +10,4 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,19]`10 if False else 11`
         BooleanLiteralNode SourceSection: [6,11]`False`
       IntegerLiteralNode SourceSection: [0,2]`10`
       IntegerLiteralNode SourceSection: [17,19]`11`
+  CalleeContext SourceSection: None

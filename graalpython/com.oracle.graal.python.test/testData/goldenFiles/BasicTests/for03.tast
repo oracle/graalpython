@@ -36,3 +36,4 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):â
                 ReadNameNodeGen SourceSection: None
                   Identifier: xrange
           BlockNode SourceSection: None
+  CalleeContext SourceSection: None

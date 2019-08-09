@@ -35,24 +35,20 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
                 ExpressionStatementNode SourceSection: None
                   YieldNode SourceSection: None
                     flagSlot: 0
-                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <return_val>
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [1,<return_val>,Illegal]
-                      TupleLiteralNode SourceSection: None
-                        PythonObjectFactoryNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                    TupleLiteralNode SourceSection: None
+                      PythonObjectFactoryNodeGen SourceSection: None
+                      ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                        Frame: [0,x,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      BinaryArithmeticExpression SourceSection: [3,6]`x*x`
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __mul__
+                        ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [3,6]`x*x`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mul__
-                          ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
-                            Frame: [0,x,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGeneratorFrameVariableNode SourceSection: [5,6]`x`
-                            Frame: [0,x,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [5,6]`x`
+                          Frame: [0,x,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
@@ -61,7 +57,7 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextCachedNode SourceSection: None
+                GetNextNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
@@ -71,6 +67,7 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
+          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [16,25]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [16,25]`range(20)`
@@ -84,3 +81,4 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+  CalleeContext SourceSection: None

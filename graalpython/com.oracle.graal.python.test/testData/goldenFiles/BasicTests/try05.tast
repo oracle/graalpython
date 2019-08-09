@@ -17,4 +17,5 @@ ModuleRootNode Name: <module 'try05'> SourceSection: [0,26]`try:↵  pass↵exce
               ExpressionStatementNode SourceSection: [22,26]`pass`
                 EmptyNode SourceSection: [22,26]`pass`
             BlockNode SourceSection: None
-          BlockNode SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None
+  CalleeContext SourceSection: None

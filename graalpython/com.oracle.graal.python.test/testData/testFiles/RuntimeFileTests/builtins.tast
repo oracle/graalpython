@@ -74,6 +74,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2239,2635]`def __import__(filen...`
         Identifier: __import__
         FunctionDefinitionNode Name: __import__ SourceSection: None
@@ -280,6 +281,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [8,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       ExpressionStatementNode SourceSection: [2635,2676]`__import__("%s/funct...`
         PythonCallNodeGen SourceSection: [2635,2676]`__import__("%s/funct...`
           CachedCallNodeGen SourceSection: None
@@ -333,3 +335,4 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr_
         StringLiteralNode SourceSection: [2868,2878]`"builtins"`
         ReadNameNodeGen SourceSection: None
           Identifier: __import__
+  CalleeContext SourceSection: None

@@ -87,7 +87,9 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [1,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
+                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 GetCallAttributeNodeGen SourceSection: None
                   BuiltinsLiteralNode SourceSection: None
@@ -98,3 +100,4 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
+  CalleeContext SourceSection: None

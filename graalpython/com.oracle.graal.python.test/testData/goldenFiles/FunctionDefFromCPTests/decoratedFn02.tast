@@ -46,6 +46,7 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [0,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
+                  CalleeContext SourceSection: None
               PythonCallNodeGen SourceSection: [14,30]`@funcattrs(x, y)`
                 CachedCallNodeGen SourceSection: None
                   CreateArgumentsNodeGen SourceSection: None
@@ -58,3 +59,4 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
                   Identifier: funcattrs
             ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
               Identifier: staticmethod
+  CalleeContext SourceSection: None

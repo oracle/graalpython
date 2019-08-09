@@ -86,6 +86,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     FrameReturnNode SourceSection: [65,76]`return wrap`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -97,6 +98,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [78,122]`@mydecorator↵def get...`
         Identifier: getNumber
         PythonCallNodeGen SourceSection: [78,90]`@mydecorator`
@@ -134,6 +136,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [78,90]`@mydecorator`
             Identifier: mydecorator
       PythonCallNodeGen SourceSection: [122,140]`print(getNumber())`
@@ -148,3 +151,4 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
             Identifier: getNumber
         ReadNameNodeGen SourceSection: None
           Identifier: print
+  CalleeContext SourceSection: None

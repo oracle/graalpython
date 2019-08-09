@@ -31,19 +31,15 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
               ExpressionStatementNode SourceSection: [1,4]`x*x`
                 YieldNode SourceSection: [1,4]`x*x`
                   flagSlot: 0
-                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                    Identifier: <return_val>
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [1,<return_val>,Illegal]
-                    BinaryArithmeticExpression SourceSection: [1,4]`x*x`
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __mul__
-                      ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
-                        Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
-                      ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
-                        Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
+                  BinaryArithmeticExpression SourceSection: [1,4]`x*x`
+                    LookupAndCallBinaryNodeGen SourceSection: None
+                      Op: __mul__
+                    ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                      Frame: [0,x,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+                    ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
+                      Frame: [0,x,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
                   GeneratorAccessNode SourceSection: None
               WriteGeneratorFrameVariableNodeGen SourceSection: None
                 Identifier: x
@@ -52,7 +48,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
               ArgumentExpressionNode SourceSection: None
                 ReadIndexedArgumentNodeGen SourceSection: None
                   Index: 0
-              GetNextCachedNode SourceSection: None
+              GetNextNode SourceSection: None
                 LookupAndCallUnaryNodeGen SourceSection: None
                   Op: __next__
               GeneratorAccessNode SourceSection: None
@@ -62,6 +58,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
             BlockNode SourceSection: None
             GeneratorAccessNode SourceSection: None
             PRaiseNodeGen SourceSection: None
+        CalleeContext SourceSection: None
       GetIteratorExpressionNodeGen SourceSection: [14,23]`range(10)`
         GetIteratorNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [14,23]`range(10)`
@@ -72,3 +69,4 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
           ReadNameNodeGen SourceSection: None
             Identifier: range
       PythonObjectFactoryNodeGen SourceSection: None
+  CalleeContext SourceSection: None

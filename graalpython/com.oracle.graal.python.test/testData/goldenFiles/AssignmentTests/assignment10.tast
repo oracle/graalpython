@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'assignment10'> SourceSection: [0,15]`i, j, k = x =
           Frame: [0,<>temp0,Illegal]
         ReadNameNodeGen SourceSection: [14,15]`a`
           Identifier: a
-      DestructuringAssignmentNode SourceSection: None
+      DestructuringAssignmentNodeGen SourceSection: None
         ReadLocalVariableNode SourceSection: None
           Frame: [0,<>temp0,Illegal]
           ReadVariableFromFrameNodeGen SourceSection: None
@@ -43,17 +43,10 @@ ModuleRootNode Name: <module 'assignment10'> SourceSection: [0,15]`i, j, k = x =
           ReadLocalVariableNode SourceSection: None
             Frame: [3,<>temp3,Illegal]
             ReadVariableFromFrameNodeGen SourceSection: None
-        GetItemNodeGen SourceSection: None
-        GetItemNodeGen SourceSection: None
-        LookupInheritedAttributeNode SourceSection: None
-          LookupAttributeInMRONodeGen SourceSection: None
-            IsSameTypeNodeGen SourceSection: None
-          GetLazyClassCachedNodeGen SourceSection: None
-        ConstructTupleNodeGen SourceSection: None
-          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: None
         Identifier: x
         ReadLocalVariableNode SourceSection: None
           Frame: [0,<>temp0,Illegal]
           ReadVariableFromFrameNodeGen SourceSection: None
       EmptyNode SourceSection: None
+  CalleeContext SourceSection: None

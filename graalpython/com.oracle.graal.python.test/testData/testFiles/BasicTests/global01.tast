@@ -60,6 +60,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       ExpressionStatementNode SourceSection: [111,116]`add()`
         PythonCallNodeGen SourceSection: [111,116]`add()`
           CachedCallNodeGen SourceSection: None
@@ -76,3 +77,4 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
           Identifier: c
         ReadNameNodeGen SourceSection: None
           Identifier: print
+  CalleeContext SourceSection: None

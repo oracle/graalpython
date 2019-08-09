@@ -115,7 +115,7 @@ Scope: []
             FreeVars: [__class__]
             Scope: generator9408
                 Kind: Generator
-                FrameDescriptor: [v, <>temp3, <>temp4, k, <return_val>]
+                FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
     Scope: clear_frames

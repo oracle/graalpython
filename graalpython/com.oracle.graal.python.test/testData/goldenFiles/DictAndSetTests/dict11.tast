@@ -24,3 +24,4 @@ ModuleRootNode Name: <module 'dict11'> SourceSection: [0,52]`{**{"a": "hello", "
         IntegerLiteralNode SourceSection: [47,48]`5`
         IntegerLiteralNode SourceSection: [44,45]`4`
         IntegerLiteralNode SourceSection: [49,50]`6`
+  CalleeContext SourceSection: None

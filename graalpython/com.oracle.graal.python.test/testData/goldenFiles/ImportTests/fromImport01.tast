@@ -10,3 +10,4 @@ ModuleRootNode Name: <module 'fromImport01'> SourceSection: [0,22]`from sys.path
         EmptyNode SourceSection: None
       SideEffect:
         ImportStarNode SourceSection: [0,22]`from sys.path import...`
+  CalleeContext SourceSection: None

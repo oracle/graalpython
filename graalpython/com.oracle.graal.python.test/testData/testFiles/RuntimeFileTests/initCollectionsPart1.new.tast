@@ -121,7 +121,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       Op: __getattribute__
                   ReadNameNodeGen SourceSection: [1394,1410]`_collections_abc`
                     Identifier: _collections_abc
-        BlockNode SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
       TryFinallyNode SourceSection: [1444,1521]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [1453,1489]`from _collections im...`
@@ -139,7 +139,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             ReadNameNodeGen SourceSection: [1497,1508]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-        BlockNode SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1521,2419]`def __getattr__(name...`
         Identifier: __getattr__
         FunctionDefinitionNode Name: __getattr__ SourceSection: None
@@ -269,6 +269,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2419,2547]`class _OrderedDictKe...`
         Identifier: _OrderedDictKeysView
         ExpressionWithSideEffects SourceSection: None
@@ -344,7 +345,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   ExpressionStatementNode SourceSection: [2511,2545]`yield from reversed(...`
                                     YieldFromNode SourceSection: [2511,2545]`yield from reversed(...`
                                       GetIteratorNodeGen SourceSection: None
-                                      GetNextCachedNode SourceSection: None
+                                      GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -363,10 +364,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: reversed
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -379,7 +376,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [2446,2471]`_collections_abc.Key...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -474,27 +473,23 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ExpressionStatementNode SourceSection: [2689,2720]`yield (key, self._ma...`
                                         YieldNode SourceSection: [2689,2720]`yield (key, self._ma...`
                                           flagSlot: 0
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,<return_val>,Illegal]
-                                            TupleLiteralNode SourceSection: [2695,2720]`(key, self._mapping[...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [2696,2699]`key`
+                                          TupleLiteralNode SourceSection: [2695,2720]`(key, self._mapping[...`
+                                            PythonObjectFactoryNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [2696,2699]`key`
+                                              Frame: [1,key,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            GetItemNodeGen SourceSection: [2701,2719]`self._mapping[key]`
+                                              GetAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
+                                                  Key: _mapping
+                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                    Op: __getattribute__
+                                                ReadGeneratorFrameVariableNode SourceSection: [2701,2705]`self`
+                                                  Frame: [0,self,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadGeneratorFrameVariableNode SourceSection: [2715,2718]`key`
                                                 Frame: [1,key,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetItemNodeGen SourceSection: [2701,2719]`self._mapping[key]`
-                                                GetAttributeNodeGen SourceSection: None
-                                                  GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: _mapping
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __getattribute__
-                                                  ReadGeneratorFrameVariableNode SourceSection: [2701,2705]`self`
-                                                    Frame: [0,self,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGeneratorFrameVariableNode SourceSection: [2715,2718]`key`
-                                                  Frame: [1,key,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: key
@@ -517,7 +512,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: reversed
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      GetNextCachedNode SourceSection: None
+                                      GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -534,7 +529,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [2575,2601]`_collections_abc.Ite...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -629,22 +626,18 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ExpressionStatementNode SourceSection: [2866,2890]`yield self._mapping[...`
                                         YieldNode SourceSection: [2866,2890]`yield self._mapping[...`
                                           flagSlot: 0
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,<return_val>,Illegal]
-                                            GetItemNodeGen SourceSection: [2872,2890]`self._mapping[key]`
-                                              GetAttributeNodeGen SourceSection: None
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: _mapping
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                ReadGeneratorFrameVariableNode SourceSection: [2872,2876]`self`
-                                                  Frame: [0,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [2886,2889]`key`
-                                                Frame: [1,key,Illegal]
+                                          GetItemNodeGen SourceSection: [2872,2890]`self._mapping[key]`
+                                            GetAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
+                                                Key: _mapping
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __getattribute__
+                                              ReadGeneratorFrameVariableNode SourceSection: [2872,2876]`self`
+                                                Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [2886,2889]`key`
+                                              Frame: [1,key,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: key
@@ -667,7 +660,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: reversed
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      GetNextCachedNode SourceSection: None
+                                      GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -684,7 +677,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [2751,2778]`_collections_abc.Val...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -755,6 +750,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             StringLiteralNode SourceSection: [2945,2950]`'key'`
                             StringLiteralNode SourceSection: [2952,2965]`'__weakref__'`
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [2904,2910]`object`
                 Identifier: object
@@ -873,7 +869,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
                                         BlockNode SourceSection: None
-                                      DestructuringAssignmentNode SourceSection: [4180,4198]`self, *args = args`
+                                      DestructuringAssignmentNodeGen SourceSection: [4180,4198]`self, *args = args`
                                         ReadLocalVariableNode SourceSection: [4194,4198]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -899,15 +895,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [6,<>temp6,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetItemNodeGen SourceSection: None
-                                        GetItemNodeGen SourceSection: None
-                                        LenNodeGen SourceSection: None
-                                        LookupInheritedAttributeNode SourceSection: None
-                                          LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeNodeGen SourceSection: None
-                                          GetLazyClassCachedNodeGen SourceSection: None
-                                        ConstructTupleNodeGen SourceSection: None
-                                          PythonObjectFactoryNodeGen SourceSection: None
                                       IfNode SourceSection: [4207,4313]`if len(args) > 1:↵  ...`
                                         YesNodeGen SourceSection: None
                                           BinaryComparisonNodeGen SourceSection: [4210,4223]`len(args) > 1`
@@ -1043,7 +1030,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Identifier: AttributeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
-                                        BlockNode SourceSection: None
+                                          SaveExceptionStateNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [4545,4573]`self.__update(*args,...`
                                         PythonCallNodeGen SourceSection: [4545,4573]`self.__update(*args,...`
                                           CachedCallNodeGen SourceSection: None
@@ -1067,6 +1054,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [9,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [4579,5195]`def __setitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1241,7 +1229,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: [5015,5019]`root`
                                                 Frame: [7,root,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                          DestructuringAssignmentNode SourceSection: [5037,5085]`link.prev, link.next...`
+                                          DestructuringAssignmentNodeGen SourceSection: [5037,5085]`link.prev, link.next...`
                                             TupleLiteralNode SourceSection: [5070,5085]`last, root, key`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [5070,5074]`last`
@@ -1289,14 +1277,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [13,<>temp13,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            LookupInheritedAttributeNode SourceSection: None
-                                              LookupAttributeInMRONodeGen SourceSection: None
-                                                IsSameTypeNodeGen SourceSection: None
-                                              GetLazyClassCachedNodeGen SourceSection: None
-                                            ConstructTupleNodeGen SourceSection: None
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                           SetAttributeNodeGen SourceSection: [5098,5114]`last.next = link`
                                             Attribute: next
                                             ReadLocalVariableNode SourceSection: [5098,5102]`last`
@@ -1341,6 +1321,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [14,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5195,5709]`def __delitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1494,6 +1475,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5709,5957]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1556,18 +1538,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ExpressionStatementNode SourceSection: [5908,5922]`yield curr.key`
                                             YieldNode SourceSection: [5908,5922]`yield curr.key`
                                               flagSlot: 0
-                                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                Identifier: <return_val>
-                                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                  Frame: [4,<return_val>,Illegal]
-                                                GetAttributeNodeGen SourceSection: [5914,5922]`curr.key`
-                                                  GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: key
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __getattribute__
-                                                  ReadGeneratorFrameVariableNode SourceSection: [5914,5918]`curr`
-                                                    Frame: [2,curr,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              GetAttributeNodeGen SourceSection: [5914,5922]`curr.key`
+                                                GetFixedAttributeNodeGen SourceSection: None
+                                                  Key: key
+                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                    Op: __getattribute__
+                                                ReadGeneratorFrameVariableNode SourceSection: [5914,5918]`curr`
+                                                  Frame: [2,curr,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                               GeneratorAccessNode SourceSection: None
                                           WriteGeneratorFrameVariableNodeGen SourceSection: [5935,5951]`curr = curr.next`
                                             Identifier: curr
@@ -1583,7 +1561,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                         NotNodeGen SourceSection: [5878,5894]`curr is not root`
-                                          IsNodeGen SourceSection: None
+                                          IsExpressionNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [5878,5882]`curr`
                                               Frame: [2,curr,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1605,6 +1583,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5957,6225]`def __reversed__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1667,18 +1646,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ExpressionStatementNode SourceSection: [6176,6190]`yield curr.key`
                                             YieldNode SourceSection: [6176,6190]`yield curr.key`
                                               flagSlot: 0
-                                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                Identifier: <return_val>
-                                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                  Frame: [4,<return_val>,Illegal]
-                                                GetAttributeNodeGen SourceSection: [6182,6190]`curr.key`
-                                                  GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: key
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __getattribute__
-                                                  ReadGeneratorFrameVariableNode SourceSection: [6182,6186]`curr`
-                                                    Frame: [2,curr,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              GetAttributeNodeGen SourceSection: [6182,6190]`curr.key`
+                                                GetFixedAttributeNodeGen SourceSection: None
+                                                  Key: key
+                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                    Op: __getattribute__
+                                                ReadGeneratorFrameVariableNode SourceSection: [6182,6186]`curr`
+                                                  Frame: [2,curr,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                               GeneratorAccessNode SourceSection: None
                                           WriteGeneratorFrameVariableNodeGen SourceSection: [6203,6219]`curr = curr.prev`
                                             Identifier: curr
@@ -1694,7 +1669,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                         NotNodeGen SourceSection: [6146,6162]`curr is not root`
-                                          IsNodeGen SourceSection: None
+                                          IsExpressionNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [6146,6150]`curr`
                                               Frame: [2,curr,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1716,6 +1691,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6225,6420]`def clear(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1816,6 +1792,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6420,7123]`def popitem(self, la...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2033,6 +2010,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [9,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7123,7871]`def move_to_end(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2262,6 +2240,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [10,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7871,8311]`def __sizeof__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2442,6 +2421,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         BlockNode SourceSection: [8311,8369]`update = __update = ...`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <>temp47
@@ -2534,6 +2514,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8507,8643]`def items(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2586,6 +2567,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8643,8775]`def values(self):↵  ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2638,6 +2620,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8775,8822]`__ne__ = _collection...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2781,7 +2764,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [9199,9268]`if default is self._...`
                                         YesNodeGen SourceSection: None
-                                          IsNodeGen SourceSection: [9202,9226]`default is self.__ma...`
+                                          IsExpressionNodeGen SourceSection: [9202,9226]`default is self.__ma...`
                                             ReadLocalVariableNode SourceSection: [9202,9209]`default`
                                               Frame: [2,default,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2817,6 +2800,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [9288,9606]`def setdefault(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2914,6 +2898,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [9606,9840]`@_recursive_repr()↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3025,6 +3010,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             PythonCallNodeGen SourceSection: [9606,9624]`@_recursive_repr()`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -3173,6 +3159,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10105,10206]`def copy(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3226,6 +3213,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10206,10473]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3328,6 +3316,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [6,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [10206,10218]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3462,7 +3451,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [2985,2989]`dict`
                 Identifier: dict
@@ -3492,7 +3483,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             ReadNameNodeGen SourceSection: [10873,10884]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-        BlockNode SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11121,11141]`_nt_itemgetters = {}...`
         Identifier: _nt_itemgetters
         DictLiteralNode SourceSection: [11139,11141]`{}`
@@ -3680,7 +3671,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             DefaultLoopNode SourceSection: None
                               ForRepeatingNode SourceSection: None
                                 ForNextElementNodeGen SourceSection: None
-                                  DestructuringAssignmentNode SourceSection: None
+                                  DestructuringAssignmentNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <>temp29
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3703,14 +3694,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ReadLocalVariableNode SourceSection: None
                                         Frame: [30,<>temp30,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    GetItemNodeGen SourceSection: None
-                                    GetItemNodeGen SourceSection: None
-                                    LookupInheritedAttributeNode SourceSection: None
-                                      LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeNodeGen SourceSection: None
-                                      GetLazyClassCachedNodeGen SourceSection: None
-                                    ConstructTupleNodeGen SourceSection: None
-                                      PythonObjectFactoryNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                   IfNode SourceSection: [12512,12711]`if (not name.isident...`
                                     YesNodeGen SourceSection: None
@@ -3809,7 +3792,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             BlockNode SourceSection: None
                               IfNode SourceSection: [12777,12885]`if type(name) is not...`
                                 NotNodeGen SourceSection: [12780,12801]`type(name) is not st...`
-                                  IsNodeGen SourceSection: None
+                                  IsExpressionNodeGen SourceSection: None
                                     PythonCallNodeGen SourceSection: [12780,12790]`type(name)`
                                       CachedCallNodeGen SourceSection: None
                                         CreateArgumentsNodeGen SourceSection: None
@@ -3994,7 +3977,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [13559,13934]`if defaults is not N...`
                       NotNodeGen SourceSection: [13562,13582]`defaults is not None...`
-                        IsNodeGen SourceSection: None
+                        IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [13562,13570]`defaults`
                             Frame: [4,defaults,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4230,11 +4213,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ExpressionStatementNode SourceSection: [14106,14118]`f'{name}=%r'`
                                         YieldNode SourceSection: [14106,14118]`f'{name}=%r'`
                                           flagSlot: 0
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,<return_val>,Illegal]
-                                            StringLiteralNode SourceSection: [14106,14118]`f'{name}=%r'`
+                                          StringLiteralNode SourceSection: [14106,14118]`f'{name}=%r'`
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: name
@@ -4243,7 +4222,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
-                                      GetNextCachedNode SourceSection: None
+                                      GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -4253,6 +4232,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     BlockNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [14131,14142]`field_names`
                                 GetIteratorNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [14131,14142]`field_names`
@@ -4351,7 +4331,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       StringLiteralNode SourceSection: [14591,14639]`f'Create new instanc...`
                     IfNode SourceSection: [14644,14714]`if defaults is not N...`
                       NotNodeGen SourceSection: [14647,14667]`defaults is not None...`
-                        IsNodeGen SourceSection: None
+                        IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14647,14655]`defaults`
                             Frame: [4,defaults,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4474,6 +4454,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [6,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                            CalleeContext SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [14714,14726]`@classmethod`
                           Identifier: classmethod
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4593,6 +4574,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [4,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     SetAttributeNodeGen SourceSection: [15286,15410]`_replace.__doc__ = (...`
                       Attribute: __doc__
                       ReadLocalVariableNode SourceSection: [15286,15294]`_replace`
@@ -4667,6 +4649,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [2,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15556,15707]`def _asdict(self):↵ ...`
                       Identifier: _asdict
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4733,6 +4716,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15707,15904]`def __getnewargs__(s...`
                       Identifier: __getnewargs__
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4784,6 +4768,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     ElseNode SourceSection: [15904,16169]`for method in (__new...`
                       ForNode SourceSection: None
                         DefaultLoopNode SourceSection: None
@@ -4884,7 +4869,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         DefaultLoopNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp33
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4907,18 +4892,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [34,<>temp34,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                             BlockNode SourceSection: None
                               TryFinallyNode SourceSection: [16607,16848]`try:↵            ite...`
                                 TryExceptNode SourceSection: None
-                                  DestructuringAssignmentNode SourceSection: [16624,16661]`itemgetter_object, d...`
+                                  DestructuringAssignmentNodeGen SourceSection: [16624,16661]`itemgetter_object, d...`
                                     GetItemNodeGen SourceSection: [16649,16661]`cache[index]`
                                       ReadLocalVariableNode SourceSection: None
                                         Frame: [25,cache,Illegal]
@@ -4948,14 +4925,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ReadLocalVariableNode SourceSection: None
                                         Frame: [32,<>temp32,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    GetItemNodeGen SourceSection: None
-                                    GetItemNodeGen SourceSection: None
-                                    LookupInheritedAttributeNode SourceSection: None
-                                      LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeNodeGen SourceSection: None
-                                      GetLazyClassCachedNodeGen SourceSection: None
-                                    ConstructTupleNodeGen SourceSection: None
-                                      PythonObjectFactoryNodeGen SourceSection: None
                                   ExceptNode SourceSection: None
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [16699,16737]`itemgetter_object = ...`
@@ -4996,7 +4965,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Identifier: KeyError
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BlockNode SourceSection: None
-                                BlockNode SourceSection: None
+                                  SaveExceptionStateNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: [16848,16908]`class_namespace[name...`
                                 ReadLocalVariableNode SourceSection: None
                                   Frame: [24,class_namespace,Illegal]
@@ -5061,7 +5030,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [17327,17502]`if module is None:↵ ...`
                       YesNodeGen SourceSection: None
-                        IsNodeGen SourceSection: [17330,17344]`module is None`
+                        IsExpressionNodeGen SourceSection: [17330,17344]`module is None`
                           ReadLocalVariableNode SourceSection: [17330,17336]`module`
                             Frame: [5,module,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5105,11 +5074,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 Identifier: ValueError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                        BlockNode SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [17502,17565]`if module is not Non...`
                       NotNodeGen SourceSection: [17505,17523]`module is not None`
-                        IsNodeGen SourceSection: None
+                        IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [17505,17511]`module`
                             Frame: [5,module,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5134,6 +5103,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [35,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [17741,17927]`def _count_elements(...`
         Identifier: _count_elements
         FunctionDefinitionNode Name: _count_elements SourceSection: None
@@ -5226,6 +5196,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [17927,18080]`try:                ...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [18009,18049]`from _collections im...`
@@ -5243,7 +5214,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             ReadNameNodeGen SourceSection: [18057,18068]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-        BlockNode SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -5354,7 +5325,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
                                             BlockNode SourceSection: None
-                                          DestructuringAssignmentNode SourceSection: [20856,20874]`self, *args = args`
+                                          DestructuringAssignmentNodeGen SourceSection: [20856,20874]`self, *args = args`
                                             ReadLocalVariableNode SourceSection: [20870,20874]`args`
                                               Frame: [0,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5380,15 +5351,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [5,<>temp5,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            LenNodeGen SourceSection: None
-                                            LookupInheritedAttributeNode SourceSection: None
-                                              LookupAttributeInMRONodeGen SourceSection: None
-                                                IsSameTypeNodeGen SourceSection: None
-                                              GetLazyClassCachedNodeGen SourceSection: None
-                                            ConstructTupleNodeGen SourceSection: None
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                           IfNode SourceSection: [20883,20989]`if len(args) > 1:↵  ...`
                                             YesNodeGen SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [20886,20899]`len(args) > 1`
@@ -5471,6 +5433,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [6,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [21061,21239]`def __missing__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -5522,6 +5485,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [21239,21745]`def most_common(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -5568,7 +5532,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [21584,21680]`if n is None:↵      ...`
                                             YesNodeGen SourceSection: None
-                                              IsNodeGen SourceSection: [21587,21596]`n is None`
+                                              IsExpressionNodeGen SourceSection: [21587,21596]`n is None`
                                                 ReadLocalVariableNode SourceSection: [21587,21588]`n`
                                                   Frame: [1,n,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5649,6 +5613,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [21745,22609]`def elements(self):↵...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -5717,6 +5682,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [22609,22923]`@classmethod↵    def...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -5784,6 +5750,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                                           Frame: [4,<return_val>,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                    CalleeContext SourceSection: None
                                 ReadClassAttributeNodeGen SourceSection: [22609,22621]`@classmethod`
                                   GetItemNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
@@ -5852,7 +5819,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
                                             BlockNode SourceSection: None
-                                          DestructuringAssignmentNode SourceSection: [24023,24041]`self, *args = args`
+                                          DestructuringAssignmentNodeGen SourceSection: [24023,24041]`self, *args = args`
                                             ReadLocalVariableNode SourceSection: [24037,24041]`args`
                                               Frame: [0,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5878,15 +5845,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [9,<>temp9,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            LenNodeGen SourceSection: None
-                                            LookupInheritedAttributeNode SourceSection: None
-                                              LookupAttributeInMRONodeGen SourceSection: None
-                                                IsSameTypeNodeGen SourceSection: None
-                                              GetLazyClassCachedNodeGen SourceSection: None
-                                            ConstructTupleNodeGen SourceSection: None
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                           IfNode SourceSection: [24050,24156]`if len(args) > 1:↵  ...`
                                             YesNodeGen SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [24053,24066]`len(args) > 1`
@@ -5944,7 +5902,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ObjectLiteralNode SourceSection: [24188,24192]`None`
                                           IfNode SourceSection: [24201,24662]`if iterable is not N...`
                                             NotNodeGen SourceSection: [24204,24224]`iterable is not None...`
-                                              IsNodeGen SourceSection: None
+                                              IsExpressionNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [24204,24212]`iterable`
                                                   Frame: [3,iterable,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5992,7 +5950,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       DefaultLoopNode SourceSection: None
                                                         ForRepeatingNode SourceSection: None
                                                           ForNextElementNodeGen SourceSection: None
-                                                            DestructuringAssignmentNode SourceSection: None
+                                                            DestructuringAssignmentNodeGen SourceSection: None
                                                               WriteLocalVariableNodeGen SourceSection: None
                                                                 Identifier: <>temp10
                                                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6015,14 +5973,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                                 ReadLocalVariableNode SourceSection: None
                                                                   Frame: [11,<>temp11,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                              GetItemNodeGen SourceSection: None
-                                                              GetItemNodeGen SourceSection: None
-                                                              LookupInheritedAttributeNode SourceSection: None
-                                                                LookupAttributeInMRONodeGen SourceSection: None
-                                                                  IsSameTypeNodeGen SourceSection: None
-                                                                GetLazyClassCachedNodeGen SourceSection: None
-                                                              ConstructTupleNodeGen SourceSection: None
-                                                                PythonObjectFactoryNodeGen SourceSection: None
                                                           SetItemNodeGen SourceSection: [24435,24473]`self[elem] = count +...`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [2,self,Illegal]
@@ -6116,6 +6066,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [12,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [24706,26171]`def subtract(*args, ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -6175,7 +6126,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
                                             BlockNode SourceSection: None
-                                          DestructuringAssignmentNode SourceSection: [25596,25614]`self, *args = args`
+                                          DestructuringAssignmentNodeGen SourceSection: [25596,25614]`self, *args = args`
                                             ReadLocalVariableNode SourceSection: [25610,25614]`args`
                                               Frame: [0,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -6201,15 +6152,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [9,<>temp9,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            LenNodeGen SourceSection: None
-                                            LookupInheritedAttributeNode SourceSection: None
-                                              LookupAttributeInMRONodeGen SourceSection: None
-                                                IsSameTypeNodeGen SourceSection: None
-                                              GetLazyClassCachedNodeGen SourceSection: None
-                                            ConstructTupleNodeGen SourceSection: None
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                           IfNode SourceSection: [25623,25729]`if len(args) > 1:↵  ...`
                                             YesNodeGen SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [25626,25639]`len(args) > 1`
@@ -6267,7 +6209,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ObjectLiteralNode SourceSection: [25761,25765]`None`
                                           IfNode SourceSection: [25774,26125]`if iterable is not N...`
                                             NotNodeGen SourceSection: [25777,25797]`iterable is not None...`
-                                              IsNodeGen SourceSection: None
+                                              IsExpressionNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [25777,25785]`iterable`
                                                   Frame: [3,iterable,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6310,7 +6252,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     DefaultLoopNode SourceSection: None
                                                       ForRepeatingNode SourceSection: None
                                                         ForNextElementNodeGen SourceSection: None
-                                                          DestructuringAssignmentNode SourceSection: None
+                                                          DestructuringAssignmentNodeGen SourceSection: None
                                                             WriteLocalVariableNodeGen SourceSection: None
                                                               Identifier: <>temp10
                                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6333,14 +6275,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                               ReadLocalVariableNode SourceSection: None
                                                                 Frame: [11,<>temp11,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                            GetItemNodeGen SourceSection: None
-                                                            GetItemNodeGen SourceSection: None
-                                                            LookupInheritedAttributeNode SourceSection: None
-                                                              LookupAttributeInMRONodeGen SourceSection: None
-                                                                IsSameTypeNodeGen SourceSection: None
-                                                              GetLazyClassCachedNodeGen SourceSection: None
-                                                            ConstructTupleNodeGen SourceSection: None
-                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                         SetItemNodeGen SourceSection: [25967,26005]`self[elem] = self_ge...`
                                                           ReadLocalVariableNode SourceSection: None
                                                             Frame: [2,self,Illegal]
@@ -6435,6 +6369,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [12,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [26171,26261]`def copy(self):↵    ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -6488,6 +6423,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [26261,26333]`def __reduce__(self)...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -6552,6 +6488,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [26333,26512]`def __delitem__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -6626,6 +6563,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [26512,27260]`def __repr__(self):↵...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -6789,10 +6727,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Identifier: TypeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
-                                            BlockNode SourceSection: None
+                                              SaveExceptionStateNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [27260,27838]`def __add__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -6876,7 +6815,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp8
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6899,14 +6838,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [9,<>temp9,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [27585,27615]`newcount = count + o...`
                                                       Identifier: newcount
@@ -6961,7 +6892,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp10
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6984,14 +6915,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [11,<>temp11,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   IfNode SourceSection: [27739,27819]`if elem not in self ...`
                                                     YesNodeGen SourceSection: None
                                                       AndNode SourceSection: [27742,27772]`elem not in self and...`
@@ -7047,6 +6970,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [7,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [27838,28445]`def __sub__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -7130,7 +7054,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp8
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7153,14 +7077,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [9,<>temp9,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [28188,28218]`newcount = count - o...`
                                                       Identifier: newcount
@@ -7215,7 +7131,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp10
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7238,14 +7154,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [11,<>temp11,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   IfNode SourceSection: [28342,28426]`if elem not in self ...`
                                                     YesNodeGen SourceSection: None
                                                       AndNode SourceSection: [28345,28375]`elem not in self and...`
@@ -7305,6 +7213,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [7,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [28445,29119]`def __or__(self, oth...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -7388,7 +7297,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp9
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7411,14 +7320,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [10,<>temp10,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [28802,28827]`other_count = other[...`
                                                       Identifier: other_count
@@ -7488,7 +7389,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp11
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7511,14 +7412,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [12,<>temp12,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   IfNode SourceSection: [29020,29100]`if elem not in self ...`
                                                     YesNodeGen SourceSection: None
                                                       AndNode SourceSection: [29023,29053]`elem not in self and...`
@@ -7574,6 +7467,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [8,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [29119,29643]`def __and__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -7657,7 +7551,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp9
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7680,14 +7574,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [10,<>temp10,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [29452,29477]`other_count = other[...`
                                                       Identifier: other_count
@@ -7763,6 +7649,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [8,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [29643,29900]`def __pos__(self):↵ ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -7814,7 +7701,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp5
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7837,14 +7724,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [6,<>temp6,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   IfNode SourceSection: [29822,29881]`if count > 0:↵      ...`
                                                     YesNodeGen SourceSection: None
                                                       BinaryComparisonNodeGen SourceSection: [29825,29834]`count > 0`
@@ -7887,6 +7766,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [7,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [29900,30219]`def __neg__(self):↵ ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -7938,7 +7818,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp5
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7961,14 +7841,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [6,<>temp6,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   IfNode SourceSection: [30137,30200]`if count < 0:↵      ...`
                                                     YesNodeGen SourceSection: None
                                                       BinaryComparisonNodeGen SourceSection: [30140,30149]`count < 0`
@@ -8015,6 +7887,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [7,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [30219,30486]`def _keep_positive(s...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -8060,7 +7933,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 CallDispatchNodeGen SourceSection: None
                                               GeneratorExpressionNode SourceSection: [30351,30399]`for elem, count in s...`
                                                 Name: _keep_positive.<locals>.<genexp>:initCollectionsPart1:818
-                                                FrameDescriptor: 5 slots [elem, count, <return_val>, <>temp3, <>temp4]
+                                                FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
                                                 Enclosing
                                                   FrameDescriptor: 5 slots [self, nonpositive, elem, __class__, <return_val>]
                                                 Active Flags: 4
@@ -8073,7 +7946,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   CelVars: None
                                                   FreeVars: None
                                                   NeedsCellFrame: False
-                                                  FrameDescriptor: 5 slots [elem, count, <return_val>, <>temp3, <>temp4]
+                                                  FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
                                                   ExecutionSlots:
                                                     FreeVarsSlots: None
                                                     CellVarsSlots: None
@@ -8095,59 +7968,48 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           ExpressionStatementNode SourceSection: [30346,30350]`elem`
                                                             YieldNode SourceSection: [30346,30350]`elem`
                                                               flagSlot: 0
-                                                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                                Identifier: <return_val>
-                                                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                                  Frame: [2,<return_val>,Illegal]
-                                                                ReadGeneratorFrameVariableNode SourceSection: [30346,30350]`elem`
-                                                                  Frame: [0,elem,Illegal]
-                                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                              ReadGeneratorFrameVariableNode SourceSection: [30346,30350]`elem`
+                                                                Frame: [0,elem,Illegal]
+                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                               GeneratorAccessNode SourceSection: None
                                                           BlockNode SourceSection: None
-                                                        DestructuringAssignmentNode SourceSection: None
+                                                        DestructuringAssignmentNodeGen SourceSection: None
+                                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                                            Identifier: <>temp2
+                                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                                              Frame: [2,<>temp2,Illegal]
                                                           WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                             Identifier: <>temp3
                                                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                               Frame: [3,<>temp3,Illegal]
                                                           WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                            Identifier: <>temp4
-                                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                              Frame: [4,<>temp4,Illegal]
-                                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                             Identifier: elem
                                                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                               Frame: [0,elem,Illegal]
                                                             ReadGeneratorFrameVariableNode SourceSection: None
-                                                              Frame: [3,<>temp3,Illegal]
+                                                              Frame: [2,<>temp2,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                           WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                             Identifier: count
                                                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                               Frame: [1,count,Illegal]
                                                             ReadGeneratorFrameVariableNode SourceSection: None
-                                                              Frame: [4,<>temp4,Illegal]
+                                                              Frame: [3,<>temp3,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                          GetItemNodeGen SourceSection: None
-                                                          GetItemNodeGen SourceSection: None
-                                                          LookupInheritedAttributeNode SourceSection: None
-                                                            LookupAttributeInMRONodeGen SourceSection: None
-                                                              IsSameTypeNodeGen SourceSection: None
-                                                            GetLazyClassCachedNodeGen SourceSection: None
-                                                          ConstructTupleNodeGen SourceSection: None
-                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                         ArgumentExpressionNode SourceSection: None
                                                           ReadIndexedArgumentNodeGen SourceSection: None
                                                             Index: 0
-                                                        GetNextCachedNode SourceSection: None
+                                                        GetNextNode SourceSection: None
                                                           LookupAndCallUnaryNodeGen SourceSection: None
                                                             Op: __next__
                                                         GeneratorAccessNode SourceSection: None
                                                       ReadGeneratorFrameVariableNode SourceSection: None
-                                                        Frame: [2,<return_val>,Illegal]
+                                                        Frame: [4,<return_val>,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       PRaiseNodeGen SourceSection: None
+                                                  CalleeContext SourceSection: None
                                                 GetIteratorExpressionNodeGen SourceSection: [30370,30382]`self.items()`
                                                   GetIteratorNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [30370,30382]`self.items()`
@@ -8195,6 +8057,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [30486,30838]`def __iadd__(self, o...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -8243,7 +8106,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp5
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8266,14 +8129,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [6,<>temp6,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   SetItemNodeGen SourceSection: [30776,30795]`self[elem] += count`
                                                     ReadLocalVariableNode SourceSection: None
                                                       Frame: [0,self,Illegal]
@@ -8319,6 +8174,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [7,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [30838,31190]`def __isub__(self, o...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -8367,7 +8223,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp5
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8390,14 +8246,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [6,<>temp6,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   SetItemNodeGen SourceSection: [31128,31147]`self[elem] -= count`
                                                     ReadLocalVariableNode SourceSection: None
                                                       Frame: [0,self,Illegal]
@@ -8443,6 +8291,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [7,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [31190,31618]`def __ior__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -8491,7 +8340,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp6
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8514,14 +8363,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [7,<>temp7,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [31480,31498]`count = self[elem]`
                                                       Identifier: count
@@ -8583,6 +8424,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [8,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [31618,32029]`def __iand__(self, o...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -8631,7 +8473,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp6
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8654,14 +8496,6 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [7,<>temp7,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [31888,31913]`other_count = other[...`
                                                       Identifier: other_count
@@ -8723,7 +8557,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [8,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
+                      CalleeContext SourceSection: None
                   StringLiteralNode SourceSection: None
                   ReadNameNodeGen SourceSection: [18094,18098]`dict`
                     Identifier: dict
@@ -8736,3 +8572,4 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               ReadLocalVariableNode SourceSection: None
                 Frame: [5,<>temp5,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
+  CalleeContext SourceSection: None

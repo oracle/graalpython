@@ -12,3 +12,4 @@ ModuleRootNode Name: <module 'expression02'> SourceSection: [0,6]`foo(1)`
       IntegerLiteralNode SourceSection: [4,5]`1`
       ReadNameNodeGen SourceSection: None
         Identifier: foo
+  CalleeContext SourceSection: None

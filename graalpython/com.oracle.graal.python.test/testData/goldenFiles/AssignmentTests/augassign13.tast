@@ -45,3 +45,5 @@ ModuleRootNode Name: <module 'augassign13'> SourceSection: [0,17]`def fn (): x +
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

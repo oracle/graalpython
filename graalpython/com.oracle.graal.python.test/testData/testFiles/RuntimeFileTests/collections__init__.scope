@@ -670,7 +670,7 @@ Scope: []
             FreeVars: [__class__]
             Scope: generator30346
                 Kind: Generator
-                FrameDescriptor: [elem, count, <>temp3, <>temp4, <return_val>]
+                FrameDescriptor: [elem, count, <>temp2, <>temp3, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
         Scope: __neg__

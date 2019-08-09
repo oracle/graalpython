@@ -42,20 +42,12 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                       ExpressionStatementNode SourceSection: [26,34]`yield 12`
                         YieldNode SourceSection: [26,34]`yield 12`
                           flagSlot: 0
-                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [1,<return_val>,Illegal]
-                            IntegerLiteralNode SourceSection: [32,34]`12`
+                          IntegerLiteralNode SourceSection: [32,34]`12`
                           GeneratorAccessNode SourceSection: None
                       ExpressionStatementNode SourceSection: [39,47]`yield 13`
                         YieldNode SourceSection: [39,47]`yield 13`
                           flagSlot: 1
-                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [1,<return_val>,Illegal]
-                            IntegerLiteralNode SourceSection: [45,47]`13`
+                          IntegerLiteralNode SourceSection: [45,47]`13`
                           GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                     ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
@@ -63,12 +55,12 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                       ReadVariableFromFrameNodeGen SourceSection: None
                     LookupInheritedAttributeNode SourceSection: None
                       LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeNodeGen SourceSection: None
-                      GetLazyClassCachedNodeGen SourceSection: None
+                        IsSameTypeSlowNodeGen SourceSection: None
+                      GetLazyClassNodeGen SourceSection: None
                     LookupInheritedAttributeNode SourceSection: None
                       LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeNodeGen SourceSection: None
-                      GetLazyClassCachedNodeGen SourceSection: None
+                        IsSameTypeSlowNodeGen SourceSection: None
+                      GetLazyClassNodeGen SourceSection: None
                     CachedCallNodeGen SourceSection: None
                       CreateArgumentsNodeGen SourceSection: None
                       CallDispatchNodeGen SourceSection: None
@@ -77,6 +69,7 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                       CallDispatchNodeGen SourceSection: None
                     YesNodeGen SourceSection: None
                     CachedNodeGen SourceSection: None
+                    SaveExceptionStateNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
@@ -90,3 +83,5 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

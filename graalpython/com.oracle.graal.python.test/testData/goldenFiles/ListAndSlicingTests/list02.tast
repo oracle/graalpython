@@ -17,3 +17,4 @@ ModuleRootNode Name: <module 'list02'> SourceSection: [0,16]`list = [1,2,3,4]`
             IntegerLiteralNode SourceSection: [10,11]`2`
             IntegerLiteralNode SourceSection: [12,13]`3`
             IntegerLiteralNode SourceSection: [14,15]`4`
+  CalleeContext SourceSection: None

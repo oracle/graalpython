@@ -16,3 +16,4 @@ ModuleRootNode Name: <module 'if05'> SourceSection: [0,14]`if not i: pass`
           ExpressionStatementNode SourceSection: [10,14]`pass`
             EmptyNode SourceSection: [10,14]`pass`
           BlockNode SourceSection: None
+  CalleeContext SourceSection: None

@@ -42,11 +42,7 @@ ModuleRootNode Name: <module 'yeild04'> SourceSection: [0,20]`def f(): x = yield
                       Frame: [0,x,Illegal]
                     YieldNode SourceSection: [13,20]`yield 1`
                       flagSlot: 0
-                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [1,<return_val>,Illegal]
-                        IntegerLiteralNode SourceSection: [19,20]`1`
+                      IntegerLiteralNode SourceSection: [19,20]`1`
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
@@ -54,3 +50,5 @@ ModuleRootNode Name: <module 'yeild04'> SourceSection: [0,20]`def f(): x = yield
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

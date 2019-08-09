@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                   CallDispatchNodeGen SourceSection: None
                 GeneratorExpressionNode SourceSection: [71,97]`for (k,v) in dict1.i...`
                   Name: [].<locals>.<genexp>:dict02:2
-                  FrameDescriptor: 5 slots [k, v, <return_val>, <>temp3, <>temp4]
+                  FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                   Enclosing
                     FrameDescriptor:  Empty
                   Active Flags: 2
@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                     CelVars: None
                     FreeVars: None
                     NeedsCellFrame: False
-                    FrameDescriptor: 5 slots [k, v, <return_val>, <>temp3, <>temp4]
+                    FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: None
@@ -43,67 +43,56 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                           ExpressionStatementNode SourceSection: None
                             YieldNode SourceSection: None
                               flagSlot: 0
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: <return_val>
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
-                                TupleLiteralNode SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: [65,66]`k`
-                                    Frame: [0,k,Illegal]
+                              TupleLiteralNode SourceSection: None
+                                PythonObjectFactoryNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNode SourceSection: [65,66]`k`
+                                  Frame: [0,k,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                BinaryArithmeticExpression SourceSection: [67,70]`v*2`
+                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                    Op: __mul__
+                                  ReadGeneratorFrameVariableNode SourceSection: [67,68]`v`
+                                    Frame: [1,v,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  BinaryArithmeticExpression SourceSection: [67,70]`v*2`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __mul__
-                                    ReadGeneratorFrameVariableNode SourceSection: [67,68]`v`
-                                      Frame: [1,v,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                    IntegerLiteralNode SourceSection: [69,70]`2`
+                                  IntegerLiteralNode SourceSection: [69,70]`2`
                               GeneratorAccessNode SourceSection: None
-                          DestructuringAssignmentNode SourceSection: None
+                          DestructuringAssignmentNodeGen SourceSection: None
+                            WriteGeneratorFrameVariableNodeGen SourceSection: None
+                              Identifier: <>temp2
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [2,<>temp2,Illegal]
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: <>temp3
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [3,<>temp3,Illegal]
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
-                              Identifier: <>temp4
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [4,<>temp4,Illegal]
-                            WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: k
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [0,k,Illegal]
                               ReadGeneratorFrameVariableNode SourceSection: None
-                                Frame: [3,<>temp3,Illegal]
+                                Frame: [2,<>temp2,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: v
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                 Frame: [1,v,Illegal]
                               ReadGeneratorFrameVariableNode SourceSection: None
-                                Frame: [4,<>temp4,Illegal]
+                                Frame: [3,<>temp3,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            GetItemNodeGen SourceSection: None
-                            GetItemNodeGen SourceSection: None
-                            LookupInheritedAttributeNode SourceSection: None
-                              LookupAttributeInMRONodeGen SourceSection: None
-                                IsSameTypeNodeGen SourceSection: None
-                              GetLazyClassCachedNodeGen SourceSection: None
-                            ConstructTupleNodeGen SourceSection: None
-                              PythonObjectFactoryNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
                               Index: 0
-                          GetNextCachedNode SourceSection: None
+                          GetNextNode SourceSection: None
                             LookupAndCallUnaryNodeGen SourceSection: None
                               Op: __next__
                           GeneratorAccessNode SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: None
-                          Frame: [2,<return_val>,Illegal]
+                          Frame: [4,<return_val>,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                         PRaiseNodeGen SourceSection: None
+                    CalleeContext SourceSection: None
                   GetIteratorExpressionNodeGen SourceSection: [84,97]`dict1.items()`
                     GetIteratorNodeGen SourceSection: None
                     PythonCallNodeGen SourceSection: [84,97]`dict1.items()`
@@ -132,3 +121,4 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
             IntegerLiteralNode SourceSection: [30,31]`3`
             IntegerLiteralNode SourceSection: [38,39]`4`
             IntegerLiteralNode SourceSection: [46,47]`5`
+  CalleeContext SourceSection: None

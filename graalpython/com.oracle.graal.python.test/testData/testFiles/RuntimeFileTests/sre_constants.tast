@@ -163,13 +163,13 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                         YesNodeGen SourceSection: None
                                           AndNode SourceSection: [1076,1115]`pattern is not None ...`
                                             NotNodeGen SourceSection: [1076,1095]`pattern is not None`
-                                              IsNodeGen SourceSection: None
+                                              IsExpressionNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [1076,1083]`pattern`
                                                   Frame: [2,pattern,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ObjectLiteralNode SourceSection: [1091,1095]`None`
                                             NotNodeGen SourceSection: [1100,1115]`pos is not None`
-                                              IsNodeGen SourceSection: None
+                                              IsExpressionNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [1100,1103]`pos`
                                                   Frame: [3,pos,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -351,7 +351,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [527,536]`Exception`
                 Identifier: Exception
@@ -502,6 +504,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [1799,1848]`def __str__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -552,6 +555,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [1848,1866]`__repr__ = __str__`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -567,6 +571,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                               Identifier: __str__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [1643,1646]`int`
                 Identifier: int
@@ -649,7 +654,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                           CallDispatchNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [2020,2051]`for i, name in enume...`
                           Name: _makecodes.<locals>.<genexp>:sre_constants:71
-                          FrameDescriptor: 5 slots [i, name, <return_val>, <>temp3, <>temp4]
+                          FrameDescriptor: 5 slots [i, name, <>temp2, <>temp3, <return_val>]
                           Enclosing
                             FrameDescriptor: 3 slots [names, items, <return_val>]
                           Active Flags: 2
@@ -662,7 +667,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [i, name, <return_val>, <>temp3, <>temp4]
+                            FrameDescriptor: 5 slots [i, name, <>temp2, <>temp3, <return_val>]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -673,68 +678,57 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                   ExpressionStatementNode SourceSection: [1993,2019]`_NamedIntConstant(i,...`
                                     YieldNode SourceSection: [1993,2019]`_NamedIntConstant(i,...`
                                       flagSlot: 0
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
-                                        PythonCallNodeGen SourceSection: [1993,2019]`_NamedIntConstant(i,...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [2011,2012]`i`
-                                            Frame: [0,i,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [2014,2018]`name`
-                                            Frame: [1,name,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                            Identifier: _NamedIntConstant
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      PythonCallNodeGen SourceSection: [1993,2019]`_NamedIntConstant(i,...`
+                                        CachedCallNodeGen SourceSection: None
+                                          CreateArgumentsNodeGen SourceSection: None
+                                          CallDispatchNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [2011,2012]`i`
+                                          Frame: [0,i,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [2014,2018]`name`
+                                          Frame: [1,name,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          Identifier: _NamedIntConstant
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
-                                  DestructuringAssignmentNode SourceSection: None
+                                  DestructuringAssignmentNodeGen SourceSection: None
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: <>temp2
+                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                        Frame: [2,<>temp2,Illegal]
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: <>temp3
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [3,<>temp3,Illegal]
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                      Identifier: <>temp4
-                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [4,<>temp4,Illegal]
-                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: i
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [0,i,Illegal]
                                       ReadGeneratorFrameVariableNode SourceSection: None
-                                        Frame: [3,<>temp3,Illegal]
+                                        Frame: [2,<>temp2,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: name
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [1,name,Illegal]
                                       ReadGeneratorFrameVariableNode SourceSection: None
-                                        Frame: [4,<>temp4,Illegal]
+                                        Frame: [3,<>temp3,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    GetItemNodeGen SourceSection: None
-                                    GetItemNodeGen SourceSection: None
-                                    LookupInheritedAttributeNode SourceSection: None
-                                      LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeNodeGen SourceSection: None
-                                      GetLazyClassCachedNodeGen SourceSection: None
-                                    ConstructTupleNodeGen SourceSection: None
-                                      PythonObjectFactoryNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                  GetNextCachedNode SourceSection: None
+                                  GetNextNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [4,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
+                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2035,2051]`enumerate(names)`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [2035,2051]`enumerate(names)`
@@ -786,23 +780,19 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                     ExpressionStatementNode SourceSection: None
                                       YieldNode SourceSection: None
                                         flagSlot: 0
-                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,<return_val>,Illegal]
-                                          TupleLiteralNode SourceSection: None
-                                            PythonObjectFactoryNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [2075,2084]`item.name`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: name
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                              ReadGeneratorFrameVariableNode SourceSection: [2075,2079]`item`
-                                                Frame: [0,item,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGeneratorFrameVariableNode SourceSection: [2086,2090]`item`
+                                        TupleLiteralNode SourceSection: None
+                                          PythonObjectFactoryNodeGen SourceSection: None
+                                          GetAttributeNodeGen SourceSection: [2075,2084]`item.name`
+                                            GetFixedAttributeNodeGen SourceSection: None
+                                              Key: name
+                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                Op: __getattribute__
+                                            ReadGeneratorFrameVariableNode SourceSection: [2075,2079]`item`
                                               Frame: [0,item,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadGeneratorFrameVariableNode SourceSection: [2086,2090]`item`
+                                            Frame: [0,item,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: item
@@ -811,7 +801,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                    GetNextCachedNode SourceSection: None
+                                    GetNextNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
@@ -821,6 +811,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [2103,2108]`items`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2103,2108]`items`
@@ -849,6 +840,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2206,2868]`OPCODES = _makecodes...`
         Identifier: OPCODES
         PythonCallNodeGen SourceSection: [2216,2868]`_makecodes("""↵    F...`
@@ -1183,6 +1175,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                           Frame: [5,<return_val>,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                    CalleeContext SourceSection: None
               WithNode SourceSection: [5758,7163]`with open("sre_const...`
                 BlockNode SourceSection: None
                   ExpressionStatementNode SourceSection: [5806,6190]`f.write("""\↵/*↵ * S...`
@@ -1424,12 +1417,12 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                     Identifier: open
                 LookupInheritedAttributeNode SourceSection: None
                   LookupAttributeInMRONodeGen SourceSection: None
-                    IsSameTypeNodeGen SourceSection: None
-                  GetLazyClassCachedNodeGen SourceSection: None
+                    IsSameTypeSlowNodeGen SourceSection: None
+                  GetLazyClassNodeGen SourceSection: None
                 LookupInheritedAttributeNode SourceSection: None
                   LookupAttributeInMRONodeGen SourceSection: None
-                    IsSameTypeNodeGen SourceSection: None
-                  GetLazyClassCachedNodeGen SourceSection: None
+                    IsSameTypeSlowNodeGen SourceSection: None
+                  GetLazyClassNodeGen SourceSection: None
                 CachedCallNodeGen SourceSection: None
                   CreateArgumentsNodeGen SourceSection: None
                   CallDispatchNodeGen SourceSection: None
@@ -1438,6 +1431,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                   CallDispatchNodeGen SourceSection: None
                 YesNodeGen SourceSection: None
                 CachedNodeGen SourceSection: None
+                SaveExceptionStateNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [7163,7176]`print("done")`
                 PythonCallNodeGen SourceSection: [7163,7176]`print("done")`
                   CachedCallNodeGen SourceSection: None
@@ -1447,3 +1441,4 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                   ReadNameNodeGen SourceSection: None
                     Identifier: print
             BlockNode SourceSection: None
+  CalleeContext SourceSection: None

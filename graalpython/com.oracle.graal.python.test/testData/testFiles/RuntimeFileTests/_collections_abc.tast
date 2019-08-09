@@ -413,11 +413,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                           Frame: [0,<return_val>,Illegal]
                         YieldNode SourceSection: [2041,2046]`yield`
                           flagSlot: 1
-                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [0,<return_val>,Illegal]
-                            EmptyNode SourceSection: None
+                          EmptyNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                     ReadGeneratorFrameVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
@@ -425,6 +421,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                     BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                     PRaiseNodeGen SourceSection: None
+                CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: type
       WriteNameNodeGen SourceSection: [2074,2092]`def _coro(): pass↵`
@@ -456,6 +453,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2092,2107]`_coro = _coro()`
         Identifier: _coro
         PythonCallNodeGen SourceSection: [2100,2107]`_coro()`
@@ -506,11 +504,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                 ExpressionStatementNode SourceSection: [2249,2254]`yield`
                   YieldNode SourceSection: [2249,2254]`yield`
                     flagSlot: 0
-                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <return_val>
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [0,<return_val>,Illegal]
-                      EmptyNode SourceSection: None
+                    EmptyNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 ReadGeneratorFrameVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
@@ -518,6 +512,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                 BlockNode SourceSection: None
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2255,2266]`_ag = _ag()`
         Identifier: _ag
         PythonCallNodeGen SourceSection: [2261,2266]`_ag()`
@@ -628,7 +623,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [2486,2575]`if B.__dict__[method...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [2489,2515]`B.__dict__[method] i...`
+                                            IsExpressionNodeGen SourceSection: [2489,2515]`B.__dict__[method] i...`
                                               GetItemNodeGen SourceSection: [2489,2507]`B.__dict__[method]`
                                                 GetAttributeNodeGen SourceSection: None
                                                   GetFixedAttributeNodeGen SourceSection: None
@@ -681,6 +676,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2646,2924]`class Hashable(metac...`
         Identifier: Hashable
         ExpressionWithSideEffects SourceSection: None
@@ -776,6 +772,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [2706,2721]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -834,7 +831,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [2823,2900]`if cls is Hashable:↵...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [2826,2841]`cls is Hashable`
+                                            IsExpressionNodeGen SourceSection: [2826,2841]`cls is Hashable`
                                               ReadLocalVariableNode SourceSection: [2826,2829]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -869,6 +866,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [2768,2780]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -879,6 +877,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               KeywordArgumentsNodeGen SourceSection: None
                 KeywordLiteralNode SourceSection: None
@@ -982,11 +981,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     ExpressionStatementNode SourceSection: [3034,3039]`yield`
                                       YieldNode SourceSection: [3034,3039]`yield`
                                         flagSlot: 0
-                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
-                                          EmptyNode SourceSection: None
+                                        EmptyNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
@@ -1000,6 +995,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           Index: 0
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [2985,3000]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1058,7 +1054,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [3100,3179]`if cls is Awaitable:...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [3103,3119]`cls is Awaitable`
+                                            IsExpressionNodeGen SourceSection: [3103,3119]`cls is Awaitable`
                                               ReadLocalVariableNode SourceSection: [3103,3106]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1093,6 +1089,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [3045,3057]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1103,6 +1100,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               KeywordArgumentsNodeGen SourceSection: None
                 KeywordLiteralNode SourceSection: None
@@ -1222,6 +1220,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [3256,3271]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1296,7 +1295,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [3633,3734]`if val is None:↵    ...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [3636,3647]`val is None`
+                                            IsExpressionNodeGen SourceSection: [3636,3647]`val is None`
                                               ReadLocalVariableNode SourceSection: [3636,3639]`val`
                                                 Frame: [2,val,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1304,7 +1303,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           BlockNode SourceSection: None
                                             IfNode SourceSection: [3661,3714]`if tb is None:↵     ...`
                                               YesNodeGen SourceSection: None
-                                                IsNodeGen SourceSection: [3664,3674]`tb is None`
+                                                IsExpressionNodeGen SourceSection: [3664,3674]`tb is None`
                                                   ReadLocalVariableNode SourceSection: [3664,3666]`tb`
                                                     Frame: [3,tb,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -1329,7 +1328,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [3734,3802]`if tb is not None:↵ ...`
                                           NotNodeGen SourceSection: [3737,3751]`tb is not None`
-                                            IsNodeGen SourceSection: None
+                                            IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [3737,3739]`tb`
                                                 Frame: [3,tb,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1358,6 +1357,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [5,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [3446,3461]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1436,10 +1436,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [4095,4279]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1489,7 +1490,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [4150,4255]`if cls is Coroutine:...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [4153,4169]`cls is Coroutine`
+                                            IsExpressionNodeGen SourceSection: [4153,4169]`cls is Coroutine`
                                               ReadLocalVariableNode SourceSection: [4153,4156]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1527,6 +1528,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [4095,4107]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1537,6 +1539,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [3219,3228]`Awaitable`
                 Identifier: Awaitable
@@ -1660,6 +1663,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [4376,4391]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1718,7 +1722,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [4508,4591]`if cls is AsyncItera...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [4511,4531]`cls is AsyncIterable...`
+                                            IsExpressionNodeGen SourceSection: [4511,4531]`cls is AsyncIterable...`
                                               ReadLocalVariableNode SourceSection: [4511,4514]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1753,6 +1757,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [4453,4465]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1763,6 +1768,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               KeywordArgumentsNodeGen SourceSection: None
                 KeywordLiteralNode SourceSection: None
@@ -1874,6 +1880,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [4676,4691]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1928,6 +1935,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [4886,5061]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1977,7 +1985,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [4941,5037]`if cls is AsyncItera...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [4944,4964]`cls is AsyncIterator...`
+                                            IsExpressionNodeGen SourceSection: [4944,4964]`cls is AsyncIterator...`
                                               ReadLocalVariableNode SourceSection: [4944,4947]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2013,6 +2021,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [4886,4898]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2023,6 +2032,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [4635,4648]`AsyncIterable`
                 Identifier: AsyncIterable
@@ -2134,6 +2144,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5320,5540]`@abstractmethod↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2188,6 +2199,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [5320,5335]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2262,7 +2274,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [5752,5853]`if val is None:↵    ...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [5755,5766]`val is None`
+                                            IsExpressionNodeGen SourceSection: [5755,5766]`val is None`
                                               ReadLocalVariableNode SourceSection: [5755,5758]`val`
                                                 Frame: [2,val,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2270,7 +2282,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           BlockNode SourceSection: None
                                             IfNode SourceSection: [5780,5833]`if tb is None:↵     ...`
                                               YesNodeGen SourceSection: None
-                                                IsNodeGen SourceSection: [5783,5793]`tb is None`
+                                                IsExpressionNodeGen SourceSection: [5783,5793]`tb is None`
                                                   ReadLocalVariableNode SourceSection: [5783,5785]`tb`
                                                     Frame: [3,tb,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -2295,7 +2307,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [5853,5921]`if tb is not None:↵ ...`
                                           NotNodeGen SourceSection: [5856,5870]`tb is not None`
-                                            IsNodeGen SourceSection: None
+                                            IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [5856,5858]`tb`
                                                 Frame: [3,tb,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2324,6 +2336,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [5,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [5540,5555]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2402,10 +2415,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6246,6485]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2455,7 +2469,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [6301,6461]`if cls is AsyncGener...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [6304,6325]`cls is AsyncGenerato...`
+                                            IsExpressionNodeGen SourceSection: [6304,6325]`cls is AsyncGenerato...`
                                               ReadLocalVariableNode SourceSection: [6304,6307]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2494,6 +2508,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [6246,6258]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2504,6 +2519,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [5082,5095]`AsyncIterator`
                 Identifier: AsyncIterator
@@ -2614,11 +2630,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         ExpressionStatementNode SourceSection: [6661,6671]`yield None`
                                           YieldNode SourceSection: [6661,6671]`yield None`
                                             flagSlot: 0
-                                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                              Identifier: <return_val>
-                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                Frame: [2,<return_val>,Illegal]
-                                              ObjectLiteralNode SourceSection: [6667,6671]`None`
+                                            ObjectLiteralNode SourceSection: [6667,6671]`None`
                                             GeneratorAccessNode SourceSection: None
                                         YesNodeGen SourceSection: None
                                           BooleanLiteralNode SourceSection: [6642,6647]`False`
@@ -2636,6 +2648,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           Index: 0
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [6588,6603]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2694,7 +2707,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [6732,6809]`if cls is Iterable:↵...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [6735,6750]`cls is Iterable`
+                                            IsExpressionNodeGen SourceSection: [6735,6750]`cls is Iterable`
                                               ReadLocalVariableNode SourceSection: [6735,6738]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2729,6 +2742,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [6677,6689]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2739,6 +2753,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               KeywordArgumentsNodeGen SourceSection: None
                 KeywordLiteralNode SourceSection: None
@@ -2850,6 +2865,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [6884,6899]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2904,6 +2920,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7088,7255]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2953,7 +2970,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [7143,7232]`if cls is Iterator:↵...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [7146,7161]`cls is Iterator`
+                                            IsExpressionNodeGen SourceSection: [7146,7161]`cls is Iterator`
                                               ReadLocalVariableNode SourceSection: [7146,7149]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2989,6 +3006,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [7088,7100]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2999,6 +3017,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [6848,6856]`Iterable`
                 Identifier: Iterable
@@ -3229,11 +3248,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         ExpressionStatementNode SourceSection: [7883,7893]`yield None`
                                           YieldNode SourceSection: [7883,7893]`yield None`
                                             flagSlot: 0
-                                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                              Identifier: <return_val>
-                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                Frame: [2,<return_val>,Illegal]
-                                              ObjectLiteralNode SourceSection: [7889,7893]`None`
+                                            ObjectLiteralNode SourceSection: [7889,7893]`None`
                                             GeneratorAccessNode SourceSection: None
                                         YesNodeGen SourceSection: None
                                           BooleanLiteralNode SourceSection: [7864,7869]`False`
@@ -3251,6 +3266,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           Index: 0
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [7806,7821]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3309,7 +3325,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [7954,8049]`if cls is Reversible...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [7957,7974]`cls is Reversible`
+                                            IsExpressionNodeGen SourceSection: [7957,7974]`cls is Reversible`
                                               ReadLocalVariableNode SourceSection: [7957,7960]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3345,6 +3361,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [7899,7911]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3355,6 +3372,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [7770,7778]`Iterable`
                 Identifier: Iterable
@@ -3466,6 +3484,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8290,8480]`@abstractmethod↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3520,6 +3539,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [8290,8305]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3594,7 +3614,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [8667,8768]`if val is None:↵    ...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [8670,8681]`val is None`
+                                            IsExpressionNodeGen SourceSection: [8670,8681]`val is None`
                                               ReadLocalVariableNode SourceSection: [8670,8673]`val`
                                                 Frame: [2,val,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3602,7 +3622,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           BlockNode SourceSection: None
                                             IfNode SourceSection: [8695,8748]`if tb is None:↵     ...`
                                               YesNodeGen SourceSection: None
-                                                IsNodeGen SourceSection: [8698,8708]`tb is None`
+                                                IsExpressionNodeGen SourceSection: [8698,8708]`tb is None`
                                                   ReadLocalVariableNode SourceSection: [8698,8700]`tb`
                                                     Frame: [3,tb,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3627,7 +3647,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [8768,8836]`if tb is not None:↵ ...`
                                           NotNodeGen SourceSection: [8771,8785]`tb is not None`
-                                            IsNodeGen SourceSection: None
+                                            IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [8771,8773]`tb`
                                                 Frame: [3,tb,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3656,6 +3676,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [5,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [8480,8495]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3734,10 +3755,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [9129,9357]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3787,7 +3809,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [9184,9334]`if cls is Generator:...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [9187,9203]`cls is Generator`
+                                            IsExpressionNodeGen SourceSection: [9187,9203]`cls is Generator`
                                               ReadLocalVariableNode SourceSection: [9187,9190]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3826,6 +3848,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [9129,9141]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3836,6 +3859,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [8089,8097]`Iterator`
                 Identifier: Iterator
@@ -3953,6 +3977,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [9446,9461]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -4011,7 +4036,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [9562,9635]`if cls is Sized:↵   ...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [9565,9577]`cls is Sized`
+                                            IsExpressionNodeGen SourceSection: [9565,9577]`cls is Sized`
                                               ReadLocalVariableNode SourceSection: [9565,9568]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4046,6 +4071,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [9507,9519]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -4056,6 +4082,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               KeywordArgumentsNodeGen SourceSection: None
                 KeywordLiteralNode SourceSection: None
@@ -4176,6 +4203,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [9720,9735]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -4234,7 +4262,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [9848,9930]`if cls is Container:...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [9851,9867]`cls is Container`
+                                            IsExpressionNodeGen SourceSection: [9851,9867]`cls is Container`
                                               ReadLocalVariableNode SourceSection: [9851,9854]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4269,6 +4297,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [9793,9805]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -4279,6 +4308,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               KeywordArgumentsNodeGen SourceSection: None
                 KeywordLiteralNode SourceSection: None
@@ -4393,7 +4423,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [10079,10186]`if cls is Collection...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [10082,10099]`cls is Collection`
+                                            IsExpressionNodeGen SourceSection: [10082,10099]`cls is Collection`
                                               ReadLocalVariableNode SourceSection: [10082,10085]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4430,6 +4460,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [10024,10036]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -4440,6 +4471,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [9970,9975]`Sized`
                 Identifier: Sized
@@ -4567,6 +4599,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [10269,10284]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -4625,7 +4658,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [10405,10482]`if cls is Callable:↵...`
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [10408,10423]`cls is Callable`
+                                            IsExpressionNodeGen SourceSection: [10408,10423]`cls is Callable`
                                               ReadLocalVariableNode SourceSection: [10408,10411]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4660,6 +4693,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [10350,10362]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -4670,6 +4704,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               KeywordArgumentsNodeGen SourceSection: None
                 KeywordLiteralNode SourceSection: None
@@ -4883,6 +4918,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [11199,11363]`def __lt__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4994,6 +5030,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [11363,11527]`def __gt__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5105,6 +5142,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [11527,11799]`def __ge__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5247,6 +5285,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [11799,11964]`def __eq__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5358,6 +5397,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [11964,12241]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5422,6 +5462,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [11964,11976]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -5549,13 +5590,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                         ExpressionStatementNode SourceSection: [12380,12385]`value`
                                                           YieldNode SourceSection: [12380,12385]`value`
                                                             flagSlot: 0
-                                                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                              Identifier: <return_val>
-                                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                                Frame: [2,<return_val>,Illegal]
-                                                              ReadGeneratorFrameVariableNode SourceSection: [12380,12385]`value`
-                                                                Frame: [0,value,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [12380,12385]`value`
+                                                              Frame: [0,value,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             GeneratorAccessNode SourceSection: None
                                                         BlockNode SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -5565,7 +5602,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
-                                                      GetNextCachedNode SourceSection: None
+                                                      GetNextNode SourceSection: None
                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                           Op: __next__
                                                       GeneratorAccessNode SourceSection: None
@@ -5575,6 +5612,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
+                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [12399,12404]`other`
                                                 GetIteratorNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [12399,12404]`other`
@@ -5590,6 +5628,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [12428,12446]`__rand__ = __and__`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5690,6 +5729,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [12653,12857]`def __or__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5788,13 +5828,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                     ExpressionStatementNode SourceSection: [12773,12774]`e`
                                                       YieldNode SourceSection: [12773,12774]`e`
                                                         flagSlot: 0
-                                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                          Identifier: <return_val>
-                                                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                            Frame: [2,<return_val>,Illegal]
-                                                          ReadGeneratorFrameVariableNode SourceSection: [12773,12774]`e`
-                                                            Frame: [0,e,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadGeneratorFrameVariableNode SourceSection: [12773,12774]`e`
+                                                          Frame: [0,e,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
                                                         GeneratorAccessNode SourceSection: None
                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                       Identifier: e
@@ -5805,7 +5841,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                       ReadGeneratorFrameVariableNode SourceSection: [12807,12808]`s`
                                                         Frame: [1,s,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    GetNextCachedNode SourceSection: None
+                                                    GetNextNode SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -5816,7 +5852,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
-                                                  GetNextCachedNode SourceSection: None
+                                                  GetNextNode SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
@@ -5826,6 +5862,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                 BlockNode SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
+                                            CalleeContext SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [12784,12797]`(self, other)`
                                             GetIteratorNodeGen SourceSection: None
                                             TupleLiteralNode SourceSection: [12784,12797]`(self, other)`
@@ -5856,6 +5893,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [12857,12873]`__ror__ = __or__`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6028,13 +6066,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                         ExpressionStatementNode SourceSection: [13112,13117]`value`
                                                           YieldNode SourceSection: [13112,13117]`value`
                                                             flagSlot: 0
-                                                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                              Identifier: <return_val>
-                                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                                Frame: [2,<return_val>,Illegal]
-                                                              ReadGeneratorFrameVariableNode SourceSection: [13112,13117]`value`
-                                                                Frame: [0,value,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [13112,13117]`value`
+                                                              Frame: [0,value,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             GeneratorAccessNode SourceSection: None
                                                         BlockNode SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -6044,7 +6078,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
-                                                      GetNextCachedNode SourceSection: None
+                                                      GetNextNode SourceSection: None
                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                           Op: __next__
                                                       GeneratorAccessNode SourceSection: None
@@ -6054,6 +6088,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
+                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [13131,13135]`self`
                                                 GetIteratorNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [13131,13135]`self`
@@ -6067,6 +6102,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [13199,13520]`def __rsub__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6220,13 +6256,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                         ExpressionStatementNode SourceSection: [13433,13438]`value`
                                                           YieldNode SourceSection: [13433,13438]`value`
                                                             flagSlot: 0
-                                                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                              Identifier: <return_val>
-                                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                                Frame: [2,<return_val>,Illegal]
-                                                              ReadGeneratorFrameVariableNode SourceSection: [13433,13438]`value`
-                                                                Frame: [0,value,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [13433,13438]`value`
+                                                              Frame: [0,value,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             GeneratorAccessNode SourceSection: None
                                                         BlockNode SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -6236,7 +6268,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
-                                                      GetNextCachedNode SourceSection: None
+                                                      GetNextNode SourceSection: None
                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                           Op: __next__
                                                       GeneratorAccessNode SourceSection: None
@@ -6246,6 +6278,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
+                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [13452,13457]`other`
                                                 GetIteratorNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [13452,13457]`other`
@@ -6261,6 +6294,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [13520,13770]`def __xor__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6389,6 +6423,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [13770,13788]`__rxor__ = __xor__`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6657,7 +6692,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [10531,10541]`Collection`
                 Identifier: Collection
@@ -6788,6 +6825,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [15275,15290]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -6851,6 +6889,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [15386,15401]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -6943,6 +6982,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [15732,15999]`def pop(self):↵     ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7018,7 +7058,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               Identifier: StopIteration
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
-                                        BlockNode SourceSection: None
+                                          SaveExceptionStateNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [15953,15972]`self.discard(value)`
                                         PythonCallNodeGen SourceSection: [15953,15972]`self.discard(value)`
                                           CachedCallNodeGen SourceSection: None
@@ -7042,6 +7082,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [15999,16196]`def clear(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7101,10 +7142,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [16196,16297]`def __ior__(self, it...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7186,6 +7228,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [16297,16412]`def __iand__(self, i...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7273,6 +7316,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [16412,16769]`def __ixor__(self, i...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7318,7 +7362,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [16444,16752]`if it is self:↵     ...`
                                         YesNodeGen SourceSection: None
-                                          IsNodeGen SourceSection: [16447,16457]`it is self`
+                                          IsExpressionNodeGen SourceSection: [16447,16457]`it is self`
                                             ReadLocalVariableNode SourceSection: [16447,16449]`it`
                                               Frame: [1,it,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -7428,6 +7472,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [16769,16941]`def __isub__(self, i...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7473,7 +7518,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [16801,16928]`if it is self:↵     ...`
                                         YesNodeGen SourceSection: None
-                                          IsNodeGen SourceSection: [16804,16814]`it is self`
+                                          IsExpressionNodeGen SourceSection: [16804,16814]`it is self`
                                             ReadLocalVariableNode SourceSection: [16804,16806]`it`
                                               Frame: [1,it,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -7527,7 +7572,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [14842,14845]`Set`
                 Identifier: Set
@@ -7654,6 +7701,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [17250,17265]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -7740,10 +7788,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [17530,17687]`def __contains__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7812,10 +7861,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             BooleanLiteralNode SourceSection: [17677,17681]`True`
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [17687,17807]`def keys(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7868,6 +7918,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [17807,17931]`def items(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7920,6 +7971,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [17931,18051]`def values(self):↵  ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7972,6 +8024,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [18051,18215]`def __eq__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8080,6 +8133,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [18215,18234]`__reversed__ = None`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8087,6 +8141,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                           StringLiteralNode SourceSection: None
                           ObjectLiteralNode SourceSection: [18230,18234]`None`
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [17001,17011]`Collection`
                 Identifier: Collection
@@ -8211,6 +8266,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [18395,18453]`def __len__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8268,6 +8324,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [18453,18544]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8319,7 +8376,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [18287,18292]`Sized`
                 Identifier: Sized
@@ -8444,6 +8503,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [18603,18615]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -8518,6 +8578,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [18748,18802]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8552,7 +8613,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   ExpressionStatementNode SourceSection: [18776,18800]`yield from self._map...`
                                     YieldFromNode SourceSection: [18776,18800]`yield from self._map...`
                                       GetIteratorNodeGen SourceSection: None
-                                      GetNextCachedNode SourceSection: None
+                                      GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -8564,10 +8625,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         ReadGeneratorFrameVariableNode SourceSection: [18787,18791]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -8580,7 +8637,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [18559,18570]`MappingView`
                 Identifier: MappingView
@@ -8717,6 +8776,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [18893,18905]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -8769,7 +8829,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 1
                                     BlockNode SourceSection: None
-                                      DestructuringAssignmentNode SourceSection: [19006,19023]`key, value = item`
+                                      DestructuringAssignmentNodeGen SourceSection: [19006,19023]`key, value = item`
                                         ReadLocalVariableNode SourceSection: [19019,19023]`item`
                                           Frame: [1,item,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -8795,14 +8855,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [7,<>temp7,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetItemNodeGen SourceSection: None
-                                        GetItemNodeGen SourceSection: None
-                                        LookupInheritedAttributeNode SourceSection: None
-                                          LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeNodeGen SourceSection: None
-                                          GetLazyClassCachedNodeGen SourceSection: None
-                                        ConstructTupleNodeGen SourceSection: None
-                                          PythonObjectFactoryNodeGen SourceSection: None
                                       TryFinallyNode SourceSection: [19032,19185]`try:↵            v =...`
                                         TryExceptNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [19049,19071]`v = self._mapping[ke...`
@@ -8837,7 +8889,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [8,<return_val>,Illegal]
                                               OrNode SourceSection: [19155,19179]`v is value or v == v...`
-                                                IsNodeGen SourceSection: [19155,19165]`v is value`
+                                                IsExpressionNodeGen SourceSection: [19155,19165]`v is value`
                                                   ReadLocalVariableNode SourceSection: [19155,19156]`v`
                                                     Frame: [4,v,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -8854,10 +8906,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                     Frame: [3,value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 YesNodeGen SourceSection: None
-                                        BlockNode SourceSection: None
+                                          SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [19185,19284]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8894,27 +8947,23 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       ExpressionStatementNode SourceSection: [19251,19282]`yield (key, self._ma...`
                                         YieldNode SourceSection: [19251,19282]`yield (key, self._ma...`
                                           flagSlot: 0
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,<return_val>,Illegal]
-                                            TupleLiteralNode SourceSection: [19257,19282]`(key, self._mapping[...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [19258,19261]`key`
+                                          TupleLiteralNode SourceSection: [19257,19282]`(key, self._mapping[...`
+                                            PythonObjectFactoryNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [19258,19261]`key`
+                                              Frame: [1,key,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            GetItemNodeGen SourceSection: [19263,19281]`self._mapping[key]`
+                                              GetAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
+                                                  Key: _mapping
+                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                    Op: __getattribute__
+                                                ReadGeneratorFrameVariableNode SourceSection: [19263,19267]`self`
+                                                  Frame: [0,self,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadGeneratorFrameVariableNode SourceSection: [19277,19280]`key`
                                                 Frame: [1,key,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetItemNodeGen SourceSection: [19263,19281]`self._mapping[key]`
-                                                GetAttributeNodeGen SourceSection: None
-                                                  GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: _mapping
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __getattribute__
-                                                  ReadGeneratorFrameVariableNode SourceSection: [19263,19267]`self`
-                                                    Frame: [0,self,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGeneratorFrameVariableNode SourceSection: [19277,19280]`key`
-                                                  Frame: [1,key,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: key
@@ -8930,7 +8979,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           ReadGeneratorFrameVariableNode SourceSection: [19224,19228]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetNextCachedNode SourceSection: None
+                                      GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -8947,7 +8996,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [18849,18860]`MappingView`
                 Identifier: MappingView
@@ -9092,7 +9143,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                 IfNode SourceSection: [19497,19562]`if v is value or v =...`
                                                   YesNodeGen SourceSection: None
                                                     OrNode SourceSection: [19500,19524]`v is value or v == v...`
-                                                      IsNodeGen SourceSection: [19500,19510]`v is value`
+                                                      IsExpressionNodeGen SourceSection: [19500,19510]`v is value`
                                                         ReadLocalVariableNode SourceSection: [19500,19501]`v`
                                                           Frame: [2,v,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -9136,6 +9187,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [19580,19672]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9172,22 +9224,18 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       ExpressionStatementNode SourceSection: [19646,19670]`yield self._mapping[...`
                                         YieldNode SourceSection: [19646,19670]`yield self._mapping[...`
                                           flagSlot: 0
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,<return_val>,Illegal]
-                                            GetItemNodeGen SourceSection: [19652,19670]`self._mapping[key]`
-                                              GetAttributeNodeGen SourceSection: None
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: _mapping
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                ReadGeneratorFrameVariableNode SourceSection: [19652,19656]`self`
-                                                  Frame: [0,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [19666,19669]`key`
-                                                Frame: [1,key,Illegal]
+                                          GetItemNodeGen SourceSection: [19652,19670]`self._mapping[key]`
+                                            GetAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
+                                                Key: _mapping
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __getattribute__
+                                              ReadGeneratorFrameVariableNode SourceSection: [19652,19656]`self`
+                                                Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [19666,19669]`key`
+                                              Frame: [1,key,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: key
@@ -9203,7 +9251,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           ReadGeneratorFrameVariableNode SourceSection: [19619,19623]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetNextCachedNode SourceSection: None
+                                      GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -9220,7 +9268,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [19334,19345]`MappingView`
                 Identifier: MappingView
@@ -9356,6 +9406,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [20011,20026]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -9419,6 +9470,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [20094,20109]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -9521,7 +9573,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           BlockNode SourceSection: None
                                             IfNode SourceSection: [20497,20560]`if default is self._...`
                                               YesNodeGen SourceSection: None
-                                                IsNodeGen SourceSection: [20500,20524]`default is self.__ma...`
+                                                IsExpressionNodeGen SourceSection: [20500,20524]`default is self.__ma...`
                                                   ReadLocalVariableNode SourceSection: [20500,20507]`default`
                                                     Frame: [2,default,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -9564,10 +9616,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               ReadLocalVariableNode SourceSection: [20634,20639]`value`
                                                 Frame: [3,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [20645,21004]`def popitem(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9636,7 +9689,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               Identifier: StopIteration
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
-                                        BlockNode SourceSection: None
+                                          SaveExceptionStateNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [20933,20950]`value = self[key]`
                                         Identifier: value
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -9671,6 +9724,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [21004,21191]`def clear(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9730,10 +9784,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [21191,22342]`def update(*args, **...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9793,7 +9848,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
                                         BlockNode SourceSection: None
-                                      DestructuringAssignmentNode SourceSection: [21720,21738]`self, *args = args`
+                                      DestructuringAssignmentNodeGen SourceSection: [21720,21738]`self, *args = args`
                                         ReadLocalVariableNode SourceSection: [21734,21738]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -9819,15 +9874,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [8,<>temp8,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetItemNodeGen SourceSection: None
-                                        GetItemNodeGen SourceSection: None
-                                        LenNodeGen SourceSection: None
-                                        LookupInheritedAttributeNode SourceSection: None
-                                          LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeNodeGen SourceSection: None
-                                          GetLazyClassCachedNodeGen SourceSection: None
-                                        ConstructTupleNodeGen SourceSection: None
-                                          PythonObjectFactoryNodeGen SourceSection: None
                                       IfNode SourceSection: [21747,21888]`if len(args) > 1:↵  ...`
                                         YesNodeGen SourceSection: None
                                           BinaryComparisonNodeGen SourceSection: [21750,21763]`len(args) > 1`
@@ -9979,7 +10025,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                   DefaultLoopNode SourceSection: None
                                                     ForRepeatingNode SourceSection: None
                                                       ForNextElementNodeGen SourceSection: None
-                                                        DestructuringAssignmentNode SourceSection: None
+                                                        DestructuringAssignmentNodeGen SourceSection: None
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: <>temp9
                                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -10002,14 +10048,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [10,<>temp10,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                          GetItemNodeGen SourceSection: None
-                                                          GetItemNodeGen SourceSection: None
-                                                          LookupInheritedAttributeNode SourceSection: None
-                                                            LookupAttributeInMRONodeGen SourceSection: None
-                                                              IsSameTypeNodeGen SourceSection: None
-                                                            GetLazyClassCachedNodeGen SourceSection: None
-                                                          ConstructTupleNodeGen SourceSection: None
-                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                       SetItemNodeGen SourceSection: [22249,22266]`self[key] = value`
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [2,self,Illegal]
@@ -10032,7 +10070,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           DefaultLoopNode SourceSection: None
                                             ForRepeatingNode SourceSection: None
                                               ForNextElementNodeGen SourceSection: None
-                                                DestructuringAssignmentNode SourceSection: None
+                                                DestructuringAssignmentNodeGen SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: <>temp11
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -10055,14 +10093,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                     ReadLocalVariableNode SourceSection: None
                                                       Frame: [12,<>temp12,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetItemNodeGen SourceSection: None
-                                                  GetItemNodeGen SourceSection: None
-                                                  LookupInheritedAttributeNode SourceSection: None
-                                                    LookupAttributeInMRONodeGen SourceSection: None
-                                                      IsSameTypeNodeGen SourceSection: None
-                                                    GetLazyClassCachedNodeGen SourceSection: None
-                                                  ConstructTupleNodeGen SourceSection: None
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                               SetItemNodeGen SourceSection: [22319,22336]`self[key] = value`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [2,self,Illegal]
@@ -10087,6 +10117,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [13,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [22342,22581]`def setdefault(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10167,7 +10198,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               Identifier: KeyError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
-                                        BlockNode SourceSection: None
+                                          SaveExceptionStateNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [22565,22579]`return default`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -10179,7 +10210,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [19728,19735]`Mapping`
                 Identifier: Mapping
@@ -10310,6 +10343,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [22848,22863]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -10375,13 +10409,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               ExpressionStatementNode SourceSection: [23043,23050]`yield v`
                                                 YieldNode SourceSection: [23043,23050]`yield v`
                                                   flagSlot: 0
-                                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                    Identifier: <return_val>
-                                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                      Frame: [4,<return_val>,Illegal]
-                                                    ReadGeneratorFrameVariableNode SourceSection: [23049,23050]`v`
-                                                      Frame: [2,v,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadGeneratorFrameVariableNode SourceSection: [23049,23050]`v`
+                                                    Frame: [2,v,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                               WriteGeneratorFrameVariableNodeGen SourceSection: [23067,23073]`i += 1`
                                                 Identifier: i
@@ -10403,9 +10433,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             Identifier: IndexError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                         GeneratorAccessNode SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
+                                        RestoreExceptionStateNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
+                                      SaveExceptionStateNodeGen SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
@@ -10419,6 +10452,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [23125,23274]`def __contains__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10474,7 +10508,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               IfNode SourceSection: [23191,23256]`if v is value or v =...`
                                                 YesNodeGen SourceSection: None
                                                   OrNode SourceSection: [23194,23218]`v is value or v == v...`
-                                                    IsNodeGen SourceSection: [23194,23204]`v is value`
+                                                    IsExpressionNodeGen SourceSection: [23194,23204]`v is value`
                                                       ReadLocalVariableNode SourceSection: [23194,23195]`v`
                                                         Frame: [2,v,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -10513,6 +10547,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [23274,23374]`def __reversed__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10549,17 +10584,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       ExpressionStatementNode SourceSection: [23355,23368]`yield self[i]`
                                         YieldNode SourceSection: [23355,23368]`yield self[i]`
                                           flagSlot: 0
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,<return_val>,Illegal]
-                                            GetItemNodeGen SourceSection: [23361,23368]`self[i]`
-                                              ReadGeneratorFrameVariableNode SourceSection: None
-                                                Frame: [0,self,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [23366,23367]`i`
-                                                Frame: [1,i,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                          GetItemNodeGen SourceSection: [23361,23368]`self[i]`
+                                            ReadGeneratorFrameVariableNode SourceSection: None
+                                              Frame: [0,self,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [23366,23367]`i`
+                                              Frame: [1,i,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: i
@@ -10591,7 +10622,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: reversed
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      GetNextCachedNode SourceSection: None
+                                      GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -10608,6 +10639,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [23374,24105]`def index(self, valu...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10671,7 +10703,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         YesNodeGen SourceSection: None
                                           AndNode SourceSection: [23674,23705]`start is not None an...`
                                             NotNodeGen SourceSection: [23674,23691]`start is not None`
-                                              IsNodeGen SourceSection: None
+                                              IsExpressionNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [23674,23679]`start`
                                                   Frame: [2,start,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -10717,7 +10749,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                         YesNodeGen SourceSection: None
                                           AndNode SourceSection: [23764,23793]`stop is not None and...`
                                             NotNodeGen SourceSection: [23764,23780]`stop is not None`
-                                              IsNodeGen SourceSection: None
+                                              IsExpressionNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [23764,23768]`stop`
                                                   Frame: [3,stop,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -10762,7 +10794,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             WhileRepeatingNode SourceSection: None
                                               YesNodeGen SourceSection: None
                                                 OrNode SourceSection: [23858,23882]`stop is None or i < ...`
-                                                  IsNodeGen SourceSection: [23858,23870]`stop is None`
+                                                  IsExpressionNodeGen SourceSection: [23858,23870]`stop is None`
                                                     ReadLocalVariableNode SourceSection: [23858,23862]`stop`
                                                       Frame: [3,stop,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -10795,7 +10827,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                       IfNode SourceSection: [23945,24015]`if v is value or v =...`
                                                         YesNodeGen SourceSection: None
                                                           OrNode SourceSection: [23948,23972]`v is value or v == v...`
-                                                            IsNodeGen SourceSection: [23948,23958]`v is value`
+                                                            IsExpressionNodeGen SourceSection: [23948,23958]`v is value`
                                                               ReadLocalVariableNode SourceSection: [23948,23949]`v`
                                                                 Frame: [5,v,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -10827,7 +10859,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                         Identifier: IndexError
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     BlockNode SourceSection: None
-                                                  BlockNode SourceSection: None
+                                                    SaveExceptionStateNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [24068,24074]`i += 1`
                                                   Identifier: i
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -10846,6 +10878,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [24105,24271]`def count(self, valu...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10925,7 +10958,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
                                                         OrNode SourceSection: [24244,24268]`v is value or v == v...`
-                                                          IsNodeGen SourceSection: [24244,24254]`v is value`
+                                                          IsExpressionNodeGen SourceSection: [24244,24254]`v is value`
                                                             ReadGeneratorFrameVariableNode SourceSection: [24244,24245]`v`
                                                               Frame: [0,v,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -10949,11 +10982,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                       ExpressionStatementNode SourceSection: [24225,24226]`1`
                                                         YieldNode SourceSection: [24225,24226]`1`
                                                           flagSlot: 0
-                                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                            Identifier: <return_val>
-                                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                              Frame: [2,<return_val>,Illegal]
-                                                            IntegerLiteralNode SourceSection: [24225,24226]`1`
+                                                          IntegerLiteralNode SourceSection: [24225,24226]`1`
                                                           GeneratorAccessNode SourceSection: None
                                                       BlockNode SourceSection: None
                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -10963,7 +10992,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextCachedNode SourceSection: None
+                                                    GetNextNode SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -10973,6 +11002,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
+                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [24236,24240]`self`
                                               GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [24236,24240]`self`
@@ -10985,7 +11015,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [22648,22658]`Reversible`
                 Identifier: Reversible
@@ -11095,6 +11127,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                           TupleLiteralNode SourceSection: [24510,24512]`()`
                             PythonObjectFactoryNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [24393,24401]`Sequence`
                 Identifier: Sequence
@@ -11238,6 +11271,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [24819,24834]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -11301,6 +11335,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [24906,24921]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -11371,6 +11406,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [24986,25001]`@abstractmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -11447,6 +11483,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [25267,25452]`def clear(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11506,10 +11543,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             Identifier: IndexError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                      BlockNode SourceSection: None
+                                        SaveExceptionStateNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [25452,25628]`def reverse(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11568,7 +11606,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                   Identifier: i
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [2,i,Illegal]
-                                              DestructuringAssignmentNode SourceSection: [25579,25622]`self[i], self[n-i-1]...`
+                                              DestructuringAssignmentNodeGen SourceSection: [25579,25622]`self[i], self[n-i-1]...`
                                                 TupleLiteralNode SourceSection: [25602,25622]`self[n-i-1], self[i]...`
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                                   GetItemNodeGen SourceSection: [25602,25613]`self[n-i-1]`
@@ -11633,14 +11671,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                   ReadLocalVariableNode SourceSection: None
                                                     Frame: [5,<>temp5,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetItemNodeGen SourceSection: None
-                                                GetItemNodeGen SourceSection: None
-                                                LookupInheritedAttributeNode SourceSection: None
-                                                  LookupAttributeInMRONodeGen SourceSection: None
-                                                    IsSameTypeNodeGen SourceSection: None
-                                                  GetLazyClassCachedNodeGen SourceSection: None
-                                                ConstructTupleNodeGen SourceSection: None
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [25554,25565]`range(n//2)`
                                             GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [25554,25565]`range(n//2)`
@@ -11661,6 +11691,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [25628,25799]`def extend(self, val...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11733,6 +11764,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [25799,26062]`def pop(self, index=...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11809,6 +11841,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [26062,26261]`def remove(self, val...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11869,6 +11902,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [26261,26338]`def __iadd__(self, v...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11935,7 +11969,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [24596,24604]`Sequence`
                 Identifier: Sequence
@@ -11967,3 +12003,4 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
         GetCallAttributeNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [26369,26384]`MutableSequence`
             Identifier: MutableSequence
+  CalleeContext SourceSection: None

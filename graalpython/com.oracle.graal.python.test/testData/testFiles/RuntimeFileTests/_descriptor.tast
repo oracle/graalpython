@@ -35,6 +35,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2008,2031]`FunctionType = type(...`
         Identifier: FunctionType
         PythonCallNodeGen SourceSection: [2023,2031]`type(_f)`
@@ -266,6 +267,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [2,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                            CalleeContext SourceSection: None
                                       SetItemNodeGen SourceSection: [2307,2611]`def __repr__(self):↵...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -428,7 +430,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [6,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                            CalleeContext SourceSection: None
                                     Return Expresssion: ObjectLiteralNode SourceSection: None
+                                CalleeContext SourceSection: None
                             StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2139,2144]`tuple`
                               Identifier: tuple
@@ -473,7 +477,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                     DefaultLoopNode SourceSection: None
                                       ForRepeatingNode SourceSection: None
                                         ForNextElementNodeGen SourceSection: None
-                                          DestructuringAssignmentNode SourceSection: None
+                                          DestructuringAssignmentNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <>temp5
                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -496,14 +500,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [6,<>temp6,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            LookupInheritedAttributeNode SourceSection: None
-                                              LookupAttributeInMRONodeGen SourceSection: None
-                                                IsSameTypeNodeGen SourceSection: None
-                                              GetLazyClassCachedNodeGen SourceSection: None
-                                            ConstructTupleNodeGen SourceSection: None
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [2700,2825]`def make_func(i):↵  ...`
                                             Identifier: make_func
@@ -590,6 +586,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                                     Frame: [2,<return_val>,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                              CalleeContext SourceSection: None
                                                         FrameReturnNode SourceSection: [2801,2812]`return func`
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: <return_val>
@@ -601,6 +598,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                       Frame: [2,<return_val>,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                CalleeContext SourceSection: None
                                           ExpressionStatementNode SourceSection: [2825,2912]`setattr(named_tuple,...`
                                             PythonCallNodeGen SourceSection: [2825,2912]`setattr(named_tuple,...`
                                               CachedCallNodeGen SourceSection: None
@@ -667,6 +665,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [7,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     ExpressionStatementNode SourceSection: [2919,2948]`_define_named_tuple_...`
                       PythonCallNodeGen SourceSection: [2919,2948]`_define_named_tuple_...`
                         CachedCallNodeGen SourceSection: None
@@ -688,6 +687,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -795,6 +795,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [3095,3195]`def __delattr__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -861,6 +862,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [3195,3290]`def __getattr__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -927,6 +929,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [3290,3393]`def __setattr__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -998,6 +1001,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [3393,3601]`def __repr__(self):↵...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -1060,7 +1064,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp6
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1083,14 +1087,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [7,<>temp7,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
                                                     PythonCallNodeGen SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
                                                       CachedCallNodeGen SourceSection: None
@@ -1144,7 +1140,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [8,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
+                      CalleeContext SourceSection: None
                   StringLiteralNode SourceSection: None
                   ReadNameNodeGen SourceSection: [2996,3002]`object`
                     Identifier: object
@@ -1157,3 +1155,4 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
               ReadLocalVariableNode SourceSection: None
                 Frame: [0,<>temp0,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
+  CalleeContext SourceSection: None

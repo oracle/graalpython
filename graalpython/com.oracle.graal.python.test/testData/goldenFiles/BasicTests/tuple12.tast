@@ -13,3 +13,4 @@ ModuleRootNode Name: <module 'tuple12'> SourceSection: [0,8]`a[1,3,4]`
         IntegerLiteralNode SourceSection: [2,3]`1`
         IntegerLiteralNode SourceSection: [4,5]`3`
         IntegerLiteralNode SourceSection: [6,7]`4`
+  CalleeContext SourceSection: None

@@ -39,11 +39,7 @@ ModuleRootNode Name: <module 'doc01'> SourceSection: [0,42]`def fn():↵  "This 
                   ExpressionStatementNode SourceSection: [30,42]`yield "neco"`
                     YieldNode SourceSection: [30,42]`yield "neco"`
                       flagSlot: 0
-                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [0,<return_val>,Illegal]
-                        StringLiteralNode SourceSection: [36,42]`"neco"`
+                      StringLiteralNode SourceSection: [36,42]`"neco"`
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
@@ -51,3 +47,5 @@ ModuleRootNode Name: <module 'doc01'> SourceSection: [0,42]`def fn():↵  "This 
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

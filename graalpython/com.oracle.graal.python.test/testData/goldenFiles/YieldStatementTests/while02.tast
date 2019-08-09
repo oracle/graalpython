@@ -66,13 +66,9 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                           ExpressionStatementNode SourceSection: [64,71]`yield x`
                             YieldNode SourceSection: [64,71]`yield x`
                               flagSlot: 0
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: <return_val>
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
-                                ReadGeneratorFrameVariableNode SourceSection: [70,71]`x`
-                                  Frame: [0,x,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [70,71]`x`
+                                Frame: [0,x,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
@@ -94,3 +90,5 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

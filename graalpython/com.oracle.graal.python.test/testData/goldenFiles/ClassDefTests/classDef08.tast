@@ -101,6 +101,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                           SetItemNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
@@ -169,7 +170,9 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
+                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 GetCallAttributeNodeGen SourceSection: None
                   BuiltinsLiteralNode SourceSection: None
@@ -180,3 +183,4 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
+  CalleeContext SourceSection: None

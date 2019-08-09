@@ -41,22 +41,14 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
                     YesNodeGen SourceSection: None
                       YieldNode SourceSection: [17,22]`yield`
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
-                          EmptyNode SourceSection: None
+                        EmptyNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     ExpressionStatementNode SourceSection: [33,40]`yield x`
                       YieldNode SourceSection: [33,40]`yield x`
                         flagSlot: 1
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`x`
-                            Identifier: x
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`x`
+                          Identifier: x
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
@@ -65,3 +57,5 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

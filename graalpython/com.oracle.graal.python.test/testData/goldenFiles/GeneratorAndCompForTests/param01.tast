@@ -41,22 +41,14 @@ ModuleRootNode Name: <module 'param01'> SourceSection: [0,30]`def fn(a):↵  yie
                     ExpressionStatementNode SourceSection: [13,20]`yield a`
                       YieldNode SourceSection: [13,20]`yield a`
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [1,<return_val>,Illegal]
-                          ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
-                            Frame: [0,a,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
+                          Frame: [0,a,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     ExpressionStatementNode SourceSection: [23,30]`yield 2`
                       YieldNode SourceSection: [23,30]`yield 2`
                         flagSlot: 1
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [1,<return_val>,Illegal]
-                          IntegerLiteralNode SourceSection: [29,30]`2`
+                        IntegerLiteralNode SourceSection: [29,30]`2`
                         GeneratorAccessNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
@@ -71,3 +63,5 @@ ModuleRootNode Name: <module 'param01'> SourceSection: [0,30]`def fn(a):↵  yie
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

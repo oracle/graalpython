@@ -16,3 +16,4 @@ ModuleRootNode Name: <module 'augassign04'> SourceSection: [0,6]`a /= b`
               Identifier: a
             ReadNameNodeGen SourceSection: [5,6]`b`
               Identifier: b
+  CalleeContext SourceSection: None

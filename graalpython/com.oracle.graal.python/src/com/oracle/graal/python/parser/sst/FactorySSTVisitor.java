@@ -82,8 +82,6 @@ import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
-import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
-import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
@@ -93,7 +91,6 @@ import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
 import com.oracle.graal.python.nodes.literal.SetLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
-import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
@@ -1049,7 +1046,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     public PNode visit(TrySSTNode node) {
         StatementNode body = (StatementNode)node.body.accept(this);
         StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(): (StatementNode)node.elseStatement.accept(this);
-        StatementNode finalyStatement = node.finallyStatement == null ? nodeFactory.createBlock(): (StatementNode)node.finallyStatement.accept(this);
+        StatementNode finalyStatement = node.finallyStatement == null ? null: (StatementNode)node.finallyStatement.accept(this);
         ExceptNode[] exceptNodes = new ExceptNode[node.exceptNodes.length];
         for (int i = 0; i < exceptNodes.length; i++) {
             ExceptSSTNode exceptNode = node.exceptNodes[i];
@@ -1120,7 +1117,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     @Override
     public PNode visit(YieldExpressionSSTNode node) {
         ExpressionNode value = node.value == null ? EmptyNode.create() : (ExpressionNode)node.value.accept(this);
-        PNode result = new YieldNode(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), value));
+        PNode result = nodeFactory.createYield(value);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }

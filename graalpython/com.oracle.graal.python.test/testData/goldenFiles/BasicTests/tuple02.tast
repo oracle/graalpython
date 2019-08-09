@@ -19,3 +19,4 @@ ModuleRootNode Name: <module 'tuple02'> SourceSection: [0,27]`(1, call01((1,2,))
         ReadNameNodeGen SourceSection: None
           Identifier: call01
       StringLiteralNode SourceSection: [20,26]`'ahoj'`
+  CalleeContext SourceSection: None

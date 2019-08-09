@@ -64,3 +64,4 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
         WriteNameNodeGen SourceSection: [0,9]`var = 100`
           Identifier: var
           IntegerLiteralNode SourceSection: [6,9]`100`
+  CalleeContext SourceSection: None

@@ -40,11 +40,7 @@ ModuleRootNode Name: <module 'yeild11'> SourceSection: [0,24]`def f(): yield 1; 
                     ExpressionStatementNode SourceSection: [9,16]`yield 1`
                       YieldNode SourceSection: [9,16]`yield 1`
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
-                          IntegerLiteralNode SourceSection: [15,16]`1`
+                        IntegerLiteralNode SourceSection: [15,16]`1`
                         GeneratorAccessNode SourceSection: None
                     ReturnNode SourceSection: [18,24]`return`
                     GeneratorAccessNode SourceSection: None
@@ -54,3 +50,5 @@ ModuleRootNode Name: <module 'yeild11'> SourceSection: [0,24]`def f(): yield 1; 
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

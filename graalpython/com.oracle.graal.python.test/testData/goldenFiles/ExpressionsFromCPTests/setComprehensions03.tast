@@ -48,20 +48,16 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                   ExpressionStatementNode SourceSection: [1,5]`f(x)`
                     YieldNode SourceSection: [1,5]`f(x)`
                       flagSlot: 0
-                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [1,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [1,5]`f(x)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
-                          ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
-                            Frame: [0,x,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: f
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      PythonCallNodeGen SourceSection: [1,5]`f(x)`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
+                          Frame: [0,x,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: f
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -71,7 +67,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextCachedNode SourceSection: None
+                GetNextNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
@@ -81,6 +77,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
+          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [15,18]`seq`
           GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [15,18]`seq`
@@ -89,3 +86,4 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+  CalleeContext SourceSection: None

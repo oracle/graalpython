@@ -56,3 +56,5 @@ ModuleRootNode Name: <module 'functionDefCPT22'> SourceSection: [0,25]`def f(*ar
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

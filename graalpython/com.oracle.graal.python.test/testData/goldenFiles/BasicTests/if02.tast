@@ -17,3 +17,4 @@ ModuleRootNode Name: <module 'if02'> SourceSection: [0,26]`if False: ↵  10↵e
           ExpressionStatementNode SourceSection: [25,26]`a`
             ReadNameNodeGen SourceSection: [25,26]`a`
               Identifier: a
+  CalleeContext SourceSection: None

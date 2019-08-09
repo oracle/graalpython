@@ -11,3 +11,4 @@ ModuleRootNode Name: <module 'or01'> SourceSection: [0,6]`a or b`
       ReadNameNodeGen SourceSection: [5,6]`b`
         Identifier: b
       YesNodeGen SourceSection: None
+  CalleeContext SourceSection: None

@@ -68,9 +68,12 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [0,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                            CalleeContext SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [15,26]`@decorator1`
                           Identifier: decorator1
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

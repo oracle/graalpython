@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                   GeneratorBlockNode SourceSection: None
                     IfNode SourceSection: [47,81]`if f is None:â†µ      ...`
                       YesNodeGen SourceSection: None
-                        IsNodeGen SourceSection: [50,59]`f is None`
+                        IsExpressionNodeGen SourceSection: [50,59]`f is None`
                           ReadGeneratorFrameVariableNode SourceSection: [50,51]`f`
                             Frame: [0,f,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -62,16 +62,12 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                         ExpressionStatementNode SourceSection: [110,117]`yield f`
                           YieldNode SourceSection: [110,117]`yield f`
                             flagSlot: 0
-                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [1,<return_val>,Illegal]
-                              ReadGeneratorFrameVariableNode SourceSection: [116,117]`f`
-                                Frame: [0,f,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [116,117]`f`
+                              Frame: [0,f,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         NotNodeGen SourceSection: [87,100]`f is not None`
-                          IsNodeGen SourceSection: None
+                          IsExpressionNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [87,88]`f`
                               Frame: [0,f,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -91,3 +87,5 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

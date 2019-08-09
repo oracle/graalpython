@@ -35,19 +35,15 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
                 ExpressionStatementNode SourceSection: [1,5]`x**y`
                   YieldNode SourceSection: [1,5]`x**y`
                     flagSlot: 0
-                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <return_val>
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [1,<return_val>,Illegal]
-                      TernaryArithmeticExpression SourceSection: [1,5]`x**y`
-                        LookupAndCallTernaryNodeGen SourceSection: None
-                          CallTernaryMethodNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
-                          Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [4,5]`y`
-                          Identifier: y
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    TernaryArithmeticExpression SourceSection: [1,5]`x**y`
+                      LookupAndCallTernaryNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
+                      ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                        Frame: [0,x,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [4,5]`y`
+                        Identifier: y
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
@@ -56,7 +52,7 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextCachedNode SourceSection: None
+                GetNextNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
@@ -66,6 +62,7 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
+          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [15,24]`range(20)`
@@ -79,3 +76,4 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+  CalleeContext SourceSection: None

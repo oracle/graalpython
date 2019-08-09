@@ -22,3 +22,4 @@ ModuleRootNode Name: <module 'fnCall05'> SourceSection: [0,21]`foo(key=value, *a
           EmptyNode SourceSection: None
       ReadNameNodeGen SourceSection: None
         Identifier: foo
+  CalleeContext SourceSection: None

@@ -25,7 +25,7 @@ Scope: []
         FreeVars: Empty
         Scope: __print_traceback__
             Kind: Function
-            FrameDescriptor: [simple_print_traceback, typ, value, traceback, <return_val>, tb]
+            FrameDescriptor: [exc, simple_print_traceback, typ, value, traceback, <return_val>, tb]
             CellVars: Empty
             FreeVars: [simple_print_traceback]
         Scope: simple_print_traceback

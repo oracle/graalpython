@@ -35,3 +35,4 @@ ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):
                 ReadNameNodeGen SourceSection: None
                   Identifier: range
           BlockNode SourceSection: None
+  CalleeContext SourceSection: None

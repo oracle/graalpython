@@ -21,4 +21,5 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,43]`try:↵  pass↵exce
               WriteNameNodeGen SourceSection: None
                 Identifier: va
             BlockNode SourceSection: None
-          BlockNode SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None
+  CalleeContext SourceSection: None

@@ -40,20 +40,12 @@ ModuleRootNode Name: <module 'generator04'> SourceSection: [0,29]`def fn():↵  
                     ExpressionStatementNode SourceSection: [12,19]`yield 1`
                       YieldNode SourceSection: [12,19]`yield 1`
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
-                          IntegerLiteralNode SourceSection: [18,19]`1`
+                        IntegerLiteralNode SourceSection: [18,19]`1`
                         GeneratorAccessNode SourceSection: None
                     ExpressionStatementNode SourceSection: [22,29]`yield 2`
                       YieldNode SourceSection: [22,29]`yield 2`
                         flagSlot: 1
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
-                          IntegerLiteralNode SourceSection: [28,29]`2`
+                        IntegerLiteralNode SourceSection: [28,29]`2`
                         GeneratorAccessNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
@@ -62,3 +54,5 @@ ModuleRootNode Name: <module 'generator04'> SourceSection: [0,29]`def fn():↵  
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

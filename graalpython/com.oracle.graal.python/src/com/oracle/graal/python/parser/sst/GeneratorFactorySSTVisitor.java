@@ -184,7 +184,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             targetExpression = (ExpressionNode)node.target.accept(parentVisitor);
         }
         parentVisitor.comprLevel--;
-        YieldNode yieldExpression = new YieldNode(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), targetExpression));
+        YieldNode yieldExpression = nodeFactory.createYield(targetExpression);
         yieldExpression.setFlagSlot(numOfActiveFlags++);
         yieldExpression.assignSourceSection(targetExpression.getSourceSection());
         
@@ -357,7 +357,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         int oldNumber = numOfActiveFlags;
         StatementNode body = (StatementNode)node.body.accept(this);
         StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(): (StatementNode)node.elseStatement.accept(this);
-        StatementNode finalyStatement = node.finallyStatement == null ? nodeFactory.createBlock(): (StatementNode)node.finallyStatement.accept(this);
+        StatementNode finalyStatement = node.finallyStatement == null ? null: (StatementNode)node.finallyStatement.accept(this);
         ExceptNode[] exceptNodes = new ExceptNode[node.exceptNodes.length];
         for (int i = 0; i < exceptNodes.length; i++) {
             ExceptSSTNode exceptNode = node.exceptNodes[i];
@@ -430,12 +430,12 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         ExpressionNode value = node.value != null ? (ExpressionNode)node.value.accept(this) : EmptyNode.create();
         ExpressionNode result;
         if (node.isFrom) {
-            YieldFromNode yieldNode = new YieldFromNode(value, WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), null));
+            YieldFromNode yieldNode = nodeFactory.createYieldFrom(value);
             yieldNode.setFlagSlot(numOfActiveFlags++);
             yieldNode.setIteratorSlot(numOfGeneratorForNode++);
             result = yieldNode;
         } else {
-            YieldNode yieldNode = new YieldNode(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), value));
+            YieldNode yieldNode = nodeFactory.createYield(value);
             yieldNode.setFlagSlot(numOfActiveFlags++);
             result = yieldNode;
         }

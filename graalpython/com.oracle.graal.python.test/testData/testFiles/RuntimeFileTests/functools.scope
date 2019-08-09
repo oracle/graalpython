@@ -200,7 +200,7 @@ Scope: []
             FreeVars: [__class__]
             Scope: generator13105
                 Kind: Generator
-                FrameDescriptor: [v, <>temp3, <>temp4, k, <return_val>]
+                FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
         Scope: __init__
@@ -230,7 +230,7 @@ Scope: []
             FreeVars: [__class__]
             Scope: generator10496
                 Kind: Generator
-                FrameDescriptor: [v, <>temp3, <>temp4, k, <return_val>]
+                FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
             Scope: generator10448

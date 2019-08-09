@@ -6,3 +6,4 @@ ModuleRootNode Name: <module 'longString02'> SourceSection: [0,27]`'''↵ahoj↵
   Documentation: `↵ahoj↵hello↵good bye...`
   InnerRootNode SourceSection: [0,27]`'''↵ahoj↵hello↵good ...`
     StringLiteralNode SourceSection: [0,27]`'''↵ahoj↵hello↵good ...`
+  CalleeContext SourceSection: None

@@ -35,17 +35,13 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                 ExpressionStatementNode SourceSection: [4,7]`x+2`
                   YieldNode SourceSection: [4,7]`x+2`
                     flagSlot: 0
-                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <return_val>
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [1,<return_val>,Illegal]
-                      BinaryArithmeticExpression SourceSection: [4,7]`x+2`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __add__
-                        ReadGeneratorFrameVariableNode SourceSection: [4,5]`x`
-                          Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                        IntegerLiteralNode SourceSection: [6,7]`2`
+                    BinaryArithmeticExpression SourceSection: [4,7]`x+2`
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __add__
+                      ReadGeneratorFrameVariableNode SourceSection: [4,5]`x`
+                        Frame: [0,x,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      IntegerLiteralNode SourceSection: [6,7]`2`
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
@@ -54,7 +50,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextCachedNode SourceSection: None
+                GetNextNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
@@ -64,6 +60,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
+          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [17,26]`range(10)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [17,26]`range(10)`
@@ -76,3 +73,4 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
         PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: None
         Identifier: foo
+  CalleeContext SourceSection: None

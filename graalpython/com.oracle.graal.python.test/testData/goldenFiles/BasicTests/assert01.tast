@@ -12,3 +12,4 @@ ModuleRootNode Name: <module 'assert01'> SourceSection: [0,11]`assert True`
         AssertNode SourceSection: [0,11]`assert True`
           YesNodeGen SourceSection: None
             BooleanLiteralNode SourceSection: [7,11]`True`
+  CalleeContext SourceSection: None

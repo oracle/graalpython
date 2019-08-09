@@ -42,96 +42,89 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                         ExpressionStatementNode SourceSection: None
                           YieldNode SourceSection: None
                             flagSlot: 0
-                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [2,<return_val>,Illegal]
-                              TupleLiteralNode SourceSection: None
-                                PythonObjectFactoryNodeGen SourceSection: None
-                                ReadLocalCellNodeGen SourceSection: [10,11]`i`
-                                  ReadGeneratorFrameVariableNode SourceSection: None
-                                    Frame: [0,i,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadFromCellNodeGen SourceSection: None
-                                PythonCallNodeGen SourceSection: [13,42]`tuple(j for j in t i...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
-                                  GeneratorExpressionNode SourceSection: [21,41]`for j in t if i != j...`
+                            TupleLiteralNode SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
+                              ReadLocalCellNodeGen SourceSection: [10,11]`i`
+                                ReadGeneratorFrameVariableNode SourceSection: None
+                                  Frame: [0,i,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadFromCellNodeGen SourceSection: None
+                              PythonCallNodeGen SourceSection: [13,42]`tuple(j for j in t i...`
+                                CachedCallNodeGen SourceSection: None
+                                  CreateArgumentsNodeGen SourceSection: None
+                                  CallDispatchNodeGen SourceSection: None
+                                GeneratorExpressionNode SourceSection: [21,41]`for j in t if i != j...`
+                                  Name: generator10.<locals>.<genexp>:comp01:1
+                                  FrameDescriptor: 3 slots [j, i, <return_val>]
+                                  Enclosing
+                                    FrameDescriptor: 3 slots [i, t, <return_val>]
+                                  Active Flags: 4
+                                  For Nodes: 1
+                                  Block Nodes: 0
+                                  Is Enclosing Frame Generator: true
+                                  FunctionRootNode SourceSection: [21,41]`for j in t if i != j...`
                                     Name: generator10.<locals>.<genexp>:comp01:1
+                                    Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                                    CelVars: None
+                                    FreeVars: i
+                                    NeedsCellFrame: False
                                     FrameDescriptor: 3 slots [j, i, <return_val>]
-                                    Enclosing
-                                      FrameDescriptor: 3 slots [i, t, <return_val>]
-                                    Active Flags: 4
-                                    For Nodes: 1
-                                    Block Nodes: 0
-                                    Is Enclosing Frame Generator: true
-                                    FunctionRootNode SourceSection: [21,41]`for j in t if i != j...`
-                                      Name: generator10.<locals>.<genexp>:comp01:1
-                                      Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                                      CelVars: None
-                                      FreeVars: i
-                                      NeedsCellFrame: False
-                                      FrameDescriptor: 3 slots [j, i, <return_val>]
-                                      ExecutionSlots:
-                                        FreeVarsSlots: i, 
-                                        CellVarsSlots: None
-                                      InnerRootNode SourceSection: [21,41]`for j in t if i != j...`
-                                        GeneratorReturnTargetNode SourceSection: [21,41]`for j in t if i != j...`
-                                          flagSlot: 3
-                                          GeneratorForNode SourceSection: [21,41]`for j in t if i != j...`
-                                            GeneratorIfNode SourceSection: None
-                                              GeneratorAccessNode SourceSection: None
-                                              YesNodeGen SourceSection: None
-                                                BinaryComparisonNodeGen SourceSection: [35,41]`i != j`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __ne__
-                                                  ReadLocalCellNodeGen SourceSection: [35,36]`i`
-                                                    ReadGeneratorFrameVariableNode SourceSection: None
-                                                      Frame: [1,i,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadFromCellNodeGen SourceSection: None
-                                                  ReadGeneratorFrameVariableNode SourceSection: [40,41]`j`
-                                                    Frame: [0,j,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                              ExpressionStatementNode SourceSection: [19,20]`j`
-                                                YieldNode SourceSection: [19,20]`j`
-                                                  flagSlot: 0
-                                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                                    Identifier: <return_val>
-                                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                      Frame: [2,<return_val>,Illegal]
-                                                    ReadGeneratorFrameVariableNode SourceSection: [19,20]`j`
-                                                      Frame: [0,j,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GeneratorAccessNode SourceSection: None
-                                              BlockNode SourceSection: None
-                                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                              Identifier: j
-                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                Frame: [0,j,Illegal]
-                                            ArgumentExpressionNode SourceSection: None
-                                              ReadIndexedArgumentNodeGen SourceSection: None
-                                                Index: 0
-                                            GetNextCachedNode SourceSection: None
-                                              LookupAndCallUnaryNodeGen SourceSection: None
-                                                Op: __next__
+                                    ExecutionSlots:
+                                      FreeVarsSlots: i, 
+                                      CellVarsSlots: None
+                                    InnerRootNode SourceSection: [21,41]`for j in t if i != j...`
+                                      GeneratorReturnTargetNode SourceSection: [21,41]`for j in t if i != j...`
+                                        flagSlot: 3
+                                        GeneratorForNode SourceSection: [21,41]`for j in t if i != j...`
+                                          GeneratorIfNode SourceSection: None
                                             GeneratorAccessNode SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          BlockNode SourceSection: None
+                                            YesNodeGen SourceSection: None
+                                              BinaryComparisonNodeGen SourceSection: [35,41]`i != j`
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __ne__
+                                                ReadLocalCellNodeGen SourceSection: [35,36]`i`
+                                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                                    Frame: [1,i,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadFromCellNodeGen SourceSection: None
+                                                ReadGeneratorFrameVariableNode SourceSection: [40,41]`j`
+                                                  Frame: [0,j,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                            ExpressionStatementNode SourceSection: [19,20]`j`
+                                              YieldNode SourceSection: [19,20]`j`
+                                                flagSlot: 0
+                                                ReadGeneratorFrameVariableNode SourceSection: [19,20]`j`
+                                                  Frame: [0,j,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                GeneratorAccessNode SourceSection: None
+                                            BlockNode SourceSection: None
+                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                            Identifier: j
+                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                              Frame: [0,j,Illegal]
+                                          ArgumentExpressionNode SourceSection: None
+                                            ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
+                                          GetNextNode SourceSection: None
+                                            LookupAndCallUnaryNodeGen SourceSection: None
+                                              Op: __next__
                                           GeneratorAccessNode SourceSection: None
-                                          PRaiseNodeGen SourceSection: None
-                                    GetIteratorExpressionNodeGen SourceSection: [30,31]`t`
-                                      GetIteratorNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: [30,31]`t`
-                                        Frame: [1,t,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    PythonObjectFactoryNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                    Identifier: tuple
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                          Frame: [2,<return_val>,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        BlockNode SourceSection: None
+                                        GeneratorAccessNode SourceSection: None
+                                        PRaiseNodeGen SourceSection: None
+                                    CalleeContext SourceSection: None
+                                  GetIteratorExpressionNodeGen SourceSection: [30,31]`t`
+                                    GetIteratorNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [30,31]`t`
+                                      Frame: [1,t,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  PythonObjectFactoryNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: tuple
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteLocalCellNodeGen SourceSection: None
                           Identifier: i
@@ -143,7 +136,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                           ReadGeneratorFrameVariableNode SourceSection: [92,93]`t`
                             Frame: [1,t,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                        GetNextCachedNode SourceSection: None
+                        GetNextNode SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
@@ -154,7 +147,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
-                      GetNextCachedNode SourceSection: None
+                      GetNextNode SourceSection: None
                         LookupAndCallUnaryNodeGen SourceSection: None
                           Op: __next__
                       GeneratorAccessNode SourceSection: None
@@ -164,6 +157,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                     BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                     PRaiseNodeGen SourceSection: None
+                CalleeContext SourceSection: None
               GetIteratorExpressionNodeGen SourceSection: [73,82]`something`
                 GetIteratorNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [73,82]`something`
@@ -172,3 +166,4 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
             ReadGlobalOrBuiltinNodeGen SourceSection: None
               Identifier: dict
               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+  CalleeContext SourceSection: None

@@ -42,11 +42,7 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
                       ExpressionStatementNode SourceSection: [23,30]`yield 3`
                         YieldNode SourceSection: [23,30]`yield 3`
                           flagSlot: 0
-                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [1,<return_val>,Illegal]
-                            IntegerLiteralNode SourceSection: [29,30]`3`
+                          IntegerLiteralNode SourceSection: [29,30]`3`
                           GeneratorAccessNode SourceSection: None
                       ExceptNode SourceSection: None
                         ExpressionStatementNode SourceSection: [56,60]`pass`
@@ -55,9 +51,12 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
                           Identifier: ValueError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                    BlockNode SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
+                      RestoreExceptionStateNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
+                    SaveExceptionStateNodeGen SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -70,3 +69,5 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

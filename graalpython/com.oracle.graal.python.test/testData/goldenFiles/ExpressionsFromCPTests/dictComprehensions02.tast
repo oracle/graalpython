@@ -48,24 +48,20 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                   ExpressionStatementNode SourceSection: None
                     YieldNode SourceSection: None
                       flagSlot: 0
-                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [1,<return_val>,Illegal]
-                        TupleLiteralNode SourceSection: None
-                          PythonObjectFactoryNodeGen SourceSection: None
-                          TernaryArithmeticExpression SourceSection: [1,5]`x**2`
-                            LookupAndCallTernaryNodeGen SourceSection: None
-                              CallTernaryMethodNodeGen SourceSection: None
-                            ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
-                              Frame: [0,x,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            IntegerLiteralNode SourceSection: [4,5]`2`
-                          GetItemNodeGen SourceSection: [6,10]`x[3]`
-                            ReadGeneratorFrameVariableNode SourceSection: None
-                              Frame: [0,x,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            IntegerLiteralNode SourceSection: [8,9]`3`
+                      TupleLiteralNode SourceSection: None
+                        PythonObjectFactoryNodeGen SourceSection: None
+                        TernaryArithmeticExpression SourceSection: [1,5]`x**2`
+                          LookupAndCallTernaryNodeGen SourceSection: None
+                            CallTernaryMethodNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                            Frame: [0,x,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          IntegerLiteralNode SourceSection: [4,5]`2`
+                        GetItemNodeGen SourceSection: [6,10]`x[3]`
+                          ReadGeneratorFrameVariableNode SourceSection: None
+                            Frame: [0,x,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          IntegerLiteralNode SourceSection: [8,9]`3`
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -75,7 +71,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextCachedNode SourceSection: None
+                GetNextNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
@@ -85,6 +81,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
+          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [20,23]`seq`
           GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [20,23]`seq`
@@ -93,3 +90,4 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+  CalleeContext SourceSection: None

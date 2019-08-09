@@ -52,3 +52,4 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
                 ReadNameNodeGen SourceSection: None
                   Identifier: range
           BlockNode SourceSection: None
+  CalleeContext SourceSection: None

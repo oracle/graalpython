@@ -42,24 +42,16 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
                     ExpressionStatementNode SourceSection: [18,25]`yield a`
                       YieldNode SourceSection: [18,25]`yield a`
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [2,<return_val>,Illegal]
-                          ReadGeneratorFrameVariableNode SourceSection: [24,25]`a`
-                            Frame: [0,a,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [24,25]`a`
+                          Frame: [0,a,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     ExpressionStatementNode SourceSection: [28,35]`yield b`
                       YieldNode SourceSection: [28,35]`yield b`
                         flagSlot: 1
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [2,<return_val>,Illegal]
-                          ReadGeneratorFrameVariableNode SourceSection: [34,35]`b`
-                            Frame: [1,b,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [34,35]`b`
+                          Frame: [1,b,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
@@ -82,3 +74,5 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
                           Index: 1
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

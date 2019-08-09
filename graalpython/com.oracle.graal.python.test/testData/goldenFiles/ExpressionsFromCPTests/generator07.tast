@@ -31,13 +31,9 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
               ExpressionStatementNode SourceSection: [1,2]`x`
                 YieldNode SourceSection: [1,2]`x`
                   flagSlot: 0
-                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                    Identifier: <return_val>
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [1,<return_val>,Illegal]
-                    ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
-                      Frame: [0,x,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                    Frame: [0,x,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
                   GeneratorAccessNode SourceSection: None
               WriteGeneratorFrameVariableNodeGen SourceSection: None
                 Identifier: x
@@ -46,7 +42,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
               ArgumentExpressionNode SourceSection: None
                 ReadIndexedArgumentNodeGen SourceSection: None
                   Index: 0
-              GetNextCachedNode SourceSection: None
+              GetNextNode SourceSection: None
                 LookupAndCallUnaryNodeGen SourceSection: None
                   Op: __next__
               GeneratorAccessNode SourceSection: None
@@ -56,6 +52,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
             BlockNode SourceSection: None
             GeneratorAccessNode SourceSection: None
             PRaiseNodeGen SourceSection: None
+        CalleeContext SourceSection: None
       GetIteratorExpressionNodeGen SourceSection: [12,21]`range(10)`
         GetIteratorNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [12,21]`range(10)`
@@ -66,3 +63,4 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
           ReadNameNodeGen SourceSection: None
             Identifier: range
       PythonObjectFactoryNodeGen SourceSection: None
+  CalleeContext SourceSection: None

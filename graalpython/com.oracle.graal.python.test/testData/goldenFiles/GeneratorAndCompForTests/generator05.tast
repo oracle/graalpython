@@ -68,18 +68,14 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                                 ExpressionStatementNode SourceSection: [32,43]`c.isspace()`
                                   YieldNode SourceSection: [32,43]`c.isspace()`
                                     flagSlot: 0
-                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                      Identifier: <return_val>
-                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [1,<return_val>,Illegal]
-                                      PythonCallNodeGen SourceSection: [32,43]`c.isspace()`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
-                                        GetCallAttributeNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [32,33]`c`
-                                            Frame: [0,c,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                    PythonCallNodeGen SourceSection: [32,43]`c.isspace()`
+                                      CachedCallNodeGen SourceSection: None
+                                        CreateArgumentsNodeGen SourceSection: None
+                                        CallDispatchNodeGen SourceSection: None
+                                      GetCallAttributeNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [32,33]`c`
+                                          Frame: [0,c,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: c
@@ -88,7 +84,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                                 ArgumentExpressionNode SourceSection: None
                                   ReadIndexedArgumentNodeGen SourceSection: None
                                     Index: 0
-                                GetNextCachedNode SourceSection: None
+                                GetNextNode SourceSection: None
                                   LookupAndCallUnaryNodeGen SourceSection: None
                                     Op: __next__
                                 GeneratorAccessNode SourceSection: None
@@ -98,6 +94,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                               BlockNode SourceSection: None
                               GeneratorAccessNode SourceSection: None
                               PRaiseNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [53,63]`caretspace`
                           GetIteratorNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [53,63]`caretspace`
@@ -107,13 +104,9 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                     ExpressionStatementNode SourceSection: [69,85]`yield caretspace`
                       YieldNode SourceSection: [69,85]`yield caretspace`
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [2,<return_val>,Illegal]
-                          ReadGeneratorFrameVariableNode SourceSection: [75,85]`caretspace`
-                            Frame: [1,caretspace,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [75,85]`caretspace`
+                          Frame: [1,caretspace,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
@@ -128,3 +121,5 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

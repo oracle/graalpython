@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
             ReadNameNodeGen SourceSection: [6592,6603]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-        BlockNode SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [6643,6939]`__all__ = [↵    "mat...`
         Identifier: __all__
         ListLiteralNode SourceSection: [6653,6939]`[↵    "match", "full...`
@@ -404,6 +404,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                 Identifier: sre_compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [6980,6992]`enum.IntFlag`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -525,6 +526,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8196,8410]`def fullmatch(patter...`
         Identifier: fullmatch
         FunctionDefinitionNode Name: fullmatch SourceSection: None
@@ -601,6 +603,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8410,8627]`def search(pattern, ...`
         Identifier: search
         FunctionDefinitionNode Name: search SourceSection: None
@@ -677,6 +680,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8627,9096]`def sub(pattern, rep...`
         Identifier: sub
         FunctionDefinitionNode Name: sub SourceSection: None
@@ -774,6 +778,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9096,9696]`def subn(pattern, re...`
         Identifier: subn
         FunctionDefinitionNode Name: subn SourceSection: None
@@ -871,6 +876,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9696,10226]`def split(pattern, s...`
         Identifier: split
         FunctionDefinitionNode Name: split SourceSection: None
@@ -958,6 +964,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10226,10603]`def findall(pattern,...`
         Identifier: findall
         FunctionDefinitionNode Name: findall SourceSection: None
@@ -1034,6 +1041,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10603,10879]`def finditer(pattern...`
         Identifier: finditer
         FunctionDefinitionNode Name: finditer SourceSection: None
@@ -1110,6 +1118,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10879,11019]`def compile(pattern,...`
         Identifier: compile
         FunctionDefinitionNode Name: compile SourceSection: None
@@ -1171,6 +1180,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11019,11126]`def purge():↵    "Cl...`
         Identifier: purge
         FunctionDefinitionNode Name: purge SourceSection: None
@@ -1217,6 +1227,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11126,11439]`def template(pattern...`
         Identifier: template
         FunctionDefinitionNode Name: template SourceSection: None
@@ -1284,6 +1295,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11439,11521]`_special_chars_map =...`
         Identifier: _special_chars_map
         PythonCallNodeGen SourceSection: [11461,11520]`i: '\\' + chr(i) for...`
@@ -1316,29 +1328,25 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                     ExpressionStatementNode SourceSection: None
                       YieldNode SourceSection: None
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [1,<return_val>,Illegal]
-                          TupleLiteralNode SourceSection: None
-                            PythonObjectFactoryNodeGen SourceSection: None
-                            ReadGeneratorFrameVariableNode SourceSection: [11461,11462]`i`
-                              Frame: [0,i,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [11464,11477]`'\\' + chr(i)`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
-                              StringLiteralNode SourceSection: [11464,11468]`'\\'`
-                              PythonCallNodeGen SourceSection: [11471,11477]`chr(i)`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
-                                ReadGeneratorFrameVariableNode SourceSection: [11475,11476]`i`
-                                  Frame: [0,i,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: chr
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        TupleLiteralNode SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [11461,11462]`i`
+                            Frame: [0,i,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          BinaryArithmeticExpression SourceSection: [11464,11477]`'\\' + chr(i)`
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __add__
+                            StringLiteralNode SourceSection: [11464,11468]`'\\'`
+                            PythonCallNodeGen SourceSection: [11471,11477]`chr(i)`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [11475,11476]`i`
+                                Frame: [0,i,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: chr
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: i
@@ -1347,7 +1355,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
-                    GetNextCachedNode SourceSection: None
+                    GetNextNode SourceSection: None
                       LookupAndCallUnaryNodeGen SourceSection: None
                         Op: __next__
                     GeneratorAccessNode SourceSection: None
@@ -1357,6 +1365,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [11487,11520]`b'()[]{}?*+-|^$\\.&~...`
               GetIteratorNodeGen SourceSection: None
               BytesLiteralNode SourceSection: [11487,11520]`b'()[]{}?*+-|^$\\.&~...`
@@ -1468,6 +1477,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11811,11853]`Pattern = type(sre_c...`
         Identifier: Pattern
         PythonCallNodeGen SourceSection: [11821,11853]`type(sre_compile.com...`
@@ -1619,7 +1629,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                             Identifier: KeyError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                      BlockNode SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
                     IfNode SourceSection: [12258,12439]`if isinstance(patter...`
                       YesNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [12261,12289]`isinstance(pattern, ...`
@@ -1771,7 +1781,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                     Identifier: KeyError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               BlockNode SourceSection: None
-                            BlockNode SourceSection: None
+                              SaveExceptionStateNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         SetItemNodeGen SourceSection: [12851,12892]`_cache[type(pattern)...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -1810,6 +1820,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [12907,13069]`@functools.lru_cache...`
         Identifier: _compile_repl
         PythonCallNodeGen SourceSection: [12907,12938]`@functools.lru_cache...`
@@ -1875,6 +1886,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
           PythonCallNodeGen SourceSection: [12907,12938]`@functools.lru_cache...`
             CachedCallNodeGen SourceSection: None
               CreateArgumentsNodeGen SourceSection: None
@@ -1971,6 +1983,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [13271,13665]`def _subx(pattern, t...`
         Identifier: _subx
         FunctionDefinitionNode Name: _subx SourceSection: None
@@ -2133,6 +2146,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [2,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     FrameReturnNode SourceSection: [13618,13631]`return filter`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -2144,6 +2158,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [13672,13679]`copyreg`
         Identifier: copyreg
         ImportExpression SourceSection: None
@@ -2211,6 +2226,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       ExpressionStatementNode SourceSection: [13740,13782]`copyreg.pickle(Patte...`
         PythonCallNodeGen SourceSection: [13740,13782]`copyreg.pickle(Patte...`
           CachedCallNodeGen SourceSection: None
@@ -2404,7 +2420,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                               DefaultLoopNode SourceSection: None
                                                 ForRepeatingNode SourceSection: None
                                                   ForNextElementNodeGen SourceSection: None
-                                                    DestructuringAssignmentNode SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp11
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2427,14 +2443,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [12,<>temp12,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      GetItemNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeNodeGen SourceSection: None
-                                                        GetLazyClassCachedNodeGen SourceSection: None
-                                                      ConstructTupleNodeGen SourceSection: None
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [14304,14323]`gid = s.opengroup()`
                                                       Identifier: gid
@@ -2569,6 +2577,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [13,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [14612,15192]`def scan(self, strin...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -2783,7 +2792,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                                       BlockNode SourceSection: None
                                                     IfNode SourceSection: [15086,15152]`if action is not Non...`
                                                       NotNodeGen SourceSection: [15089,15107]`action is not None`
-                                                        IsNodeGen SourceSection: None
+                                                        IsExpressionNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [15089,15095]`action`
                                                             Frame: [8,action,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2832,7 +2841,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [10,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                  CalleeContext SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
+                      CalleeContext SourceSection: None
                   StringLiteralNode SourceSection: None
                   GetCallAttributeNodeGen SourceSection: None
                     BuiltinsLiteralNode SourceSection: None
@@ -2843,3 +2854,4 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
               ReadLocalVariableNode SourceSection: None
                 Frame: [1,<>temp1,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
+  CalleeContext SourceSection: None

@@ -19,3 +19,4 @@ FunctionRootNode SourceSection: [0,8]`"\uD800"`
       Return Expresssion: ReadLocalVariableNode SourceSection: None
         Frame: [0,<return_val>,Illegal]
         ReadVariableFromFrameNodeGen SourceSection: None
+  CalleeContext SourceSection: None

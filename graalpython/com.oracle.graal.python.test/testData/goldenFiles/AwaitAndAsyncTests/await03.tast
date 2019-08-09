@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'await03'> SourceSection: [0,39]`async def f():↵ 
                 ReturnTargetNode SourceSection: [6,39]`def f():↵ foo, bar =...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    DestructuringAssignmentNode SourceSection: [16,39]`foo, bar = await smt...`
+                    DestructuringAssignmentNodeGen SourceSection: [16,39]`foo, bar = await smt...`
                       PythonCallNodeGen SourceSection: [27,39]`await smth()`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
@@ -63,14 +63,8 @@ ModuleRootNode Name: <module 'await03'> SourceSection: [0,39]`async def f():↵ 
                         ReadLocalVariableNode SourceSection: None
                           Frame: [3,<>temp3,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                      GetItemNodeGen SourceSection: None
-                      GetItemNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
-                      ConstructTupleNodeGen SourceSection: None
-                        PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

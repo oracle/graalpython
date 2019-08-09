@@ -14,3 +14,4 @@ ModuleRootNode Name: <module 'basic01'> SourceSection: [0,10]`import sys`
           ImportExpression SourceSection: None
             ImportNode SourceSection: None
               Module: sys
+  CalleeContext SourceSection: None

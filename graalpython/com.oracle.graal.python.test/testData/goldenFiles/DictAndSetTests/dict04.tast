@@ -15,3 +15,4 @@ ModuleRootNode Name: <module 'dict04'> SourceSection: [0,10]`{a:b, c:d}`
         Identifier: b
       ReadNameNodeGen SourceSection: [8,9]`d`
         Identifier: d
+  CalleeContext SourceSection: None

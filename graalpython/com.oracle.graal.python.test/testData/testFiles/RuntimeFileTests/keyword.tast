@@ -207,12 +207,12 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
@@ -221,6 +221,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       CachedNodeGen SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [1366,1425]`nl = format[0][len(f...`
                       Identifier: nl
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -375,12 +376,12 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
@@ -389,6 +390,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       CachedNodeGen SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [1764,1776]`lines.sort()`
                       PythonCallNodeGen SourceSection: [1764,1776]`lines.sort()`
                         CachedCallNodeGen SourceSection: None
@@ -490,7 +492,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                      BlockNode SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
                     WithNode SourceSection: [2133,2207]`with open(optfile, '...`
                       ExpressionStatementNode SourceSection: [2184,2205]`fp.writelines(format...`
                         PythonCallNodeGen SourceSection: [2184,2205]`fp.writelines(format...`
@@ -527,12 +529,12 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
@@ -541,9 +543,11 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       CachedNodeGen SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -564,3 +568,4 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                 ReadNameNodeGen SourceSection: None
                   Identifier: main
             BlockNode SourceSection: None
+  CalleeContext SourceSection: None

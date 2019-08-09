@@ -20,12 +20,12 @@ Scope: []
             FreeVars: Empty
         Scope: generator33751
             Kind: Generator
-            FrameDescriptor: [v, <>temp3, <>temp4, m, <return_val>]
+            FrameDescriptor: [v, <>temp2, <>temp3, m, <return_val>]
             CellVars: Empty
             FreeVars: Empty
         Scope: generator33513
             Kind: Generator
-            FrameDescriptor: [v, <>temp3, <>temp4, m, <return_val>]
+            FrameDescriptor: [v, <>temp2, <>temp3, m, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: unique
@@ -35,7 +35,7 @@ Scope: []
         FreeVars: Empty
         Scope: generator32846
             Kind: Generator
-            FrameDescriptor: [name, alias, <>temp3, <>temp4, <return_val>]
+            FrameDescriptor: [name, <>temp2, alias, <>temp3, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: _high_bit
@@ -260,7 +260,7 @@ Scope: []
             FreeVars: [__class__]
         Scope: _create_
             Kind: Function
-            FrameDescriptor: [last_values, <>temp32, <>temp31, type, <>temp30, bases, qualname, first_enum, class_name, classdict, value, _, <>temp29, <>temp28, item, <>temp25, <>temp24, <>temp27, module, <>temp26, start, count, *, <>temp23, cls, original_names, member_name, enum_class, __class__, names, metacls, member_value, name, <return_val>]
+            FrameDescriptor: [last_values, <>temp32, <>temp31, <>temp33, type, <>temp30, bases, exc, qualname, first_enum, class_name, classdict, value, _, <>temp29, <>temp28, item, <>temp25, <>temp24, <>temp27, module, <>temp26, start, count, *, cls, original_names, member_name, enum_class, __class__, names, metacls, member_value, name, <return_val>]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __setattr__

@@ -22,3 +22,4 @@ ModuleRootNode Name: <module 'call16'> SourceSection: [0,11]`a.b.c.foo()`
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [0,1]`a`
               Identifier: a
+  CalleeContext SourceSection: None

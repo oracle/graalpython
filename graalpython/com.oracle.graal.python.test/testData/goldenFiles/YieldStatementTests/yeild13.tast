@@ -43,15 +43,11 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                         CallDispatchNodeGen SourceSection: None
                       YieldFromNode SourceSection: [12,24]`yield from 1`
                         GetIteratorNodeGen SourceSection: None
-                        GetNextCachedNode SourceSection: None
+                        GetNextNode SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
                         IntegerLiteralNode SourceSection: [23,24]`1`
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: f
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -61,3 +57,5 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

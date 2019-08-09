@@ -30,3 +30,4 @@ ModuleRootNode Name: <module 'while05'> SourceSection: [0,64]`while True:↵  if
                     ExpressionStatementNode SourceSection: [60,64]`pass`
                       EmptyNode SourceSection: [60,64]`pass`
           BlockNode SourceSection: None
+  CalleeContext SourceSection: None

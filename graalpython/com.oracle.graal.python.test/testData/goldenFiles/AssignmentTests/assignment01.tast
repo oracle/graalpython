@@ -12,3 +12,4 @@ ModuleRootNode Name: <module 'assignment01'> SourceSection: [0,5]`a = 1`
         WriteNameNodeGen SourceSection: [0,5]`a = 1`
           Identifier: a
           IntegerLiteralNode SourceSection: [4,5]`1`
+  CalleeContext SourceSection: None

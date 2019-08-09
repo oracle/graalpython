@@ -17,3 +17,4 @@ ModuleRootNode Name: <module 'moduleDoc02'> SourceSection: [0,29]`'''↵Thi is d
       SideEffect:
         ExpressionStatementNode SourceSection: [0,22]`'''↵Thi is doc↵yes↵'...`
           StringLiteralNode SourceSection: [0,22]`'''↵Thi is doc↵yes↵'...`
+  CalleeContext SourceSection: None

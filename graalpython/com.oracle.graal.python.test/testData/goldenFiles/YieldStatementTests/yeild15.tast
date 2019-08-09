@@ -41,13 +41,9 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
                       ExpressionStatementNode SourceSection: [41,48]`yield x`
                         YieldNode SourceSection: [41,48]`yield x`
                           flagSlot: 0
-                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [1,<return_val>,Illegal]
-                            ReadGeneratorFrameVariableNode SourceSection: [47,48]`x`
-                              Frame: [0,x,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [47,48]`x`
+                            Frame: [0,x,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                         Identifier: x
@@ -63,7 +59,7 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: range
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      GetNextCachedNode SourceSection: None
+                      GetNextNode SourceSection: None
                         LookupAndCallUnaryNodeGen SourceSection: None
                           Op: __next__
                       GeneratorAccessNode SourceSection: None
@@ -74,3 +70,5 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

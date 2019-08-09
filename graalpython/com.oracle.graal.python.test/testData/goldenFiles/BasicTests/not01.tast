@@ -8,3 +8,4 @@ ModuleRootNode Name: <module 'not01'> SourceSection: [0,5]`not a`
     NotNodeGen SourceSection: [0,5]`not a`
       ReadNameNodeGen SourceSection: [4,5]`a`
         Identifier: a
+  CalleeContext SourceSection: None

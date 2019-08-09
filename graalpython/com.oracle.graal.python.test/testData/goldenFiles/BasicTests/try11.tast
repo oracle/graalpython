@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 1 slots [<return_val>]
+              FrameDescriptor: 2 slots [err, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -43,19 +43,23 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
                                 CallDispatchNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [75,78]`err`
-                                Identifier: err
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [75,78]`err`
+                                Frame: [0,err,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
                             Identifier: Exception
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          WriteGlobalNodeGen SourceSection: None
+                          WriteLocalVariableNodeGen SourceSection: None
                             Identifier: err
+                            WriteLocalFrameSlotNodeGen SourceSection: None
+                              Frame: [0,err,Illegal]
                         BlockNode SourceSection: None
-                      BlockNode SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

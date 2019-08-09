@@ -83,3 +83,5 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

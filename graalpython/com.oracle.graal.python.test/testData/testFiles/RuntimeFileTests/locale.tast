@@ -142,6 +142,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1312,1446]`def _strxfrm(s):↵   ...`
         Identifier: _strxfrm
         FunctionDefinitionNode Name: _strxfrm SourceSection: None
@@ -184,6 +185,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [1446,2901]`try:↵↵    from _loca...`
         TryExceptNode SourceSection: None
           ImportStarNode SourceSection: [1456,1477]`from _locale import ...`
@@ -290,6 +292,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                           Frame: [0,<return_val>,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                    CalleeContext SourceSection: None
               WriteNameNodeGen SourceSection: [2553,2901]`def setlocale(catego...`
                 Identifier: setlocale
                 FunctionDefinitionNode Name: setlocale SourceSection: None
@@ -365,10 +368,11 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                           Frame: [2,<return_val>,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                    CalleeContext SourceSection: None
             ReadNameNodeGen SourceSection: [1486,1497]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-        BlockNode SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
       IfNode SourceSection: [2901,2955]`if 'strxfrm' not in ...`
         NotNodeGen SourceSection: [2904,2930]`'strxfrm' not in glo...`
           ContainsNodeGen SourceSection: None
@@ -482,6 +486,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
           PythonCallNodeGen SourceSection: [3179,3208]`@functools.wraps(_lo...`
             CachedCallNodeGen SourceSection: None
               CreateArgumentsNodeGen SourceSection: None
@@ -554,7 +559,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           GeneratorBlockNode SourceSection: None
                             IfNode SourceSection: [3715,3806]`if last_interval is ...`
                               YesNodeGen SourceSection: None
-                                IsNodeGen SourceSection: [3718,3739]`last_interval is Non...`
+                                IsExpressionNodeGen SourceSection: [3718,3739]`last_interval is Non...`
                                   ReadGeneratorFrameVariableNode SourceSection: [3718,3731]`last_interval`
                                     Frame: [1,last_interval,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -575,13 +580,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ExpressionStatementNode SourceSection: [3834,3853]`yield last_interval`
                                   YieldNode SourceSection: [3834,3853]`yield last_interval`
                                     flagSlot: 0
-                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                      Identifier: <return_val>
-                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [3,<return_val>,Illegal]
-                                      ReadGeneratorFrameVariableNode SourceSection: [3840,3853]`last_interval`
-                                        Frame: [1,last_interval,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [3840,3853]`last_interval`
+                                      Frame: [1,last_interval,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                 YesNodeGen SourceSection: None
                                   BooleanLiteralNode SourceSection: [3812,3816]`True`
@@ -592,13 +593,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ExpressionStatementNode SourceSection: [3862,3876]`yield interval`
                           YieldNode SourceSection: [3862,3876]`yield interval`
                             flagSlot: 4
-                            WriteGeneratorFrameVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [3,<return_val>,Illegal]
-                              ReadGeneratorFrameVariableNode SourceSection: [3868,3876]`interval`
-                                Frame: [2,interval,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [3868,3876]`interval`
+                              Frame: [2,interval,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteGeneratorFrameVariableNodeGen SourceSection: [3885,3909]`last_interval = inte...`
                           Identifier: last_interval
@@ -617,7 +614,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadGeneratorFrameVariableNode SourceSection: [3530,3538]`grouping`
                           Frame: [0,grouping,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                      GetNextCachedNode SourceSection: None
+                      GetNextNode SourceSection: None
                         LookupAndCallUnaryNodeGen SourceSection: None
                           Op: __next__
                       GeneratorAccessNode SourceSection: None
@@ -635,6 +632,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Index: 0
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3952,4916]`def _group(s, moneta...`
         Identifier: _group
         FunctionDefinitionNode Name: _group SourceSection: None
@@ -998,6 +996,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4916,5159]`def _strip_padding(s...`
         Identifier: _strip_padding
         FunctionDefinitionNode Name: _strip_padding SourceSection: None
@@ -1168,6 +1167,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5159,5288]`_percent_re = re.com...`
         Identifier: _percent_re
         PythonCallNodeGen SourceSection: [5173,5288]`re.compile(r'%(?:\((...`
@@ -1319,7 +1319,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: [5631,5639]`grouping`
                               Frame: [2,grouping,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                          DestructuringAssignmentNode SourceSection: [5653,5705]`parts[0], seps = _gr...`
+                          DestructuringAssignmentNodeGen SourceSection: [5653,5705]`parts[0], seps = _gr...`
                             PythonCallNodeGen SourceSection: [5670,5705]`_group(parts[0], mon...`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -1363,14 +1363,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [10,<>temp10,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            GetItemNodeGen SourceSection: None
-                            GetItemNodeGen SourceSection: None
-                            LookupInheritedAttributeNode SourceSection: None
-                              LookupAttributeInMRONodeGen SourceSection: None
-                                IsSameTypeNodeGen SourceSection: None
-                              GetLazyClassCachedNodeGen SourceSection: None
-                            ConstructTupleNodeGen SourceSection: None
-                              PythonObjectFactoryNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [5714,5841]`decimal_point = loca...`
                           Identifier: decimal_point
@@ -1457,7 +1449,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: [6020,6028]`grouping`
                                 Frame: [2,grouping,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            DestructuringAssignmentNode SourceSection: [6042,6096]`formatted, seps = _g...`
+                            DestructuringAssignmentNodeGen SourceSection: [6042,6096]`formatted, seps = _g...`
                               PythonCallNodeGen SourceSection: [6060,6096]`_group(formatted, mo...`
                                 CachedCallNodeGen SourceSection: None
                                   CreateArgumentsNodeGen SourceSection: None
@@ -1498,14 +1490,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: None
                                   Frame: [12,<>temp12,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                              GetItemNodeGen SourceSection: None
-                              GetItemNodeGen SourceSection: None
-                              LookupInheritedAttributeNode SourceSection: None
-                                LookupAttributeInMRONodeGen SourceSection: None
-                                  IsSameTypeNodeGen SourceSection: None
-                                GetLazyClassCachedNodeGen SourceSection: None
-                              ConstructTupleNodeGen SourceSection: None
-                                PythonObjectFactoryNodeGen SourceSection: None
                             BlockNode SourceSection: None
                           IfNode SourceSection: [6105,6174]`if seps:↵           ...`
                             YesNodeGen SourceSection: None
@@ -1542,6 +1526,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [13,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6192,7537]`def format_string(f,...`
         Identifier: format_string
         FunctionDefinitionNode Name: format_string SourceSection: None
@@ -1953,6 +1938,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [7537,8175]`def format(percent, ...`
         Identifier: format
         FunctionDefinitionNode Name: format SourceSection: None
@@ -2149,6 +2135,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8175,9703]`def currency(val, sy...`
         Identifier: currency
         FunctionDefinitionNode Name: currency SourceSection: None
@@ -2625,6 +2612,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [12,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9703,9818]`def str(val):↵    ""...`
         Identifier: str
         FunctionDefinitionNode Name: str SourceSection: None
@@ -2675,6 +2663,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9818,10216]`def delocalize(strin...`
         Identifier: delocalize
         FunctionDefinitionNode Name: delocalize SourceSection: None
@@ -2791,6 +2780,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10216,10350]`def atof(string, fun...`
         Identifier: atof
         FunctionDefinitionNode Name: atof SourceSection: None
@@ -2857,6 +2847,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10350,10476]`def atoi(string):↵  ...`
         Identifier: atoi
         FunctionDefinitionNode Name: atoi SourceSection: None
@@ -2913,6 +2904,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10476,10892]`def _test():↵    set...`
         Identifier: _test
         FunctionDefinitionNode Name: _test SourceSection: None
@@ -3023,6 +3015,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10892,10914]`_setlocale = setloca...`
         Identifier: _setlocale
         ReadNameNodeGen SourceSection: [10905,10914]`setlocale`
@@ -3269,6 +3262,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11898,12275]`def _append_modifier...`
         Identifier: _append_modifier
         FunctionDefinitionNode Name: _append_modifier SourceSection: None
@@ -3342,7 +3336,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [12017,12030]`'.ISO8859-15'`
                           BlockNode SourceSection: None
-                        DestructuringAssignmentNode SourceSection: [12039,12075]`_, _, encoding = cod...`
+                        DestructuringAssignmentNodeGen SourceSection: [12039,12075]`_, _, encoding = cod...`
                           PythonCallNodeGen SourceSection: [12056,12075]`code.partition('.')`
                             CachedCallNodeGen SourceSection: None
                               CreateArgumentsNodeGen SourceSection: None
@@ -3385,14 +3379,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: None
                               Frame: [7,<>temp7,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                          GetItemNodeGen SourceSection: None
-                          GetItemNodeGen SourceSection: None
-                          LookupInheritedAttributeNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeNodeGen SourceSection: None
-                            GetLazyClassCachedNodeGen SourceSection: None
-                          ConstructTupleNodeGen SourceSection: None
-                            PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [12084,12156]`if encoding in ('ISO...`
                           YesNodeGen SourceSection: None
                             ContainsNodeGen SourceSection: [12087,12122]`encoding in ('ISO885...`
@@ -3463,6 +3449,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [12275,15168]`def normalize(locale...`
         Identifier: normalize
         FunctionDefinitionNode Name: normalize SourceSection: None
@@ -3542,7 +3529,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Frame: [1,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12926,12929]`'@'`
-                      DestructuringAssignmentNode SourceSection: [12947,12982]`code, modifier = cod...`
+                      DestructuringAssignmentNodeGen SourceSection: [12947,12982]`code, modifier = cod...`
                         PythonCallNodeGen SourceSection: [12964,12982]`code.split('@', 1)`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
@@ -3575,14 +3562,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: None
                             Frame: [10,<>temp10,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                        GetItemNodeGen SourceSection: None
-                        GetItemNodeGen SourceSection: None
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassCachedNodeGen SourceSection: None
-                        ConstructTupleNodeGen SourceSection: None
-                          PythonObjectFactoryNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [13001,13014]`modifier = ''`
                         Identifier: modifier
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3598,7 +3577,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Frame: [1,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [13022,13025]`'.'`
-                      DestructuringAssignmentNode SourceSection: [13043,13083]`langname, encoding =...`
+                      DestructuringAssignmentNodeGen SourceSection: [13043,13083]`langname, encoding =...`
                         GetItemNodeGen SourceSection: [13064,13083]`code.split('.')[:2]`
                           PythonCallNodeGen SourceSection: [13064,13079]`code.split('.')`
                             CachedCallNodeGen SourceSection: None
@@ -3636,14 +3615,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: None
                             Frame: [12,<>temp12,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                        GetItemNodeGen SourceSection: None
-                        GetItemNodeGen SourceSection: None
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          GetLazyClassCachedNodeGen SourceSection: None
-                        ConstructTupleNodeGen SourceSection: None
-                          PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [13102,13117]`langname = code`
                           Identifier: langname
@@ -3760,7 +3731,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [13527,13607]`if code is not None:...`
                       NotNodeGen SourceSection: [13530,13546]`code is not None`
-                        IsNodeGen SourceSection: None
+                        IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [13530,13534]`code`
                             Frame: [1,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3798,7 +3769,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [13749,14044]`if code is not None:...`
                           NotNodeGen SourceSection: [13752,13768]`code is not None`
-                            IsNodeGen SourceSection: None
+                            IsExpressionNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [13752,13756]`code`
                                 Frame: [1,code,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3921,7 +3892,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [14283,14576]`if code is not None:...`
                           NotNodeGen SourceSection: [14286,14302]`code is not None`
-                            IsNodeGen SourceSection: None
+                            IsExpressionNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [14286,14290]`code`
                                 Frame: [1,code,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3956,7 +3927,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Identifier: _replace_encoding
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               BlockNode SourceSection: None
-                            DestructuringAssignmentNode SourceSection: [14461,14496]`code, modifier = cod...`
+                            DestructuringAssignmentNodeGen SourceSection: [14461,14496]`code, modifier = cod...`
                               PythonCallNodeGen SourceSection: [14478,14496]`code.split('@', 1)`
                                 CachedCallNodeGen SourceSection: None
                                   CreateArgumentsNodeGen SourceSection: None
@@ -3989,14 +3960,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: None
                                   Frame: [15,<>temp15,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                              GetItemNodeGen SourceSection: None
-                              GetItemNodeGen SourceSection: None
-                              LookupInheritedAttributeNode SourceSection: None
-                                LookupAttributeInMRONodeGen SourceSection: None
-                                  IsSameTypeNodeGen SourceSection: None
-                                GetLazyClassCachedNodeGen SourceSection: None
-                              ConstructTupleNodeGen SourceSection: None
-                                PythonObjectFactoryNodeGen SourceSection: None
                             FrameReturnNode SourceSection: [14509,14566]`return _replace_enco...`
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <return_val>
@@ -4050,7 +4013,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IfNode SourceSection: [14720,15149]`if code is not None:...`
                               NotNodeGen SourceSection: [14723,14739]`code is not None`
-                                IsNodeGen SourceSection: None
+                                IsExpressionNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [14723,14727]`code`
                                     Frame: [1,code,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -4103,7 +4066,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                             Identifier: _append_modifier
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BlockNode SourceSection: None
-                                DestructuringAssignmentNode SourceSection: [14987,15020]`code, defmod = code....`
+                                DestructuringAssignmentNodeGen SourceSection: [14987,15020]`code, defmod = code....`
                                   PythonCallNodeGen SourceSection: [15002,15020]`code.split('@', 1)`
                                     CachedCallNodeGen SourceSection: None
                                       CreateArgumentsNodeGen SourceSection: None
@@ -4136,14 +4099,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadLocalVariableNode SourceSection: None
                                       Frame: [17,<>temp17,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                  GetItemNodeGen SourceSection: None
-                                  GetItemNodeGen SourceSection: None
-                                  LookupInheritedAttributeNode SourceSection: None
-                                    LookupAttributeInMRONodeGen SourceSection: None
-                                      IsSameTypeNodeGen SourceSection: None
-                                    GetLazyClassCachedNodeGen SourceSection: None
-                                  ConstructTupleNodeGen SourceSection: None
-                                    PythonObjectFactoryNodeGen SourceSection: None
                                 IfNode SourceSection: [15037,15149]`if defmod.lower() ==...`
                                   YesNodeGen SourceSection: None
                                     BinaryComparisonNodeGen SourceSection: [15040,15066]`defmod.lower() == mo...`
@@ -4203,6 +4158,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [13,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [15168,16245]`def _parse_localenam...`
         Identifier: _parse_localename
         FunctionDefinitionNode Name: _parse_localename SourceSection: None
@@ -4260,7 +4216,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [15707,15710]`'@'`
                       BlockNode SourceSection: None
-                        DestructuringAssignmentNode SourceSection: [15765,15800]`code, modifier = cod...`
+                        DestructuringAssignmentNodeGen SourceSection: [15765,15800]`code, modifier = cod...`
                           PythonCallNodeGen SourceSection: [15782,15800]`code.split('@', 1)`
                             CachedCallNodeGen SourceSection: None
                               CreateArgumentsNodeGen SourceSection: None
@@ -4293,14 +4249,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: None
                               Frame: [4,<>temp4,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                          GetItemNodeGen SourceSection: None
-                          GetItemNodeGen SourceSection: None
-                          LookupInheritedAttributeNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeNodeGen SourceSection: None
-                            GetLazyClassCachedNodeGen SourceSection: None
-                          ConstructTupleNodeGen SourceSection: None
-                            PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [15809,16082]`if modifier == 'euro...`
                           YesNodeGen SourceSection: None
                             AndNode SourceSection: [15812,15850]`modifier == 'euro' a...`
@@ -4409,6 +4357,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [16245,16838]`def _build_localenam...`
         Identifier: _build_localename
         FunctionDefinitionNode Name: _build_localename SourceSection: None
@@ -4443,7 +4392,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   TryFinallyNode SourceSection: [16429,16838]`try:↵        languag...`
                     TryExceptNode SourceSection: None
                       BlockNode SourceSection: None
-                        DestructuringAssignmentNode SourceSection: [16442,16474]`language, encoding =...`
+                        DestructuringAssignmentNodeGen SourceSection: [16442,16474]`language, encoding =...`
                           ReadLocalVariableNode SourceSection: [16463,16474]`localetuple`
                             Frame: [0,localetuple,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4469,17 +4418,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: None
                               Frame: [4,<>temp4,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                          GetItemNodeGen SourceSection: None
-                          GetItemNodeGen SourceSection: None
-                          LookupInheritedAttributeNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeNodeGen SourceSection: None
-                            GetLazyClassCachedNodeGen SourceSection: None
-                          ConstructTupleNodeGen SourceSection: None
-                            PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [16484,16540]`if language is None:...`
                           YesNodeGen SourceSection: None
-                            IsNodeGen SourceSection: [16487,16503]`language is None`
+                            IsExpressionNodeGen SourceSection: [16487,16503]`language is None`
                               ReadLocalVariableNode SourceSection: [16487,16495]`language`
                                 Frame: [1,language,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4492,7 +4433,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           BlockNode SourceSection: None
                         IfNode SourceSection: [16540,16652]`if encoding is None:...`
                           YesNodeGen SourceSection: None
-                            IsNodeGen SourceSection: [16543,16559]`encoding is None`
+                            IsExpressionNodeGen SourceSection: [16543,16559]`encoding is None`
                               ReadLocalVariableNode SourceSection: [16543,16551]`encoding`
                                 Frame: [2,encoding,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4543,10 +4484,11 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [16838,18825]`def getdefaultlocale...`
         Identifier: getdefaultlocale
         FunctionDefinitionNode Name: getdefaultlocale SourceSection: None
@@ -4595,7 +4537,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ImportExpression SourceSection: None
                               ImportNode SourceSection: None
                                 Module: _locale
-                          DestructuringAssignmentNode SourceSection: [18003,18047]`code, encoding = _lo...`
+                          DestructuringAssignmentNodeGen SourceSection: [18003,18047]`code, encoding = _lo...`
                             PythonCallNodeGen SourceSection: [18020,18047]`_locale._getdefaultl...`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -4626,14 +4568,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [9,<>temp9,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            GetItemNodeGen SourceSection: None
-                            GetItemNodeGen SourceSection: None
-                            LookupInheritedAttributeNode SourceSection: None
-                              LookupAttributeInMRONodeGen SourceSection: None
-                                IsSameTypeNodeGen SourceSection: None
-                              GetLazyClassCachedNodeGen SourceSection: None
-                            ConstructTupleNodeGen SourceSection: None
-                              PythonObjectFactoryNodeGen SourceSection: None
                         ExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [18098,18102]`pass`
                             EmptyNode SourceSection: [18098,18102]`pass`
@@ -4717,7 +4651,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: [18454,18462]`encoding`
                                   Frame: [3,encoding,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                      BlockNode SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [18510,18512]`os`
                       Identifier: os
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4828,6 +4762,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [18825,19428]`def getlocale(catego...`
         Identifier: getlocale
         FunctionDefinitionNode Name: getlocale SourceSection: None
@@ -4926,6 +4861,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [19428,20007]`def setlocale(catego...`
         Identifier: setlocale
         FunctionDefinitionNode Name: setlocale SourceSection: None
@@ -5031,6 +4967,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [20007,20288]`def resetlocale(cate...`
         Identifier: resetlocale
         FunctionDefinitionNode Name: resetlocale SourceSection: None
@@ -5092,6 +5029,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       IfNode SourceSection: [20288,22737]`if sys.platform.star...`
         YesNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [20291,20321]`sys.platform.startsw...`
@@ -5186,6 +5124,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
         TryFinallyNode SourceSection: [20691,22737]`try:↵        CODESET...`
           TryExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [20704,20711]`CODESET`
@@ -5244,6 +5183,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Return Expresssion: ReadLocalVariableNode SourceSection: None
                             Frame: [1,<return_val>,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                      CalleeContext SourceSection: None
                 WriteNameNodeGen SourceSection: [21088,21544]`def getpreferredenco...`
                   Identifier: getpreferredencoding
                   FunctionDefinitionNode Name: getpreferredencoding SourceSection: None
@@ -5314,7 +5254,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   IntegerLiteralNode SourceSection: [21376,21377]`1`
                               IfNode SourceSection: [21395,21529]`if res is None:↵    ...`
                                 YesNodeGen SourceSection: None
-                                  IsNodeGen SourceSection: [21398,21409]`res is None`
+                                  IsExpressionNodeGen SourceSection: [21398,21409]`res is None`
                                     ReadLocalVariableNode SourceSection: [21398,21401]`res`
                                       Frame: [1,res,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -5336,6 +5276,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Return Expresssion: ReadLocalVariableNode SourceSection: None
                             Frame: [2,<return_val>,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                      CalleeContext SourceSection: None
               ReadNameNodeGen SourceSection: [20723,20732]`NameError`
                 Identifier: NameError
             WriteNameNodeGen SourceSection: [21558,22737]`def getpreferredenco...`
@@ -5441,7 +5382,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Identifier: Error
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BlockNode SourceSection: None
-                                BlockNode SourceSection: None
+                                  SaveExceptionStateNodeGen SourceSection: None
                             BlockNode SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [22028,22076]`result = _bootlocale...`
                             Identifier: result
@@ -5487,7 +5428,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [4,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-          BlockNode SourceSection: None
+                  CalleeContext SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [22737,25081]`locale_encoding_alia...`
         Identifier: locale_encoding_alias
         DictLiteralNode SourceSection: [22761,25081]`{↵↵    # Mappings fo...`
@@ -5585,7 +5527,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
           DefaultLoopNode SourceSection: None
             ForRepeatingNode SourceSection: None
               ForNextElementNodeGen SourceSection: None
-                DestructuringAssignmentNode SourceSection: None
+                DestructuringAssignmentNodeGen SourceSection: None
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <>temp0
                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -5604,14 +5546,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     ReadLocalVariableNode SourceSection: None
                       Frame: [1,<>temp1,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
-                  GetItemNodeGen SourceSection: None
-                  GetItemNodeGen SourceSection: None
-                  LookupInheritedAttributeNode SourceSection: None
-                    LookupAttributeInMRONodeGen SourceSection: None
-                      IsSameTypeNodeGen SourceSection: None
-                    GetLazyClassCachedNodeGen SourceSection: None
-                  ConstructTupleNodeGen SourceSection: None
-                    PythonObjectFactoryNodeGen SourceSection: None
               BlockNode SourceSection: None
                 WriteNameNodeGen SourceSection: [25138,25160]`k = k.replace('_', '...`
                   Identifier: k
@@ -7324,7 +7258,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     DefaultLoopNode SourceSection: None
                                       ForRepeatingNode SourceSection: None
                                         ForNextElementNodeGen SourceSection: None
-                                          DestructuringAssignmentNode SourceSection: None
+                                          DestructuringAssignmentNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <>temp3
                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7347,14 +7281,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [4,<>temp4,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            GetItemNodeGen SourceSection: None
-                                            LookupInheritedAttributeNode SourceSection: None
-                                              LookupAttributeInMRONodeGen SourceSection: None
-                                                IsSameTypeNodeGen SourceSection: None
-                                              GetLazyClassCachedNodeGen SourceSection: None
-                                            ConstructTupleNodeGen SourceSection: None
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                         IfNode SourceSection: [76227,76284]`if k[:3] == 'LC_':↵ ...`
                                           YesNodeGen SourceSection: None
                                             BinaryComparisonNodeGen SourceSection: [76230,76244]`k[:3] == 'LC_'`
@@ -7399,6 +7325,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [5,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                          CalleeContext SourceSection: None
                     ExpressionStatementNode SourceSection: [76284,76302]`_init_categories()`
                       PythonCallNodeGen SourceSection: [76284,76302]`_init_categories()`
                         CachedCallNodeGen SourceSection: None
@@ -7434,7 +7361,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                    DestructuringAssignmentNode SourceSection: [76421,76451]`lang, enc = getdefau...`
+                    DestructuringAssignmentNodeGen SourceSection: [76421,76451]`lang, enc = getdefau...`
                       PythonCallNodeGen SourceSection: [76433,76451]`getdefaultlocale()`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
@@ -7464,14 +7391,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadLocalVariableNode SourceSection: None
                           Frame: [7,<>temp7,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                      GetItemNodeGen SourceSection: None
-                      GetItemNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
-                      ConstructTupleNodeGen SourceSection: None
-                        PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76456,76498]`print('Language: ', ...`
                       PythonCallNodeGen SourceSection: [76456,76498]`print('Language: ', ...`
                         CachedCallNodeGen SourceSection: None
@@ -7537,7 +7456,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         DefaultLoopNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp10
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7560,14 +7479,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [11,<>temp11,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                             BlockNode SourceSection: None
                               ExpressionStatementNode SourceSection: [76670,76688]`print(name, '...')`
                                 PythonCallNodeGen SourceSection: [76670,76688]`print(name, '...')`
@@ -7581,7 +7492,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: print
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: [76697,76728]`lang, enc = getlocal...`
+                              DestructuringAssignmentNodeGen SourceSection: [76697,76728]`lang, enc = getlocal...`
                                 PythonCallNodeGen SourceSection: [76709,76728]`getlocale(category)`
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
@@ -7614,14 +7525,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [9,<>temp9,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [76737,76782]`print('   Language: ...`
                                 PythonCallNodeGen SourceSection: [76737,76782]`print('   Language: ...`
                                   CachedCallNodeGen SourceSection: None
@@ -7714,7 +7617,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         DefaultLoopNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp14
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7737,14 +7640,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [15,<>temp15,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                             BlockNode SourceSection: None
                               ExpressionStatementNode SourceSection: [77012,77030]`print(name, '...')`
                                 PythonCallNodeGen SourceSection: [77012,77030]`print(name, '...')`
@@ -7758,7 +7653,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: print
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: [77039,77070]`lang, enc = getlocal...`
+                              DestructuringAssignmentNodeGen SourceSection: [77039,77070]`lang, enc = getlocal...`
                                 PythonCallNodeGen SourceSection: [77051,77070]`getlocale(category)`
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
@@ -7791,14 +7686,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [13,<>temp13,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [77079,77124]`print('   Language: ...`
                                 PythonCallNodeGen SourceSection: [77079,77124]`print('   Language: ...`
                                   CachedCallNodeGen SourceSection: None
@@ -7927,7 +7814,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               DefaultLoopNode SourceSection: None
                                 ForRepeatingNode SourceSection: None
                                   ForNextElementNodeGen SourceSection: None
-                                    DestructuringAssignmentNode SourceSection: None
+                                    DestructuringAssignmentNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp18
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7950,14 +7837,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         ReadLocalVariableNode SourceSection: None
                                           Frame: [19,<>temp19,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetItemNodeGen SourceSection: None
-                                      GetItemNodeGen SourceSection: None
-                                      LookupInheritedAttributeNode SourceSection: None
-                                        LookupAttributeInMRONodeGen SourceSection: None
-                                          IsSameTypeNodeGen SourceSection: None
-                                        GetLazyClassCachedNodeGen SourceSection: None
-                                      ConstructTupleNodeGen SourceSection: None
-                                        PythonObjectFactoryNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [77579,77597]`print(name, '...')`
                                       PythonCallNodeGen SourceSection: [77579,77597]`print(name, '...')`
@@ -7971,7 +7850,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    DestructuringAssignmentNode SourceSection: [77610,77641]`lang, enc = getlocal...`
+                                    DestructuringAssignmentNodeGen SourceSection: [77610,77641]`lang, enc = getlocal...`
                                       PythonCallNodeGen SourceSection: [77622,77641]`getlocale(category)`
                                         CachedCallNodeGen SourceSection: None
                                           CreateArgumentsNodeGen SourceSection: None
@@ -8004,14 +7883,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         ReadLocalVariableNode SourceSection: None
                                           Frame: [17,<>temp17,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetItemNodeGen SourceSection: None
-                                      GetItemNodeGen SourceSection: None
-                                      LookupInheritedAttributeNode SourceSection: None
-                                        LookupAttributeInMRONodeGen SourceSection: None
-                                          IsSameTypeNodeGen SourceSection: None
-                                        GetLazyClassCachedNodeGen SourceSection: None
-                                      ConstructTupleNodeGen SourceSection: None
-                                        PythonObjectFactoryNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [77654,77699]`print('   Language: ...`
                                       PythonCallNodeGen SourceSection: [77654,77699]`print('   Language: ...`
                                         CachedCallNodeGen SourceSection: None
@@ -8061,10 +7932,11 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Frame: [0,categories,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                             BlockNode SourceSection: None
-                      BlockNode SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [20,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [77783,77872]`try:↵    LC_MESSAGES...`
         TryExceptNode SourceSection: None
           ExpressionStatementNode SourceSection: [77792,77803]`LC_MESSAGES`
@@ -8084,7 +7956,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               GetCallAttributeNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [77841,77848]`__all__`
                   Identifier: __all__
-        BlockNode SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -8150,3 +8022,4 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   ReadNameNodeGen SourceSection: None
                     Identifier: _test
             BlockNode SourceSection: None
+  CalleeContext SourceSection: None

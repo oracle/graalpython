@@ -42,6 +42,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [366,389]`FunctionType = type(...`
         Identifier: FunctionType
         PythonCallNodeGen SourceSection: [381,389]`type(_f)`
@@ -89,6 +90,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: type
       WriteNameNodeGen SourceSection: [453,481]`CodeType = type(_f._...`
@@ -166,11 +168,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 ExpressionStatementNode SourceSection: [579,586]`yield 1`
                   YieldNode SourceSection: [579,586]`yield 1`
                     flagSlot: 0
-                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <return_val>
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [0,<return_val>,Illegal]
-                      IntegerLiteralNode SourceSection: [585,586]`1`
+                    IntegerLiteralNode SourceSection: [585,586]`1`
                     GeneratorAccessNode SourceSection: None
                 ReadGeneratorFrameVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
@@ -178,6 +176,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 BlockNode SourceSection: None
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [587,613]`GeneratorType = type...`
         Identifier: GeneratorType
         PythonCallNodeGen SourceSection: [603,613]`type(_g())`
@@ -221,6 +220,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [636,645]`_c = _c()`
         Identifier: _c
         PythonCallNodeGen SourceSection: [641,645]`_c()`
@@ -277,11 +277,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 ExpressionStatementNode SourceSection: [731,736]`yield`
                   YieldNode SourceSection: [731,736]`yield`
                     flagSlot: 0
-                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <return_val>
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [0,<return_val>,Illegal]
-                      EmptyNode SourceSection: None
+                    EmptyNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 ReadGeneratorFrameVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
@@ -289,6 +285,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 BlockNode SourceSection: None
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [737,748]`_ag = _ag()`
         Identifier: _ag
         PythonCallNodeGen SourceSection: [743,748]`_ag()`
@@ -387,7 +384,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -570,7 +569,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
             ReadNameNodeGen SourceSection: [1189,1198]`TypeError`
               Identifier: TypeError
           BlockNode SourceSection: None
-        BlockNode SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1365,1415]`GetSetDescriptorType...`
         Identifier: GetSetDescriptorType
         PythonCallNodeGen SourceSection: [1388,1415]`type(FunctionType.__...`
@@ -684,7 +683,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: resolve_bases
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                    DestructuringAssignmentNode SourceSection: [1782,1840]`meta, ns, kwds = pre...`
+                    DestructuringAssignmentNodeGen SourceSection: [1782,1840]`meta, ns, kwds = pre...`
                       PythonCallNodeGen SourceSection: [1799,1840]`prepare_class(name, ...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
@@ -734,17 +733,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         ReadLocalVariableNode SourceSection: None
                           Frame: [9,<>temp9,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                      GetItemNodeGen SourceSection: None
-                      GetItemNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
-                      ConstructTupleNodeGen SourceSection: None
-                        PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [1845,1897]`if exec_body is not ...`
                       NotNodeGen SourceSection: [1848,1869]`exec_body is not Non...`
-                        IsNodeGen SourceSection: None
+                        IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [1848,1857]`exec_body`
                             Frame: [3,exec_body,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -763,7 +754,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                       BlockNode SourceSection: None
                     IfNode SourceSection: [1897,1970]`if resolved_bases is...`
                       NotNodeGen SourceSection: [1900,1927]`resolved_bases is no...`
-                        IsNodeGen SourceSection: None
+                        IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [1900,1914]`resolved_bases`
                             Frame: [4,resolved_bases,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -809,6 +800,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2017,2691]`def resolve_bases(ba...`
         Identifier: resolve_bases
         FunctionDefinitionNode Name: resolve_bases SourceSection: None
@@ -870,7 +862,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         DefaultLoopNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNode SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp7
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -893,14 +885,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<>temp8,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: None
-                                LookupInheritedAttributeNode SourceSection: None
-                                  LookupAttributeInMRONodeGen SourceSection: None
-                                    IsSameTypeNodeGen SourceSection: None
-                                  GetLazyClassCachedNodeGen SourceSection: None
-                                ConstructTupleNodeGen SourceSection: None
-                                  PythonObjectFactoryNodeGen SourceSection: None
                             ContinueTargetNode SourceSection: None
                               BlockNode SourceSection: None
                                 IfNode SourceSection: [2217,2273]`if isinstance(base, ...`
@@ -1080,6 +1064,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [9,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2691,3755]`def prepare_class(na...`
         Identifier: prepare_class
         FunctionDefinitionNode Name: prepare_class SourceSection: None
@@ -1132,7 +1117,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                   BlockNode SourceSection: None
                     IfNode SourceSection: [3130,3240]`if kwds is None:↵   ...`
                       YesNodeGen SourceSection: None
-                        IsNodeGen SourceSection: [3133,3145]`kwds is None`
+                        IsExpressionNodeGen SourceSection: [3133,3145]`kwds is None`
                           ReadLocalVariableNode SourceSection: [3133,3137]`kwds`
                             Frame: [2,kwds,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1303,6 +1288,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3755,4330]`def _calculate_meta(...`
         Identifier: _calculate_meta
         FunctionDefinitionNode Name: _calculate_meta SourceSection: None
@@ -1444,6 +1430,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4330,6524]`class DynamicClassAt...`
         Identifier: DynamicClassAttribute
         ExpressionWithSideEffects SourceSection: None
@@ -1606,7 +1593,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                         ReadLocalVariableNode SourceSection: [5156,5160]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        IsNodeGen SourceSection: [5177,5188]`doc is None`
+                                        IsExpressionNodeGen SourceSection: [5177,5188]`doc is None`
                                           ReadLocalVariableNode SourceSection: [5177,5180]`doc`
                                             Frame: [4,doc,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1638,6 +1625,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5320,5629]`def __get__(self, in...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1691,7 +1679,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5374,5597]`if instance is None:...`
                                         YesNodeGen SourceSection: None
-                                          IsNodeGen SourceSection: [5377,5393]`instance is None`
+                                          IsExpressionNodeGen SourceSection: [5377,5393]`instance is None`
                                             ReadLocalVariableNode SourceSection: [5377,5385]`instance`
                                               Frame: [1,instance,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1727,7 +1715,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                             EmptyNode SourceSection: None
                                         IfNode SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsNodeGen SourceSection: [5513,5530]`self.fget is None`
+                                            IsExpressionNodeGen SourceSection: [5513,5530]`self.fget is None`
                                               GetAttributeNodeGen SourceSection: [5513,5522]`self.fget`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: fget
@@ -1767,6 +1755,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5629,5791]`def __set__(self, in...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1819,7 +1808,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5673,5759]`if self.fset is None...`
                                         YesNodeGen SourceSection: None
-                                          IsNodeGen SourceSection: [5676,5693]`self.fset is None`
+                                          IsExpressionNodeGen SourceSection: [5676,5693]`self.fset is None`
                                             GetAttributeNodeGen SourceSection: [5676,5685]`self.fset`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: fset
@@ -1858,6 +1847,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5791,5945]`def __delete__(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1903,7 +1893,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5831,5920]`if self.fdel is None...`
                                         YesNodeGen SourceSection: None
-                                          IsNodeGen SourceSection: [5834,5851]`self.fdel is None`
+                                          IsExpressionNodeGen SourceSection: [5834,5851]`self.fdel is None`
                                             GetAttributeNodeGen SourceSection: [5834,5843]`self.fdel`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: fdel
@@ -1939,6 +1929,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5945,6184]`def getter(self, fge...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2079,6 +2070,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6184,6355]`def setter(self, fse...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2191,6 +2183,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6355,6524]`def deleter(self, fd...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2303,7 +2296,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -2411,7 +2406,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                         ReadLocalVariableNode SourceSection: [6648,6652]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        IsNodeGen SourceSection: [6663,6693]`gen.__class__ is Gen...`
+                                        IsExpressionNodeGen SourceSection: [6663,6693]`gen.__class__ is Gen...`
                                           GetAttributeNodeGen SourceSection: [6663,6676]`gen.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
@@ -2460,6 +2455,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6816,6881]`def send(self, val):...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2526,6 +2522,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6881,6960]`def throw(self, tp, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2604,6 +2601,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6960,7019]`def close(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2659,6 +2657,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7019,7094]`@property↵    def gi...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2718,6 +2717,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [7019,7028]`@property`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2786,6 +2786,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [7094,7103]`@property`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2854,6 +2855,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [7171,7180]`@property`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2922,6 +2924,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [7252,7261]`@property`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3044,6 +3047,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7499,7602]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3114,6 +3118,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7602,7622]`__await__ = __iter__...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3129,6 +3134,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                               Identifier: __iter__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
+                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -3200,7 +3206,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                     IfNode SourceSection: [7803,8984]`if (func.__class__ i...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [7807,7903]`func.__class__ is Fu...`
-                          IsNodeGen SourceSection: [7807,7837]`func.__class__ is Fu...`
+                          IsExpressionNodeGen SourceSection: [7807,7837]`func.__class__ is Fu...`
                             GetAttributeNodeGen SourceSection: [7807,7821]`func.__class__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __class__
@@ -3214,7 +3220,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7825,7837]`FunctionType`
                               Identifier: FunctionType
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          IsNodeGen SourceSection: [7850,7903]`getattr(func, '__cod...`
+                          IsExpressionNodeGen SourceSection: [7850,7903]`getattr(func, '__cod...`
                             GetAttributeNodeGen SourceSection: [7850,7891]`getattr(func, '__cod...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __class__
@@ -3540,7 +3546,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                     IfNode SourceSection: [9135,9361]`if (coro.__class__ i...`
                                       YesNodeGen SourceSection: None
                                         OrNode SourceSection: [9139,9251]`coro.__class__ is Co...`
-                                          IsNodeGen SourceSection: [9139,9170]`coro.__class__ is Co...`
+                                          IsExpressionNodeGen SourceSection: [9139,9170]`coro.__class__ is Co...`
                                             GetAttributeNodeGen SourceSection: [9139,9153]`coro.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
@@ -3553,7 +3559,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                               Identifier: CoroutineType
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           AndNode SourceSection: [9186,9251]`coro.__class__ is Ge...`
-                                            IsNodeGen SourceSection: [9186,9217]`coro.__class__ is Ge...`
+                                            IsExpressionNodeGen SourceSection: [9186,9217]`coro.__class__ is Ge...`
                                               GetAttributeNodeGen SourceSection: [9186,9200]`coro.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
@@ -3665,6 +3671,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                            CalleeContext SourceSection: None
                         PythonCallNodeGen SourceSection: [9033,9055]`@functools.wraps(fun...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
@@ -3689,6 +3696,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
+            CalleeContext SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -3741,13 +3749,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                           ExpressionStatementNode SourceSection: [9880,9881]`n`
                             YieldNode SourceSection: [9880,9881]`n`
                               flagSlot: 0
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: <return_val>
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
-                                ReadGeneratorFrameVariableNode SourceSection: [9880,9881]`n`
-                                  Frame: [0,n,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [9880,9881]`n`
+                                Frame: [0,n,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           BlockNode SourceSection: None
                         WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -3757,7 +3761,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
-                        GetNextCachedNode SourceSection: None
+                        GetNextNode SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
@@ -3767,6 +3771,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                       BlockNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                       PRaiseNodeGen SourceSection: None
+                  CalleeContext SourceSection: None
                 GetIteratorExpressionNodeGen SourceSection: [9891,9900]`globals()`
                   GetIteratorNodeGen SourceSection: None
                   PythonCallNodeGen SourceSection: [9891,9900]`globals()`
@@ -3779,3 +3784,4 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
               ReadGlobalOrBuiltinNodeGen SourceSection: None
                 Identifier: list
                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+  CalleeContext SourceSection: None

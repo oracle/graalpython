@@ -10,3 +10,4 @@ ModuleRootNode Name: <module 'binaryOp01'> SourceSection: [0,6]`1 + 10`
         Op: __add__
       IntegerLiteralNode SourceSection: [0,1]`1`
       IntegerLiteralNode SourceSection: [4,6]`10`
+  CalleeContext SourceSection: None

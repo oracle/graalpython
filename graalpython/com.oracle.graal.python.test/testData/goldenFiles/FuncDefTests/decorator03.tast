@@ -42,6 +42,7 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
+                CalleeContext SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNodeGen SourceSection: None
                 GetFixedAttributeNodeGen SourceSection: None
@@ -55,3 +56,4 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                       Op: __getattribute__
                   ReadNameNodeGen SourceSection: None
                     Identifier: some
+  CalleeContext SourceSection: None

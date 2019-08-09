@@ -11,3 +11,4 @@ ModuleRootNode Name: <module 'dict03'> SourceSection: [0,6]`{a:b,}`
         Identifier: a
       ReadNameNodeGen SourceSection: [3,4]`b`
         Identifier: b
+  CalleeContext SourceSection: None

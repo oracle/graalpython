@@ -47,3 +47,5 @@ ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ 
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

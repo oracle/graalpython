@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
             DefaultLoopNode SourceSection: None
               ForRepeatingNode SourceSection: None
                 ForNextElementNodeGen SourceSection: None
-                  DestructuringAssignmentNode SourceSection: None
+                  DestructuringAssignmentNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <>temp0
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -33,14 +33,6 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
                       ReadLocalVariableNode SourceSection: None
                         Frame: [1,<>temp1,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                    GetItemNodeGen SourceSection: None
-                    GetItemNodeGen SourceSection: None
-                    LookupInheritedAttributeNode SourceSection: None
-                      LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeNodeGen SourceSection: None
-                      GetLazyClassCachedNodeGen SourceSection: None
-                    ConstructTupleNodeGen SourceSection: None
-                      PythonObjectFactoryNodeGen SourceSection: None
                 ExpressionStatementNode SourceSection: [16,20]`pass`
                   EmptyNode SourceSection: [16,20]`pass`
             GetIteratorExpressionNodeGen SourceSection: [12,14]`()`
@@ -48,3 +40,4 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
               TupleLiteralNode SourceSection: [12,14]`()`
                 PythonObjectFactoryNodeGen SourceSection: None
           BlockNode SourceSection: None
+  CalleeContext SourceSection: None

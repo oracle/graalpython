@@ -26,3 +26,4 @@ ModuleRootNode Name: <module 'fnCall09'> SourceSection: [0,25]`foo(a, b, c, *arg
             Identifier: kw
       ReadNameNodeGen SourceSection: None
         Identifier: foo
+  CalleeContext SourceSection: None

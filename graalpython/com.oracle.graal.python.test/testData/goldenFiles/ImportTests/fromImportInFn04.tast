@@ -52,3 +52,5 @@ ModuleRootNode Name: <module 'fromImportInFn04'> SourceSection: [0,66]`def fn():
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

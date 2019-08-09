@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'assignment05'> SourceSection: [0,17]`a, b, c = 1, 
       Expression:
         EmptyNode SourceSection: None
       SideEffect:
-        DestructuringAssignmentNode SourceSection: [0,17]`a, b, c = 1, 2, 3`
+        DestructuringAssignmentNodeGen SourceSection: [0,17]`a, b, c = 1, 2, 3`
           TupleLiteralNode SourceSection: [10,17]`1, 2, 3`
             PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [10,11]`1`
@@ -42,11 +42,4 @@ ModuleRootNode Name: <module 'assignment05'> SourceSection: [0,17]`a, b, c = 1, 
             ReadLocalVariableNode SourceSection: None
               Frame: [2,<>temp2,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
-          GetItemNodeGen SourceSection: None
-          GetItemNodeGen SourceSection: None
-          LookupInheritedAttributeNode SourceSection: None
-            LookupAttributeInMRONodeGen SourceSection: None
-              IsSameTypeNodeGen SourceSection: None
-            GetLazyClassCachedNodeGen SourceSection: None
-          ConstructTupleNodeGen SourceSection: None
-            PythonObjectFactoryNodeGen SourceSection: None
+  CalleeContext SourceSection: None

@@ -15,12 +15,12 @@ Scope: []
         FreeVars: Empty
     Scope: execusercustomize
         Kind: Function
-        FrameDescriptor: [usercustomize, <return_val>]
+        FrameDescriptor: [exc, usercustomize, err, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: execsitecustomize
         Kind: Function
-        FrameDescriptor: [sitecustomize, <return_val>]
+        FrameDescriptor: [exc, err, sitecustomize, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: venv

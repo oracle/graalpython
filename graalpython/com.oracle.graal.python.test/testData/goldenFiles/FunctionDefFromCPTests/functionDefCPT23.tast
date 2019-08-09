@@ -63,3 +63,5 @@ ModuleRootNode Name: <module 'functionDefCPT23'> SourceSection: [0,28]`def f(*ar
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

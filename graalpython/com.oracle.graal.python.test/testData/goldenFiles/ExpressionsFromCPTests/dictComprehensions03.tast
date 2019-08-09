@@ -52,18 +52,14 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     ExpressionStatementNode SourceSection: None
                       YieldNode SourceSection: None
                         flagSlot: 0
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [2,<return_val>,Illegal]
-                          TupleLiteralNode SourceSection: None
-                            PythonObjectFactoryNodeGen SourceSection: None
-                            ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
-                              Frame: [1,x,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
-                              Frame: [1,x,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
+                        TupleLiteralNode SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                            Frame: [1,x,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
+                            Frame: [1,x,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     BlockNode SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -75,7 +71,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`seq2`
                       Identifier: seq2
                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  GetNextCachedNode SourceSection: None
+                  GetNextNode SourceSection: None
                     LookupAndCallUnaryNodeGen SourceSection: None
                       Op: __next__
                   GeneratorAccessNode SourceSection: None
@@ -86,7 +82,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextCachedNode SourceSection: None
+                GetNextNode SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
@@ -96,6 +92,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
+          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [14,18]`seq1`
           GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [14,18]`seq1`
@@ -104,3 +101,4 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+  CalleeContext SourceSection: None

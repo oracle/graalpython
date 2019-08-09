@@ -101,3 +101,5 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

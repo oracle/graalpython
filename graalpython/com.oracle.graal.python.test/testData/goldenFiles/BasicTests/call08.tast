@@ -20,3 +20,4 @@ ModuleRootNode Name: <module 'call08'> SourceSection: [0,31]`foo('ahoj', arg1 = 
           EmptyNode SourceSection: None
       ReadNameNodeGen SourceSection: None
         Identifier: foo
+  CalleeContext SourceSection: None

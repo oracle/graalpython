@@ -13,3 +13,4 @@ ModuleRootNode Name: <module 'slice02'> SourceSection: [0,6]`a[1::]`
         IntegerLiteralNode SourceSection: [2,3]`1`
         EmptyNode SourceSection: None
         EmptyNode SourceSection: None
+  CalleeContext SourceSection: None

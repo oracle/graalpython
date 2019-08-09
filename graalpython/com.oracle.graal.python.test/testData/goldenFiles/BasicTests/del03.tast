@@ -13,3 +13,4 @@ ModuleRootNode Name: <module 'del03'> SourceSection: [0,13]`del (x, y, z)`
       DeleteNameNodeGen SourceSection: None
         Identifier: z
       EmptyNode SourceSection: None
+  CalleeContext SourceSection: None

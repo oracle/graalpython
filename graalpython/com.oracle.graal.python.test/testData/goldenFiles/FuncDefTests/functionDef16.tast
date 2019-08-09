@@ -122,6 +122,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                 Frame: [1,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                          CalleeContext SourceSection: None
                                     ExpressionStatementNode SourceSection: [94,107]`inner_inner()`
                                       PythonCallNodeGen SourceSection: [94,107]`inner_inner()`
                                         CachedCallNodeGen SourceSection: None
@@ -133,6 +134,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                            CalleeContext SourceSection: None
                       ExpressionStatementNode SourceSection: [110,125]`inner(" baf\n")`
                         PythonCallNodeGen SourceSection: [110,125]`inner(" baf\n")`
                           CachedCallNodeGen SourceSection: None
@@ -145,3 +147,5 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

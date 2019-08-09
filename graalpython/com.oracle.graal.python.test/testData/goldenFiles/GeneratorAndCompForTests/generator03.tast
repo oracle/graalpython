@@ -67,21 +67,17 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                   ExpressionStatementNode SourceSection: [22,27]`x + c`
                                     YieldNode SourceSection: [22,27]`x + c`
                                       flagSlot: 0
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [22,27]`x + c`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
-                                          ReadGeneratorFrameVariableNode SourceSection: [22,23]`x`
-                                            Frame: [0,x,Illegal]
+                                      BinaryArithmeticExpression SourceSection: [22,27]`x + c`
+                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                          Op: __add__
+                                        ReadGeneratorFrameVariableNode SourceSection: [22,23]`x`
+                                          Frame: [0,x,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [26,27]`c`
+                                          ReadGeneratorFrameVariableNode SourceSection: None
+                                            Frame: [1,c,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: [26,27]`c`
-                                            ReadGeneratorFrameVariableNode SourceSection: None
-                                              Frame: [1,c,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadFromCellNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: x
@@ -90,7 +86,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                  GetNextCachedNode SourceSection: None
+                                  GetNextNode SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
@@ -100,6 +96,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
+                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [37,46]`range(10)`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [37,46]`range(10)`
@@ -114,3 +111,5 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

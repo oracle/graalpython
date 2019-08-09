@@ -12,3 +12,4 @@ ModuleRootNode Name: <module 'binOp05'> SourceSection: [0,10]`foo // bar`
         Identifier: foo
       ReadNameNodeGen SourceSection: [7,10]`bar`
         Identifier: bar
+  CalleeContext SourceSection: None

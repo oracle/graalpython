@@ -20,3 +20,4 @@ ModuleRootNode Name: <module 'dict10'> SourceSection: [0,46]`{**{"a": "hello", "
         IntegerLiteralNode SourceSection: [41,42]`5`
         IntegerLiteralNode SourceSection: [38,39]`4`
         IntegerLiteralNode SourceSection: [43,44]`6`
+  CalleeContext SourceSection: None

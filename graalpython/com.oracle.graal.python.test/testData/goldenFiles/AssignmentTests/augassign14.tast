@@ -48,7 +48,7 @@ ModuleRootNode Name: <module 'augassign14'> SourceSection: [0,61]`def _method(*a
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                    DestructuringAssignmentNode SourceSection: [36,61]`cls_or_self, *rest =...`
+                    DestructuringAssignmentNodeGen SourceSection: [36,61]`cls_or_self, *rest =...`
                       ReadLocalVariableNode SourceSection: [57,61]`args`
                         Frame: [0,args,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -74,15 +74,8 @@ ModuleRootNode Name: <module 'augassign14'> SourceSection: [0,61]`def _method(*a
                         ReadLocalVariableNode SourceSection: None
                           Frame: [5,<>temp5,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                      GetItemNodeGen SourceSection: None
-                      GetItemNodeGen SourceSection: None
-                      LenNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassCachedNodeGen SourceSection: None
-                      ConstructTupleNodeGen SourceSection: None
-                        PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [6,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

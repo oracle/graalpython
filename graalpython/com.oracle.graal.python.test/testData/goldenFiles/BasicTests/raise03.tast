@@ -18,3 +18,4 @@ ModuleRootNode Name: <module 'raise03'> SourceSection: [0,24]`raise NameError('P
             ReadNameNodeGen SourceSection: None
               Identifier: NameError
           EmptyNode SourceSection: None
+  CalleeContext SourceSection: None

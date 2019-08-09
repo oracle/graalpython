@@ -43,3 +43,5 @@ ModuleRootNode Name: <module 'basicInFn01'> SourceSection: [0,22]`def fn():↵  
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

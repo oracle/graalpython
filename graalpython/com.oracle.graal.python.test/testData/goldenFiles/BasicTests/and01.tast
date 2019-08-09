@@ -11,3 +11,4 @@ ModuleRootNode Name: <module 'and01'> SourceSection: [0,7]`a and b`
       ReadNameNodeGen SourceSection: [6,7]`b`
         Identifier: b
       YesNodeGen SourceSection: None
+  CalleeContext SourceSection: None

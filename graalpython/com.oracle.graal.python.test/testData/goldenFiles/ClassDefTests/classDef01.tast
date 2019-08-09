@@ -53,6 +53,7 @@ ModuleRootNode Name: <module 'classDef01'> SourceSection: [0,16]`class foo():pas
                           ExpressionStatementNode SourceSection: [12,16]`pass`
                             EmptyNode SourceSection: [12,16]`pass`
                         Return Expresssion: ObjectLiteralNode SourceSection: None
+                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 GetCallAttributeNodeGen SourceSection: None
                   BuiltinsLiteralNode SourceSection: None
@@ -63,3 +64,4 @@ ModuleRootNode Name: <module 'classDef01'> SourceSection: [0,16]`class foo():pas
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
+  CalleeContext SourceSection: None
