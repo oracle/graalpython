@@ -295,8 +295,8 @@ class EnvBuilder:
                         break
 
         # Truffle change: we need to set some extra options for the launcher to work
-        from capi_graalpython import build_capi
-        build_capi()
+        import build_capi
+        build_capi.build()
         # Truffle change end
             
     

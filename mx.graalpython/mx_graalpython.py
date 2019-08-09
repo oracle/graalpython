@@ -310,12 +310,15 @@ def _graalpytest_root():
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None):
     args = args or []
-    args = ["--experimental-options=true", "--python.CatchAllExceptions=true", mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>")] + args
+    args = ["--experimental-options=true", 
+            "--python.CatchAllExceptions=true", 
+            mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"),
+            ] + args
     exclude = exclude or []
     paths = paths or [_graalpytest_root()]
 
     # ensure that C API was built (we may need on-demand compilation)
-    mx.run([python_binary] + args + ["-m", "capi_graalpython"], nonZeroIsFatal=True)
+    mx.run([python_binary] + args + ["-m", "build_capi"], nonZeroIsFatal=True)
 
     # list of excluded tests
     if aot_compatible:

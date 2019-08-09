@@ -77,10 +77,12 @@ def _init_posix():
     g['CPPFLAGS'] = '-I. -I%s' % get_python_inc()
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
-    g['LDSHARED'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC') 
+    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
     if darwin_native:
         capi_home = str(sys.graal_python_cext_home)
-        g['LDSHARED'] = g['LDSHARED'] + " -L" + capi_home + " -lpython." + so_abi + " -Wl,-rpath," + capi_home
+        g['LDSHARED'] = g['LDSHARED_LINUX'] + " -L" + capi_home + " -lpython." + so_abi + " -Wl,-rpath," + capi_home
+    else:
+        g['LDSHARED'] = g['LDSHARED_LINUX']
     g['SOABI'] = so_abi
     g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
