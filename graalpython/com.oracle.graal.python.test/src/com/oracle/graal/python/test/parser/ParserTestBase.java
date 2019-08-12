@@ -86,6 +86,10 @@ public class ParserTestBase {
         context = PythonLanguage.getContextRef().get();
     }
     
+    protected Source createSource(File testFile) throws Exception {
+        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
+        return context.getLanguage().newSource(context, src, getFileName(testFile));
+    }
     
     protected RootNode parseOld(String src, String moduleName, PythonParser.ParserMode mode) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();

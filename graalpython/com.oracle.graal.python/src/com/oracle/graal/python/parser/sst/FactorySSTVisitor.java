@@ -278,7 +278,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
-
+    
     @Override
     public PNode visit(CallSSTNode node) {
         ExpressionNode target = (ExpressionNode)node.target.accept(this);
@@ -342,7 +342,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         for (int i = 0; i < bodyNodes.length; i++) {
             bodyStatements[i+1] = (StatementNode)bodyNodes[i].accept(this);
         }
-        ExpressionNode doc = (new PythonNodeFactory.DocExtractor()).extract(bodyStatements[1]);
+        ExpressionNode doc = StringUtils.extractDoc(bodyStatements[1]);
         if (doc != null) {
             scopeEnvironment.createLocal(__DOC__);
             bodyStatements[1] = scopeEnvironment.findVariable(__DOC__).makeWriteNode(doc);
@@ -674,7 +674,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         } else {
             body = (StatementNode)node.body.accept(this);
         }
-        ExpressionNode doc = (new PythonNodeFactory.DocExtractor()).extract(body);
+        ExpressionNode doc = StringUtils.extractDoc(body);
         if (doc != null) {
             if (body instanceof BaseBlockNode) {
                 StatementNode[] st = ((BaseBlockNode)body).getStatements();

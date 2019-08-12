@@ -537,7 +537,11 @@ small_stmt
 :
 	expr_stmt
 	| del_stmt
-	| pass_stmt
+	| p='pass'
+            { 
+                int start = $p.getStartIndex(); 
+                push(new SimpleSSTNode(SimpleSSTNode.Type.PASS, start, start + 4 ));
+            }
 	| flow_stmt
 	| import_stmt
 	| global_stmt
@@ -618,11 +622,6 @@ del_stmt
 :
 	'del' exprlist
 	{ push(new DelSSTNode($exprlist.result, getStartIndex($ctx), getStopIndex($exprlist.stop))); }
-;
-
-pass_stmt: 
-        p='pass'
-        {push(new SimpleSSTNode(SimpleSSTNode.Type.PASS, getStartIndex($p), getStopIndex($p)));}
 ;
 
 flow_stmt
@@ -1184,10 +1183,10 @@ atom returns [SSTNode result]
 	| FLOAT_NUMBER { $result = new FloatLiteralSSTNode($FLOAT_NUMBER.text, false, $FLOAT_NUMBER.getStartIndex(), $FLOAT_NUMBER.getStopIndex() + 1); }
 	| IMAG_NUMBER { $result = new FloatLiteralSSTNode($IMAG_NUMBER.text, true, $IMAG_NUMBER.getStartIndex(), $IMAG_NUMBER.getStopIndex() + 1); }
 	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = new StringLiteralSSTNode(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
-	| t='...' { $result = new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS,  $t.getStartIndex(), $t.getStopIndex() + 1);}
-	| t='None' { $result = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  $t.getStartIndex(), $t.getStopIndex() + 1);}
-	| t='True' { $result = new BooleanLiteralSSTNode(true,  $t.getStartIndex(), $t.getStopIndex() + 1); }
-	| t='False' { $result = new BooleanLiteralSSTNode(false, $t.getStartIndex(), $t.getStopIndex() + 1); }
+	| t='...' { int start = $t.getStartIndex(); $result = new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS,  start, start + 3);}
+	| t='None' { int start = $t.getStartIndex(); $result = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  start, start + 4);}
+	| t='True' { int start = $t.getStartIndex(); $result = new BooleanLiteralSSTNode(true,  start, start + 4); }
+	| t='False' { int start = $t.getStartIndex(); $result = new BooleanLiteralSSTNode(false, start, start + 5); }
 ;
 
 

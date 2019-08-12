@@ -71,6 +71,7 @@ import com.oracle.graal.python.parser.sst.ImportSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.StarSSTNode;
+import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
@@ -305,7 +306,7 @@ public final class PythonNodeFactory {
     }
            
     public String getModuleDoc (ExpressionNode from) {
-        StringLiteralNode sln = (new DocExtractor()).extract(from);
+        StringLiteralNode sln = StringUtils.extractDoc(from);
         String doc = null;
         if (sln != null) {
             doc = sln.getValue();
@@ -362,35 +363,35 @@ public final class PythonNodeFactory {
         }
     }
     
-    public static class DocExtractor {
-        
-        private boolean firstStatement = true;
-        
-        public StringLiteralNode extract(StatementNode node) {
-            if (node instanceof ExpressionNode.ExpressionStatementNode) {
-                return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
-            } else if (node instanceof BaseBlockNode) {
-                StatementNode[] statements = ((BaseBlockNode)node).getStatements();
-                if (statements != null && statements.length > 0) {
-                    return extract(statements[0]);
-                }
-                return null;
-            }
-            return null;
-        }
-        
-        public StringLiteralNode extract(ExpressionNode node) {
-            if (node instanceof StringLiteralNode) {
-                return (StringLiteralNode) node;
-            } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
-                return extract(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
-            } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
-                StatementNode[] sideEffects = ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
-                if (sideEffects != null && sideEffects.length > 0) {
-                    return extract(sideEffects[0]);
-                }
-            }
-            return null;
-        }
-    }
+    
+//    public static class DocExtractor {
+//        
+//        
+//        public StringLiteralNode extract(StatementNode node) {
+//            if (node instanceof ExpressionNode.ExpressionStatementNode) {
+//                return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
+//            } else if (node instanceof BaseBlockNode) {
+//                StatementNode[] statements = ((BaseBlockNode)node).getStatements();
+//                if (statements != null && statements.length > 0) {
+//                    return extract(statements[0]);
+//                }
+//                return null;
+//            }
+//            return null;
+//        }
+//        
+//        public StringLiteralNode extract(ExpressionNode node) {
+//            if (node instanceof StringLiteralNode) {
+//                return (StringLiteralNode) node;
+//            } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
+//                return extract(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
+//            } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
+//                StatementNode[] sideEffects = ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
+//                if (sideEffects != null && sideEffects.length > 0) {
+//                    return extract(sideEffects[0]);
+//                }
+//            }
+//            return null;
+//        }
+//    }
 }

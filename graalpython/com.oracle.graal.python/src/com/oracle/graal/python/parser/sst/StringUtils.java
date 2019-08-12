@@ -44,12 +44,54 @@ package com.oracle.graal.python.parser.sst;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.control.BaseBlockNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.literal.StringLiteralNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 import java.util.ArrayList;
 import java.util.List;
 
 public class StringUtils {
+    
+    public static StringLiteralNode extractDoc(StatementNode node) {
+        if (node instanceof ExpressionNode.ExpressionStatementNode) {
+            return extractDoc(((ExpressionNode.ExpressionStatementNode) node).getExpression());
+        } else if (node instanceof BaseBlockNode) {
+            StatementNode[] statements = ((BaseBlockNode)node).getStatements();
+            if (statements != null && statements.length > 0) {
+                return extractDoc(statements[0]);
+            }
+            return null;
+        }
+        return null;
+    }
+
+    public static StringLiteralNode extractDoc(ExpressionNode node) {
+        if (node instanceof StringLiteralNode) {
+            return (StringLiteralNode) node;
+        } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
+            return extractDoc(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
+        } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
+            StatementNode[] sideEffects = ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
+            if (sideEffects != null && sideEffects.length > 0) {
+                return extractDoc(sideEffects[0]);
+            }
+        }
+        return null;
+    }
+
+//    public static StringLiteralNode getDoc(BlockSSTNode block, NodeFactory nodeFactory, PythonParser.ParserErrorCallback errors) {
+//        if (block.statements.length > 0 && block.statements[0] instanceof StringLiteralSSTNode) {
+//            SSTNode node = block.statements[0];
+//            PNode result =  parseString(((StringLiteralSSTNode)node).values, nodeFactory, errors);
+//            if (result instanceof StringLiteralNode) {
+//                return (StringLiteralNode)result;
+//            }
+//        }
+//        return null;
+//    }
     
     private static class BytesBuilder {
         List<byte[]> bytes = new ArrayList<>();
