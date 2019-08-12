@@ -1969,4 +1969,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return "/dev/tty";
         }
     }
+
+    @Builtin(name = "symlink", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst", "target_is_directory", "dir_fd"})
+    @GenerateNodeFactory
+    public abstract static class SymlinkNode extends PythonBuiltinNode {
+
+        @Specialization(guards = {"isNoValue(targetIsDir)", "isNoValue(dirFd)"})
+        PNone doSimple(VirtualFrame frame, Object srcObj, Object dstObj, @SuppressWarnings("unused") PNone targetIsDir, @SuppressWarnings("unused") PNone dirFd,
+                       @Cached ConvertPathlikeObjectNode castSrcToPath,
+                       @Cached ConvertPathlikeObjectNode castDstToPath) {
+            String src = castSrcToPath.execute(frame, srcObj);
+            String dst = castDstToPath.execute(frame, dstObj);
+
+            Env env = getContext().getEnv();
+            TruffleFile dstFile = env.getPublicTruffleFile(dst);
+            try {
+                dstFile.createSymbolicLink(env.getPublicTruffleFile(src));
+            } catch (IOException e) {
+                throw raiseOSError(frame, OSErrorEnum.EIO, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
 }
