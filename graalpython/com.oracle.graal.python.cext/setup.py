@@ -56,8 +56,6 @@ libpython_name = "libpython"
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
 so_ext = get_config_var("EXT_SUFFIX")
-capi_module = os.path.abspath(os.path.join(sys.graal_python_cext_home, libpython_name + so_ext))
-cflags = cflags_warnings
 
 def system(cmd, msg=""):
     logger.debug("Running command: " + cmd)
@@ -69,11 +67,6 @@ def system(cmd, msg=""):
 def xit(msg, status=-1):
     print(msg)
     exit(-1)
-
-
-class BzipBuilder:
-    def __call__(self, dir):
-        system("make CC='%s'" % (get_config_var("CC"), get_config_var("CXX")))
 
 
 class CAPIDependency:
@@ -143,6 +136,7 @@ class CAPIDependency:
 class Bzip2Depedency(CAPIDependency):
     makefile = "Makefile-libbz2_so"
     header_name = "bzlib.h"
+    install_name = "libbz2.so.1.0"
 
     def build(self, extracted_dir=None):
         if not extracted_dir:
@@ -158,10 +152,11 @@ class Bzip2Depedency(CAPIDependency):
 
         # bzip2's Makefile will name the output file 'libb2.so.<version>'
         lib_filename = "libbz2.so." + self.version
+        #lib_filename = "bzip2-shared"
 
         # The destination file name will be 'libbz2.so'. The Makefile also creates a symbolic link called
         # 'libbz2.so.1.0' which we could use but to be more platform-independent, we just rename the file.
-        dest_lib_filename = os.path.join(self.lib_install_dir, "libbz2.so")
+        dest_lib_filename = os.path.join(self.lib_install_dir, self.install_name)
 
         logger.info("Installing dependency %s to %s" % (self.package_name, dest_lib_filename))
         shutil.move(os.path.join(build_dir, lib_filename), dest_lib_filename)
@@ -171,6 +166,9 @@ class Bzip2Depedency(CAPIDependency):
 
         logger.info("Installing header file %s to %s" % (self.header_name, dest_include_filename))
         shutil.copy(os.path.join(build_dir, self.header_name), dest_include_filename)
+
+        # create symlink 'libbz2.so' for linking
+        os.symlink(self.install_name, os.path.join(self.lib_install_dir, "lib%s.so" % self.lib_name))
 
         return self.lib_install_dir
 
@@ -226,31 +224,36 @@ class NativeBuiltinModule:
             self.files = [name + ".c"]
 
     def __call__(self):
-        libs = []
+        libs = ["polyglot-mock"] if darwin_native else []
+        library_dirs = []
         include_dirs = []
-        extra_link_args = ["-lpolyglot-mock"] if darwin_native else []
+        runtime_library_dirs = []
+        extra_link_args = []
         for dep in self.deps:
             if not dep.conftest():
                 # this will download, build and install the library
                 install_dir = dep.install()
-                # if the dependency install a shared lib, use the lib during linking
-                if install_dir:
-                    libs.append(dep.lib_name)
-                    extra_link_args.append("-L" + install_dir)
-
-                # if the dependency installed a header file, add the include path
-                if dep.include_install_dir:
-                    include_dirs.append(dep.include_install_dir)
+                assert install_dir == dep.lib_install_dir
             else:
                 logger.info("conftest for %s passed; not installing", dep.package_name)
 
             # Whether or not the dependency is already available, we need to link against it.
-            extra_link_args.append("-l" + dep.lib_name)
+            if dep.lib_install_dir:
+                libs.append(dep.lib_name)
+                library_dirs.append(dep.lib_install_dir)
+                #runtime_library_dirs.append(dep.lib_install_dir)
+                extra_link_args.append("-Wl,-rpath," + dep.lib_install_dir)
+
+            # If the dependency provides a header file, add the include path
+            if dep.include_install_dir:
+                include_dirs.append(dep.include_install_dir)
 
         return Extension(self.name,
                          sources=[os.path.join(__dir__, self.subdir, f) for f in self.files],
                          libraries=libs,
-                         extra_compile_args=cflags,
+                         library_dirs=library_dirs,
+                         extra_compile_args=cflags_warnings,
+                         runtime_library_dirs=runtime_library_dirs,
                          include_dirs=include_dirs,
                          extra_link_args=extra_link_args,
                          )
@@ -280,7 +283,7 @@ class BootstrapContextManager:
             get_config_vars()["LDSHARED"] = self.default_link_args
 
 
-def build_libpython():
+def build_libpython(capi_home):
     src_dir = os.path.join(__dir__, "src")
     files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
     module = Extension(libpython_name,
@@ -290,7 +293,7 @@ def build_libpython():
                        # 'libpolyglot-mock' that provides definitions for polyglot functions and we define an install name for this lib.
                        extra_link_args=["-lpolyglot-mock", "-Wl,-install_name,@rpath/" + libpython_name + so_ext] if darwin_native else [],
     )
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % sys.graal_python_cext_home, "clean"]
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
     with BootstrapContextManager():
         setup(
             script_name='setup' + libpython_name,
@@ -301,8 +304,8 @@ def build_libpython():
             ext_modules=[module],
         )
 
-def build_builtin_exts():
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % sys.graal_python_cext_module_home, "clean"]
+def build_builtin_exts(capi_module_home):
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_module_home, "clean"]
     for ext in builtin_exts:
         distutil_ext = ext()
         res = setup(
@@ -316,9 +319,9 @@ def build_builtin_exts():
         logger.debug("Successfully built and installed module %s", ext.name)
 
 
-def build():
-    build_libpython()
-    build_builtin_exts()
+def build(capi_home, capi_module_home):
+    build_libpython(capi_home)
+    build_builtin_exts(capi_module_home)
 
 
 if __name__ == "__main__":

@@ -69,6 +69,7 @@ def _init_posix():
     so_ext = ".so" if not darwin_native else ".dylib"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
 
+
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
     g['CXX'] = sys.__graal_get_toolchain_path('CXX')
@@ -79,7 +80,7 @@ def _init_posix():
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED_LINUX'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
     if darwin_native:
-        capi_home = str(sys.graal_python_cext_home)
+        from build_capi import capi_home
         g['LDSHARED'] = g['LDSHARED_LINUX'] + " -L" + capi_home + " -lpython." + so_abi + " -Wl,-rpath," + capi_home
     else:
         g['LDSHARED'] = g['LDSHARED_LINUX']

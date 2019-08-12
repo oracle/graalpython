@@ -57,12 +57,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -85,7 +87,9 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -244,48 +248,68 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
-            PythonContext ctxt = getContext();
-            if (!ctxt.capiWasLoaded()) {
-                Env env = ctxt.getEnv();
+            PythonContext context = getContext();
+            if (!context.capiWasLoaded()) {
+                Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
 
-                // get C API home path from sys module
-                PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
-                String capiHome;
-                Object capiHomeAttr = sysModule.getAttribute(SysModuleBuiltins.GRAAL_PYTHON_CEXT_HOME);
-                if (capiHomeAttr instanceof String) {
-                    capiHome = (String) capiHomeAttr;
-                } else {
-                    throw raise(PythonErrorType.ImportError, "cannot load C api from " + capiHomeAttr);
-                }
-
-                // TODO(fa): should we try all extension suffixes?
-                String extSuffix = ExtensionSuffixesNode.getSoAbi(ctxt);
-
-                TruffleFile capiFile = env.getInternalTruffleFile(String.join(env.getFileNameSeparator(), capiHome, "libpython" + extSuffix));
+                String libPythonName = "libpython" + ExtensionSuffixesNode.getSoAbi(context);
+                String libPythonPath = getCapiHome(context, env, libPythonName);
+                TruffleFile capiFile = env.getInternalTruffleFile(libPythonPath);
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
-                    if (!PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources)) {
+                    if (!PythonOptions.getOption(context, PythonOptions.ExposeInternalSources)) {
                         capiSrcBuilder.internal(true);
                     }
-                    capi = ctxt.getEnv().parseInternal(capiSrcBuilder.build()).call();
+                    capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
                 } catch (SecurityException | IOException e) {
                     throw raise(PythonErrorType.ImportError, "cannot load C api from " + capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
-                ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
-                PythonModule builtinModule = ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
+                PythonModule builtinModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
 
                 CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
                 callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capi);
-                ctxt.setCapiWasLoaded(capi);
+                context.setCapiWasLoaded(capi);
                 callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capi);
 
                 // initialization needs to be finished already but load memoryview implementation
                 // immediately
                 callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
             }
+        }
+
+        private String getCapiHome(PythonContext context, Env env, String libPythonName) {
+            CompilerAsserts.neverPartOfCompilation();
+            // look for file 'libPythonName' in the path
+            PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in entries of 'sys.path'");
+            ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
+            PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
+            Object pathObj = readNode.execute(sysModule, "path");
+            if(pathObj instanceof PList) {
+                SequenceStorage storage = ((PList) pathObj).getSequenceStorage();
+                for(int i=0; i < storage.length(); i++) {
+                    String path = String.join(env.getFileNameSeparator(), storage.getItemNormalized(i).toString(), libPythonName);
+                    PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in " + path);
+                    try {
+                        if (env.getInternalTruffleFile(path).exists()) {
+                            PythonLanguage.getLogger().log(Level.FINE, "Found " + libPythonName +" in " + path);
+                            return path;
+                        }
+                    } catch(SecurityException e) {
+                        // ignore
+                    }
+                }
+            } else {
+                // generic case
+                SequenceNodes.LenNode lenNode = SequenceNodes.LenNode.getUncached();
+                PInteropSubscriptNode getItemNode = PInteropSubscriptNode.getUncached();
+
+                 // TODO
+            }
+            throw raise(PythonErrorType.ImportError, "cannot load C API '%s' from 'sys.path'", libPythonName);
         }
 
         private SetItemNode getSetItemNode() {

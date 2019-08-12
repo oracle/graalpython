@@ -99,7 +99,6 @@ import com.oracle.truffle.llvm.api.Toolchain;
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
     public static final String LLVM_LANGUAGE = "llvm";
-    public static final String GRAAL_PYTHON_CEXT_HOME = "graal_python_cext_home";
     private static final String LICENSE = "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.";
     private static final String COMPILE_TIME;
     static {
@@ -210,14 +209,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-        String cextModuleHome = String.join(env.getFileNameSeparator(), context.getCoreHome(), "modules", toolchain.getIdentifier());
-        String cextHome = String.join(env.getFileNameSeparator(), context.getCoreHome(), toolchain.getIdentifier());
         String capiSrc = context.getCAPIHome();
 
         Object[] path;
         int pathIdx = 0;
         boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
-        int defaultPaths = doIsolate ? 3 : 4;
+        int defaultPaths = doIsolate ? 2 : 3;
         if (option.length() > 0) {
             String[] split = option.split(context.getEnv().getPathSeparator());
             path = new Object[split.length + defaultPaths];
@@ -231,11 +228,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
         path[pathIdx++] = context.getStdlibHome();
         path[pathIdx++] = context.getCoreHome() + env.getFileNameSeparator() + "modules";
-        path[pathIdx++] = cextModuleHome;
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
-        sys.setAttribute(GRAAL_PYTHON_CEXT_HOME, cextHome);
-        sys.setAttribute("graal_python_cext_module_home", cextModuleHome);
         sys.setAttribute("graal_python_cext_src", capiSrc);
         sys.setAttribute("graal_python_platform_id", toolchain.getIdentifier());
     }

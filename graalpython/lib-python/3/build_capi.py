@@ -42,6 +42,10 @@ import os
 import logging
 import importlib.util
 import distutils.log as dlog
+import site
+
+capi_home = site.getusersitepackages()
+capi_module_home = site.getusersitepackages()
 
 def build(args=[]):
     if "-v" in args or "--verbose" in args:
@@ -55,7 +59,7 @@ def build(args=[]):
     spec = importlib.util.spec_from_file_location("setup.py", os.path.join(sys.graal_python_cext_src, "setup.py"))
     setup_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(setup_module)
-    return setup_module.build()
+    return setup_module.build(capi_home, capi_module_home)
 
 
 if __name__ == "__main__":
