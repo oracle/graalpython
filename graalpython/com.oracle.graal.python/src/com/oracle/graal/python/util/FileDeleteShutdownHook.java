@@ -57,6 +57,7 @@ public class FileDeleteShutdownHook implements ShutdownHook {
         TruffleFile truffleFile = context.getEnv().getPublicTruffleFile(path);
         try {
             truffleFile.delete();
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
     }
 }

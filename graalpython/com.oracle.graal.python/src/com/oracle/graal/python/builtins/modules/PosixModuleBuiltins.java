@@ -64,7 +64,6 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
@@ -99,7 +98,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
@@ -527,8 +525,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
-        @Child private ToBytesNode toBytesNode;
-
         private final BranchProfile fileNotFound = BranchProfile.create();
 
         private static final int S_IFIFO = 0010000;
@@ -786,19 +782,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return mode;
         }
 
-        private String toJavaString(VirtualFrame frame, PIBytesLike bytesLike) {
-            if (toBytesNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toBytesNode = insert(ToBytesNode.create());
-            }
-            return newString(toBytesNode.execute(frame, bytesLike));
-        }
-
-        @TruffleBoundary
-        private static String newString(byte[] bytes) {
-            return new String(bytes, StandardCharsets.UTF_8);
-        }
-
         public static StatNode create() {
             return StatNodeFactory.create();
         }
@@ -910,12 +893,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class Dup2Node extends PythonFileNode {
         @Specialization
         int dup(int fd, int fd2) {
-            return getResources().dup2(fd, fd2);
+            try {
+                return getResources().dup2(fd, fd2);
+            } catch (IOException e) {
+                throw raise(OSError, "invalid fd %r", fd2);
+            }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         int dupPInt(PInt fd, PInt fd2) {
-            return getResources().dup2(fd.intValueExact(), fd2.intValueExact());
+            try {
+                return getResources().dup2(fd.intValueExact(), fd2.intValueExact());
+            } catch (IOException e) {
+                throw raise(OSError, "invalid fd %r", fd2);
+            }
         }
 
         @Specialization(replaces = "dupPInt")
@@ -1072,7 +1063,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "close", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonFileNode {
-        private final BranchProfile gotException = BranchProfile.create();
         private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
 
         @Specialization
@@ -1993,9 +1983,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class FSyncNode extends PythonUnaryBuiltinNode {
         @Specialization
         PNone fsync(VirtualFrame frame, int fd) {
-            try {
-                getContext().getResources().fsync(fd);
-            } catch (ArrayIndexOutOfBoundsException e) {
+            if (!getContext().getResources().fsync(fd)) {
                 throw raiseOSError(frame, OSErrorEnum.ENOENT.getNumber());
             }
             return PNone.NONE;

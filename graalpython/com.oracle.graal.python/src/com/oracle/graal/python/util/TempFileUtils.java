@@ -71,15 +71,12 @@ public final class TempFileUtils {
         if (path == null) {
             throw new IOException("TempFile path cannot be null!");
         }
-        if (prefix == null) {
-            prefix = "";
-        }
-        if (suffix == null) {
-            suffix = "";
-        }
-
         while (true) {
-            String tmpPath = path + env.getFileNameSeparator() + prefix + getRandomString(8) + suffix;
+            String tmpPath = path +
+                            env.getFileNameSeparator() +
+                            ((prefix == null) ? "" : prefix) +
+                            getRandomString(8) +
+                            ((suffix == null) ? "" : suffix);
             TruffleFile tmpFile = env.getPublicTruffleFile(tmpPath);
             if (!tmpFile.exists()) {
                 tmpFile.createFile();
