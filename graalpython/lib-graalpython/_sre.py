@@ -339,12 +339,15 @@ class SRE_Pattern():
            returned list if always either 'str' or 'bytes'."""
         if self.__binary:
             return bytes(elem)
+        elif elem is None:
+            return None
         else:
             return str(elem)
 
     def finditer(self, string, pos=0, endpos=-1):
         self.__check_input_type(string)
-        if endpos > len(string):
+        # print('String to find iter:' , string)
+        if endpos > len(string) or len(string) == 0:
             endpos = len(string)
         elif endpos < 0:
             endpos = endpos % len(string) + 1

@@ -454,4 +454,5 @@ def test_none_value():
 
     n = next(stream)
     assert not n[0]
+    assert str(n[0]) == 'None'
 

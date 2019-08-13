@@ -21,7 +21,7 @@ wrapper scripts and makes the implementation usable from shell as standard Pytho
 execute the following command in the project directory:
 
 ```
-mx graalpython -m venv <dir-to-venv>
+mx python -m venv <dir-to-venv>
 ```
 
 To activate the environment in your shell session call:
