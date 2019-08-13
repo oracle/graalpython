@@ -80,7 +80,7 @@ public final class TempFileUtils {
 
         while (true) {
             String tmpPath = path + env.getFileNameSeparator() + prefix + getRandomString(8) + suffix;
-            TruffleFile tmpFile = env.getTruffleFile(tmpPath);
+            TruffleFile tmpFile = env.getPublicTruffleFile(tmpPath);
             if (!tmpFile.exists()) {
                 tmpFile.createFile();
                 options.remove(StandardOpenOption.CREATE_NEW);

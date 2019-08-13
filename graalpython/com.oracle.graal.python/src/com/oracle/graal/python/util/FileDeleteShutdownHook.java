@@ -54,7 +54,7 @@ public class FileDeleteShutdownHook implements ShutdownHook {
 
     @Override
     public void call(PythonContext context) {
-        TruffleFile truffleFile = context.getEnv().getTruffleFile(path);
+        TruffleFile truffleFile = context.getEnv().getPublicTruffleFile(path);
         try {
             truffleFile.delete();
         } catch (IOException ignored) {}
