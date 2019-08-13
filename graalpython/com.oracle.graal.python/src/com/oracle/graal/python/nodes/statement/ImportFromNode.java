@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -40,6 +41,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -51,9 +53,11 @@ public class ImportFromNode extends AbstractImportNode {
     @Child private GetAttributeNode getName;
     @Child private GetItemNode getItem;
     @Child private ReadAttributeFromObjectNode readModules;
-    @Child private LookupAndCallBinaryNode readNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+    @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+    @Child private LookupAndCallBinaryNode getAttrNode = LookupAndCallBinaryNode.create(__GETATTR__);
     @Child private PRaiseNode raiseNode;
-    private final IsBuiltinClassProfile attrErrorProfile = IsBuiltinClassProfile.create();
+    @CompilationFinal private final IsBuiltinClassProfile getAttributeErrorProfile = IsBuiltinClassProfile.create();
+    @CompilationFinal private final IsBuiltinClassProfile getAttrErrorProfile = IsBuiltinClassProfile.create();
 
     public static ImportFromNode create(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
         return new ImportFromNode(importee, fromlist, readNodes, level);
@@ -70,6 +74,15 @@ public class ImportFromNode extends AbstractImportNode {
         this.level = level;
     }
 
+    private Object readAttributeFromModule(VirtualFrame frame, Object module, String attr) {
+        try {
+            return getAttributeNode.executeObject(frame, module, attr);
+        } catch (PException pe) {
+            pe.expectAttributeError(getAttributeErrorProfile);
+            return getAttrNode.executeObject(frame, module, attr);
+        }
+    }
+
     @Override
     @ExplodeLoop
     public void executeVoid(VirtualFrame frame) {
@@ -79,9 +92,9 @@ public class ImportFromNode extends AbstractImportNode {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
             try {
-                writeNode.doWrite(frame, readNode.executeObject(frame, importedModule, attr));
-            } catch (PException e) {
-                e.expectAttributeError(attrErrorProfile);
+                writeNode.doWrite(frame, readAttributeFromModule(frame, importedModule, attr));
+            } catch (PException pe) {
+                pe.expectAttributeError(getAttrErrorProfile);
                 if (getName == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getName = insert(GetAttributeNode.create(__NAME__, null));
@@ -94,7 +107,7 @@ public class ImportFromNode extends AbstractImportNode {
                     } else if (pkgname_o instanceof String) {
                         pkgname = (String) pkgname_o;
                     } else {
-                        throw e;
+                        throw pe;
                     }
                     String fullname = pkgname + "." + attr;
                     if (getItem == null) {
