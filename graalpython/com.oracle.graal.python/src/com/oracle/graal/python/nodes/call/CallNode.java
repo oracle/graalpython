@@ -144,6 +144,13 @@ public abstract class CallNode extends PNodeWithContext {
             return ensureDispatch().executeCall(frame, (PFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
         }
 
+        @Specialization(limit = "1", guards = {"callable == cachedCallable", "isPBuiltinFunction(cachedCallable.getFunction())"}, assumptions = "singleContextAssumption()")
+        protected Object builtinMethodCallBuiltinDirectCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
+                        @Cached("callable") PBuiltinMethod cachedCallable) {
+            // functions must be called directly otherwise the call stack is incorrect
+            return ensureDispatch().executeCall(frame, (PBuiltinFunction) cachedCallable.getFunction(), ensureCreateArguments().execute(cachedCallable, arguments, keywords));
+        }
+
         @Specialization(guards = "isPBuiltinFunction(callable.getFunction())")
         protected Object builtinMethodCallBuiltinDirect(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
             // functions must be called directly otherwise the call stack is incorrect
