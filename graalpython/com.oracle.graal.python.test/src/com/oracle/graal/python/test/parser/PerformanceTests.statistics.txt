@@ -101,3 +101,9 @@ When                            folders01   folders02
 2019-08-12 at 18:55:00 CEST: folders02 - 1699 (30 was parsed with and error ) in 5526ms.
 2019-08-12 at 18:55:16 CEST: folders01 - 1699 (30 was parsed with and error ) in 7854ms.
 2019-08-12 at 18:55:25 CEST: folders02 - 1699 (30 was parsed with and error ) in 5520ms.
+2019-08-13 at 15:00:18 CEST: folders01 - 1699 (30 was parsed with and error ) in 7975ms.
+2019-08-13 at 15:00:27 CEST: folders02 - 1699 (30 was parsed with and error ) in 5331ms.
+2019-08-13 at 15:01:11 CEST: folders01 - 1699 (30 was parsed with and error ) in 7903ms.
+2019-08-13 at 15:01:20 CEST: folders02 - 1699 (30 was parsed with and error ) in 5484ms.
+2019-08-13 at 15:01:37 CEST: folders01 - 1699 (30 was parsed with and error ) in 7851ms.
+2019-08-13 at 15:01:46 CEST: folders02 - 1699 (30 was parsed with and error ) in 5371ms.

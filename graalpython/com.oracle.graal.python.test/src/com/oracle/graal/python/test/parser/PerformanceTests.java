@@ -53,23 +53,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import org.junit.Test;
-import org.junit.Assert;
 import static org.junit.Assert.assertTrue;
+import org.junit.Assume;
 
 public class PerformanceTests extends ParserTestBase {
     int count = 1;
-    
-    //@Test
-    public void assignment01() throws Exception {
-        File file = getTestFileFromTestAndTestMethod();
-        executePerformanceTest(file);
-    }
-    
-    //@Test
-    public void generator01() throws Exception {
-        File file = getTestFileFromTestAndTestMethod();
-        executePerformanceTest(file);
-    }
     
     private static String[] paths = new String[]{
             "/home/petr/labs/sstparser/graalpython/graalpython/lib-graalpython",
@@ -79,7 +67,7 @@ public class PerformanceTests extends ParserTestBase {
     
     @Test
     public void folders01() throws Exception {
-        
+        Assume.assumeTrue("/home/petr/".equals(System.getProperty("user.home")));
         int numberOfOKParsed = 0;
         int numberOfWrongParsed = 0;
         long start;
@@ -109,6 +97,7 @@ public class PerformanceTests extends ParserTestBase {
     
     @Test
     public void folders02() throws Exception {
+        Assume.assumeTrue("/home/petr/".equals(System.getProperty("user.home")));
         System.out.println("Test2");
         Thread.sleep(3000);
         int numberOfOKParsed = 0;
