@@ -346,7 +346,6 @@ class SRE_Pattern():
 
     def finditer(self, string, pos=0, endpos=-1):
         self.__check_input_type(string)
-        # print('String to find iter:' , string)
         if endpos > len(string) or len(string) == 0:
             endpos = len(string)
         elif endpos < 0:
