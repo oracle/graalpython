@@ -442,3 +442,16 @@ class ReTests(unittest.TestCase):
     
     def test_escape(self):
         self.assertEqual(re.escape(" ()"), "\\ \\(\\)")
+
+def test_none_value():
+    path_tokenizer = re.compile(
+        r"(//?| ==?)|([[]]+)"
+    ).findall
+
+    stream = iter([ (special,text)
+                    for (special,text) in path_tokenizer('[]')
+                    if special or text ])
+
+    n = next(stream)
+    assert not n[0]
+
