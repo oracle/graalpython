@@ -32,6 +32,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -50,11 +51,11 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         return GcModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "collect", minNumOfPositionalArgs = 0)
+    @Builtin(name = "collect", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
-        int collect(VirtualFrame frame) {
+        int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level) {
             doGc();
             // collect some weak references now
             getContext().triggerAsyncActions(frame, this);
@@ -65,6 +66,32 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         private static void doGc() {
             System.gc();
         }
+    }
+
+    @Builtin(name = "isenabled", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GcIsEnabledNode extends PythonBuiltinNode {
+        @Specialization
+        boolean isenabled() {
+            return true;
+        }
+    }
+
+    abstract static class StubNode extends PythonBuiltinNode {
+        @Specialization
+        PNone disable() {
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "disable", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class DisableNode extends StubNode {
+    }
+
+    @Builtin(name = "enable", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class EnableNode extends StubNode {
     }
 
     @Builtin(name = "get_count", minNumOfPositionalArgs = 0)
