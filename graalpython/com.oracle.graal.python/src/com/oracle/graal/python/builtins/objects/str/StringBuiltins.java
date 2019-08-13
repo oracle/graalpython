@@ -450,7 +450,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class RAddNode {
         @Specialization
         Object doAll(VirtualFrame frame, Object left, Object right,
-                     @Cached("create()") AddNode addNode) {
+                        @Cached("create()") AddNode addNode) {
             return addNode.execute(frame, right, left);
         }
     }
