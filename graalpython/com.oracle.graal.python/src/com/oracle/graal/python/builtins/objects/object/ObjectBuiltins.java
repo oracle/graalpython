@@ -300,7 +300,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
                         @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
             if (self == PNone.NONE) {
-                return "None";
+                return "";
             }
             PythonAbstractClass type = getClass.execute(self);
             Object moduleName = readModuleNode.executeObject(frame, type);

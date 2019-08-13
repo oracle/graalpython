@@ -447,7 +447,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class RAddNode extends AddNode {
+    public abstract static class RAddNode {
+        @Specialization
+        Object doAll(VirtualFrame frame, Object left, Object right,
+                     @Cached("create()") AddNode addNode) {
+            return addNode.execute(frame, right, left);
+        }
     }
 
     // str.startswith(prefix[, start[, end]])
