@@ -82,6 +82,15 @@ def test_json_bytes_re_compile():
     else:
         assert False, "searching a bytes-pattern in a str did not raise"
 
+def test_none_value():
+    regex_find = re.compile(
+        r"(//?| ==?)|([[]]+)").findall
+    stream = iter([ (special,text)
+                    for (special,text) in regex_find('[]')
+                    if special or text ])
+    n = next(stream)
+    assert not n[0]
+    assert str(n[0]) == 'None'
 
 class S(str):
     def __getitem__(self, index):
@@ -443,16 +452,10 @@ class ReTests(unittest.TestCase):
     def test_escape(self):
         self.assertEqual(re.escape(" ()"), "\\ \\(\\)")
 
-def test_none_value():
-    path_tokenizer = re.compile(
-        r"(//?| ==?)|([[]]+)"
-    ).findall
+    def test_finditer_empty_string(self):
+        regex = re.compile(
+            r"(//?| ==?)|([[]]+)")
+        for m in regex.finditer(''):
+            self.fail()
 
-    stream = iter([ (special,text)
-                    for (special,text) in path_tokenizer('[]')
-                    if special or text ])
-
-    n = next(stream)
-    assert not n[0]
-    assert str(n[0]) == 'None'
 
