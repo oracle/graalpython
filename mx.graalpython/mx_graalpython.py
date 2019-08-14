@@ -155,6 +155,10 @@ def punittest(args):
     args += ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
              "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
              "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
+
+    # ensure that C API was built (we may need on-demand compilation)
+    do_run_python(["-m", "build_capi"], nonZeroIsFatal=True)
+
     mx_unittest.unittest(args)
 
 
