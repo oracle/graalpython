@@ -594,7 +594,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyObject_Setattr extends PythonTernaryBuiltinNode {
         @Specialization
         Object doBuiltinClass(PythonBuiltinClass object, String key, Object value,
-                       @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
             return PNone.NONE;
         }
@@ -608,7 +608,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
         Object doObject(PythonObject object, String key, Object value,
-                       @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
+                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
             writeAttrToDynamicObjectNode.execute(object.getStorage(), key, value);
             return PNone.NONE;
         }

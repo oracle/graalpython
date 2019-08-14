@@ -43,5 +43,6 @@ package com.oracle.graal.python.builtins.objects.str;
 public interface PCharSequence extends CharSequence {
 
     boolean isMaterialized();
+
     String materialize();
 }

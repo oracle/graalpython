@@ -89,12 +89,13 @@ abstract class CallSpecialMethodNode extends Node {
 
     private boolean callerExceedsMaxSize() {
         CompilerAsserts.neverPartOfCompilation();
-        if(!maxSizeExceeded) {
+        if (!maxSizeExceeded) {
             int n = NodeUtil.countNodes(getRootNode());
-            // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e., ASTs
+            // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
+            // ASTs
             // will only we shared between contexts that have the same value for this option.
             int maxSize = PythonOptions.getOption(lookupContextReference(PythonLanguage.class).get(), PythonOptions.BuiltinsInliningMaxCallerSize);
-            if(n >= maxSize) {
+            if (n >= maxSize) {
                 maxSizeExceeded = true;
                 return true;
             }

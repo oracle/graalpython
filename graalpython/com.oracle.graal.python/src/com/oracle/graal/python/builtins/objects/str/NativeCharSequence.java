@@ -77,7 +77,7 @@ public class NativeCharSequence implements PCharSequence {
 
     @Override
     public String materialize() {
-        if(!isMaterialized()) {
+        if (!isMaterialized()) {
             materialized = (String) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, ptr);
         }
         return materialized;
@@ -86,7 +86,7 @@ public class NativeCharSequence implements PCharSequence {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        if(isMaterialized()) {
+        if (isMaterialized()) {
             return materialized;
         }
         return Objects.toString(ptr);
