@@ -83,6 +83,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [59,60]`1`
+                                        Value: 1
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -133,6 +134,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,<return_val>,Illegal]
                         IntegerLiteralNode SourceSection: [119,120]`1`
+                          Value: 1
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

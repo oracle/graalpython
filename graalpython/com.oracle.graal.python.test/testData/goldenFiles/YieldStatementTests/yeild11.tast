@@ -41,6 +41,7 @@ ModuleRootNode Name: <module 'yeild11'> SourceSection: [0,24]`def f(): yield 1; 
                       YieldNode SourceSection: [9,16]`yield 1`
                         flagSlot: 0
                         IntegerLiteralNode SourceSection: [15,16]`1`
+                          Value: 1
                         GeneratorAccessNode SourceSection: None
                     ReturnNode SourceSection: [18,24]`return`
                     GeneratorAccessNode SourceSection: None

@@ -455,6 +455,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: match SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [8017,8018]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Try to apply the pat...`
           FreeVarSlots: None
@@ -532,6 +533,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: fullmatch SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [8233,8234]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Try to apply the pat...`
           FreeVarSlots: None
@@ -609,6 +611,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: search SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [8444,8445]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Scan through string ...`
           FreeVarSlots: None
@@ -686,7 +689,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: sub SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [8664,8665]`0`
+              Value: 0
             IntegerLiteralNode SourceSection: [8673,8674]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Return the string ob...`
           FreeVarSlots: None
@@ -784,7 +789,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: subn SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [9134,9135]`0`
+              Value: 0
             IntegerLiteralNode SourceSection: [9143,9144]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Return a 2-tuple con...`
           FreeVarSlots: None
@@ -882,7 +889,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: split SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [9732,9733]`0`
+              Value: 0
             IntegerLiteralNode SourceSection: [9741,9742]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Split the source str...`
           FreeVarSlots: None
@@ -970,6 +979,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: findall SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [10261,10262]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Return a list of all...`
           FreeVarSlots: None
@@ -1047,6 +1057,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: finditer SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [10639,10640]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Return an iterator o...`
           FreeVarSlots: None
@@ -1124,6 +1135,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: compile SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [10906,10907]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Compile a regular ex...`
           FreeVarSlots: None
@@ -1233,6 +1245,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
         FunctionDefinitionNode Name: template SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [11154,11155]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `Compile a template p...`
           FreeVarSlots: None
@@ -1490,6 +1503,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
               CallDispatchNodeGen SourceSection: None
             StringLiteralNode SourceSection: [11846,11848]`''`
             IntegerLiteralNode SourceSection: [11850,11851]`0`
+              Value: 0
             GetCallAttributeNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [11826,11837]`sre_compile`
                 Identifier: sre_compile
@@ -1513,6 +1527,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                   CallDispatchNodeGen SourceSection: None
                 StringLiteralNode SourceSection: [11887,11889]`''`
                 IntegerLiteralNode SourceSection: [11891,11892]`0`
+                  Value: 0
                 GetCallAttributeNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [11867,11878]`sre_compile`
                     Identifier: sre_compile
@@ -1525,6 +1540,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
       WriteNameNodeGen SourceSection: [12015,12030]`_MAXCACHE = 512`
         Identifier: _MAXCACHE
         IntegerLiteralNode SourceSection: [12027,12030]`512`
+          Value: 512
       WriteNameNodeGen SourceSection: [12031,12907]`def _compile(pattern...`
         Identifier: _compile
         FunctionDefinitionNode Name: _compile SourceSection: None
@@ -2050,6 +2066,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                 Frame: [1,template,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [13424,13425]`0`
+                                Value: 0
                           BinaryComparisonNodeGen SourceSection: [13431,13452]`len(template[1]) == ...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
@@ -2062,10 +2079,12 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                   Frame: [1,template,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [13444,13445]`1`
+                                  Value: 1
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [13451,13452]`1`
+                              Value: 1
                           YesNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [13492,13513]`return template[1][0...`
                         WriteLocalVariableNodeGen SourceSection: None
@@ -2078,7 +2097,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                 Frame: [1,template,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [13508,13509]`1`
+                                Value: 1
                             IntegerLiteralNode SourceSection: [13511,13512]`0`
+                              Value: 0
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [13518,13618]`def filter(match, te...`
                       Identifier: filter
@@ -2294,6 +2315,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                               FunctionDefinitionNode Name: __init__ SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [13971,13972]`0`
+                                    Value: 0
                                 KwArguments: None
                                 Documentation: StringLiteralNode: Empty
                                 FreeVarSlots: __class__, 
@@ -2481,7 +2503,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                                                   Frame: [7,gid,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [14406,14407]`0`
+                                                                  Value: 0
                                                                 IntegerLiteralNode SourceSection: [14409,14410]`0`
+                                                                  Value: 0
                                                                 PythonCallNodeGen SourceSection: [14412,14442]`sre_parse.parse(phra...`
                                                                   CachedCallNodeGen SourceSection: None
                                                                     CreateArgumentsNodeGen SourceSection: None
@@ -2516,10 +2540,8 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                                           ReadLocalVariableNode SourceSection: None
                                                             Frame: [5,p,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          UnaryArithmeticExpression SourceSection: [14498,14500]`-1`
-                                                            LookupAndCallUnaryNodeGen SourceSection: None
-                                                              Op: __neg__
-                                                            IntegerLiteralNode SourceSection: [14499,14500]`1`
+                                                          IntegerLiteralNode SourceSection: [14498,14500]`-1`
+                                                            Value: -1
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [14478,14479]`s`
                                                             Frame: [6,s,Illegal]
@@ -2669,6 +2691,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [5,i,Illegal]
                                             IntegerLiteralNode SourceSection: [14750,14751]`0`
+                                              Value: 0
                                           BreakTargetNode SourceSection: [14760,15166]`while True:↵        ...`
                                             WhileNode SourceSection: None
                                               DefaultLoopNode SourceSection: None
@@ -2745,7 +2768,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for
                                                                 Frame: [6,m,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [14955,14956]`1`
+                                                              Value: 1
                                                         IntegerLiteralNode SourceSection: [14958,14959]`1`
+                                                          Value: 1
                                                     IfNode SourceSection: [14973,15086]`if callable(action):...`
                                                       YesNodeGen SourceSection: None
                                                         PythonCallNodeGen SourceSection: [14976,14992]`callable(action)`

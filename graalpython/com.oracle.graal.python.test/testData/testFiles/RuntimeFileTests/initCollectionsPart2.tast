@@ -966,6 +966,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [2323,2324]`0`
+                                                    Value: 0
                                             GetItemNodeGen SourceSection: [2335,2348]`self.maps[1:]`
                                               GetAttributeNodeGen SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
@@ -978,6 +979,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                               SliceLiteralNodeGen SourceSection: [2345,2347]`1:`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [2345,2346]`1`
+                                                  Value: 1
                                                 EmptyNode SourceSection: None
                                                 EmptyNode SourceSection: None
                                             ExecutePositionalStarargsNodeGen SourceSection: None
@@ -1151,6 +1153,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                                 SliceLiteralNodeGen SourceSection: [2845,2847]`1:`
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [2845,2846]`1`
+                                                    Value: 1
                                                   EmptyNode SourceSection: None
                                                   EmptyNode SourceSection: None
                                               ExecutePositionalStarargsNodeGen SourceSection: None
@@ -1231,6 +1234,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [2908,2909]`0`
+                                          Value: 0
                                       ReadLocalVariableNode SourceSection: [2911,2914]`key`
                                         Frame: [1,key,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -1296,6 +1300,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [2996,2997]`0`
+                                              Value: 0
                                           ReadLocalVariableNode SourceSection: [2999,3002]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1383,6 +1388,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [3269,3270]`0`
+                                                    Value: 0
                                         ExceptNode SourceSection: None
                                           RaiseNodeGen SourceSection: [3319,3372]`raise KeyError('No k...`
                                             PythonCallNodeGen SourceSection: [3325,3372]`KeyError('No keys fo...`
@@ -1482,6 +1488,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [3545,3546]`0`
+                                                    Value: 0
                                         ExceptNode SourceSection: None
                                           RaiseNodeGen SourceSection: [3601,3671]`raise KeyError('Key ...`
                                             PythonCallNodeGen SourceSection: [3607,3671]`KeyError('Key not fo...`
@@ -1560,6 +1567,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [3762,3763]`0`
+                                              Value: 0
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -1725,6 +1733,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [4278,4279]`1`
+                                              Value: 1
                                         RaiseNodeGen SourceSection: [4293,4360]`raise TypeError('exp...`
                                           PythonCallNodeGen SourceSection: [4299,4360]`TypeError('expected ...`
                                             CachedCallNodeGen SourceSection: None
@@ -1763,6 +1772,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                               Frame: [0,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [4402,4403]`0`
+                                              Value: 0
                                         IfNode SourceSection: None
                                           YesNodeGen SourceSection: None
                                             ContainsNodeGen SourceSection: [4418,4434]`'dict' in kwargs`
@@ -1806,6 +1816,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   KeywordLiteralNode SourceSection: None
                                                     IntegerLiteralNode SourceSection: [4637,4638]`2`
+                                                      Value: 2
                                                   CompactKeywordsNodeGen SourceSection: None
                                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                                     EmptyNode SourceSection: None
@@ -4517,10 +4528,8 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: pop SourceSection: None
                             Arguments:
-                              UnaryArithmeticExpression SourceSection: [8535,8537]`-1`
-                                LookupAndCallUnaryNodeGen SourceSection: None
-                                  Op: __neg__
-                                IntegerLiteralNode SourceSection: [8536,8537]`1`
+                              IntegerLiteralNode SourceSection: [8535,8537]`-1`
+                                Value: -1
                             KwArguments: None
                             Documentation: StringLiteralNode: Empty
                             FreeVarSlots: __class__, 
@@ -7216,6 +7225,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: count SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [11933,11934]`0`
+                                    Value: 0
                                   GetAttributeNodeGen SourceSection: [11940,11952]`_sys.maxsize`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: maxsize
@@ -7503,6 +7513,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: endswith SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [12407,12408]`0`
+                                    Value: 0
                                   GetAttributeNodeGen SourceSection: [12414,12426]`_sys.maxsize`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: maxsize
@@ -7605,6 +7616,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: expandtabs SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [12516,12517]`8`
+                                    Value: 8
                                 KwArguments: None
                                 Documentation: StringLiteralNode: Empty
                                 FreeVarSlots: __class__, 
@@ -7681,6 +7693,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: find SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [12611,12612]`0`
+                                    Value: 0
                                   GetAttributeNodeGen SourceSection: [12618,12630]`_sys.maxsize`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: maxsize
@@ -7962,6 +7975,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: index SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [12942,12943]`0`
+                                    Value: 0
                                   GetAttributeNodeGen SourceSection: [12949,12961]`_sys.maxsize`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: maxsize
@@ -9115,10 +9129,8 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               StringLiteralNode SourceSection: None
                               FunctionDefinitionNode Name: replace SourceSection: None
                                 Arguments:
-                                  UnaryArithmeticExpression SourceSection: [14070,14072]`-1`
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __neg__
-                                    IntegerLiteralNode SourceSection: [14071,14072]`1`
+                                  IntegerLiteralNode SourceSection: [14070,14072]`-1`
+                                    Value: -1
                                 KwArguments: None
                                 Documentation: StringLiteralNode: Empty
                                 FreeVarSlots: __class__, 
@@ -9272,6 +9284,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: rfind SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [14309,14310]`0`
+                                    Value: 0
                                   GetAttributeNodeGen SourceSection: [14316,14328]`_sys.maxsize`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: maxsize
@@ -9403,6 +9416,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: rindex SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [14478,14479]`0`
+                                    Value: 0
                                   GetAttributeNodeGen SourceSection: [14485,14497]`_sys.maxsize`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: maxsize
@@ -9735,10 +9749,8 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: split SourceSection: None
                                 Arguments:
                                   ObjectLiteralNode SourceSection: [14830,14834]`None`
-                                  UnaryArithmeticExpression SourceSection: [14845,14847]`-1`
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __neg__
-                                    IntegerLiteralNode SourceSection: [14846,14847]`1`
+                                  IntegerLiteralNode SourceSection: [14845,14847]`-1`
+                                    Value: -1
                                 KwArguments: None
                                 Documentation: StringLiteralNode: Empty
                                 FreeVarSlots: __class__, 
@@ -9817,10 +9829,8 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: rsplit SourceSection: None
                                 Arguments:
                                   ObjectLiteralNode SourceSection: [14921,14925]`None`
-                                  UnaryArithmeticExpression SourceSection: [14936,14938]`-1`
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __neg__
-                                    IntegerLiteralNode SourceSection: [14937,14938]`1`
+                                  IntegerLiteralNode SourceSection: [14936,14938]`-1`
+                                    Value: -1
                                 KwArguments: None
                                 Documentation: StringLiteralNode: Empty
                                 FreeVarSlots: __class__, 
@@ -9967,6 +9977,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`
                               FunctionDefinitionNode Name: startswith SourceSection: None
                                 Arguments:
                                   IntegerLiteralNode SourceSection: [15107,15108]`0`
+                                    Value: 0
                                   GetAttributeNodeGen SourceSection: [15114,15126]`_sys.maxsize`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: maxsize

@@ -17,11 +17,17 @@ ModuleRootNode Name: <module 'dict11'> SourceSection: [0,52]`{**{"a": "hello", "
       DictLiteralNode SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [33,34]`1`
+          Value: 1
         IntegerLiteralNode SourceSection: [35,36]`2`
+          Value: 2
       DictLiteralNode SourceSection: [41,51]`{3:4, 5:6}`
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [42,43]`3`
+          Value: 3
         IntegerLiteralNode SourceSection: [47,48]`5`
+          Value: 5
         IntegerLiteralNode SourceSection: [44,45]`4`
+          Value: 4
         IntegerLiteralNode SourceSection: [49,50]`6`
+          Value: 6
   CalleeContext SourceSection: None

@@ -9,6 +9,7 @@ ModuleRootNode Name: <module 'assignment03'> SourceSection: [0,25]`a = 0↵b = a
       WriteNameNodeGen SourceSection: [0,5]`a = 0`
         Identifier: a
         IntegerLiteralNode SourceSection: [4,5]`0`
+          Value: 0
       WriteNameNodeGen SourceSection: [6,11]`b = a`
         Identifier: b
         ReadNameNodeGen SourceSection: [10,11]`a`

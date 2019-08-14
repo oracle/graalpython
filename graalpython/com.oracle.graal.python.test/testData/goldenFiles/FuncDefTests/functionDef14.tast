@@ -85,6 +85,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                             ListLiteralNode SourceSection: [32,35]`[1]`
                               PythonObjectFactoryNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [33,34]`1`
+                                Value: 1
                           CompactKeywordsNodeGen SourceSection: None
                           ExecuteKeywordStarargsNodeGen SourceSection: None
                             EmptyNode SourceSection: None

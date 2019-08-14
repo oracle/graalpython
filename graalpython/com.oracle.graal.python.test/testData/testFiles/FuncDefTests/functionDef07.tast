@@ -15,6 +15,7 @@ ModuleRootNode Name: <module 'functionDef07'> SourceSection: [0,56]`↵def foo(p
             Arguments:
               StringLiteralNode SourceSection: [14,20]`'ahoj'`
               IntegerLiteralNode SourceSection: [29,31]`22`
+                Value: 22
             KwArguments: None
             Documentation: StringLiteralNode: Empty
             FreeVarSlots: None

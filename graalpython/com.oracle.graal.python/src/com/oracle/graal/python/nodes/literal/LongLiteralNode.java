@@ -44,4 +44,8 @@ public final class LongLiteralNode extends LiteralNode {
     public Object execute(VirtualFrame frame) {
         return value;
     }
+
+    public long getValue() {
+        return value;
+    }
 }

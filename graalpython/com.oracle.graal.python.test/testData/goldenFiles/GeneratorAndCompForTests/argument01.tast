@@ -42,6 +42,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [6,7]`2`
+                        Value: 2
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
@@ -68,6 +69,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
               CreateArgumentsNodeGen SourceSection: None
               CallDispatchNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [23,25]`10`
+              Value: 10
             ReadNameNodeGen SourceSection: None
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None

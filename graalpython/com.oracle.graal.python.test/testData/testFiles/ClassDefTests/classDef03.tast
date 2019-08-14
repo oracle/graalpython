@@ -62,6 +62,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             IntegerLiteralNode SourceSection: [56,61]`12345`
+                              Value: 12345
                           SetItemNodeGen SourceSection: [67,108]`def f(self):↵       ...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None

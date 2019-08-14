@@ -43,6 +43,7 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
                         YieldNode SourceSection: [23,30]`yield 3`
                           flagSlot: 0
                           IntegerLiteralNode SourceSection: [29,30]`3`
+                            Value: 3
                           GeneratorAccessNode SourceSection: None
                       ExceptNode SourceSection: None
                         ExpressionStatementNode SourceSection: [56,60]`pass`

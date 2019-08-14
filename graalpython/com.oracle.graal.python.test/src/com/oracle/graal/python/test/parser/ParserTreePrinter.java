@@ -66,6 +66,9 @@ import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
+import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
+import com.oracle.graal.python.nodes.literal.LongLiteralNode;
+import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
@@ -505,22 +508,29 @@ public class ParserTreePrinter implements NodeVisitor {
             } else {
                 nodeHeader(node);
                 level++;
-                if (node instanceof WriteIdentifierNode) {
-                    indent(level); sb.append("Identifier: ").append(((WriteIdentifierNode)node).getIdentifier()); newLine();
+                if (node instanceof PIntLiteralNode) {
+                    indent(level); sb.append("Value: ").append(((PIntLiteralNode)node).getValue().toString()); newLine();
+                } else if (node instanceof IntegerLiteralNode) {
+                    indent(level); sb.append("Value: ").append(((IntegerLiteralNode)node).getValue()); newLine();
+                } else if (node instanceof LongLiteralNode) {
+                    indent(level); sb.append("Value: ").append(((LongLiteralNode)node).getValue()); newLine();
+                } else {
+                    if (node instanceof WriteIdentifierNode) {
+                        indent(level); sb.append("Identifier: ").append(((WriteIdentifierNode)node).getIdentifier()); newLine();
+                    }
+                    if (node instanceof AccessNameNode) {
+                        indent(level); sb.append("Identifier: ").append(((AccessNameNode)node).getAttributeId()); newLine();
+                    }
+                    if (node instanceof FrameSlotNode) {
+                        indent(level); sb.append("Frame: ").append(((FrameSlotNode)node).getSlot().toString()); newLine();
+                    }
+                    if (node instanceof WriteGlobalNode) {
+                        indent(level); sb.append("Identifier: ").append(((WriteGlobalNode)node).getAttributeId()); newLine();
+                    }
+                    if (node instanceof ReadIndexedArgumentNode) {
+                        indent(level); sb.append("Index: ").append(((ReadIndexedArgumentNode)node).getIndex()); newLine();
+                    }
                 }
-                if (node instanceof AccessNameNode) {
-                    indent(level); sb.append("Identifier: ").append(((AccessNameNode)node).getAttributeId()); newLine();
-                }
-                if (node instanceof FrameSlotNode) {
-                    indent(level); sb.append("Frame: ").append(((FrameSlotNode)node).getSlot().toString()); newLine();
-                }
-                if (node instanceof WriteGlobalNode) {
-                    indent(level); sb.append("Identifier: ").append(((WriteGlobalNode)node).getAttributeId()); newLine();
-                }
-                if (node instanceof ReadIndexedArgumentNode) {
-                    indent(level); sb.append("Index: ").append(((ReadIndexedArgumentNode)node).getIndex()); newLine();
-                }
-                
                 level--;
             }
             if (visitChildren) {

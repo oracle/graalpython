@@ -194,27 +194,35 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               WriteNameNodeGen SourceSection: [1528,1542]`CHAR_MAX = 127`
                 Identifier: CHAR_MAX
                 IntegerLiteralNode SourceSection: [1539,1542]`127`
+                  Value: 127
               WriteNameNodeGen SourceSection: [1547,1557]`LC_ALL = 6`
                 Identifier: LC_ALL
                 IntegerLiteralNode SourceSection: [1556,1557]`6`
+                  Value: 6
               WriteNameNodeGen SourceSection: [1562,1576]`LC_COLLATE = 3`
                 Identifier: LC_COLLATE
                 IntegerLiteralNode SourceSection: [1575,1576]`3`
+                  Value: 3
               WriteNameNodeGen SourceSection: [1581,1593]`LC_CTYPE = 0`
                 Identifier: LC_CTYPE
                 IntegerLiteralNode SourceSection: [1592,1593]`0`
+                  Value: 0
               WriteNameNodeGen SourceSection: [1598,1613]`LC_MESSAGES = 5`
                 Identifier: LC_MESSAGES
                 IntegerLiteralNode SourceSection: [1612,1613]`5`
+                  Value: 5
               WriteNameNodeGen SourceSection: [1618,1633]`LC_MONETARY = 4`
                 Identifier: LC_MONETARY
                 IntegerLiteralNode SourceSection: [1632,1633]`4`
+                  Value: 4
               WriteNameNodeGen SourceSection: [1638,1652]`LC_NUMERIC = 1`
                 Identifier: LC_NUMERIC
                 IntegerLiteralNode SourceSection: [1651,1652]`1`
+                  Value: 1
               WriteNameNodeGen SourceSection: [1657,1668]`LC_TIME = 2`
                 Identifier: LC_TIME
                 IntegerLiteralNode SourceSection: [1667,1668]`2`
+                  Value: 2
               WriteNameNodeGen SourceSection: [1673,1691]`Error = ValueError`
                 Identifier: Error
                 ReadNameNodeGen SourceSection: [1681,1691]`ValueError`
@@ -271,24 +279,33 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ListLiteralNode SourceSection: [1894,1899]`[127]`
                                   PythonObjectFactoryNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [1895,1898]`127`
+                                    Value: 127
                                 StringLiteralNode SourceSection: [1936,1938]`''`
                                 IntegerLiteralNode SourceSection: [1971,1974]`127`
+                                  Value: 127
                                 IntegerLiteralNode SourceSection: [2009,2012]`127`
+                                  Value: 127
                                 IntegerLiteralNode SourceSection: [2047,2050]`127`
+                                  Value: 127
                                 ListLiteralNode SourceSection: [2084,2086]`[]`
                                   PythonObjectFactoryNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [2122,2125]`127`
+                                  Value: 127
                                 StringLiteralNode SourceSection: [2160,2163]`'.'`
                                 StringLiteralNode SourceSection: [2198,2200]`''`
                                 StringLiteralNode SourceSection: [2235,2237]`''`
                                 IntegerLiteralNode SourceSection: [2273,2276]`127`
+                                  Value: 127
                                 StringLiteralNode SourceSection: [2313,2315]`''`
                                 IntegerLiteralNode SourceSection: [2348,2351]`127`
+                                  Value: 127
                                 StringLiteralNode SourceSection: [2386,2388]`''`
                                 StringLiteralNode SourceSection: [2427,2429]`''`
                                 IntegerLiteralNode SourceSection: [2462,2465]`127`
+                                  Value: 127
                                 StringLiteralNode SourceSection: [2504,2506]`''`
                                 IntegerLiteralNode SourceSection: [2543,2546]`127`
+                                  Value: 127
                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                           Frame: [0,<return_val>,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -556,6 +573,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [2,interval,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [3700,3701]`0`
+                                Value: 0
                           GeneratorBlockNode SourceSection: None
                             IfNode SourceSection: [3715,3806]`if last_interval is ...`
                               YesNodeGen SourceSection: None
@@ -735,6 +753,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Frame: [0,s,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [4188,4189]`0`
+                              Value: 0
                       BlockNode SourceSection: None
                     IfNode SourceSection: [4195,4344]`if s[-1] == ' ':↵   ...`
                       YesNodeGen SourceSection: None
@@ -745,10 +764,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: None
                               Frame: [0,s,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            UnaryArithmeticExpression SourceSection: [4200,4202]`-1`
-                              LookupAndCallUnaryNodeGen SourceSection: None
-                                Op: __neg__
-                              IntegerLiteralNode SourceSection: [4201,4202]`1`
+                            IntegerLiteralNode SourceSection: [4200,4202]`-1`
+                              Value: -1
                           StringLiteralNode SourceSection: [4207,4210]`' '`
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [4220,4241]`stripped = s.rstrip(...`
@@ -835,10 +852,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [0,s,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          UnaryArithmeticExpression SourceSection: [4450,4452]`-1`
-                                            LookupAndCallUnaryNodeGen SourceSection: None
-                                              Op: __neg__
-                                            IntegerLiteralNode SourceSection: [4451,4452]`1`
+                                          IntegerLiteralNode SourceSection: [4450,4452]`-1`
+                                            Value: -1
                                     YesNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [4549,4564]`left_spaces = s`
@@ -993,6 +1008,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [4843,4844]`1`
+                                Value: 1
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1042,6 +1058,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,lpos,Illegal]
                       IntegerLiteralNode SourceSection: [4958,4959]`0`
+                        Value: 0
                     ElseNode SourceSection: [4964,5039]`while amount and s[l...`
                       WhileNode SourceSection: None
                         DefaultLoopNode SourceSection: None
@@ -1073,6 +1090,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [2,lpos,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [5013,5014]`1`
+                                    Value: 1
                               WriteLocalVariableNodeGen SourceSection: [5023,5034]`amount -= 1`
                                 Identifier: amount
                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1082,6 +1100,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [1,amount,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [5033,5034]`1`
+                                    Value: 1
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [5039,5056]`rpos = len(s) - 1`
                       Identifier: rpos
@@ -1101,6 +1120,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Identifier: len
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [5055,5056]`1`
+                          Value: 1
                     ElseNode SourceSection: [5061,5136]`while amount and s[r...`
                       WhileNode SourceSection: None
                         DefaultLoopNode SourceSection: None
@@ -1132,6 +1152,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [3,rpos,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [5110,5111]`1`
+                                    Value: 1
                               WriteLocalVariableNodeGen SourceSection: [5120,5131]`amount -= 1`
                                 Identifier: amount
                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1141,6 +1162,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [1,amount,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [5130,5131]`1`
+                                    Value: 1
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [5136,5157]`return s[lpos:rpos+1...`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -1163,6 +1185,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [3,rpos,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [5155,5156]`1`
+                                Value: 1
                             EmptyNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
@@ -1291,16 +1314,15 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: None
                               Frame: [0,percent,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            UnaryArithmeticExpression SourceSection: [5549,5551]`-1`
-                              LookupAndCallUnaryNodeGen SourceSection: None
-                                Op: __neg__
-                              IntegerLiteralNode SourceSection: [5550,5551]`1`
+                            IntegerLiteralNode SourceSection: [5549,5551]`-1`
+                              Value: -1
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [5574,5582]`seps = 0`
                           Identifier: seps
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [6,seps,Illegal]
                           IntegerLiteralNode SourceSection: [5581,5582]`0`
+                            Value: 0
                         WriteLocalVariableNodeGen SourceSection: [5591,5619]`parts = formatted.sp...`
                           Identifier: parts
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1329,6 +1351,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [7,parts,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [5683,5684]`0`
+                                  Value: 0
                               KeywordArgumentsNodeGen SourceSection: None
                                 KeywordLiteralNode SourceSection: None
                                   ReadLocalVariableNode SourceSection: [5696,5704]`monetary`
@@ -1353,6 +1376,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [7,parts,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [5659,5660]`0`
+                                Value: 0
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [9,<>temp9,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1434,16 +1458,15 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [0,percent,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              UnaryArithmeticExpression SourceSection: [5978,5980]`-1`
-                                LookupAndCallUnaryNodeGen SourceSection: None
-                                  Op: __neg__
-                                IntegerLiteralNode SourceSection: [5979,5980]`1`
+                              IntegerLiteralNode SourceSection: [5978,5980]`-1`
+                                Value: -1
                         BlockNode SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [6000,6008]`seps = 0`
                             Identifier: seps
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [6,seps,Illegal]
                             IntegerLiteralNode SourceSection: [6007,6008]`0`
+                              Value: 0
                           IfNode SourceSection: [6017,6105]`if grouping:↵       ...`
                             YesNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [6020,6028]`grouping`
@@ -1671,10 +1694,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                             ReadLocalVariableNode SourceSection: [6741,6745]`perc`
                                               Frame: [7,perc,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        UnaryArithmeticExpression SourceSection: [6754,6756]`-1`
-                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                            Op: __neg__
-                                          IntegerLiteralNode SourceSection: [6755,6756]`1`
+                                        IntegerLiteralNode SourceSection: [6754,6756]`-1`
+                                          Value: -1
                                       StringLiteralNode SourceSection: [6759,6762]`'%'`
                                   ExpressionStatementNode SourceSection: [6780,6799]`new_val.append('%')`
                                     PythonCallNodeGen SourceSection: [6780,6799]`new_val.append('%')`
@@ -1762,6 +1783,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [8,i,Illegal]
                           IntegerLiteralNode SourceSection: [7004,7005]`0`
+                            Value: 0
                         ElseNode SourceSection: [7014,7491]`for perc in percents...`
                           ForNode SourceSection: None
                             DefaultLoopNode SourceSection: None
@@ -1785,10 +1807,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                             ReadLocalVariableNode SourceSection: [7051,7055]`perc`
                                               Frame: [7,perc,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        UnaryArithmeticExpression SourceSection: [7064,7066]`-1`
-                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                            Op: __neg__
-                                          IntegerLiteralNode SourceSection: [7065,7066]`1`
+                                        IntegerLiteralNode SourceSection: [7064,7066]`-1`
+                                          Value: -1
                                       StringLiteralNode SourceSection: [7069,7072]`'%'`
                                   ExpressionStatementNode SourceSection: [7090,7109]`new_val.append('%')`
                                     PythonCallNodeGen SourceSection: [7090,7109]`new_val.append('%')`
@@ -1864,6 +1884,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                                     Frame: [8,i,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [7431,7432]`1`
+                                                    Value: 1
                                                 BinaryArithmeticExpression SourceSection: [7433,7446]`i+1+starcount`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__
@@ -1874,6 +1895,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                                       Frame: [8,i,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [7435,7436]`1`
+                                                      Value: 1
                                                   ReadLocalVariableNode SourceSection: [7437,7446]`starcount`
                                                     Frame: [9,starcount,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -1898,6 +1920,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __add__
                                           IntegerLiteralNode SourceSection: [7472,7473]`1`
+                                            Value: 1
                                           ReadLocalVariableNode SourceSection: [7476,7485]`starcount`
                                             Frame: [9,starcount,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2021,6 +2044,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
                             IntegerLiteralNode SourceSection: [7856,7857]`2`
+                              Value: 2
                           CompactKeywordsNodeGen SourceSection: None
                           ExecuteKeywordStarargsNodeGen SourceSection: None
                             EmptyNode SourceSection: None
@@ -2230,6 +2254,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Frame: [5,digits,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [8473,8476]`127`
+                            Value: 127
                       RaiseNodeGen SourceSection: [8486,8591]`raise ValueError("Cu...`
                         PythonCallNodeGen SourceSection: [8492,8591]`ValueError("Currency...`
                           CachedCallNodeGen SourceSection: None
@@ -2333,6 +2358,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [0,val,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [8890,8891]`0`
+                                    Value: 0
                                 StringLiteralNode SourceSection: [8896,8911]`'n_cs_precedes'`
                                 YesNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [8915,8930]`'p_cs_precedes'`
@@ -2354,6 +2380,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [0,val,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [8961,8962]`0`
+                                    Value: 0
                                 StringLiteralNode SourceSection: [8967,8983]`'n_sep_by_space'`
                                 YesNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [8987,9003]`'p_sep_by_space'`
@@ -2431,6 +2458,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [0,val,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [9170,9171]`0`
+                                Value: 0
                             StringLiteralNode SourceSection: [9176,9189]`'n_sign_posn'`
                             YesNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [9193,9206]`'p_sign_posn'`
@@ -2452,6 +2480,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [0,val,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [9228,9229]`0`
+                                Value: 0
                             StringLiteralNode SourceSection: [9234,9249]`'negative_sign'`
                             YesNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [9253,9268]`'positive_sign'`
@@ -2465,6 +2494,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Frame: [10,sign_pos,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [9290,9291]`0`
+                            Value: 0
                       WriteLocalVariableNodeGen SourceSection: [9301,9318]`s = '(' + s + ')'`
                         Identifier: s
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2489,6 +2519,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Frame: [10,sign_pos,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [9340,9341]`1`
+                              Value: 1
                         WriteLocalVariableNodeGen SourceSection: [9351,9363]`s = sign + s`
                           Identifier: s
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2511,6 +2542,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [10,sign_pos,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [9385,9386]`2`
+                                Value: 2
                           WriteLocalVariableNodeGen SourceSection: [9396,9408]`s = s + sign`
                             Identifier: s
                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2533,6 +2565,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [10,sign_pos,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [9430,9431]`3`
+                                  Value: 3
                             WriteLocalVariableNodeGen SourceSection: [9441,9465]`s = s.replace('<', s...`
                               Identifier: s
                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2558,6 +2591,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [10,sign_pos,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [9487,9488]`4`
+                                    Value: 4
                               WriteLocalVariableNodeGen SourceSection: [9498,9522]`s = s.replace('>', s...`
                                 Identifier: s
                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2952,7 +2986,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           CallDispatchNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [10555,10559]`"%d"`
                         IntegerLiteralNode SourceSection: [10561,10570]`123456789`
+                          Value: 123456789
                         IntegerLiteralNode SourceSection: [10571,10572]`1`
+                          Value: 1
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: format_string
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3536,6 +3572,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             CallDispatchNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12975,12978]`'@'`
                           IntegerLiteralNode SourceSection: [12980,12981]`1`
+                            Value: 1
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [12964,12968]`code`
                               Frame: [1,code,Illegal]
@@ -3592,6 +3629,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             PythonObjectFactoryNodeGen SourceSection: None
                             EmptyNode SourceSection: None
                             IntegerLiteralNode SourceSection: [13081,13082]`2`
+                              Value: 2
                             EmptyNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <>temp11
@@ -3821,11 +3859,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                             CallDispatchNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [13940,13943]`'@'`
                                           IntegerLiteralNode SourceSection: [13945,13946]`1`
+                                            Value: 1
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [13929,13933]`code`
                                               Frame: [1,code,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [13948,13949]`1`
+                                          Value: 1
                                   ReadLocalVariableNode SourceSection: [13962,13970]`modifier`
                                     Frame: [2,modifier,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3934,6 +3974,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   CallDispatchNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [14489,14492]`'@'`
                                 IntegerLiteralNode SourceSection: [14494,14495]`1`
+                                  Value: 1
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [14478,14482]`code`
                                     Frame: [1,code,Illegal]
@@ -4073,6 +4114,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       CallDispatchNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [15013,15016]`'@'`
                                     IntegerLiteralNode SourceSection: [15018,15019]`1`
+                                      Value: 1
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [15002,15006]`code`
                                         Frame: [1,code,Illegal]
@@ -4223,6 +4265,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               CallDispatchNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [15793,15796]`'@'`
                             IntegerLiteralNode SourceSection: [15798,15799]`1`
+                              Value: 1
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [15782,15786]`code`
                                 Frame: [1,code,Illegal]
@@ -4315,6 +4358,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 PythonObjectFactoryNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
                                 IntegerLiteralNode SourceSection: [16136,16137]`2`
+                                  Value: 2
                                 EmptyNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: tuple
@@ -4611,6 +4655,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       PythonObjectFactoryNodeGen SourceSection: None
                                       EmptyNode SourceSection: None
                                       IntegerLiteralNode SourceSection: [18222,18223]`2`
+                                        Value: 2
                                       EmptyNode SourceSection: None
                                   StringLiteralNode SourceSection: [18228,18232]`"0x"`
                                 YesNodeGen SourceSection: None
@@ -4630,6 +4675,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [2,code,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [18345,18346]`0`
+                                    Value: 0
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: int
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4731,6 +4777,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                               Frame: [6,localename,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [18726,18727]`0`
+                                          Value: 0
                                     BlockNode SourceSection: None
                                   BreakNode SourceSection: [18741,18746]`break`
                                 BlockNode SourceSection: None
@@ -5252,6 +5299,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Identifier: getdefaultlocale
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [21376,21377]`1`
+                                    Value: 1
                               IfNode SourceSection: [21395,21529]`if res is None:↵    ...`
                                 YesNodeGen SourceSection: None
                                   IsExpressionNodeGen SourceSection: [21398,21409]`res is None`
@@ -6771,213 +6819,421 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
         DictLiteralNode SourceSection: [67911,76053]`{↵    0x0436: "af_ZA...`
           PythonObjectFactoryNodeGen SourceSection: None
           IntegerLiteralNode SourceSection: [67917,67923]`0x0436`
+            Value: 1078
           IntegerLiteralNode SourceSection: [67950,67956]`0x041c`
+            Value: 1052
           IntegerLiteralNode SourceSection: [67982,67988]`0x0484`
+            Value: 1156
           IntegerLiteralNode SourceSection: [68023,68029]`0x045e`
+            Value: 1118
           IntegerLiteralNode SourceSection: [68065,68071]`0x0401`
+            Value: 1025
           IntegerLiteralNode SourceSection: [68110,68116]`0x0801`
+            Value: 2049
           IntegerLiteralNode SourceSection: [68147,68153]`0x0c01`
+            Value: 3073
           IntegerLiteralNode SourceSection: [68185,68191]`0x1001`
+            Value: 4097
           IntegerLiteralNode SourceSection: [68223,68229]`0x1401`
+            Value: 5121
           IntegerLiteralNode SourceSection: [68263,68269]`0x1801`
+            Value: 6145
           IntegerLiteralNode SourceSection: [68303,68309]`0x1c01`
+            Value: 7169
           IntegerLiteralNode SourceSection: [68343,68349]`0x2001`
+            Value: 8193
           IntegerLiteralNode SourceSection: [68380,68386]`0x2401`
+            Value: 9217
           IntegerLiteralNode SourceSection: [68418,68424]`0x2801`
+            Value: 10241
           IntegerLiteralNode SourceSection: [68456,68462]`0x2c01`
+            Value: 11265
           IntegerLiteralNode SourceSection: [68495,68501]`0x3001`
+            Value: 12289
           IntegerLiteralNode SourceSection: [68535,68541]`0x3401`
+            Value: 13313
           IntegerLiteralNode SourceSection: [68574,68580]`0x3801`
+            Value: 14337
           IntegerLiteralNode SourceSection: [68627,68633]`0x3c01`
+            Value: 15361
           IntegerLiteralNode SourceSection: [68667,68673]`0x4001`
+            Value: 16385
           IntegerLiteralNode SourceSection: [68705,68711]`0x042b`
+            Value: 1067
           IntegerLiteralNode SourceSection: [68737,68743]`0x044d`
+            Value: 1101
           IntegerLiteralNode SourceSection: [68777,68783]`0x042c`
+            Value: 1068
           IntegerLiteralNode SourceSection: [68814,68820]`0x082c`
+            Value: 2092
           IntegerLiteralNode SourceSection: [68854,68860]`0x046d`
+            Value: 1133
           IntegerLiteralNode SourceSection: [68885,68891]`0x042d`
+            Value: 1069
           IntegerLiteralNode SourceSection: [68924,68930]`0x0423`
+            Value: 1059
           IntegerLiteralNode SourceSection: [68958,68964]`0x0445`
+            Value: 1093
           IntegerLiteralNode SourceSection: [68988,68994]`0x201a`
+            Value: 8218
           IntegerLiteralNode SourceSection: [69030,69036]`0x141a`
+            Value: 5146
           IntegerLiteralNode SourceSection: [69069,69075]`0x047e`
+            Value: 1150
           IntegerLiteralNode SourceSection: [69108,69114]`0x0402`
+            Value: 1026
           IntegerLiteralNode SourceSection: [69189,69195]`0x0403`
+            Value: 1027
           IntegerLiteralNode SourceSection: [69220,69226]`0x0004`
+            Value: 4
           IntegerLiteralNode SourceSection: [69264,69270]`0x0404`
+            Value: 1028
           IntegerLiteralNode SourceSection: [69304,69310]`0x0804`
+            Value: 2052
           IntegerLiteralNode SourceSection: [69341,69347]`0x0c04`
+            Value: 3076
           IntegerLiteralNode SourceSection: [69391,69397]`0x1004`
+            Value: 4100
           IntegerLiteralNode SourceSection: [69434,69440]`0x1404`
+            Value: 5124
           IntegerLiteralNode SourceSection: [69480,69486]`0x7c04`
+            Value: 31748
           IntegerLiteralNode SourceSection: [69525,69531]`0x0483`
+            Value: 1155
           IntegerLiteralNode SourceSection: [69566,69572]`0x041a`
+            Value: 1050
           IntegerLiteralNode SourceSection: [69598,69604]`0x101a`
+            Value: 4122
           IntegerLiteralNode SourceSection: [69639,69645]`0x0405`
+            Value: 1029
           IntegerLiteralNode SourceSection: [69668,69674]`0x0406`
+            Value: 1030
           IntegerLiteralNode SourceSection: [69698,69704]`0x048c`
+            Value: 1164
           IntegerLiteralNode SourceSection: [69740,69746]`0x0465`
+            Value: 1125
           IntegerLiteralNode SourceSection: [69781,69787]`0x0413`
+            Value: 1043
           IntegerLiteralNode SourceSection: [69828,69834]`0x0813`
+            Value: 2067
           IntegerLiteralNode SourceSection: [69867,69873]`0x0409`
+            Value: 1033
           IntegerLiteralNode SourceSection: [69914,69920]`0x0809`
+            Value: 2057
           IntegerLiteralNode SourceSection: [69962,69968]`0x0c09`
+            Value: 3081
           IntegerLiteralNode SourceSection: [70005,70011]`0x1009`
+            Value: 4105
           IntegerLiteralNode SourceSection: [70045,70051]`0x1409`
+            Value: 5129
           IntegerLiteralNode SourceSection: [70090,70096]`0x1809`
+            Value: 6153
           IntegerLiteralNode SourceSection: [70131,70137]`0x1c09`
+            Value: 7177
           IntegerLiteralNode SourceSection: [70177,70183]`0x2009`
+            Value: 8201
           IntegerLiteralNode SourceSection: [70218,70224]`0x2409`
+            Value: 9225
           IntegerLiteralNode SourceSection: [70261,70267]`0x2809`
+            Value: 10249
           IntegerLiteralNode SourceSection: [70301,70307]`0x2c09`
+            Value: 11273
           IntegerLiteralNode SourceSection: [70343,70349]`0x3009`
+            Value: 12297
           IntegerLiteralNode SourceSection: [70385,70391]`0x3409`
+            Value: 13321
           IntegerLiteralNode SourceSection: [70430,70436]`0x4009`
+            Value: 16393
           IntegerLiteralNode SourceSection: [70469,70475]`0x4409`
+            Value: 17417
           IntegerLiteralNode SourceSection: [70511,70517]`0x4809`
+            Value: 18441
           IntegerLiteralNode SourceSection: [70554,70560]`0x0425`
+            Value: 1061
           IntegerLiteralNode SourceSection: [70586,70592]`0x0438`
+            Value: 1080
           IntegerLiteralNode SourceSection: [70617,70623]`0x0464`
+            Value: 1124
           IntegerLiteralNode SourceSection: [70649,70655]`0x040b`
+            Value: 1035
           IntegerLiteralNode SourceSection: [70680,70686]`0x040c`
+            Value: 1036
           IntegerLiteralNode SourceSection: [70719,70725]`0x080c`
+            Value: 2060
           IntegerLiteralNode SourceSection: [70759,70765]`0x0c0c`
+            Value: 3084
           IntegerLiteralNode SourceSection: [70798,70804]`0x100c`
+            Value: 4108
           IntegerLiteralNode SourceSection: [70842,70848]`0x140c`
+            Value: 5132
           IntegerLiteralNode SourceSection: [70885,70891]`0x180c`
+            Value: 6156
           IntegerLiteralNode SourceSection: [70924,70930]`0x0462`
+            Value: 1122
           IntegerLiteralNode SourceSection: [70969,70975]`0x0456`
+            Value: 1110
           IntegerLiteralNode SourceSection: [71001,71007]`0x0437`
+            Value: 1079
           IntegerLiteralNode SourceSection: [71033,71039]`0x0407`
+            Value: 1031
           IntegerLiteralNode SourceSection: [71073,71079]`0x0807`
+            Value: 2055
           IntegerLiteralNode SourceSection: [71117,71123]`0x0c07`
+            Value: 3079
           IntegerLiteralNode SourceSection: [71157,71163]`0x1007`
+            Value: 4103
           IntegerLiteralNode SourceSection: [71200,71206]`0x1407`
+            Value: 5127
           IntegerLiteralNode SourceSection: [71246,71252]`0x0408`
+            Value: 1032
           IntegerLiteralNode SourceSection: [71275,71281]`0x046f`
+            Value: 1135
           IntegerLiteralNode SourceSection: [71322,71328]`0x0447`
+            Value: 1095
           IntegerLiteralNode SourceSection: [71354,71360]`0x0468`
+            Value: 1128
           IntegerLiteralNode SourceSection: [71391,71397]`0x040d`
+            Value: 1037
           IntegerLiteralNode SourceSection: [71421,71427]`0x0439`
+            Value: 1081
           IntegerLiteralNode SourceSection: [71450,71456]`0x040e`
+            Value: 1038
           IntegerLiteralNode SourceSection: [71483,71489]`0x040f`
+            Value: 1039
           IntegerLiteralNode SourceSection: [71516,71522]`0x0421`
+            Value: 1057
           IntegerLiteralNode SourceSection: [71550,71556]`0x045d`
+            Value: 1117
           IntegerLiteralNode SourceSection: [71595,71601]`0x085d`
+            Value: 2141
           IntegerLiteralNode SourceSection: [71636,71642]`0x083c`
+            Value: 2108
           IntegerLiteralNode SourceSection: [71675,71681]`0x0410`
+            Value: 1040
           IntegerLiteralNode SourceSection: [71714,71720]`0x0810`
+            Value: 2064
           IntegerLiteralNode SourceSection: [71759,71765]`0x0411`
+            Value: 1041
           IntegerLiteralNode SourceSection: [71791,71797]`0x044b`
+            Value: 1099
           IntegerLiteralNode SourceSection: [71830,71836]`0x043f`
+            Value: 1087
           IntegerLiteralNode SourceSection: [71860,71866]`0x0453`
+            Value: 1107
           IntegerLiteralNode SourceSection: [71900,71906]`0x0486`
+            Value: 1158
           IntegerLiteralNode SourceSection: [71942,71948]`0x0487`
+            Value: 1159
           IntegerLiteralNode SourceSection: [71986,71992]`0x0457`
+            Value: 1111
           IntegerLiteralNode SourceSection: [72017,72023]`0x0412`
+            Value: 1042
           IntegerLiteralNode SourceSection: [72047,72053]`0x0440`
+            Value: 1088
           IntegerLiteralNode SourceSection: [72077,72083]`0x0454`
+            Value: 1108
           IntegerLiteralNode SourceSection: [72114,72120]`0x0426`
+            Value: 1062
           IntegerLiteralNode SourceSection: [72145,72151]`0x0427`
+            Value: 1063
           IntegerLiteralNode SourceSection: [72179,72185]`0x082e`
+            Value: 2094
           IntegerLiteralNode SourceSection: [72226,72232]`0x046e`
+            Value: 1134
           IntegerLiteralNode SourceSection: [72263,72269]`0x042f`
+            Value: 1071
           IntegerLiteralNode SourceSection: [72303,72309]`0x043e`
+            Value: 1086
           IntegerLiteralNode SourceSection: [72343,72349]`0x083e`
+            Value: 2110
           IntegerLiteralNode SourceSection: [72392,72398]`0x044c`
+            Value: 1100
           IntegerLiteralNode SourceSection: [72433,72439]`0x043a`
+            Value: 1082
           IntegerLiteralNode SourceSection: [72464,72470]`0x0481`
+            Value: 1153
           IntegerLiteralNode SourceSection: [72493,72499]`0x047a`
+            Value: 1146
           IntegerLiteralNode SourceSection: [72527,72533]`0x044e`
+            Value: 1102
           IntegerLiteralNode SourceSection: [72558,72564]`0x047c`
+            Value: 1148
           IntegerLiteralNode SourceSection: [72597,72603]`0x0450`
+            Value: 1104
           IntegerLiteralNode SourceSection: [72641,72647]`0x0850`
+            Value: 2128
           IntegerLiteralNode SourceSection: [72680,72686]`0x0461`
+            Value: 1121
           IntegerLiteralNode SourceSection: [72710,72716]`0x0414`
+            Value: 1044
           IntegerLiteralNode SourceSection: [72752,72758]`0x0814`
+            Value: 2068
           IntegerLiteralNode SourceSection: [72795,72801]`0x0482`
+            Value: 1154
           IntegerLiteralNode SourceSection: [72835,72841]`0x0448`
+            Value: 1096
           IntegerLiteralNode SourceSection: [72872,72878]`0x0463`
+            Value: 1123
           IntegerLiteralNode SourceSection: [72916,72922]`0x0429`
+            Value: 1065
           IntegerLiteralNode SourceSection: [72947,72953]`0x0415`
+            Value: 1045
           IntegerLiteralNode SourceSection: [72977,72983]`0x0416`
+            Value: 1046
           IntegerLiteralNode SourceSection: [73020,73026]`0x0816`
+            Value: 2070
           IntegerLiteralNode SourceSection: [73065,73071]`0x0446`
+            Value: 1094
           IntegerLiteralNode SourceSection: [73096,73102]`0x046b`
+            Value: 1131
           IntegerLiteralNode SourceSection: [73137,73143]`0x086b`
+            Value: 2155
           IntegerLiteralNode SourceSection: [73178,73184]`0x0c6b`
+            Value: 3179
           IntegerLiteralNode SourceSection: [73216,73222]`0x0418`
+            Value: 1048
           IntegerLiteralNode SourceSection: [73258,73264]`0x0417`
+            Value: 1047
           IntegerLiteralNode SourceSection: [73289,73295]`0x0419`
+            Value: 1049
           IntegerLiteralNode SourceSection: [73320,73326]`0x243b`
+            Value: 9275
           IntegerLiteralNode SourceSection: [73356,73362]`0x103b`
+            Value: 4155
           IntegerLiteralNode SourceSection: [73391,73397]`0x143b`
+            Value: 5179
           IntegerLiteralNode SourceSection: [73426,73432]`0x043b`
+            Value: 1083
           IntegerLiteralNode SourceSection: [73470,73476]`0x083b`
+            Value: 2107
           IntegerLiteralNode SourceSection: [73514,73520]`0x0c3b`
+            Value: 3131
           IntegerLiteralNode SourceSection: [73559,73565]`0x203b`
+            Value: 8251
           IntegerLiteralNode SourceSection: [73593,73599]`0x183b`
+            Value: 6203
           IntegerLiteralNode SourceSection: [73637,73643]`0x1c3b`
+            Value: 7227
           IntegerLiteralNode SourceSection: [73681,73687]`0x044f`
+            Value: 1103
           IntegerLiteralNode SourceSection: [73713,73719]`0x0c1a`
+            Value: 3098
           IntegerLiteralNode SourceSection: [73755,73761]`0x1c1a`
+            Value: 7194
           IntegerLiteralNode SourceSection: [73804,73810]`0x081a`
+            Value: 2074
           IntegerLiteralNode SourceSection: [73843,73849]`0x181a`
+            Value: 6170
           IntegerLiteralNode SourceSection: [73889,73895]`0x045b`
+            Value: 1115
           IntegerLiteralNode SourceSection: [73932,73938]`0x046c`
+            Value: 1132
           IntegerLiteralNode SourceSection: [73970,73976]`0x0432`
+            Value: 1074
           IntegerLiteralNode SourceSection: [74020,74026]`0x041b`
+            Value: 1051
           IntegerLiteralNode SourceSection: [74050,74056]`0x0424`
+            Value: 1060
           IntegerLiteralNode SourceSection: [74083,74089]`0x040a`
+            Value: 1034
           IntegerLiteralNode SourceSection: [74122,74128]`0x080a`
+            Value: 2058
           IntegerLiteralNode SourceSection: [74162,74168]`0x0c0a`
+            Value: 3082
           IntegerLiteralNode SourceSection: [74210,74216]`0x100a`
+            Value: 4106
           IntegerLiteralNode SourceSection: [74253,74259]`0x140a`
+            Value: 5130
           IntegerLiteralNode SourceSection: [74297,74303]`0x180a`
+            Value: 6154
           IntegerLiteralNode SourceSection: [74337,74343]`0x1c0a`
+            Value: 7178
           IntegerLiteralNode SourceSection: [74389,74395]`0x200a`
+            Value: 8202
           IntegerLiteralNode SourceSection: [74432,74438]`0x240a`
+            Value: 9226
           IntegerLiteralNode SourceSection: [74474,74480]`0x280a`
+            Value: 10250
           IntegerLiteralNode SourceSection: [74512,74518]`0x2c0a`
+            Value: 11274
           IntegerLiteralNode SourceSection: [74555,74561]`0x300a`
+            Value: 12298
           IntegerLiteralNode SourceSection: [74596,74602]`0x340a`
+            Value: 13322
           IntegerLiteralNode SourceSection: [74635,74641]`0x380a`
+            Value: 14346
           IntegerLiteralNode SourceSection: [74676,74682]`0x3c0a`
+            Value: 15370
           IntegerLiteralNode SourceSection: [74718,74724]`0x400a`
+            Value: 16394
           IntegerLiteralNode SourceSection: [74759,74765]`0x440a`
+            Value: 17418
           IntegerLiteralNode SourceSection: [74804,74810]`0x480a`
+            Value: 18442
           IntegerLiteralNode SourceSection: [74846,74852]`0x4c0a`
+            Value: 19466
           IntegerLiteralNode SourceSection: [74889,74895]`0x500a`
+            Value: 20490
           IntegerLiteralNode SourceSection: [74934,74940]`0x540a`
+            Value: 21514
           IntegerLiteralNode SourceSection: [75021,75027]`0x0441`
+            Value: 1089
           IntegerLiteralNode SourceSection: [75052,75058]`0x041d`
+            Value: 1053
           IntegerLiteralNode SourceSection: [75092,75098]`0x081d`
+            Value: 2077
           IntegerLiteralNode SourceSection: [75133,75139]`0x045a`
+            Value: 1114
           IntegerLiteralNode SourceSection: [75163,75169]`0x0428`
+            Value: 1064
           IntegerLiteralNode SourceSection: [75203,75209]`0x085f`
+            Value: 2143
           IntegerLiteralNode SourceSection: [75244,75250]`0x0449`
+            Value: 1097
           IntegerLiteralNode SourceSection: [75273,75279]`0x0444`
+            Value: 1092
           IntegerLiteralNode SourceSection: [75302,75308]`0x044a`
+            Value: 1098
           IntegerLiteralNode SourceSection: [75332,75338]`0x041e`
+            Value: 1054
           IntegerLiteralNode SourceSection: [75360,75366]`0x0851`
+            Value: 2129
           IntegerLiteralNode SourceSection: [75400,75406]`0x0451`
+            Value: 1105
           IntegerLiteralNode SourceSection: [75437,75443]`0x041f`
+            Value: 1055
           IntegerLiteralNode SourceSection: [75468,75474]`0x0442`
+            Value: 1090
           IntegerLiteralNode SourceSection: [75510,75516]`0x0480`
+            Value: 1152
           IntegerLiteralNode SourceSection: [75549,75555]`0x0422`
+            Value: 1058
           IntegerLiteralNode SourceSection: [75582,75588]`0x042e`
+            Value: 1070
           IntegerLiteralNode SourceSection: [75629,75635]`0x0420`
+            Value: 1056
           IntegerLiteralNode SourceSection: [75657,75663]`0x0820`
+            Value: 2080
           IntegerLiteralNode SourceSection: [75693,75699]`0x0443`
+            Value: 1091
           IntegerLiteralNode SourceSection: [75730,75736]`0x0843`
+            Value: 2115
           IntegerLiteralNode SourceSection: [75770,75776]`0x042a`
+            Value: 1066
           IntegerLiteralNode SourceSection: [75804,75810]`0x0452`
+            Value: 1106
           IntegerLiteralNode SourceSection: [75833,75839]`0x0488`
+            Value: 1160
           IntegerLiteralNode SourceSection: [75872,75878]`0x0434`
+            Value: 1076
           IntegerLiteralNode SourceSection: [75916,75922]`0x0485`
+            Value: 1157
           IntegerLiteralNode SourceSection: [75956,75962]`0x0478`
+            Value: 1144
           IntegerLiteralNode SourceSection: [75988,75994]`0x046a`
+            Value: 1130
           IntegerLiteralNode SourceSection: [76028,76034]`0x0435`
+            Value: 1077
           StringLiteralNode SourceSection: [67925,67932]`"af_ZA"`
           StringLiteralNode SourceSection: [67958,67965]`"sq_AL"`
           StringLiteralNode SourceSection: [67990,67998]`"gsw_FR"`
@@ -7294,6 +7550,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                                   EmptyNode SourceSection: None
                                                   IntegerLiteralNode SourceSection: [76233,76234]`3`
+                                                    Value: 3
                                                   EmptyNode SourceSection: None
                                               StringLiteralNode SourceSection: [76239,76244]`'LC_'`
                                           SetItemNodeGen SourceSection: [76262,76279]`categories[k] = v`
@@ -7358,6 +7615,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Op: __mul__
                           StringLiteralNode SourceSection: [76409,76412]`'-'`
                           IntegerLiteralNode SourceSection: [76413,76415]`72`
+                            Value: 72
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7448,6 +7706,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Op: __mul__
                           StringLiteralNode SourceSection: [76609,76612]`'-'`
                           IntegerLiteralNode SourceSection: [76613,76615]`72`
+                            Value: 72
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7601,6 +7860,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             Op: __mul__
                           StringLiteralNode SourceSection: [76933,76936]`'-'`
                           IntegerLiteralNode SourceSection: [76937,76939]`72`
+                            Value: 72
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7806,6 +8066,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Op: __mul__
                                 StringLiteralNode SourceSection: [77510,77513]`'-'`
                                 IntegerLiteralNode SourceSection: [77514,77516]`72`
+                                  Value: 72
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

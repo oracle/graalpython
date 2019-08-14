@@ -41,6 +41,7 @@ ModuleRootNode Name: <module 'call17'> SourceSection: [0,22]`def fn(): foo(arg =
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
                             IntegerLiteralNode SourceSection: [20,21]`1`
+                              Value: 1
                           CompactKeywordsNodeGen SourceSection: None
                           ExecuteKeywordStarargsNodeGen SourceSection: None
                             EmptyNode SourceSection: None

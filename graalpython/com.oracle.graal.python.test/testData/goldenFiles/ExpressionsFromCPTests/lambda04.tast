@@ -48,6 +48,7 @@ ModuleRootNode Name: <module 'lambda04'> SourceSection: [0,17]`lambda *y, **z: 0
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                   IntegerLiteralNode SourceSection: [16,17]`0`
+                    Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [2,<return_val>,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None

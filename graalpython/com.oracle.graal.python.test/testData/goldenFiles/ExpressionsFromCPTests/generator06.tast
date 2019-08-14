@@ -43,6 +43,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [36,37]`2`
+                          Value: 2
                       BinaryArithmeticExpression SourceSection: [41,46]`x % 3`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
@@ -50,6 +51,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [45,46]`3`
+                          Value: 3
                       YesNodeGen SourceSection: None
                   ExpressionStatementNode SourceSection: [5,9]`x**3`
                     YieldNode SourceSection: [5,9]`x**3`
@@ -61,6 +63,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [8,9]`3`
+                          Value: 3
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -88,6 +91,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
               CreateArgumentsNodeGen SourceSection: None
               CallDispatchNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [25,27]`20`
+              Value: 20
             ReadNameNodeGen SourceSection: None
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None

@@ -18,6 +18,7 @@ ModuleRootNode Name: <module 'fnCall11'> SourceSection: [0,25]`foo(a, *args, key
       KeywordArgumentsNodeGen SourceSection: None
         KeywordLiteralNode SourceSection: None
           IntegerLiteralNode SourceSection: [22,24]`23`
+            Value: 23
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           EmptyNode SourceSection: None

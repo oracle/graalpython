@@ -50,6 +50,7 @@ ModuleRootNode Name: <module 'while03'> SourceSection: [0,81]`def gen(x):↵   w
                                   Frame: [0,x,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [37,38]`1`
+                                  Value: 1
                             ContinueNode SourceSection: [47,55]`continue`
                             BlockNode SourceSection: None
                           WriteGeneratorFrameVariableNodeGen SourceSection: [61,68]`x = x-1`
@@ -63,6 +64,7 @@ ModuleRootNode Name: <module 'while03'> SourceSection: [0,81]`def gen(x):↵   w
                                 Frame: [0,x,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [67,68]`1`
+                                Value: 1
                           ExpressionStatementNode SourceSection: [74,81]`yield x`
                             YieldNode SourceSection: [74,81]`yield x`
                               flagSlot: 0

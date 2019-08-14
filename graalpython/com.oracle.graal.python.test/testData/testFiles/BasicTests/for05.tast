@@ -53,6 +53,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,119]`def fn():↵  for x
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [0,x,Illegal]
                                 IntegerLiteralNode SourceSection: [39,40]`4`
+                                  Value: 4
                               IfNode SourceSection: [45,115]`if x == 1:↵      pri...`
                                 YesNodeGen SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [48,54]`x == 1`
@@ -62,6 +63,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,119]`def fn():↵  for x
                                       Frame: [0,x,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [53,54]`1`
+                                      Value: 1
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [62,76]`print('jedna')`
                                     PythonCallNodeGen SourceSection: [62,76]`print('jedna')`
@@ -91,6 +93,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,119]`def fn():↵  for x
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [27,28]`3`
+                              Value: 3
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: range
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -496,6 +496,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [2090,2091]`0`
+                                          Value: 0
                                       SetAttributeNodeGen SourceSection: [2100,2119]`self.groupdict = {}`
                                         Attribute: groupdict
                                         ReadLocalVariableNode SourceSection: [2100,2104]`self`
@@ -1206,6 +1207,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                           FunctionDefinitionNode Name: dump SourceSection: None
                             Arguments:
                               IntegerLiteralNode SourceSection: [3593,3594]`0`
+                                Value: 0
                             KwArguments: None
                             Documentation: StringLiteralNode: Empty
                             FreeVarSlots: __class__, 
@@ -1386,6 +1388,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                         Frame: [1,level,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [3881,3882]`1`
+                                                                        Value: 1
                                                                     StringLiteralNode SourceSection: [3884,3888]`"  "`
                                                                   PythonCallNodeGen SourceSection: [3891,3898]`str(op)`
                                                                     CachedCallNodeGen SourceSection: None
@@ -1493,6 +1496,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                         Frame: [1,level,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [4112,4113]`1`
+                                                                        Value: 1
                                                                     GetCallAttributeNodeGen SourceSection: None
                                                                       ReadLocalVariableNode SourceSection: [4099,4100]`a`
                                                                         Frame: [5,a,Illegal]
@@ -1508,6 +1512,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                   Frame: [10,av,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [3999,4000]`1`
+                                                                  Value: 1
                                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                                 Identifier: enumerate
                                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1583,6 +1588,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                 Frame: [1,level,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [4278,4279]`1`
+                                                                Value: 1
                                                             GetCallAttributeNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [4258,4266]`item_yes`
                                                                 Frame: [8,item_yes,Illegal]
@@ -1624,6 +1630,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                     Frame: [1,level,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [4395,4396]`1`
+                                                                    Value: 1
                                                                 GetCallAttributeNodeGen SourceSection: None
                                                                   ReadLocalVariableNode SourceSection: [4376,4383]`item_no`
                                                                     Frame: [9,item_no,Illegal]
@@ -1701,6 +1708,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                               Frame: [1,level,Illegal]
                                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                                             IntegerLiteralNode SourceSection: [4655,4656]`1`
+                                                                              Value: 1
                                                                           GetCallAttributeNodeGen SourceSection: None
                                                                             ReadLocalVariableNode SourceSection: [4642,4643]`a`
                                                                               Frame: [5,a,Illegal]
@@ -2358,6 +2366,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [11,<>temp11,Illegal]
                                           IntegerLiteralNode SourceSection: [5687,5688]`0`
+                                            Value: 0
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: lo
                                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2421,11 +2430,13 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Identifier: MAXREPEAT
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [5783,5784]`1`
+                                                        Value: 1
                                                   WriteLocalVariableNodeGen SourceSection: [5801,5806]`j = 0`
                                                     Identifier: j
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [4,j,Illegal]
                                                     IntegerLiteralNode SourceSection: [5805,5806]`0`
+                                                      Value: 0
                                                   ElseNode SourceSection: [5823,5965]`for av in av[1]:↵   ...`
                                                     ForNode SourceSection: None
                                                       DefaultLoopNode SourceSection: None
@@ -2508,6 +2519,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                             Frame: [7,av,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [5836,5837]`1`
+                                                            Value: 1
                                                     BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [5965,5976]`lo = lo + i`
                                                     Identifier: lo
@@ -2622,10 +2634,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                               ReadLocalVariableNode SourceSection: None
                                                                 Frame: [7,av,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                              UnaryArithmeticExpression SourceSection: [6188,6190]`-1`
-                                                                LookupAndCallUnaryNodeGen SourceSection: None
-                                                                  Op: __neg__
-                                                                IntegerLiteralNode SourceSection: [6189,6190]`1`
+                                                              IntegerLiteralNode SourceSection: [6188,6190]`-1`
+                                                                Value: -1
                                                         WriteLocalVariableNodeGen SourceSection: None
                                                           Identifier: <>temp16
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2698,6 +2708,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                   Frame: [7,av,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [6322,6323]`2`
+                                                                  Value: 2
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: <>temp18
                                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2741,6 +2752,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                   Frame: [7,av,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [6369,6370]`0`
+                                                                  Value: 0
                                                         WriteLocalVariableNodeGen SourceSection: [6388,6407]`hi = hi + j * av[1]`
                                                           Identifier: hi
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2762,6 +2774,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                   Frame: [7,av,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [6405,6406]`1`
+                                                                  Value: 1
                                                       IfNode SourceSection: None
                                                         YesNodeGen SourceSection: None
                                                           ContainsNodeGen SourceSection: [6425,6441]`op in _UNITCODES`
@@ -2786,6 +2799,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                 Frame: [1,lo,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [6469,6470]`1`
+                                                                Value: 1
                                                           WriteLocalVariableNodeGen SourceSection: [6487,6498]`hi = hi + 1`
                                                             Identifier: hi
                                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2797,6 +2811,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                 Frame: [2,hi,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [6497,6498]`1`
+                                                                Value: 1
                                                         IfNode SourceSection: None
                                                           YesNodeGen SourceSection: None
                                                             IsExpressionNodeGen SourceSection: [6516,6530]`op is GROUPREF`
@@ -2894,6 +2909,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                         Frame: [7,av,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [6706,6707]`1`
+                                                                        Value: 1
                                                                 WriteLocalVariableNodeGen SourceSection: None
                                                                   Identifier: <>temp22
                                                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2924,6 +2940,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                         Frame: [7,av,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [6742,6743]`2`
+                                                                        Value: 2
                                                                     ObjectLiteralNode SourceSection: [6752,6756]`None`
                                                                 BlockNode SourceSection: None
                                                                   DestructuringAssignmentNodeGen SourceSection: [6778,6801]`l, h = av[2].getwidt...`
@@ -2937,6 +2954,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                             Frame: [7,av,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                           IntegerLiteralNode SourceSection: [6788,6789]`2`
+                                                                            Value: 2
                                                                     WriteLocalVariableNodeGen SourceSection: None
                                                                       Identifier: <>temp24
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2998,6 +3016,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                                     Frame: [3,i,Illegal]
                                                                   IntegerLiteralNode SourceSection: [6916,6917]`0`
+                                                                    Value: 0
                                                               WriteLocalVariableNodeGen SourceSection: [6934,6945]`lo = lo + i`
                                                                 Identifier: lo
                                                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3067,6 +3086,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                 Identifier: MAXREPEAT
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [7069,7070]`1`
+                                                Value: 1
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: min
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3262,6 +3282,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [7372,7373]`0`
+                                          Value: 0
                                       SetAttributeNodeGen SourceSection: [7382,7398]`self.next = None`
                                         Attribute: next
                                         ReadLocalVariableNode SourceSection: [7382,7386]`self`
@@ -3379,6 +3400,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                 Frame: [1,index,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [7650,7651]`1`
+                                                Value: 1
                                           TryFinallyNode SourceSection: [7664,7891]`try:↵               ...`
                                             TryExceptNode SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [7685,7719]`char += self.decoded...`
@@ -3435,6 +3457,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                           Identifier: len
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [7870,7871]`1`
+                                                        Value: 1
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                       Identifier: error
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3457,6 +3480,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                             Frame: [1,index,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [7912,7913]`1`
+                                            Value: 1
                                       SetAttributeNodeGen SourceSection: [7922,7938]`self.next = char`
                                         Attribute: next
                                         ReadLocalVariableNode SourceSection: [7922,7926]`self`
@@ -3912,6 +3936,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                             CallDispatchNodeGen SourceSection: None
                                                           StringLiteralNode SourceSection: [8858,8878]`"missing group name"...`
                                                           IntegerLiteralNode SourceSection: [8880,8881]`1`
+                                                            Value: 1
                                                           GetCallAttributeNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [8847,8851]`self`
                                                               Frame: [0,self,Illegal]
@@ -4173,6 +4198,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                           FunctionDefinitionNode Name: error SourceSection: None
                             Arguments:
                               IntegerLiteralNode SourceSection: [9211,9212]`0`
+                                Value: 0
                             KwArguments: None
                             Documentation: StringLiteralNode: Empty
                             FreeVarSlots: __class__, 
@@ -4364,6 +4390,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                 Frame: [2,code,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [9479,9480]`0`
+                                Value: 0
                             ReadGlobalOrBuiltinNodeGen SourceSection: [9485,9487]`IN`
                               Identifier: IN
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4391,7 +4418,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                               SliceLiteralNodeGen SourceSection: [9537,9540]`1:2`
                                 PythonObjectFactoryNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [9537,9538]`1`
+                                  Value: 1
                                 IntegerLiteralNode SourceSection: [9539,9540]`2`
+                                  Value: 2
                                 EmptyNode SourceSection: None
                           IfNode SourceSection: [9550,10946]`if c == "x":↵       ...`
                             YesNodeGen SourceSection: None
@@ -4416,6 +4445,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                       CreateArgumentsNodeGen SourceSection: None
                                       CallDispatchNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [9655,9656]`2`
+                                      Value: 2
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [9658,9667]`HEXDIGITS`
                                       Identifier: HEXDIGITS
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4439,6 +4469,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Identifier: len
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [9699,9700]`4`
+                                      Value: 4
                                 RaiseNodeGen SourceSection: [9718,9782]`raise source.error("...`
                                   PythonCallNodeGen SourceSection: [9724,9782]`source.error("incomp...`
                                     CachedCallNodeGen SourceSection: None
@@ -4488,9 +4519,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         SliceLiteralNodeGen SourceSection: [9822,9824]`2:`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [9822,9823]`2`
+                                            Value: 2
                                           EmptyNode SourceSection: None
                                           EmptyNode SourceSection: None
                                       IntegerLiteralNode SourceSection: [9827,9829]`16`
+                                        Value: 16
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: int
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4527,6 +4560,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         CreateArgumentsNodeGen SourceSection: None
                                         CallDispatchNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [9961,9962]`4`
+                                        Value: 4
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [9964,9973]`HEXDIGITS`
                                         Identifier: HEXDIGITS
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4550,6 +4584,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [10005,10006]`6`
+                                        Value: 6
                                   RaiseNodeGen SourceSection: [10024,10088]`raise source.error("...`
                                     PythonCallNodeGen SourceSection: [10030,10088]`source.error("incomp...`
                                       CachedCallNodeGen SourceSection: None
@@ -4599,9 +4634,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           SliceLiteralNodeGen SourceSection: [10128,10130]`2:`
                                             PythonObjectFactoryNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [10128,10129]`2`
+                                              Value: 2
                                             EmptyNode SourceSection: None
                                             EmptyNode SourceSection: None
                                         IntegerLiteralNode SourceSection: [10133,10135]`16`
+                                          Value: 16
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: int
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4638,6 +4675,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           CreateArgumentsNodeGen SourceSection: None
                                           CallDispatchNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [10268,10269]`8`
+                                          Value: 8
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [10271,10280]`HEXDIGITS`
                                           Identifier: HEXDIGITS
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4661,6 +4699,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [10312,10314]`10`
+                                          Value: 10
                                     RaiseNodeGen SourceSection: [10332,10396]`raise source.error("...`
                                       PythonCallNodeGen SourceSection: [10338,10396]`source.error("incomp...`
                                         CachedCallNodeGen SourceSection: None
@@ -4704,9 +4743,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         SliceLiteralNodeGen SourceSection: [10424,10426]`2:`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [10424,10425]`2`
+                                            Value: 2
                                           EmptyNode SourceSection: None
                                           EmptyNode SourceSection: None
                                       IntegerLiteralNode SourceSection: [10429,10431]`16`
+                                        Value: 16
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: int
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4760,6 +4801,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                             CreateArgumentsNodeGen SourceSection: None
                                             CallDispatchNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [10633,10634]`2`
+                                            Value: 2
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10636,10645]`OCTDIGITS`
                                             Identifier: OCTDIGITS
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4782,9 +4824,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           SliceLiteralNodeGen SourceSection: [10674,10676]`1:`
                                             PythonObjectFactoryNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [10674,10675]`1`
+                                              Value: 1
                                             EmptyNode SourceSection: None
                                             EmptyNode SourceSection: None
                                         IntegerLiteralNode SourceSection: [10679,10680]`8`
+                                          Value: 8
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: int
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4797,6 +4841,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                             Frame: [3,c,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [10701,10706]`0o377`
+                                            Value: 255
                                       RaiseNodeGen SourceSection: [10724,10852]`raise source.error('...`
                                         PythonCallNodeGen SourceSection: [10730,10852]`source.error('octal ...`
                                           CachedCallNodeGen SourceSection: None
@@ -4872,6 +4917,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                     Identifier: len
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [10964,10965]`2`
+                                  Value: 2
                             BlockNode SourceSection: None
                               IfNode SourceSection: [10979,11087]`if c in ASCIILETTERS...`
                                 YesNodeGen SourceSection: None
@@ -4932,6 +4978,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [1,escape,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [11114,11115]`1`
+                                          Value: 1
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: ord
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5094,7 +5141,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                               SliceLiteralNodeGen SourceSection: [11451,11454]`1:2`
                                 PythonObjectFactoryNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [11451,11452]`1`
+                                  Value: 1
                                 IntegerLiteralNode SourceSection: [11453,11454]`2`
+                                  Value: 2
                                 EmptyNode SourceSection: None
                           IfNode SourceSection: [11464,13779]`if c == "x":↵       ...`
                             YesNodeGen SourceSection: None
@@ -5119,6 +5168,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                       CreateArgumentsNodeGen SourceSection: None
                                       CallDispatchNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [11548,11549]`2`
+                                      Value: 2
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [11551,11560]`HEXDIGITS`
                                       Identifier: HEXDIGITS
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5142,6 +5192,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Identifier: len
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [11592,11593]`4`
+                                      Value: 4
                                 RaiseNodeGen SourceSection: [11611,11675]`raise source.error("...`
                                   PythonCallNodeGen SourceSection: [11617,11675]`source.error("incomp...`
                                     CachedCallNodeGen SourceSection: None
@@ -5191,9 +5242,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         SliceLiteralNodeGen SourceSection: [11715,11717]`2:`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [11715,11716]`2`
+                                            Value: 2
                                           EmptyNode SourceSection: None
                                           EmptyNode SourceSection: None
                                       IntegerLiteralNode SourceSection: [11720,11722]`16`
+                                        Value: 16
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: int
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5230,6 +5283,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         CreateArgumentsNodeGen SourceSection: None
                                         CallDispatchNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [11854,11855]`4`
+                                        Value: 4
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [11857,11866]`HEXDIGITS`
                                         Identifier: HEXDIGITS
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5253,6 +5307,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [11898,11899]`6`
+                                        Value: 6
                                   RaiseNodeGen SourceSection: [11917,11981]`raise source.error("...`
                                     PythonCallNodeGen SourceSection: [11923,11981]`source.error("incomp...`
                                       CachedCallNodeGen SourceSection: None
@@ -5302,9 +5357,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           SliceLiteralNodeGen SourceSection: [12021,12023]`2:`
                                             PythonObjectFactoryNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [12021,12022]`2`
+                                              Value: 2
                                             EmptyNode SourceSection: None
                                             EmptyNode SourceSection: None
                                         IntegerLiteralNode SourceSection: [12026,12028]`16`
+                                          Value: 16
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: int
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5341,6 +5398,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           CreateArgumentsNodeGen SourceSection: None
                                           CallDispatchNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [12161,12162]`8`
+                                          Value: 8
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [12164,12173]`HEXDIGITS`
                                           Identifier: HEXDIGITS
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5364,6 +5422,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [12205,12207]`10`
+                                          Value: 10
                                     RaiseNodeGen SourceSection: [12225,12289]`raise source.error("...`
                                       PythonCallNodeGen SourceSection: [12231,12289]`source.error("incomp...`
                                         CachedCallNodeGen SourceSection: None
@@ -5407,9 +5466,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         SliceLiteralNodeGen SourceSection: [12317,12319]`2:`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [12317,12318]`2`
+                                            Value: 2
                                           EmptyNode SourceSection: None
                                           EmptyNode SourceSection: None
                                       IntegerLiteralNode SourceSection: [12322,12324]`16`
+                                        Value: 16
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: int
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5460,6 +5521,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                             CreateArgumentsNodeGen SourceSection: None
                                             CallDispatchNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [12499,12500]`2`
+                                            Value: 2
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12502,12511]`OCTDIGITS`
                                             Identifier: OCTDIGITS
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5488,9 +5550,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                               SliceLiteralNodeGen SourceSection: [12552,12554]`1:`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [12552,12553]`1`
+                                                  Value: 1
                                                 EmptyNode SourceSection: None
                                                 EmptyNode SourceSection: None
                                             IntegerLiteralNode SourceSection: [12557,12558]`8`
+                                              Value: 8
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: int
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5557,6 +5621,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Frame: [1,escape,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [12753,12754]`1`
+                                                        Value: 1
                                                   ContainsNodeGen SourceSection: [12773,12795]`escape[2] in OCTDIGI...`
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __contains__
@@ -5569,6 +5634,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Frame: [1,escape,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [12780,12781]`2`
+                                                        Value: 2
                                                   YesNodeGen SourceSection: None
                                                 ContainsNodeGen SourceSection: [12820,12844]`source.next in OCTDI...`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
@@ -5618,9 +5684,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                     SliceLiteralNodeGen SourceSection: [12995,12997]`1:`
                                                       PythonObjectFactoryNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [12995,12996]`1`
+                                                        Value: 1
                                                       EmptyNode SourceSection: None
                                                       EmptyNode SourceSection: None
                                                   IntegerLiteralNode SourceSection: [13000,13001]`8`
+                                                    Value: 8
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                     Identifier: int
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5633,6 +5701,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Frame: [4,c,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [13030,13035]`0o377`
+                                                      Value: 255
                                                 RaiseNodeGen SourceSection: [13061,13240]`raise source.error('...`
                                                   PythonCallNodeGen SourceSection: [13067,13240]`source.error('octal ...`
                                                     CachedCallNodeGen SourceSection: None
@@ -5691,6 +5760,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                             SliceLiteralNodeGen SourceSection: [13374,13376]`1:`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [13374,13375]`1`
+                                                Value: 1
                                               EmptyNode SourceSection: None
                                               EmptyNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -5803,6 +5873,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [13768,13769]`1`
+                                              Value: 1
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [13703,13709]`source`
                                               Frame: [0,source,Illegal]
@@ -5825,6 +5896,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                     Identifier: len
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [13797,13798]`2`
+                                  Value: 2
                             BlockNode SourceSection: None
                               IfNode SourceSection: [13812,13920]`if c in ASCIILETTERS...`
                                 YesNodeGen SourceSection: None
@@ -5885,6 +5957,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [1,escape,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [13947,13948]`1`
+                                          Value: 1
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: ord
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6187,6 +6260,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [3,nested,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [14518,14519]`1`
+                                        Value: 1
                                     AndNode SourceSection: [14548,14572]`not nested and not i...`
                                       NotNodeGen SourceSection: [14548,14558]`not nested`
                                         ReadLocalVariableNode SourceSection: [14552,14558]`nested`
@@ -6232,6 +6306,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [14648,14649]`1`
+                            Value: 1
                       FrameReturnNode SourceSection: [14659,14674]`return items[0]`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
@@ -6242,6 +6317,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                               Frame: [4,items,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [14672,14673]`0`
+                              Value: 0
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14680,14710]`subpattern = SubPatt...`
                       Identifier: subpattern
@@ -6303,6 +6379,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                   Frame: [10,item,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [14932,14933]`0`
+                                                  Value: 0
                                             IfNode SourceSection: None
                                               YesNodeGen SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [14952,14969]`item[0] != prefix`
@@ -6313,6 +6390,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Frame: [10,item,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [14957,14958]`0`
+                                                      Value: 0
                                                   ReadLocalVariableNode SourceSection: [14963,14969]`prefix`
                                                     Frame: [9,prefix,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -6338,6 +6416,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                 Frame: [10,item,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [15160,15161]`0`
+                                                Value: 0
                                         GetIteratorExpressionNodeGen SourceSection: [15128,15133]`items`
                                           GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [15128,15133]`items`
@@ -6391,6 +6470,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Identifier: len
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [15375,15376]`1`
+                                      Value: 1
                                 BreakNode SourceSection: [15390,15395]`break`
                                 BlockNode SourceSection: None
                               DestructuringAssignmentNodeGen SourceSection: [15404,15420]`op, av = item[0]`
@@ -6399,6 +6479,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                     Frame: [10,item,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [15418,15419]`0`
+                                    Value: 0
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp15
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6465,7 +6546,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                 Frame: [13,av,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [15509,15510]`0`
+                                                Value: 0
                                             IntegerLiteralNode SourceSection: [15512,15513]`0`
+                                              Value: 0
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [15522,15528]`NEGATE`
                                             Identifier: NEGATE
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6808,6 +6891,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                           Frame: [11,this,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [16691,16692]`0`
+                                          Value: 0
                                       StringLiteralNode SourceSection: [16697,16701]`"\\"`
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [16715,16750]`code = _escape(sourc...`
@@ -6902,6 +6986,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                   Frame: [0,source,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [16941,16942]`1`
+                                              Value: 1
                                         WriteLocalVariableNodeGen SourceSection: [16983,16991]`set = []`
                                           Identifier: set
                                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6971,6 +7056,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Frame: [3,nested,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [17335,17336]`6`
+                                                        Value: 6
                                                   CompactKeywordsNodeGen SourceSection: None
                                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                                     EmptyNode SourceSection: None
@@ -7067,6 +7153,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                               Frame: [11,this,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [17748,17749]`0`
+                                                              Value: 0
                                                           StringLiteralNode SourceSection: [17754,17758]`"\\"`
                                                       WriteLocalVariableNodeGen SourceSection: [17780,17815]`code1 = _class_escap...`
                                                         Identifier: code1
@@ -7179,6 +7266,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                             Frame: [0,source,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [18349,18350]`1`
+                                                                        Value: 1
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [18381,18394]`FutureWarning`
                                                                   Identifier: FutureWarning
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7191,6 +7279,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                         Frame: [3,nested,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [18416,18417]`6`
+                                                                        Value: 6
                                                                   CompactKeywordsNodeGen SourceSection: None
                                                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                                                     EmptyNode SourceSection: None
@@ -7291,6 +7380,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                     Frame: [18,code1,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [18850,18851]`0`
+                                                                    Value: 0
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [18856,18858]`IN`
                                                                   Identifier: IN
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7304,7 +7394,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                     Frame: [18,code1,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [18902,18903]`1`
+                                                                    Value: 1
                                                                 IntegerLiteralNode SourceSection: [18905,18906]`0`
+                                                                  Value: 0
                                                             BlockNode SourceSection: None
                                                           ExpressionStatementNode SourceSection: [18932,18948]`setappend(code1)`
                                                             PythonCallNodeGen SourceSection: [18932,18948]`setappend(code1)`
@@ -7350,6 +7442,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                 Frame: [19,that,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [19063,19064]`0`
+                                                                Value: 0
                                                             StringLiteralNode SourceSection: [19069,19073]`"\\"`
                                                         WriteLocalVariableNodeGen SourceSection: [19099,19134]`code2 = _class_escap...`
                                                           Identifier: code2
@@ -7407,6 +7500,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                             Frame: [0,source,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [19417,19418]`2`
+                                                                        Value: 2
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [19453,19466]`FutureWarning`
                                                                     Identifier: FutureWarning
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7419,6 +7513,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                           Frame: [3,nested,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                                         IntegerLiteralNode SourceSection: [19488,19489]`6`
+                                                                          Value: 6
                                                                     CompactKeywordsNodeGen SourceSection: None
                                                                     ExecuteKeywordStarargsNodeGen SourceSection: None
                                                                       EmptyNode SourceSection: None
@@ -7457,6 +7552,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                   Frame: [18,code1,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [19601,19602]`0`
+                                                                  Value: 0
                                                               ReadGlobalOrBuiltinNodeGen SourceSection: [19607,19614]`LITERAL`
                                                                 Identifier: LITERAL
                                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7468,6 +7564,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                   Frame: [20,code2,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [19624,19625]`0`
+                                                                  Value: 0
                                                               ReadGlobalOrBuiltinNodeGen SourceSection: [19630,19637]`LITERAL`
                                                                 Identifier: LITERAL
                                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7514,6 +7611,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                       Identifier: len
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [19772,19773]`1`
+                                                                    Value: 1
                                                                 PythonCallNodeGen SourceSection: [19776,19785]`len(that)`
                                                                   CachedCallNodeGen SourceSection: None
                                                                     CreateArgumentsNodeGen SourceSection: None
@@ -7539,6 +7637,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                             Frame: [18,code1,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [19818,19819]`1`
+                                                            Value: 1
                                                       WriteLocalVariableNodeGen SourceSection: [19841,19854]`hi = code2[1]`
                                                         Identifier: hi
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7548,6 +7647,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                             Frame: [20,code2,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [19852,19853]`1`
+                                                            Value: 1
                                                       IfNode SourceSection: [19875,20055]`if hi < lo:↵        ...`
                                                         YesNodeGen SourceSection: None
                                                           BinaryComparisonNodeGen SourceSection: [19878,19885]`hi < lo`
@@ -7601,6 +7701,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                       Identifier: len
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [20020,20021]`1`
+                                                                    Value: 1
                                                                 PythonCallNodeGen SourceSection: [20024,20033]`len(that)`
                                                                   CachedCallNodeGen SourceSection: None
                                                                     CreateArgumentsNodeGen SourceSection: None
@@ -7647,6 +7748,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                 Frame: [18,code1,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [20135,20136]`0`
+                                                                Value: 0
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [20141,20143]`IN`
                                                               Identifier: IN
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7660,7 +7762,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                 Frame: [18,code1,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [20183,20184]`1`
+                                                                Value: 1
                                                             IntegerLiteralNode SourceSection: [20186,20187]`0`
+                                                              Value: 0
                                                         BlockNode SourceSection: None
                                                       ExpressionStatementNode SourceSection: [20209,20225]`setappend(code1)`
                                                         PythonCallNodeGen SourceSection: [20209,20225]`setappend(code1)`
@@ -7705,6 +7809,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                     Frame: [9,_len,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [20350,20351]`1`
+                                                  Value: 1
                                               IsExpressionNodeGen SourceSection: [20356,20376]`set[0][0] is LITERAL...`
                                                 GetItemNodeGen SourceSection: [20356,20365]`set[0][0]`
                                                   GetItemNodeGen SourceSection: None
@@ -7712,7 +7817,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Frame: [14,set,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [20360,20361]`0`
+                                                      Value: 0
                                                   IntegerLiteralNode SourceSection: [20363,20364]`0`
+                                                    Value: 0
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20369,20376]`LITERAL`
                                                   Identifier: LITERAL
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7738,7 +7845,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Frame: [14,set,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [20491,20492]`0`
+                                                        Value: 0
                                                     IntegerLiteralNode SourceSection: [20494,20495]`1`
+                                                      Value: 1
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [6,subpatternappend,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7752,6 +7861,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                     Frame: [14,set,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [20562,20563]`0`
+                                                    Value: 0
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [6,subpatternappend,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7767,6 +7877,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                     CreateArgumentsNodeGen SourceSection: None
                                                     CallDispatchNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [20642,20643]`0`
+                                                    Value: 0
                                                   TupleLiteralNode SourceSection: [20645,20659]`(NEGATE, None)`
                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [20646,20652]`NEGATE`
@@ -7832,7 +7943,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                               TupleLiteralNode SourceSection: [20982,20986]`0, 1`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [20982,20983]`0`
+                                                  Value: 0
                                                 IntegerLiteralNode SourceSection: [20985,20986]`1`
+                                                  Value: 1
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp47
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7868,6 +7981,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                 TupleLiteralNode SourceSection: [21044,21056]`0, MAXREPEAT`
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [21044,21045]`0`
+                                                    Value: 0
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21047,21056]`MAXREPEAT`
                                                     Identifier: MAXREPEAT
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7906,6 +8020,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                   TupleLiteralNode SourceSection: [21115,21127]`1, MAXREPEAT`
                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [21115,21116]`1`
+                                                      Value: 1
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21118,21127]`MAXREPEAT`
                                                       Identifier: MAXREPEAT
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7985,6 +8100,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       TupleLiteralNode SourceSection: [21314,21326]`0, MAXREPEAT`
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [21314,21315]`0`
+                                                          Value: 0
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [21317,21326]`MAXREPEAT`
                                                           Identifier: MAXREPEAT
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8323,10 +8439,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 SliceLiteralNodeGen SourceSection: [22527,22530]`-1:`
                                                   PythonObjectFactoryNodeGen SourceSection: None
-                                                  UnaryArithmeticExpression SourceSection: [22527,22529]`-1`
-                                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                                      Op: __neg__
-                                                    IntegerLiteralNode SourceSection: [22528,22529]`1`
+                                                  IntegerLiteralNode SourceSection: [22527,22529]`-1`
+                                                    Value: -1
                                                   EmptyNode SourceSection: None
                                                   EmptyNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [22566,22577]`item = None`
@@ -8348,7 +8462,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Frame: [26,item,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [22610,22611]`0`
+                                                        Value: 0
                                                     IntegerLiteralNode SourceSection: [22613,22614]`0`
+                                                      Value: 0
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [22619,22621]`AT`
                                                     Identifier: AT
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8407,7 +8523,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Frame: [26,item,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [22768,22769]`0`
+                                                      Value: 0
                                                   IntegerLiteralNode SourceSection: [22771,22772]`0`
+                                                    Value: 0
                                             RaiseNodeGen SourceSection: [22807,22913]`raise source.error("...`
                                               PythonCallNodeGen SourceSection: [22813,22913]`source.error("multip...`
                                                 CachedCallNodeGen SourceSection: None
@@ -8456,7 +8574,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Frame: [26,item,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [22934,22935]`0`
+                                                      Value: 0
                                                   IntegerLiteralNode SourceSection: [22937,22938]`0`
+                                                    Value: 0
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [22943,22953]`SUBPATTERN`
                                                   Identifier: SUBPATTERN
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8468,7 +8588,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Frame: [26,item,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [23009,23010]`0`
+                                                      Value: 0
                                                   IntegerLiteralNode SourceSection: [23012,23013]`1`
+                                                    Value: 1
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <>temp56
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8555,10 +8677,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [5,subpattern,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              UnaryArithmeticExpression SourceSection: [23174,23176]`-1`
-                                                LookupAndCallUnaryNodeGen SourceSection: None
-                                                  Op: __neg__
-                                                IntegerLiteralNode SourceSection: [23175,23176]`1`
+                                              IntegerLiteralNode SourceSection: [23174,23176]`-1`
+                                                Value: -1
                                               TupleLiteralNode SourceSection: [23180,23210]`(MIN_REPEAT, (min, m...`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [23181,23191]`MIN_REPEAT`
@@ -8579,10 +8699,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [5,subpattern,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              UnaryArithmeticExpression SourceSection: [23256,23258]`-1`
-                                                LookupAndCallUnaryNodeGen SourceSection: None
-                                                  Op: __neg__
-                                                IntegerLiteralNode SourceSection: [23257,23258]`1`
+                                              IntegerLiteralNode SourceSection: [23256,23258]`-1`
+                                                Value: -1
                                               TupleLiteralNode SourceSection: [23262,23292]`(MAX_REPEAT, (min, m...`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [23263,23273]`MAX_REPEAT`
@@ -8648,6 +8766,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Frame: [0,source,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [23425,23426]`1`
+                                                    Value: 1
                                               WriteLocalVariableNodeGen SourceSection: [23439,23451]`group = True`
                                                 Identifier: group
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8663,11 +8782,13 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [28,add_flags,Illegal]
                                                 IntegerLiteralNode SourceSection: [23500,23501]`0`
+                                                  Value: 0
                                               WriteLocalVariableNodeGen SourceSection: [23514,23527]`del_flags = 0`
                                                 Identifier: del_flags
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [29,del_flags,Illegal]
                                                 IntegerLiteralNode SourceSection: [23526,23527]`0`
+                                                  Value: 0
                                               IfNode SourceSection: [23540,30390]`if sourcematch("?"):...`
                                                 YesNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [23543,23559]`sourcematch("?")`
@@ -8786,6 +8907,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                       Identifier: len
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [24145,24146]`1`
+                                                                    Value: 1
                                                                 GetCallAttributeNodeGen SourceSection: None
                                                                   ReadLocalVariableNode SourceSection: [24115,24121]`source`
                                                                     Frame: [0,source,Illegal]
@@ -8860,6 +8982,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                         Identifier: len
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                     IntegerLiteralNode SourceSection: [24479,24480]`1`
+                                                                      Value: 1
                                                                   GetCallAttributeNodeGen SourceSection: None
                                                                     ReadLocalVariableNode SourceSection: [24449,24455]`source`
                                                                       Frame: [0,source,Illegal]
@@ -8927,6 +9050,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                         Identifier: len
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                     IntegerLiteralNode SourceSection: [24707,24708]`1`
+                                                                      Value: 1
                                                                   GetCallAttributeNodeGen SourceSection: None
                                                                     ReadLocalVariableNode SourceSection: [24677,24683]`source`
                                                                       Frame: [0,source,Illegal]
@@ -8966,6 +9090,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                       Identifier: len
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [24903,24904]`1`
+                                                                    Value: 1
                                                                 GetCallAttributeNodeGen SourceSection: None
                                                                   ReadLocalVariableNode SourceSection: [24798,24804]`source`
                                                                     Frame: [0,source,Illegal]
@@ -9061,6 +9186,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                     Identifier: len
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [25377,25378]`2`
+                                                                  Value: 2
                                                               GetCallAttributeNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [25278,25284]`source`
                                                                   Frame: [0,source,Illegal]
@@ -9168,6 +9294,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                                 Frame: [35,dir,Illegal]
                                                               IntegerLiteralNode SourceSection: [26001,26002]`1`
+                                                                Value: 1
                                                             IfNode SourceSection: [26023,26635]`if char == "<":↵    ...`
                                                               YesNodeGen SourceSection: None
                                                                 BinaryComparisonNodeGen SourceSection: [26026,26037]`char == "<"`
@@ -9244,6 +9371,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                             Identifier: len
                                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                         IntegerLiteralNode SourceSection: [26381,26382]`2`
+                                                                          Value: 2
                                                                       GetCallAttributeNodeGen SourceSection: None
                                                                         ReadLocalVariableNode SourceSection: [26278,26284]`source`
                                                                           Frame: [0,source,Illegal]
@@ -9254,10 +9382,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                   Identifier: dir
                                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                                     Frame: [35,dir,Illegal]
-                                                                  UnaryArithmeticExpression SourceSection: [26414,26416]`-1`
-                                                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                                                      Op: __neg__
-                                                                    IntegerLiteralNode SourceSection: [26415,26416]`1`
+                                                                  IntegerLiteralNode SourceSection: [26414,26416]`-1`
+                                                                    Value: -1
                                                                 WriteLocalVariableNodeGen SourceSection: [26454,26495]`lookbehindgroups = s...`
                                                                   Identifier: lookbehindgroups
                                                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -9316,6 +9442,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                     Frame: [3,nested,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [26683,26684]`1`
+                                                                    Value: 1
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                                   Identifier: _parse_sub
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9328,6 +9455,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                     Frame: [35,dir,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [26715,26716]`0`
+                                                                    Value: 0
                                                               IfNode SourceSection: [26742,26849]`if lookbehindgroups ...`
                                                                 YesNodeGen SourceSection: None
                                                                   IsExpressionNodeGen SourceSection: [26745,26769]`lookbehindgroups is ...`
@@ -9526,6 +9654,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                                 Identifier: len
                                                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                             IntegerLiteralNode SourceSection: [27676,27677]`1`
+                                                                              Value: 1
                                                                           GetCallAttributeNodeGen SourceSection: None
                                                                             ReadLocalVariableNode SourceSection: [27642,27648]`source`
                                                                               Frame: [0,source,Illegal]
@@ -9559,6 +9688,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                                 Frame: [38,condgroup,Illegal]
                                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                                               IntegerLiteralNode SourceSection: [27831,27832]`0`
+                                                                                Value: 0
                                                                           RaiseNodeGen SourceSection: [27866,27882]`raise ValueError`
                                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [27872,27882]`ValueError`
                                                                               Identifier: ValueError
@@ -9600,6 +9730,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                                     Identifier: len
                                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                                 IntegerLiteralNode SourceSection: [28072,28073]`1`
+                                                                                  Value: 1
                                                                               GetCallAttributeNodeGen SourceSection: None
                                                                                 ReadLocalVariableNode SourceSection: [28038,28044]`source`
                                                                                   Frame: [0,source,Illegal]
@@ -9635,6 +9766,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                               Identifier: len
                                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                           IntegerLiteralNode SourceSection: [28257,28258]`1`
+                                                                            Value: 1
                                                                         GetCallAttributeNodeGen SourceSection: None
                                                                           ReadLocalVariableNode SourceSection: [28161,28167]`source`
                                                                             Frame: [0,source,Illegal]
@@ -9686,6 +9818,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                                 Identifier: len
                                                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                             IntegerLiteralNode SourceSection: [28454,28455]`1`
+                                                                              Value: 1
                                                                           GetCallAttributeNodeGen SourceSection: None
                                                                             ReadLocalVariableNode SourceSection: [28420,28426]`source`
                                                                               Frame: [0,source,Illegal]
@@ -9731,6 +9864,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                       Frame: [3,nested,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     IntegerLiteralNode SourceSection: [28594,28595]`1`
+                                                                      Value: 1
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                                     Identifier: _parse
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9770,6 +9904,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                           Frame: [3,nested,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                                         IntegerLiteralNode SourceSection: [28713,28714]`1`
+                                                                          Value: 1
                                                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                                         Identifier: _parse
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9959,6 +10094,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                                                     EmptyNode SourceSection: None
                                                                                     IntegerLiteralNode SourceSection: [29706,29708]`20`
+                                                                                      Value: 20
                                                                                     EmptyNode SourceSection: None
                                                                                 TernaryIfNode SourceSection: [29772,29821]`' (truncated)' if le...`
                                                                                   YesNodeGen SourceSection: None
@@ -9981,6 +10117,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                                           Identifier: len
                                                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                                       IntegerLiteralNode SourceSection: [29811,29813]`20`
+                                                                                        Value: 20
                                                                                   StringLiteralNode SourceSection: [29772,29786]`' (truncated)'`
                                                                                   StringLiteralNode SourceSection: [29819,29821]`''`
                                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [29890,29908]`DeprecationWarning`
@@ -9995,6 +10132,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                                     Frame: [3,nested,Illegal]
                                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                                   IntegerLiteralNode SourceSection: [29930,29931]`6`
+                                                                                    Value: 6
                                                                               CompactKeywordsNodeGen SourceSection: None
                                                                               ExecuteKeywordStarargsNodeGen SourceSection: None
                                                                                 EmptyNode SourceSection: None
@@ -10090,6 +10228,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                         Identifier: len
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                     IntegerLiteralNode SourceSection: [30339,30340]`1`
+                                                                      Value: 1
                                                                   GetCallAttributeNodeGen SourceSection: None
                                                                     ReadLocalVariableNode SourceSection: [30245,30251]`source`
                                                                       Frame: [0,source,Illegal]
@@ -10148,6 +10287,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                                 Identifier: len
                                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [30580,30581]`1`
+                                                              Value: 1
                                                           GetCallAttributeNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [30546,30552]`source`
                                                               Frame: [0,source,Illegal]
@@ -10217,6 +10357,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Frame: [3,nested,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [30795,30796]`1`
+                                                      Value: 1
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                     Identifier: _parse_sub
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10509,6 +10650,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                             Frame: [46,i,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [31645,31646]`1`
+                                            Value: 1
                                         EmptyNode SourceSection: None
                                       ReadLocalVariableNode SourceSection: [31650,31651]`p`
                                         Frame: [30,p,Illegal]
@@ -10539,10 +10681,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                               PythonObjectFactoryNodeGen SourceSection: None
                               EmptyNode SourceSection: None
                               EmptyNode SourceSection: None
-                              UnaryArithmeticExpression SourceSection: [31434,31436]`-1`
-                                LookupAndCallUnaryNodeGen SourceSection: None
-                                  Op: __neg__
-                                IntegerLiteralNode SourceSection: [31435,31436]`1`
+                              IntegerLiteralNode SourceSection: [31434,31436]`-1`
+                                Value: -1
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [31657,31674]`return subpattern`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -10620,11 +10760,13 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,add_flags,Illegal]
                       IntegerLiteralNode SourceSection: [31758,31759]`0`
+                        Value: 0
                     WriteLocalVariableNodeGen SourceSection: [31764,31777]`del_flags = 0`
                       Identifier: del_flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,del_flags,Illegal]
                       IntegerLiteralNode SourceSection: [31776,31777]`0`
+                        Value: 0
                     IfNode SourceSection: [31782,32783]`if char != "-":↵    ...`
                       YesNodeGen SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [31785,31796]`char != "-"`
@@ -10928,6 +11070,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                             CallDispatchNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [32912,32958]`"bad inline flags: c...`
                           IntegerLiteralNode SourceSection: [32960,32961]`1`
+                            Value: 1
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [32899,32905]`source`
                               Frame: [0,source,Illegal]
@@ -11210,6 +11353,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                             CallDispatchNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [33864,33911]`"bad inline flags: c...`
                           IntegerLiteralNode SourceSection: [33913,33914]`1`
+                            Value: 1
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [33851,33857]`source`
                               Frame: [0,source,Illegal]
@@ -11234,6 +11378,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                             CallDispatchNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [33973,34015]`"bad inline flags: f...`
                           IntegerLiteralNode SourceSection: [34017,34018]`1`
+                            Value: 1
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [33960,33966]`source`
                               Frame: [0,source,Illegal]
@@ -11452,6 +11597,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
         FunctionDefinitionNode Name: parse SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [34780,34781]`0`
+              Value: 0
             ObjectLiteralNode SourceSection: [34791,34795]`None`
           KwArguments: None
           Documentation: StringLiteralNode: Empty
@@ -11571,6 +11717,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                 Identifier: SRE_FLAG_VERBOSE
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [35068,35069]`0`
+                              Value: 0
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _parse_sub
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -11615,6 +11762,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                   CreateArgumentsNodeGen SourceSection: None
                                   CallDispatchNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [35349,35350]`0`
+                                  Value: 0
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [35337,35343]`source`
                                     Frame: [3,source,Illegal]
@@ -11635,6 +11783,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BooleanLiteralNode SourceSection: [35392,35396]`True`
                                 IntegerLiteralNode SourceSection: [35398,35399]`0`
+                                  Value: 0
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: _parse_sub
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -12073,6 +12222,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [10,this,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [36349,36350]`0`
+                                        Value: 0
                                     StringLiteralNode SourceSection: [36355,36359]`"\\"`
                                 BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [36393,36404]`c = this[1]`
@@ -12084,6 +12234,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                         Frame: [10,this,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [36402,36403]`1`
+                                        Value: 1
                                   IfNode SourceSection: [36417,38583]`if c == "g":↵       ...`
                                     YesNodeGen SourceSection: None
                                       BinaryComparisonNodeGen SourceSection: [36420,36428]`c == "g"`
@@ -12213,6 +12364,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Frame: [13,index,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [36927,36928]`0`
+                                                        Value: 0
                                                   RaiseNodeGen SourceSection: [36958,36974]`raise ValueError`
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [36964,36974]`ValueError`
                                                       Identifier: ValueError
@@ -12246,6 +12398,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                           Identifier: len
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [37143,37144]`1`
+                                                        Value: 1
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [37044,37045]`s`
                                                         ReadLocalVariableNode SourceSection: None
@@ -12295,6 +12448,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Identifier: len
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [37325,37326]`1`
+                                                    Value: 1
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [37229,37230]`s`
                                                     ReadLocalVariableNode SourceSection: None
@@ -12325,6 +12479,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [37372,37373]`1`
+                                              Value: 1
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [8,addgroup,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -12432,13 +12587,16 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                     SliceLiteralNodeGen SourceSection: [37597,37599]`1:`
                                                       PythonObjectFactoryNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [37597,37598]`1`
+                                                        Value: 1
                                                       EmptyNode SourceSection: None
                                                       EmptyNode SourceSection: None
                                                   IntegerLiteralNode SourceSection: [37602,37603]`8`
+                                                    Value: 8
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                     Identifier: int
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [37607,37611]`0xff`
+                                                  Value: 255
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: chr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -12524,6 +12682,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                             Frame: [10,this,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [37796,37797]`2`
+                                                            Value: 2
                                                       YesNodeGen SourceSection: None
                                                     ContainsNodeGen SourceSection: [37840,37859]`s.next in OCTDIGITS`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
@@ -12579,9 +12738,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         SliceLiteralNodeGen SourceSection: [37977,37979]`1:`
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [37977,37978]`1`
+                                                            Value: 1
                                                           EmptyNode SourceSection: None
                                                           EmptyNode SourceSection: None
                                                       IntegerLiteralNode SourceSection: [37982,37983]`8`
+                                                        Value: 8
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                         Identifier: int
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -12594,6 +12755,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                           Frame: [11,c,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [38016,38021]`0o377`
+                                                          Value: 255
                                                     RaiseNodeGen SourceSection: [38051,38177]`raise s.error('octal...`
                                                       PythonCallNodeGen SourceSection: [38057,38177]`s.error('octal escap...`
                                                         CachedCallNodeGen SourceSection: None
@@ -12665,6 +12827,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                     SliceLiteralNodeGen SourceSection: [38288,38290]`1:`
                                                       PythonObjectFactoryNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [38288,38289]`1`
+                                                        Value: 1
                                                       EmptyNode SourceSection: None
                                                       EmptyNode SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -12684,6 +12847,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                       Identifier: len
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [38306,38307]`1`
+                                                    Value: 1
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [8,addgroup,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -12708,6 +12872,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                                                         Frame: [10,this,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [38393,38394]`1`
+                                                      Value: 1
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                     Identifier: chr
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -13004,6 +13169,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Inter
                               PythonObjectFactoryNodeGen SourceSection: None
                               EmptyNode SourceSection: None
                               IntegerLiteralNode SourceSection: [39037,39038]`0`
+                                Value: 0
                               EmptyNode SourceSection: None
                         DestructuringAssignmentNodeGen SourceSection: [39044,39071]`groups, literals = t...`
                           ReadLocalVariableNode SourceSection: [39063,39071]`template`

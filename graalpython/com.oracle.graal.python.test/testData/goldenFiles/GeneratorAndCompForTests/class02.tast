@@ -127,6 +127,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                                 Frame: [1,count,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [126,127]`0`
+                                                                Value: 0
                                                         ExpressionStatementNode SourceSection: [74,78]`elem`
                                                           YieldNode SourceSection: [74,78]`elem`
                                                             flagSlot: 0

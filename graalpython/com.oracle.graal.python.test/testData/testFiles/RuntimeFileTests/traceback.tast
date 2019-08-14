@@ -2987,12 +2987,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Frame: [3,limit,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [12038,12039]`0`
+                                                      Value: 0
                                                   YesNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [12057,12066]`limit = 0`
                                                 Identifier: limit
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [3,limit,Illegal]
                                                 IntegerLiteralNode SourceSection: [12065,12066]`0`
+                                                  Value: 0
                                               BlockNode SourceSection: None
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [12075,12286]`if limit is not None...`
@@ -3011,6 +3013,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Frame: [3,limit,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [12121,12122]`0`
+                                                  Value: 0
                                             WriteLocalVariableNodeGen SourceSection: [12140,12186]`frame_gen = itertool...`
                                               Identifier: frame_gen
                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3580,6 +3583,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,count,Illegal]
                                         IntegerLiteralNode SourceSection: [14610,14611]`0`
+                                          Value: 0
                                       ElseNode SourceSection: [14620,15683]`for frame in self:↵ ...`
                                         ForNode SourceSection: None
                                           DefaultLoopNode SourceSection: None
@@ -3672,6 +3676,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           Frame: [5,count,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [14878,14879]`1`
+                                                          Value: 1
                                                     BlockNode SourceSection: None
                                                       IfNode SourceSection: [14914,15032]`if count > 3:↵      ...`
                                                         YesNodeGen SourceSection: None
@@ -3682,6 +3687,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                               Frame: [5,count,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [14925,14926]`3`
+                                                              Value: 3
                                                         ExpressionStatementNode SourceSection: [14948,15015]`result.append(f'  [P...`
                                                           PythonCallNodeGen SourceSection: [14948,15015]`result.append(f'  [P...`
                                                             CachedCallNodeGen SourceSection: None
@@ -3734,6 +3740,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                                           Frame: [5,count,Illegal]
                                                         IntegerLiteralNode SourceSection: [15163,15164]`0`
+                                                          Value: 0
                                                   IfNode SourceSection: [15177,15229]`if count >= 3:↵     ...`
                                                     YesNodeGen SourceSection: None
                                                       BinaryComparisonNodeGen SourceSection: [15180,15190]`count >= 3`
@@ -3743,6 +3750,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           Frame: [5,count,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [15189,15190]`3`
+                                                          Value: 3
                                                     ContinueNode SourceSection: [15208,15216]`continue`
                                                     BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [15229,15237]`row = []`
@@ -3951,6 +3959,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               Frame: [5,count,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [15694,15695]`3`
+                                              Value: 3
                                         ExpressionStatementNode SourceSection: [15709,15776]`result.append(f'  [P...`
                                           PythonCallNodeGen SourceSection: [15709,15776]`result.append(f'  [P...`
                                             CachedCallNodeGen SourceSection: None
@@ -5311,6 +5320,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         Identifier: min
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [21677,21678]`1`
+                                                      Value: 1
                                                 WriteGeneratorFrameVariableNodeGen SourceSection: [21695,21736]`caretspace = caretsp...`
                                                   Identifier: caretspace
                                                   WriteGeneraterFrameSlotNodeGen SourceSection: None

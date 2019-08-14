@@ -40,6 +40,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                           Frame: [0,c,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [16,18]`10`
+                          Value: 10
                       ExpressionStatementNode SourceSection: [28,46]`for x in range(10)`
                         GeneratorExpressionNode SourceSection: [28,46]`for x in range(10)`
                           Name: fn.<locals>.<genexp>:generator03:3
@@ -104,6 +105,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                 CreateArgumentsNodeGen SourceSection: None
                                 CallDispatchNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [43,45]`10`
+                                Value: 10
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

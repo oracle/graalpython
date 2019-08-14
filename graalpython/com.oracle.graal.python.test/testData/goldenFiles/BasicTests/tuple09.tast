@@ -8,6 +8,7 @@ ModuleRootNode Name: <module 'tuple09'> SourceSection: [0,10]`1, call1()`
     TupleLiteralNode SourceSection: [0,10]`1, call1()`
       PythonObjectFactoryNodeGen SourceSection: None
       IntegerLiteralNode SourceSection: [0,1]`1`
+        Value: 1
       PythonCallNodeGen SourceSection: [3,10]`call1()`
         CachedCallNodeGen SourceSection: None
           CreateArgumentsNodeGen SourceSection: None

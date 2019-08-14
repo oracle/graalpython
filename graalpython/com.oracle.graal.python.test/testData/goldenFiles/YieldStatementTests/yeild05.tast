@@ -44,6 +44,7 @@ ModuleRootNode Name: <module 'yeild05'> SourceSection: [0,24]`def f(): x = y = y
                       YieldNode SourceSection: [17,24]`yield 1`
                         flagSlot: 0
                         IntegerLiteralNode SourceSection: [23,24]`1`
+                          Value: 1
                         GeneratorAccessNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: x

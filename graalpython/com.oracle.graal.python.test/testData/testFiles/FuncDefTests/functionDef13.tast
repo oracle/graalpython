@@ -44,6 +44,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,x,Illegal]
                         IntegerLiteralNode SourceSection: [23,25]`10`
+                          Value: 10
                       WriteLocalVariableNodeGen SourceSection: [30,98]`def inner():↵       ...`
                         Identifier: inner
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -76,6 +77,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [0,x,Illegal]
                                       IntegerLiteralNode SourceSection: [55,56]`5`
+                                        Value: 5
                                     ExpressionStatementNode SourceSection: [65,92]`print("Inner, local ...`
                                       PythonCallNodeGen SourceSection: [65,92]`print("Inner, local ...`
                                         CachedCallNodeGen SourceSection: None

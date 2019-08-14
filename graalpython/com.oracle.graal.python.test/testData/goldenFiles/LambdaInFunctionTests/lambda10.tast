@@ -46,6 +46,7 @@ ModuleRootNode Name: <module 'lambda10'> SourceSection: [0,47]`def fn():↵  lam
                               Identifier: blat
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [38,39]`2`
+                              Value: 2
                         KwArguments: None
                         Documentation: None
                         FreeVarSlots: None
@@ -95,6 +96,7 @@ ModuleRootNode Name: <module 'lambda10'> SourceSection: [0,47]`def fn():↵  lam
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                     IntegerLiteralNode SourceSection: [46,47]`0`
+                                      Value: 0
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

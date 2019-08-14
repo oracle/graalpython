@@ -57,11 +57,13 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                             Frame: [0,x,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [4,5]`2`
+                            Value: 2
                         GetItemNodeGen SourceSection: [6,10]`x[3]`
                           ReadGeneratorFrameVariableNode SourceSection: None
                             Frame: [0,x,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [8,9]`3`
+                            Value: 3
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None

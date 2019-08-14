@@ -11,6 +11,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
       WriteNameNodeGen SourceSection: [380,396]`MAGIC = 20171005`
         Identifier: MAGIC
         IntegerLiteralNode SourceSection: [388,396]`20171005`
+          Value: 20171005
       ImportFromNode SourceSection: [398,435]`from _sre import MAX...`
         Importee: _sre
         Level: 0
@@ -234,6 +235,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                                   Frame: [4,newline,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [1339,1340]`0`
+                                                  Value: 0
                                                 ReadLocalVariableNode SourceSection: [1342,1345]`pos`
                                                   Frame: [3,pos,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -242,6 +244,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                                     Frame: [2,pattern,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [1349,1350]`1`
+                                                Value: 1
                                           SetAttributeNodeGen SourceSection: [1363,1412]`self.colno = pos - p...`
                                             Attribute: colno
                                             ReadLocalVariableNode SourceSection: [1363,1367]`self`
@@ -261,6 +264,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
                                                   Frame: [4,newline,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [1405,1406]`0`
+                                                  Value: 0
                                                 ReadLocalVariableNode SourceSection: [1408,1411]`pos`
                                                   Frame: [3,pos,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -855,10 +859,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
           Identifier: OPCODES
         SliceLiteralNodeGen SourceSection: [2881,2884]`-2:`
           PythonObjectFactoryNodeGen SourceSection: None
-          UnaryArithmeticExpression SourceSection: [2881,2883]`-2`
-            LookupAndCallUnaryNodeGen SourceSection: None
-              Op: __neg__
-            IntegerLiteralNode SourceSection: [2882,2883]`2`
+          IntegerLiteralNode SourceSection: [2881,2883]`-2`
+            Value: -2
           EmptyNode SourceSection: None
           EmptyNode SourceSection: None
       WriteNameNodeGen SourceSection: [2934,3169]`ATCODES = _makecodes...`
@@ -1026,39 +1028,51 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""In
       WriteNameNodeGen SourceSection: [4949,4970]`SRE_FLAG_TEMPLATE = ...`
         Identifier: SRE_FLAG_TEMPLATE
         IntegerLiteralNode SourceSection: [4969,4970]`1`
+          Value: 1
       WriteNameNodeGen SourceSection: [5010,5033]`SRE_FLAG_IGNORECASE ...`
         Identifier: SRE_FLAG_IGNORECASE
         IntegerLiteralNode SourceSection: [5032,5033]`2`
+          Value: 2
       WriteNameNodeGen SourceSection: [5053,5072]`SRE_FLAG_LOCALE = 4`
         Identifier: SRE_FLAG_LOCALE
         IntegerLiteralNode SourceSection: [5071,5072]`4`
+          Value: 4
       WriteNameNodeGen SourceSection: [5096,5118]`SRE_FLAG_MULTILINE =...`
         Identifier: SRE_FLAG_MULTILINE
         IntegerLiteralNode SourceSection: [5117,5118]`8`
+          Value: 8
       WriteNameNodeGen SourceSection: [5154,5174]`SRE_FLAG_DOTALL = 16...`
         Identifier: SRE_FLAG_DOTALL
         IntegerLiteralNode SourceSection: [5172,5174]`16`
+          Value: 16
       WriteNameNodeGen SourceSection: [5209,5230]`SRE_FLAG_UNICODE = 3...`
         Identifier: SRE_FLAG_UNICODE
         IntegerLiteralNode SourceSection: [5228,5230]`32`
+          Value: 32
       WriteNameNodeGen SourceSection: [5254,5275]`SRE_FLAG_VERBOSE = 6...`
         Identifier: SRE_FLAG_VERBOSE
         IntegerLiteralNode SourceSection: [5273,5275]`64`
+          Value: 64
       WriteNameNodeGen SourceSection: [5309,5329]`SRE_FLAG_DEBUG = 128...`
         Identifier: SRE_FLAG_DEBUG
         IntegerLiteralNode SourceSection: [5326,5329]`128`
+          Value: 128
       WriteNameNodeGen SourceSection: [5342,5362]`SRE_FLAG_ASCII = 256...`
         Identifier: SRE_FLAG_ASCII
         IntegerLiteralNode SourceSection: [5359,5362]`256`
+          Value: 256
       WriteNameNodeGen SourceSection: [5412,5431]`SRE_INFO_PREFIX = 1`
         Identifier: SRE_INFO_PREFIX
         IntegerLiteralNode SourceSection: [5430,5431]`1`
+          Value: 1
       WriteNameNodeGen SourceSection: [5445,5465]`SRE_INFO_LITERAL = 2...`
         Identifier: SRE_INFO_LITERAL
         IntegerLiteralNode SourceSection: [5464,5465]`2`
+          Value: 2
       WriteNameNodeGen SourceSection: [5512,5532]`SRE_INFO_CHARSET = 4...`
         Identifier: SRE_INFO_CHARSET
         IntegerLiteralNode SourceSection: [5531,5532]`4`
+          Value: 4
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None

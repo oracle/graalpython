@@ -84,6 +84,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [6343,6344]`0`
+                          Value: 0
                         BinaryArithmeticExpression SourceSection: [6346,6357]`len(heap)-1`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __sub__
@@ -98,6 +99,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [6356,6357]`1`
+                            Value: 1
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: _siftdown
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -164,11 +166,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [6573,6574]`0`
+                              Value: 0
                         SetItemNodeGen SourceSection: [6584,6601]`heap[0] = lastelt`
                           ReadLocalVariableNode SourceSection: None
                             Frame: [0,heap,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [6589,6590]`0`
+                            Value: 0
                           ReadLocalVariableNode SourceSection: [6594,6601]`lastelt`
                             Frame: [1,lastelt,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -181,6 +185,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [6624,6625]`0`
+                              Value: 0
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _siftup
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -254,11 +259,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [7169,7170]`0`
+                          Value: 0
                     SetItemNodeGen SourceSection: [7228,7242]`heap[0] = item`
                       ReadLocalVariableNode SourceSection: None
                         Frame: [0,heap,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [7233,7234]`0`
+                        Value: 0
                       ReadLocalVariableNode SourceSection: [7238,7242]`item`
                         Frame: [1,item,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -271,6 +278,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [7261,7262]`0`
+                          Value: 0
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: _siftup
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -340,6 +348,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [0,heap,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [7397,7398]`0`
+                                Value: 0
                             ReadLocalVariableNode SourceSection: [7402,7406]`item`
                               Frame: [1,item,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -353,6 +362,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [0,heap,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [7437,7438]`0`
+                                Value: 0
                             ReadLocalVariableNode SourceSection: [7441,7445]`item`
                               Frame: [1,item,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -376,6 +386,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [7427,7428]`0`
+                              Value: 0
                             ReadLocalVariableNode SourceSection: None
                               Frame: [3,<>temp3,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -388,6 +399,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [7468,7469]`0`
+                              Value: 0
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _siftup
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -490,6 +502,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Frame: [1,n,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [7988,7989]`2`
+                                  Value: 2
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -560,11 +573,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [8196,8197]`0`
+                              Value: 0
                         SetItemNodeGen SourceSection: [8207,8224]`heap[0] = lastelt`
                           ReadLocalVariableNode SourceSection: None
                             Frame: [0,heap,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [8212,8213]`0`
+                            Value: 0
                           ReadLocalVariableNode SourceSection: [8217,8224]`lastelt`
                             Frame: [1,lastelt,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -577,6 +592,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [8251,8252]`0`
+                              Value: 0
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _siftup_max
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -650,11 +666,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [8419,8420]`0`
+                          Value: 0
                     SetItemNodeGen SourceSection: [8478,8492]`heap[0] = item`
                       ReadLocalVariableNode SourceSection: None
                         Frame: [0,heap,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [8483,8484]`0`
+                        Value: 0
                       ReadLocalVariableNode SourceSection: [8488,8492]`item`
                         Frame: [1,item,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -667,6 +685,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [8515,8516]`0`
+                          Value: 0
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: _siftup_max
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -768,6 +787,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Frame: [1,n,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [8678,8679]`2`
+                                  Value: 2
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -867,7 +887,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [2,pos,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [9089,9090]`1`
+                                        Value: 1
                                     IntegerLiteralNode SourceSection: [9095,9096]`1`
+                                      Value: 1
                                 WriteLocalVariableNodeGen SourceSection: [9105,9129]`parent = heap[parent...`
                                   Identifier: parent
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1009,10 +1031,12 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __mul__
                           IntegerLiteralNode SourceSection: [11504,11505]`2`
+                            Value: 2
                           ReadLocalVariableNode SourceSection: [11506,11509]`pos`
                             Frame: [1,pos,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [11512,11513]`1`
+                          Value: 1
                     ElseNode SourceSection: [11547,12021]`while childpos < end...`
                       WhileNode SourceSection: None
                         DefaultLoopNode SourceSection: None
@@ -1039,6 +1063,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [5,childpos,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [11652,11653]`1`
+                                    Value: 1
                               IfNode SourceSection: [11662,11801]`if rightpos < endpos...`
                                 YesNodeGen SourceSection: None
                                   AndNode SourceSection: [11665,11722]`rightpos < endpos an...`
@@ -1110,10 +1135,12 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __mul__
                                     IntegerLiteralNode SourceSection: [11870,11871]`2`
+                                      Value: 2
                                     ReadLocalVariableNode SourceSection: [11872,11875]`pos`
                                       Frame: [1,pos,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [11878,11879]`1`
+                                    Value: 1
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [12021,12040]`heap[pos] = newitem`
                       ReadLocalVariableNode SourceSection: None
@@ -1234,7 +1261,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [2,pos,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [12326,12327]`1`
+                                        Value: 1
                                     IntegerLiteralNode SourceSection: [12332,12333]`1`
+                                      Value: 1
                                 WriteLocalVariableNodeGen SourceSection: [12342,12366]`parent = heap[parent...`
                                   Identifier: parent
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1376,10 +1405,12 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __mul__
                           IntegerLiteralNode SourceSection: [12712,12713]`2`
+                            Value: 2
                           ReadLocalVariableNode SourceSection: [12714,12717]`pos`
                             Frame: [1,pos,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [12720,12721]`1`
+                          Value: 1
                     ElseNode SourceSection: [12755,13227]`while childpos < end...`
                       WhileNode SourceSection: None
                         DefaultLoopNode SourceSection: None
@@ -1406,6 +1437,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [5,childpos,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [12859,12860]`1`
+                                    Value: 1
                               IfNode SourceSection: [12869,13007]`if rightpos < endpos...`
                                 YesNodeGen SourceSection: None
                                   AndNode SourceSection: [12872,12929]`rightpos < endpos an...`
@@ -1477,10 +1509,12 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __mul__
                                     IntegerLiteralNode SourceSection: [13076,13077]`2`
+                                      Value: 2
                                     ReadLocalVariableNode SourceSection: [13078,13081]`pos`
                                       Frame: [1,pos,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [13084,13085]`1`
+                                    Value: 1
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [13227,13246]`heap[pos] = newitem`
                       ReadLocalVariableNode SourceSection: None
@@ -1597,10 +1631,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Identifier: direction
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [8,direction,Illegal]
-                        UnaryArithmeticExpression SourceSection: [14142,14144]`-1`
-                          LookupAndCallUnaryNodeGen SourceSection: None
-                            Op: __neg__
-                          IntegerLiteralNode SourceSection: [14143,14144]`1`
+                        IntegerLiteralNode SourceSection: [14142,14144]`-1`
+                          Value: -1
                     BlockNode SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: [14163,14181]`_heapify = heapify`
                         Identifier: _heapify
@@ -1628,6 +1660,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [8,direction,Illegal]
                         IntegerLiteralNode SourceSection: [14264,14265]`1`
+                          Value: 1
                   GeneratorIfNode SourceSection: [14271,15131]`if key is None:↵    ...`
                     GeneratorAccessNode SourceSection: None
                     YesNodeGen SourceSection: None
@@ -1768,6 +1801,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             Frame: [3,h,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [14650,14651]`0`
+                                            Value: 0
                                       DestructuringAssignmentNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: None
                                           Frame: [17,<>temp17,Illegal]
@@ -1824,6 +1858,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [13,s,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [14707,14708]`0`
+                                        Value: 0
                                       PythonCallNodeGen SourceSection: [14712,14718]`next()`
                                         CachedCallNodeGen SourceSection: None
                                           CreateArgumentsNodeGen SourceSection: None
@@ -1887,6 +1922,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [14555,14556]`1`
+                                Value: 1
                           GeneratorAccessNode SourceSection: None
                         BlockNode SourceSection: None
                       GeneratorIfNode SourceSection: [14946,15119]`if h:↵            # ...`
@@ -1902,6 +1938,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [3,h,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [15047,15048]`0`
+                                Value: 0
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: <>temp21
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
@@ -2110,6 +2147,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [3,h,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [15495,15496]`0`
+                                        Value: 0
                                   DestructuringAssignmentNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: None
                                       Frame: [26,<>temp26,Illegal]
@@ -2188,6 +2226,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [13,s,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [15575,15576]`0`
+                                    Value: 0
                                   PythonCallNodeGen SourceSection: [15580,15590]`key(value)`
                                     CachedCallNodeGen SourceSection: None
                                       CreateArgumentsNodeGen SourceSection: None
@@ -2203,6 +2242,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [13,s,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [15609,15610]`2`
+                                    Value: 2
                                   ReadGeneratorFrameVariableNode SourceSection: [15614,15619]`value`
                                     Frame: [12,value,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -2262,6 +2302,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [15401,15402]`1`
+                            Value: 1
                       GeneratorAccessNode SourceSection: None
                     BlockNode SourceSection: None
                   GeneratorIfNode SourceSection: [15713,18959]`if h:↵        key_va...`
@@ -2277,6 +2318,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [3,h,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [15761,15762]`0`
+                            Value: 0
                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                           Identifier: <>temp31
                           WriteGeneraterFrameSlotNodeGen SourceSection: None
@@ -2432,6 +2474,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [0,n,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [19160,19161]`1`
+                            Value: 1
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [19171,19190]`it = iter(iterable)`
                           Identifier: it
@@ -2777,7 +2820,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [5,result,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [20005,20006]`0`
+                                Value: 0
                             IntegerLiteralNode SourceSection: [20008,20009]`0`
+                              Value: 0
                         WriteLocalVariableNodeGen SourceSection: [20019,20028]`order = n`
                           Identifier: order
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2838,6 +2883,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [5,result,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [20209,20210]`0`
+                                          Value: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp15
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2869,6 +2915,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [8,order,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [20237,20238]`1`
+                                          Value: 1
                                   BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20089,20091]`it`
                               GetIteratorNodeGen SourceSection: None
@@ -3138,7 +3185,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [5,result,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [20523,20524]`0`
+                            Value: 0
                         IntegerLiteralNode SourceSection: [20526,20527]`0`
+                          Value: 0
                     WriteLocalVariableNodeGen SourceSection: [20533,20542]`order = n`
                       Identifier: order
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3219,6 +3268,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [5,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [20732,20733]`0`
+                                        Value: 0
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <>temp17
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3261,6 +3311,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [8,order,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [20756,20757]`1`
+                                        Value: 1
                                 BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [20595,20597]`it`
                           GetIteratorNodeGen SourceSection: None
@@ -3435,6 +3486,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [0,n,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [21039,21040]`1`
+                            Value: 1
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [21050,21069]`it = iter(iterable)`
                           Identifier: it
@@ -3732,16 +3784,15 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       CreateArgumentsNodeGen SourceSection: None
                                       CallDispatchNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [21677,21678]`0`
+                                      Value: 0
                                     UnaryArithmeticExpression SourceSection: [21680,21682]`-n`
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __neg__
                                       ReadLocalVariableNode SourceSection: [21681,21682]`n`
                                         Frame: [0,n,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    UnaryArithmeticExpression SourceSection: [21684,21686]`-1`
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __neg__
-                                      IntegerLiteralNode SourceSection: [21685,21686]`1`
+                                    IntegerLiteralNode SourceSection: [21684,21686]`-1`
+                                      Value: -1
                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
                                       Identifier: range
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3790,7 +3841,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [5,result,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [21788,21789]`0`
+                                Value: 0
                             IntegerLiteralNode SourceSection: [21791,21792]`0`
+                              Value: 0
                         WriteLocalVariableNodeGen SourceSection: [21802,21812]`order = -n`
                           Identifier: order
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3854,6 +3907,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [5,result,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [21988,21989]`0`
+                                          Value: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp15
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3885,6 +3939,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [8,order,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [22016,22017]`1`
+                                          Value: 1
                                   BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [21868,21870]`it`
                               GetIteratorNodeGen SourceSection: None
@@ -4110,16 +4165,15 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   CreateArgumentsNodeGen SourceSection: None
                                   CallDispatchNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [22222,22223]`0`
+                                  Value: 0
                                 UnaryArithmeticExpression SourceSection: [22225,22227]`-n`
                                   LookupAndCallUnaryNodeGen SourceSection: None
                                     Op: __neg__
                                   ReadLocalVariableNode SourceSection: [22226,22227]`n`
                                     Frame: [0,n,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                UnaryArithmeticExpression SourceSection: [22229,22231]`-1`
-                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                    Op: __neg__
-                                  IntegerLiteralNode SourceSection: [22230,22231]`1`
+                                IntegerLiteralNode SourceSection: [22229,22231]`-1`
+                                  Value: -1
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: range
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4168,7 +4222,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [5,result,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [22317,22318]`0`
+                            Value: 0
                         IntegerLiteralNode SourceSection: [22320,22321]`0`
+                          Value: 0
                     WriteLocalVariableNodeGen SourceSection: [22327,22337]`order = -n`
                       Identifier: order
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4252,6 +4308,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [5,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [22522,22523]`0`
+                                        Value: 0
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <>temp17
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4294,6 +4351,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Frame: [8,order,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [22546,22547]`1`
+                                        Value: 1
                                 BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [22385,22387]`it`
                           GetIteratorNodeGen SourceSection: None

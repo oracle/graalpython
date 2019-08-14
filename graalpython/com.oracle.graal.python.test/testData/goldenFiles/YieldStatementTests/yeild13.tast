@@ -48,6 +48,7 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
                         IntegerLiteralNode SourceSection: [23,24]`1`
+                          Value: 1
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: f
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -60,6 +60,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
           IntegerLiteralNode SourceSection: [18,20]`10`
+            Value: 10
           ReadNameNodeGen SourceSection: None
             Identifier: range
       PythonObjectFactoryNodeGen SourceSection: None

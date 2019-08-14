@@ -12,6 +12,7 @@ ModuleRootNode Name: <module 'call03'> SourceSection: [0,12]`foo(arg = 1)`
       KeywordArgumentsNodeGen SourceSection: None
         KeywordLiteralNode SourceSection: None
           IntegerLiteralNode SourceSection: [10,11]`1`
+            Value: 1
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           EmptyNode SourceSection: None

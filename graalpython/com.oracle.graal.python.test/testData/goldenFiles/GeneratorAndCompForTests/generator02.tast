@@ -95,6 +95,7 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [32,34]`10`
+                              Value: 10
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: range
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

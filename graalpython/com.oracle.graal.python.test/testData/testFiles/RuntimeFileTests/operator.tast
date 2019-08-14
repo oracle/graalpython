@@ -1811,6 +1811,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,count,Illegal]
                       IntegerLiteralNode SourceSection: [3304,3305]`0`
+                        Value: 0
                     ElseNode SourceSection: [3310,3368]`for i in a:↵        ...`
                       ForNode SourceSection: None
                         DefaultLoopNode SourceSection: None
@@ -1840,6 +1841,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                     Frame: [2,count,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [3362,3363]`1`
+                                    Value: 1
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3319,3320]`a`
                           GetIteratorNodeGen SourceSection: None
@@ -2142,6 +2144,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
         FunctionDefinitionNode Name: length_hint SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [3789,3790]`0`
+              Value: 0
           KwArguments: None
           Documentation: StringLiteralNode: `↵    Return an estim...`
           FreeVarSlots: None
@@ -2399,6 +2402,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                             Frame: [4,val,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [4753,4754]`0`
+                            Value: 0
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [4764,4808]`msg = '__length_hint...`
                           Identifier: msg
@@ -3784,6 +3788,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [7676,7677]`2`
+                                              Value: 2
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [7691,7756]`msg = "methodcaller ...`
                                             Identifier: msg
@@ -3812,6 +3817,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                             Frame: [0,args,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [7810,7811]`0`
+                                            Value: 0
                                       SetAttributeNodeGen SourceSection: [7821,7841]`self._name = args[1]...`
                                         Attribute: _name
                                         ReadLocalVariableNode SourceSection: [7821,7825]`self`
@@ -3822,6 +3828,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                             Frame: [0,args,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [7839,7840]`1`
+                                            Value: 1
                                       IfNode SourceSection: [7850,7954]`if not isinstance(se...`
                                         NotNodeGen SourceSection: [7853,7884]`not isinstance(self....`
                                           PythonCallNodeGen SourceSection: [7857,7884]`isinstance(self._nam...`
@@ -3865,6 +3872,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                                           SliceLiteralNodeGen SourceSection: [7972,7974]`2:`
                                             PythonObjectFactoryNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [7972,7973]`2`
+                                              Value: 2
                                             EmptyNode SourceSection: None
                                             EmptyNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [7984,8005]`self._kwargs = kwarg...`

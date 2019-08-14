@@ -29,7 +29,9 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                             ReadNameNodeGen SourceSection: [27,28]`x`
                               Identifier: x
                             IntegerLiteralNode SourceSection: [31,32]`2`
+                              Value: 2
                           IntegerLiteralNode SourceSection: [36,37]`0`
+                            Value: 0
                       ContinueNode SourceSection: [47,55]`continue`
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [60,68]`print(x)`
@@ -48,6 +50,7 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                   CreateArgumentsNodeGen SourceSection: None
                   CallDispatchNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [15,17]`10`
+                  Value: 10
                 ReadNameNodeGen SourceSection: None
                   Identifier: range
           BlockNode SourceSection: None

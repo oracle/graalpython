@@ -187,6 +187,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     PythonObjectFactoryNodeGen SourceSection: None
                                     EmptyNode SourceSection: None
                                     IntegerLiteralNode SourceSection: [666,667]`2`
+                                      Value: 2
                                     EmptyNode SourceSection: None
                                 GetItemNodeGen SourceSection: [672,681]`name[-2:]`
                                   ReadLocalVariableNode SourceSection: None
@@ -194,10 +195,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   SliceLiteralNodeGen SourceSection: [677,680]`-2:`
                                     PythonObjectFactoryNodeGen SourceSection: None
-                                    UnaryArithmeticExpression SourceSection: [677,679]`-2`
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __neg__
-                                      IntegerLiteralNode SourceSection: [678,679]`2`
+                                    IntegerLiteralNode SourceSection: [677,679]`-2`
+                                      Value: -2
                                     EmptyNode SourceSection: None
                                     EmptyNode SourceSection: None
                               BinaryComparisonNodeGen SourceSection: None
@@ -209,10 +208,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   SliceLiteralNodeGen SourceSection: [677,680]`-2:`
                                     PythonObjectFactoryNodeGen SourceSection: None
-                                    UnaryArithmeticExpression SourceSection: [677,679]`-2`
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __neg__
-                                      IntegerLiteralNode SourceSection: [678,679]`2`
+                                    IntegerLiteralNode SourceSection: [677,679]`-2`
+                                      Value: -2
                                     EmptyNode SourceSection: None
                                     EmptyNode SourceSection: None
                                 StringLiteralNode SourceSection: [685,689]`'__'`
@@ -227,7 +224,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 SliceLiteralNodeGen SourceSection: [711,714]`2:3`
                                   PythonObjectFactoryNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [711,712]`2`
+                                    Value: 2
                                   IntegerLiteralNode SourceSection: [713,714]`3`
+                                    Value: 3
                                   EmptyNode SourceSection: None
                               StringLiteralNode SourceSection: [719,722]`'_'`
                             YesNodeGen SourceSection: None
@@ -240,14 +239,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               SliceLiteralNodeGen SourceSection: [744,749]`-3:-2`
                                 PythonObjectFactoryNodeGen SourceSection: None
-                                UnaryArithmeticExpression SourceSection: [744,746]`-3`
-                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                    Op: __neg__
-                                  IntegerLiteralNode SourceSection: [745,746]`3`
-                                UnaryArithmeticExpression SourceSection: [747,749]`-2`
-                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                    Op: __neg__
-                                  IntegerLiteralNode SourceSection: [748,749]`2`
+                                IntegerLiteralNode SourceSection: [744,746]`-3`
+                                  Value: -3
+                                IntegerLiteralNode SourceSection: [747,749]`-2`
+                                  Value: -2
                                 EmptyNode SourceSection: None
                             StringLiteralNode SourceSection: [754,757]`'_'`
                           YesNodeGen SourceSection: None
@@ -265,6 +260,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [786,787]`4`
+                            Value: 4
                         YesNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
@@ -318,14 +314,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Frame: [0,name,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [890,891]`0`
+                                    Value: 0
                                 GetItemNodeGen SourceSection: [896,904]`name[-1]`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [0,name,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  UnaryArithmeticExpression SourceSection: [901,903]`-1`
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __neg__
-                                    IntegerLiteralNode SourceSection: [902,903]`1`
+                                  IntegerLiteralNode SourceSection: [901,903]`-1`
+                                    Value: -1
                               BinaryComparisonNodeGen SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __eq__
@@ -333,10 +328,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [0,name,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  UnaryArithmeticExpression SourceSection: [901,903]`-1`
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __neg__
-                                    IntegerLiteralNode SourceSection: [902,903]`1`
+                                  IntegerLiteralNode SourceSection: [901,903]`-1`
+                                    Value: -1
                                 StringLiteralNode SourceSection: [908,911]`'_'`
                               YesNodeGen SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [928,944]`name[1:2] != '_'`
@@ -349,7 +342,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 SliceLiteralNodeGen SourceSection: [933,936]`1:2`
                                   PythonObjectFactoryNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [933,934]`1`
+                                    Value: 1
                                   IntegerLiteralNode SourceSection: [935,936]`2`
+                                    Value: 2
                                   EmptyNode SourceSection: None
                               StringLiteralNode SourceSection: [941,944]`'_'`
                             YesNodeGen SourceSection: None
@@ -362,14 +357,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               SliceLiteralNodeGen SourceSection: [966,971]`-2:-1`
                                 PythonObjectFactoryNodeGen SourceSection: None
-                                UnaryArithmeticExpression SourceSection: [966,968]`-2`
-                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                    Op: __neg__
-                                  IntegerLiteralNode SourceSection: [967,968]`2`
-                                UnaryArithmeticExpression SourceSection: [969,971]`-1`
-                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                    Op: __neg__
-                                  IntegerLiteralNode SourceSection: [970,971]`1`
+                                IntegerLiteralNode SourceSection: [966,968]`-2`
+                                  Value: -2
+                                IntegerLiteralNode SourceSection: [969,971]`-1`
+                                  Value: -1
                                 EmptyNode SourceSection: None
                             StringLiteralNode SourceSection: [976,979]`'_'`
                           YesNodeGen SourceSection: None
@@ -387,6 +378,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [1008,1009]`2`
+                            Value: 2
                         YesNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
@@ -1116,6 +1108,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               Frame: [1,key,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [3510,3511]`1`
+                                                              Value: 1
                                                             PythonCallNodeGen SourceSection: [3513,3536]`len(self._member_nam...`
                                                               CachedCallNodeGen SourceSection: None
                                                                 CreateArgumentsNodeGen SourceSection: None
@@ -2816,6 +2809,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               KwDefaultExpressionNode SourceSection: None
                                 Name: start
                                 Value: IntegerLiteralNode SourceSection: [11414,11415]`1`
+                                  Value: 1
                             Documentation: StringLiteralNode: `Either returns an ex...`
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
@@ -3033,6 +3027,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Identifier: DeprecationWarning
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [13033,13034]`2`
+                                                Value: 2
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [12859,12867]`warnings`
                                                   Frame: [2,warnings,Illegal]
@@ -3975,6 +3970,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               KwDefaultExpressionNode SourceSection: None
                                 Name: start
                                 Value: IntegerLiteralNode SourceSection: [15384,15385]`1`
+                                  Value: 1
                             Documentation: StringLiteralNode: `Convenience method t...`
                             FreeVarSlots: __class__, 
                             ExecutionSlots:
@@ -4204,6 +4200,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Frame: [2,names,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [16214,16215]`0`
+                                                  Value: 0
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [16218,16221]`str`
                                                 Identifier: str
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4500,6 +4497,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       CreateArgumentsNodeGen SourceSection: None
                                                       CallDispatchNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [17127,17128]`2`
+                                                      Value: 2
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [17113,17116]`sys`
                                                         Identifier: sys
@@ -4753,6 +4751,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Frame: [0,bases,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [18574,18575]`0`
+                                                  Value: 0
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [18578,18582]`Enum`
                                                 Identifier: Enum
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4769,6 +4768,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Frame: [0,bases,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [18617,18618]`0`
+                                                  Value: 0
                                             WriteLocalVariableNodeGen SourceSection: [18654,18676]`first_enum = bases[-...`
                                               Identifier: first_enum
                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4777,10 +4777,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [0,bases,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                UnaryArithmeticExpression SourceSection: [18673,18675]`-1`
-                                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                                    Op: __neg__
-                                                  IntegerLiteralNode SourceSection: [18674,18675]`1`
+                                                IntegerLiteralNode SourceSection: [18673,18675]`-1`
+                                                  Value: -1
                                           ElseNode SourceSection: [18716,19236]`for base in bases[0]...`
                                             ForNode SourceSection: None
                                               DefaultLoopNode SourceSection: None
@@ -4847,6 +4845,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Frame: [0,bases,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [18734,18735]`0`
+                                                      Value: 0
                                             BlockNode SourceSection: None
                                         FrameReturnNode SourceSection: [19236,19266]`return member_type, ...`
                                           WriteLocalVariableNodeGen SourceSection: None
@@ -5454,6 +5453,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         Frame: [4,last_value,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [22204,22205]`1`
+                                                        Value: 1
                                                 ExceptNode SourceSection: None
                                                   ExpressionStatementNode SourceSection: [22252,22256]`pass`
                                                     EmptyNode SourceSection: [22252,22256]`pass`
@@ -5799,6 +5799,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   Frame: [0,m,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [22808,22809]`0`
+                                                                  Value: 0
                                                               StringLiteralNode SourceSection: [22814,22817]`'_'`
                                                             NotNodeGen SourceSection: [22822,22848]`m not in self._membe...`
                                                               ContainsNodeGen SourceSection: None
@@ -6563,11 +6564,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                         Frame: [0,t,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [25394,25395]`1`
+                                                                        Value: 1
                                                                     GetItemNodeGen SourceSection: [25398,25402]`t[0]`
                                                                       ReadLocalVariableNode SourceSection: None
                                                                         Frame: [0,t,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [25400,25401]`0`
+                                                                        Value: 0
                                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                               Frame: [1,<return_val>,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -6626,6 +6629,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                         Frame: [0,t,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [25551,25552]`0`
+                                                                        Value: 0
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                                 Frame: [1,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -6986,6 +6990,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [1,start,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [26337,26338]`1`
+                                                Value: 1
                                         BlockNode SourceSection: None
                                       BreakTargetNode SourceSection: [26347,26595]`for last_value in re...`
                                         ForNode SourceSection: None
@@ -7058,6 +7063,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             LookupAndCallTernaryNodeGen SourceSection: None
                                               CallTernaryMethodNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [26602,26603]`2`
+                                              Value: 2
                                             BinaryArithmeticExpression SourceSection: [26608,26618]`high_bit+1`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __add__
@@ -7065,6 +7071,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [4,high_bit,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [26617,26618]`1`
+                                                Value: 1
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -7132,6 +7139,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [1,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [26719,26720]`0`
+                                                Value: 0
                                           WriteLocalVariableNodeGen SourceSection: [26734,26748]`value = ~value`
                                             Identifier: value
                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7167,6 +7175,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [2,original_value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [26837,26838]`0`
+                                                Value: 0
                                           WriteLocalVariableNodeGen SourceSection: [26852,26886]`possible_member = ~p...`
                                             Identifier: possible_member
                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7498,6 +7507,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Identifier: DeprecationWarning
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [28086,28087]`2`
+                                                Value: 2
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [27912,27920]`warnings`
                                                   Frame: [2,warnings,Illegal]
@@ -7949,6 +7959,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [28817,28818]`1`
+                                                Value: 1
                                             IsExpressionNodeGen SourceSection: [28823,28848]`members[0]._name_ is...`
                                               GetAttributeNodeGen SourceSection: [28823,28840]`members[0]._name_`
                                                 GetFixedAttributeNodeGen SourceSection: None
@@ -7960,6 +7971,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     Frame: [2,members,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [28831,28832]`0`
+                                                    Value: 0
                                               ObjectLiteralNode SourceSection: [28844,28848]`None`
                                             YesNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [28862,28913]`return '%s.%r' % (cl...`
@@ -7991,6 +8003,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Frame: [2,members,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [28902,28903]`0`
+                                                      Value: 0
                                         FrameReturnNode SourceSection: [28940,29091]`return '%s.%s' % (↵ ...`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -8575,6 +8588,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             CreateArgumentsNodeGen SourceSection: None
                                             CallDispatchNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [29806,29807]`0`
+                                            Value: 0
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [29791,29795]`self`
                                               Frame: [0,self,Illegal]
@@ -9006,6 +9020,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           LookupAndCallTernaryNodeGen SourceSection: None
                                                             CallTernaryMethodNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [30753,30754]`2`
+                                                            Value: 2
                                                           ReadLocalVariableNode SourceSection: [30758,30761]`bit`
                                                             Frame: [6,bit,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -9072,6 +9087,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                                             Frame: [5,extra_flags,Illegal]
                                                           IntegerLiteralNode SourceSection: [31046,31047]`0`
+                                                            Value: 0
                                                         WriteLocalVariableNodeGen SourceSection: [31090,31115]`extra_flags ^= flag_...`
                                                           Identifier: extra_flags
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -9730,6 +9746,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               Frame: [0,value,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [32513,32514]`1`
+                          Value: 1
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -10052,6 +10069,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           Frame: [1,value,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [33219,33220]`0`
+                          Value: 0
                     IfNode SourceSection: [33420,33904]`if negative:↵       ...`
                       YesNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [33423,33431]`negative`
@@ -10525,6 +10543,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [34297,34298]`1`
+                              Value: 1
                           BinaryComparisonNodeGen SourceSection: [34303,34328]`members[0].value == ...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
@@ -10538,6 +10557,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Frame: [5,members,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [34311,34312]`0`
+                                  Value: 0
                             ReadLocalVariableNode SourceSection: [34323,34328]`value`
                               Frame: [1,value,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -10548,6 +10568,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [34418,34419]`0`
+                            Value: 0
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [34406,34413]`members`
                               Frame: [5,members,Illegal]
@@ -10615,6 +10636,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Frame: [0,value,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [34495,34496]`1`
+                                Value: 1
                           FrameReturnNode SourceSection: [34506,34518]`return False`
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: <return_val>
@@ -10637,6 +10659,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 LookupAndCallTernaryNodeGen SourceSection: None
                                   CallTernaryMethodNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [34539,34540]`2`
+                                  Value: 2
                                 PythonCallNodeGen SourceSection: [34544,34560]`_high_bit(value)`
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None

@@ -209,6 +209,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                 CreateArgumentsNodeGen SourceSection: None
                 CallDispatchNodeGen SourceSection: None
               IntegerLiteralNode SourceSection: [1683,1684]`0`
+                Value: 0
               ReadNameNodeGen SourceSection: None
                 Identifier: range
             ReadNameNodeGen SourceSection: None
@@ -233,7 +234,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __lshift__
                 IntegerLiteralNode SourceSection: [1725,1726]`1`
+                  Value: 1
                 IntegerLiteralNode SourceSection: [1730,1734]`1000`
+                  Value: 1000
               ReadNameNodeGen SourceSection: None
                 Identifier: range
             ReadNameNodeGen SourceSection: None
@@ -769,6 +772,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,<return_val>,Illegal]
                                           IntegerLiteralNode SourceSection: [2761,2762]`0`
+                                            Value: 0
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3974,6 +3978,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,<return_val>,Illegal]
                                           IntegerLiteralNode SourceSection: [9500,9501]`0`
+                                            Value: 0
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -6496,10 +6501,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mul__
                                             IntegerLiteralNode SourceSection: [14422,14423]`2`
+                                              Value: 2
                                             ReadLocalVariableNode SourceSection: [14426,14429]`MAX`
                                               Frame: [1,MAX,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [14432,14433]`1`
+                                            Value: 1
                                       WriteLocalVariableNodeGen SourceSection: [14442,14455]`n = len(self)`
                                         Identifier: n
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6522,6 +6529,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __mul__
                                           IntegerLiteralNode SourceSection: [14468,14478]`1927868237`
+                                            Value: 1927868237
                                           BinaryArithmeticExpression SourceSection: [14482,14487]`n + 1`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __add__
@@ -6529,6 +6537,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               Frame: [3,n,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [14486,14487]`1`
+                                              Value: 1
                                       WriteLocalVariableNodeGen SourceSection: [14497,14506]`h &= MASK`
                                         Identifier: h
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6591,8 +6600,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                               Frame: [5,hx,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [14585,14587]`16`
+                                                              Value: 16
                                                         IntegerLiteralNode SourceSection: [14591,14599]`89869747`
+                                                          Value: 89869747
                                                       LongLiteralNode SourceSection: [14604,14614]`3644798167`
+                                                        Value: 3644798167
                                                 WriteLocalVariableNodeGen SourceSection: [14627,14636]`h &= MASK`
                                                   Identifier: h
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6624,7 +6636,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                               Frame: [4,h,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [14653,14658]`69069`
+                                              Value: 69069
                                           IntegerLiteralNode SourceSection: [14661,14670]`907133923`
+                                            Value: 907133923
                                       WriteLocalVariableNodeGen SourceSection: [14679,14688]`h &= MASK`
                                         Identifier: h
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6662,6 +6676,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                 Frame: [2,MASK,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [14733,14734]`1`
+                                                Value: 1
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [14743,14789]`if h == -1:↵        ...`
                                         YesNodeGen SourceSection: None
@@ -6671,15 +6686,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                             ReadLocalVariableNode SourceSection: [14746,14747]`h`
                                               Frame: [4,h,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            UnaryArithmeticExpression SourceSection: [14751,14753]`-1`
-                                              LookupAndCallUnaryNodeGen SourceSection: None
-                                                Op: __neg__
-                                              IntegerLiteralNode SourceSection: [14752,14753]`1`
+                                            IntegerLiteralNode SourceSection: [14751,14753]`-1`
+                                              Value: -1
                                         WriteLocalVariableNodeGen SourceSection: [14767,14780]`h = 590923713`
                                           Identifier: h
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,h,Illegal]
                                           IntegerLiteralNode SourceSection: [14771,14780]`590923713`
+                                            Value: 590923713
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [14789,14797]`return h`
                                         WriteLocalVariableNodeGen SourceSection: None
@@ -9890,6 +9904,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [21762,21763]`1`
+                                              Value: 1
                                         RaiseNodeGen SourceSection: [21777,21879]`raise TypeError('upd...`
                                           PythonCallNodeGen SourceSection: [21783,21879]`TypeError('update ex...`
                                             CachedCallNodeGen SourceSection: None
@@ -9929,6 +9944,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                 Frame: [0,args,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [21922,21923]`0`
+                                                Value: 0
                                           IfNode SourceSection: [21937,22275]`if isinstance(other,...`
                                             YesNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [21940,21966]`isinstance(other, Ma...`
@@ -10390,6 +10406,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                         Frame: [1,i,Illegal]
                                       IntegerLiteralNode SourceSection: [22960,22961]`0`
+                                        Value: 0
                                     GeneratorTryFinallyNode SourceSection: [22970,23125]`try:↵            whi...`
                                       GeneratorTryExceptNode SourceSection: None
                                         ElseNode SourceSection: [22987,23082]`while True:↵        ...`
@@ -10422,6 +10439,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                     Frame: [1,i,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [23072,23073]`1`
+                                                    Value: 1
                                               GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None
                                               BooleanLiteralNode SourceSection: [22993,22997]`True`
@@ -10648,6 +10666,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                           FunctionDefinitionNode Name: index SourceSection: None
                             Arguments:
                               IntegerLiteralNode SourceSection: [23403,23404]`0`
+                                Value: 0
                               ObjectLiteralNode SourceSection: [23411,23415]`None`
                             KwArguments: None
                             Documentation: StringLiteralNode: `S.index(value, [star...`
@@ -10715,6 +10734,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                 Frame: [2,start,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [23704,23705]`0`
+                                                Value: 0
                                             YesNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [23719,23752]`start = max(len(self...`
                                           Identifier: start
@@ -10741,6 +10761,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                 Frame: [2,start,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [23750,23751]`0`
+                                              Value: 0
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: max
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -10761,6 +10782,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                 Frame: [3,stop,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [23792,23793]`0`
+                                                Value: 0
                                             YesNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [23807,23824]`stop += len(self)`
                                           Identifier: stop
@@ -10869,6 +10891,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                       Frame: [4,i,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [24073,24074]`1`
+                                                      Value: 1
                                         BlockNode SourceSection: None
                                       RaiseNodeGen SourceSection: [24083,24099]`raise ValueError`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [24089,24099]`ValueError`
@@ -10983,6 +11006,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                         YieldNode SourceSection: [24225,24226]`1`
                                                           flagSlot: 0
                                                           IntegerLiteralNode SourceSection: [24225,24226]`1`
+                                                            Value: 1
                                                           GeneratorAccessNode SourceSection: None
                                                       BlockNode SourceSection: None
                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -11626,6 +11650,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                           Frame: [2,i,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [25611,25612]`1`
+                                                        Value: 1
                                                   GetItemNodeGen SourceSection: [25615,25622]`self[i]`
                                                     ReadLocalVariableNode SourceSection: None
                                                       Frame: [0,self,Illegal]
@@ -11668,6 +11693,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                         Frame: [2,i,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [25597,25598]`1`
+                                                      Value: 1
                                                   ReadLocalVariableNode SourceSection: None
                                                     Frame: [5,<>temp5,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -11684,6 +11710,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                                                   Frame: [1,n,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [25563,25564]`2`
+                                                  Value: 2
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: range
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -11772,10 +11799,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"
                           StringLiteralNode SourceSection: None
                           FunctionDefinitionNode Name: pop SourceSection: None
                             Arguments:
-                              UnaryArithmeticExpression SourceSection: [25819,25821]`-1`
-                                LookupAndCallUnaryNodeGen SourceSection: None
-                                  Op: __neg__
-                                IntegerLiteralNode SourceSection: [25820,25821]`1`
+                              IntegerLiteralNode SourceSection: [25819,25821]`-1`
+                                Value: -1
                             KwArguments: None
                             Documentation: StringLiteralNode: `S.pop([index]) -> it...`
                             FreeVarSlots: __class__, 

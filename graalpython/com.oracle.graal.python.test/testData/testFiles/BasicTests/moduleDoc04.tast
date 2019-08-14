@@ -11,6 +11,7 @@ ModuleRootNode Name: <module 'moduleDoc04'> SourceSection: [15,54]`↵"This is m
       WriteNameNodeGen SourceSection: [38,43]`a = 1`
         Identifier: a
         IntegerLiteralNode SourceSection: [42,43]`1`
+          Value: 1
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None

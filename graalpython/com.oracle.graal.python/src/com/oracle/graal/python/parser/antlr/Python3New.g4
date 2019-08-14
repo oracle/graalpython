@@ -1096,9 +1096,22 @@ term returns [SSTNode result]
 
 factor returns [SSTNode result]
 :
-	{ UnaryArithmetic arithmetic; }
-	( '+' { arithmetic = UnaryArithmetic.Pos; } | '-' { arithmetic = UnaryArithmetic.Neg; } | '~' { arithmetic = UnaryArithmetic.Invert; } )
-	factor { $result = new UnarySSTNode(arithmetic, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
+	{ 
+            UnaryArithmetic arithmetic; 
+            boolean isNeg = false;
+        }
+	( '+' { arithmetic = UnaryArithmetic.Pos; } | m='-' { arithmetic = UnaryArithmetic.Neg; isNeg = true; } | '~' { arithmetic = UnaryArithmetic.Invert; } )
+	factor 
+            { 
+                SSTNode fResult = $factor.result;
+                if (isNeg && fResult instanceof NumberLiteralSSTNode) {
+                    ((NumberLiteralSSTNode)fResult).setIsNegative(true);
+                    fResult.setStartOffset($m.getStartIndex());
+                    $result = fResult;
+                } else {
+                    $result = new UnarySSTNode(arithmetic, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); 
+                }
+            }
 	| power { $result = $power.result; }
 ;
 
@@ -1179,7 +1192,7 @@ atom returns [SSTNode result]
 	| DECIMAL_INTEGER { $result = new NumberLiteralSSTNode($DECIMAL_INTEGER.text, 0, 10, $DECIMAL_INTEGER.getStartIndex(), $DECIMAL_INTEGER.getStopIndex() + 1); }
 	| OCT_INTEGER { $result = new NumberLiteralSSTNode($OCT_INTEGER.text, 2, 8, $OCT_INTEGER.getStartIndex(), $OCT_INTEGER.getStopIndex() + 1); }
 	| HEX_INTEGER { $result = new NumberLiteralSSTNode($HEX_INTEGER.text, 2, 16, $HEX_INTEGER.getStartIndex(), $HEX_INTEGER.getStopIndex() + 1); }
-	| BIN_INTEGER { $result = new NumberLiteralSSTNode($BIN_INTEGER.text, 2, 1, $BIN_INTEGER.getStartIndex(), $BIN_INTEGER.getStopIndex() + 1); }
+	| BIN_INTEGER { $result = new NumberLiteralSSTNode($BIN_INTEGER.text, 2, 2, $BIN_INTEGER.getStartIndex(), $BIN_INTEGER.getStopIndex() + 1); }
 	| FLOAT_NUMBER { $result = new FloatLiteralSSTNode($FLOAT_NUMBER.text, false, $FLOAT_NUMBER.getStartIndex(), $FLOAT_NUMBER.getStopIndex() + 1); }
 	| IMAG_NUMBER { $result = new FloatLiteralSSTNode($IMAG_NUMBER.text, true, $IMAG_NUMBER.getStartIndex(), $IMAG_NUMBER.getStopIndex() + 1); }
 	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = new StringLiteralSSTNode(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }

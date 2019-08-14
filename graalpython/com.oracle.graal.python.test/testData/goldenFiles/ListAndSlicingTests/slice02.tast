@@ -11,6 +11,7 @@ ModuleRootNode Name: <module 'slice02'> SourceSection: [0,6]`a[1::]`
       SliceLiteralNodeGen SourceSection: [2,5]`1::`
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [2,3]`1`
+          Value: 1
         EmptyNode SourceSection: None
         EmptyNode SourceSection: None
   CalleeContext SourceSection: None

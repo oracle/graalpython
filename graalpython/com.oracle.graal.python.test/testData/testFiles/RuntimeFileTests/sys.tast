@@ -589,8 +589,11 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
             PythonObjectFactoryNodeGen SourceSection: None
             StringLiteralNode SourceSection: [4101,4107]`"java"`
             IntegerLiteralNode SourceSection: [4109,4110]`0`
+              Value: 0
             IntegerLiteralNode SourceSection: [4112,4114]`64`
+              Value: 64
             IntegerLiteralNode SourceSection: [4116,4117]`0`
+              Value: 0
             PythonCallNodeGen SourceSection: [4119,4142]`float('inf').__hash_...`
               CachedCallNodeGen SourceSection: None
                 CreateArgumentsNodeGen SourceSection: None
@@ -604,6 +607,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                   ReadNameNodeGen SourceSection: None
                     Identifier: float
             IntegerLiteralNode SourceSection: [4144,4145]`7`
+              Value: 7
             PythonCallNodeGen SourceSection: [4147,4170]`float('nan').__hash_...`
               CachedCallNodeGen SourceSection: None
                 CreateArgumentsNodeGen SourceSection: None
@@ -617,7 +621,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                   ReadNameNodeGen SourceSection: None
                     Identifier: float
             IntegerLiteralNode SourceSection: [4172,4173]`0`
+              Value: 0
             IntegerLiteralNode SourceSection: [4175,4177]`64`
+              Value: 64
           PythonCallNodeGen SourceSection: None
             CachedCallNodeGen SourceSection: None
               CreateArgumentsNodeGen SourceSection: None
@@ -657,6 +663,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
           FunctionDefinitionNode Name: exit SourceSection: None
             Arguments:
               IntegerLiteralNode SourceSection: [4520,4521]`0`
+                Value: 0
             KwArguments: None
             Documentation: StringLiteralNode: Empty
             FreeVarSlots: None
@@ -1252,6 +1259,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [5813,5814]`0`
+                                Value: 0
                             YesNodeGen SourceSection: None
                         BlockNode SourceSection: None
                           ExpressionStatementNode SourceSection: [5824,5936]`warnings.warn('Graal...`
@@ -1472,6 +1480,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [1998,7086]`↵def make_imple
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,<return_val>,Illegal]
                         IntegerLiteralNode SourceSection: [6494,6498]`1000`
+                          Value: 1000
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

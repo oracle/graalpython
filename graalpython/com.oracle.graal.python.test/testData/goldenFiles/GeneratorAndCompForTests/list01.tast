@@ -70,6 +70,7 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
               CreateArgumentsNodeGen SourceSection: None
               CallDispatchNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [21,23]`20`
+              Value: 20
             ReadNameNodeGen SourceSection: None
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None

@@ -9,6 +9,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
       WriteNameNodeGen SourceSection: [0,5]`c = 0`
         Identifier: c
         IntegerLiteralNode SourceSection: [4,5]`0`
+          Value: 0
       WriteNameNodeGen SourceSection: [25,111]`def add():↵    globa...`
         Identifier: add
         FunctionDefinitionNode Name: add SourceSection: None
@@ -45,6 +46,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                           Identifier: c
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [61,62]`2`
+                          Value: 2
                     ExpressionStatementNode SourceSection: [84,109]`print("Inside add():...`
                       PythonCallNodeGen SourceSection: [84,109]`print("Inside add():...`
                         CachedCallNodeGen SourceSection: None

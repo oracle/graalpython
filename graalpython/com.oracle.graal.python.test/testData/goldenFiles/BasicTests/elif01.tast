@@ -19,12 +19,14 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                   ReadNameNodeGen SourceSection: [13,16]`var`
                     Identifier: var
                   IntegerLiteralNode SourceSection: [20,23]`200`
+                    Value: 200
               ExpressionStatementNode SourceSection: [27,36]`print (2)`
                 PythonCallNodeGen SourceSection: [27,36]`print (2)`
                   CachedCallNodeGen SourceSection: None
                     CreateArgumentsNodeGen SourceSection: None
                     CallDispatchNodeGen SourceSection: None
                   IntegerLiteralNode SourceSection: [34,35]`2`
+                    Value: 2
                   ReadNameNodeGen SourceSection: None
                     Identifier: print
               IfNode SourceSection: None
@@ -35,6 +37,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     ReadNameNodeGen SourceSection: [42,45]`var`
                       Identifier: var
                     IntegerLiteralNode SourceSection: [49,52]`150`
+                      Value: 150
                 ExpressionStatementNode SourceSection: [56,67]`print (1.5)`
                   PythonCallNodeGen SourceSection: [56,67]`print (1.5)`
                     CachedCallNodeGen SourceSection: None
@@ -51,12 +54,14 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                       ReadNameNodeGen SourceSection: [73,76]`var`
                         Identifier: var
                       IntegerLiteralNode SourceSection: [80,83]`100`
+                        Value: 100
                   ExpressionStatementNode SourceSection: [87,96]`print (1)`
                     PythonCallNodeGen SourceSection: [87,96]`print (1)`
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [94,95]`1`
+                        Value: 1
                       ReadNameNodeGen SourceSection: None
                         Identifier: print
                   BlockNode SourceSection: None
@@ -64,4 +69,5 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
         WriteNameNodeGen SourceSection: [0,9]`var = 100`
           Identifier: var
           IntegerLiteralNode SourceSection: [6,9]`100`
+            Value: 100
   CalleeContext SourceSection: None

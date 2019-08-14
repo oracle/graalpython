@@ -14,6 +14,7 @@ ModuleRootNode Name: <module 'moduleDoc02'> SourceSection: [0,29]`'''↵Thi is d
             WriteNameNodeGen SourceSection: [23,29]`a = 10`
               Identifier: a
               IntegerLiteralNode SourceSection: [27,29]`10`
+                Value: 10
       SideEffect:
         ExpressionStatementNode SourceSection: [0,22]`'''↵Thi is doc↵yes↵'...`
           StringLiteralNode SourceSection: [0,22]`'''↵Thi is doc↵yes↵'...`

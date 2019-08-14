@@ -459,66 +459,77 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1239,1240]`6`
+                                          Value: 6
                                       SetAttributeNodeGen SourceSection: [1249,1266]`self.maxtuple = 6`
                                         Attribute: maxtuple
                                         ReadLocalVariableNode SourceSection: [1249,1253]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1265,1266]`6`
+                                          Value: 6
                                       SetAttributeNodeGen SourceSection: [1275,1291]`self.maxlist = 6`
                                         Attribute: maxlist
                                         ReadLocalVariableNode SourceSection: [1275,1279]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1290,1291]`6`
+                                          Value: 6
                                       SetAttributeNodeGen SourceSection: [1300,1317]`self.maxarray = 5`
                                         Attribute: maxarray
                                         ReadLocalVariableNode SourceSection: [1300,1304]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1316,1317]`5`
+                                          Value: 5
                                       SetAttributeNodeGen SourceSection: [1326,1342]`self.maxdict = 4`
                                         Attribute: maxdict
                                         ReadLocalVariableNode SourceSection: [1326,1330]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1341,1342]`4`
+                                          Value: 4
                                       SetAttributeNodeGen SourceSection: [1351,1366]`self.maxset = 6`
                                         Attribute: maxset
                                         ReadLocalVariableNode SourceSection: [1351,1355]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1365,1366]`6`
+                                          Value: 6
                                       SetAttributeNodeGen SourceSection: [1375,1396]`self.maxfrozenset = ...`
                                         Attribute: maxfrozenset
                                         ReadLocalVariableNode SourceSection: [1375,1379]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1395,1396]`6`
+                                          Value: 6
                                       SetAttributeNodeGen SourceSection: [1405,1422]`self.maxdeque = 6`
                                         Attribute: maxdeque
                                         ReadLocalVariableNode SourceSection: [1405,1409]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1421,1422]`6`
+                                          Value: 6
                                       SetAttributeNodeGen SourceSection: [1431,1450]`self.maxstring = 30`
                                         Attribute: maxstring
                                         ReadLocalVariableNode SourceSection: [1431,1435]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1448,1450]`30`
+                                          Value: 30
                                       SetAttributeNodeGen SourceSection: [1459,1476]`self.maxlong = 40`
                                         Attribute: maxlong
                                         ReadLocalVariableNode SourceSection: [1459,1463]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1474,1476]`40`
+                                          Value: 40
                                       SetAttributeNodeGen SourceSection: [1485,1503]`self.maxother = 30`
                                         Attribute: maxother
                                         ReadLocalVariableNode SourceSection: [1485,1489]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [1501,1503]`30`
+                                          Value: 30
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -876,6 +887,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                 Frame: [2,level,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [2027,2028]`0`
+                                                Value: 0
                                             ReadLocalVariableNode SourceSection: [2033,2034]`n`
                                               Frame: [7,n,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -898,6 +910,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                 Frame: [2,level,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [2103,2104]`1`
+                                                Value: 1
                                           WriteLocalCellNodeGen SourceSection: [2117,2135]`repr1 = self.repr1`
                                             Identifier: repr1
                                             ReadLocalVariableNode SourceSection: None
@@ -1045,6 +1058,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                     Frame: [7,n,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [2316,2317]`1`
+                                                    Value: 1
                                                 ReadLocalVariableNode SourceSection: [2322,2327]`trail`
                                                   Frame: [6,trail,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1749,6 +1763,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                               Frame: [3,n,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [3442,3443]`0`
+                                              Value: 0
                                         FrameReturnNode SourceSection: [3445,3456]`return '{}'`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -1765,6 +1780,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                               Frame: [2,level,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [3477,3478]`0`
+                                              Value: 0
                                         FrameReturnNode SourceSection: [3480,3494]`return '{...}'`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -1783,6 +1799,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                             Frame: [2,level,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [3522,3523]`1`
+                                            Value: 1
                                       WriteLocalVariableNodeGen SourceSection: [3532,3550]`repr1 = self.repr1`
                                         Identifier: repr1
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2067,6 +2084,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [4025,4026]`0`
+                                                Value: 0
                                               BinaryArithmeticExpression SourceSection: [4028,4049]`(self.maxstring-3)//...`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __floordiv__
@@ -2082,7 +2100,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [4044,4045]`3`
+                                                    Value: 3
                                                 IntegerLiteralNode SourceSection: [4048,4049]`2`
+                                                  Value: 2
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: max
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2095,6 +2115,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [4071,4072]`0`
+                                                Value: 0
                                               BinaryArithmeticExpression SourceSection: [4074,4092]`self.maxstring-3-i`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
@@ -2110,6 +2131,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [4089,4090]`3`
+                                                    Value: 3
                                                 ReadLocalVariableNode SourceSection: [4091,4092]`i`
                                                   Frame: [4,i,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2323,6 +2345,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [4360,4361]`0`
+                                                Value: 0
                                               BinaryArithmeticExpression SourceSection: [4363,4382]`(self.maxlong-3)//2`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __floordiv__
@@ -2338,7 +2361,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [4377,4378]`3`
+                                                    Value: 3
                                                 IntegerLiteralNode SourceSection: [4381,4382]`2`
+                                                  Value: 2
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: max
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2351,6 +2376,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [4404,4405]`0`
+                                                Value: 0
                                               BinaryArithmeticExpression SourceSection: [4407,4423]`self.maxlong-3-i`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
@@ -2366,6 +2392,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [4420,4421]`3`
+                                                    Value: 3
                                                 ReadLocalVariableNode SourceSection: [4422,4423]`i`
                                                   Frame: [4,i,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2571,6 +2598,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [4834,4835]`0`
+                                                Value: 0
                                               BinaryArithmeticExpression SourceSection: [4837,4857]`(self.maxother-3)//2...`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __floordiv__
@@ -2586,7 +2614,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [4852,4853]`3`
+                                                    Value: 3
                                                 IntegerLiteralNode SourceSection: [4856,4857]`2`
+                                                  Value: 2
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: max
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2599,6 +2629,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [4879,4880]`0`
+                                                Value: 0
                                               BinaryArithmeticExpression SourceSection: [4882,4899]`self.maxother-3-i`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
@@ -2614,6 +2645,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5266]`"""Redo the buil
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [4896,4897]`3`
+                                                    Value: 3
                                                 ReadLocalVariableNode SourceSection: [4898,4899]`i`
                                                   Frame: [4,i,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None

@@ -44,6 +44,7 @@ ModuleRootNode Name: <module 'yeild12'> SourceSection: [0,21]`def f(): yield fro
                           Op: __next__
                       GeneratorAccessNode SourceSection: None
                       IntegerLiteralNode SourceSection: [20,21]`1`
+                        Value: 1
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

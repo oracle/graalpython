@@ -497,6 +497,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [2803,2804]`0`
+                              Value: 0
                           YesNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [2821,2827]`_posix`
@@ -520,10 +521,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                             CachedCallNodeGen SourceSection: None
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
-                            UnaryArithmeticExpression SourceSection: [2943,2945]`-1`
-                              LookupAndCallUnaryNodeGen SourceSection: None
-                                Op: __neg__
-                              IntegerLiteralNode SourceSection: [2944,2945]`1`
+                            IntegerLiteralNode SourceSection: [2943,2945]`-1`
+                              Value: -1
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2931,2937]`_posix`
                                 Frame: [5,_posix,Illegal]
@@ -1069,6 +1068,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [3832,3833]`0`
+                              Value: 0
                         FrameReturnNode SourceSection: [3954,3985]`return __getframe__(...`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
@@ -1084,6 +1084,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                   CreateArgumentsNodeGen SourceSection: None
                                   CallDispatchNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [3974,3975]`1`
+                                  Value: 1
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: __getframe__
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1103,6 +1104,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [4007,4008]`1`
+                                Value: 1
                           RaiseNodeGen SourceSection: [4018,4069]`raise TypeError("var...`
                             PythonCallNodeGen SourceSection: [4024,4069]`TypeError("vars() ta...`
                               CachedCallNodeGen SourceSection: None
@@ -1131,6 +1133,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__built
                                     Frame: [0,obj,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [4098,4099]`0`
+                                    Value: 0
                           ExceptNode SourceSection: None
                             RaiseNodeGen SourceSection: [4145,4208]`raise TypeError("var...`
                               PythonCallNodeGen SourceSection: [4151,4208]`TypeError("vars() ar...`

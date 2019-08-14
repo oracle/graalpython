@@ -1,0 +1,10 @@
+ModuleRootNode Name: <module 'maxint'> SourceSection: [0,10]`2147483647`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,10]`2147483647`
+    IntegerLiteralNode SourceSection: [0,10]`2147483647`
+      Value: 2147483647
+  CalleeContext SourceSection: None

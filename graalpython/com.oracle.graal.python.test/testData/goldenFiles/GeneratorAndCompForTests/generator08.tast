@@ -111,6 +111,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [82,83]`1`
+                              Value: 1
                         GeneratorAccessNode SourceSection: None
                       BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None

@@ -8,5 +8,7 @@ ModuleRootNode Name: <module 'set03'> SourceSection: [0,6]`{2, 3}`
     SetLiteralNode SourceSection: [0,6]`{2, 3}`
       PythonObjectFactoryNodeGen SourceSection: None
       IntegerLiteralNode SourceSection: [1,2]`2`
+        Value: 2
       IntegerLiteralNode SourceSection: [4,5]`3`
+        Value: 3
   CalleeContext SourceSection: None

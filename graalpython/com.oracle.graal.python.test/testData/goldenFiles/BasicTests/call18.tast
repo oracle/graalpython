@@ -16,7 +16,9 @@ ModuleRootNode Name: <module 'call18'> SourceSection: [0,35]`def fn(arg = [1,2])
               ListLiteralNode SourceSection: [13,18]`[1,2]`
                 PythonObjectFactoryNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [14,15]`1`
+                  Value: 1
                 IntegerLiteralNode SourceSection: [16,17]`2`
+                  Value: 2
             KwArguments: None
             Documentation: StringLiteralNode: Empty
             FreeVarSlots: None
@@ -54,6 +56,7 @@ ModuleRootNode Name: <module 'call18'> SourceSection: [0,35]`def fn(arg = [1,2])
                             ListLiteralNode SourceSection: [31,34]`[1]`
                               PythonObjectFactoryNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [32,33]`1`
+                                Value: 1
                           CompactKeywordsNodeGen SourceSection: None
                           ExecuteKeywordStarargsNodeGen SourceSection: None
                             EmptyNode SourceSection: None

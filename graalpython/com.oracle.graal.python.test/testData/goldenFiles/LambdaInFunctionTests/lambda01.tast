@@ -62,6 +62,7 @@ ModuleRootNode Name: <module 'lambda01'> SourceSection: [0,21]`def fn():↵  lam
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [0,<return_val>,Illegal]
                                     IntegerLiteralNode SourceSection: [20,21]`0`
+                                      Value: 0
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [0,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

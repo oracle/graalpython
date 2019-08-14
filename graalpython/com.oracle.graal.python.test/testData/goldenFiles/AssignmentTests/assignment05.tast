@@ -13,8 +13,11 @@ ModuleRootNode Name: <module 'assignment05'> SourceSection: [0,17]`a, b, c = 1, 
           TupleLiteralNode SourceSection: [10,17]`1, 2, 3`
             PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [10,11]`1`
+              Value: 1
             IntegerLiteralNode SourceSection: [13,14]`2`
+              Value: 2
             IntegerLiteralNode SourceSection: [16,17]`3`
+              Value: 3
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp0
             WriteLocalFrameSlotNodeGen SourceSection: None

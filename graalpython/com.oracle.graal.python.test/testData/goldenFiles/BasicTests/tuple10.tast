@@ -14,6 +14,7 @@ ModuleRootNode Name: <module 'tuple10'> SourceSection: [0,14]`t = 1, call1()`
           TupleLiteralNode SourceSection: [4,14]`1, call1()`
             PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [4,5]`1`
+              Value: 1
             PythonCallNodeGen SourceSection: [7,14]`call1()`
               CachedCallNodeGen SourceSection: None
                 CreateArgumentsNodeGen SourceSection: None

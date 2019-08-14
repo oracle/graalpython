@@ -71,6 +71,7 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                             SliceLiteralNodeGen SourceSection: [107,109]`1:`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [107,108]`1`
+                                                Value: 1
                                               EmptyNode SourceSection: None
                                               EmptyNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [91,100]`candidate`

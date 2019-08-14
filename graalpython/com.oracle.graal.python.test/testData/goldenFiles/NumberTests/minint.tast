@@ -1,0 +1,10 @@
+ModuleRootNode Name: <module 'minint'> SourceSection: [0,11]`-2147483648`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,11]`-2147483648`
+    IntegerLiteralNode SourceSection: [0,11]`-2147483648`
+      Value: -2147483648
+  CalleeContext SourceSection: None

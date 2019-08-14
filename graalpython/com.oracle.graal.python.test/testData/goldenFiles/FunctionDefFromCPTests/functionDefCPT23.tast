@@ -17,6 +17,7 @@ ModuleRootNode Name: <module 'functionDefCPT23'> SourceSection: [0,28]`def f(*ar
               KwDefaultExpressionNode SourceSection: None
                 Name: a
                 Value: IntegerLiteralNode SourceSection: [17,18]`5`
+                  Value: 5
             Documentation: StringLiteralNode: Empty
             FreeVarSlots: None
             ExecutionSlots:

@@ -887,17 +887,36 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     @Override
     public PNode visit(NumberLiteralSSTNode node) {
+        final long max = node.isNegative ? Long.MIN_VALUE : -Long.MAX_VALUE ;
+        final long moltmax = max / node.base;
         int i = node.start;
         long result = 0;
+        int lastD;
+        boolean overunder = false;
         while (i < node.value.length()) {
-            long next = result * node.base + digitValue(node.value.charAt(i));
-            if (next < 0) {
+            lastD = digitValue(node.value.charAt(i));
+            
+            long next = result;
+            if ( next < moltmax ) {
+                overunder = true;
+            } else {
+                next *= node.base;
+                if (next < (max + lastD)) {
+                    overunder = true;
+                } else {
+                    next -= lastD;
+                }
+            }
+            if (overunder) {
                 // overflow
                 BigInteger bigResult = BigInteger.valueOf(result);
                 BigInteger bigBase = BigInteger.valueOf(node.base);
                 while (i < node.value.length()) {
-                    bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(node.value.charAt(i))));
+                    bigResult = bigResult.multiply(bigBase).subtract(BigInteger.valueOf(digitValue(node.value.charAt(i))));
                     i++;
+                }
+                if (!node.isNegative) {
+                    bigResult = bigResult.negate();
                 }
                 PIntLiteralNode intLiteral = new PIntLiteralNode(bigResult);
                 intLiteral.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
@@ -907,7 +926,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             i++;
         }
         
-        ExpressionNode intLiteral = result <= Integer.MAX_VALUE ? new IntegerLiteralNode((int) result) : new LongLiteralNode(result);
+        if (!node.isNegative) {
+            result = -1 * result;
+        }
+        
+        ExpressionNode intLiteral = Integer.MIN_VALUE <= result && result <= Integer.MAX_VALUE ? new IntegerLiteralNode((int) result) : new LongLiteralNode(result);
         intLiteral.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return intLiteral;
     }

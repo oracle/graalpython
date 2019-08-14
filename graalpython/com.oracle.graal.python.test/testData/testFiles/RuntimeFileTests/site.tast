@@ -983,6 +983,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                     Frame: [11,n,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [6441,6442]`1`
+                                                    Value: 1
                                                 ReadLocalVariableNode SourceSection: [6444,6452]`fullname`
                                                   Frame: [4,fullname,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1893,6 +1894,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   PythonObjectFactoryNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
                                   IntegerLiteralNode SourceSection: [9050,9051]`2`
+                                    Value: 2
                                   EmptyNode SourceSection: None
                             ReadLocalVariableNode SourceSection: None
                               Frame: [1,joinuser,Illegal]
@@ -1993,11 +1995,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Frame: [1,version,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [9298,9299]`0`
+                                  Value: 0
                               GetItemNodeGen SourceSection: [9302,9312]`version[1]`
                                 ReadLocalVariableNode SourceSection: None
                                   Frame: [1,version,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [9310,9311]`1`
+                                  Value: 1
                       BlockNode SourceSection: None
                     IfNode SourceSection: [9319,9427]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
@@ -2055,11 +2059,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Frame: [1,version,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [9489,9490]`0`
+                                Value: 0
                             GetItemNodeGen SourceSection: [9493,9503]`version[1]`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,version,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [9501,9502]`1`
+                                Value: 1
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2436,6 +2442,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
                                                 IntegerLiteralNode SourceSection: [11371,11372]`2`
+                                                  Value: 2
                                                 EmptyNode SourceSection: None
                                           StringLiteralNode SourceSection: [11415,11430]`"site-packages"`
                                           GetCallAttributeNodeGen SourceSection: None
@@ -2478,6 +2485,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                   Identifier: sys
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [11643,11644]`0`
+                                                Value: 0
                                           StringLiteralNode SourceSection: [11687,11702]`"site-packages"`
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [11544,11551]`os.path`
@@ -2810,6 +2818,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonObjectFactoryNodeGen SourceSection: None
                               EmptyNode SourceSection: None
                               IntegerLiteralNode SourceSection: [12685,12686]`4`
+                                Value: 4
                               EmptyNode SourceSection: None
                           StringLiteralNode SourceSection: [12691,12697]`'java'`
                       SetAttributeNodeGen SourceSection: [12707,12851]`builtins.credits = _...`
@@ -3206,6 +3215,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Frame: [1,readline,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [15006,15007]`0`
+                                          Value: 0
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [15339,15440]`history = os.path.jo...`
                                         Identifier: history
@@ -3614,6 +3624,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Frame: [7,candidate_confs,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [16368,16369]`0`
+                              Value: 0
                         WriteLocalVariableNodeGen SourceSection: [16379,16399]`system_site = "true"...`
                           Identifier: system_site
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3855,6 +3866,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CreateArgumentsNodeGen SourceSection: None
                                 CallDispatchNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [17350,17351]`0`
+                                Value: 0
                               GetAttributeNodeGen SourceSection: [17353,17363]`sys.prefix`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: prefix
@@ -4474,6 +4486,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         SliceLiteralNodeGen SourceSection: [20158,20160]`1:`
                           PythonObjectFactoryNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [20158,20159]`1`
+                            Value: 1
                           EmptyNode SourceSection: None
                           EmptyNode SourceSection: None
                     IfNode SourceSection: [20166,20696]`if not args:↵       ...`
@@ -4654,6 +4667,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [20688,20689]`0`
+                              Value: 0
                             GetCallAttributeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [20679,20682]`sys`
                                 Identifier: sys
@@ -4752,6 +4766,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CreateArgumentsNodeGen SourceSection: None
                                 CallDispatchNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [20939,20940]`0`
+                                Value: 0
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20930,20933]`sys`
                                   Identifier: sys
@@ -4769,6 +4784,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   CreateArgumentsNodeGen SourceSection: None
                                   CallDispatchNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [21003,21004]`1`
+                                  Value: 1
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20994,20997]`sys`
                                     Identifier: sys
@@ -4786,6 +4802,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [21066,21067]`2`
+                                    Value: 2
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21057,21060]`sys`
                                       Identifier: sys
@@ -4796,6 +4813,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [21104,21105]`3`
+                                    Value: 3
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21095,21098]`sys`
                                       Identifier: sys
@@ -4835,6 +4853,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Identifier: sys
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [21188,21189]`0`
+                                      Value: 0
                                   GetAttributeNodeGen SourceSection: [21192,21202]`os.pathsep`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: pathsep
@@ -4856,6 +4875,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [21223,21225]`10`
+                              Value: 10
                             GetCallAttributeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21214,21217]`sys`
                                 Identifier: sys

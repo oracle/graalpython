@@ -39,6 +39,7 @@ ModuleRootNode Name: <module 'functionDef02'> SourceSection: [0,24]`def foo(): â
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,<return_val>,Illegal]
                         IntegerLiteralNode SourceSection: [21,23]`10`
+                          Value: 10
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

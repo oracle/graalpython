@@ -169,6 +169,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                   YieldNode SourceSection: [579,586]`yield 1`
                     flagSlot: 0
                     IntegerLiteralNode SourceSection: [585,586]`1`
+                      Value: 1
                     GeneratorAccessNode SourceSection: None
                 ReadGeneratorFrameVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
@@ -536,6 +537,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                       ReadNameNodeGen SourceSection: [1209,1212]`sys`
                         Identifier: sys
                   IntegerLiteralNode SourceSection: [1224,1225]`2`
+                    Value: 2
               WriteNameNodeGen SourceSection: [1231,1255]`TracebackType = type...`
                 Identifier: TracebackType
                 PythonCallNodeGen SourceSection: [1247,1255]`type(tb)`
@@ -857,6 +859,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,shift,Illegal]
                       IntegerLiteralNode SourceSection: [2170,2171]`0`
+                        Value: 0
                     ElseNode SourceSection: [2176,2625]`for i, base in enume...`
                       ForNode SourceSection: None
                         DefaultLoopNode SourceSection: None
@@ -993,6 +996,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                               Frame: [3,shift,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [2568,2569]`1`
+                                            Value: 1
                                         EmptyNode SourceSection: None
                                       ReadLocalVariableNode SourceSection: [2573,2581]`new_base`
                                         Frame: [4,new_base,Illegal]
@@ -1019,6 +1023,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [2619,2620]`1`
+                                            Value: 1
                         GetIteratorExpressionNodeGen SourceSection: [2191,2207]`enumerate(bases)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [2191,2207]`enumerate(bases)`
@@ -1183,6 +1188,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                 Frame: [1,bases,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [3359,3360]`0`
+                                Value: 0
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: type
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3273,6 +3279,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                 Frame: [1,co_flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [8081,8086]`0x180`
+                                Value: 384
                           FrameReturnNode SourceSection: [8100,8111]`return func`
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: <return_val>
@@ -3293,6 +3300,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                 Frame: [1,co_flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [8219,8223]`0x20`
+                                Value: 32
                           BlockNode SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: [8278,8296]`co = func.__code__`
                               Identifier: co
@@ -3363,6 +3371,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                       Frame: [2,co,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [8467,8472]`0x100`
+                                    Value: 256
                                 GetAttributeNodeGen SourceSection: [8524,8534]`co.co_code`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: co_code
@@ -3588,6 +3597,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                                     Frame: [2,coro,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [9246,9251]`0x100`
+                                                Value: 256
                                             YesNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [9341,9352]`return coro`
@@ -3744,6 +3754,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                                   PythonObjectFactoryNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
                                   IntegerLiteralNode SourceSection: [9907,9908]`1`
+                                    Value: 1
                                   EmptyNode SourceSection: None
                               StringLiteralNode SourceSection: [9913,9916]`'_'`
                           ExpressionStatementNode SourceSection: [9880,9881]`n`

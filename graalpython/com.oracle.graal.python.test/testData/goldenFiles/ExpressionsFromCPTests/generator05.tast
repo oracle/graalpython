@@ -42,6 +42,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [36,37]`3`
+                        Value: 3
                   ExpressionStatementNode SourceSection: [5,9]`x**3`
                     YieldNode SourceSection: [5,9]`x**3`
                       flagSlot: 0
@@ -52,6 +53,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [8,9]`3`
+                          Value: 3
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -79,6 +81,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
               CreateArgumentsNodeGen SourceSection: None
               CallDispatchNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [25,27]`20`
+              Value: 20
             ReadNameNodeGen SourceSection: None
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None

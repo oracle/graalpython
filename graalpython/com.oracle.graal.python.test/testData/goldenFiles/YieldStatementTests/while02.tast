@@ -63,6 +63,7 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                                 Frame: [0,x,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [57,58]`1`
+                                Value: 1
                           ExpressionStatementNode SourceSection: [64,71]`yield x`
                             YieldNode SourceSection: [64,71]`yield x`
                               flagSlot: 0

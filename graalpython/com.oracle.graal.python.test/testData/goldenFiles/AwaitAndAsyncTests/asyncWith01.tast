@@ -37,6 +37,7 @@ ModuleRootNode Name: <module 'asyncWith01'> SourceSection: [0,34]`async def f():
                       ExpressionStatementNode SourceSection: [30,34]`pass`
                         EmptyNode SourceSection: [30,34]`pass`
                       IntegerLiteralNode SourceSection: [27,28]`1`
+                        Value: 1
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeSlowNodeGen SourceSection: None

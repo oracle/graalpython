@@ -195,6 +195,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,<return_val>,Illegal]
                         IntegerLiteralNode SourceSection: [195,196]`1`
+                          Value: 1
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -204,6 +205,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
               CreateArgumentsNodeGen SourceSection: None
               CallDispatchNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [164,165]`3`
+              Value: 3
             ReadNameNodeGen SourceSection: None
               Identifier: mydecorator
       PythonCallNodeGen SourceSection: [198,216]`print(getNumber())`

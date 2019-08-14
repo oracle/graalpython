@@ -51,6 +51,7 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
                                     Frame: [0,x,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [44,45]`1`
+                                    Value: 1
                               BreakNode SourceSection: [53,58]`break`
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [21,30]`xrange(3)`
@@ -60,6 +61,7 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [28,29]`3`
+                              Value: 3
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: xrange
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -49,6 +49,7 @@ ModuleRootNode Name: <module 'param01'> SourceSection: [0,30]`def fn(a):↵  yie
                       YieldNode SourceSection: [23,30]`yield 2`
                         flagSlot: 1
                         IntegerLiteralNode SourceSection: [29,30]`2`
+                          Value: 2
                         GeneratorAccessNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None

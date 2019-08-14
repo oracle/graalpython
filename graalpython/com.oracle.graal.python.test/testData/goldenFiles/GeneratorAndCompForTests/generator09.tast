@@ -73,6 +73,7 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                               Frame: [0,h,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [67,68]`1`
+                              Value: 1
                         GeneratorAccessNode SourceSection: None
                       BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None

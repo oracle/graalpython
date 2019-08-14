@@ -123,6 +123,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                         SliceLiteralNodeGen SourceSection: [1050,1052]`1:`
                           PythonObjectFactoryNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [1050,1051]`1`
+                            Value: 1
                           EmptyNode SourceSection: None
                           EmptyNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [1058,1107]`iptfile = args and a...`
@@ -139,6 +140,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                               Frame: [2,args,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [1082,1083]`0`
+                              Value: 0
                           YesNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [1088,1107]`"Python/graminit.c"`
                         YesNodeGen SourceSection: None
@@ -158,6 +160,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [1127,1128]`1`
+                            Value: 1
                       WriteLocalVariableNodeGen SourceSection: [1130,1147]`optfile = args[1]`
                         Identifier: optfile
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -167,6 +170,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                             Frame: [2,args,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [1145,1146]`1`
+                            Value: 1
                       WriteLocalVariableNodeGen SourceSection: [1158,1184]`optfile = "Lib/keywo...`
                         Identifier: optfile
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -237,6 +241,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                               Frame: [5,format,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [1378,1379]`0`
+                              Value: 0
                           SliceLiteralNodeGen SourceSection: [1381,1404]`len(format[0].strip(...`
                             PythonObjectFactoryNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [1381,1403]`len(format[0].strip(...`
@@ -253,6 +258,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                                       Frame: [5,format,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [1392,1393]`0`
+                                      Value: 0
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -340,6 +346,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                                                     CreateArgumentsNodeGen SourceSection: None
                                                     CallDispatchNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [1744,1745]`1`
+                                                    Value: 1
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [1732,1737]`match`
                                                       Frame: [10,match,Illegal]
@@ -426,6 +433,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                                     Frame: [5,format,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [1899,1900]`1`
+                                Value: 1
                           WriteLocalVariableNodeGen SourceSection: [1909,1953]`end = format.index("...`
                             Identifier: end
                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -484,6 +492,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords 
                                   CreateArgumentsNodeGen SourceSection: None
                                   CallDispatchNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [2097,2098]`1`
+                                  Value: 1
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [2088,2091]`sys`
                                     Frame: [0,sys,Illegal]

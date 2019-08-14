@@ -84,6 +84,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                             Frame: [0,arg,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [72,73]`1`
+                                            Value: 1
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [1,recursionInner,Illegal]
@@ -99,6 +100,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [92,93]`0`
+                            Value: 0
                           ReadLocalCellNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: None
                               Frame: [0,recursionInner,Illegal]

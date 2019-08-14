@@ -32,6 +32,7 @@ ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):
                   CreateArgumentsNodeGen SourceSection: None
                   CallDispatchNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [15,18]`210`
+                  Value: 210
                 ReadNameNodeGen SourceSection: None
                   Identifier: range
           BlockNode SourceSection: None

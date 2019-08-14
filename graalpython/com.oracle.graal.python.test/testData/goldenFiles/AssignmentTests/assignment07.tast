@@ -37,8 +37,11 @@ ModuleRootNode Name: <module 'assignment07'> SourceSection: [0,29]`def fn():↵ 
                       TupleLiteralNode SourceSection: [22,29]`1, 2, 3`
                         PythonObjectFactoryNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [22,23]`1`
+                          Value: 1
                         IntegerLiteralNode SourceSection: [25,26]`2`
+                          Value: 2
                         IntegerLiteralNode SourceSection: [28,29]`3`
+                          Value: 3
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <>temp3
                         WriteLocalFrameSlotNodeGen SourceSection: None

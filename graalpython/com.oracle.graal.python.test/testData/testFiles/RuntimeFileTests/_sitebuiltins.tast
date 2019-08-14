@@ -337,6 +337,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                               Index: 0
                           StringLiteralNode SourceSection: None
                           IntegerLiteralNode SourceSection: [934,936]`23`
+                            Value: 23
                         SetItemNodeGen SourceSection: [942,1249]`def __init__(self, n...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -839,6 +840,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [1907,1908]`2`
+                                                  Value: 2
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -897,12 +899,14 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,lineno,Illegal]
                                         IntegerLiteralNode SourceSection: [2043,2044]`0`
+                                          Value: 0
                                       BreakTargetNode SourceSection: [2053,2538]`while 1:↵           ...`
                                         WhileNode SourceSection: None
                                           DefaultLoopNode SourceSection: None
                                             WhileRepeatingNode SourceSection: None
                                               YesNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [2059,2060]`1`
+                                                  Value: 1
                                               TryFinallyNode SourceSection: [2074,2538]`try:↵               ...`
                                                 TryExceptNode SourceSection: None
                                                   ElseNode SourceSection: [2095,2198]`for i in range(linen...`

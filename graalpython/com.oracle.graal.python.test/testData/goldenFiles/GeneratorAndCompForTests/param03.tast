@@ -18,6 +18,7 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
             Block Nodes: 1
             Arguments:
               IntegerLiteralNode SourceSection: [12,13]`1`
+                Value: 1
             KwArguments: None
             Documentation: StringLiteralNode: Empty
             FreeVarSlots: None

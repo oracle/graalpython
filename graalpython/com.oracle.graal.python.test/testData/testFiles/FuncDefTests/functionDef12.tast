@@ -88,6 +88,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                           Frame: [1,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [58,60]`12`
+                          Value: 12
                       ExpressionStatementNode SourceSection: [65,72]`inner()`
                         PythonCallNodeGen SourceSection: [65,72]`inner()`
                           CachedCallNodeGen SourceSection: None

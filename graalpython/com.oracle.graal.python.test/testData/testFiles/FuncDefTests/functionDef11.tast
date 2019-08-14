@@ -44,6 +44,7 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,x,Illegal]
                         IntegerLiteralNode SourceSection: [23,25]`10`
+                          Value: 10
                       ExpressionStatementNode SourceSection: [30,38]`print(x)`
                         PythonCallNodeGen SourceSection: [30,38]`print(x)`
                           CachedCallNodeGen SourceSection: None

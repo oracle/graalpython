@@ -11,6 +11,7 @@ ModuleRootNode Name: <module 'assignment02'> SourceSection: [0,9]`a = b = 1`
         WriteLocalFrameSlotNodeGen SourceSection: None
           Frame: [0,<>temp0,Illegal]
         IntegerLiteralNode SourceSection: [8,9]`1`
+          Value: 1
       WriteNameNodeGen SourceSection: None
         Identifier: a
         ReadLocalVariableNode SourceSection: None

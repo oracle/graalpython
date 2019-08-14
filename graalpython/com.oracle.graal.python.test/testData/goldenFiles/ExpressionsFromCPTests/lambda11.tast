@@ -15,6 +15,7 @@ ModuleRootNode Name: <module 'lambda11'> SourceSection: [0,39]`lambda foo=bar, b
           ReadNameNodeGen SourceSection: [21,25]`blat`
             Identifier: blat
           IntegerLiteralNode SourceSection: [26,27]`2`
+            Value: 2
       KwArguments: None
       Documentation: None
       FreeVarSlots: None
@@ -71,6 +72,7 @@ ModuleRootNode Name: <module 'lambda11'> SourceSection: [0,39]`lambda foo=bar, b
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                   IntegerLiteralNode SourceSection: [38,39]`0`
+                    Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [4,<return_val>,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None

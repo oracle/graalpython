@@ -55,6 +55,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                                     Frame: [1,v,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [69,70]`2`
+                                    Value: 2
                               GeneratorAccessNode SourceSection: None
                           DestructuringAssignmentNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -117,8 +118,13 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
             StringLiteralNode SourceSection: [33,36]`'d'`
             StringLiteralNode SourceSection: [41,44]`'e'`
             IntegerLiteralNode SourceSection: [14,15]`1`
+              Value: 1
             IntegerLiteralNode SourceSection: [22,23]`2`
+              Value: 2
             IntegerLiteralNode SourceSection: [30,31]`3`
+              Value: 3
             IntegerLiteralNode SourceSection: [38,39]`4`
+              Value: 4
             IntegerLiteralNode SourceSection: [46,47]`5`
+              Value: 5
   CalleeContext SourceSection: None

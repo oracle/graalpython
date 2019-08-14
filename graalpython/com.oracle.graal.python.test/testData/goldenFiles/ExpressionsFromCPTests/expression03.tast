@@ -8,6 +8,9 @@ ModuleRootNode Name: <module 'expression03'> SourceSection: [0,9]`[1, 2, 3]`
     ListLiteralNode SourceSection: [0,9]`[1, 2, 3]`
       PythonObjectFactoryNodeGen SourceSection: None
       IntegerLiteralNode SourceSection: [1,2]`1`
+        Value: 1
       IntegerLiteralNode SourceSection: [4,5]`2`
+        Value: 2
       IntegerLiteralNode SourceSection: [7,8]`3`
+        Value: 3
   CalleeContext SourceSection: None

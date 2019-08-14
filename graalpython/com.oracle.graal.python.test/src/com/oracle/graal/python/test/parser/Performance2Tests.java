@@ -17,11 +17,13 @@ public class Performance2Tests extends ParserTestBase {
     
     @Test
     public void trueFalse() throws Exception {
-        Assume.assumeTrue("/home/petr/".equals(System.getProperty("user.home")));
+        Assume.assumeTrue("/home/petr".equals(System.getProperty("user.home")));
         measureFile(new File("/home/petr/labs/parser/tests/performance/trueFalse01.py"), 100);
         measureFile(new File("/home/petr/labs/parser/tests/performance/functions01.py"), 100);
         measureFile(new File("/home/petr/labs/parser/tests/performance/assignment.py"), 100);
         measureFile(new File("/home/petr/labs/parser/tests/performance/classes01.py"), 100);
+        measureFile(new File("/home/petr/labs/parser/tests/performance/posnumber01.py"), 100);
+        measureFile(new File("/home/petr/labs/parser/tests/performance/negnumber01.py"), 100);
     }
     
     private void measureFile(File file, int count) throws Exception {

@@ -24,6 +24,7 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):â
                       ReadNameNodeGen SourceSection: [25,26]`x`
                         Identifier: x
                       IntegerLiteralNode SourceSection: [30,31]`1`
+                        Value: 1
                   BreakNode SourceSection: [37,42]`break`
                   BlockNode SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [9,18]`xrange(3)`
@@ -33,6 +34,7 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):â
                   CreateArgumentsNodeGen SourceSection: None
                   CallDispatchNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [16,17]`3`
+                  Value: 3
                 ReadNameNodeGen SourceSection: None
                   Identifier: xrange
           BlockNode SourceSection: None

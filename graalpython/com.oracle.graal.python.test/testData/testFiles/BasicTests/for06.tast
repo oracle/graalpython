@@ -9,6 +9,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,125]`x = 0â†µdef fn():â†
       WriteNameNodeGen SourceSection: [0,5]`x = 0`
         Identifier: x
         IntegerLiteralNode SourceSection: [4,5]`0`
+          Value: 0
       WriteNameNodeGen SourceSection: [6,121]`def fn():â†µ  for x in...`
         Identifier: fn
         FunctionDefinitionNode Name: fn SourceSection: None
@@ -48,6 +49,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,125]`x = 0â†µdef fn():â†
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [0,x,Illegal]
                               IntegerLiteralNode SourceSection: [45,46]`4`
+                                Value: 4
                             IfNode SourceSection: [51,121]`if x == 1:â†µ      pri...`
                               YesNodeGen SourceSection: None
                                 BinaryComparisonNodeGen SourceSection: [54,60]`x == 1`
@@ -57,6 +59,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,125]`x = 0â†µdef fn():â†
                                     Frame: [0,x,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [59,60]`1`
+                                    Value: 1
                               BlockNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [68,82]`print('jedna')`
                                   PythonCallNodeGen SourceSection: [68,82]`print('jedna')`
@@ -86,6 +89,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,125]`x = 0â†µdef fn():â†
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [33,34]`3`
+                            Value: 3
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: range
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

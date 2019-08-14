@@ -12,4 +12,5 @@ ModuleRootNode Name: <module 'tuple04'> SourceSection: [0,7]`t = (2)`
         WriteNameNodeGen SourceSection: [0,7]`t = (2)`
           Identifier: t
           IntegerLiteralNode SourceSection: [5,6]`2`
+            Value: 2
   CalleeContext SourceSection: None

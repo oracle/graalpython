@@ -85,6 +85,7 @@ ModuleRootNode Name: <module 'lambda12'> SourceSection: [0,32]`def fn():↵  lam
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                     IntegerLiteralNode SourceSection: [31,32]`0`
+                                      Value: 0
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

@@ -344,14 +344,15 @@ public class ParserTestBase {
         
         StringBuilder corrected = new StringBuilder();
         
-        int lineIndex = 0;
+        int odlLineIndex = 0;
+        int newLineIndex = 0;
         String oldLine;
         String newLine;
         int ssIndex;
         
-        while (lineIndex < oldLines.size()) {
-            oldLine = oldLines.get(lineIndex);
-            newLine = lineIndex< newLines.size() ? newLines.get(lineIndex) : "";
+        while (odlLineIndex < oldLines.size()) {
+            oldLine = oldLines.get(odlLineIndex);
+            newLine = newLineIndex< newLines.size() ? newLines.get(newLineIndex) : "";
             
             if (oldLine.equals(newLine)) {
                 // the same lines
@@ -369,12 +370,37 @@ public class ParserTestBase {
                     corrected.append(correctDocumentation(oldLine, newLine));
                 } else if (oldLine.contains("Name:") && newLine.contains("Name:")) {
                     corrected.append(correctName(oldLine, newLine));
+                } else if (oldLine.contains("UnaryArithmeticExpression") && 
+                        (newLine.contains("IntegerLiteralNode") || newLine.contains("LongLiteralNode") || newLine.contains("PIntLiteralNode"))){
+                    // replace unary operation node for negative numbers
+                    int oldIndex = oldLine.indexOf("UnaryArithmeticExpression");
+                    int newIndex = newLine.contains("IntegerLiteralNode") 
+                            ? newLine.indexOf("IntegerLiteralNode") 
+                            : newLine.contains("LongLiteralNode")
+                                ? newLine.indexOf("LongLiteralNode")
+                                : newLine.indexOf("PIntLiteralNode");;
+                    boolean wasCorrected = false;
+                    if (oldIndex == newIndex) {
+                        if (odlLineIndex + 4 < oldLines.size()
+                                && oldLines.get(odlLineIndex + 1).contains("LookupAndCallUnaryNodeGen")
+                                && oldLines.get(odlLineIndex + 2).contains("Op: __neg__")) {
+                            odlLineIndex += 4;
+                            newLineIndex++;
+                            corrected.append(newLine).append(LINE_TEXT);
+                            corrected.append(newLines.get(newLineIndex));
+                            wasCorrected = true;
+                        }
+                    }
+                    if (!wasCorrected) {
+                        corrected.append(oldLine);
+                    }
                 } else {
                     corrected.append(correctSourceSection(oldLine, newLine));
                 }                
             }
-            lineIndex++;
-            if (lineIndex < oldLines.size()) {
+            odlLineIndex++;
+            newLineIndex++;
+            if (odlLineIndex < oldLines.size()) {
                 corrected.append(LINE_TEXT);
             }
         }

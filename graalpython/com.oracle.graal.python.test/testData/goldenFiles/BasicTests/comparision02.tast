@@ -10,6 +10,7 @@ ModuleRootNode Name: <module 'comparision02'> SourceSection: [0,15]`1 < '10' > T
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __lt__
         IntegerLiteralNode SourceSection: [0,1]`1`
+          Value: 1
         StringLiteralNode SourceSection: [4,8]`'10'`
       BinaryComparisonNodeGen SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None

@@ -52,6 +52,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                                     Frame: [0,h,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [95,96]`0`
+                                    Value: 0
                               DestructuringAssignmentNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [5,<>temp5,Illegal]
@@ -123,6 +124,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [33,34]`1`
+                            Value: 1
                       GeneratorAccessNode SourceSection: None
                     BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None

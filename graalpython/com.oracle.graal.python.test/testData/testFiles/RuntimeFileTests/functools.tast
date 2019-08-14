@@ -2096,6 +2096,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [8350,8351]`0`
+                                                          Value: 0
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2176,6 +2177,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [8433,8434]`0`
+                                                          Value: 0
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2256,6 +2258,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [8517,8518]`0`
+                                                          Value: 0
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2336,6 +2339,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [8601,8602]`0`
+                                                          Value: 0
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2416,6 +2420,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [8685,8686]`0`
+                                                          Value: 0
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2605,6 +2610,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [9384,9385]`2`
+                                              Value: 2
                                         RaiseNodeGen SourceSection: [9399,9460]`raise TypeError("typ...`
                                           PythonCallNodeGen SourceSection: [9405,9460]`TypeError("type 'par...`
                                             CachedCallNodeGen SourceSection: None
@@ -3480,6 +3486,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [11031,11032]`4`
+                                              Value: 4
                                         RaiseNodeGen SourceSection: [11046,11109]`raise TypeError(f"ex...`
                                           PythonCallNodeGen SourceSection: [11052,11109]`TypeError(f"expected...`
                                             CachedCallNodeGen SourceSection: None
@@ -5388,6 +5395,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Frame: [7,len,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [16752,16753]`1`
+                                Value: 1
                             ContainsNodeGen SourceSection: [16758,16783]`type(key[0]) in fast...`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __contains__
@@ -5404,6 +5412,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Frame: [8,key,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [16767,16768]`0`
+                                    Value: 0
                                 ReadLocalCellNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [6,type,Illegal]
@@ -5420,6 +5429,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 Frame: [8,key,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [16804,16805]`0`
+                                Value: 0
                         BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [16811,16833]`return _HashedSeq(ke...`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -5445,6 +5455,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
         FunctionDefinitionNode Name: lru_cache SourceSection: None
           Arguments:
             IntegerLiteralNode SourceSection: [16857,16860]`128`
+              Value: 128
             BooleanLiteralNode SourceSection: [16868,16873]`False`
           KwArguments: None
           Documentation: StringLiteralNode: `Least-recently-used ...`
@@ -5700,9 +5711,13 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       TupleLiteralNode SourceSection: [18654,18664]`0, 1, 2, 3`
                         PythonObjectFactoryNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [18654,18655]`0`
+                          Value: 0
                         IntegerLiteralNode SourceSection: [18657,18658]`1`
+                          Value: 1
                         IntegerLiteralNode SourceSection: [18660,18661]`2`
+                          Value: 2
                         IntegerLiteralNode SourceSection: [18663,18664]`3`
+                          Value: 3
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <>temp21
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -5764,6 +5779,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [25,<>temp25,Illegal]
                         IntegerLiteralNode SourceSection: [18731,18732]`0`
+                          Value: 0
                       WriteLocalCellNodeGen SourceSection: None
                         Identifier: hits
                         ReadLocalVariableNode SourceSection: None
@@ -5871,6 +5887,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [19137,19138]`0`
+                            Value: 0
                       WriteLocalVariableNodeGen SourceSection: [19149,19387]`def wrapper(*args, *...`
                         Identifier: wrapper
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -5951,6 +5968,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [19354,19355]`1`
+                                          Value: 1
                                     FrameReturnNode SourceSection: [19368,19381]`return result`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -6085,6 +6103,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [19695,19696]`1`
+                                                Value: 1
                                           FrameReturnNode SourceSection: [19713,19726]`return result`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
@@ -6142,6 +6161,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [19831,19832]`1`
+                                            Value: 1
                                       FrameReturnNode SourceSection: [19845,19858]`return result`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -6407,6 +6427,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadFromCellNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [20586,20587]`1`
+                                                    Value: 1
                                               FrameReturnNode SourceSection: [20608,20621]`return result`
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <return_val>
@@ -6736,6 +6757,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [22677,22678]`1`
+                                                Value: 1
                                         ReadLocalCellNodeGen SourceSection: [20689,20693]`lock`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [26,lock,Illegal]
@@ -6934,6 +6956,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [6,<>temp6,Illegal]
                                           IntegerLiteralNode SourceSection: [23082,23083]`0`
+                                            Value: 0
                                         WriteLocalCellNodeGen SourceSection: None
                                           Identifier: hits
                                           ReadLocalVariableNode SourceSection: None
@@ -7178,6 +7201,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [4,s1,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [23948,23949]`0`
+                                              Value: 0
                                         BreakTargetNode SourceSection: [23963,24184]`for s2 in sequences:...`
                                           ForNode SourceSection: None
                                             DefaultLoopNode SourceSection: None
@@ -7200,6 +7224,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         SliceLiteralNodeGen SourceSection: [24019,24021]`1:`
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [24019,24020]`1`
+                                                            Value: 1
                                                           EmptyNode SourceSection: None
                                                           EmptyNode SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [24003,24012]`candidate`
@@ -7274,6 +7299,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Frame: [5,seq,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [24383,24384]`0`
+                                                Value: 0
                                             ReadLocalVariableNode SourceSection: [24389,24398]`candidate`
                                               Frame: [2,candidate,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -7282,6 +7308,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             Frame: [5,seq,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [24424,24425]`0`
+                                            Value: 0
                                         BlockNode SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [24353,24362]`sequences`
                                     GetIteratorNodeGen SourceSection: None
@@ -7437,6 +7464,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,boundary,Illegal]
                         IntegerLiteralNode SourceSection: [25624,25625]`0`
+                          Value: 0
                     WriteLocalCellNodeGen SourceSection: [25630,25663]`abcs = list(abcs) if...`
                       Identifier: abcs
                       ReadLocalVariableNode SourceSection: None
@@ -9611,6 +9639,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   Frame: [0,args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [31921,31922]`0`
+                                                  Value: 0
                                             ReadLocalCellNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [2,dispatch,Illegal]

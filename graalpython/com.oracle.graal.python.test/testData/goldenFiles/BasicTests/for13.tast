@@ -60,6 +60,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                       Frame: [1,count,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [58,59]`1`
+                                      Value: 1
                                 IfNode SourceSection: [68,112]`if count >= 3:â†µ     ...`
                                   YesNodeGen SourceSection: None
                                     BinaryComparisonNodeGen SourceSection: [71,81]`count >= 3`
@@ -69,6 +70,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                         Frame: [1,count,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [80,81]`3`
+                                        Value: 3
                                   ContinueNode SourceSection: [95,103]`continue`
                                   BlockNode SourceSection: None
                                 IfNode SourceSection: [112,186]`if count == 4:â†µ     ...`
@@ -80,6 +82,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                         Frame: [1,count,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [124,125]`4`
+                                        Value: 4
                                   ElseNode SourceSection: [139,186]`for name, value in a...`
                                     ForNode SourceSection: None
                                       DefaultLoopNode SourceSection: None
@@ -113,6 +116,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,count,Illegal]
                                             IntegerLiteralNode SourceSection: [185,186]`1`
+                                              Value: 1
                                       GetIteratorExpressionNodeGen SourceSection: [158,159]`a`
                                         GetIteratorNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [158,159]`a`
