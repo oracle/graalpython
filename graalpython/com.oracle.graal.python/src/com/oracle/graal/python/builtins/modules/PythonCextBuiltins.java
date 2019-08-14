@@ -141,6 +141,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -590,25 +591,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_SetAttr", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyObject_Setattr extends PythonBuiltinNode {
+    abstract static class PyObject_Setattr extends PythonTernaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object setattr(PythonBuiltinClass object, String key, Object value) {
-            object.setAttributeUnsafe(key, value);
+        Object doBuiltinClass(PythonBuiltinClass object, String key, Object value,
+                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(object, key, value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doNativeClass(PythonNativeClass object, String key, Object value,
+                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(object, key, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
-        @TruffleBoundary
-        Object setattr(PythonObject object, String key, Object value) {
-            object.getStorage().define(key, value);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object setattr(PythonNativeClass object, String key, Object value,
-                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
-            writeAttrNode.execute(object, key, value);
+        Object doObject(PythonObject object, String key, Object value,
+                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
+            writeAttrToDynamicObjectNode.execute(object.getStorage(), key, value);
             return PNone.NONE;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,15 +38,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.type;
+package com.oracle.graal.python.builtins.objects.str;
 
-import com.oracle.truffle.api.interop.TruffleObject;
+import java.util.Objects;
 
-public interface LazyPythonClass extends TruffleObject {
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.truffle.api.CompilerAsserts;
 
-    /**
-     * Returns the name of the class for debugging purposes. This method must assume that no context
-     * is available.
-     */
-    String getName();
+public class NativeCharSequence implements PCharSequence {
+
+    private final Object ptr;
+    private String materialized;
+
+    public NativeCharSequence(Object ptr) {
+        this.ptr = ptr;
+    }
+
+    @Override
+    public int length() {
+        return materialize().length();
+    }
+
+    @Override
+    public char charAt(int index) {
+        return materialize().charAt(index);
+    }
+
+    @Override
+    public CharSequence subSequence(int start, int end) {
+        return materialize().subSequence(start, end);
+    }
+
+    @Override
+    public boolean isMaterialized() {
+        return materialized != null;
+    }
+
+    @Override
+    public String materialize() {
+        if (!isMaterialized()) {
+            materialized = (String) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, ptr);
+        }
+        return materialized;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (isMaterialized()) {
+            return materialized;
+        }
+        return Objects.toString(ptr);
+    }
 }
