@@ -70,6 +70,9 @@ import com.oracle.truffle.api.nodes.RootNode;
 @ReportPolymorphism
 abstract class CallSpecialMethodNode extends Node {
 
+    /** for interpreter performance: cache if we exceeded the max caller size */
+    private boolean maxSizeExceeded = false;
+
     /**
      * Returns a new instanceof the builtin if it's a subclass of the given class, and null
      * otherwise.
@@ -86,11 +89,18 @@ abstract class CallSpecialMethodNode extends Node {
 
     private boolean callerExceedsMaxSize() {
         CompilerAsserts.neverPartOfCompilation();
-        int n = NodeUtil.countNodes(getRootNode());
-        // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e., ASTs
-        // will only we shared between contexts that have the same value for this option.
-        int maxSize = PythonOptions.getOption(lookupContextReference(PythonLanguage.class).get(), PythonOptions.BuiltinsInliningMaxCallerSize);
-        return n >= maxSize;
+        if(!maxSizeExceeded) {
+            int n = NodeUtil.countNodes(getRootNode());
+            // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e., ASTs
+            // will only we shared between contexts that have the same value for this option.
+            int maxSize = PythonOptions.getOption(lookupContextReference(PythonLanguage.class).get(), PythonOptions.BuiltinsInliningMaxCallerSize);
+            if(n >= maxSize) {
+                maxSizeExceeded = true;
+                return true;
+            }
+            return false;
+        }
+        return true;
     }
 
     protected Assumption singleContextAssumption() {
