@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -891,13 +892,12 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class FromCharPointerNode extends CExtBaseNode {
-        public abstract String execute(Object charPtr);
+        public abstract Object execute(Object charPtr);
 
         @Specialization
-        public String execute(Object charPtr,
-                        @Cached PCallCapiFunction callCstrToStringNode) {
-
-            return (String) callCstrToStringNode.call(FUN_PY_TRUFFLE_CSTR_TO_STRING, charPtr);
+        PString execute(Object charPtr,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createString(new NativeCharSequence(charPtr));
         }
     }
 
