@@ -53,6 +53,11 @@ public interface PythonNativeClass extends PythonAbstractClass {
 
     TruffleObject getPtr();
 
+    @Override
+    default String getName() {
+        return String.format("PythonNativeClass(%s)", getPtr());
+    }
+
     static boolean isInstance(Object object) {
         return object instanceof PythonAbstractNativeObject;
     }

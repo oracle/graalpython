@@ -40,17 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import java.util.Objects;
+
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
-import org.graalvm.nativeimage.ImageInfo;
-
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class NativeCharSequence implements CharSequence {
+public class NativeCharSequence implements PCharSequence {
 
     private final Object ptr;
     private String materialized;
@@ -74,8 +70,14 @@ public class NativeCharSequence implements CharSequence {
         return materialize().subSequence(start, end);
     }
 
-    private String materialize() {
-        if(materialized == null) {
+    @Override
+    public boolean isMaterialized() {
+        return materialized != null;
+    }
+
+    @Override
+    public String materialize() {
+        if(!isMaterialized()) {
             materialized = (String) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, ptr);
         }
         return materialized;
@@ -83,6 +85,10 @@ public class NativeCharSequence implements CharSequence {
 
     @Override
     public String toString() {
-        return materialize();
+        CompilerAsserts.neverPartOfCompilation();
+        if(isMaterialized()) {
+            return materialized;
+        }
+        return Objects.toString(ptr);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,14 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.type;
+package com.oracle.graal.python.builtins.objects.str;
 
-import com.oracle.truffle.api.interop.TruffleObject;
+public interface PCharSequence extends CharSequence {
 
-public interface LazyPythonClass extends TruffleObject {
-
-    /**
-     * Returns the name of the class for debugging purposes. This method must assume that no context is available.
-     */
-    String getName();
+    boolean isMaterialized();
+    String materialize();
 }

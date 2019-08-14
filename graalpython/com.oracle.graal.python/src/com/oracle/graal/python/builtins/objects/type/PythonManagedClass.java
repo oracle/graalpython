@@ -130,7 +130,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return methodResolutionOrder;
     }
 
-    String getName() {
+    @Override
+    public String getName() {
         return className;
     }
 
