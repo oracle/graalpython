@@ -107,7 +107,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String NAME = "Python";
     public static final int MAJOR = 3;
     public static final int MINOR = 7;
-    public static final int MICRO = 3;
+    public static final int MICRO = 4;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
 
     public static final String MIME_TYPE = "text/x-python";
@@ -160,10 +160,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
         // internal sources were marked during context initialization
         return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
-                        // we cache WithThread on the lanugage
+                        // we cache WithThread on the language
                         firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
                         // we cache CatchAllExceptions hard on TryExceptNode
-                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)));
+                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)) &&
+                        // we cache BuiltinsInliningMaxCallerSize on the language
+                        firstOptions.get(PythonOptions.BuiltinsInliningMaxCallerSize).equals(newOptions.get(PythonOptions.BuiltinsInliningMaxCallerSize)));
     }
 
     private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {

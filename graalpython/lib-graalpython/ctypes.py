@@ -53,3 +53,93 @@ class CDLL(object):
     reacquires it afterwards.
     """
     pass
+
+
+class _SimpleCData:
+    pass
+
+# dummies
+class c_void_p(_SimpleCData):
+    _type_ = "P"
+
+
+class c_double(_SimpleCData):
+    _type_ = "d"
+
+
+class c_int(_SimpleCData):
+    _type_ = "i"
+
+
+class py_object(_SimpleCData):
+    _type_ = "O"
+    def __repr__(self):
+        try:
+            return super().__repr__()
+        except ValueError:
+            return "%s(<NULL>)" % type(self).__name__
+
+
+class _CFuncPtr():
+    pass
+
+
+_c_functype_cache = {}
+def CFUNCTYPE(restype, *argtypes, **kw):
+    """CFUNCTYPE(restype, *argtypes,
+                 use_errno=False, use_last_error=False) -> function prototype.
+
+    restype: the result type
+    argtypes: a sequence specifying the argument types
+
+    The function prototype can be called in different ways to create a
+    callable object:
+
+    prototype(integer address) -> foreign function
+    prototype(callable) -> create and return a C callable function from callable
+    prototype(integer index, method name[, paramflags]) -> foreign function calling a COM method
+    prototype((ordinal number, dll object)[, paramflags]) -> foreign function exported by ordinal
+    prototype((function name, dll object)[, paramflags]) -> foreign function exported by name
+    """
+    flags = 0
+    if kw.pop("use_errno", False):
+        #flags |= _FUNCFLAG_USE_ERRNO
+        pass
+    if kw.pop("use_last_error", False):
+        #flags |= _FUNCFLAG_USE_LASTERROR
+        pass
+    if kw:
+        raise ValueError("unexpected keyword argument(s) %s" % kw.keys())
+    try:
+        return _c_functype_cache[(restype, argtypes, flags)]
+    except KeyError:
+        class CFunctionType(_CFuncPtr):
+            _argtypes_ = argtypes
+            _restype_ = restype
+            _flags_ = flags
+        _c_functype_cache[(restype, argtypes, flags)] = CFunctionType
+        return CFunctionType
+
+
+class _Pointer():
+    pass
+
+
+def POINTER(basetype):
+    return type("LP_" + basetype.__name__, (_Pointer,), {})
+
+
+def PYFUNCTYPE(restype, *argtypes):
+    class CFunctionType(_CFuncPtr):
+        _argtypes_ = argtypes
+        _restype_ = restype
+        #_flags_ = _FUNCFLAG_CDECL | _FUNCFLAG_PYTHONAPI
+        _flags_ = 0
+    return CFunctionType
+
+
+_cast_addr = 0xFF00000000000000
+_cast = PYFUNCTYPE(py_object, c_void_p, py_object, py_object)(_cast_addr)
+def cast(obj, typ):
+    return _cast(obj, obj, typ)
+

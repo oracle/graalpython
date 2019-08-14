@@ -45,21 +45,22 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -76,10 +77,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected Object execute(Object[] arguments,
-                    @Exclusive @Cached ExecuteNode executeNode) throws ArityException, UnsupportedMessageException {
-        return executeNode.execute(this, arguments);
-
+    @SuppressWarnings({"unused", "static-method"})
+    protected Object execute(Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+        throw new IllegalStateException("should not reach");
     }
 
     @ExportMessage
@@ -96,19 +96,41 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         return null;
     }
 
-    @GenerateUncached
-    abstract static class ExecuteNode extends Node {
+    @ExportMessage
+    protected boolean isPointer(
+                    @Cached CExtNodes.IsPointerNode isPointerNode) {
+        return isPointerNode.execute(this);
+    }
 
-        public abstract Object execute(PyProcsWrapper receiver, Object[] arguments) throws ArityException, UnsupportedMessageException;
+    @ExportMessage
+    protected long asPointer(
+                    @Exclusive @Cached PAsPointerNode pAsPointerNode) {
+        return pAsPointerNode.execute(this);
+    }
 
-        @Specialization
-        static Object doGetAttr(GetAttrWrapper object, Object[] arguments,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("executeNode") @Cached PythonAbstractObject.PExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
+    @ExportMessage
+    protected void toNative(
+                    @Exclusive @Cached ToPyObjectNode toPyObjectNode,
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        invalidateNode.execute();
+        setNativePointer(toPyObjectNode.execute(this));
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static class GetAttrWrapper extends PyProcsWrapper {
+
+        public GetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        protected Object execute(Object[] arguments,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached IsBuiltinClassProfile errProfile,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws ArityException, UnsupportedMessageException {
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
@@ -117,7 +139,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             converted[1] = toJavaNode.execute(arguments[1]);
             Object result;
             try {
-                result = toSulongNode.execute(executeNode.execute(object.getDelegate(), converted));
+                result = toSulongNode.execute(executeNode.execute(getDelegate(), converted));
             } catch (PException e) {
                 // TODO move to node
                 e.expectAttributeError(errProfile);
@@ -134,11 +156,20 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             }
             return result;
         }
+    }
 
-        @Specialization
-        static Object doSetAttr(SetAttrWrapper object, Object[] arguments,
-                        @Shared("executeNode") @Cached PythonAbstractObject.PExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException, UnsupportedMessageException {
+    @ExportLibrary(InteropLibrary.class)
+    static class SetAttrWrapper extends PyProcsWrapper {
+
+        public SetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        protected int execute(Object[] arguments,
+                        @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Cached ToJavaNode toJavaNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -147,20 +178,32 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             converted[1] = toJavaNode.execute(arguments[1]);
             converted[2] = toJavaNode.execute(arguments[2]);
             try {
-                executeNode.execute(object.getDelegate(), converted);
+                executeNode.execute(getDelegate(), converted);
                 return 0;
             } catch (PException e) {
+                PythonContext context = contextRef.get();
+                e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+                context.setCurrentException(e);
                 return -1;
             }
         }
 
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static class SsizeargfuncWrapper extends PyProcsWrapper {
+        public SsizeargfuncWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
         @Specialization
-        static Object doSsize(SsizeargfuncWrapper object, Object[] arguments,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("executeNode") @Cached PythonAbstractObject.PExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws ArityException, UnsupportedMessageException {
+        protected Object execute(Object[] arguments,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
@@ -170,35 +213,14 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             converted[1] = arguments[1];
             Object result;
             try {
-                result = toSulongNode.execute(executeNode.execute(object.getDelegate(), converted));
+                result = toSulongNode.execute(executeNode.execute(getDelegate(), converted));
             } catch (PException e) {
+                PythonContext context = contextRef.get();
                 e.getExceptionObject().reifyException(context.peekTopFrameInfo());
                 context.setCurrentException(e);
                 result = getNativeNullNode.execute();
             }
             return result;
-        }
-    }
-
-    static class GetAttrWrapper extends PyProcsWrapper {
-
-        public GetAttrWrapper(Object delegate) {
-            super(delegate);
-        }
-
-    }
-
-    static class SetAttrWrapper extends PyProcsWrapper {
-
-        public SetAttrWrapper(Object delegate) {
-            super(delegate);
-        }
-
-    }
-
-    static class SsizeargfuncWrapper extends PyProcsWrapper {
-        public SsizeargfuncWrapper(Object delegate) {
-            super(delegate);
         }
     }
 

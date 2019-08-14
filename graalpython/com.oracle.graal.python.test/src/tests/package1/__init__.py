@@ -40,4 +40,5 @@
 """PACKAGE DOC"""
 
 from .lib import *
+from .lib1 import *
 from . import exported

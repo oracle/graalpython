@@ -76,19 +76,22 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
 /* Special C landing functions that convert some arguments to primitives. */
 
 static PyObject* wrap_allocfunc(allocfunc f, PyTypeObject* klass, PyObject* n) {
-	return f(klass, PyLong_AsSsize_t(n));
+	return native_to_java(f(klass, PyLong_AsSsize_t(n)));
 }
 
 /* Wrapper around a native function to be called by Python code. */
 static PyObject* wrap_getattrfunc(getattrfunc f, PyObject* obj, PyObject* unicode) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
-	return f(obj, as_char_pointer(unicode));
+	return native_to_java(f(obj, as_char_pointer(unicode)));
 }
 
 /* Wrapper around the native function to be called by Python code. */
 static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicode, PyObject* value) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
-	return f(obj, as_char_pointer(unicode), value);
+    if (f(obj, as_char_pointer(unicode), value) < 0) {
+        return NULL;
+    }
+    return Py_None;
 }
 
 static PyObject* wrap_setattrofunc(setattrofunc f, PyObject* obj, PyObject* key, PyObject* item) {
@@ -108,7 +111,7 @@ static PyObject* wrap_descrgetfunc(descrgetfunc f, PyObject* self, PyObject* obj
 }
 
 static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObject* n) {
-	return f(a, b, (int)PyLong_AsLong(n));
+	return native_to_java(f(a, b, (int)PyLong_AsLong(n)));
 }
 
 #undef RICHCMP_WRAPPER
@@ -183,9 +186,12 @@ static PyObject* wrap_reverse_binop(binaryfunc f, PyObject* a, PyObject* b) {
     return f(b, a);
 }
 
-static void
-inherit_special(PyTypeObject *type, PyTypeObject *base)
-{
+UPCALL_ID(PyTruffle_Type_Modified);
+void PyType_Modified(PyTypeObject* type) {
+	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, native_type_to_java(type), polyglot_from_string(type->tp_name, SRC_CS), native_to_java(type->tp_mro));
+}
+
+static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
 
     /* Copying basicsize is connected to the GC flags */
     if (!(type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
@@ -246,6 +252,17 @@ inherit_special(PyTypeObject *type, PyTypeObject *base)
         type->tp_flags |= Py_TPFLAGS_DICT_SUBCLASS;
 }
 
+static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
+    if (type->tp_getattr == NULL && type->tp_getattro == NULL) {
+        type->tp_getattr = base->tp_getattr;
+        type->tp_getattro = base->tp_getattro;
+    }
+    if (type->tp_setattr == NULL && type->tp_setattro == NULL) {
+        type->tp_setattr = base->tp_setattr;
+        type->tp_setattro = base->tp_setattro;
+    }
+}
+
 // TODO support member flags other than READONLY
 UPCALL_ID(AddMember);
 static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
@@ -295,6 +312,9 @@ int PyType_Ready(PyTypeObject* cls) {
 	if (__meth__) { \
 		add_method_or_slot(cls, dict, (__name__), (__meth__), (__clanding__), (__flags__), (__doc__)); \
 	}
+
+    Py_ssize_t n;
+    Py_ssize_t i;
 
     // https://docs.python.org/3/c-api/typeobj.html#Py_TPFLAGS_READY
     if ((cls->tp_flags & Py_TPFLAGS_READY) || (cls->tp_flags & Py_TPFLAGS_READYING)) {
@@ -409,6 +429,17 @@ int PyType_Ready(PyTypeObject* cls) {
     if (cls->tp_base != NULL)
         inherit_special(cls, cls->tp_base);
 
+    /* Initialize tp_dict properly */
+    bases = cls->tp_mro;
+    assert(bases != NULL);
+    assert(PyTuple_Check(bases));
+    n = PyTuple_GET_SIZE(bases);
+    for (i = 1; i < n; i++) {
+        PyObject *b = PyTuple_GET_ITEM(bases, i);
+        if (PyType_Check(b))
+            inherit_slots(cls, (PyTypeObject *)b);
+    }
+
     ADD_IF_MISSING(cls->tp_alloc, PyType_GenericAlloc);
     ADD_IF_MISSING(cls->tp_new, PyType_GenericNew);
 
@@ -457,6 +488,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__sub__", numbers->nb_subtract, -2);
         ADD_SLOT_CONV("__rsub__", wrap_reverse_binop, numbers->nb_subtract, -2);
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
+        ADD_SLOT_CONV("__rmul__", wrap_reverse_binop, numbers->nb_multiply, -2);
         ADD_SLOT("__mod__", numbers->nb_remainder, -2);
         ADD_SLOT_CONV("__rmod__", wrap_reverse_binop, numbers->nb_remainder, -2);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
@@ -541,8 +573,7 @@ int PyType_Ready(PyTypeObject* cls) {
 
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
-    Py_ssize_t n = PyTuple_GET_SIZE(bases);
-    Py_ssize_t i;
+    n = PyTuple_GET_SIZE(bases);
     for (i = 0; i < n; i++) {
         PyObject* base_class_object = PyTuple_GetItem(bases, i);
         PyTypeObject* b = (PyTypeObject*) base_class_object;
@@ -555,17 +586,15 @@ int PyType_Ready(PyTypeObject* cls) {
     cls->tp_flags = cls->tp_flags & ~Py_TPFLAGS_READYING;
     cls->tp_flags = cls->tp_flags | Py_TPFLAGS_READY;
 
+    // it may be that the type was used uninitialized
+	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, cls, polyglot_from_string(cls->tp_name, SRC_CS), Py_NoValue);
+
     return 0;
 
 #undef ADD_IF_MISSING
 #undef ADD_METHOD
 #undef ADD_SLOT
 #undef ADD_METHOD_OR_SLOT
-}
-
-UPCALL_ID(PyTruffle_Type_Modified);
-void PyType_Modified(PyTypeObject* type) {
-	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, native_type_to_java(type), polyglot_from_string(type->tp_name, SRC_CS), native_to_java(type->tp_mro));
 }
 
 MUST_INLINE static int valid_identifier(PyObject *s) {
