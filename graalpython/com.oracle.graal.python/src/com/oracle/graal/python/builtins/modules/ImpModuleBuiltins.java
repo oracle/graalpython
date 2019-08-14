@@ -246,6 +246,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        private static final String CAPI_NOT_BUILT_HINT = "Did you forget to build the C API using 'graalpython -m build_capi'?";
+        private static final String CAPI_LOAD_ERROR = "Could not load C API from %s.\n" + CAPI_NOT_BUILT_HINT;
+        private static final String CAPI_LOCATE_ERROR = "Could not locate C API library '%s' in 'sys.path'\n" + CAPI_NOT_BUILT_HINT;
+
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
             PythonContext context = getContext();
@@ -263,8 +267,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                         capiSrcBuilder.internal(true);
                     }
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
-                } catch (SecurityException | IOException e) {
-                    throw raise(PythonErrorType.ImportError, "cannot load C api from " + capiFile.getAbsoluteFile().getPath());
+                } catch (IOException | RuntimeException e) {
+                    PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath()));
+                    throw raise(PythonErrorType.ImportError, CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
@@ -309,7 +314,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
                  // TODO
             }
-            throw raise(PythonErrorType.ImportError, "cannot load C API '%s' from 'sys.path'", libPythonName);
+            PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOCATE_ERROR, libPythonName));
+            throw raise(PythonErrorType.ImportError, CAPI_LOCATE_ERROR, libPythonName);
         }
 
         private SetItemNode getSetItemNode() {
