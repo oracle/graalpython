@@ -47,7 +47,15 @@ import site
 capi_home = site.getusersitepackages()
 capi_module_home = site.getusersitepackages()
 
-def build(args=[]):
+
+def load_setup():
+    spec = importlib.util.spec_from_file_location("setup.py", os.path.join(sys.graal_python_cext_src, "setup.py"))
+    setup_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(setup_module)
+    return setup_module
+
+
+def configure_logging(args):
     if "-v" in args or "--verbose" in args:
         dlog.set_verbosity(dlog.DEBUG)
         logging.basicConfig(level=logging.DEBUG)
@@ -56,11 +64,20 @@ def build(args=[]):
         logging.basicConfig(level=logging.ERROR)
     else:
         logging.basicConfig(level=logging.INFO)
-    spec = importlib.util.spec_from_file_location("setup.py", os.path.join(sys.graal_python_cext_src, "setup.py"))
-    setup_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(setup_module)
-    return setup_module.build(capi_home, capi_module_home)
+
+
+def build(args=[]):
+    configure_logging(args)
+    return load_setup().build(capi_home, capi_module_home)
+
+
+def clean(args=[]):
+    configure_logging(args)
+    return load_setup().clean(capi_home, capi_module_home)
 
 
 if __name__ == "__main__":
-    build(sys.argv)
+    if "clean" in sys.argv:
+        clean(sys.argv)
+    else:
+        build(sys.argv)

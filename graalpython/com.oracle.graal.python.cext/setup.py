@@ -324,5 +324,16 @@ def build(capi_home, capi_module_home):
     build_builtin_exts(capi_module_home)
 
 
+def clean(capi_home, capi_module_home):
+    libpython_path = os.path.join(capi_home, libpython_name + so_ext)
+    if os.path.exists(libpython_path):
+        logger.info("Cleaning %s", libpython_path)
+        os.unlink(libpython_path)
+    if os.path.exists(capi_module_home):
+        for f in [os.path.join(capi_module_home, f) for f in os.listdir(capi_module_home) if f.endswith(so_ext)]:
+            logger.info("Cleaning %s", f)
+            os.unlink(f)
+
+
 if __name__ == "__main__":
     build()
