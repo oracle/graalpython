@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -129,6 +130,17 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         @Fallback
         public boolean isTracked(@SuppressWarnings("unused") Object object) {
             return true;
+        }
+    }
+
+    @Builtin(name = "get_referents", takesVarArgs = true)
+    @GenerateNodeFactory
+    abstract static class GcGetReferentsNode extends PythonBuiltinNode {
+        @Specialization
+        PList getReferents(@SuppressWarnings("unused") Object objects) {
+            // TODO: this is just a dummy implementation; for native objects, this should actually
+            // use 'tp_traverse'
+            return factory().createList();
         }
     }
 }
