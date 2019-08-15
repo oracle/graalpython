@@ -373,7 +373,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!concatGuard(self.getCharSequence(), self.getCharSequence())")
+        @Specialization(guards = "!concatGuard(self.getCharSequence(), other.getCharSequence())")
         PString doSSSimple(PString self, PString other) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
                 return other;
