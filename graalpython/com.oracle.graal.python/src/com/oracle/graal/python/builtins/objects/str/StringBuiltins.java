@@ -451,7 +451,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class RAddNode extends PythonBinaryBuiltinNode{
+    public abstract static class RAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doAll(VirtualFrame frame, Object left, Object right,
                         @Cached("create()") AddNode addNode) {
