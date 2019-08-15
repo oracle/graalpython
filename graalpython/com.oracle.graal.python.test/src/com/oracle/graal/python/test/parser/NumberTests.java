@@ -121,5 +121,9 @@ public class NumberTests extends ParserTestBase {
         checkTreeResult("0b1111111111111111111111111111111111111111111111111111111111111111");
     }
     
+    @Test
+    public void complex01() throws Exception {
+        checkTreeResult("0+1j");
+    }
     
 }

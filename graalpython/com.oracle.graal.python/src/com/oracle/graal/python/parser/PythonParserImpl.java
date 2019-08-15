@@ -238,7 +238,8 @@ public final class PythonParserImpl implements PythonParser {
         // create frame slots for cell and free vars
         defineScopes.setFreeVarsInRootScope(currentFrame);
         defineScopes.createFrameSlotsForCellAndFreeVars();
-
+        
+        lastGlobalScope = environment.getGlobalScope();
         // create Truffle ASTs
         return PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode);
     }

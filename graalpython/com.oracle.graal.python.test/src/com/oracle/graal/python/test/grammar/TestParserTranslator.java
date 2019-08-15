@@ -109,6 +109,7 @@ import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.RootCallTarget;
@@ -119,6 +120,7 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
+import org.junit.Assume;
 
 import org.junit.Test;
 
@@ -434,6 +436,7 @@ public class TestParserTranslator {
 
     @Test
     public void parseUnaryOps() {
+        Assume.assumeFalse(PythonOptions.getOption(context.getEnv(), PythonOptions.UseExperimentalParser));
         parseAs("-1", UnaryArithmetic.UnaryArithmeticExpression.class);
         parseAs("+1", UnaryArithmetic.UnaryArithmeticExpression.class);
         parseAs("~1", UnaryArithmetic.UnaryArithmeticExpression.class);

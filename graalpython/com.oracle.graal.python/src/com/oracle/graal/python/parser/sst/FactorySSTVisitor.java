@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
+import com.oracle.graal.python.nodes.literal.LiteralNode;
 import com.oracle.graal.python.nodes.literal.LongLiteralNode;
 import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
@@ -465,16 +466,21 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
         ExpressionNode left = (ExpressionNode)node.firstValue.accept(this);
         ExpressionNode right;
         ExpressionNode result = null;
-        for (int i = 0; i < node.operations.length; i++) {
+        int opLen = node.operations.length;
+        for (int i = 0; i < opLen; i++) {
             operator = node.operations[i];
             right = (ExpressionNode)node.otherValues[i].accept(this);
-            if (result == null) {
-                result = nodeFactory.createComparisonOperation(operator, left, right);
+            ExpressionNode nextComp;
+            if (right instanceof LiteralNode || right instanceof ReadNode || i == opLen - 1) {
+                nextComp = nodeFactory.createComparisonOperation(operator, left, right);
+                left = right;
             } else {
-                ExpressionNode next = nodeFactory.createComparisonOperation(operator, left, right);
-                result = new AndNode(result, next);
+                ReadNode tmpVar = makeTempLocalVariable();
+                StatementNode tmpAssignment = tmpVar.makeWriteNode(right);
+                nextComp = nodeFactory.createComparisonOperation(operator, left, (ExpressionNode)tmpVar).withSideEffect(tmpAssignment);
+                left = (ExpressionNode)tmpVar;
             }
-            left = right;
+            result = result == null ? nextComp : new AndNode(result, nextComp);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;

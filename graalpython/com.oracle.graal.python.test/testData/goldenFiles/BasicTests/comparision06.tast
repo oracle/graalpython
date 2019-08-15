@@ -1,0 +1,71 @@
+ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < y() <= z...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 2 slots [<>temp0, <>temp1]
+  Documentation: None
+  InnerRootNode SourceSection: [0,22]`x() < y() < y() <= z...`
+    AndNode SourceSection: [0,22]`x() < y() < y() <= z...`
+      AndNode SourceSection: None
+        ExpressionWithSideEffect SourceSection: None
+          Expression:
+            BinaryComparisonNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __lt__
+              PythonCallNodeGen SourceSection: [0,3]`x()`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: None
+                  Identifier: x
+              ReadLocalVariableNode SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+          SideEffect:
+            WriteLocalVariableNodeGen SourceSection: None
+              Identifier: <>temp0
+              WriteLocalFrameSlotNodeGen SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+              PythonCallNodeGen SourceSection: [6,9]`y()`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: None
+                  Identifier: y
+        ExpressionWithSideEffect SourceSection: None
+          Expression:
+            BinaryComparisonNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __lt__
+              ReadLocalVariableNode SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+              ReadLocalVariableNode SourceSection: None
+                Frame: [1,<>temp1,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+          SideEffect:
+            WriteLocalVariableNodeGen SourceSection: None
+              Identifier: <>temp1
+              WriteLocalFrameSlotNodeGen SourceSection: None
+                Frame: [1,<>temp1,Illegal]
+              PythonCallNodeGen SourceSection: [12,15]`y()`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: None
+                  Identifier: y
+        YesNodeGen SourceSection: None
+      BinaryComparisonNodeGen SourceSection: None
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __le__
+        ReadLocalVariableNode SourceSection: None
+          Frame: [1,<>temp1,Illegal]
+          ReadVariableFromFrameNodeGen SourceSection: None
+        PythonCallNodeGen SourceSection: [19,22]`z()`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: None
+            Identifier: z
+      YesNodeGen SourceSection: None
+  CalleeContext SourceSection: None

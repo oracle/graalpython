@@ -41,7 +41,7 @@
 
 package com.oracle.graal.python.parser.sst;
 
-public class BooleanLiteralSSTNode extends SSTNode{
+public class BooleanLiteralSSTNode extends SSTNode {
     protected final boolean value;
 
     public BooleanLiteralSSTNode(boolean value, int startOffset, int endOffset) {

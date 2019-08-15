@@ -58,33 +58,6 @@ public class NumberLiteralSSTNode extends SSTNode {
         this.isNegative = isNegative;
     }
 
-    
-//    @Override
-//    PNode createPythonNode(ScopeEnvironment scopeEnvironment) {
-//        int i = start;
-//        long result = 0;
-//        while (i < value.length()) {
-//            long next = result * base + digitValue(value.charAt(i));
-//            if (next < 0) {
-//                // overflow
-//                BigInteger bigResult = BigInteger.valueOf(result);
-//                BigInteger bigBase = BigInteger.valueOf(base);
-//                while (i < value.length()) {
-//                    bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(value.charAt(i))));
-//                    i++;
-//                }
-//                PIntLiteralNode intLiteral = new PIntLiteralNode(bigResult);
-//                return intLiteral;
-//            }
-//            result = next;
-//            i++;
-//        }
-//        
-//        ExpressionNode intLiteral = result <= Integer.MAX_VALUE ? new IntegerLiteralNode((int) result) : new LongLiteralNode(result);
-//        return intLiteral;
-//    }
-    
-    
     @Override
     public <T>T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);

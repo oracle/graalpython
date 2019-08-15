@@ -41,7 +41,7 @@
 
 package com.oracle.graal.python.parser.sst;
 
-public class StringLiteralSSTNode extends SSTNode{
+public class StringLiteralSSTNode extends SSTNode {
     protected final String[] values;
 
     public StringLiteralSSTNode(String[] values, int start, int end) {

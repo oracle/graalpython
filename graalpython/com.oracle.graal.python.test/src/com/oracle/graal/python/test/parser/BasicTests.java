@@ -189,6 +189,21 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void comparision04() throws Exception {
+        checkScopeAndTree("x < y() <= z");
+    }
+    
+    @Test
+    public void comparision05() throws Exception {
+        checkScopeAndTree("x() < y() <= z()");
+    }
+    
+    @Test
+    public void comparision06() throws Exception {
+        checkScopeAndTree("x() < y() < y() <= z()");
+    }
+    
+    @Test
     public void if01() throws Exception {
         checkTreeResult(
                 "if False: \n"

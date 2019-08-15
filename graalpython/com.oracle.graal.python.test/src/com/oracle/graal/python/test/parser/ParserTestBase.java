@@ -476,6 +476,9 @@ public class ParserTestBase {
         }
         int oldBracket = oldLine.indexOf('[', oldStart);
         int newBracket = newLine.indexOf('[', oldStart);
+        if (oldBracket == -1 || newBracket == -1) {
+            return oldLine;
+        }
         String oldPart = oldLine.substring(0, oldBracket);
         String newPart = newLine.substring(0, newBracket);
         if (oldPart.equals(newPart)) {

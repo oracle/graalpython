@@ -104,7 +104,7 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);
     
     @Option(category = OptionCategory.EXPERT, help = "Prints parser time statistis after number of parsed files, set by this option. 0 or <0 means no statistics are printed.") //
-    public static final OptionKey<Integer> ParserStatistics = new OptionKey<>(517);
+    public static final OptionKey<Integer> ParserStatistics = new OptionKey<>(0);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
