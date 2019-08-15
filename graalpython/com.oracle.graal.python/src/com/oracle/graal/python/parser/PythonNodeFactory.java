@@ -272,10 +272,13 @@ public final class PythonNodeFactory {
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Source source, Frame currentFrame) {
         Node result;
         scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
+        scopeEnvironment.setFreeVarsInRootScope(currentFrame);
         FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source);
         ExpressionNode body =  mode == PythonParser.ParserMode.Eval
                 ? (ExpressionNode)parserSSTResult.accept(factoryVisitor)
-                : factoryVisitor.asExpression((BlockSSTNode)parserSSTResult);
+                : parserSSTResult instanceof BlockSSTNode 
+                    ? factoryVisitor.asExpression((BlockSSTNode)parserSSTResult)
+                    : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
         FrameDescriptor fd = currentFrame == null ? null : currentFrame.getFrameDescriptor();
         switch (mode) {
             case Eval:

@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.parser;
 
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
@@ -56,8 +57,10 @@ import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -428,5 +431,19 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     
     public void setToGeneratorScope() {
         currentScope.setAsGenerator();
+    }
+    
+    public void setFreeVarsInRootScope(Frame frame) {
+        if (frame != null) {
+            for (Object identifier : frame.getFrameDescriptor().getIdentifiers()) {
+                FrameSlot frameSlot = frame.getFrameDescriptor().findFrameSlot(identifier);
+                if (frameSlot != null && frame.isObject(frameSlot)) {
+                    Object value = FrameUtil.getObjectSafe(frame, frameSlot);
+                    if (value instanceof PCell) {
+                        globalScope.addFreeVar((String) frameSlot.getIdentifier(), false);
+                    }
+                }
+            }
+        }
     }
 }

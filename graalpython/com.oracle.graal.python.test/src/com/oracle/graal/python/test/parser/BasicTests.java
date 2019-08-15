@@ -42,6 +42,9 @@
 package com.oracle.graal.python.test.parser;
 
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import java.io.File;
 import org.junit.*;
 
@@ -97,6 +100,16 @@ public class BasicTests extends ParserTestBase {
     @Test
     public void assert04() throws Exception {
         checkTreeResult("assert not hascased");
+    }
+    
+    @Test
+    public void inline01() throws Exception {
+        // TODO Correct this test, now doesn't work. 
+        FrameDescriptor fd = new FrameDescriptor(44);
+        fd.addFrameSlot("a");
+        fd.addFrameSlot("b");
+        Frame frame = Truffle.getRuntime().createVirtualFrame(new Object[] {2,3},fd);
+        checkTreeResult("a + b", PythonParser.ParserMode.InlineEvaluation, frame);
     }
     
     @Test

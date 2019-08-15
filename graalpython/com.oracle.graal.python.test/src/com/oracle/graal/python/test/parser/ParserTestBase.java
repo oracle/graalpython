@@ -49,6 +49,8 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -91,12 +93,16 @@ public class ParserTestBase {
         return context.getLanguage().newSource(context, src, getFileName(testFile));
     }
     
-    protected RootNode parseOld(String src, String moduleName, PythonParser.ParserMode mode) {
+    protected RootNode parseOld(String src, String moduleName, PythonParser.ParserMode mode, Frame frame) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
         PythonParser parser = context.getCore().getParser();
-        RootNode result = (RootNode)((PythonParserImpl)parser).parseO(mode, context.getCore(), source, null);
+        RootNode result = (RootNode)((PythonParserImpl)parser).parseO(mode, context.getCore(), source, frame);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
+    }
+    
+    protected RootNode parseOld(String src, String moduleName, PythonParser.ParserMode mode) {
+        return parseOld(src, moduleName, mode, null);
     }
     
     protected RootNode parseOld(Source source, PythonParser.ParserMode mode) {
@@ -106,12 +112,16 @@ public class ParserTestBase {
         return result;
     }
     
-    protected Node parseNew(String src, String moduleName, PythonParser.ParserMode mode) {
+    protected Node parseNew(String src, String moduleName, PythonParser.ParserMode mode, Frame fd) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
         PythonParser parser = context.getCore().getParser();
-        Node result = ((PythonParserImpl)parser).parseN(mode, context.getCore(), source, null);
+        Node result = ((PythonParserImpl)parser).parseN(mode, context.getCore(), source, fd);
         lastGlobalScope = ((PythonParserImpl)parser).getLastGlobaScope();
         return result;
+    }
+      
+    protected Node parseNew(String src, String moduleName, PythonParser.ParserMode mode) {
+        return parseNew(src, moduleName, mode, null);
     }
     
     protected Node parseNew(Source source, PythonParser.ParserMode mode) {
@@ -235,8 +245,8 @@ public class ParserTestBase {
         assertDescriptionMatches(scopes.toString(), goldenScopeFile);
     }
     
-    public void checkTreeResult(String source, PythonParser.ParserMode mode) throws Exception {
-        Node resultNew = parseNew(source, name.getMethodName(), mode);
+    public void checkTreeResult(String source, PythonParser.ParserMode mode, Frame frame) throws Exception {
+        Node resultNew = parseNew(source, name.getMethodName(), mode, frame);
         String tree = printTreeToString(resultNew);
         File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
         if (!goldenFile.exists()) {
@@ -244,7 +254,7 @@ public class ParserTestBase {
             // TODO, when the new parser will work, it has to be removed
             String oldTree;
             try {
-                RootNode resultOld = parseOld(source, name.getMethodName(), mode);
+                RootNode resultOld = parseOld(source, name.getMethodName(), mode, frame);
                 oldTree = printTreeToString(resultOld);
             } catch (RuntimeException e) {
                 oldTree = tree;
@@ -263,6 +273,10 @@ public class ParserTestBase {
             
         }
         assertDescriptionMatches(tree, goldenFile);
+    }
+    
+    public void checkTreeResult(String source, PythonParser.ParserMode mode) throws Exception {
+        checkTreeResult(source, mode, null);
     }
     
     public void checkScopeResult(String source, PythonParser.ParserMode mode) throws Exception {
