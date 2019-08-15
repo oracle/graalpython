@@ -82,6 +82,15 @@ def test_json_bytes_re_compile():
     else:
         assert False, "searching a bytes-pattern in a str did not raise"
 
+def test_none_value():
+    regex_find = re.compile(
+        r"(//?| ==?)|([[]]+)").findall
+    stream = iter([ (special,text)
+                    for (special,text) in regex_find('[]')
+                    if special or text ])
+    n = next(stream)
+    assert not n[0]
+    assert str(n[0]) == 'None'
 
 class S(str):
     def __getitem__(self, index):
@@ -370,7 +379,7 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.compile("(?i)(a)(b)").pattern, "(?i)(a)(b)")
         # TODO at the moment, we use slightly different default flags
         #self.assertEqual(re.compile("(?i)(a)(b)").flags, re.I | re.U)
-        
+
         # TODO re-enable this test once TRegex provides this property
         #self.assertEqual(re.compile("(?i)(a)(b)").groups, 2)
         self.assertEqual(re.compile("(?i)(a)(b)").groupindex, {})
@@ -390,7 +399,7 @@ class ReTests(unittest.TestCase):
         p = re.compile(r'(?i)(?P<first>a)(?P<other>b)')
         self.assertEqual(sorted(p.groupindex), ['first', 'other'])
         self.assertEqual(p.groupindex['other'], 2)
-        
+
         if sys.version_info.minor >= 6:
             with self.assertRaises(TypeError):
                 p.groupindex['other'] = 0
@@ -438,7 +447,15 @@ class ReTests(unittest.TestCase):
         self.assertTrue(match)
         assert "frac" in match.groupdict()
         assert match.groupdict()["frac"] == "1"
-        
-    
+
+
     def test_escape(self):
         self.assertEqual(re.escape(" ()"), "\\ \\(\\)")
+
+    def test_finditer_empty_string(self):
+        regex = re.compile(
+            r"(//?| ==?)|([[]]+)")
+        for m in regex.finditer(''):
+            self.fail()
+
+
