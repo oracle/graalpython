@@ -76,7 +76,7 @@ static PyTypeObject NativeCustomType = {
     0,
     0,
     Py_TPFLAGS_DEFAULT,
-    "",
+    0,
     0,                          /* tp_traverse */
     0,                          /* tp_clear */
     0,                          /* tp_richcompare */

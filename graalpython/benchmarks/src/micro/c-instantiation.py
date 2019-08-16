@@ -71,7 +71,7 @@ static PyTypeObject NativeType = {
     0,
     0,
     Py_TPFLAGS_DEFAULT,
-    "",
+    0,
     0,              /* tp_traverse */
     0,                 /* tp_clear */
     0,           /* tp_richcompare */
@@ -140,4 +140,3 @@ def measure(num):
 
 def __benchmark__(num=1000000):
     measure(num)
-

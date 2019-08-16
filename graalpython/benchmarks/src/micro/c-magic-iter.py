@@ -118,7 +118,7 @@ static PyTypeObject CustomIteratorType = {
     0,
     0,
     Py_TPFLAGS_DEFAULT,
-    "",
+    0,
     0,                          /* tp_traverse */
     0,                          /* tp_clear */
     0,                          /* tp_richcompare */
@@ -160,7 +160,7 @@ static PyTypeObject CustomIterableType = {
     0,
     0,
     Py_TPFLAGS_DEFAULT,
-    "",
+    0,
     0,                          /* tp_traverse */
     0,                          /* tp_clear */
     0,                          /* tp_richcompare */
@@ -249,7 +249,7 @@ def count(num):
         val0 = next(it)
         val1 = next(it)
         val2 = next(it)
-        
+
     return (val0, val1, val2)
 
 
@@ -260,4 +260,3 @@ def measure(num):
 
 def __benchmark__(num=1000000):
     measure(num)
-
