@@ -45,7 +45,9 @@ typedef struct {
 } NativeCustomObject;
 
 PyObject* nc_classmethod(PyObject* class, PyObject* args) {
-    return PyTuple_GET_ITEM(args, 0);
+    PyObject* item = PyTuple_GET_ITEM(args, 0);
+    Py_INCREF(item);
+    return item;
 }
 
 static struct PyMethodDef nc_methods[] = {
@@ -140,4 +142,3 @@ def measure(num):
 
 def __benchmark__(num=1000000):
     measure(num)
-
