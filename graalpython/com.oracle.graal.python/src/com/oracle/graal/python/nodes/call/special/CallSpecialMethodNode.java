@@ -80,22 +80,23 @@ abstract class CallSpecialMethodNode extends Node {
     private <T extends PythonBuiltinBaseNode> T getBuiltin(PBuiltinFunction func, Class<T> clazz) {
         CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
-        if (builtinNodeFactory != null && !callerExceedsMaxSize()) {
-            return clazz.isAssignableFrom(builtinNodeFactory.getNodeClass()) ? clazz.cast(func.getBuiltinNodeFactory().createNode()) : null;
-        } else {
-            return null;
+        if (builtinNodeFactory != null && clazz.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
+            T builtinNode = clazz.cast(func.getBuiltinNodeFactory().createNode());
+            if (!callerExceedsMaxSize(builtinNode)) {
+                return builtinNode;
+            }
         }
+        return null;
     }
 
-    private boolean callerExceedsMaxSize() {
+    private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
         CompilerAsserts.neverPartOfCompilation();
         if (!maxSizeExceeded) {
             int n = NodeUtil.countNodes(getRootNode());
             // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
-            // ASTs
-            // will only we shared between contexts that have the same value for this option.
+            // ASTs will only we shared between contexts that have the same value for this option.
             int maxSize = PythonOptions.getOption(lookupContextReference(PythonLanguage.class).get(), PythonOptions.BuiltinsInliningMaxCallerSize);
-            if (n >= maxSize) {
+            if (n >= maxSize || n + NodeUtil.countNodes(builtinNode) >= maxSize) {
                 maxSizeExceeded = true;
                 return true;
             }
