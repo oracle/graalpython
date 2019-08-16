@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNod
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -74,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -297,10 +295,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
             PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
             Object pathObj = readNode.execute(sysModule, "path");
-            if(pathObj instanceof PList) {
+            if (pathObj instanceof PList) {
                 SequenceStorage storage = ((PList) pathObj).getSequenceStorage();
-                for(int i=0; i < storage.length(); i++) {
-                    String path = tryPathEntry(env, libPythonName, storage.getItemNormalized(i), i);
+                for (int i = 0; i < storage.length(); i++) {
+                    String path = tryPathEntry(env, libPythonName, storage.getItemNormalized(i));
                     if (path != null) {
                         return path;
                     }
@@ -312,8 +310,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 PInteropSubscriptNode getItemNode = PInteropSubscriptNode.getUncached();
 
                 int n = castToIndexNode.execute(callLenNode.passState().executeObject(pathObj, SpecialMethodNames.__LEN__));
-                for(int i=0; i < n; i++) {
-                    String path = tryPathEntry(env, libPythonName, getItemNode.execute(pathObj, i), i);
+                for (int i = 0; i < n; i++) {
+                    String path = tryPathEntry(env, libPythonName, getItemNode.execute(pathObj, i));
                     if (path != null) {
                         return path;
                     }
@@ -323,25 +321,25 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.ImportError, CAPI_LOCATE_ERROR, libPythonName);
         }
 
-        private String tryPathEntry(Env env, String libPythonName, Object entry, int i) {
+        private String tryPathEntry(Env env, String libPythonName, Object entry) {
             String path = String.join(env.getFileNameSeparator(), asString(entry), libPythonName);
             PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in " + path);
             try {
                 if (env.getInternalTruffleFile(path).exists()) {
-                    PythonLanguage.getLogger().log(Level.FINE, "Found " + libPythonName +" in " + path);
+                    PythonLanguage.getLogger().log(Level.FINE, "Found " + libPythonName + " in " + path);
                     return path;
                 }
-            } catch(SecurityException e) {
+            } catch (SecurityException e) {
                 // ignore
             }
             return null;
         }
 
         private String asString(Object object) {
-            if(object instanceof String) {
+            if (object instanceof String) {
                 return (String) object;
-            } else if(object instanceof PString) {
-                return ((PString)object).getValue();
+            } else if (object instanceof PString) {
+                return ((PString) object).getValue();
             }
             throw raise(PythonBuiltinClassType.TypeError, "path entry '%s' is not of type 'str'", object);
         }

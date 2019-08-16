@@ -1976,8 +1976,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(targetIsDir)", "isNoValue(dirFd)"})
         PNone doSimple(VirtualFrame frame, Object srcObj, Object dstObj, @SuppressWarnings("unused") PNone targetIsDir, @SuppressWarnings("unused") PNone dirFd,
-                       @Cached ConvertPathlikeObjectNode castSrcToPath,
-                       @Cached ConvertPathlikeObjectNode castDstToPath) {
+                        @Cached ConvertPathlikeObjectNode castSrcToPath,
+                        @Cached ConvertPathlikeObjectNode castDstToPath) {
             String src = castSrcToPath.execute(frame, srcObj);
             String dst = castDstToPath.execute(frame, dstObj);
 

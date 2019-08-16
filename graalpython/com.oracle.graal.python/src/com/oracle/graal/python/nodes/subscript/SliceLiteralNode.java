@@ -170,11 +170,11 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
         @Specialization
         int doGeneric(Object i,
-                      @Cached("createCastToIndex()") CastToIndexNode castToIndexNode,
-                      @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached("createCastToIndex()") CastToIndexNode castToIndexNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
             try {
                 return castToIndexNode.execute(i);
-            } catch(PException e) {
+            } catch (PException e) {
                 e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
                 return overflowValue;
             }
@@ -187,7 +187,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         private PRaiseNode getRaiseNode() {
-            if(raiseNode == null) {
+            if (raiseNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
             }
