@@ -319,7 +319,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         return [
             # warmup curves
             StdOutRule(
-                r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
+                r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
                 {
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "warmup",
@@ -334,7 +334,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             ),
             # no warmups
             StdOutRule(
-                r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
+                r"^@@@ name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
                 {
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "time",
