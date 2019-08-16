@@ -3,7 +3,7 @@ local const = import 'ci_common/constants.libsonnet';
 local builder = import 'ci_common/builder.libsonnet';
 
 {
-    overlay: "9c948fac4c5424a79d957f0e62bed7cc71489ed2",
+    overlay: "0b8c2c1bde9a5795991150b7de779467c752f7dc",
 
     // ======================================================================================================
     //
