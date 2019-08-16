@@ -48,7 +48,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class LazyString implements CharSequence {
+public class LazyString implements PCharSequence {
 
     protected static final int MinLazyStringLength;
     protected static final boolean UseLazyStrings;
@@ -157,22 +157,26 @@ public class LazyString implements CharSequence {
 
     @Override
     public String toString() {
-        if (!isFlat()) {
-            flatten();
+        if (!isMaterialized()) {
+            return materialize();
         }
         return (String) left;
     }
 
-    private boolean isFlat() {
+    @Override
+    public boolean isMaterialized() {
         return right == null;
     }
 
+    @Override
     @TruffleBoundary
-    private void flatten() {
+    public String materialize() {
         char[] dst = new char[len];
-        flatten(this, 0, len, dst, 0);
-        left = new String(dst);
+        LazyString.flatten(this, 0, len, dst, 0);
+        String flattened = new String(dst);
+        left = flattened;
         right = null;
+        return flattened;
     }
 
     private static void flatten(CharSequence src, int srcBegin, int srcEnd, char[] dst, int dstBegin) {

@@ -345,6 +345,10 @@ public final class StringBuiltins extends PythonBuiltins {
         protected final ConditionProfile rightProfile1 = ConditionProfile.createBinaryProfile();
         protected final ConditionProfile rightProfile2 = ConditionProfile.createBinaryProfile();
 
+        public static AddNode create() {
+            return StringBuiltinsFactory.AddNodeFactory.create();
+        }
+
         @Specialization(guards = "!concatGuard(self, other)")
         String doSSSimple(String self, String other) {
             if (LazyString.length(self, leftProfile1, leftProfile2) == 0) {
@@ -369,7 +373,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!concatGuard(self.getCharSequence(), self.getCharSequence())")
+        @Specialization(guards = "!concatGuard(self.getCharSequence(), other.getCharSequence())")
         PString doSSSimple(PString self, PString other) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
                 return other;
@@ -447,7 +451,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class RAddNode extends AddNode {
+    public abstract static class RAddNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doAll(VirtualFrame frame, Object left, Object right,
+                        @Cached("create()") AddNode addNode) {
+            return addNode.execute(frame, right, left);
+        }
     }
 
     // str.startswith(prefix[, start[, end]])
