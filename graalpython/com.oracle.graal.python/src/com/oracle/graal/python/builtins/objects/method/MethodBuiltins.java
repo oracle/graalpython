@@ -28,8 +28,10 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -43,6 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -90,6 +93,26 @@ public class MethodBuiltins extends PythonBuiltins {
         protected Object doIt(VirtualFrame frame, PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
             return getCode.executeObject(frame, self.getFunction(), __CODE__);
+        }
+    }
+
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class DictNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object doIt(VirtualFrame frame, PMethod self,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDict) {
+            return getDict.executeObject(frame, self.getFunction(), __DICT__);
+        }
+    }
+
+    @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class GetattrNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object doIt(VirtualFrame frame, PMethod self, Object key,
+                        @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode) {
+            return objectGetattrNode.execute(frame, self.getFunction(), key);
         }
     }
 
