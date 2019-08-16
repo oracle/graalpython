@@ -53,6 +53,7 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -73,15 +74,18 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -296,26 +300,50 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if(pathObj instanceof PList) {
                 SequenceStorage storage = ((PList) pathObj).getSequenceStorage();
                 for(int i=0; i < storage.length(); i++) {
-                    String path = String.join(env.getFileNameSeparator(), storage.getItemNormalized(i).toString(), libPythonName);
-                    PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in " + path);
-                    try {
-                        if (env.getInternalTruffleFile(path).exists()) {
-                            PythonLanguage.getLogger().log(Level.FINE, "Found " + libPythonName +" in " + path);
-                            return path;
-                        }
-                    } catch(SecurityException e) {
-                        // ignore
+                    String path = tryPathEntry(env, libPythonName, storage.getItemNormalized(i), i);
+                    if (path != null) {
+                        return path;
                     }
                 }
             } else {
                 // generic case
-                SequenceNodes.LenNode lenNode = SequenceNodes.LenNode.getUncached();
+                LookupAndCallUnaryDynamicNode callLenNode = LookupAndCallUnaryDynamicNode.getUncached();
+                CastToIndexNode castToIndexNode = CastToIndexNode.getUncached();
                 PInteropSubscriptNode getItemNode = PInteropSubscriptNode.getUncached();
 
-                 // TODO
+                int n = castToIndexNode.execute(callLenNode.passState().executeObject(pathObj, SpecialMethodNames.__LEN__));
+                for(int i=0; i < n; i++) {
+                    String path = tryPathEntry(env, libPythonName, getItemNode.execute(pathObj, i), i);
+                    if (path != null) {
+                        return path;
+                    }
+                }
             }
             PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOCATE_ERROR, libPythonName));
             throw raise(PythonErrorType.ImportError, CAPI_LOCATE_ERROR, libPythonName);
+        }
+
+        private String tryPathEntry(Env env, String libPythonName, Object entry, int i) {
+            String path = String.join(env.getFileNameSeparator(), asString(entry), libPythonName);
+            PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in " + path);
+            try {
+                if (env.getInternalTruffleFile(path).exists()) {
+                    PythonLanguage.getLogger().log(Level.FINE, "Found " + libPythonName +" in " + path);
+                    return path;
+                }
+            } catch(SecurityException e) {
+                // ignore
+            }
+            return null;
+        }
+
+        private String asString(Object object) {
+            if(object instanceof String) {
+                return (String) object;
+            } else if(object instanceof PString) {
+                return ((PString)object).getValue();
+            }
+            throw raise(PythonBuiltinClassType.TypeError, "path entry '%s' is not of type 'str'", object);
         }
 
         private SetItemNode getSetItemNode() {
