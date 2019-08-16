@@ -162,6 +162,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
                         // we cache WithThread on the language
                         firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
+                        // we cache JythonEmulation on nodes
+                        firstOptions.get(PythonOptions.EmulateJython).equals(newOptions.get(PythonOptions.EmulateJython)) &&
                         // we cache CatchAllExceptions hard on TryExceptNode
                         firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)) &&
                         // we cache BuiltinsInliningMaxCallerSize on the language
