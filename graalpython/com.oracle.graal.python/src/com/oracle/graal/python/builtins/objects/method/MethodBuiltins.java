@@ -31,7 +31,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -57,6 +57,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -106,13 +108,19 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GetattrNode extends PythonBuiltinNode {
+    public abstract static class GetattributeNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(VirtualFrame frame, PMethod self, Object key,
-                        @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode) {
-            return objectGetattrNode.execute(frame, self.getFunction(), key);
+                        @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+            try {
+                return objectGetattrNode.execute(frame, self, key);
+            } catch (PException e) {
+                e.expectAttributeError(errorProfile);
+                return objectGetattrNode.execute(frame, self.getFunction(), key);
+            }
         }
     }
 
