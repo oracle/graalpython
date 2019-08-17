@@ -134,27 +134,28 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object close(VirtualFrame frame, PSocket socket) {
+        @TruffleBoundary
+        Object close(PSocket socket) {
             if (socket.getSocket() != null) {
                 if (!socket.getSocket().isOpen()) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
 
                 try {
                     socket.getSocket().close();
                 } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTSOCK, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
             }
             else if (socket.getServerSocket() != null) {
                 if (!socket.getServerSocket().isOpen()) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTSOCK, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
 
                 try {
                     socket.getServerSocket().close();
                 } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTSOCK, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
             }
             getContext().getResources().closeSocket(socket.getFileno());
@@ -479,6 +480,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetTimeoutNode extends PythonBinaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object setTimeout(PSocket socket, Integer value) {
             try {
                 if (socket.getSocket() != null) {
