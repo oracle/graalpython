@@ -60,6 +60,10 @@ EBADF = getattr(errno, 'EBADF', 9)
 EAGAIN = getattr(errno, 'EAGAIN', 11)
 EWOULDBLOCK = getattr(errno, 'EWOULDBLOCK', 11)
 
+SOL_SOCKET = 0
+SOL_TCP = 6
+SO_REUSEADDR = 0
+
 __all__ = ["fromfd", "getfqdn", "create_connection",
         "AddressFamily", "SocketKind"]
 __all__.extend(os._get_exports_list(_socket))
@@ -151,6 +155,7 @@ class socket(_socket.socket):
         _socket.socket.__init__(self, family, type, proto, fileno)
         self._io_refs = 0
         self._closed = False
+        self.opts = {}
 
     def __enter__(self):
         return self
@@ -190,6 +195,14 @@ class socket(_socket.socket):
 
     def __getstate__(self):
         raise TypeError("Cannot serialize socket object")
+
+    # TODO: These do not have any effect on the socket
+
+    def setsockopt(self, level, option, value):
+        self.opts[option] = value
+
+    def getsockopt(self, level, option, buffersize=None):
+        return self.opts.get(option, 0)
 
     def dup(self):
         """dup() -> socket object

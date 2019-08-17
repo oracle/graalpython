@@ -41,6 +41,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -325,6 +326,7 @@ public final class Python3Core implements PythonCore {
                         new AstModuleBuiltins(),
                         new SelectModuleBuiltins(),
                         new SocketModuleBuiltins(),
+                        new SocketBuiltins(),
                         new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),

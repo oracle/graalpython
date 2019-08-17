@@ -511,10 +511,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "fd > 2")
         Object setInheritable(int fd, @SuppressWarnings("unused") Object inheritable) {
-            String path = getResources().getFilePath(fd);
-            TruffleFile f = getContext().getEnv().getPublicTruffleFile(path);
-            if (!f.exists()) {
-                throw raise(OSError, "No such file or directory: '%s'", path);
+            try {
+                String path = getResources().getFilePath(fd);
+                TruffleFile f = getContext().getEnv().getTruffleFile(path);
+                if (!f.exists()) {
+                    throw raise(OSError, "No such file or directory: '%s'", path);
+                }
+            } catch (NullPointerException e) {
+                throw raise(OSError, "Not a valid file descriptor, maybe a socket?'");
             }
             // TODO: investigate how to map this to the truffle file api (if supported)
             return PNone.NONE;

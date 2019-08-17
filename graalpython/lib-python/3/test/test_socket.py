@@ -1287,6 +1287,7 @@ class GeneralModuleTests(unittest.TestCase):
     def testCloseException(self):
         sock = socket.socket()
         sock.bind((socket._LOCALHOST, 0))
+        sock.listen()
         socket.socket(fileno=sock.fileno()).close()
         try:
             sock.close()
@@ -1318,17 +1319,6 @@ class GeneralModuleTests(unittest.TestCase):
         neg_port = port - 65536
         self.assertRaises(OverflowError, sock.bind, (HOST, big_port))
         self.assertRaises(OverflowError, sock.bind, (HOST, neg_port))
-        # Since find_unused_port() is inherently subject to race conditions, we
-        # call it a couple times if necessary.
-        for i in itertools.count():
-            port = support.find_unused_port()
-            try:
-                sock.bind((HOST, port))
-            except OSError as e:
-                if e.errno != errno.EADDRINUSE or i == 5:
-                    raise
-            else:
-                break
 
     @unittest.skipUnless(os.name == "nt", "Windows specific")
     def test_sock_ioctl(self):
@@ -1457,43 +1447,6 @@ class GeneralModuleTests(unittest.TestCase):
         # have a reverse entry yet
         # socket.gethostbyaddr('испытание.python.org')
 
-    def check_sendall_interrupted(self, with_timeout):
-        # socketpair() is not strictly required, but it makes things easier.
-        if not hasattr(signal, 'alarm') or not hasattr(socket, 'socketpair'):
-            self.skipTest("signal.alarm and socket.socketpair required for this test")
-        # Our signal handlers clobber the C errno by calling a math function
-        # with an invalid domain value.
-        def ok_handler(*args):
-            self.assertRaises(ValueError, math.acosh, 0)
-        def raising_handler(*args):
-            self.assertRaises(ValueError, math.acosh, 0)
-            1 // 0
-        c, s = socket.socketpair()
-        old_alarm = signal.signal(signal.SIGALRM, raising_handler)
-        try:
-            if with_timeout:
-                # Just above the one second minimum for signal.alarm
-                c.settimeout(1.5)
-            with self.assertRaises(ZeroDivisionError):
-                signal.alarm(1)
-                c.sendall(b"x" * support.SOCK_MAX_SIZE)
-            if with_timeout:
-                signal.signal(signal.SIGALRM, ok_handler)
-                signal.alarm(1)
-                self.assertRaises(socket.timeout, c.sendall,
-                                  b"x" * support.SOCK_MAX_SIZE)
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_alarm)
-            c.close()
-            s.close()
-
-    def test_sendall_interrupted(self):
-        self.check_sendall_interrupted(False)
-
-    def test_sendall_interrupted_with_timeout(self):
-        self.check_sendall_interrupted(True)
-
     def test_dealloc_warn(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         r = repr(sock)
@@ -1515,7 +1468,7 @@ class GeneralModuleTests(unittest.TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             fp = sock.makefile("rb")
             fp.close()
-            self.assertEqual(repr(fp), "<_io.BufferedReader name=-1>")
+            self.assertEqual(repr(fp), "<_pyio.BufferedReader name=-1>")
 
     def test_unusable_closed_socketio(self):
         with socket.socket() as sock:
@@ -2274,7 +2227,7 @@ class BasicUDPTest(ThreadedUDPSocketTest):
 # SendrecvmsgDgramBase and SendrecvmsgConnectedBase which map these
 # sockets to cli_sock and serv_sock and override the methods and
 # attributes of SendrecvmsgBase to fill in destination addresses if
-# needed when sending, check for specific flags in msg_flags, etc.
+# needed when sending, check for specific flags in msGeneralModuleTestsg_flags, etc.
 #
 # RecvmsgIntoMixin provides a version of doRecvmsg() implemented using
 # recvmsg_into().

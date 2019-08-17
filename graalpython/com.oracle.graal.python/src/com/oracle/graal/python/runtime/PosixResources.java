@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -66,12 +67,14 @@ import java.util.Locale;
 public class PosixResources {
     /** Context-local file-descriptor mappings and PID mappings */
     private final List<Channel> files;
+    private final List<PSocket> sockets;
     private final List<String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
 
     public PosixResources() {
+        sockets = Collections.synchronizedList(new ArrayList<>());
         files = Collections.synchronizedList(new ArrayList<>());
         filePaths = Collections.synchronizedList(new ArrayList<>());
         children = Collections.synchronizedList(new ArrayList<>());
@@ -115,12 +118,39 @@ public class PosixResources {
         return null;
     }
 
+    @TruffleBoundary
+    public PSocket getSocket(int fd) {
+        if (sockets.size() > fd) {
+            return sockets.get(fd);
+        }
+        return null;
+    }
+
     @TruffleBoundary(allowInlining = true)
     public void close(int fd) {
         if (filePaths.size() > fd) {
             files.set(fd, null);
             filePaths.set(fd, null);
         }
+    }
+
+    @TruffleBoundary
+    public void closeSocket(int fd) {
+        if (sockets.size() > fd) {
+            sockets.set(fd, null);
+        }
+    }
+
+    @TruffleBoundary
+    public int openSocket(PSocket socket) {
+        int fd = nextFreeSocketFd();
+        sockets.set(fd, socket);
+        return fd;
+    }
+
+    @TruffleBoundary
+    public void reopenSocket(PSocket socket, int fd) {
+        sockets.set(fd, socket);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -167,6 +197,20 @@ public class PosixResources {
             files.add(null);
             filePaths.add(null);
             return filePaths.size() - 1;
+        }
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private int nextFreeSocketFd() {
+        synchronized (sockets) {
+            for (int i = 0; i < sockets.size(); i++) {
+                PSocket socket = sockets.get(i);
+                if (socket == null) {
+                    return i;
+                }
+            }
+            sockets.add(null);
+            return sockets.size() - 1;
         }
     }
 

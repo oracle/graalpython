@@ -260,6 +260,20 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
+
+    @Builtin(name = "itemsize", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ItemSizeNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object getItemSize(PArray self) {
+            if (self.getSequenceStorage().getElementType() == SequenceStorage.ListStorageType.Int) {
+                return factory().createInt(4);
+            }
+            return factory().createInt(2);
+        }
+    }
+
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {

@@ -13,6 +13,7 @@ import xml.etree.ElementTree as ET
 
 from datetime import datetime
 
+
 class RegressionTestResult(unittest.TextTestResult):
     separator1 = '=' * 70 + '\n'
     separator2 = '-' * 70 + '\n'
@@ -45,7 +46,7 @@ class RegressionTestResult(unittest.TextTestResult):
         self.__e = e = ET.SubElement(self.__suite, 'testcase')
         self.__start_time = time.perf_counter()
         if self.__verbose:
-            self.stream.write(f'{self.getDescription(test)} ... ')
+            self.stream.write(self.getDescription(test) + ' ... ')
             self.stream.flush()
 
     def _add_result(self, test, capture=False, **args):
@@ -57,7 +58,7 @@ class RegressionTestResult(unittest.TextTestResult):
         e.set('status', args.pop('status', 'run'))
         e.set('result', args.pop('result', 'completed'))
         if self.__start_time:
-            e.set('time', f'{time.perf_counter() - self.__start_time:0.6f}')
+            e.set('time', time.perf_counter() - self.__start_time)
 
         if capture:
             if self._stdout_buffer is not None:
@@ -82,7 +83,7 @@ class RegressionTestResult(unittest.TextTestResult):
 
     def __write(self, c, word):
         if self.__verbose:
-            self.stream.write(f'{word}\n')
+            self.stream.write(word + '\n')
 
     @classmethod
     def __makeErrorDict(cls, err_type, err_value, err_tb):
@@ -90,7 +91,7 @@ class RegressionTestResult(unittest.TextTestResult):
             if err_type.__module__ == 'builtins':
                 typename = err_type.__name__
             else:
-                typename = f'{err_type.__module__}.{err_type.__name__}'
+                typename = err_type.__module__ + '.' + err_type.__name__
         else:
             typename = repr(err_type)
 
@@ -121,7 +122,7 @@ class RegressionTestResult(unittest.TextTestResult):
     def addSkip(self, test, reason):
         self._add_result(test, skipped=reason)
         super().addSkip(test, reason)
-        self.__write('S', f'skipped {reason!r}')
+        self.__write('S', 'skipped ' + reason)
 
     def addSuccess(self, test):
         self._add_result(test)
@@ -142,7 +143,7 @@ class RegressionTestResult(unittest.TextTestResult):
     def printErrorList(self, flavor, errors):
         for test, err in errors:
             self.stream.write(self.separator1)
-            self.stream.write(f'{flavor}: {self.getDescription(test)}\n')
+            self.stream.write(flavor + ': ' + self.getDescription(test) + '\n')
             self.stream.write(self.separator2)
             self.stream.write('%s\n' % err)
 
@@ -153,6 +154,7 @@ class RegressionTestResult(unittest.TextTestResult):
         e.set('failures', str(len(self.failures)))
         return e
 
+
 class QuietRegressionTestRunner:
     def __init__(self, stream, buffer=False):
         self.result = RegressionTestResult(stream, None, 0)
@@ -162,6 +164,7 @@ class QuietRegressionTestRunner:
         test(self.result)
         return self.result
 
+
 def get_test_runner_class(verbosity, buffer=False):
     if verbosity:
         return functools.partial(unittest.TextTestRunner,
@@ -170,8 +173,10 @@ def get_test_runner_class(verbosity, buffer=False):
                                  verbosity=verbosity)
     return functools.partial(QuietRegressionTestRunner, buffer=buffer)
 
+
 def get_test_runner(stream, verbosity, capture_output=False):
     return get_test_runner_class(verbosity, capture_output)(stream)
+
 
 if __name__ == '__main__':
     class TestTests(unittest.TestCase):
