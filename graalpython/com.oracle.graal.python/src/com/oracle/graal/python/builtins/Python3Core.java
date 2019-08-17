@@ -150,6 +150,7 @@ import com.oracle.graal.python.builtins.objects.reversed.ReversedBuiltins;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
+import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
@@ -327,6 +328,7 @@ public final class Python3Core implements PythonCore {
                         new AstModuleBuiltins(),
                         new SelectModuleBuiltins(),
                         new SocketModuleBuiltins(),
+                        new SocketBuiltins(),
                         new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),

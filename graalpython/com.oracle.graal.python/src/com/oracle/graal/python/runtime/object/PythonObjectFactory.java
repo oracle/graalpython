@@ -785,6 +785,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSocket(cls, family, type, proto));
     }
 
+    public PSocket createSocket(LazyPythonClass cls, int family, int type, int proto, int fileno) {
+        return trace(new PSocket(cls, family, type, proto, fileno));
+    }
+
     /*
      * Threading
      */
