@@ -47,6 +47,8 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -567,6 +569,10 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getAddrInfo(String host, String port, int family, int type, int proto, int flags) {
+            if (!StandardCharsets.US_ASCII.newEncoder().canEncode(port)) {
+                throw raise(PythonBuiltinClassType.UnicodeEncodeError);
+            }
+
             if (services == null) {
                 services = parseServices();
             }
