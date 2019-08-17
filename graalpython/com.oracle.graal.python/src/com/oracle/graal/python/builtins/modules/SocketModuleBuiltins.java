@@ -626,42 +626,44 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class moduleCloseNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object close(@SuppressWarnings("unused") PNone fd) {
             throw raise(PythonBuiltinClassType.TypeError);
         }
 
         @Specialization
-        Object close(VirtualFrame frame, int fd) {
+        @TruffleBoundary
+        Object close(int fd) {
             if (fd < 0) {
-                throw raise(PythonBuiltinClassType.OSError);
+                throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
             }
 
             PSocket socket = getContext().getResources().getSocket(fd);
 
             if (socket == null) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF, "Bad file descriptor");
+                throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
             }
 
             if (socket.getSocket() != null) {
                 if (!socket.getSocket().isOpen()) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
 
                 try {
                     socket.getSocket().close();
                 } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTSOCK, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
             }
             else if (socket.getServerSocket() != null) {
                 if (!socket.getServerSocket().isOpen()) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTSOCK, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
 
                 try {
                     socket.getServerSocket().close();
                 } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTSOCK, "Bad file descriptor");
+                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
             }
             getContext().getResources().closeSocket(socket.getFileno());
