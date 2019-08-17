@@ -40,11 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.cell;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PCell extends PythonAbstractObject {
     private final Assumption effectivelyFinal;
     private Object ref;
@@ -100,5 +106,11 @@ public final class PCell extends PythonAbstractObject {
     public int compareTo(Object o) {
         CompilerDirectives.transferToInterpreter();
         throw new UnsupportedOperationException();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public LazyPythonClass getLazyPythonClass() {
+        return PythonBuiltinClassType.PCell;
     }
 }

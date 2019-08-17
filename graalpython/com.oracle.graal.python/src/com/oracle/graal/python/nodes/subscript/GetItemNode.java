@@ -30,6 +30,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -43,6 +46,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -63,8 +67,19 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
-    @Specialization
-    Object doSpecialObject(VirtualFrame frame, Object primary, Object index) {
+    @Specialization(guards = "isBuiltinList.profileIsAnyBuiltinObject(primary)")
+    Object doBuiltinList(@SuppressWarnings("unused") VirtualFrame frame, PList primary, Object index,
+                    @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinList) {
+        return getItemNode.execute(primary.getSequenceStorage(), index);
+    }
+
+    protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
+        return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
+    }
+
+    @Specialization(replaces = "doBuiltinList")
+    Object doAnyObject(VirtualFrame frame, Object primary, Object index) {
         if (callGetitemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callGetitemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__, null, () -> new LookupAndCallBinaryNode.NotImplementedHandler() {

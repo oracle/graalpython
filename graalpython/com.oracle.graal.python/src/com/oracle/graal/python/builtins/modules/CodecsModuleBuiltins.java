@@ -73,11 +73,12 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -262,7 +263,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "unicode_escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
-    @ImportStatic(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UnicodeEscapeEncode extends PythonBinaryBuiltinNode {
         static final byte[] hexdigits = "0123456789abcdef".getBytes();
 
@@ -341,7 +342,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isBytes(bytes)")
         Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+                        @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+            return encode(frame, bytes, "", toBytes);
+        }
+
+        @Specialization(guards = "isBytes(bytes)")
+        Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") String errors,
+                        @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
             // for now we'll just parse this as a String, ignoring any error strategies
             PythonCore core = getCore();
             byte[] byteArray = toBytes.execute(frame, bytes);
@@ -626,6 +633,33 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             } else {
                 return PNone.NONE;
             }
+        }
+    }
+
+    // _codecs.lookup(name)
+    @Builtin(name = "charmap_build", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CharmapBuildNode extends PythonBuiltinNode {
+        // This is replaced in the core _codecs.py with the full functionality
+        @Specialization
+        Object lookup(String chars) {
+            Map<Integer, Integer> charmap = createMap(chars);
+            return factory().createDict(charmap);
+        }
+
+        @TruffleBoundary
+        private static Map<Integer, Integer> createMap(String chars) {
+            Map<Integer, Integer> charmap = new HashMap<>();
+            int pos = 0;
+            int num = 0;
+
+            while (pos < chars.length()) {
+                int charid = Character.codePointAt(chars, pos);
+                charmap.put(charid, num);
+                pos += Character.charCount(charid);
+                num++;
+            }
+            return charmap;
         }
     }
 }

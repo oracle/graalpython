@@ -67,6 +67,8 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -74,7 +76,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -476,6 +480,31 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartsWithNode extends PythonBuiltinNode {
         @Child private SequenceStorageNodes.LenNode lenNode;
+
+        @Specialization
+        boolean startswith(VirtualFrame frame, PByteArray self, PTuple prefixes, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached GetNextNode getNextNode,
+                        @Cached BytesNodes.FindNode findNode) {
+            Object iterator = getIteratorNode.executeWith(frame, prefixes);
+            while (true) {
+                try {
+                    Object arrayObj = getNextNode.execute(frame, iterator);
+                    if (arrayObj instanceof PIBytesLike) {
+                        PIBytesLike array = (PIBytesLike) arrayObj;
+                        if (startswith(self, array, start, end, findNode)) {
+                            return true;
+                        }
+                    } else {
+                        throw raise(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'", arrayObj);
+                    }
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    return false;
+                }
+            }
+        }
 
         @Specialization
         boolean startswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,

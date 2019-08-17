@@ -681,9 +681,14 @@ class BasicSocketTests(unittest.TestCase):
         cert = {'subject': ((('commonName', 'example.com'),),),
                 'subjectAltName': (('DNS', 'example.com'),
                                    ('IP Address', '10.11.12.13'),
-                                   ('IP Address', '14.15.16.17'))}
+                                   ('IP Address', '14.15.16.17'),
+                                   ('IP Address', '127.0.0.1'))}
         ok(cert, '10.11.12.13')
         ok(cert, '14.15.16.17')
+        # socket.inet_ntoa(socket.inet_aton('127.1')) == '127.0.0.1'
+        fail(cert, '127.1')
+        fail(cert, '14.15.16.17 ')
+        fail(cert, '14.15.16.17 extra data')
         fail(cert, '14.15.16.18')
         fail(cert, 'example.net')
 
@@ -696,6 +701,8 @@ class BasicSocketTests(unittest.TestCase):
                         ('IP Address', '2003:0:0:0:0:0:0:BABA\n'))}
             ok(cert, '2001::cafe')
             ok(cert, '2003::baba')
+            fail(cert, '2003::baba ')
+            fail(cert, '2003::baba extra data')
             fail(cert, '2003::bebe')
             fail(cert, 'example.net')
 
@@ -2214,7 +2221,7 @@ class ThreadedEchoServer(threading.Thread):
                     self.sock, server_side=True)
                 self.server.selected_npn_protocols.append(self.sslconn.selected_npn_protocol())
                 self.server.selected_alpn_protocols.append(self.sslconn.selected_alpn_protocol())
-            except (ConnectionResetError, BrokenPipeError) as e:
+            except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError) as e:
                 # We treat ConnectionResetError as though it were an
                 # SSLError - OpenSSL on Ubuntu abruptly closes the
                 # connection when asked to use an unsupported protocol.
@@ -2222,6 +2229,9 @@ class ThreadedEchoServer(threading.Thread):
                 # BrokenPipeError is raised in TLS 1.3 mode, when OpenSSL
                 # tries to send session tickets after handshake.
                 # https://github.com/openssl/openssl/issues/6342
+                #
+                # ConnectionAbortedError is raised in TLS 1.3 mode, when OpenSSL
+                # tries to send session tickets after handshake when using WinSock.
                 self.server.conn_errors.append(str(e))
                 if self.server.chatty:
                     handle_error("\n server:  bad connection attempt from " + repr(self.addr) + ":\n")
@@ -2352,7 +2362,7 @@ class ThreadedEchoServer(threading.Thread):
                             sys.stdout.write(" server: read %r (%s), sending back %r (%s)...\n"
                                              % (msg, ctype, msg.lower(), ctype))
                         self.write(msg.lower())
-                except ConnectionResetError:
+                except (ConnectionResetError, ConnectionAbortedError):
                     # XXX: OpenSSL 1.1.1 sometimes raises ConnectionResetError
                     # when connection is not shut down gracefully.
                     if self.server.chatty and support.verbose:
@@ -2362,6 +2372,18 @@ class ThreadedEchoServer(threading.Thread):
                         )
                     self.close()
                     self.running = False
+                except ssl.SSLError as err:
+                    # On Windows sometimes test_pha_required_nocert receives the
+                    # PEER_DID_NOT_RETURN_A_CERTIFICATE exception
+                    # before the 'tlsv13 alert certificate required' exception.
+                    # If the server is stopped when PEER_DID_NOT_RETURN_A_CERTIFICATE
+                    # is received test_pha_required_nocert fails with ConnectionResetError
+                    # because the underlying socket is closed
+                    if 'PEER_DID_NOT_RETURN_A_CERTIFICATE' == err.reason:
+                        if self.server.chatty and support.verbose:
+                            sys.stdout.write(err.args[1])
+                        # test_pha_required_nocert is expecting this exception
+                        raise ssl.SSLError('tlsv13 alert certificate required')
                 except OSError:
                     if self.server.chatty:
                         handle_error("Test server failure:\n")
@@ -4365,7 +4387,7 @@ class TestPostHandshakeAuth(unittest.TestCase):
                 self.assertEqual(s.recv(1024), b'FALSE\n')
                 s.write(b'PHA')
                 self.assertEqual(s.recv(1024), b'OK\n')
-                # optional doens't fail when client does not have a cert
+                # optional doesn't fail when client does not have a cert
                 s.write(b'HASCERT')
                 self.assertEqual(s.recv(1024), b'FALSE\n')
 
@@ -4421,6 +4443,37 @@ class TestPostHandshakeAuth(unittest.TestCase):
                 # PHA fails for TLS != 1.3
                 s.write(b'PHA')
                 self.assertIn(b'WRONG_SSL_VERSION', s.recv(1024))
+
+    def test_bpo37428_pha_cert_none(self):
+        # verify that post_handshake_auth does not implicitly enable cert
+        # validation.
+        hostname = SIGNED_CERTFILE_HOSTNAME
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.post_handshake_auth = True
+        client_context.load_cert_chain(SIGNED_CERTFILE)
+        # no cert validation and CA on client side
+        client_context.check_hostname = False
+        client_context.verify_mode = ssl.CERT_NONE
+
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(SIGNED_CERTFILE)
+        server_context.load_verify_locations(SIGNING_CA)
+        server_context.post_handshake_auth = True
+        server_context.verify_mode = ssl.CERT_REQUIRED
+
+        server = ThreadedEchoServer(context=server_context, chatty=False)
+        with server:
+            with client_context.wrap_socket(socket.socket(),
+                                            server_hostname=hostname) as s:
+                s.connect((HOST, server.port))
+                s.write(b'HASCERT')
+                self.assertEqual(s.recv(1024), b'FALSE\n')
+                s.write(b'PHA')
+                self.assertEqual(s.recv(1024), b'OK\n')
+                s.write(b'HASCERT')
+                self.assertEqual(s.recv(1024), b'TRUE\n')
+                # server cert has not been validated
+                self.assertEqual(s.getpeercert(), {})
 
 
 def test_main(verbose=False):

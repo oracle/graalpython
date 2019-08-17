@@ -315,7 +315,7 @@ public abstract class PGuards {
     }
 
     public static boolean isForeignObject(Object obj) {
-        return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject);
+        return obj instanceof TruffleObject && !(obj instanceof PythonAbstractObject) && !(obj instanceof PythonBuiltinClassType);
     }
 
     public static boolean isPInt(Object obj) {

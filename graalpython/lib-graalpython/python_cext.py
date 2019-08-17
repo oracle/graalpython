@@ -661,6 +661,15 @@ def PyUnicode_Compare(left, right):
         return -1
     else:
         return 1
+    
+_codecs_module = None
+
+@may_raise
+def PyUnicode_AsUnicodeEscapeString(string):
+    global _codecs_module
+    if not _codecs_module:
+        import _codecs as _codecs_module 
+    return _codecs_module.unicode_escape_encode(string)[0]
 
 
 ##################### CAPSULE
@@ -724,9 +733,28 @@ def PyModule_AddObject(m, k, v):
     return None
 
 
-from posix import stat_result
+@may_raise
 def PyStructSequence_New(typ):
-    return stat_result([None] * stat_result.n_sequence_fields * 2)
+    n = len(typ._fields)
+    return typ(*([None]*n))
+
+
+namedtuple_type = None
+@may_raise
+def PyStructSequence_InitType2(type_name, type_doc, field_names, field_docs):
+    assert len(field_names) == len(field_docs)
+    global namedtuple_type
+    if not namedtuple_type:
+        from collections import namedtuple as namedtuple_type
+    new_type = namedtuple_type(type_name, field_names)
+    new_type.__doc__ = type_doc
+    for i in range(len(field_names)):
+        prop = getattr(new_type, field_names[i])
+        assert isinstance(prop, property)
+        prop.__doc__ = field_docs[i]
+    # ensure '_fields' attribute; required in 'PyStructSequence_New'
+    assert hasattr(new_type, "_fields")
+    return new_type
 
 
 def METH_UNSUPPORTED(fun):
@@ -891,6 +919,7 @@ def PyObject_Size(obj):
         return -1
 
 
+@may_raise
 def PyObject_Call(callee, args, kwargs):
     return callee(*args, **kwargs)
 
@@ -950,13 +979,13 @@ def PyObject_AsFileDescriptor(obj):
 
 
 @may_raise
-def PyObject_GetAttr(obj, attr):
-    return getattr(obj, attr)
+def PyObject_GenericGetAttr(obj, attr):
+    return object.__getattribute__(obj, attr)
 
 
 @may_raise(-1)
-def PyObject_SetAttr(obj, attr, value):
-    setattr(obj, attr, value)
+def PyObject_GenericSetAttr(obj, attr, value):
+    object.__setattr__(obj, attr, value)
     return 0
 
 

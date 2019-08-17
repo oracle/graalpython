@@ -176,6 +176,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+        sys.setAttribute("graal_python_host_import_enabled", context.getEnv().isHostLookupAllowed());
         sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         sys.setAttribute("graal_python_core_home", context.getCoreHome());
         sys.setAttribute("graal_python_stdlib_home", context.getStdlibHome());
@@ -225,7 +226,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         if (args.length > 0) {
             String argv0 = args[0];
             if (argv0 != null && !argv0.startsWith("-") && !argv0.isEmpty()) {
-                TruffleFile scriptFile = env.getTruffleFile(argv0);
+                TruffleFile scriptFile = env.getPublicTruffleFile(argv0);
                 try {
                     scriptPath = scriptFile.getAbsoluteFile().getParent().getPath();
                 } catch (SecurityException e) {

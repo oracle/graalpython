@@ -113,17 +113,24 @@ public abstract class ExecutionContext {
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
             if (calleeRootNode.needsExceptionState()) {
-                PException curExc = PArguments.getException(frame);
-                if (curExc == null) {
-                    // bad, but we must provide the exception state
+                PException curExc = null;
+                if (isPythonFrame(frame, callNode)) {
+                    curExc = PArguments.getException(frame);
+                    if (curExc == null) {
+                        // bad, but we must provide the exception state
 
-                    // TODO: frames: check that this also set
-                    // needsExceptionState on our own root node
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                    curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                    // now, set in our args, such that we won't do this again
-                    PArguments.setException(frame, curExc);
+                        // TODO: frames: check that this also set
+                        // needsExceptionState on our own root node
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                        curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                        // now, set in our args, such that we won't do this again
+                        PArguments.setException(frame, curExc);
+                    }
+                } else {
+                    // If we're here, it can only be because some top-level call
+                    // inside Python led us here
+                    curExc = PException.NO_EXCEPTION;
                 }
                 PArguments.setException(callArguments, curExc);
             }
@@ -316,6 +323,10 @@ public abstract class ExecutionContext {
          * Prepare a call from a foreign frame to a Python function.
          */
         public static PFrame.Reference enter(PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.acquireInteropLock();
+            }
+
             Reference popTopFrameInfo = context.popTopFrameInfo();
             PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
@@ -344,6 +355,9 @@ public abstract class ExecutionContext {
             // topframeref was marked as escaped, it'll be materialized at the
             // latest needed time
             context.setTopFrameInfo(frameInfo);
+            if (!context.getSingleThreadedAssumption().isValid()) {
+                context.releaseInteropLock();
+            }
         }
     }
 

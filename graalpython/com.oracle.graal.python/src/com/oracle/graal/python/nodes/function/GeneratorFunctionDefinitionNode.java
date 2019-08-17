@@ -86,7 +86,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
                 kwDefaultValues[i] = new PKeyword(kwDefaults[i].name, kwDefaults[i].execute(frame));
             }
         }
-        PCell[] closure = getClosureFromLocals(frame);
+        PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
         return withDocString(frame, factory().createGeneratorFunction(functionName, enclosingClassName, getGeneratorCallTarget(), PArguments.getGlobals(frame), closure, defaultValues,
                         kwDefaultValues));
     }

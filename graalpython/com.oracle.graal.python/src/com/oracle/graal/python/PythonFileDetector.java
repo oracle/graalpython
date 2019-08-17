@@ -49,7 +49,7 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
     @Override
     public String findMimeType(TruffleFile file) throws IOException {
         String fileName = file.getName();
-        if (fileName != null && fileName.endsWith(".py")) {
+        if (fileName != null && fileName.endsWith(PythonLanguage.EXTENSION)) {
             return PythonLanguage.MIME_TYPE;
         }
         return null;

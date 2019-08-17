@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.range;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -39,16 +40,21 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -56,6 +62,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRange)
@@ -223,4 +230,92 @@ public class RangeBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = "start", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class StartNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int start(PRange self) {
+            return self.getStart();
+        }
+    }
+
+    @Builtin(name = "step", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class StepNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int step(PRange self) {
+            return self.getStep();
+        }
+    }
+
+    @Builtin(name = "stop", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class StopNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int stop(PRange self) {
+            return self.getStop();
+        }
+    }
+
+    @Builtin(name = "index", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class IndexNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        int doInt(PRange self, int elem) {
+            if (elem >= self.getStart() && elem < self.getStop()) {
+                int normalized = elem - self.getStart();
+                if (normalized % self.getStep() == 0) {
+                    return normalized / self.getStep();
+                }
+            }
+            throw raise(ValueError, "%d is not in range", elem);
+        }
+
+        @Specialization
+        Object doGeneric(PRange self, Object elem,
+                        @Cached CastToIndexNode castToIntNode) {
+            try {
+                return doInt(self, castToIntNode.execute(elem));
+            } catch (PException e) {
+                throw raise(ValueError, "%s is not in range", elem);
+            }
+        }
+    }
+
+    @Builtin(name = "count", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class CountNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        int doInt(PRange self, int elem) {
+            assert self.getStep() != 0;
+            if (elem >= self.getStart() && elem < self.getStop()) {
+                int normalized = elem - self.getStart();
+                if (normalized % self.getStep() == 0) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        @Specialization
+        int doGeneric(VirtualFrame frame, PRange self, Object elem,
+                        @Cached("createEq()") BinaryComparisonNode cmpNode,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+
+            int len = self.len();
+            int cnt = 0;
+            for (int i = 0; i < len; i++) {
+                Object item = getItemNode.execute(self.getSequenceStorage(), i);
+                if (castToBooleanNode.executeBoolean(frame, cmpNode.executeWith(frame, elem, item))) {
+                    cnt++;
+                }
+            }
+            return cnt;
+        }
+
+        protected static BinaryComparisonNode createEq() {
+            return BinaryComparisonNode.create(__EQ__, __EQ__, "==");
+        }
+    }
 }

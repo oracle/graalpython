@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -68,6 +68,11 @@ def _reference_findchar(args):
         return string.find(char, start, end)
     elif direction == -1:
         return string.rfind(char, start, end)
+
+
+def _reference_unicode_escape(args):
+    import _codecs
+    return _codecs.unicode_escape_encode(args[0])[0]
 
 
 class CustomString(str):
@@ -462,5 +467,17 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="O",
         argspec='OO',
         arguments=["PyObject* str", "PyObject* seq"],
+        cmpfunc=unhandled_error_compare
+    )
+    
+    test_PyUnicode_AsUnicodeEscapeString = CPyExtFunction(
+        _reference_unicode_escape,
+        lambda: (
+            ("abcd", ),
+            ("öüä", ),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* str"],
         cmpfunc=unhandled_error_compare
     )

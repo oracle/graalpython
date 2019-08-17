@@ -505,8 +505,8 @@ def CPyExtType(name, code, **kwargs):
         0,                          /* tp_getset */
         {tp_base},                  /* tp_base */
         {tp_dict},                  /* tp_dict */
-        0,                          /* tp_descr_get */
-        0,                          /* tp_descr_set */
+        {tp_descr_get},             /* tp_descr_get */
+        {tp_descr_set},             /* tp_descr_set */
         {tp_dictoffset},            /* tp_dictoffset */
         {tp_init},                  /* tp_init */
         PyType_GenericAlloc,        /* tp_alloc */

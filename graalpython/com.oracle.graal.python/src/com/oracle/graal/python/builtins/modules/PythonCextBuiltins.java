@@ -81,12 +81,14 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassInitNativeWrapper;
@@ -139,6 +141,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -289,6 +292,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Type extends NativeBuiltin {
+
+        private static final String[] LOOKUP_MODULES = new String[]{
+                        PythonCextBuiltins.PYTHON_CEXT,
+                        "_weakref",
+                        "builtins"
+        };
+
         @Specialization
         @TruffleBoundary
         Object doI(String typeName) {
@@ -298,13 +308,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     return core.lookupType(type);
                 }
             }
-            Object attribute = core.lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT).getAttribute(typeName);
-            if (attribute != PNone.NO_VALUE) {
-                return attribute;
-            }
-            attribute = core.lookupBuiltinModule("builtins").getAttribute(typeName);
-            if (attribute != PNone.NO_VALUE) {
-                return attribute;
+            for (String module : LOOKUP_MODULES) {
+                Object attribute = core.lookupBuiltinModule(module).getAttribute(typeName);
+                if (attribute != PNone.NO_VALUE) {
+                    return attribute;
+                }
             }
             throw raise(PythonErrorType.KeyError, "'%s'", typeName);
         }
@@ -324,9 +332,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTuple_SetItem extends PythonTernaryBuiltinNode {
         @Specialization
-        int doI(PTuple tuple, Object position, Object element,
+        int doManaged(PTuple tuple, Object position, Object element,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             setItemNode.execute(tuple.getSequenceStorage(), position, element);
+            return 0;
+        }
+
+        @Specialization
+        int doNative(PythonNativeObject tuple, long position, Object element,
+                        @Cached PCallCapiFunction callSetItem,
+                        @Cached CExtNodes.ToSulongNode receiverToSulongNode,
+                        @Cached CExtNodes.ToSulongNode elementToSulongNode) {
+            // TODO(fa): This path should be avoided since this is called from native code to do a
+            // native operation.
+            callSetItem.call(NativeCAPISymbols.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, receiverToSulongNode.execute(tuple), position, elementToSulongNode.execute(element));
             return 0;
         }
 
@@ -572,25 +591,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_SetAttr", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyObject_Setattr extends PythonBuiltinNode {
+    abstract static class PyObject_Setattr extends PythonTernaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object setattr(PythonBuiltinClass object, String key, Object value) {
-            object.setAttributeUnsafe(key, value);
+        Object doBuiltinClass(PythonBuiltinClass object, String key, Object value,
+                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(object, key, value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doNativeClass(PythonNativeClass object, String key, Object value,
+                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(object, key, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
-        @TruffleBoundary
-        Object setattr(PythonObject object, String key, Object value) {
-            object.getStorage().define(key, value);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object setattr(PythonNativeClass object, String key, Object value,
-                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
-            writeAttrNode.execute(object, key, value);
+        Object doObject(PythonObject object, String key, Object value,
+                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
+            writeAttrToDynamicObjectNode.execute(object.getStorage(), key, value);
             return PNone.NONE;
         }
     }
@@ -2422,6 +2441,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(mroTuple)")
+        Object doIt(PythonNativeClass clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
+            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+            if (nativeClassStableAssumption != null) {
+                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") (without MRO) called");
+            }
+            return PNone.NONE;
+        }
 
         @Specialization
         Object doIt(PythonNativeClass clazz, String name, PTuple mroTuple,

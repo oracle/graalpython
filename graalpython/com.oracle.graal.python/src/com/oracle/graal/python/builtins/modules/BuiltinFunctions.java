@@ -67,7 +67,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -104,11 +103,12 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -132,7 +132,8 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListContextManager;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -179,15 +180,16 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -516,40 +518,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
-        @Child private AppendNode appendNode;
 
+        // logic like in 'Objects/object.c: _dir_locals'
         @Specialization(guards = "isNoValue(object)")
-        @SuppressWarnings("unused")
-        public Object dir(VirtualFrame frame, Object object) {
-            PList locals = factory().createList();
-            FrameDescriptor frameDescriptor = frame.getFrameDescriptor();
-            addIdsFromDescriptor(locals, frameDescriptor);
-            return locals;
-        }
+        Object locals(VirtualFrame frame, @SuppressWarnings("unused") Object object,
+                        @Cached ReadLocalsNode readLocalsNode,
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile inGenerator,
+                        @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
 
-        @TruffleBoundary
-        private void addIdsFromDescriptor(PList locals, FrameDescriptor frameDescriptor) {
-            for (FrameSlot slot : frameDescriptor.getSlots()) {
-                // XXX: remove this special case
-                if (slot.getIdentifier().equals(RETURN_SLOT_ID)) {
-                    continue;
-                }
-                getAppendNode().execute(locals, slot.getIdentifier());
+            Object localsDict = LocalsNode.getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
+            Object keysObj = callKeysNode.executeObject(frame, localsDict);
+            try (ConstructListContextManager cm = constructListNode.withGlobalState(getContextRef(), frame)) {
+                return cm.execute(keysObj);
             }
         }
 
         @Specialization(guards = "!isNoValue(object)")
-        public Object dir(VirtualFrame frame, Object object,
+        Object dir(VirtualFrame frame, Object object,
                         @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
             return dirNode.executeObject(frame, object);
-        }
-
-        private AppendNode getAppendNode() {
-            if (appendNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(AppendNode.create());
-            }
-            return appendNode;
         }
     }
 
@@ -652,12 +642,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setCustomLocals(args, locals);
         }
 
-        private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
+        private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins, PythonObjectLibrary lib) {
             if (builtins != null) {
-                PHashingCollection builtinsDict = builtins.getDict();
+                PHashingCollection builtinsDict = lib.getDict(builtins);
                 if (builtinsDict == null) {
                     builtinsDict = factory().createDictFixedStorage(builtins);
-                    builtins.setDict(builtinsDict);
+                    try {
+                        lib.setDict(builtins, builtinsDict);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreter();
+                        throw new IllegalStateException(e);
+                    }
                 }
                 setBuiltins.execute(frame, globals, BuiltinNames.__BUILTINS__, builtinsDict);
             } else {
@@ -666,9 +661,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        private void setCustomGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
+        private void setCustomGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args, PythonObjectLibrary lib) {
             PythonModule builtins = getContext().getBuiltins();
-            setBuiltinsInGlobals(frame, globals, setBuiltins, builtins);
+            setBuiltinsInGlobals(frame, globals, setBuiltins, builtins, lib);
             PArguments.setGlobals(args, globals);
         }
 
@@ -687,10 +682,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object execCustomGlobalsGlobalLocals(VirtualFrame frame, Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(frame, globals, setBuiltins, args);
+            setCustomGlobals(frame, globals, setBuiltins, args, lib);
             // here, we don't need to set any locals, since the {Write,Read,Delete}NameNodes will
             // fall back (like their CPython counterparts) to writing to the globals. We only need
             // to ensure that the `locals()` call still gives us the globals dict
@@ -717,10 +713,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"isMapping(locals)"})
         Object execCustomGlobalsCustomLocals(VirtualFrame frame, Object source, PDict globals, Object locals,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(frame, globals, setBuiltins, args);
+            setCustomGlobals(frame, globals, setBuiltins, args, lib);
             setCustomLocals(args, locals);
 
             return invokeNode.execute(frame, code.getRootCallTarget(), args);
@@ -1321,20 +1318,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "args.length != 0")
         Object minmaxBinary(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
-            return minmaxBinaryWithKey(frame, arg1, args, null, compare, null, moreThanTwo);
+                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode) {
+            return minmaxBinaryWithKey(frame, arg1, args, null, compare, null, moreThanTwo, castToBooleanNode);
         }
 
         @Specialization(guards = "args.length != 0")
         Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, PythonObject keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("create()") CallNode keyCall,
-                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
+                        @Cached CallNode keyCall,
+                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode) {
             Object currentValue = arg1;
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
             Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-            if (compare.executeBool(frame, nextKey, currentKey)) {
+            if (castToBooleanNode.executeBoolean(frame, compare.executeWith(frame, nextKey, currentKey))) {
                 currentKey = nextKey;
                 currentValue = nextValue;
             }
@@ -1864,6 +1863,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
+        public String doIt(PGenerator gen) {
+            return NodeUtil.printTreeToString(gen.getCallTarget().getRootNode());
+        }
+
+        @Specialization
+        @TruffleBoundary
         public String doIt(PCode code) {
             return NodeUtil.printTreeToString(code.getRootNode());
         }
@@ -1927,14 +1932,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public Object globals(VirtualFrame frame) {
+        public Object globals(VirtualFrame frame,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             PythonObject globals = callerFrame.getGlobals();
             if (condProfile.profile(globals instanceof PythonModule)) {
-                PHashingCollection dict = globals.getDict();
+                PHashingCollection dict = lib.getDict(globals);
                 if (dict == null) {
                     CompilerDirectives.transferToInterpreter();
-                    globals.setDict(dict = factory().createDictFixedStorage(globals));
+                    dict = factory().createDictFixedStorage(globals);
+                    try {
+                        lib.setDict(globals, dict);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreter();
+                        throw new IllegalStateException(e);
+                    }
                 }
                 return dict;
             } else {
@@ -1946,19 +1958,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "locals", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
-        private final ConditionProfile inGenerator = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public Object locals(VirtualFrame frame,
+        Object locals(VirtualFrame frame,
                         @Cached ReadLocalsNode readLocalsNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Cached MaterializeFrameNode materializeNode) {
+                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile inGenerator) {
+            return getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
+        }
+
+        static Object getLocalsDict(VirtualFrame frame, Node n, ReadLocalsNode readLocalsNode, ReadCallerFrameNode readCallerFrameNode, MaterializeFrameNode materializeNode,
+                        ConditionProfile inGenerator) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame.getArguments());
             if (inGenerator.profile(generatorFrame == null)) {
                 return readLocalsNode.execute(frame, callerFrame);
             } else {
-                return readLocalsNode.execute(frame, materializeNode.execute(frame, this, false, false, generatorFrame));
+                return readLocalsNode.execute(frame, materializeNode.execute(frame, n, false, false, generatorFrame));
             }
         }
     }

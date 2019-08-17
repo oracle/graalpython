@@ -135,6 +135,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
@@ -555,8 +556,9 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doSlice(SequenceStorage storage, PSlice slice,
+                        @Cached LenNode lenNode,
                         @Cached PythonObjectFactory factory) {
-            SliceInfo info = slice.computeIndices(storage.length());
+            SliceInfo info = slice.computeIndices(lenNode.execute(storage));
             if (factoryMethod != null) {
                 return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, info.length), factory);
             }
@@ -771,6 +773,11 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doObject(ObjectSequenceStorage storage, int idx) {
+            return storage.getItemNormalized(idx);
+        }
+
+        @Specialization
+        protected Object doMro(MroSequenceStorage storage, int idx) {
             return storage.getItemNormalized(idx);
         }
 
@@ -1014,15 +1021,19 @@ public abstract class SequenceStorageNodes {
         protected static SequenceStorage doSlice(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, PSlice slice, Object iterable,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
-                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode) {
+                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
             SliceInfo info = slice.computeIndices(storage.length());
+            // We need to construct the list eagerly because if a SequenceStoreException occurs, we
+            // must not use iterable again. It could have sice-effects.
+            PList values = constructListNode.execute(iterable);
             try {
-                setItemSliceNode.execute(storage, info, iterable);
+                setItemSliceNode.execute(storage, info, values);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
-                setItemSliceNode.execute(generalized, info, iterable);
+                setItemSliceNode.execute(generalized, info, values);
                 return generalized;
             }
         }
@@ -1151,15 +1162,20 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected SequenceStorage doSlice(SequenceStorage storage, PSlice slice, Object iterable,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
-                        @Cached SetItemSliceNode setItemSliceNode) {
+                        @Cached SetItemSliceNode setItemSliceNode,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
             SliceInfo info = slice.computeIndices(storage.length());
+
+            // We need to construct the list eagerly because if a SequenceStoreException occurs, we
+            // must not use iterable again. It could have sice-effects.
+            PList values = constructListNode.execute(iterable);
             try {
-                setItemSliceNode.execute(storage, info, iterable);
+                setItemSliceNode.execute(storage, info, values);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
-                setItemSliceNode.execute(generalized, info, iterable);
+                setItemSliceNode.execute(generalized, info, values);
                 return generalized;
             }
         }
@@ -3289,7 +3305,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         Object[] doObjectSequenceStorage(ObjectSequenceStorage s) {
             Object[] barr = s.getInternalArray();
-            if (exact) {
+            if (exact && barr.length != s.length()) {
                 return exactCopy(barr, s.length());
             }
             return barr;

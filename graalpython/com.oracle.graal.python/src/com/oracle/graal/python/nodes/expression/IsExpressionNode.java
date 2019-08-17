@@ -42,11 +42,12 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -58,10 +59,9 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         return IsExpressionNodeGen.create(left, right);
     }
 
-    @Child private IsNode isNode = IsNodeGen.create();
-
     @Specialization
-    boolean doIt(Object left, Object right) {
+    boolean doIt(Object left, Object right,
+                    @Cached IsNode isNode) {
         return isNode.execute(left, right);
     }
 
@@ -174,7 +174,19 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         @Specialization
         boolean doDD(double left, double right) {
-            return left == right;
+            // n.b. we simulate that the primitive NaN is a singleton; this is required to make
+            // 'nan = float("nan"); nan is nan' work
+            return left == right || (Double.isNaN(left) && Double.isNaN(right));
+        }
+
+        @Specialization
+        boolean doCT(PythonBuiltinClass left, PythonBuiltinClassType right) {
+            return left.getType() == right;
+        }
+
+        @Specialization
+        boolean doTC(PythonBuiltinClassType left, PythonBuiltinClass right) {
+            return right.getType() == left;
         }
 
         @Specialization

@@ -81,11 +81,6 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return cachedObject.getShape() == cachedShape;
     }
 
-    private static boolean assertFinal(DynamicObject dynamicObject, Object key, Object cachedValue) {
-        Object other = dynamicObject.get(key) == null ? PNone.NO_VALUE : dynamicObject.get(key);
-        return cachedValue == other || cachedValue instanceof Number && other instanceof Number && ((Number) cachedValue).doubleValue() == ((Number) other).doubleValue();
-    }
-
     @SuppressWarnings("unused")
     @Specialization(limit = "1", //
                     guards = {
@@ -110,7 +105,6 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                     @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @Cached("readFinalValue(dynamicObject, loc)") Object cachedValue) {
-        assert assertFinal(dynamicObject, attrKey, cachedValue);
         return cachedValue;
     }
 
@@ -133,7 +127,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         if (loc == null) {
             return PNone.NO_VALUE;
         } else {
-            return loc.get(dynamicObject);
+            return loc.get(dynamicObject, cachedShape);
         }
     }
 

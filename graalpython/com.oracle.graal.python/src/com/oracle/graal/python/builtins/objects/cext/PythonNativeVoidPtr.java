@@ -40,9 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public class PythonNativeVoidPtr extends PythonAbstractObject {
     public final TruffleObject object;
 
@@ -52,6 +59,18 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
 
     public int compareTo(Object o) {
         return 0;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public LazyPythonClass getLazyPythonClass() {
+        return PythonBuiltinClassType.PInt;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("PythonNativeVoidPtr(%s)", object);
     }
 
 }

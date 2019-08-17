@@ -86,6 +86,7 @@ MICRO_BENCHMARKS = {
     'list-iterating-explicit': ITER_25 + ['1000000'],
     'list-iterating': ITER_25 + ['1000000'],
     'list-iterating-obj': ITER_15 + ['50000000'],
+    'list-constructions': ITER_25 + ['500000'],
     'math-sqrt': ITER_15 + ['500000000'],
     'object-allocate': ITER_10 + ['5000'],
     'object-layout-change': ITER_15 + ['1000000'],
@@ -127,7 +128,7 @@ MESO_BENCHMARKS = {
     'pads-eratosthenes': ITER_10 + ['100000'],
     'pads-integerpartitions': ITER_10 + ['700'],
     'pads-bipartite': ITER_10 + ['10000'],
-    'pads-lyndon': ITER_10 + ['10000000'],
+    'pads-lyndon': ITER_25 + ['10000000'],
     # -------------------------------------------------------
     # object benchmarks
     # -------------------------------------------------------
@@ -174,4 +175,3 @@ BENCHMARKS = {
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
     # "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
 }
-

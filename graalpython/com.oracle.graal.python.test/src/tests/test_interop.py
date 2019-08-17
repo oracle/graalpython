@@ -282,7 +282,7 @@ if sys.implementation.name == "graalpython":
         try:
             polyglot.eval(language="nfi", string="default")
         except NotImplementedError as e:
-            assert "internal language" in str(e)
+            assert "No language for id nfi found" in str(e)
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 
@@ -339,6 +339,13 @@ if sys.implementation.name == "graalpython":
             assert repr(ArrayList()) == "[]"
 
             assert java.util.ArrayList == ArrayList
+
+            import sun
+            assert type(sun.misc) is type(java)
+
+            import sun.misc.Signal
+            assert sun.misc.Signal is not None
+
 
     def test_foreign_object_does_not_leak_Javas_toString():
         try:

@@ -246,7 +246,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
-                BufferedReader reader = getContext().getEnv().getTruffleFile(path).newBufferedReader();
+                BufferedReader reader = getContext().getEnv().getPublicTruffleFile(path).newBufferedReader();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     data.history.add(line);
@@ -274,7 +274,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
-                BufferedWriter writer = getContext().getEnv().getTruffleFile(path).newBufferedWriter(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                BufferedWriter writer = getContext().getEnv().getPublicTruffleFile(path).newBufferedWriter(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                 for (String l : data.history) {
                     writer.write(l);
                     writer.newLine();

@@ -315,6 +315,33 @@ class TestObject(object):
         assert expected_basicsize == actual_basicsize, "expected = %s, actual = %s" % (expected_basicsize, actual_basicsize)
 
 
+    def test_descrset(self):
+        TestDescrSet = CPyExtType("TestDescrSet",
+                             '''
+                             int testdescr_set(PyObject* self, PyObject* key, PyObject* value) {
+                                     Py_XDECREF(((TestDescrSetObject*)self)->payload);
+                                     Py_XINCREF(value);
+                                     ((TestDescrSetObject*)self)->payload = value;
+                                     return 0;
+                             }
+
+                             PyObject* testdescr_get(PyObject* self, PyObject* key, PyObject* type) {
+                                     return ((TestDescrSetObject*)self)->payload;
+                             }
+                             ''',
+                             cmembers='PyObject* payload;',
+                             tp_descr_set="(descrsetfunc) testdescr_set",
+                             tp_descr_get="(descrgetfunc) testdescr_get",
+        )
+        
+        class Uff:
+            hello = TestDescrSet()
+        
+        obj = Uff()
+        obj.hello = "world"
+        assert obj.hello == "world", 'expected "world" but was %s' % obj.hello
+
+
 class TestObjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)

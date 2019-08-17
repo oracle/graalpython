@@ -151,6 +151,12 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Determines wether context startup tries to re-use previously cached sources of the core library.") //
     public static final OptionKey<Boolean> WithCachedSources = new OptionKey<>(true);
 
+    @Option(category = OptionCategory.EXPERT, help = "Embedder option: what to print in response to PythonLanguage#toString.") //
+    public static final OptionKey<Boolean> UseReprForPrintString = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.EXPERT, help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
+    public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2250);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }

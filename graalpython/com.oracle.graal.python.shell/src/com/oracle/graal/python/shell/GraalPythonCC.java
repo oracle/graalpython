@@ -171,7 +171,7 @@ public class GraalPythonCC extends GraalPythonCompiler {
                             throw new RuntimeException("cannot mix source and compiled sources");
                         }
                         fileInputs.add(arg);
-                    } else if (arg.endsWith(".c") || arg.endsWith(".cpp") || arg.endsWith(".cxx")) {
+                    } else if (arg.endsWith(".c") || arg.endsWith(".cc") || arg.endsWith(".cpp") || arg.endsWith(".cxx")) {
                         if (arg.endsWith(".cpp") || arg.endsWith(".cxx")) {
                             isCpp = true;
                         }

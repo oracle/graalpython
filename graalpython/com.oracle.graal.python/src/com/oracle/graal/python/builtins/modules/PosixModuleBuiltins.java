@@ -133,6 +133,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -384,7 +385,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone chdir(String spath) {
             Env env = getContext().getEnv();
             try {
-                TruffleFile dir = env.getTruffleFile(spath).getAbsoluteFile();
+                TruffleFile dir = env.getPublicTruffleFile(spath).getAbsoluteFile();
                 env.setCurrentWorkingDirectory(dir);
                 return PNone.NONE;
             } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
@@ -511,7 +512,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "fd > 2")
         Object setInheritable(int fd, @SuppressWarnings("unused") Object inheritable) {
             String path = getResources().getFilePath(fd);
-            TruffleFile f = getContext().getEnv().getTruffleFile(path);
+            TruffleFile f = getContext().getEnv().getPublicTruffleFile(path);
             if (!f.exists()) {
                 throw raise(OSError, "No such file or directory: '%s'", path);
             }
@@ -565,7 +566,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         Object stat(String path, boolean followSymlinks) {
-            TruffleFile f = getContext().getEnv().getTruffleFile(path);
+            TruffleFile f = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
             try {
                 return unixStat(f, linkOptions);
@@ -817,7 +818,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object listdir(VirtualFrame frame, String path,
                         @Cached PRaiseOSErrorNode raiseOS) {
             try {
-                TruffleFile file = getContext().getEnv().getTruffleFile(path);
+                TruffleFile file = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
                 Collection<TruffleFile> listFiles = file.list();
                 Object[] filenames = listToArray(listFiles);
                 return factory().createList(filenames);
@@ -851,7 +852,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(LazyPythonClass cls, String path) {
             try {
-                TruffleFile file = getContext().getEnv().getTruffleFile(path);
+                TruffleFile file = getContext().getEnv().getPublicTruffleFile(path);
                 return factory().createScandirIterator(cls, path, file.newDirectoryStream());
             } catch (SecurityException | IOException e) {
                 gotException.enter();
@@ -869,7 +870,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(LazyPythonClass cls, String name, String path) {
             try {
-                TruffleFile dir = getContext().getEnv().getTruffleFile(path);
+                TruffleFile dir = getContext().getEnv().getPublicTruffleFile(path);
                 TruffleFile file = dir.resolve(name);
                 return factory().createDirEntry(cls, name, file);
             } catch (SecurityException | InvalidPathException e) {
@@ -920,7 +921,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object open(VirtualFrame frame, String pathname, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd) {
             Set<StandardOpenOption> options = flagsToOptions(flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes(fileMode);
-            TruffleFile truffleFile = getContext().getEnv().getTruffleFile(pathname);
+            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
             try {
                 SeekableByteChannel fc = truffleFile.newByteChannel(options, attributes);
                 return getResources().open(truffleFile, fc);
@@ -1097,12 +1098,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object unlink(String path) {
             try {
-                getContext().getEnv().getTruffleFile(path).delete();
+                getContext().getEnv().getPublicTruffleFile(path).delete();
             } catch (RuntimeException | IOException e) {
                 gotException.enter();
                 throw raise(OSError, e);
             }
             return PNone.NONE;
+        }
+
+        @Specialization
+        Object unlink(VirtualFrame frame, Object pathLike,
+                        @Cached("createFspath()") LookupAndCallUnaryNode callFspathNode,
+                        @Cached CastToStringNode castToStringNode) {
+            try {
+                Object fsPathObj = callFspathNode.executeObject(frame, pathLike);
+                getContext().getEnv().getPublicTruffleFile(castToStringNode.execute(frame, fsPathObj)).delete();
+            } catch (RuntimeException | IOException e) {
+                gotException.enter();
+                throw raise(OSError, e);
+            }
+            return PNone.NONE;
+        }
+
+        protected static LookupAndCallUnaryNode createFspath() {
+            return LookupAndCallUnaryNode.create(__FSPATH__);
         }
     }
 
@@ -1130,7 +1149,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object mkdir(VirtualFrame frame, String path, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd) {
             try {
-                getContext().getEnv().getTruffleFile(path).createDirectory();
+                getContext().getEnv().getPublicTruffleFile(path).createDirectory();
             } catch (FileAlreadyExistsException e) {
                 throw raiseOSError(frame, OSErrorEnum.EEXIST, path);
             } catch (RuntimeException | IOException e) {
@@ -1285,7 +1304,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object chmod(String path, long mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks) {
             Set<PosixFilePermission> permissions = modeToPermissions(mode);
             try {
-                TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
+                TruffleFile truffleFile = getContext().getEnv().getPublicTruffleFile(path);
                 if (!follow_symlinks) {
                     truffleFile = truffleFile.getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
                 } else {
@@ -1428,7 +1447,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         private TruffleFile getFile(String path, boolean followSymlinks) {
-            TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
+            TruffleFile truffleFile = getContext().getEnv().getPublicTruffleFile(path);
             if (!followSymlinks) {
                 try {
                     truffleFile = truffleFile.getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
@@ -1668,11 +1687,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         private Object rename(String src, String dst) {
             try {
-                TruffleFile dstFile = getContext().getEnv().getTruffleFile(dst);
+                TruffleFile dstFile = getContext().getEnv().getPublicTruffleFile(dst);
                 if (dstFile.isDirectory()) {
                     throw raise(OSError, "%s is a directory", dst);
                 }
-                TruffleFile file = getContext().getEnv().getTruffleFile(src);
+                TruffleFile file = getContext().getEnv().getPublicTruffleFile(src);
                 file.move(dstFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
                 return PNone.NONE;
             } catch (IOException e) {
@@ -1761,7 +1780,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 notImplementedBranch.enter();
                 throw raise(NotImplementedError);
             }
-            TruffleFile f = getContext().getEnv().getTruffleFile(path);
+            TruffleFile f = getContext().getEnv().getPublicTruffleFile(path);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
             if (!f.exists(linkOptions)) {
                 return false;
@@ -1914,7 +1933,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         String readlink(String str, @SuppressWarnings("unused") PNone none) {
             try {
-                return getContext().getEnv().getTruffleFile(str).getCanonicalFile().getPath();
+                return getContext().getEnv().getPublicTruffleFile(str).getCanonicalFile().getPath();
             } catch (IOException e) {
                 throw raise(OSError, e);
             }

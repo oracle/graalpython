@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins.GetTracebackNextNode;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -126,7 +127,9 @@ public class TopLevelExceptionHandler extends RootNode {
                 // we cannot reify at this point because we have no Python frame; so create the full
                 // traceback chain
                 PTraceback tbHead = GetTracebackNextNode.createTracebackChain(e, materializeFrameNode, factory());
-                e.getExceptionObject().setTraceback(tbHead);
+                if (tbHead != PTraceback.NO_TRACEBACK) {
+                    e.getExceptionObject().setTraceback(tbHead);
+                }
                 printExc(frame, e);
                 if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
@@ -260,7 +263,7 @@ public class TopLevelExceptionHandler extends RootNode {
             PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
         } else {
             PythonModule mainModule = pythonContext.getMainModule();
-            PHashingCollection mainDict = mainModule.getDict();
+            PHashingCollection mainDict = PythonObjectLibrary.getUncached().getDict(mainModule);
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);

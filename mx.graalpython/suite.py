@@ -5,11 +5,11 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.219.2",
+    "mxversion": "5.225.2",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "19.2.0",
+    "version": "19.3.0",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "00e0018db91b66ebaec939f6cd7fa5f90f46ef30",
+                "version": "17b272f9e2bb634c4544ffacfced6d4fcc6654bb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "00e0018db91b66ebaec939f6cd7fa5f90f46ef30",
+                "version": "17b272f9e2bb634c4544ffacfced6d4fcc6654bb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -90,7 +90,16 @@ suite = {
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/setuptools-40.6.3.zip",
             ],
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
-        }
+        },
+        "XZ-1.8": {
+            "sha1": "c4f7d054303948eb6a4066194253886c8af07128",
+            "maven": {
+                "groupId": "org.tukaani",
+                "artifactId": "xz",
+                "version": "1.8",
+            },
+        },
+
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -150,7 +159,6 @@ suite = {
         },
     },
 
-
     "projects": {
         # GRAALPYTHON ANTLR
         "com.oracle.graal.python.parser.antlr": {
@@ -190,14 +198,15 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
                 "sulong:SULONG",
+                "XZ-1.8",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
-            "javaCompliance" : "8+",
-            "checkstyleVersion" : "8.8",
+            "javaCompliance": "8+",
+            "checkstyleVersion": "8.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
-            "spotbugsIgnoresGenerated" : True,
+            "spotbugsIgnoresGenerated": True,
         },
 
         # GRAALPYTHON TEST
@@ -230,7 +239,6 @@ suite = {
             "workingSets": "Truffle,Python",
             "testProject": True,
         },
-
 
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",

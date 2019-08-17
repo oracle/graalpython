@@ -97,23 +97,6 @@ Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
     return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(Py_ssize_t));
 }
 
-PyObject * PyLong_FromVoidPtr(void *p) {
-#if SIZEOF_VOID_P <= SIZEOF_LONG
-    return PyLong_FromUnsignedLongLong((unsigned long)p);
-#else
-
-#if SIZEOF_LONG_LONG < SIZEOF_VOID_P
-#   error "PyLong_FromVoidPtr: sizeof(long long) < sizeof(void*)"
-#endif
-    return PyLong_FromUnsignedLongLong((unsigned long long)(uintptr_t)p);
-#endif /* SIZEOF_VOID_P <= SIZEOF_LONG */
-}
-
-UPCALL_ID(PyLong_AsVoidPtr);
-void * PyLong_AsVoidPtr(PyObject *obj){
-    return (void *)UPCALL_CEXT_PTR(_jls_PyLong_AsVoidPtr, native_to_java(obj));
-}
-
 UPCALL_ID(PyLong_FromLongLong);
 PyObject * PyLong_FromLong(long n)  {
     return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 1);
@@ -129,6 +112,16 @@ PyObject * PyLong_FromUnsignedLong(unsigned long n) {
 
 PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
     return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 0);
+}
+
+PyObject * PyLong_FromVoidPtr(void *p) {
+	// directly do the upcall to avoid a cast to primitive
+    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, p, 0);
+}
+
+UPCALL_ID(PyLong_AsVoidPtr);
+void * PyLong_AsVoidPtr(PyObject *obj){
+    return (void *)UPCALL_CEXT_PTR(_jls_PyLong_AsVoidPtr, native_to_java(obj));
 }
 
 UPCALL_ID(_PyLong_Sign);

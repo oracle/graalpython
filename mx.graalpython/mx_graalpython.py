@@ -31,7 +31,6 @@ import re
 import shutil
 import sys
 import tempfile
-import time
 from argparse import ArgumentParser
 
 import mx
@@ -43,7 +42,8 @@ import mx_subst
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
-    CONFIGURATION_DEFAULT, CONFIG_EXPERIMENTAL_SPLITTING, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, CONFIGURATION_DUMP
+    CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
+    CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI
 
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
@@ -270,7 +270,7 @@ def python_gvm(args=None):
 
 def python_svm(args=None):
     "Build and run the native graalpython image"
-    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher(args or [])
 
 
@@ -359,7 +359,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.sandboxed"])
+            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -373,11 +373,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_svm(["sandboxed"]), args=["--llvm.sandboxed"])
+            run_python_unittests(python_svm(["sandboxed"]), args=["--llvm.managed"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
-            python_checkcopyrights(["--fix"])
+            python_checkcopyrights([])
 
     with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm]) as task:
         if task:
@@ -463,7 +463,7 @@ def run_embedded_native_python_test(args=None):
             """)
         out = mx.OutputCapture()
         mx.run([graalvm_javac, filename])
-        mx.run([graalvm_native_image, "--initialize-at-build-time", "--language:python", "HelloWorld"])
+        mx.run([graalvm_native_image, "-H:+ReportExceptionStackTraces", "--initialize-at-build-time", "--language:python", "HelloWorld"])
         mx.run(["./helloworld"], out=mx.TeeOutputCapture(out))
         assert "abc" in out.data
         assert "xyz" in out.data
@@ -522,7 +522,7 @@ def run_shared_lib_test(args=None):
                 return status;
             }
         #if %s
-            status = poly_context_builder_option(isolate_thread, builder, "llvm.sandboxed", "true");
+            status = poly_context_builder_option(isolate_thread, builder, "llvm.managed", "true");
             if (status != poly_ok) {
                 return status;
             }
@@ -733,7 +733,7 @@ def update_import_cmd(args):
 
 def python_style_checks(args):
     "Check (and fix where possible) copyrights, eclipse formatting, and spotbugs"
-    python_checkcopyrights(["--fix"])
+    python_checkcopyrights(["--fix"] if "--fix" in args else [])
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
     if os.environ.get("ECLIPSE_EXE"):
@@ -993,18 +993,20 @@ def _register_vms(namespace):
 
     # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIG_EXPERIMENTAL_SPLITTING, extra_vm_args=[
-        '-Dgraal.TruffleExperimentalSplitting=true',
-        '-Dgraal.TruffleExperimentalSplittingAllowForcedSplits=false'
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=[
-        '--llvm.sandboxed',
+        '--llvm.managed',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
-        "--llvm.sandboxed=false"
+        "--llvm.managed=false"
     ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DUMP, extra_polyglot_args=[
-        "--experimental-options", "-dump"
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context', '--llvm.managed',
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context', '--llvm.managed=false',
     ]), SUITE, 10)
 
 
@@ -1038,35 +1040,56 @@ def python_build_watch(args):
     if sum([args.full, args.graalvm, args.no_java]) > 1:
         mx.abort("Only one of --full, --graalvm, --no-java can be specified")
     if args.full:
-        suffixes = [".c", ".h", ".class", ".jar", ".java"]
+        # suffixes = [".c", ".h", ".class", ".jar", ".java"]
         excludes = [".*\\.py$"]
     elif args.graalvm:
-        suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
+        # suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
         excludes = ["mx_.*\\.py$"]
     else:
-        suffixes = [".c", ".h", ".class", ".jar"]
+        # suffixes = [".c", ".h", ".class", ".jar"]
         excludes = [".*\\.py$", ".*\\.java$"]
 
     cmd = ["inotifywait", "-q", "-e", "close_write,moved_to", "-r", "--format=%f"]
     for e in excludes:
         cmd += ["--exclude", e]
     cmd += ["@%s" % os.path.join(SUITE.dir, ".git"), SUITE.dir]
+    cmd_qq = cmd[:]
+    cmd_qq[1] = "-qq"
+    was_quiet = mx.get_opts().quiet
 
     while True:
         out = mx.OutputCapture()
-        mx.run(cmd, out=out)
+        if mx.run(cmd, out=out, nonZeroIsFatal=False) != 0:
+            continue
         changed_file = out.data.strip()
         mx.logv(changed_file)
         if any(changed_file.endswith(ext) for ext in [".c", ".h", ".class", ".jar"]):
-            mx.log("Build needed ...")
-            time.sleep(2)
+            if not mx.get_opts().quiet:
+                sys.stdout.write("Build needed ")
+                sys.stdout.flush()
+            while True:
+                # re-run this until it times out, which we'll interpret as quiet
+                # time
+                if not mx.get_opts().quiet:
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+                mx.get_opts().quiet = True
+                try:
+                    retcode = mx.run(cmd_qq, timeout=3, nonZeroIsFatal=False)
+                finally:
+                    mx.get_opts().quiet = was_quiet
+                if retcode == mx.ERROR_TIMEOUT:
+                    if not mx.get_opts().quiet:
+                        sys.stdout.write("\n")
+                    break
+            mx.log("Building.")
             if args.full:
                 mx.command_function("build")()
             elif args.graalvm:
                 mx.log(python_gvm())
             else:
                 nativebuild([])
-        mx.log("Build done.")
+            mx.log("Build done.")
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1081,7 +1104,7 @@ mx.update_commands(SUITE, {
     'deploy-binary-if-master': [deploy_binary_if_master, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[import-name, default: truffle]'],
-    'python-style': [python_style_checks, ''],
+    'python-style': [python_style_checks, '[--fix]'],
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
