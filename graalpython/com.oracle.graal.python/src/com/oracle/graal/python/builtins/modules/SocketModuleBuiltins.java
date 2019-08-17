@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -59,7 +60,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -76,7 +76,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -558,6 +557,10 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getAddrInfo(String host, String port, int family, int type, int proto, int flags) {
+            if (!StandardCharsets.US_ASCII.newEncoder().canEncode(port)) {
+                throw raise(PythonBuiltinClassType.UnicodeEncodeError);
+            }
+
             if (services == null) {
                 services = parseServices();
             }

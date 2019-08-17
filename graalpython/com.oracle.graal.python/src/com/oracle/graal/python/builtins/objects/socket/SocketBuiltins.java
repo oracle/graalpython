@@ -570,6 +570,16 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
+    // detach
+    @Builtin(name = "detach", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SockDetachNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int detach(PSocket socket) {
+            return socket.getFileno();
+        }
+    }
+
     @Builtin(name = "_setsockopt", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class SetSockOptNode extends PythonBuiltinNode {
