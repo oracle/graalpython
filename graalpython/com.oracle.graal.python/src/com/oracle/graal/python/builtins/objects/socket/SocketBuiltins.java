@@ -251,6 +251,17 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class GetTimeoutNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object get(PSocket socket) {
+            try {
+                if (socket.getSocket() != null) {
+                    socket.getSocket().socket().getSoTimeout();
+                }
+
+                if (socket.getServerSocket() != null) {
+                    socket.getServerSocket().socket().getSoTimeout();
+                }
+            } catch (Exception e) {
+                throw raise(PythonBuiltinClassType.OSError);
+            }
             return PNone.NONE;
         }
     }
