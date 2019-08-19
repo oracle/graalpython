@@ -49,7 +49,7 @@ public class NumberLiteralSSTNode extends SSTNode {
 
     public NumberLiteralSSTNode(String value, int start, int base, int startIndex, int endIndex) {
         super(startIndex, endIndex);
-        this.value = value;
+        this.value = value.indexOf('_') == -1 ? value : value.replaceAll("_", "");
         this.start = start;
         this.base = base;
     }
