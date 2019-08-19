@@ -300,7 +300,7 @@ public final class PythonNodeFactory {
             case Statement:
                 ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
                 printExpression.assignSourceSection(body.getSourceSection());
-                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd);
+                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor());
                 break;
             default:
                 throw new RuntimeException("unexpected mode: " + mode);

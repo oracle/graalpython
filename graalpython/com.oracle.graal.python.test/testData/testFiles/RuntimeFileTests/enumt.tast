@@ -537,6 +537,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: auto
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -610,6 +611,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: _EnumDict
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1265,6 +1267,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: EnumMeta
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5180,6 +5183,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: Enum
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6780,6 +6784,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: IntEnum
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6899,6 +6904,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: Flag
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8730,6 +8736,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: IntFlag
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

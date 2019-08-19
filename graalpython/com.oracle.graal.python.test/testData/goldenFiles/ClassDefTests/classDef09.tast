@@ -43,6 +43,7 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
                       ReturnTargetNode SourceSection: None
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
+                            QualName: Enum
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: __name__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

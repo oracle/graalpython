@@ -1951,6 +1951,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReturnTargetNode SourceSection: None
                                     Body: BlockNode SourceSection: None
                                       ClassDefinitionPrologueNode SourceSection: None
+                                        QualName: cmp_to_key.<locals>.K
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: __name__
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2510,6 +2511,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: partial
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3806,6 +3808,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: partialmethod
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4863,6 +4866,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: _HashedSeq
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

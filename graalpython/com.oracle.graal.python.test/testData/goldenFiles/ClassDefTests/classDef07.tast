@@ -43,6 +43,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                       ReturnTargetNode SourceSection: None
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
+                            QualName: OrderedDict
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: __name__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

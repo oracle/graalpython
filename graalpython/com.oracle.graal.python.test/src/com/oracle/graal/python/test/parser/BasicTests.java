@@ -104,7 +104,6 @@ public class BasicTests extends ParserTestBase {
     
     @Test
     public void inline01() throws Exception {
-        // TODO Correct this test, now doesn't work. 
         FrameDescriptor fd = new FrameDescriptor(44);
         fd.addFrameSlot("a");
         fd.addFrameSlot("b");

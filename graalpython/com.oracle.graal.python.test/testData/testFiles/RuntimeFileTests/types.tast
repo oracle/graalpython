@@ -339,6 +339,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: _C
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1471,6 +1472,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: DynamicClassAttribute
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2349,6 +2351,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9917]`"""↵Define names
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: _GeneratorWrapper
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

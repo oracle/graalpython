@@ -295,17 +295,18 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
 
     private String getQualifiedName(ScopeInfo scope, String name) {
         StringBuilder qualifiedName = new StringBuilder(name);
+        boolean addDot = false;
         scope = scope.getParent();
         while (scope != null) {
-            
             switch (scope.getScopeKind()) {
                 case Function:
                 case Generator:
-                    qualifiedName.insert(0, "<locals>");
+                    qualifiedName.insert(0, ".<locals>.");
                     qualifiedName.insert(0, scope.getScopeId());
                     scope = scope.getParent();
                     break;
                 case Class:
+                    qualifiedName.insert(0, '.');
                     qualifiedName.insert(0, scope.getScopeId());
                     scope = scope.getParent();
                     break;
@@ -313,7 +314,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
                     scope = null;
                     break;
             }
-            
+                
         }
         return qualifiedName.toString();
     }

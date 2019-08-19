@@ -382,7 +382,7 @@ public class ParserTestBase {
                     corrected.append(correctIdentifier(oldLine, newLine));
                 } else if (oldLine.contains("Documentation:") && newLine.contains("Documentation:")) {
                     corrected.append(correctDocumentation(oldLine, newLine));
-                } else if (oldLine.contains("Name:") && newLine.contains("Name:")) {
+                } else if (oldLine.contains(" Name:") && newLine.contains(" Name:")) {
                     corrected.append(correctName(oldLine, newLine));
                 } else if (oldLine.contains("UnaryArithmeticExpression") && 
                         (newLine.contains("IntegerLiteralNode") || newLine.contains("LongLiteralNode") || newLine.contains("PIntLiteralNode"))){
@@ -435,8 +435,8 @@ public class ParserTestBase {
     }
     
     private String correctName(String oldLine, String newLine) {
-        int oldStart = oldLine.indexOf("Name: ");
-        int newStart = newLine.indexOf("Name: ");
+        int oldStart = oldLine.indexOf(" Name: ");
+        int newStart = newLine.indexOf(" Name: ");
         
         if (oldStart != newStart) {
             return oldLine;

@@ -2468,6 +2468,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: attrgetter
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3125,6 +3126,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: itemgetter
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3706,6 +3708,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10862]`"""↵Operator
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: methodcaller
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -1,9 +1,7 @@
 BinaryArithmeticExpression SourceSection: [0,5]`a + b`
   LookupAndCallBinaryNodeGen SourceSection: None
     Op: __add__
-  ReadLocalVariableNode SourceSection: [0,1]`a`
-    Frame: [0,a,Illegal]
-    ReadVariableFromFrameNodeGen SourceSection: None
-  ReadLocalVariableNode SourceSection: [4,5]`b`
-    Frame: [1,b,Illegal]
-    ReadVariableFromFrameNodeGen SourceSection: None
+  ReadNameNodeGen SourceSection: [0,1]`a`
+    Identifier: a
+  ReadNameNodeGen SourceSection: [4,5]`b`
+    Identifier: b

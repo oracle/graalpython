@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.test.parser;
 
+import com.oracle.graal.python.runtime.PythonParser;
 import java.io.File;
 import org.junit.Test;
 
@@ -146,6 +147,14 @@ public class ClassDefTests extends ParserTestBase {
                 "    \"\"\"Class doc\"\"\"\n" +
                 "    def method():\n" +
                 "        \"\"\"Method doc\"\"\"");
+    }
+    
+    @Test
+    public void metaclass01() throws Exception {
+        checkScopeAndTree(
+                "class A:\n" +
+                "    class B:\n" +
+                "        pass\n", PythonParser.ParserMode.Statement);
     }
     
     private void checkScopeAndTree()  throws Exception{

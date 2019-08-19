@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttribu
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.AccessNameNode;
@@ -514,6 +515,8 @@ public class ParserTreePrinter implements NodeVisitor {
                     indent(level); sb.append("Value: ").append(((IntegerLiteralNode)node).getValue()); newLine();
                 } else if (node instanceof LongLiteralNode) {
                     indent(level); sb.append("Value: ").append(((LongLiteralNode)node).getValue()); newLine();
+                } else if (node instanceof ClassDefinitionPrologueNode) {
+                    indent(level); sb.append("QualName: ").append(((ClassDefinitionPrologueNode)node).getQualName()); newLine();
                 } else {
                     if (node instanceof WriteIdentifierNode) {
                         indent(level); sb.append("Identifier: ").append(((WriteIdentifierNode)node).getIdentifier()); newLine();

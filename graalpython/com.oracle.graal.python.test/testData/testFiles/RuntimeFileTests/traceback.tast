@@ -1753,6 +1753,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: FrameSummary
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2856,6 +2857,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                     ReturnTargetNode SourceSection: None
                       Body: BlockNode SourceSection: None
                         ClassDefinitionPrologueNode SourceSection: None
+                          QualName: StackSummary
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4035,6 +4037,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         ReturnTargetNode SourceSection: None
                           Body: BlockNode SourceSection: None
                             ClassDefinitionPrologueNode SourceSection: None
+                              QualName: TracebackException
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: __name__
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

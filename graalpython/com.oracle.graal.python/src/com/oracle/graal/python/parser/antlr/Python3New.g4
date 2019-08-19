@@ -303,10 +303,10 @@ locals
 [ com.oracle.graal.python.parser.ScopeInfo scope, ArrayList<StatementNode> list ]
 :
 	{
-	    if ($interactive) {
-                factory.createScope(_localctx, ScopeInfo.ScopeKind.Module);
-            } else if ($curInlineLocals != null) {
+	    if ($interactive && $curInlineLocals != null) {
                 factory.createScope(_localctx, ScopeInfo.ScopeKind.Function, $curInlineLocals);
+            } else {
+                factory.createScope(_localctx, ScopeInfo.ScopeKind.Module);
             }
 	}
 	{ int start = start(); }

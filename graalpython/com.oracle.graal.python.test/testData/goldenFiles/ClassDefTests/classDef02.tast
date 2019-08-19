@@ -43,6 +43,7 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
                       ReturnTargetNode SourceSection: None
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
+                            QualName: foo
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: __name__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

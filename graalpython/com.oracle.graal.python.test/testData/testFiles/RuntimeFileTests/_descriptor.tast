@@ -140,6 +140,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                                   ReturnTargetNode SourceSection: None
                                     Body: BlockNode SourceSection: None
                                       ClassDefinitionPrologueNode SourceSection: None
+                                        QualName: make_named_tuple_class.<locals>.named_tuple
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: __name__
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -726,6 +727,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f
                         ReturnTargetNode SourceSection: None
                           Body: BlockNode SourceSection: None
                             ClassDefinitionPrologueNode SourceSection: None
+                              QualName: SimpleNamespace
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: __name__
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
