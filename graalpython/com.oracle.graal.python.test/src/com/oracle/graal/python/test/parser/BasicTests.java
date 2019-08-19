@@ -865,6 +865,20 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void while11() throws Exception {
+        checkTreeResult( 
+                "iters = 0\n" +
+                "while iters < 40:\n" +
+                "    while iters < 10:\n" +
+                "        if False:\n" +
+                "            break\n" +
+                "        iters += 1\n" +
+                "    else:\n" +
+                "        iters += 1\n" +
+                "        break");
+    }
+    
+    @Test
     public void with01() throws Exception {
         checkTreeResult(
                 "with A() as a:\n" +

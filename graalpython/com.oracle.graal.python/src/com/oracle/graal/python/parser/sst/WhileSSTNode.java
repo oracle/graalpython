@@ -48,12 +48,13 @@ public class WhileSSTNode extends SSTNode {
     protected final boolean containsContinue;
     protected boolean containsBreak;
 
-    public WhileSSTNode(SSTNode test, SSTNode body, boolean containsContinue, int startOffset, int endOffset) {
+    public WhileSSTNode(SSTNode test, SSTNode body, boolean containsContinue, boolean containsBreak, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.test = test;
         this.body = body;
         this.elseStatement = null;
         this.containsContinue = containsContinue;
+        this.containsBreak = containsBreak;
     }
     
     @Override
@@ -64,10 +65,5 @@ public class WhileSSTNode extends SSTNode {
     public void setElse(SSTNode elseStatement) {
         this.elseStatement = elseStatement;
     }
-
-    public void setContainsBreak(boolean containsBreak) {
-        this.containsBreak = containsBreak;
-    }
-    
     
 }

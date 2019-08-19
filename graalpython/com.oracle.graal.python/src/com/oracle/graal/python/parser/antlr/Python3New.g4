@@ -808,8 +808,9 @@ while_stmt
 	{ boolean bFlag = startLoopBreak(); boolean cFlag = startLoopContinue(); }
 	suite
 	{ 
-            WhileSSTNode result = new WhileSSTNode($test.result, $suite.result, containsContinue, getStartIndex($ctx),getStopIndex($suite.stop)); 
+            WhileSSTNode result = new WhileSSTNode($test.result, $suite.result, containsContinue, containsBreak, getStartIndex($ctx),getStopIndex($suite.stop)); 
             containsContinue = cFlag;
+            containsBreak = bFlag;
         }
 	(
 		'else' ':' suite 
@@ -819,9 +820,7 @@ while_stmt
                 }
 	)?
 	{ 
-            result.setContainsBreak(containsBreak);
             push(result);
-            containsBreak = bFlag;
         }
 ;
 
