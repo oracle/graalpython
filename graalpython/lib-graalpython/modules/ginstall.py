@@ -1029,7 +1029,8 @@ index 8657420..f7b3f08 100644
  from pandas.compat.numpy import function as nv
  from pandas.util._decorators import Appender, Substitution, cache_readonly
 '''
-        cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
+        # workaround until Sulong toolchain fixes this
+        cflags = "-stdlib=libc++ -lc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
 
     return locals()
