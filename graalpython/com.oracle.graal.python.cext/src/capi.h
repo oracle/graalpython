@@ -44,7 +44,8 @@
 #define MUST_INLINE __attribute__((always_inline)) inline
 #define NO_INLINE __attribute__((noinline))
 
-#include "polyglot.h"
+#include <polyglot.h>
+
 #include "Python.h"
 
 #define SRC_CS "utf-8"
