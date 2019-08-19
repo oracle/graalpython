@@ -180,6 +180,10 @@ def OSError__str__(self):
 OSError.__new__ = OSError__new__
 OSError.__init__ = OSError__init__
 OSError.__str__ = OSError__str__
+OSError.errno = -1
+OSError.strerror = None
+OSError.filename = None
+OSError.filename2 = None
 del OSError__init__
 del OSError__new__
 del OSError__str__
