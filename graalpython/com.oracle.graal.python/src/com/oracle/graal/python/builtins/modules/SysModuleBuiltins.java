@@ -101,6 +101,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public static final String LLVM_LANGUAGE = "llvm";
     private static final String LICENSE = "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.";
     private static final String COMPILE_TIME;
+    public static final String PLATFORM_DARWIN = "darwin";
+    public static final String PLATFORM_WIN32 = "win32";
+    public static final PNone FRAMEWORK = PNone.NONE;
+
     static {
         String compile_time;
         try {
@@ -152,8 +156,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         String os = getPythonOSName();
         builtinConstants.put("platform", os);
-        if (os.equals("darwin")) {
-            builtinConstants.put("_framework", PNone.NONE);
+        if (os.equals(PLATFORM_DARWIN)) {
+            builtinConstants.put("_framework", FRAMEWORK);
         }
         builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
 
@@ -210,11 +214,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
         LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         String capiSrc = context.getCAPIHome();
+        String capiHome = getCapiHome(env, sys);
 
         Object[] path;
         int pathIdx = 0;
         boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
-        int defaultPaths = doIsolate ? 2 : 3;
+        int defaultPaths = doIsolate ? 3 : 4;
         if (option.length() > 0) {
             String[] split = option.split(context.getEnv().getPathSeparator());
             path = new Object[split.length + defaultPaths];
@@ -228,10 +233,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
         path[pathIdx++] = context.getStdlibHome();
         path[pathIdx++] = context.getCoreHome() + env.getFileNameSeparator() + "modules";
+        path[pathIdx++] = capiHome;
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
         sys.setAttribute("graal_python_cext_src", capiSrc);
         sys.setAttribute("graal_python_platform_id", toolchain.getIdentifier());
+        sys.setAttribute("graal_python_capi_home", capiHome);
+        sys.setAttribute("graal_python_capi_module_home", capiHome);
     }
 
     private static String getScriptPath(Env env, String[] args) {
@@ -257,6 +265,27 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return scriptPath;
     }
 
+    private static String getCapiHome(Env env, PythonModule sys) {
+        return String.join(env.getFileNameSeparator(), getCapiUserBase(env, sys), "lib", "capi");
+    }
+
+    // similar to 'sysconfig._getuserbase()'
+    private static String getCapiUserBase(Env env, PythonModule sys) {
+        Object osName = sys.getAttribute("platform");
+        if (FRAMEWORK != PNone.NONE && PLATFORM_DARWIN.equals(osName)) {
+            String _framework = FRAMEWORK.toString();
+            return String.join(env.getFileNameSeparator(), System.getProperty("user.home"), "Library", _framework, PythonLanguage.MAJOR + "." + PythonLanguage.MINOR);
+        } else if (PLATFORM_WIN32.equals(osName)) {
+            // first try to get 'APPDATA'
+            String appdata = System.getenv("APPDATA");
+            if (appdata != null) {
+                return appdata + env.getFileNameSeparator() + "Python";
+            }
+            return System.getProperty("user.home") + env.getFileNameSeparator() + "Python";
+        }
+        return System.getProperty("user.home") + env.getFileNameSeparator() + ".local";
+    }
+
     static String getPythonArch() {
         String arch = System.getProperty("os.arch", "");
         if (arch.equals("amd64")) {
@@ -275,9 +304,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
             } else if (property.toLowerCase().contains("linux")) {
                 os = "linux";
             } else if (property.toLowerCase().contains("mac")) {
-                os = "darwin";
+                os = PLATFORM_DARWIN;
             } else if (property.toLowerCase().contains("windows")) {
-                os = "win32";
+                os = PLATFORM_WIN32;
             } else if (property.toLowerCase().contains("sunos")) {
                 os = "sunos";
             } else if (property.toLowerCase().contains("freebsd")) {

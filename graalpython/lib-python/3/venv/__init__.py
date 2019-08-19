@@ -325,21 +325,6 @@ class EnvBuilder:
         # Truffle change: we need to ensure that the C API is built
         import build_capi
         build_capi.build()
-
-        # link C API libraries to venv if we do not use the system site
-        if not self.system_site_packages:
-            import site
-            from distutils.sysconfig import get_config_var
-            symlinks = self.symlinks
-            self.symlinks = True
-            ext_suffix = get_config_var("EXT_SUFFIX")
-            user_site = site.getusersitepackages()
-            for lib in [entry for entry in os.listdir(user_site) if entry.endswith(ext_suffix)]:
-                src = os.path.join(user_site, lib)
-                dst = os.path.join(context.libpath, lib)
-                logger.debug("Linking %s to %s" % (src, dst))
-                self.symlink_or_copy(src, dst)
-            self.symlinks = symlinks
         # Truffle change end
             
     

@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
@@ -77,19 +76,16 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -291,31 +287,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private String getCapiHome(PythonContext context, Env env, String libPythonName) {
             CompilerAsserts.neverPartOfCompilation();
             // look for file 'libPythonName' in the path
-            PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in entries of 'sys.path'");
             ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
             PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
-            Object pathObj = readNode.execute(sysModule, "path");
-            if (pathObj instanceof PList) {
-                SequenceStorage storage = ((PList) pathObj).getSequenceStorage();
-                for (int i = 0; i < storage.length(); i++) {
-                    String path = tryPathEntry(env, libPythonName, storage.getItemNormalized(i));
-                    if (path != null) {
-                        return path;
-                    }
-                }
-            } else {
-                // generic case
-                LookupAndCallUnaryDynamicNode callLenNode = LookupAndCallUnaryDynamicNode.getUncached();
-                CastToIndexNode castToIndexNode = CastToIndexNode.getUncached();
-                PInteropSubscriptNode getItemNode = PInteropSubscriptNode.getUncached();
-
-                int n = castToIndexNode.execute(callLenNode.passState().executeObject(pathObj, SpecialMethodNames.__LEN__));
-                for (int i = 0; i < n; i++) {
-                    String path = tryPathEntry(env, libPythonName, getItemNode.execute(pathObj, i));
-                    if (path != null) {
-                        return path;
-                    }
-                }
+            String path = tryPathEntry(env, libPythonName, readNode.execute(sysModule, "graal_python_capi_home"));
+            if (path != null) {
+                return path;
             }
             PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOCATE_ERROR, libPythonName));
             throw raise(PythonErrorType.ImportError, CAPI_LOCATE_ERROR, libPythonName);
@@ -325,7 +301,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String path = String.join(env.getFileNameSeparator(), asString(entry), libPythonName);
             PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in " + path);
             try {
-                if (env.getInternalTruffleFile(path).exists()) {
+                if (env.getPublicTruffleFile(path).exists()) {
                     PythonLanguage.getLogger().log(Level.FINE, "Found " + libPythonName + " in " + path);
                     return path;
                 }

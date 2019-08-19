@@ -42,10 +42,9 @@ import os
 import logging
 import importlib.util
 import distutils.log as dlog
-import site
 
-capi_home = site.getusersitepackages()
-capi_module_home = site.getusersitepackages()
+capi_home = sys.graal_python_capi_home
+capi_module_home = sys.graal_python_capi_module_home
 
 
 def load_setup():
