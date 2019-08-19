@@ -199,6 +199,7 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     unittest_sandboxed = 'python-unittest-sandboxed'
+    unittest_jython = 'python-unittest-jython'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
@@ -273,7 +274,7 @@ def set_env(**environ):
 
 def python_gvm(args=None):
     "Build and run a GraalVM graalpython launcher"
-    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher(args or [])
 
 
@@ -375,6 +376,10 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
             run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+
+    with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
+        if task:
+            run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:

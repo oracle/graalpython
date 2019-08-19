@@ -25,62 +25,52 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateWrapper
 public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
-
     @Child private StatementNode body;
-    @Child private ExpressionNode exceptType;
     @Child private WriteNode exceptName;
-    @Child private GetLazyClassNode getClass;
-    @Child private GetMroNode getMroNode;
-    @Child private IsSameTypeNode isSameTypeNode;
-    @Child private IsTypeNode isTypeNode;
-    @Child private PRaiseNode raiseNode;
+    @Child private ExpressionNode exceptType;
+
     @Child private MaterializeFrameNode materializeFrameNode;
     @Child private PythonObjectFactory factory;
-
-    // "object" is the uninitialized value (since it's not a valid error type)
-    @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
-    private final IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
-    private final ConditionProfile isTupleProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile isBuiltinTypeProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile isBuiltinClassProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile builtinClassMatchesProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile equalsProfile = ConditionProfile.createBinaryProfile();
-    private final BranchProfile errorProfile = BranchProfile.create();
-    private final ConditionProfile matchesProfile = ConditionProfile.createBinaryProfile();
+    @Child private ExceptMatchNode matchNode;
 
     public ExceptNode(StatementNode body, ExpressionNode exceptType, WriteNode exceptName) {
         this.body = body;
@@ -94,102 +84,17 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         this.exceptType = original.exceptType;
     }
 
-    public void executeExcept(VirtualFrame frame, PException e) {
-        SetCaughtExceptionNode.execute(frame, e);
-        body.executeVoid(frame);
-        if (exceptName != null) {
-            exceptName.doWrite(frame, null);
-        }
-        throw ExceptionHandledException.INSTANCE;
-    }
-
-    private GetLazyClassNode getClassNode() {
-        if (getClass == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getClass = insert(GetLazyClassNode.create());
-        }
-        return getClass;
-    }
-
-    public boolean matchesException(VirtualFrame frame, PException e) {
-        if (exceptType == null) {
-            return true;
-        }
-        Object expectedType = exceptType.execute(frame);
-        LazyPythonClass lazyClass = getClassNode().execute(e.getExceptionObject());
-
-        if (singleBuiltinError == PythonBuiltinClassType.PythonObject) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            PythonBuiltinClassType error = expectedType instanceof PythonBuiltinClass ? ((PythonBuiltinClass) expectedType).getType() : null;
-
-            if (error != null) {
-                // check that the class is a subclass of BaseException
-                if (!derivesFromBaseException(error)) {
-                    raiseNoException();
-                }
-                singleBuiltinError = error;
-            }
-        }
-
-        PythonBuiltinClassType cachedError = singleBuiltinError;
-        if (cachedError != null) {
-            if (expectedType instanceof PythonBuiltinClass && ((PythonBuiltinClass) expectedType).getType() == cachedError) {
-                return matchesExceptionCached(frame, lazyClass, cachedError, e);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            // the exception type we're looking for has changed
-            singleBuiltinError = null;
-            // fall through to normal case
-        }
-
-        return matchesExceptionFallback(frame, e, expectedType, lazyClass);
-    }
-
-    private boolean matchesExceptionCached(VirtualFrame frame, LazyPythonClass lazyClass, PythonBuiltinClassType cachedError, PException e) {
-        boolean matches = false;
-        if (isBuiltinTypeProfile.profile(lazyClass instanceof PythonBuiltinClassType)) {
-            // builtin class: look through base classes
-            PythonBuiltinClassType builtinClass = (PythonBuiltinClassType) lazyClass;
-            while (builtinClass != PythonBuiltinClassType.PythonObject) {
-                if (builtinClassMatchesProfile.profile(builtinClass == cachedError)) {
-                    matches = true;
-                    break;
-                }
-                builtinClass = builtinClass.getBase();
-            }
-        } else if (isBuiltinClassProfile.profile(lazyClass instanceof PythonBuiltinClass)) {
-            // builtin class: look through base classes
-            PythonBuiltinClassType builtinClass = ((PythonBuiltinClass) lazyClass).getType();
-            while (builtinClass != PythonBuiltinClassType.PythonObject) {
-                if (builtinClassMatchesProfile.profile(builtinClass == cachedError)) {
-                    matches = true;
-                    break;
-                }
-                builtinClass = builtinClass.getBase();
-            }
-        } else {
-            // non-builtin class: look through MRO
-            PythonAbstractClass[] mro = getMro(lazyClass);
-            for (PythonAbstractClass current : mro) {
-                if (isClassProfile.profileClass(current, cachedError)) {
-                    matches = true;
-                    break;
-                }
-            }
-        }
-        return writeResult(frame, e, matches);
-    }
-
-    private boolean writeResult(VirtualFrame frame, PException e, boolean matches) {
-        if (matchesProfile.profile(matches)) {
+    public void executeExcept(VirtualFrame frame, TruffleException e) {
+        if (e instanceof PException) {
+            PException pE = (PException) e;
+            SetCaughtExceptionNode.execute(frame, pE);
             if (exceptName != null) {
-                PBaseException exceptionObject = e.getExceptionObject();
+                PBaseException exceptionObject = pE.getExceptionObject();
                 if (materializeFrameNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     materializeFrameNode = insert(MaterializeFrameNodeGen.create());
                 }
                 PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false);
-
                 if (factory == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     factory = insert(PythonObjectFactory.create());
@@ -197,97 +102,29 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
                 exceptionObject.reifyException(escapedFrame, factory);
                 exceptName.doWrite(frame, exceptionObject);
             }
-            return true;
-        } else {
-            return false;
+        } else if (exceptName != null) {
+            exceptName.doWrite(frame, e.getExceptionObject());
         }
+        body.executeVoid(frame);
+        if (exceptName != null) {
+            exceptName.doWrite(frame, null);
+        }
+        throw ExceptionHandledException.INSTANCE;
     }
 
-    /**
-     * Fallback case for non-builtin classes and changing types.
-     */
-    private boolean matchesExceptionFallback(VirtualFrame frame, PException e, Object expectedType, LazyPythonClass lazyClass) {
-        boolean matches = false;
-        if (isBuiltinTypeProfile.profile(lazyClass instanceof PythonBuiltinClassType)) {
-            PythonBuiltinClassType builtinType = (PythonBuiltinClassType) lazyClass;
-            if (isTupleProfile.profile(expectedType instanceof PTuple)) {
-                // check for every type in the tuple
-                for (Object etype : ((PTuple) expectedType).getArray()) {
-                    if (matches(etype, builtinType)) {
-                        matches = true;
-                        break;
-                    }
-                }
-            } else {
-                matches = matches(expectedType, builtinType);
-            }
-        } else {
-            PythonAbstractClass clazz = (PythonAbstractClass) lazyClass;
-            if (isTupleProfile.profile(expectedType instanceof PTuple)) {
-                // check for every type in the tuple
-                for (Object etype : ((PTuple) expectedType).getArray()) {
-                    if (matches(etype, clazz)) {
-                        matches = true;
-                        break;
-                    }
-                }
-            } else {
-                matches = matches(expectedType, clazz);
-            }
+    public boolean matchesException(VirtualFrame frame, TruffleException e) {
+        if (exceptType == null) {
+            return e instanceof PException; // foreign exceptions must be caught explicitly
         }
-
-        return writeResult(frame, e, matches);
+        return getMatchNode().executeMatch(frame, e, exceptType.execute(frame));
     }
 
-    private boolean matches(Object expectedType, PythonAbstractClass clazz) {
-        // TODO: check whether expected type derives from BaseException
-        if (equalsProfile.profile(isSameType(expectedType, clazz))) {
-            return true;
-        }
-        PythonAbstractClass[] mro = getMro(clazz);
-        for (PythonAbstractClass current : mro) {
-            if (expectedType == current) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean matches(Object expectedType, PythonBuiltinClassType clazz) {
-        if (!isType(expectedType)) {
-            errorProfile.enter();
-            throw raiseNoException();
-        }
-
-        PythonAbstractClass expectedClass = (PythonAbstractClass) expectedType;
-
-        // TODO: check whether expected type derives from BaseException
-        PythonBuiltinClassType builtinClass = clazz;
-        while (builtinClass != PythonBuiltinClassType.PythonObject) {
-            if (isClassProfile.profileClass(expectedClass, builtinClass)) {
-                return true;
-            }
-            builtinClass = builtinClass.getBase();
-        }
-        return false;
-    }
-
-    private PException raiseNoException() {
-        if (raiseNode == null) {
+    private ExceptMatchNode getMatchNode() {
+        if (matchNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
+            matchNode = insert(ExceptMatchNode.create());
         }
-        throw raiseNode.raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
-    }
-
-    private boolean derivesFromBaseException(PythonBuiltinClassType error) {
-        if (error == PythonBuiltinClassType.PBaseException) {
-            return true;
-        }
-        if (error == PythonBuiltinClassType.PythonObject) {
-            return false;
-        }
-        return derivesFromBaseException(error.getBase());
+        return matchNode;
     }
 
     public StatementNode getBody() {
@@ -310,28 +147,127 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     public boolean isInstrumentable() {
         return getSourceSection() != null;
     }
+}
 
-    private PythonAbstractClass[] getMro(LazyPythonClass clazz) {
-        if (getMroNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getMroNode = insert(GetMroNode.create());
-        }
-        return getMroNode.execute(clazz);
+interface EmulateJythonNode {
+    default boolean emulateJython(PythonContext context) {
+        return PythonOptions.getOption(context, PythonOptions.EmulateJython);
+    }
+}
+
+@ImportStatic(PythonOptions.class)
+abstract class ValidExceptionNode extends Node implements EmulateJythonNode {
+    protected abstract boolean execute(VirtualFrame frame, Object type);
+
+    @Specialization
+    boolean isPythonException(VirtualFrame frame, LazyPythonClass type,
+                    @Cached IsSubtypeNode isSubtype) {
+        return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
     }
 
-    private boolean isSameType(Object left, Object right) {
-        if (isSameTypeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isSameTypeNode = insert(IsSameTypeNode.create());
-        }
-        return isSameTypeNode.execute(left, right);
+    @Specialization(guards = {"emulateJython", "context.getEnv().isHostObject(type)"}, limit = "1")
+    boolean isJavaException(@SuppressWarnings("unused") VirtualFrame frame, Object type,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @SuppressWarnings("unused") @Cached("emulateJython(context)") boolean emulateJython) {
+        Object hostType = context.getEnv().asHostObject(type);
+        return hostType instanceof Class && Throwable.class.isAssignableFrom((Class<?>) hostType);
     }
 
-    private boolean isType(Object expectedType) {
-        if (isTypeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isTypeNode = insert(IsTypeNode.create());
+    @Fallback
+    boolean isAnException(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object type) {
+        return false;
+    }
+
+    static ValidExceptionNode create() {
+        return ValidExceptionNodeGen.create();
+    }
+}
+
+@ImportStatic(PythonOptions.class)
+abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
+    @Child private PRaiseNode raiseNode;
+
+    protected abstract boolean executeMatch(VirtualFrame frame, Object exception, Object clause);
+
+    private void raiseIfNoException(VirtualFrame frame, Object clause, ValidExceptionNode isValidException) {
+        if (!isValidException.execute(frame, clause)) {
+            raiseNoException();
         }
-        return isTypeNode.execute(expectedType);
+    }
+
+    private void raiseNoException() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        throw raiseNode.raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
+    }
+
+    @Specialization
+    boolean matchPythonSingle(VirtualFrame frame, PException e, LazyPythonClass clause,
+                    @Cached ValidExceptionNode isValidException,
+                    @Cached GetLazyClassNode getLazyClass,
+                    @Cached IsSubtypeNode isSubtype) {
+        raiseIfNoException(frame, clause, isValidException);
+        return isSubtype.execute(frame, getLazyClass.execute(e.getExceptionObject()), clause);
+    }
+
+    @Specialization(guards = {"emulateJython", "context.getEnv().isHostException(e)", "context.getEnv().isHostObject(clause)"}, limit = "1")
+    boolean matchJava(VirtualFrame frame, Throwable e, Object clause,
+                    @Cached ValidExceptionNode isValidException,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @SuppressWarnings("unused") @Cached("emulateJython(context)") boolean emulateJython) {
+        raiseIfNoException(frame, clause, isValidException);
+        // cast must succeed due to ValidExceptionNode above
+        Class<?> javaClause = (Class<?>) context.getEnv().asHostObject(clause);
+        Throwable hostException = context.getEnv().asHostException(e);
+        return javaClause.isInstance(hostException);
+    }
+
+    @Specialization(guards = {"emulateJython", "context.getEnv().isHostObject(clause)"}, limit = "1")
+    boolean doNotMatchPython(VirtualFrame frame, @SuppressWarnings("unused") PException e, Object clause,
+                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @SuppressWarnings("unused") @Cached("emulateJython(context)") boolean emulateJython,
+                    @Cached ValidExceptionNode isValidException) {
+        raiseIfNoException(frame, clause, isValidException);
+        return false;
+    }
+
+    @Specialization(guards = {"emulateJython", "context.getEnv().isHostException(e)"}, limit = "1")
+    boolean doNotMatchJava(VirtualFrame frame, @SuppressWarnings("unused") Throwable e, LazyPythonClass clause,
+                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @SuppressWarnings("unused") @Cached("emulateJython(context)") boolean emulateJython,
+                    @Cached ValidExceptionNode isValidException) {
+        raiseIfNoException(frame, clause, isValidException);
+        return false;
+    }
+
+    @Specialization
+    boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
+                    @Cached ExceptMatchNode recursiveNode,
+                    @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                    @Cached SequenceStorageNodes.LenNode getLenNode,
+                    @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+        // check for every type in the tuple
+        SequenceStorage storage = getStorageNode.execute(clause);
+        int length = getLenNode.execute(storage);
+        for (int i = 0; i < length; i++) {
+            Object clauseType = getItemNode.execute(storage, i);
+            if (recursiveNode.executeMatch(frame, e, clauseType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Fallback
+    @SuppressWarnings("unused")
+    boolean fallback(VirtualFrame frame, Object e, Object clause) {
+        raiseNoException();
+        return false;
+    }
+
+    static ExceptMatchNode create() {
+        return ExceptMatchNodeGen.create();
     }
 }
