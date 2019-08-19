@@ -145,8 +145,8 @@ public class PosixResources {
     }
 
     private static class ChannelWrapper {
-        public Channel channel;
-        public int cnt;
+        Channel channel;
+        int cnt;
 
         ChannelWrapper() {
             this(null, 0);
@@ -213,7 +213,9 @@ public class PosixResources {
     @TruffleBoundary
     private void addFD(int fd, Channel channel, String path) {
         files.put(fd, new ChannelWrapper(channel));
-        filePaths.put(fd, path);
+        if (path != null) {
+            filePaths.put(fd, path);
+        }
     }
 
     @TruffleBoundary
