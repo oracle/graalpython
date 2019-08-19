@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -2390,7 +2391,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject, isPublic = false)
+    @Builtin(name = MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule, isPublic = false)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
@@ -2409,6 +2410,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object doType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs) {
+            return factory().createPythonModule(self);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        Object doNative(PythonAbstractNativeObject self, Object[] varargs, PKeyword[] kwargs) {
             return factory().createPythonModule(self);
         }
     }

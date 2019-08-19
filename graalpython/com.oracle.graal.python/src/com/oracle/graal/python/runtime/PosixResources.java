@@ -54,8 +54,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.TreeMap;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -173,8 +172,8 @@ public class PosixResources {
     }
 
     public PosixResources() {
-        files = new ConcurrentSkipListMap<>();
-        filePaths = new ConcurrentHashMap<>();
+        files = Collections.synchronizedSortedMap(new TreeMap<>());
+        filePaths = Collections.synchronizedMap(new HashMap<>());
 
         children = Collections.synchronizedList(new ArrayList<>());
         String osProperty = System.getProperty("os.name");
