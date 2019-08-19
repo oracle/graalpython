@@ -354,6 +354,9 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         if (isGlobal(name)) {
             return findVariableInGlobalOrBuiltinScope(name);
         } else if (isNonlocal(name)) {
+            if (currentScope.getScopeKind() == ScopeInfo.ScopeKind.Generator) {
+                return findVariableNodeInGenerator(name);
+            }
             return findVariableInLocalOrEnclosingScopes(name);
         }
 

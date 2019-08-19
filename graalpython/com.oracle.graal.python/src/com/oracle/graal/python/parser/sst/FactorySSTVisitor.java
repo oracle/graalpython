@@ -1102,6 +1102,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     public PNode visit(VarLookupSSTNode node) {
 //        ScopeInfo oldScope = scopeEnvironment.setCurrentScope(node.scope);
         PNode result =  (PNode)scopeEnvironment.findVariable(node.name);
+        if (result == null) {
+            if (scopeEnvironment.isNonlocal(node.name)) {
+                throw errors.raise(SyntaxError, "no binding for nonlocal variable \"%s\" found", node.name);
+            }
+            throw errors.raise(SyntaxError, "Cannot assign to %s", node.name);
+        }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
 //        scopeEnvironment.setCurrentScope(oldScope);
         return result;

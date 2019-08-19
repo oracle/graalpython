@@ -134,6 +134,22 @@ public class YieldStatementTests extends ParserTestBase {
     }
     
     @Test
+    public void customIter01() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "    class MyIter:\n" +
+                "        def __iter__(self):\n" +
+                "            return self\n" +
+                "        def __next__(self):\n" +
+                "            raise StopIteration(42)\n" +
+                "    def gen():\n" +
+                "        nonlocal ret\n" +
+                "        ret = yield from MyIter()\n" +
+                "    ret = None\n" +
+                "    list(gen())");
+    }
+    
+    @Test
     public void yeild17() throws Exception {
         checkScopeAndTree("generator = type((lambda: (yield))())");
     }
