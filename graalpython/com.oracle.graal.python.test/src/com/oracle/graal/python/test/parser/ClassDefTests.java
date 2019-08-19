@@ -128,6 +128,25 @@ public class ClassDefTests extends ParserTestBase {
     }
     
     @Test
+    public void classDef12() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "    def get_nested_class():\n" +
+                "        method_and_var = \"var\"\n" +
+                "        class Test(object):\n" +
+                "            def method_and_var(self):\n" +
+                "                return \"method\"\n" +
+                "            def test(self):\n" +
+                "                return method_and_var\n" +
+                "            def actual_global(self):\n" +
+                "                return str(\"global\")\n" +
+                "            def str(self):\n" +
+                "                return str(self)\n" +
+                "        return Test()\n" +
+                "    t = get_nested_class()\n");
+    }
+    
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree("@class_decorator\n" +
                          "class foo():pass");

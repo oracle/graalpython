@@ -930,6 +930,11 @@ public class BasicTests extends ParserTestBase {
                 "      pass"
         );
     }
+    
+    @Test
+    public void spaceEnd() throws Exception {
+        checkTreeResult("x=5 ");
+    }
   
     
     private void checkScopeAndTree() throws Exception {

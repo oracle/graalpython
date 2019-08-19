@@ -116,12 +116,12 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         if (localySeenVars != null || !unresolvedVars.isEmpty()) {
             for (Object identifier : identifiers) {
                 String name = (String)identifier;
-                
+         
                 if (localySeenVars != null) {
                     // remove the localy declared variable
                     localySeenVars.remove(name);
                 }
-
+                
                 List<ScopeInfo> usedInScopes = unresolvedVars.get(name);
                 // was the declared varibale seen before?
                 if (usedInScopes != null 
@@ -140,7 +140,8 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                             scope.addFreeVar(name, true);
                             definingScope.addCellVar(name);
                             scope = scope.getParent();
-                            while(scope != null && scope != definingScope && scope.findFrameSlot(name) == null) {
+                            while(scope != null && scope != definingScope && (scope.findFrameSlot(name) == null 
+                                    || !scope.isFreeVar(name))) {
                                 scope.addFreeVar(name, true);
                                 scope = scope.getParent();
                             }
