@@ -133,7 +133,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "mro.getInternalClassArray().length < 32" //
     }, //
                     limit = "getVariableArgumentInlineCacheLimit()", //
-                    assumptions = "mro.getLookupStableAssumption()")
+                    assumptions = { //
+                                    "mro.getLookupStableAssumption()", //
+                                    "singleContextAssumption()"
+                    })
     @ExplodeLoop
     boolean isSubtypeOfConstantType(@SuppressWarnings("unused") LazyPythonClass derived, @SuppressWarnings("unused") PythonAbstractClass cls,
                     @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
@@ -153,8 +156,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }, //
                     limit = "getVariableArgumentInlineCacheLimit()", //
                     replaces = "isSubtypeOfConstantType", //
-                    assumptions = "mro.getLookupStableAssumption()" //
-    )
+                    assumptions = { //
+                                    "mro.getLookupStableAssumption()", //
+                                    "singleContextAssumption()"
+                    })
     @ExplodeLoop
     boolean isSubtypeOfVariableType(@SuppressWarnings("unused") LazyPythonClass derived, LazyPythonClass cls,
                     @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
