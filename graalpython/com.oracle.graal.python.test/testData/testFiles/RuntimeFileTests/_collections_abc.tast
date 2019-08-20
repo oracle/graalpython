@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module '_collections_abc'> SourceSection: [100,26404]`↵"""Abstract Base Cl...`
+ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copyright 2007 Goo...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor: 25 slots [<>temp0, <>temp1, <>temp2, <>temp3, <>temp4, <>temp5, <>temp6, <>temp7, <>temp8, <>temp9, <>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24]
   Documentation: `Abstract Base Classe...`
-  InnerRootNode SourceSection: [100,26404]`↵"""Abstract Base Cl...`
+  InnerRootNode SourceSection: [0,26444]`# Copyright 2007 Goo...`
     ExpressionWithSideEffects SourceSection: [100,26404]`↵"""Abstract Base Cl...`
       ExpressionStatementNode SourceSection: [101,213]`"""Abstract Base Cla...`
         StringLiteralNode SourceSection: [101,213]`"""Abstract Base Cla...`

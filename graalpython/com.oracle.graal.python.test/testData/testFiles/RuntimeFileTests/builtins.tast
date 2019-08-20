@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'builtins'> SourceSection: [2167,2879]`↵def __gr__(self, na...`
+ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c) 2018...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [2167,2879]`↵def __gr__(self, na...`
+  InnerRootNode SourceSection: [0,2880]`# Copyright (c) 2018...`
     ExpressionWithSideEffects SourceSection: [2167,2879]`↵def __gr__(self, na...`
       WriteNameNodeGen SourceSection: [2168,2239]`def __gr__(self, nam...`
         Identifier: __gr__

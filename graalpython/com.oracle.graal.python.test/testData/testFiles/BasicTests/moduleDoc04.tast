@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'moduleDoc04'> SourceSection: [15,54]`↵"This is module doc...`
+ModuleRootNode Name: <module 'moduleDoc04'> SourceSection: [0,58]`# some comment↵↵"Thi...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: `This is module doc`
-  InnerRootNode SourceSection: [15,54]`↵"This is module doc...`
+  InnerRootNode SourceSection: [0,58]`# some comment↵↵"Thi...`
     ExpressionWithSideEffects SourceSection: [15,54]`↵"This is module doc...`
       ExpressionStatementNode SourceSection: [16,36]`"This is module doc"...`
         StringLiteralNode SourceSection: [16,36]`"This is module doc"...`

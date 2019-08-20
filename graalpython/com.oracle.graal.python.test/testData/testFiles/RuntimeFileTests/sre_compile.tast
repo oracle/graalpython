@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'sre_compile'> SourceSection: [223,26935]`↵"""Internal support...`
+ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secret Labs' Reg...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: `Internal support mod...`
-  InnerRootNode SourceSection: [223,26935]`↵"""Internal support...`
+  InnerRootNode SourceSection: [0,26935]`#↵# Secret Labs' Reg...`
     ExpressionWithSideEffects SourceSection: [223,26935]`↵"""Internal support...`
       ExpressionStatementNode SourceSection: [224,261]`"""Internal support ...`
         StringLiteralNode SourceSection: [224,261]`"""Internal support ...`

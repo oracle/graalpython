@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [160,15620]`↵class ChainMap(_col...`
+ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`####################...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor: 4 slots [<>temp0, <>temp1, <>temp2, <>temp3]
   Documentation: None
-  InnerRootNode SourceSection: [160,15620]`↵class ChainMap(_col...`
+  InnerRootNode SourceSection: [0,15620]`####################...`
     ExpressionWithSideEffects SourceSection: [160,15620]`↵class ChainMap(_col...`
       WriteNameNodeGen SourceSection: [161,3951]`class ChainMap(_coll...`
         Identifier: ChainMap

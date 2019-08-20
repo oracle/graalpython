@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module '_descriptor'> SourceSection: [1992,3601]`↵def _f(): pass↵Func...`
+ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright (c) 2018...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor: 1 slots [<>temp0]
   Documentation: None
-  InnerRootNode SourceSection: [1992,3601]`↵def _f(): pass↵Func...`
+  InnerRootNode SourceSection: [0,3601]`# Copyright (c) 2018...`
     ExpressionWithSideEffects SourceSection: [1992,3601]`↵def _f(): pass↵Func...`
       WriteNameNodeGen SourceSection: [1993,2008]`def _f(): pass↵`
         Identifier: _f

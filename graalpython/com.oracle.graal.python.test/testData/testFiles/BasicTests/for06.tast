@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'for06'> SourceSection: [0,125]`x = 0↵def fn():↵  fo...`
+ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0↵def fn():↵  fo...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [0,125]`x = 0↵def fn():↵  fo...`
+  InnerRootNode SourceSection: [0,127]`x = 0↵def fn():↵  fo...`
     ExpressionWithSideEffects SourceSection: [0,125]`x = 0↵def fn():↵  fo...`
       WriteNameNodeGen SourceSection: [0,5]`x = 0`
         Identifier: x

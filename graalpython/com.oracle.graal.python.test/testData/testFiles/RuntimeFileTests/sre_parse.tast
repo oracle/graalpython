@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'sre_parse'> SourceSection: [238,39305]`↵"""Internal support...`
+ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret Labs' Reg...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor: 4 slots [<>temp0, <>temp1, <>temp2, <>temp3]
   Documentation: `Internal support mod...`
-  InnerRootNode SourceSection: [238,39305]`↵"""Internal support...`
+  InnerRootNode SourceSection: [0,39305]`#↵# Secret Labs' Reg...`
     ExpressionWithSideEffects SourceSection: [238,39305]`↵"""Internal support...`
       ExpressionStatementNode SourceSection: [239,276]`"""Internal support ...`
         StringLiteralNode SourceSection: [239,276]`"""Internal support ...`

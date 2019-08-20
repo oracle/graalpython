@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'moduleDoc02'> SourceSection: [0,29]`'''↵Thi is doc↵yes↵'...`
+ModuleRootNode Name: <module 'moduleDoc02'> SourceSection: [0,31]`'''↵Thi is doc↵yes↵'...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: `↵Thi is doc↵yes↵`
-  InnerRootNode SourceSection: [0,29]`'''↵Thi is doc↵yes↵'...`
+  InnerRootNode SourceSection: [0,31]`'''↵Thi is doc↵yes↵'...`
     ExpressionWithSideEffect SourceSection: [0,29]`'''↵Thi is doc↵yes↵'...`
       Expression:
         ExpressionWithSideEffect SourceSection: None

@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'sre_constants'> SourceSection: [294,7177]`↵"""Internal support...`
+ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secret Labs' Reg...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor: 2 slots [<>temp0, <>temp1]
   Documentation: `Internal support mod...`
-  InnerRootNode SourceSection: [294,7177]`↵"""Internal support...`
+  InnerRootNode SourceSection: [0,7177]`#↵# Secret Labs' Reg...`
     ExpressionWithSideEffects SourceSection: [294,7177]`↵"""Internal support...`
       ExpressionStatementNode SourceSection: [295,332]`"""Internal support ...`
         StringLiteralNode SourceSection: [295,332]`"""Internal support ...`

@@ -290,17 +290,20 @@ public final class PythonNodeFactory {
                 break;
             case File:
                 result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor());
-                break;    
+                ((ModuleRootNode)result).assignSourceSection(createSourceSection(0, source.getLength()));
+                break;
             case InlineEvaluation:
                 result = body;
                 break;
             case InteractiveStatement:
                 result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd);
+                ((ModuleRootNode)result).assignSourceSection(createSourceSection(0, source.getLength()));
                 break;
             case Statement:
                 ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
                 printExpression.assignSourceSection(body.getSourceSection());
                 result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor());
+                ((ModuleRootNode)result).assignSourceSection(createSourceSection(0, source.getLength()));
                 break;
             default:
                 throw new RuntimeException("unexpected mode: " + mode);

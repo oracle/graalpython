@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'functions'> SourceSection: [1998,4894]`↵@__builtin__↵def ha...`
+ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c) 2018...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor: 1 slots [<>temp0]
   Documentation: None
-  InnerRootNode SourceSection: [1998,4894]`↵@__builtin__↵def ha...`
+  InnerRootNode SourceSection: [0,4894]`# Copyright (c) 2018...`
     ExpressionWithSideEffects SourceSection: [1998,4894]`↵@__builtin__↵def ha...`
       WriteNameNodeGen SourceSection: [1999,2113]`@__builtin__↵def has...`
         Identifier: hasattr

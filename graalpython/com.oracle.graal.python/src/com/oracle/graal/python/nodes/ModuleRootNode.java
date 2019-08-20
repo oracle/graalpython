@@ -117,4 +117,8 @@ public class ModuleRootNode extends PClosureRootNode {
     public boolean isPythonInternal() {
         return false;
     }
+    
+    public void assignSourceSection(SourceSection source) {
+        this.body.assignSourceSection(source);
+    }
 }

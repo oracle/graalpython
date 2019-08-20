@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 're'> SourceSection: [499,15192]`↵r"""Support for reg...`
+ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' Reg...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor: 2 slots [<>temp0, <>temp1]
   Documentation: `Support for regular ...`
-  InnerRootNode SourceSection: [499,15192]`↵r"""Support for reg...`
+  InnerRootNode SourceSection: [0,15192]`#↵# Secret Labs' Reg...`
     ExpressionWithSideEffects SourceSection: [499,15192]`↵r"""Support for reg...`
       ExpressionStatementNode SourceSection: [500,6494]`r"""Support for regu...`
         StringLiteralNode SourceSection: [500,6494]`r"""Support for regu...`

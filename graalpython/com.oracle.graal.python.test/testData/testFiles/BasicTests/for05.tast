@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'for05'> SourceSection: [0,119]`def fn():↵  for x in...`
+ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x in...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [0,119]`def fn():↵  for x in...`
+  InnerRootNode SourceSection: [0,121]`def fn():↵  for x in...`
     ExpressionWithSideEffect SourceSection: [0,119]`def fn():↵  for x in...`
       Expression:
         PythonCallNodeGen SourceSection: [115,119]`fn()`

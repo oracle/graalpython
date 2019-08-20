@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'keyword'> SourceSection: [24,2245]`↵"""Keywords (from "...`
+ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env pyth...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: `Keywords (from "gram...`
-  InnerRootNode SourceSection: [24,2245]`↵"""Keywords (from "...`
+  InnerRootNode SourceSection: [0,2245]`#! /usr/bin/env pyth...`
     ExpressionWithSideEffects SourceSection: [24,2245]`↵"""Keywords (from "...`
       ExpressionStatementNode SourceSection: [25,282]`"""Keywords (from "g...`
         StringLiteralNode SourceSection: [25,282]`"""Keywords (from "g...`

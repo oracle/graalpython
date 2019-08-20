@@ -1,9 +1,9 @@
-ModuleRootNode Name: <module 'moduleDoc03'> SourceSection: [0,20]`"This is module doc"...`
+ModuleRootNode Name: <module 'moduleDoc03'> SourceSection: [0,27]`"This is module doc"...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: `This is module doc`
-  InnerRootNode SourceSection: [0,20]`"This is module doc"...`
+  InnerRootNode SourceSection: [0,27]`"This is module doc"...`
     StringLiteralNode SourceSection: [0,20]`"This is module doc"...`
   CalleeContext SourceSection: None

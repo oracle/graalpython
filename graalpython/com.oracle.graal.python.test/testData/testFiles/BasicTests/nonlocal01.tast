@@ -1,10 +1,10 @@
-ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,168]`def outer():↵    x =...`
+ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():↵    x =...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [0,168]`def outer():↵    x =...`
+  InnerRootNode SourceSection: [0,169]`def outer():↵    x =...`
     ExpressionWithSideEffect SourceSection: [0,168]`def outer():↵    x =...`
       Expression:
         PythonCallNodeGen SourceSection: [161,168]`outer()`

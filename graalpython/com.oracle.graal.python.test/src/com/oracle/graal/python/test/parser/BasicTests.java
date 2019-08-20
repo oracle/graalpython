@@ -72,6 +72,15 @@ public class BasicTests extends ParserTestBase {
     }
     
     @Test
+    public void moduleWithLincense() throws Exception {
+        checkTreeResult(
+                "# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.\n" +
+                "# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.\n" +
+                "\"\"\"MODULE A DOC\"\"\"\n" +
+                "print(\"module A\")");
+    }
+    
+    @Test
     public void annAssign01() throws Exception {
         checkTreeResult("a: int = 1");
     }
