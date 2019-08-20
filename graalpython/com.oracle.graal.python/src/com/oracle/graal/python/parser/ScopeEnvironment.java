@@ -119,13 +119,17 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
          
                 if (localySeenVars != null) {
                     // remove the localy declared variable
-                    localySeenVars.remove(name);
+                    if (definingScopeKind == ScopeInfo.ScopeKind.Class && name.startsWith("<>class")) {
+                        localySeenVars.remove(name.substring(7));
+                    } else {
+                        localySeenVars.remove(name);
+                    }
                 }
                 
                 List<ScopeInfo> usedInScopes = unresolvedVars.get(name);
                 // was the declared varibale seen before?
                 if (usedInScopes != null 
-                        && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) { 
+                        && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) {
                     // make the varible freevar and cellvar in scopes, where is used
                     List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
                     for (ScopeInfo scope : copy) {
@@ -150,8 +154,14 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                     if (usedInScopes.isEmpty()) {
                         unresolvedVars.remove(name);
                     }
-                }
-            }
+                } /*else if (usedInScopes == null && definingScopeKind == ScopeInfo.ScopeKind.Class) {
+                    if (name.startsWith("<>class")) {
+                        definingScope.getFrameDescriptor().removeFrameSlot(identifier);
+                        name = name.substring(7);
+                        definingScope.createSlotIfNotPresent(name);
+                    }
+                }*/
+            } 
         }
             
         // are in current scope used variables that are not defined

@@ -169,6 +169,46 @@ public class ClassDefTests extends ParserTestBase {
     }
     
     @Test
+    public void localMember01() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "    a_local_var = \"a local var\"\n" +
+                "\n" +
+                "    def f():\n" +
+                "        class C(object):\n" +
+                "            a_local_var = a_local_var\n" +
+                "\n" +
+                "        return C.a_local_var");
+    }
+    
+    @Test
+    public void localMember02() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "    a_local_var_out = \"a local var\"\n" +
+                "\n" +
+                "    def f():\n" +
+                "        class C(object):\n" +
+                "            a_local_var = a_local_var_out\n" +
+                "\n" +
+                "        return C.a_local_var");
+    }
+    
+    @Test
+    public void localMember03() throws Exception {
+        checkScopeAndTree(
+                "def fn():\n" +
+                "    a_local_var = \"a local var\"\n" +
+                "\n" +
+                "    def f():\n" +
+                "        class C(object):\n" +
+                "            a_local_var = a_local_var\n" +
+                "            def method01():\n" +
+                "                return a_local_var\n" +
+                "        return C.a_local_var");
+    }
+    
+    @Test
     public void metaclass01() throws Exception {
         checkScopeAndTree(
                 "class A:\n" +
