@@ -54,21 +54,21 @@ SOURCE=${PARSER_PATH}/Python3.g4
 STAMP=${SOURCE}.stamp
 
 SOURCENEW=${PARSER_PATH}/Python3New.g4
-STAMPNEW=${PARSER_PATH}/Python3New.g4.stamp
+STAMPNEW=${SOURCENEW}.stamp
 
 .PHONY: default clean
-default: ${TARGETSNEW}
-
-${STAMP}: ${SOURCE} ${POSTPROCESSOR}
-	$(QUIETLY) touch $@
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
+default: ${TARGETS} ${TARGETSNEW}
 
 ${STAMPNEW}: ${SOURCENEW} ${POSTPROCESSOR}
 	$(QUIETLY) touch $@
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCENEW}
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} ${SOURCENEW}
+
+${STAMP}: ${SOURCE} ${POSTPROCESSOR}
+	$(QUIETLY) touch $@
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} ${SOURCE}
 
 # postprocessing to make source compile without warnings
-${PARSER_PATH}/%.java: ${STAMPNEW} ${STAMP}
+${PARSER_PATH}/%.java: ${STAMP} ${STAMPNEW}
 	$(QUIETLY) python ${POSTPROCESSOR} $@
 
 clean:
@@ -79,4 +79,3 @@ endif
 	$(QUIETLY) rm -f ${STAMP}
 	$(QUIETLY) rm -f ${TARGETSNEW}
 	$(QUIETLY) rm -f ${STAMPNEW}
-
