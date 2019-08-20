@@ -267,7 +267,6 @@ index b0b749c..2d8e8c0 100644
  
  typedef int (PyArray_SortFunc)(void *, npy_intp, void *);
  typedef int (PyArray_ArgSortFunc)(void *, npy_intp *, npy_intp, void *);
-
 diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
 index f837df1..d3ce70d 100644
 --- a/numpy/core/setup_common.py
@@ -283,6 +282,25 @@ index f837df1..d3ce70d 100644
          src, obj = cmd._compile(body, None, None, 'c')
          cmd.temp_files.append("_configtest")
          cmd.compiler.link_executable([obj], "_configtest")
+diff --git a/numpy/core/src/multiarray/alloc.c b/numpy/core/src/multiarray/alloc.c
+index 6755095..e2fbae6 100644
+--- a/numpy/core/src/multiarray/alloc.c
++++ b/numpy/core/src/multiarray/alloc.c
+@@ -74,14 +74,6 @@ _npy_alloc_cache(npy_uintp nelem, npy_uintp esz, npy_uint msz,
+ #ifdef _PyPyGC_AddMemoryPressure
+         _PyPyPyGC_AddMemoryPressure(nelem * esz);
+ #endif
+-#ifdef HAVE_MADV_HUGEPAGE
+-        /* allow kernel allocating huge pages for large arrays */
+-        if (NPY_UNLIKELY(nelem * esz >= ((1u<<22u)))) {
+-            npy_uintp offset = 4096u - (npy_uintp)p % (4096u);
+-            npy_uintp length = nelem * esz - offset;
+-            madvise((void*)((npy_uintp)p + offset), length, MADV_HUGEPAGE);
+-        }
+-#endif
+     }
+     return p;
+ }
 diff --git a/numpy/core/src/multiarray/typeinfo.c b/numpy/core/src/multiarray/typeinfo.c
 index 14c4f27..c5a72b1 100644
 --- a/numpy/core/src/multiarray/typeinfo.c
@@ -844,7 +862,6 @@ index 535ea76..2ecf3a2 100644
  
 diff --git a/numpy/linalg/setup.py b/numpy/linalg/setup.py
 index 66c07c9..847116f 100644
-
 --- a/numpy/linalg/setup.py
 +++ b/numpy/linalg/setup.py
 @@ -29,6 +29,7 @@ def configuration(parent_package='', top_path=None):
@@ -910,19 +927,6 @@ index 8b2ded1..8a9295a 100755
          entry_points={
              'console_scripts': f2py_cmds
          },
-
-diff --git a/numpy/core/src/multiarray/shape.c b/numpy/core/src/multiarray/shape.c
-index 30820737e..d8a350f0d 100644
---- a/numpy/core/src/multiarray/shape.c
-+++ b/numpy/core/src/multiarray/shape.c
-@@ -94,3 +94,4 @@ PyArray_Resize(PyArrayObject *self, PyArray_Dims *newshape, int refcheck,
-                     "Use the np.resize function or refcheck=False");
--            return NULL;
-+            PyErr_Clear();
-+            refcnt = 1;
- #else
-             refcnt = PyArray_REFCOUNT(self);
- #endif /* PYPY_VERSION */
 
 '''
         install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"})
