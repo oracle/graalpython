@@ -133,6 +133,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -150,6 +151,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -1244,9 +1246,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @CompilationFinal private BranchProfile tooLargeProfile = BranchProfile.create();
 
         @Specialization
-        Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached("create()") ReadFromChannelNode readNode) {
+        Object readLong(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
+                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Shared("readNode") @Cached ReadFromChannelNode readNode) {
             int size;
             try {
                 size = Math.toIntExact(requestedSize);
@@ -1257,6 +1259,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             ByteSequenceStorage array = readNode.execute(channel, size);
             return factory().createBytes(array);
+        }
+
+        @Specialization
+        Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, Object requestedSize,
+                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Shared("readNode") @Cached ReadFromChannelNode readNode,
+                        @Cached CastToJavaLongNode castToLongNode) {
+            return readLong(frame, fd, castToLongNode.execute(requestedSize), channelClassProfile, readNode);
         }
     }
 
