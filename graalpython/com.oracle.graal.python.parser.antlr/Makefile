@@ -61,11 +61,11 @@ default: ${TARGETS} ${TARGETSNEW}
 
 ${STAMPNEW}: ${SOURCENEW} ${POSTPROCESSOR}
 	$(QUIETLY) touch $@
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} ${SOURCENEW}
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCENEW}
 
 ${STAMP}: ${SOURCE} ${POSTPROCESSOR}
 	$(QUIETLY) touch $@
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} ${SOURCE}
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
 
 # postprocessing to make source compile without warnings
 ${PARSER_PATH}/%.java: ${STAMP} ${STAMPNEW}
