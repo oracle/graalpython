@@ -377,7 +377,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
 
-    with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
+    with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
             run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"])
 
