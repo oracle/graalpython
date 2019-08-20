@@ -269,7 +269,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             // TODO: do it properly via the python API in super.__init__ :
             // sys._getframe(1).f_code.co_closure?
             PDict locals = (PDict) target.getLocalsDict();
-            Object cls = getItemNode.execute(frame, locals.getDictStorage(), SpecialAttributeNames.__CLASS__);
+            Object cls = ensureGetItemNode().execute(frame, locals.getDictStorage(), SpecialAttributeNames.__CLASS__);
             if (cls instanceof PCell) {
                 cls = getGetRefNode().execute((PCell) cls);
                 if (cls == null) {
@@ -331,6 +331,14 @@ public final class SuperBuiltins extends PythonBuiltins {
                 getAttrNode = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__));
             }
             return getAttrNode;
+        }
+
+        private HashingStorageNodes.GetItemNode ensureGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
+            }
+            return getItemNode;
         }
 
         private PythonAbstractClass supercheck(VirtualFrame frame, Object cls, Object object) {
