@@ -89,7 +89,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     private int numOfActiveFlags;
     private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
-    private FactorySSTVisitor parentVisitor;
+    protected FactorySSTVisitor parentVisitor;
     
     public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source, FactorySSTVisitor parentVisitor) {
         super(errors, scopeEnvironment, nodeFactory, source);

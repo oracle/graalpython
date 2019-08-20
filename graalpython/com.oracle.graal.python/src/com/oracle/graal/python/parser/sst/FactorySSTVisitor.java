@@ -123,7 +123,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
     protected final PythonParser.ParserErrorCallback errors;
     
     protected int comprLevel;
-
+    
     public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source) {
         this.scopeEnvironment = scopeEnvironment;
         this.source = source;
@@ -679,7 +679,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode>{
             generatorFactory = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source, this);
             body = (StatementNode)node.body.accept(generatorFactory);
         } else {
-            body = (StatementNode)node.body.accept(this);
+            body = (StatementNode)node.body.accept(this instanceof GeneratorFactorySSTVisitor 
+                    ? ((GeneratorFactorySSTVisitor)this).parentVisitor
+                    : this);
         }
         ExpressionNode doc = StringUtils.extractDoc(body);
         if (doc != null) {

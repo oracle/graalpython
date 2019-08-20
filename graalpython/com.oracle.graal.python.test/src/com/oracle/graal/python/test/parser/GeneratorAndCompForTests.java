@@ -172,6 +172,25 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     }
     
     @Test
+    public void generatorWithNonLocal() throws Exception {
+        checkScopeAndTree(
+                "def b_func():\n" +
+                "  exec_gen = False\n" +
+                "  def _inner_func():\n" +
+                "    def doit():\n" +
+                "      nonlocal exec_gen\n" +
+                "      exec_gen = True\n" +
+                "      return [1]\n" +
+                "    for A in doit():\n" +
+                "      for C in Y:\n" +
+                "        yield A\n" +
+                "  gen = _inner_func()\n" +
+                "  Y = [1, 2]\n" +
+                "  list(gen)\n" +
+                "  return gen");
+    }
+    
+    @Test
     public void param01() throws Exception {
         checkScopeAndTree(
                 "def fn(a):\n" +
