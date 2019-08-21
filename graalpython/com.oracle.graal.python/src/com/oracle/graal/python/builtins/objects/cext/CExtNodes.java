@@ -1629,6 +1629,17 @@ public abstract class CExtNodes {
             return false;
         }
 
+        @Specialization(guards = "obj.isNative()")
+        boolean doNative(@SuppressWarnings("unused") PythonNativeWrapper obj) {
+            return true;
+        }
+
+        @Specialization(guards = {"!obj.isNative()", "isSpecialSingleton(obj.getDelegate())"})
+        boolean doSpecial(PythonNativeWrapper obj,
+                        @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode) {
+            return getSpecialSingletonPtrNode.execute(obj.getDelegate()) != null;
+        }
+
         @Specialization
         boolean doGeneric(PythonNativeWrapper obj,
                         @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode,
@@ -1643,7 +1654,7 @@ public abstract class CExtNodes {
             return false;
         }
 
-        private static boolean isSpecialSingleton(Object delegate) {
+        protected static boolean isSpecialSingleton(Object delegate) {
             return PythonLanguage.getSingletonNativePtrIdx(delegate) != -1;
         }
 
