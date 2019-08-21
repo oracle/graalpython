@@ -1186,6 +1186,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        PInt doIPi(int left, PInt right) {
+            raiseNegativeShiftCount(!right.isZeroOrPositive());
+            return factory().createInt(op(BigInteger.valueOf(left), right.intValue()));
+        }
+
+        @Specialization
         PInt doLPi(long left, PInt right) {
             raiseNegativeShiftCount(!right.isZeroOrPositive());
             return factory().createInt(op(BigInteger.valueOf(left), right.intValue()));
