@@ -70,7 +70,7 @@ ${STAMP}: ${SOURCE} ${POSTPROCESSOR}
 	${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
 
 # postprocessing to make source compile without warnings
-${PARSER_PATH}/%.java: ${STAMP} ${STAMPNEW}
+${PARSER_PATH}/%.java: ${STAMPNEW} ${STAMP}
 	echo postprocessing $@
 	python ${POSTPROCESSOR} $@
 
