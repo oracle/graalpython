@@ -118,7 +118,17 @@ public abstract class MaterializeFrameNode extends Node {
         return escapedFrame;
     }
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)", "!isGeneratorFrame(frameToMaterialize)"})
+    @Specialization(guards = {"cachedFD == frameToMaterialize.getFrameDescriptor()", "getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)", "!isGeneratorFrame(frameToMaterialize)"}, limit = "1")
+    static PFrame freshPFrameCachedFD(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
+                    @Cached("frameToMaterialize.getFrameDescriptor()") FrameDescriptor cachedFD,
+                    @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
+                    @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
+        PDict locals = factory.createDictLocals(cachedFD);
+        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, false);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location), syncValuesNode);
+    }
+
+    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)", "!isGeneratorFrame(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
     static PFrame freshPFrame(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
@@ -154,7 +164,7 @@ public abstract class MaterializeFrameNode extends Node {
         return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location), syncValuesNode);
     }
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).isAssociated()"}, replaces = "freshPFrame")
+    @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).isAssociated()"})
     static PFrame alreadyEscapedFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
                     @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
