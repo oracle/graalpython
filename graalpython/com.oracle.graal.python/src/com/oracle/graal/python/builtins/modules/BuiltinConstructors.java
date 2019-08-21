@@ -132,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
@@ -2413,9 +2414,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createPythonModule(self);
         }
 
-        @Specialization
+        @Specialization(guards = "isTypeNode.execute(self)")
         @SuppressWarnings("unused")
-        Object doNative(PythonAbstractNativeObject self, Object[] varargs, PKeyword[] kwargs) {
+        Object doNative(PythonAbstractNativeObject self, Object[] varargs, PKeyword[] kwargs,
+                        @Cached IsTypeNode isTypeNode) {
             return factory().createPythonModule(self);
         }
     }
