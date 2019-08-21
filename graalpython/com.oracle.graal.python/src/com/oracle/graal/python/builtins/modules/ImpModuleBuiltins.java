@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNod
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -86,6 +87,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -467,12 +469,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object run(VirtualFrame frame, String modulename, String moduleFile, PList modulepath,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("cast") @Cached CastToStringNode castString,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            Object[] pathList = modulepath.getSequenceStorage().getInternalArray();
-            String[] paths = new String[pathList.length];
-            for (int i = 0; i < pathList.length; i++) {
+            SequenceStorage sequenceStorage = modulepath.getSequenceStorage();
+            int n = lenNode.execute(sequenceStorage);
+            Object[] pathList = sequenceStorage.getInternalArray();
+            assert n <= pathList.length;
+            String[] paths = new String[n];
+            for (int i = 0; i < n; i++) {
                 paths[i] = castString.execute(frame, pathList[i]);
             }
             return doCache(modulename, moduleFile, paths, ctxt, lang);
