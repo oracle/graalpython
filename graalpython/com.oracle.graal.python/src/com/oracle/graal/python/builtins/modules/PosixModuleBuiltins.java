@@ -30,7 +30,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.TempFileUtils.getRandomFilePath;
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
 import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
 import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
@@ -923,8 +922,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
-
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
@@ -939,16 +936,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             String pathname = cast.execute(frame, pathArg);
             Set<StandardOpenOption> options = flagsToOptions(flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes(fileMode);
-            TruffleFile truffleFile;
             try {
                 SeekableByteChannel fc;
+                TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
                 if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
-                    // TODO: (cbas) remove patch once the TruffleFile API supports temp file
-                    // creation -> GR-17515
-                    pathname = getRandomFilePath(pathname, options, getContext().getEnv());
-                    getContext().registerShutdownHook(new FileDeleteShutdownHook(pathname));
+                    truffleFile = getContext().getEnv().createTempFile(truffleFile, null, null);
+                    options.remove(StandardOpenOption.CREATE_NEW);
+                    options.remove(StandardOpenOption.DELETE_ON_CLOSE);
+                    options.add(StandardOpenOption.CREATE);
+                    getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
                 }
-                truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+
                 fc = truffleFile.newByteChannel(options, attributes);
                 return getResources().open(truffleFile, fc);
             } catch (NoSuchFileException e) {

@@ -46,15 +46,14 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleFile;
 
 public class FileDeleteShutdownHook implements ShutdownHook {
-    private final String path;
+    private final TruffleFile truffleFile;
 
-    public FileDeleteShutdownHook(String path) {
-        this.path = path;
+    public FileDeleteShutdownHook(TruffleFile truffleFile) {
+        this.truffleFile = truffleFile;
     }
 
     @Override
     public void call(PythonContext context) {
-        TruffleFile truffleFile = context.getEnv().getPublicTruffleFile(path);
         try {
             truffleFile.delete();
         } catch (IOException ignored) {
