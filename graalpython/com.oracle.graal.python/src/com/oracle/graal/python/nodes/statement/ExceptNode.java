@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -159,7 +160,32 @@ interface EmulateJythonNode {
 abstract class ValidExceptionNode extends Node implements EmulateJythonNode {
     protected abstract boolean execute(VirtualFrame frame, Object type);
 
-    @Specialization
+    protected static boolean isPythonExceptionType(PythonBuiltinClassType type) {
+        PythonBuiltinClassType base = type;
+        while (base != null) {
+            if (base == PythonBuiltinClassType.PBaseException) {
+                return true;
+            }
+            base = base.getBase();
+        }
+        return false;
+    }
+
+    @Specialization(guards = "cachedType == type", limit = "3")
+    boolean isPythonExceptionTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType type,
+                    @SuppressWarnings("unused") @Cached("type") PythonBuiltinClassType cachedType,
+                    @Cached("isPythonExceptionType(type)") boolean isExceptionType) {
+        return isExceptionType;
+    }
+
+    @Specialization(guards = "cachedType == klass.getType()", limit = "3")
+    boolean isPythonExceptionClassCached(@SuppressWarnings("unused") PythonBuiltinClass klass,
+                    @SuppressWarnings("unused") @Cached("klass.getType()") PythonBuiltinClassType cachedType,
+                    @Cached("isPythonExceptionType(cachedType)") boolean isExceptionType) {
+        return isExceptionType;
+    }
+
+    @Specialization(replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
     boolean isPythonException(VirtualFrame frame, LazyPythonClass type,
                     @Cached IsSubtypeNode isSubtype) {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
