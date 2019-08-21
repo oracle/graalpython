@@ -75,6 +75,10 @@ def _check_vm_args(name, args):
                  "got {} instead".format(args))
 
 
+def is_sandboxed_configuration(conf):
+    return conf == CONFIGURATION_SANDBOXED or conf == CONFIGURATION_SANDBOXED_MULTI
+
+
 @contextmanager
 def environ(env):
     def _handle_var((k, v)):
