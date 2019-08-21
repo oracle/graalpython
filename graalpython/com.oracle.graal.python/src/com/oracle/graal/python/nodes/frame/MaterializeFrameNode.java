@@ -59,6 +59,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -74,6 +75,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * This node makes sure that the current frame has a filled-in PFrame object with a backref
  * container that will be filled in by the caller.
  **/
+@ReportPolymorphism
 public abstract class MaterializeFrameNode extends Node {
 
     private final boolean adoptable;

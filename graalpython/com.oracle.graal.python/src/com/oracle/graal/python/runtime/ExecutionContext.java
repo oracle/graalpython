@@ -67,7 +67,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class ExecutionContext {
 
     public static final class CallContext extends Node {
-
+        @CompilationFinal boolean neededCallerFrame;
+        @CompilationFinal boolean neededExceptionState;
         private static final CallContext INSTANCE = new CallContext(false);
 
         @Child private MaterializeFrameNode materializeNode;
@@ -78,6 +79,8 @@ public abstract class ExecutionContext {
 
         private CallContext(boolean adoptable) {
             this.adoptable = adoptable;
+            this.neededExceptionState = !adoptable;
+            this.neededCallerFrame = !adoptable;
         }
 
         /**
@@ -94,6 +97,11 @@ public abstract class ExecutionContext {
             // must only be used when calling from Python to Python
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             if (calleeRootNode.needsCallerFrame()) {
+                if (!neededCallerFrame) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    neededCallerFrame = true;
+                    reportPolymorphicSpecialize();
+                }
                 PFrame.Reference thisInfo;
 
                 if (isPythonFrame(frame, callNode)) {
@@ -113,6 +121,11 @@ public abstract class ExecutionContext {
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
             if (calleeRootNode.needsExceptionState()) {
+                if (!neededExceptionState) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    neededExceptionState = true;
+                    reportPolymorphicSpecialize();
+                }
                 PException curExc = null;
                 if (isPythonFrame(frame, callNode)) {
                     curExc = PArguments.getException(frame);
@@ -180,6 +193,7 @@ public abstract class ExecutionContext {
 
         @Child private MaterializeFrameNode materializeNode;
 
+        @CompilationFinal private boolean everEscaped = false;
         @CompilationFinal private boolean firstRequest = true;
 
         /**
@@ -206,6 +220,11 @@ public abstract class ExecutionContext {
              */
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             if (info.isEscaped()) {
+                if (!everEscaped) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    everEscaped = true;
+                    reportPolymorphicSpecialize();
+                }
                 // This assumption acts as our branch profile here
                 PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
                 if (callerInfo == null) {
