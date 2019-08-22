@@ -43,9 +43,9 @@ import logging
 import importlib.util
 import distutils.log as dlog
 
+
 capi_home = sys.graal_python_capi_home
 capi_module_home = sys.graal_python_capi_module_home
-
 
 def load_setup():
     spec = importlib.util.spec_from_file_location("setup.py", os.path.join(sys.graal_python_cext_src, "setup.py"))
@@ -73,6 +73,24 @@ def build(args=[]):
 def clean(args=[]):
     configure_logging(args)
     return load_setup().clean(capi_home, capi_module_home)
+
+
+class CapiNotBuiltContextManager:
+    def __init__(self, module_name):
+        self.module_name = module_name
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, typ, val, tb):
+        if typ and issubclass(typ, ModuleNotFoundError):
+            print("Could not locate module '%s'. Did you forget to build the C API using 'graalpython -m build_capi'?" % self.module_name)
+        # this causes the exception to propagate in any case
+        return False
+
+
+def hint(module_name):
+    return CapiNotBuiltContextManager(module_name)
 
 
 if __name__ == "__main__":

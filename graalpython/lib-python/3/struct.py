@@ -17,7 +17,9 @@ def make_delegate(p):
     def delegate(*args ,**kwargs):
         global __cstruct
         if not __cstruct:
-            import _struct as __cstruct
+            from build_capi import hint
+            with hint("_struct"):
+                import _struct as __cstruct
         return getattr(__cstruct, p)(*args, **kwargs)
     delegate.__name__ = p
     return delegate
