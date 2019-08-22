@@ -64,6 +64,11 @@ def known_packages():
         install_from_pypi("Cython==0.29.2", extra_opts=(['--no-cython-compile'] + extra_opts), **kwargs)
 
     def setuptools(**kwargs):
+        try:
+            import six as _six
+        except ImportError:
+            print("Installing required dependency: six")
+            six(**kwargs)
         install_from_pypi("setuptools==41.0.1", **kwargs)
 
     def pkgconfig(**kwargs):
