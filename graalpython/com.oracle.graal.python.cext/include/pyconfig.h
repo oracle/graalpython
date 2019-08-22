@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,8 @@
 #ifndef Py_PYCONFIG_H
 #define Py_PYCONFIG_H
 
+// required for __UINT32_MAX__ etc.
+#include <limits.h>
 
 // defines based on Clang defines
 #define SIZEOF_DOUBLE __SIZEOF_DOUBLE__
@@ -60,13 +62,21 @@
 #define SIZEOF_VOID_P __SIZEOF_POINTER__
 #define SIZEOF_WCHAR_T __SIZEOF_WCHAR_T__
 #define SIZEOF__BOOL 1
-#define INT_MIN ((-__INT32_MAX__)-1)
-#define INT_MAX __INT32_MAX__
+# ifndef UINT_MAX
 #define UINT_MAX __UINT32_MAX__
+#endif
+# ifndef SHRT_MIN
 #define SHRT_MIN ((-__INT16_MAX__)-1)
+#endif
+# ifndef SHRT_MAX
 #define SHRT_MAX __INT16_MAX__
+#endif
+# ifndef USHRT_MAX
 #define USHRT_MAX __UINT16_MAX__
+#endif
+# ifndef CHAR_BIT
 #define CHAR_BIT __CHAR_BIT__
+#endif
 // #define Py_LIMITED_API 1
 #define _Py_BEGIN_SUPPRESS_IPH
 #define _Py_END_SUPPRESS_IPH
