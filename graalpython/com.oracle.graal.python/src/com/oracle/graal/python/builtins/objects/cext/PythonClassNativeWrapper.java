@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -93,7 +92,6 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
     @Override
     @TruffleBoundary
     public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
         PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
         return String.format("PythonClassNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
     }
