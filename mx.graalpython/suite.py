@@ -122,12 +122,6 @@ suite = {
             "source": [],
         },
 
-        "python.site-packages": {
-            "type": "python",
-            "path": 'graalpython/site-packages',
-            "source": [],
-        },
-
         "perf.benchmarks": {
             "type": "python",
             "path": 'graalpython/benchmarks',
@@ -271,23 +265,6 @@ suite = {
                 "\/idle_test\/",
             ],
             "license": ["PSF-License"],
-        },
-
-        "site-packages": {
-            "subDir": "graalpython",
-            "native": True,
-            "vpath": False,
-            "output": ".",
-            "license": ["MIT"],
-            "defaultBuild": False,
-            "buildEnv": {
-                "SETUPTOOLS_ZIP": "<path:SETUPTOOLS>",
-            },
-            "buildDependencies": [
-                "SETUPTOOLS",
-                "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON",
-            ],
         },
     },
 
