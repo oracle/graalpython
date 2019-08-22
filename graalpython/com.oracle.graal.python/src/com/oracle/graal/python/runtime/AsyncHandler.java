@@ -66,7 +66,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -183,7 +182,7 @@ public class AsyncHandler {
     }
 
     private final RootCallTarget callTarget;
-    @Child CallNode callNode = CallNode.create();
+    CallNode callNode = CallNode.create();
 
     AsyncHandler(PythonLanguage language) {
         callTarget = Truffle.getRuntime().createCallTarget(new CallRootNode(language));
