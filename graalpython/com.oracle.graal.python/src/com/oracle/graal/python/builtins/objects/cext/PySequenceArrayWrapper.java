@@ -113,7 +113,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         CompilerAsserts.neverPartOfCompilation();
         final int prime = 31;
         int result = 1;
-        result = prime * result + getDelegate().hashCode();
+        result = prime * result + PythonNativeWrapperLibrary.getUncached().getDelegate(this).hashCode();
         return result;
     }
 
@@ -128,14 +128,19 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        return getDelegate() == ((PySequenceArrayWrapper) obj).getDelegate();
+        // n.b.: (tfel) This is hopefully fine here, since if we get to this
+        // code path, we don't speculate that either of those objects is
+        // constant anymore, so any caching on them won't happen anyway
+        PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
+        return lib.getDelegate(this) == lib.getDelegate((PySequenceArrayWrapper) obj);
     }
 
     @ExportMessage
     final long getArraySize(
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
                     @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
-        return castToLongNode.execute(callLenNode.passState().executeObject(getDelegate(), SpecialMethodNames.__LEN__));
+        return castToLongNode.execute(callLenNode.passState().executeObject(lib.getDelegate(this), SpecialMethodNames.__LEN__));
     }
 
     @ExportMessage
@@ -146,16 +151,18 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     final Object readArrayElement(long index,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadArrayItemNode readArrayItemNode) {
-        return readArrayItemNode.execute(this.getDelegate(), index);
+        return readArrayItemNode.execute(lib.getDelegate(this), index);
     }
 
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
                     @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
         // also include the implicit null-terminator
-        return 0 <= identifier && identifier <= getArraySize(callLenNode, castToLongNode);
+        return 0 <= identifier && identifier <= getArraySize(lib, callLenNode, castToLongNode);
     }
 
     @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
@@ -280,8 +287,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached WriteArrayItemNode writeArrayItemNode) throws UnsupportedMessageException {
-        writeArrayItemNode.execute(getDelegate(), index, value);
+        writeArrayItemNode.execute(lib.getDelegate(this), index, value);
     }
 
     @ExportMessage
@@ -292,23 +300,26 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
                     @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
-        return 0 <= index && index <= getArraySize(callLenNode, castToLongNode);
+        return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(long index,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
                     @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
-        return 0 <= index && index <= getArraySize(callLenNode, castToLongNode);
+        return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
                     @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
-        return 0 <= index && index <= getArraySize(callLenNode, castToLongNode);
+        return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
     }
 
     @GenerateUncached
@@ -391,11 +402,12 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void toNative(
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ToNativeArrayNode toPyObjectNode,
                     @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
         invalidateNode.execute();
-        if (!this.isNative()) {
-            this.setNativePointer(toPyObjectNode.execute(this));
+        if (!lib.isNative(this)) {
+            setNativePointer(toPyObjectNode.execute(this));
         }
     }
 
@@ -403,10 +415,11 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     abstract static class ToNativeArrayNode extends CExtNodes.CExtBaseNode {
         public abstract Object execute(PySequenceArrayWrapper object);
 
-        @Specialization(guards = "isPSequence(object.getDelegate())")
+        @Specialization(guards = "isPSequence(lib.getDelegate(object))", limit = "1")
         Object doPSequence(PySequenceArrayWrapper object,
+                        @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
-            PSequence sequence = (PSequence) object.getDelegate();
+            PSequence sequence = (PSequence) lib.getDelegate(object);
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(sequence.getSequenceStorage());
             if (nativeStorage == null) {
                 CompilerDirectives.transferToInterpreter();
@@ -417,8 +430,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             return nativeStorage.getPtr();
         }
 
-        @Specialization(guards = "!isPSequence(object.getDelegate())")
+        @Specialization(guards = "!isPSequence(lib.getDelegate(object))", limit = "1")
         Object doGeneric(PySequenceArrayWrapper object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callNativeHandleForArrayNode) {
             // TODO correct element size
             return callNativeHandleForArrayNode.call(FUN_NATIVE_HANDLE_FOR_ARRAY, object, 8L);
@@ -468,8 +482,10 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    public long asPointer(@CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-        Object nativePointer = this.getNativePointer();
+    public long asPointer(
+                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnsupportedMessageException {
+        Object nativePointer = lib.getNativePointer(this);
         if (nativePointer instanceof Long) {
             return (long) nativePointer;
         }
@@ -484,8 +500,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     Object getNativeType(
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached GetTypeIDNode getTypeIDNode) {
-        return getTypeIDNode.execute(getDelegate());
+        return getTypeIDNode.execute(lib.getDelegate(this));
     }
 
     @GenerateUncached

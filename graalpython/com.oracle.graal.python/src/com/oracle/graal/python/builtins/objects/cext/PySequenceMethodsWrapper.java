@@ -57,6 +57,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -74,8 +75,8 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    public PythonManagedClass getPythonClass() {
-        return (PythonManagedClass) getDelegate();
+    public PythonManagedClass getPythonClass(PythonNativeWrapperLibrary lib) {
+        return (PythonManagedClass) lib.getDelegate(this);
     }
 
     @ExportMessage
@@ -101,6 +102,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached LookupAttributeInMRONode.Dynamic getSqItemNode,
                     @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
                     @Cached CExtNodes.ToSulongNode toSulongNode,
@@ -111,10 +113,10 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
         try {
             switch (member) {
                 case NativeMemberNames.SQ_REPEAT:
-                    result = toSulongNode.execute(getSqRepeatNode.execute(this.getPythonClass(), __MUL__));
+                    result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
                     break;
                 case NativeMemberNames.SQ_ITEM:
-                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(this.getPythonClass(), __GETITEM__));
+                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__));
                 default:
                     // TODO extend list
                     throw UnknownIdentifierException.create(member);

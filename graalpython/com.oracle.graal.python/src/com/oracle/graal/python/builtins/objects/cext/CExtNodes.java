@@ -159,8 +159,8 @@ public abstract class CExtNodes {
             return object instanceof PythonNativeNull;
         }
 
-        protected static boolean isMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper wrapper) {
-            return wrapper.getMaterializedObject() != null;
+        protected static boolean isMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper wrapper, PythonNativeWrapperLibrary lib) {
+            return wrapper.getMaterializedObject(lib) != null;
         }
     }
 
@@ -487,9 +487,10 @@ public abstract class CExtNodes {
             return materializeNode.execute(object);
         }
 
-        @Specialization(guards = "!isPrimitiveNativeWrapper(object)")
-        Object doNativeWrapper(PythonNativeWrapper object) {
-            return object.getDelegate();
+        @Specialization(guards = "!isPrimitiveNativeWrapper(object)", limit = "1")
+        Object doNativeWrapper(PythonNativeWrapper object,
+                        @CachedLibrary("object") PythonNativeWrapperLibrary lib) {
+            return lib.getDelegate(object);
         }
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
@@ -561,7 +562,7 @@ public abstract class CExtNodes {
         @TruffleBoundary
         public static Object doSlowPath(Object object, boolean forceNativeClass) {
             if (object instanceof PythonNativeWrapper) {
-                return ((PythonNativeWrapper) object).getDelegate();
+                return PythonNativeWrapperLibrary.getUncached().getDelegate((PythonNativeWrapper) object);
             } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.ForeignObject)) {
                 if (forceNativeClass) {
                     return PythonObjectFactory.getUncached().createNativeClassWrapper((TruffleObject) object);
@@ -597,8 +598,9 @@ public abstract class CExtNodes {
 
         public abstract Object execute(PythonNativeWrapper object);
 
-        @Specialization(guards = {"!isMaterialized(object)", "object.isBool()"})
+        @Specialization(guards = {"!isMaterialized(object, lib)", "object.isBool()"}, limit = "1")
         PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             // Special case for True and False: use singletons
             PythonCore core = context.getCore();
@@ -608,15 +610,16 @@ public abstract class CExtNodes {
             // If the singleton already has a native wrapper, we may need to update the pointer
             // of wrapper 'object' since the native could code see the same pointer.
             if (materializedInt.getNativeWrapper() != null) {
-                object.setNativePointer(materializedInt.getNativeWrapper().getNativePointer());
+                object.setNativePointer(lib.getNativePointer(materializedInt.getNativeWrapper()));
             } else {
                 materializedInt.setNativeWrapper(object);
             }
             return materializedInt;
         }
 
-        @Specialization(guards = {"!isMaterialized(object)", "object.isByte()"})
+        @Specialization(guards = {"!isMaterialized(object, lib)", "object.isByte()"}, limit = "1")
         PInt doByteNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getByte());
             object.setMaterializedObject(materializedInt);
@@ -624,8 +627,9 @@ public abstract class CExtNodes {
             return materializedInt;
         }
 
-        @Specialization(guards = {"!isMaterialized(object)", "object.isInt()"})
+        @Specialization(guards = {"!isMaterialized(object, lib)", "object.isInt()"}, limit = "1")
         PInt doIntNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getInt());
             object.setMaterializedObject(materializedInt);
@@ -633,8 +637,9 @@ public abstract class CExtNodes {
             return materializedInt;
         }
 
-        @Specialization(guards = {"!isMaterialized(object)", "object.isLong()"})
+        @Specialization(guards = {"!isMaterialized(object, lib)", "object.isLong()"}, limit = "1")
         PInt doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getLong());
             object.setMaterializedObject(materializedInt);
@@ -642,8 +647,9 @@ public abstract class CExtNodes {
             return materializedInt;
         }
 
-        @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()", "!isNaN(object)"})
+        @Specialization(guards = {"!isMaterialized(object, lib)", "object.isDouble()", "!isNaN(object)"}, limit = "1")
         PFloat doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PFloat materializedInt = factory.createFloat(object.getDouble());
             materializedInt.setNativeWrapper(object);
@@ -651,8 +657,9 @@ public abstract class CExtNodes {
             return materializedInt;
         }
 
-        @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()", "isNaN(object)"})
+        @Specialization(guards = {"!isMaterialized(object, lib)", "object.isDouble()", "isNaN(object)"}, limit = "1")
         PFloat doDoubleNativeWrapperNaN(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             // Special case for double NaN: use singleton
             PFloat materializedFloat = context.getCore().getNaN();
@@ -661,28 +668,31 @@ public abstract class CExtNodes {
             // If the NaN singleton already has a native wrapper, we may need to update the pointer
             // of wrapper 'object' since the native code should see the same pointer.
             if (materializedFloat.getNativeWrapper() != null) {
-                object.setNativePointer(materializedFloat.getNativeWrapper().getNativePointer());
+                object.setNativePointer(lib.getNativePointer(materializedFloat.getNativeWrapper()));
             } else {
                 materializedFloat.setNativeWrapper(object);
             }
             return materializedFloat;
         }
 
-        @Specialization(guards = {"object.getClass() == cachedClass", "isMaterialized(object)"})
+        @Specialization(guards = {"object.getClass() == cachedClass", "isMaterialized(object, lib)"}, limit = "1")
         Object doMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @SuppressWarnings("unused") @Cached("object.getClass()") Class<? extends DynamicObjectNativeWrapper.PrimitiveNativeWrapper> cachedClass) {
-            return CompilerDirectives.castExact(object, cachedClass).getDelegate();
+            return lib.getDelegate(CompilerDirectives.castExact(object, cachedClass));
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(object)", "object.getClass() == cachedClass"}, limit = "3")
         Object doNativeWrapper(PythonNativeWrapper object,
+                        @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @SuppressWarnings("unused") @Cached("object.getClass()") Class<? extends PythonNativeWrapper> cachedClass) {
-            return CompilerDirectives.castExact(object, cachedClass).getDelegate();
+            return lib.getDelegate(CompilerDirectives.castExact(object, cachedClass));
         }
 
-        @Specialization(guards = "!isPrimitiveNativeWrapper(object)", replaces = "doNativeWrapper")
-        Object doNativeWrapperGeneric(PythonNativeWrapper object) {
-            return object.getDelegate();
+        @Specialization(guards = "!isPrimitiveNativeWrapper(object)", replaces = "doNativeWrapper", limit = "1")
+        Object doNativeWrapperGeneric(PythonNativeWrapper object,
+                        @CachedLibrary("object") PythonNativeWrapperLibrary lib) {
+            return lib.getDelegate(object);
         }
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
@@ -1375,11 +1385,12 @@ public abstract class CExtNodes {
             return (long) object.getDouble();
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         long run(PythonNativeWrapper value,
+                        @CachedLibrary("value") PythonNativeWrapperLibrary lib,
                         @Cached("create()") AsLong recursive) {
             // TODO(fa) this specialization should eventually go away
-            return recursive.execute(value.getDelegate());
+            return recursive.execute(lib.getDelegate(value));
         }
 
         @Fallback
@@ -1629,29 +1640,35 @@ public abstract class CExtNodes {
             return false;
         }
 
-        @Specialization(guards = "obj.isNative()")
-        boolean doNative(@SuppressWarnings("unused") PythonNativeWrapper obj) {
+        @Specialization(guards = "lib.isNative(obj)", limit = "1")
+        @SuppressWarnings("unused")
+        boolean doNative(PythonNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
             return true;
         }
 
-        @Specialization(guards = {"!obj.isNative()", "isSpecialSingleton(obj.getDelegate())"})
+        @Specialization(guards = {"!lib.isNative(obj)", "isSpecialSingleton(lib.getDelegate(obj))"}, limit = "1")
         boolean doSpecial(PythonNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode) {
-            return getSpecialSingletonPtrNode.execute(obj.getDelegate()) != null;
+            return getSpecialSingletonPtrNode.execute(lib.getDelegate(obj)) != null;
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         boolean doGeneric(PythonNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode,
                         @Cached("createClassProfile()") ValueProfile singletonProfile) {
-            if (obj.isNative()) {
+            if (lib.isNative(obj)) {
                 return true;
+            } else {
+                Object delegate = singletonProfile.profile(lib.getDelegate(obj));
+                if (isSpecialSingleton(delegate)) {
+                    return getSpecialSingletonPtrNode.execute(delegate) != null;
+                } else {
+                    return false;
+                }
             }
-            Object delegate = singletonProfile.profile(obj.getDelegate());
-            if (isSpecialSingleton(delegate)) {
-                return getSpecialSingletonPtrNode.execute(delegate) != null;
-            }
-            return false;
         }
 
         protected static boolean isSpecialSingleton(Object delegate) {

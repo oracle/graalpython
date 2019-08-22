@@ -932,11 +932,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return allocFunc;
         }
 
-        @Specialization(guards = "eq(TP_SUBCLASSES, key)")
+        @Specialization(guards = "eq(TP_SUBCLASSES, key)", limit = "1")
         @TruffleBoundary
-        Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, DynamicObjectNativeWrapper.PythonObjectNativeWrapper value) {
+        Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, DynamicObjectNativeWrapper.PythonObjectNativeWrapper value,
+                        @CachedLibrary("value") PythonNativeWrapperLibrary lib) {
             // TODO more type checking; do fast path
-            PDict dict = (PDict) value.getPythonObject();
+            PDict dict = (PDict) lib.getDelegate(value);
             for (Object item : dict.items()) {
                 GetSubclassesNode.doSlowPath(object).add((PythonClass) item);
             }
@@ -1052,8 +1053,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached WriteNativeMemberNode writeNativeMemberNode) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
-        writeNativeMemberNode.execute(getDelegate(), member, value);
+        writeNativeMemberNode.execute(lib.getDelegate(this), member, value);
     }
 
     @ExportMessage
@@ -1073,6 +1075,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object execute(Object[] arguments,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached.Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
                     @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
                     @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
@@ -1083,7 +1086,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
         Object result;
         try {
-            result = executeNode.execute(getDelegate(), converted);
+            result = executeNode.execute(lib.getDelegate(this), converted);
         } catch (PException e) {
             result = PNone.NO_VALUE;
         }
@@ -1099,18 +1102,20 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return obj instanceof PythonClassInitNativeWrapper;
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         public void executeClsInit(PythonClassInitNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
                         @Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
-            if (!obj.isNative()) {
+            if (!lib.isNative(obj)) {
                 obj.setNativePointer(toPyObjectNode.execute(obj));
             }
         }
 
-        @Specialization(guards = "!isClassInitNativeWrapper(obj)")
+        @Specialization(guards = "!isClassInitNativeWrapper(obj)", limit = "1")
         public void execute(PythonNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
                         @Cached SetSpecialSingletonPtrNode setSpecialSingletonPtrNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
@@ -1119,7 +1124,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             invalidateNode.execute();
             if (!isPointerNode.execute(obj)) {
                 Object ptr = toPyObjectNode.execute(obj);
-                Object delegate = obj.getDelegate();
+                Object delegate = lib.getDelegate(obj);
                 if (profile.profile(PythonLanguage.getSingletonNativePtrIdx(delegate) != -1)) {
                     setSpecialSingletonPtrNode.execute(delegate, ptr);
                 } else {
@@ -1134,35 +1139,38 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         public abstract long execute(PythonNativeWrapper o);
 
-        @Specialization(guards = {"obj.isBool()", "!obj.isNative()"})
+        @Specialization(guards = {"obj.isBool()", "!lib.isNative(obj)"}, limit = "1")
         long doBoolNotNative(PrimitiveNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached CExtNodes.MaterializeDelegateNode materializeNode,
                         @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
             // special case for True and False singletons
             PInt boxed = (PInt) materializeNode.execute(obj);
-            assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
-            return ensureLong(interopLib, obj.getNativePointer());
+            assert lib.getNativePointer(obj) == lib.getNativePointer(boxed.getNativeWrapper());
+            return ensureLong(interopLib, lib.getNativePointer(obj));
         }
 
-        @Specialization(guards = {"obj.isBool()", "obj.isNative()"})
+        @Specialization(guards = {"obj.isBool()", "lib.isNative(obj)"}, limit = "1")
         long doBoolNative(PrimitiveNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-            return ensureLong(interopLib, obj.getNativePointer());
+            return ensureLong(interopLib, lib.getNativePointer(obj));
         }
 
-        @Specialization(guards = "!isBoolNativeWrapper(obj)")
+        @Specialization(guards = "!isBoolNativeWrapper(obj)", limit = "1")
         long doFast(PythonNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode) {
             // the native pointer object must either be a TruffleObject or a primitive
-            Object nativePointer = obj.getNativePointer();
+            Object nativePointer = lib.getNativePointer(obj);
             if (profile.profile(nativePointer == null)) {
                 // We assume that before someone calls 'asPointer' on the wrapper, 'isPointer' was
                 // checked and returned true. So, for this case we assume that it is one of the
                 // special singletons where we store the pointer in the context.
-                nativePointer = getSpecialSingletonPtrNode.execute(obj.getDelegate());
-                assert nativePointer != null : createAssertionMessage(obj.getDelegate());
+                nativePointer = getSpecialSingletonPtrNode.execute(lib.getDelegate(obj));
+                assert nativePointer != null : createAssertionMessage(lib.getDelegate(obj));
             }
             return ensureLong(interopLib, nativePointer);
         }
@@ -1199,21 +1207,23 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     abstract static class ToPyObjectNode extends CExtNodes.CExtBaseNode {
         public abstract Object execute(PythonNativeWrapper wrapper);
 
-        @Specialization(guards = "isManagedPythonClass(wrapper)")
+        @Specialization(guards = "isManagedPythonClass(wrapper, lib)", limit = "1")
         Object doClass(PythonClassNativeWrapper wrapper,
+                        @SuppressWarnings("unused") @CachedLibrary("wrapper") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callNativeUnary) {
             return callNativeUnary.call(FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE, wrapper);
         }
 
-        @Specialization(guards = "!isManagedPythonClass(wrapper)")
+        @Specialization(guards = "!isManagedPythonClass(wrapper, lib)", limit = "1")
         Object doObject(PythonNativeWrapper wrapper,
+                        @SuppressWarnings("unused") @CachedLibrary("wrapper") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callNativeUnary) {
             return callNativeUnary.call(FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT, wrapper);
         }
 
-        protected static boolean isManagedPythonClass(PythonNativeWrapper wrapper) {
-            assert !(wrapper instanceof PythonClassNativeWrapper) || PGuards.isManagedClass(wrapper.getDelegate());
-            return wrapper instanceof PythonClassNativeWrapper && !(PGuards.isNativeClass(wrapper.getDelegate()));
+        protected static boolean isManagedPythonClass(PythonNativeWrapper wrapper, PythonNativeWrapperLibrary lib) {
+            assert !(wrapper instanceof PythonClassNativeWrapper) || PGuards.isManagedClass(lib.getDelegate(wrapper));
+            return wrapper instanceof PythonClassNativeWrapper && !(PGuards.isNativeClass(lib.getDelegate(wrapper)));
         }
     }
 
@@ -1226,10 +1236,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         public PythonObjectNativeWrapper(PythonAbstractObject object) {
             super(object);
-        }
-
-        public PythonAbstractObject getPythonObject() {
-            return (PythonAbstractObject) getDelegate();
         }
 
         public static DynamicObjectNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
@@ -1255,15 +1261,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Override
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
-            return String.format("PythonObjectNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
+            PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
+            return String.format("PythonObjectNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
         }
 
         @ExportMessage
         protected boolean isMemberReadable(String member,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached GetNameNode getNameNode) {
             return DynamicObjectNativeWrapper.GP_OBJECT.equals(member) || NativeMemberNames.isValid(member) ||
-                            ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(getDelegate())));
+                            ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(this))));
         }
 
         @ExportMessage
@@ -1347,8 +1355,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         // this method exists just for readability
-        public Object getMaterializedObject() {
-            return getDelegate();
+        public Object getMaterializedObject(PythonNativeWrapperLibrary lib) {
+            return lib.getDelegate(this);
         }
 
         // this method exists just for readability

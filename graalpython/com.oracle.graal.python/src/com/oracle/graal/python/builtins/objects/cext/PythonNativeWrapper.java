@@ -40,9 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.interop.TruffleObject;
+import java.lang.ref.WeakReference;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+
+@ExportLibrary(PythonNativeWrapperLibrary.class)
 public abstract class PythonNativeWrapper implements TruffleObject {
 
     private Object delegate;
@@ -55,16 +64,59 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         this.delegate = delegate;
     }
 
-    public final Object getDelegate() {
-        return delegate;
+    protected static Assumption singleContextAssumption() {
+        return PythonLanguage.getCurrent().singleContextAssumption;
+    }
+
+    protected static final boolean isEq(Object obj, Object obj2) {
+        return obj == obj2;
+    }
+
+    protected static WeakReference<PythonNativeWrapper> weak(PythonNativeWrapper wrapper) {
+        return new WeakReference<>(wrapper);
+    }
+
+    @ExportMessage(name = "getDelegate")
+    protected static class GetDelegate {
+        @Specialization(guards = {"isEq(cachedWrapper.get(), wrapper)", "!isEq(delegate.get(), null)"}, assumptions = "singleContextAssumption()")
+        protected static Object getCachedDel(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
+                        @Exclusive @SuppressWarnings("unused") @Cached("weak(wrapper)") WeakReference<PythonNativeWrapper> cachedWrapper,
+                        @Cached("wrapper.getDelegatePrivate()") WeakReference<Object> delegate) {
+            return delegate.get();
+        }
+
+        @Specialization(replaces = "getCachedDel")
+        protected static Object getGenericDel(PythonNativeWrapper wrapper) {
+            return wrapper.delegate;
+        }
+    }
+
+    protected final WeakReference<Object> getDelegatePrivate() {
+        return new WeakReference<>(delegate);
     }
 
     protected void setDelegate(Object delegate) {
+        assert this.delegate == null || this.delegate == delegate;
         this.delegate = delegate;
     }
 
-    public Object getNativePointer() {
-        return nativePointer;
+    @ExportMessage(name = "getNativePointer")
+    protected static class GetNativePointer {
+        @Specialization(guards = {"isEq(cachedWrapper.get(), wrapper)", "!isEq(nativePointer.get(), null)"}, assumptions = "singleContextAssumption()")
+        protected static Object getCachedPtr(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
+                        @Exclusive @SuppressWarnings("unused") @Cached("weak(wrapper)") WeakReference<PythonNativeWrapper> cachedWrapper,
+                        @Exclusive @Cached("wrapper.getNativePointerPrivate()") WeakReference<Object> nativePointer) {
+            return nativePointer.get();
+        }
+
+        @Specialization(replaces = "getCachedPtr")
+        protected static Object getGenericPtr(PythonNativeWrapper wrapper) {
+            return wrapper.nativePointer;
+        }
+    }
+
+    protected final WeakReference<Object> getNativePointerPrivate() {
+        return new WeakReference<>(nativePointer);
     }
 
     public void setNativePointer(Object nativePointer) {
@@ -77,7 +129,18 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         this.nativePointer = nativePointer;
     }
 
-    public boolean isNative() {
-        return nativePointer != null;
+    @ExportMessage(name = "isNative")
+    protected static class IsNative {
+        @Specialization(guards = {"isEq(cachedWrapper.get(), wrapper)", "!isEq(nativePointer.get(), null)"}, assumptions = "singleContextAssumption()")
+        protected static boolean isCachedNative(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
+                        @Exclusive @SuppressWarnings("unused") @Cached("weak(wrapper)") WeakReference<PythonNativeWrapper> cachedWrapper,
+                        @Exclusive @SuppressWarnings("unused") @Cached("wrapper.getNativePointerPrivate()") WeakReference<Object> nativePointer) {
+            return true;
+        }
+
+        @Specialization(replaces = "isCachedNative")
+        protected static boolean isNative(PythonNativeWrapper wrapper) {
+            return wrapper.nativePointer != null;
+        }
     }
 }

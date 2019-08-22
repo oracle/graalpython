@@ -48,6 +48,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
@@ -63,8 +64,8 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    public PythonBuiltinClass getPythonClass() {
-        return (PythonBuiltinClass) getDelegate();
+    public PythonBuiltinClass getPythonClass(PythonNativeWrapperLibrary lib) {
+        return (PythonBuiltinClass) lib.getDelegate(this);
     }
 
     @ExportMessage
@@ -90,9 +91,10 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         // translate key to attribute name
-        PythonClassNativeWrapper nativeWrapper = getPythonClass().getClassNativeWrapper();
+        PythonClassNativeWrapper nativeWrapper = getPythonClass(lib).getClassNativeWrapper();
         // TODO handle case if nativeWrapper does not exist yet
         Object result;
         switch (member) {

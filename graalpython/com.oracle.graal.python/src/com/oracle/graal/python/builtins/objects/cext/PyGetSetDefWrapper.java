@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -100,8 +101,9 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadFieldNode readFieldNode) {
-        return readFieldNode.execute(this.getDelegate(), member);
+        return readFieldNode.execute(lib.getDelegate(this), member);
     }
 
     @ImportStatic({SpecialMethodNames.class, PyGetSetDefWrapper.class})
@@ -154,13 +156,14 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
                     @Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
         if (!DOC.equals(member)) {
             CompilerDirectives.transferToInterpreter();
             throw UnsupportedMessageException.create();
         }
-        setAttrNode.execute(getDelegate(), SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
+        setAttrNode.execute(lib.getDelegate(this), SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
     }
 
     @ExportMessage
