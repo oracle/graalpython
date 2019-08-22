@@ -1694,12 +1694,29 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object obj);
 
-        @Specialization
-        Object doGeneric(Object obj,
+        protected static Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        // n.b.: since we guard that there is a pointer, we can be sure that
+        // this is a singleton and we can cache it directly
+        @Specialization(guards = {"cachedObj == obj", "ptr != null"}, assumptions = "singleContextAssumption()")
+        @SuppressWarnings("unused")
+        Object doCached(PythonAbstractObject obj,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("obj") PythonAbstractObject cachedObj,
+                        @Cached("context.getSingletonNativePtr(cachedObj)") Object ptr) {
+            return ptr;
+        }
+
+        @Specialization(replaces = "doCached")
+        Object doAbstract(PythonAbstractObject obj,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
-            if (obj instanceof PythonAbstractObject) {
-                return context.getSingletonNativePtr((PythonAbstractObject) obj);
-            }
+            return context.getSingletonNativePtr(obj);
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object obj) {
             return null;
         }
     }
