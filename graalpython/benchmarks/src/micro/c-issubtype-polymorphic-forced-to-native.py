@@ -79,7 +79,7 @@ static PyTypeObject NativeCustomType = {
     0,
     0,
     Py_TPFLAGS_DEFAULT,
-    "",
+    0,
     0,                          /* tp_traverse */
     0,                          /* tp_clear */
     0,                          /* tp_richcompare */
@@ -103,7 +103,7 @@ static PyTypeObject NativeCustomType = {
 static PyModuleDef c_classmethod_module = {
     PyModuleDef_HEAD_INIT,
     "c_classmethod_module",
-    "",
+    0,
     -1,
     NULL, NULL, NULL, NULL, NULL
 };
