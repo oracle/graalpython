@@ -71,6 +71,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean quietFlag = false;
     private boolean noUserSite = false;
     private boolean noSite = false;
+    private boolean ensureCapi = false;
     private boolean stdinIsInteractive = System.console() != null;
     private boolean runLLI = false;
     private boolean unbufferedIO = false;
@@ -155,6 +156,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-LLI":
                     if (wantsExperimental) {
                         runLLI = true;
+                    } else {
+                        unrecognized.add(arg);
+                    }
+                    break;
+                case "-ensure-capi":
+                    if (wantsExperimental) {
+                        ensureCapi = true;
                     } else {
                         unrecognized.add(arg);
                     }
@@ -399,6 +407,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
                 }
+            }
+            if (ensureCapi) {
+                evalInternal(context, "import build_capi; build_capi.ensure_capi([" + (quietFlag ? "'-q'" : "") + "])\n");
             }
             if (!noSite) {
                 evalInternal(context, "import site\n");

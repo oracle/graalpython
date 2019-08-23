@@ -65,6 +65,14 @@ def configure_logging(args):
         logging.basicConfig(level=logging.INFO)
 
 
+def ensure_capi(args=[]):
+    configure_logging(args)
+    from distutils.sysconfig import get_config_var
+    if not os.path.exists(os.path.join(capi_home, "libpython" + get_config_var("EXT_SUFFIX"))):
+        return load_setup().build(capi_home, capi_module_home)
+    return 0
+
+
 def build(args=[]):
     configure_logging(args)
     return load_setup().build(capi_home, capi_module_home)

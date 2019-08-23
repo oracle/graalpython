@@ -132,6 +132,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
 
     graalpython_args.insert(0, '--experimental-options=true')
+    graalpython_args.insert(1, '-ensure-capi')
 
     vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk)
 
