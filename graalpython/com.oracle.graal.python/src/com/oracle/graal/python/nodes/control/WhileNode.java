@@ -81,6 +81,6 @@ public final class WhileNode extends LoopNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        loopNode.executeLoop(frame);
+        loopNode.execute(frame);
     }
 }
