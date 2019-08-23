@@ -77,7 +77,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
     private VersionAction versionAction = VersionAction.None;
-    private String sulongLibraryPath = null;
     private List<String> givenArguments;
     private List<String> relaunchArgs;
     private boolean wantsExperimental = false;
@@ -152,13 +151,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "--show-version":
                     versionAction = VersionAction.PrintAndContinue;
-                    break;
-                case "-LLI":
-                    if (wantsExperimental) {
-                        runLLI = true;
-                    } else {
-                        unrecognized.add(arg);
-                    }
                     break;
                 case "-ensure-capi":
                     if (wantsExperimental) {
@@ -382,11 +374,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
         contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
         contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
-
-        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
-        if (sulongLibraryPath != null) {
-            contextBuilder.option("llvm.libraryPath", sulongLibraryPath);
-        }
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
