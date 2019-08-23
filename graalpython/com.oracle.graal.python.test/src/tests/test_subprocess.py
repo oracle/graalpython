@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -79,3 +79,16 @@ class TestSubprocess(unittest.TestCase):
                     stdout=sys.stdout)
             self.fail("Expected ValueError when stdout arg supplied.")
         self.assertIn('stdout', c.exception.args[0])
+
+    def test_kill(self):
+        p = subprocess.Popen([sys.executable, "-c", "print('oh no')"])
+        p.kill()
+        assert True
+
+    def test_waitpid(self):
+        import os
+        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2); 42"])
+        try:
+            assert os.waitpid(p.pid, os.WNOHANG) == (0, 0)
+        finally:
+            p.kill()

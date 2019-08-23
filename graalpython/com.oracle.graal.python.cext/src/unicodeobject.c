@@ -131,6 +131,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
     size_t fmt_size = strlen(fmt) + 1;
     char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
+    int use_valist = args == NULL;
 
     int remaining_space = 2047;
     char* buffer = (char*)calloc(sizeof(char), remaining_space + 1);
@@ -151,7 +152,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
                     allocated = NULL;
                 }
                 variable = NULL;
-            } else if (va != NULL) {
+            } else if (use_valist) {
                 bytes_written = vsnprintf(buffer, remaining_space, fmtcpy, va);
             } else {
                 strncpy(buffer, fmtcpy, remaining_space);
@@ -176,7 +177,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
             case 'R':
                 if (converter == NULL) converter = PyObject_Repr;
                 c[1] = 's';
-                allocated = variable = as_char_pointer(converter(args == NULL ? va_arg(va, PyObject*) : (PyObject*)(args[argc++])));
+                allocated = variable = as_char_pointer(converter(use_valist ? va_arg(va, PyObject*) : (PyObject*)(args[argc++])));
                 break;
             case '%':
                 // literal %
@@ -203,7 +204,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
         if (allocated) {
             free(allocated);
         }
-    } else if (va != NULL) {
+    } else if (use_valist) {
         vsnprintf(buffer, remaining_space, fmtcpy, va);
     } else {
         strncpy(buffer, fmtcpy, remaining_space);

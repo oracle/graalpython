@@ -26,6 +26,7 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
+import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
@@ -35,7 +36,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.LinkOption;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -55,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -86,6 +90,7 @@ public final class PythonContext {
     private final PythonLanguage language;
     private PythonModule mainModule;
     private final PythonCore core;
+    private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
@@ -340,7 +345,7 @@ public final class PythonContext {
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
-        builtinsModule = core.lookupBuiltinModule("builtins");
+        builtinsModule = core.lookupBuiltinModule(BUILTINS);
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
@@ -554,6 +559,11 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
+    public void registerShutdownHook(ShutdownHook shutdownHook) {
+        shutdownHooks.add(shutdownHook);
+    }
+
+    @TruffleBoundary
     public void registerShutdownHook(Object callable, CallTarget ct) {
         atExitHooks.put(callable, ct);
     }
@@ -568,6 +578,9 @@ public final class PythonContext {
         handler.shutdown();
         for (CallTarget f : atExitHooks.values()) {
             f.call();
+        }
+        for (ShutdownHook h : shutdownHooks) {
+            h.call(this);
         }
     }
 

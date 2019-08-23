@@ -118,7 +118,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return globals instanceof PDict && profile.profileObject(globals, PythonBuiltinClassType.PDict);
     }
 
-    protected static HashingStorage getStorage(Object cachedGlobals) {
+    /**
+     * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
+     */
+    protected static HashingStorage getStorage(Object module, Object cachedGlobals) {
         return ((PDict) cachedGlobals).getDictStorage();
     }
 
@@ -126,7 +129,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "cachedObject == object",
                     "lib.getDict(cachedObject) == cachedDict",
-                    "getStorage(cachedDict) == cachedStorage",
+                    "getStorage(object, cachedDict) == cachedStorage",
                     "isBuiltinDict(cachedDict, isBuiltinDict)",
     }, assumptions = "singleContextAssumption", limit = "1")
     protected Object readFromBuiltinModuleDictUnchanged(@SuppressWarnings("unused") PythonModule object, String key,
@@ -134,7 +137,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Cached("object") PythonModule cachedObject,
                     @SuppressWarnings("unused") @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @Cached("getStorage(cachedDict)") HashingStorage cachedStorage,
+                    @Cached("getStorage(object, cachedDict)") HashingStorage cachedStorage,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @Cached HashingStorageNodes.GetItemNode getItemNode) {
         // note that we don't need to pass the state here - string keys are hashable by definition

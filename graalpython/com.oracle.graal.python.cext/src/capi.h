@@ -354,13 +354,14 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
  * together, the managed array with arguments will be escape analyzed away.
  */
 #define CallWithPolyglotArgs(result, last, off, function, ...)          \
+    va_list __va_list;                                                  \
     int __poly_argc = polyglot_get_arg_count();                         \
     int __poly_args_s = sizeof(void*) * (__poly_argc - off);            \
     void **__poly_args = truffle_managed_malloc(__poly_args_s);         \
     for (int i = off; i < __poly_argc; i++) {                           \
         __poly_args[i - off] = polyglot_get_arg(i);                     \
     }                                                                   \
-    result = function(__VA_ARGS__, NULL, __poly_args, 0)
+    result = function(__VA_ARGS__, __va_list, __poly_args, 0)
 #else
 /*
  * (tfel): Just skip the optimization with using a managed malloc and use

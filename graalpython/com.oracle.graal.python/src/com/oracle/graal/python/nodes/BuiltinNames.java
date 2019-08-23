@@ -131,6 +131,7 @@ public abstract class BuiltinNames {
     public static final String HASH = "hash";
     public static final String MEMORYVIEW = "memoryview";
     public static final String SET = "set";
+    public static final String BUILTINS = "builtins";
     // truffle specific builtins
     public static final String __BUILTIN__ = "__builtin__";
     public static final String __DUMP_TRUFFLE_AST__ = "__dump_truffle_ast__";

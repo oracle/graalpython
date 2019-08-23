@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,189 +38,22 @@
 # SOFTWARE.
 
 
-PyCF_ONLY_AST = 0
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
+def test_create():
+    from tempfile import TemporaryFile
+    try:
+        f = TemporaryFile()
+        assert f is not None
+        f.close()
+    except Exception as e:
+        print(e)
+        assert False
 
-
-class AST:
-    def __dir__(self):
-        return []
-
-
-class mod(AST):
-    pass
-
-
-class expr(AST):
-    pass
-
-
-class stmt(AST):
-    pass
-
-
-class expr_context(AST):
-    pass
-
-
-class slice(AST):
-    pass
-
-
-class boolop(AST):
-    pass
-
-
-class operator(AST):
-    pass
-
-
-class BitOr(operator):
-    pass
-
-
-class BitXor(operator):
-    pass
-
-
-class BitAnd(operator):
-    pass
-
-
-class LShift(operator):
-    pass
-
-
-class RShift(operator):
-    pass
-
-
-class Add(operator):
-    pass
-
-
-class Sub(operator):
-    pass
-
-
-class Mult(operator):
-    pass
-
-
-class Div(operator):
-    pass
-
-
-class FloorDiv(operator):
-    pass
-
-
-class Mod(operator):
-    pass
-
-
-class Eq(operator):
-    pass
-
-
-class NotEq(operator):
-    pass
-
-
-class Lt(operator):
-    pass
-
-
-class LtE(operator):
-    pass
-
-
-class Gt(operator):
-    pass
-
-
-class GtE(operator):
-    pass
-
-
-class Pow(operator):
-    pass
-
-
-class Is(operator):
-    pass
-
-
-class IsNot(operator):
-    pass
-
-
-class In(operator):
-    pass
-
-
-class NotIn(operator):
-    pass
-
-
-class MatMult(operator):
-    pass
-
-
-class unaryop(AST):
-    pass
-
-
-class cmpop(AST):
-    pass
-
-
-class comprehension(AST):
-    pass
-
-
-class excepthandler(AST):
-    pass
-
-
-class arguments(AST):
-    pass
-
-
-class keyword(AST):
-    pass
-
-
-class alias(AST):
-    pass
-
-
-class Eq(cmpop):
-    pass
-
-
-class In(cmpop):
-    pass
-
-
-class Not(unaryop):
-    pass
-
-
-class Invert(unaryop):
-    pass
-
-
-class USub(unaryop):
-    pass
-
-
-class UAdd(unaryop):
-    pass
-
-
-class NotEq(cmpop):
-    pass
-
-
-class NotIn(cmpop):
-    pass

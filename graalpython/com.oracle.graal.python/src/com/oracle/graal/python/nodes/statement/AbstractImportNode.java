@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
@@ -125,7 +126,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     Object __import__(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
-        PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule("builtins").getAttribute(__IMPORT__);
+        PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule(BuiltinNames.BUILTINS).getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
         return getCallNode().execute(frame, builtinImport, new Object[]{name}, new PKeyword[]{

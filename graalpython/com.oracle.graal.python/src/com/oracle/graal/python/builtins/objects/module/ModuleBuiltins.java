@@ -40,8 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.util.List;
 
@@ -52,15 +59,19 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -70,6 +81,30 @@ public class ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class ModuleNode extends PythonBuiltinNode {
+        @Specialization
+        public PNone module(PythonModule self, String name, Object path,
+                        @Cached WriteAttributeToObjectNode writeName,
+                        @Cached WriteAttributeToObjectNode writeDoc,
+                        @Cached WriteAttributeToObjectNode writePackage,
+                        @Cached WriteAttributeToObjectNode writeLoader,
+                        @Cached WriteAttributeToObjectNode writeSpec,
+                        @Cached WriteAttributeToObjectNode writeFile) {
+            writeName.execute(self, __NAME__, name);
+            writeDoc.execute(self, __DOC__, PNone.NONE);
+            writePackage.execute(self, __PACKAGE__, PNone.NONE);
+            writeLoader.execute(self, __LOADER__, PNone.NONE);
+            writeSpec.execute(self, __SPEC__, PNone.NONE);
+            if (path != PNone.NO_VALUE) {
+                writeFile.execute(self, __FILE__, path);
+            }
+            return PNone.NONE;
+        }
     }
 
     @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)

@@ -42,7 +42,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -66,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -193,7 +193,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Child private GetLazyClassNode getClassNode;
         @Child private LookupAttributeInMRONode findFspathNode;
-        @Child private PosixModuleBuiltins.ConvertPathlikeObjectNode convertPathNode;
+        @Child private CastToPathNode convertPathNode;
 
         @CompilerDirectives.TruffleBoundary
         private void initZipImporter(PZipImporter self, String path) {
@@ -360,7 +360,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             // use the value of __fspath__ method
             if (convertPathNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                convertPathNode = insert(PosixModuleBuiltins.ConvertPathlikeObjectNode.create());
+                convertPathNode = insert(CastToPathNode.create());
             }
             initZipImporter(self, convertPathNode.execute(frame, path));
             return PNone.NONE;
