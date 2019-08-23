@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
@@ -305,7 +306,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             PythonAbstractClass type = getClass.execute(self);
             Object moduleName = readModuleNode.executeObject(frame, type);
             Object qualName = readQualNameNode.executeObject(frame, type);
-            if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
+            if (moduleName != PNone.NO_VALUE && !moduleName.equals(BuiltinNames.BUILTINS)) {
                 return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
             }
             return strFormat("<%s object at 0x%x>", qualName, self.hashCode());

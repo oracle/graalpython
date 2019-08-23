@@ -336,11 +336,11 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PythonModule createPythonModule(String name) {
-        return trace(new PythonModule(PythonBuiltinClassType.PythonModule, name));
+        return trace(PythonModule.createInternal(name));
     }
 
-    public PythonModule createPythonModule(LazyPythonClass cls, String name) {
-        return trace(new PythonModule(cls, name));
+    public PythonModule createPythonModule(LazyPythonClass cls) {
+        return trace(new PythonModule(cls));
     }
 
     public PythonClass createPythonClass(LazyPythonClass metaclass, String name, PythonAbstractClass[] bases) {
