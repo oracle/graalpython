@@ -2504,7 +2504,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (msg != null) {
                 stderr.print(msg);
             } else {
-                stderr.print("<messgae not set>");
+                stderr.print("<message not set>");
             }
             stderr.println();
             stderr.flush();
