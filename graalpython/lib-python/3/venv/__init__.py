@@ -126,6 +126,7 @@ class EnvBuilder:
         # Truffle change: our executable may not just be a file (e.g. we're
         # running through java), we always provide a script for launching in
         # venv
+        context.libpath = libpath
         exename = context.python_exe = "graalpython"
 
         import atexit, tempfile
@@ -138,12 +139,13 @@ class EnvBuilder:
             if sys.platform != "win32":
                 f.write("#!/bin/sh\n")
             f.write(sys.executable)
-            f.write(" --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s'" % (
+            f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'" % (
                 sys.graal_python_core_home,
                 sys.graal_python_stdlib_home,
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
+                sys.graal_python_cext_src,
             ))
             if sys.platform == "win32":
                 f.write(" %*")
@@ -319,6 +321,13 @@ class EnvBuilder:
                         dst = os.path.join(tcldir, 'init.tcl')
                         shutil.copyfile(src, dst)
                         break
+
+        # Truffle change: we need to ensure that the C API is built
+        import build_capi
+        build_capi.build()
+        # Truffle change end
+            
+    
 
     def _setup_pip(self, context):
         """Installs or upgrades pip in a virtual environment"""

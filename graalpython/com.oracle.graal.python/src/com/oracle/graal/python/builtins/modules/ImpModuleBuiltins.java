@@ -53,15 +53,18 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -84,20 +87,22 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -106,8 +111,10 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -196,11 +203,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) {
             ensureCapiWasLoaded();
-            Env env = getContext().getEnv();
+            PythonContext context = getContext();
+            Env env = context.getEnv();
             String basename = name.substring(name.lastIndexOf('.') + 1);
             TruffleObject sulongLibrary;
             try {
-                CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, getContext().getPublicTruffleFileRelaxed(path, ".bc")).build());
+                String extSuffix = ExtensionSuffixesNode.getSoAbi(context);
+                CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
                 throw raise(ImportError, "cannot load %s: %m", path, e);
@@ -225,7 +234,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 } else {
                     ((PythonObject) result).setAttribute(__FILE__, path);
                     // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
-                    PDict sysModules = getContext().getSysModules();
+                    PDict sysModules = context.getSysModules();
                     getSetItemNode().execute(null, sysModules, name, result);
                     return result;
                 }
@@ -237,36 +246,80 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        private static final String CAPI_NOT_BUILT_HINT = "Did you forget to build the C API using 'graalpython -m build_capi'?";
+        private static final String CAPI_LOAD_ERROR = "Could not load C API from %s.\n" + CAPI_NOT_BUILT_HINT;
+        private static final String CAPI_LOCATE_ERROR = "Could not locate C API library '%s' in 'sys.path'\n" + CAPI_NOT_BUILT_HINT;
+
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
-            PythonContext ctxt = getContext();
-            if (!ctxt.capiWasLoaded()) {
-                Env env = ctxt.getEnv();
+            PythonContext context = getContext();
+            if (!context.capiWasLoaded()) {
+                Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                TruffleFile capiFile = env.getInternalTruffleFile(getContext().getCoreHome() + env.getFileNameSeparator() + "capi.bc");
+
+                String libPythonName = "libpython" + ExtensionSuffixesNode.getSoAbi(context);
+                String libPythonPath = getCapiHome(context, env, libPythonName);
+                TruffleFile capiFile = env.getInternalTruffleFile(libPythonPath);
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
-                    if (!PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources)) {
+                    if (!PythonOptions.getOption(context, PythonOptions.ExposeInternalSources)) {
                         capiSrcBuilder.internal(true);
                     }
-                    capi = ctxt.getEnv().parseInternal(capiSrcBuilder.build()).call();
-                } catch (SecurityException | IOException e) {
-                    throw raise(PythonErrorType.ImportError, "cannot load capi from " + capiFile.getAbsoluteFile().getPath());
+                    capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
+                } catch (IOException | RuntimeException e) {
+                    PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath()));
+                    throw raise(PythonErrorType.ImportError, CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
-                ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
-                PythonModule builtinModule = ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
+                PythonModule builtinModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
 
                 CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
                 callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capi);
-                ctxt.setCapiWasLoaded(capi);
+                context.setCapiWasLoaded(capi);
                 callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capi);
 
                 // initialization needs to be finished already but load memoryview implementation
                 // immediately
                 callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
             }
+        }
+
+        private String getCapiHome(PythonContext context, Env env, String libPythonName) {
+            CompilerAsserts.neverPartOfCompilation();
+            // look for file 'libPythonName' in the path
+            ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
+            PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
+            String path = tryPathEntry(env, libPythonName, readNode.execute(sysModule, "graal_python_capi_home"));
+            if (path != null) {
+                return path;
+            }
+            PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOCATE_ERROR, libPythonName));
+            throw raise(PythonErrorType.ImportError, CAPI_LOCATE_ERROR, libPythonName);
+        }
+
+        private String tryPathEntry(Env env, String libPythonName, Object entry) {
+            String path = String.join(env.getFileNameSeparator(), asString(entry), libPythonName);
+            PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in " + path);
+            try {
+                if (env.getPublicTruffleFile(path).exists()) {
+                    PythonLanguage.getLogger().log(Level.FINE, "Found " + libPythonName + " in " + path);
+                    return path;
+                }
+            } catch (SecurityException e) {
+                // ignore
+            }
+            return null;
+        }
+
+        private String asString(Object object) {
+            if (object instanceof String) {
+                return (String) object;
+            } else if (object instanceof PString) {
+                return ((PString) object).getValue();
+            }
+            throw raise(PythonBuiltinClassType.TypeError, "path entry '%s' is not of type 'str'", object);
         }
 
         private SetItemNode getSetItemNode() {
@@ -416,12 +469,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object run(VirtualFrame frame, String modulename, String moduleFile, PList modulepath,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("cast") @Cached CastToStringNode castString,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            Object[] pathList = modulepath.getSequenceStorage().getInternalArray();
-            String[] paths = new String[pathList.length];
-            for (int i = 0; i < pathList.length; i++) {
+            SequenceStorage sequenceStorage = modulepath.getSequenceStorage();
+            int n = lenNode.execute(sequenceStorage);
+            Object[] pathList = sequenceStorage.getInternalArray();
+            assert n <= pathList.length;
+            String[] paths = new String[n];
+            for (int i = 0; i < n; i++) {
                 paths[i] = castString.execute(frame, pathList[i]);
             }
             return doCache(modulename, moduleFile, paths, ctxt, lang);
@@ -525,6 +582,42 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } else {
                 return factory().createCode((RootCallTarget) ct);
             }
+        }
+    }
+
+    @Builtin(name = "extension_suffixes", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
+        @Specialization
+        Object run(
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            String soAbi = getSoAbi(ctxt);
+            return factory().createList(new Object[]{soAbi, ".so", ".dylib", ".su"});
+        }
+
+        @TruffleBoundary
+        static String getSoAbi(PythonContext ctxt) {
+            PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
+            Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
+            // sys.implementation.cache_tag
+            String cacheTag = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "cache_tag");
+            // sys.implementation._multiarch
+            String multiArch = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "_multiarch");
+
+            Env env = ctxt.getEnv();
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(SysModuleBuiltins.LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            String toolchainId = toolchain.getIdentifier();
+
+            // only use '.dylib' if we are on 'Darwin-native'
+            String soExt;
+            if ("darwin".equals(SysModuleBuiltins.getPythonOSName()) && "native".equals(toolchainId)) {
+                soExt = ".dylib";
+            } else {
+                soExt = ".so";
+            }
+
+            return "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
         }
     }
 

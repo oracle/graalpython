@@ -2079,37 +2079,40 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = {"dest.getClass() == left.getClass()", "left.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
         SequenceStorage doManagedManagedSameType(SequenceStorage dest, SequenceStorage left, SequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            SequenceStorage destProfiled = cachedClass.cast(dest);
             SequenceStorage leftProfiled = cachedClass.cast(left);
             SequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
             Object arr2 = rightProfiled.getInternalArrayObject();
             int len2 = rightProfiled.length();
-            concat(dest.getInternalArrayObject(), arr1, len1, arr2, len2);
-            getSetLenNode().execute(dest, len1 + len2);
-            return dest;
+            concat(destProfiled.getInternalArrayObject(), arr1, len1, arr2, len2);
+            getSetLenNode().execute(destProfiled, len1 + len2);
+            return destProfiled;
         }
 
         @Specialization(guards = {"dest.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
         SequenceStorage doEmptyManagedSameType(SequenceStorage dest, @SuppressWarnings("unused") EmptySequenceStorage left, SequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            SequenceStorage destProfiled = cachedClass.cast(dest);
             SequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr2 = rightProfiled.getInternalArrayObject();
             int len2 = rightProfiled.length();
-            System.arraycopy(arr2, 0, dest.getInternalArrayObject(), 0, len2);
-            getSetLenNode().execute(dest, len2);
-            return dest;
+            System.arraycopy(arr2, 0, destProfiled.getInternalArrayObject(), 0, len2);
+            getSetLenNode().execute(destProfiled, len2);
+            return destProfiled;
         }
 
         @Specialization(guards = {"dest.getClass() == left.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
         SequenceStorage doManagedEmptySameType(SequenceStorage dest, SequenceStorage left, @SuppressWarnings("unused") EmptySequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            SequenceStorage destProfiled = cachedClass.cast(dest);
             SequenceStorage leftProfiled = cachedClass.cast(left);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
-            System.arraycopy(arr1, 0, dest.getInternalArrayObject(), 0, len1);
-            getSetLenNode().execute(dest, len1);
-            return dest;
+            System.arraycopy(arr1, 0, destProfiled.getInternalArrayObject(), 0, len1);
+            getSetLenNode().execute(destProfiled, len1);
+            return destProfiled;
         }
 
         @Specialization

@@ -158,6 +158,7 @@ static PyObject* wrap_nb_bool(inquiry f, PyObject* a) {
 }
 
 /* very special case: operator '**' has an optional third arg */
+NO_INLINE
 static PyObject* wrap_pow(ternaryfunc f, ...) {
     int nargs = polyglot_get_arg_count();
     switch(nargs) {

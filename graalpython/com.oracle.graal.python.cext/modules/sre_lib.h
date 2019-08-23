@@ -459,8 +459,11 @@ do { \
            "(%" PY_FORMAT_SIZE_T "d)\n", \
            data, state->data_stack_base-size, size)); \
     memcpy(data, state->data_stack+state->data_stack_base-size, size); \
-    if (discard) \
+    if (discard) { \
+        /* TODO: workaround for Sulong realloc bug */ \
+        memset(state->data_stack+state->data_stack_base-size, 0, size); \
         state->data_stack_base -= size; \
+    } \
 } while (0)
 
 #define DATA_STACK_POP_DISCARD(state, size) \
@@ -468,6 +471,8 @@ do { \
     TRACE(("discard data from %" PY_FORMAT_SIZE_T "d " \
            "(%" PY_FORMAT_SIZE_T "d)\n", \
            state->data_stack_base-size, size)); \
+    /* TODO: workaround for Sulong realloc bug */ \
+    memset(state->data_stack+state->data_stack_base-size, 0, size); \
     state->data_stack_base -= size; \
 } while(0)
 

@@ -81,6 +81,7 @@ public final class PythonContext {
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";
     static final String LIB_GRAALPYTHON = "/lib-graalpython";
+    static final String CAPI_HOME = "/capi";
     static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
@@ -371,20 +372,22 @@ public final class PythonContext {
         isInitialized = true;
     }
 
-    private String sysPrefix, basePrefix, coreHome, stdLibHome;
+    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
         basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
         coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
+        capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
 
         PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
-                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
+                        "\n\tStdLibHome: {4}" +
+                        "\n\tC API: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -439,13 +442,40 @@ public final class PythonContext {
                 }
             }
 
+            if (capiHome.isEmpty()) {
+                // first, try dev home layout
+                try {
+                    for (TruffleFile f : home.list()) {
+                        if (f.getName().equals("com.oracle.graal.python.cext") && f.isDirectory()) {
+                            capiHome = f.getPath();
+                            break;
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+
+                // second, try dist home layout
+                if (capiHome == null) {
+                    try {
+                        for (TruffleFile f : newEnv.getInternalTruffleFile(coreHome).list()) {
+                            if (f.getName().equals("capi") && f.isDirectory()) {
+                                capiHome = f.getPath();
+                                break;
+                            }
+                        }
+                    } catch (SecurityException | IOException e) {
+                    }
+                }
+            }
+
             PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
                             "\n\tLanguage home: {0}" +
                             "\n\tSysPrefix: {1}" +
                             "\n\tSysBasePrefix: {2}" +
                             "\n\tCoreHome: {3}" +
                             "\n\tStdLibHome: {4}" +
-                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
+                            "\n\tC API: {5}" +
+                            "\n\tExecutable: {6}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, newEnv.getOptions().get(PythonOptions.Executable))));
         }
     }
 
@@ -486,6 +516,14 @@ public final class PythonContext {
             stdLibHome = LIB_PYTHON_3;
         }
         return stdLibHome;
+    }
+
+    @TruffleBoundary
+    public String getCAPIHome() {
+        if (capiHome.isEmpty()) {
+            capiHome = getCoreHome() + CAPI_HOME;
+        }
+        return capiHome;
     }
 
     @TruffleBoundary

@@ -89,7 +89,12 @@ def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0):
     log.info(' '.join(cmd))
     if dry_run:
         return
-    os.system(' '.join(cmd)); return # TODO: Truffle remove-me
+    # TODO: Begin Truffle change
+    status = os.system(' '.join(cmd))
+    if status != 0:
+        raise DistutilsExecError( "command %r failed with exit status %d" % (cmd, status))
+    return
+    # End of Truffle change
     executable = cmd[0]
     exec_fn = search_path and os.execvp or os.execv
     env = None

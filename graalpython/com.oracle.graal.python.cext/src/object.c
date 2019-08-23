@@ -225,6 +225,7 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
         fprintf(stderr, "Too many arguments passed through varargs: %d", polyglot_get_arg_count() - skipN); \
     }
 
+NO_INLINE
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
 
@@ -243,6 +244,7 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     return PyObject_CallObject(callable, args);
 }
 
+NO_INLINE
 PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
 
@@ -261,6 +263,7 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
     return PyObject_CallObject(callable, args);
 }
 
+NO_INLINE
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     // the arguments are given as a variable list followed by NULL
     PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
@@ -542,6 +545,13 @@ PyObject* _PyObject_New(PyTypeObject *tp) {
 void PyObject_GC_Track(void *tp) {
 }
 
+void PyObject_GC_Del(void *tp) {
+}
+
+
+void PyObject_GC_UnTrack(void *tp) {
+}
+
 PyObject* _PyObject_GC_New(PyTypeObject *tp) {
     return _PyObject_New(tp);
 }
@@ -588,4 +598,14 @@ int PyCallable_Check(PyObject *x) {
 
 PyObject * PyObject_Dir(PyObject *obj) {
 	return UPCALL_O(PY_BUILTIN, polyglot_from_string("dir", SRC_CS), native_to_java(obj));
+}
+
+// taken from CPython "Objects/object.c"
+PyObject * _PyObject_GetAttrId(PyObject *v, _Py_Identifier *name) {
+    PyObject *result;
+    PyObject *oname = _PyUnicode_FromId(name);
+    if (!oname)
+        return NULL;
+    result = PyObject_GetAttr(v, oname);
+    return result;
 }

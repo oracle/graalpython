@@ -38,11 +38,9 @@
 # SOFTWARE.
 
 import sys
+import os
 from importlib import invalidate_caches
 from string import Formatter
-os = sys.modules.get("posix", sys.modules.get("nt", None))
-if os is None:
-    raise ImportError("posix or nt module is required in builtin modules")
 __dir__ = __file__.rpartition("/")[0]
 
 GRAALPYTHON = sys.implementation.name == "graalpython"
@@ -72,27 +70,61 @@ class CPyExtTestCase():
 
 def ccompile(self, name):
     from distutils.core import setup, Extension
+    from distutils.sysconfig import get_config_var
+    from hashlib import sha256
+    EXT_SUFFIX = get_config_var("EXT_SUFFIX")
+
     source_file = '%s/%s.c' % (__dir__, name)
     file_not_empty(source_file)
-    module = Extension(name, sources=[source_file])
-    args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
-    setup(
-        script_name='setup',
-        script_args=args,
-        name=name,
-        version='1.0',
-        description='',
-        ext_modules=[module]
-    )
+
+    # compute checksum of source file
+    m = sha256()
+    with open(source_file,"rb") as f:
+        # read 4K blocks
+        for block in iter(lambda: f.read(4096),b""):
+            m.update(block)
+    cur_checksum = m.hexdigest()
+    
+    # see if there is already a checksum file
+    checksum_file = '%s/%s%s.sha256' % (__dir__, name, EXT_SUFFIX)
+    available_checksum = ""
+    if os.path.exists(checksum_file):
+        # read checksum file
+        with open(checksum_file, "r") as f:
+            available_checksum = f.readline()
+            
+    # note, the suffix is already a string like '.so'
+    binary_file_llvm = '%s/%s%s' % (__dir__, name, EXT_SUFFIX)
+    
+    # Compare checksums and only re-compile if different.
+    # Note: It could be that the C source file's checksum didn't change but someone 
+    # manually deleted the shared library file.
+    if available_checksum != cur_checksum or not os.path.exists(binary_file_llvm):
+        module = Extension(name, sources=[source_file])
+        verbosity = '--verbose' if sys.flags.verbose else '--quiet'
+        args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__, 'clean']
+        setup(
+            script_name='setup',
+            script_args=args,
+            name=name,
+            version='1.0',
+            description='',
+            ext_modules=[module]
+        )
+        
+        # write new checksum
+        with open(checksum_file, "w") as f:
+            f.write(cur_checksum)
+
+        # IMPORTANT:
+        # Invalidate caches after creating the native module.
+        # FileFinder caches directory contents, and the check for directory
+        # changes has whole-second precision, so it can miss quick updates.
+        invalidate_caches()
+
     # ensure file was really written
-    binary_file_llvm = '%s/%s.bc' % (__dir__, name)
     if GRAALPYTHON:
         file_not_empty(binary_file_llvm)
-    # IMPORTANT:
-    # Invalidate caches after creating the native module.
-    # FileFinder caches directory contents, and the check for directory
-    # changes has whole-second precision, so it can miss quick updates.
-    invalidate_caches()
 
 
 def file_not_empty(path):

@@ -128,7 +128,7 @@ def PyDict_Next(dictObj, pos):
         return native_null
     for key in dictObj:
         if curPos == pos:
-            return key, dictObj[key]
+            return key, dictObj[key], hash(key)
         curPos = curPos + 1
     return native_null
 
@@ -158,6 +158,15 @@ def PyDict_GetItem(dictObj, key):
 def PyDict_SetItem(dictObj, key, value):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+    dictObj[key] = value
+    return 0
+
+
+@may_raise(-1)
+def PyDict_SetItem_KnownHash(dictObj, key, value, given_hash):
+    if not isinstance(dictObj, dict):
+        raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+    assert hash(key) == given_hash, "hash mismatch: known hash is different to computed hash"
     dictObj[key] = value
     return 0
 
@@ -272,6 +281,11 @@ def PyBytes_FromFormat(fmt, args):
 @may_raise
 def PyBytes_Join(sep, iterable):
     return sep.join(iterable)
+
+
+@may_raise
+def PyBytes_FromObject(iterable):
+    return bytes(iterable)
 
 
 ##################### LIST
@@ -545,6 +559,11 @@ def PyIter_Next(itObj):
     except StopIteration:
         PyErr_Restore(None, None, None)
         return native_null
+
+
+@may_raise
+def PyCallIter_New(it, sentinel):
+    return iter(it, sentinel)
 
 
 ##################### SEQUENCE
@@ -1352,7 +1371,7 @@ def PyThread_allocate_lock():
 
 @may_raise
 def PyThread_acquire_lock(lock, waitflag):
-    return lock.acquire(waitflag)
+    return 1 if lock.acquire(waitflag) else 0
 
 
 @may_raise
@@ -1368,6 +1387,11 @@ def PySlice_New(start, stop, step):
 @may_raise
 def PyMapping_Keys(obj):
     return list(obj.keys())
+
+
+@may_raise
+def PyMapping_Values(obj):
+    return list(obj.values())
 
 
 @may_raise

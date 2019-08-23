@@ -128,6 +128,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -1226,9 +1227,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @CompilationFinal private BranchProfile tooLargeProfile = BranchProfile.create();
 
         @Specialization
-        Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached("create()") ReadFromChannelNode readNode) {
+        Object readLong(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
+                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Shared("readNode") @Cached ReadFromChannelNode readNode) {
             int size;
             try {
                 size = Math.toIntExact(requestedSize);
@@ -1239,6 +1240,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             ByteSequenceStorage array = readNode.execute(channel, size);
             return factory().createBytes(array);
+        }
+
+        @Specialization
+        Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, Object requestedSize,
+                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Shared("readNode") @Cached ReadFromChannelNode readNode,
+                        @Cached CastToJavaLongNode castToLongNode) {
+            return readLong(frame, fd, castToLongNode.execute(requestedSize), channelClassProfile, readNode);
         }
     }
 
@@ -1917,6 +1926,28 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         String ctermid() {
             return "/dev/tty";
+        }
+    }
+
+    @Builtin(name = "symlink", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst", "target_is_directory", "dir_fd"})
+    @GenerateNodeFactory
+    public abstract static class SymlinkNode extends PythonBuiltinNode {
+
+        @Specialization(guards = {"isNoValue(targetIsDir)", "isNoValue(dirFd)"})
+        PNone doSimple(VirtualFrame frame, Object srcObj, Object dstObj, @SuppressWarnings("unused") PNone targetIsDir, @SuppressWarnings("unused") PNone dirFd,
+                        @Cached CastToPathNode castSrcToPath,
+                        @Cached CastToPathNode castDstToPath) {
+            String src = castSrcToPath.execute(frame, srcObj);
+            String dst = castDstToPath.execute(frame, dstObj);
+
+            Env env = getContext().getEnv();
+            TruffleFile dstFile = env.getPublicTruffleFile(dst);
+            try {
+                dstFile.createSymbolicLink(env.getPublicTruffleFile(src));
+            } catch (IOException e) {
+                throw raiseOSError(frame, OSErrorEnum.EIO, e);
+            }
+            return PNone.NONE;
         }
     }
 

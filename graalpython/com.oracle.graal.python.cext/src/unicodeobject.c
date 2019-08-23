@@ -42,6 +42,15 @@
 
 PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS, sizeof(PyUnicodeObject));
 
+/* The empty Unicode object is shared to improve performance. */
+static PyObject *unicode_empty = NULL;
+
+#define _Py_RETURN_UNICODE_EMPTY()                      \
+    do {                                                \
+        _Py_INCREF_UNICODE_EMPTY();                     \
+        return unicode_empty;                           \
+    } while (0)
+
 // partially taken from CPython "Objects/unicodeobject.c"
 const unsigned char _Py_ascii_whitespace[] = {
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -72,6 +81,10 @@ const unsigned char _Py_ascii_whitespace[] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0
 };
+
+static PyObject * _PyUnicode_FromUCS1(const Py_UCS1 *s, Py_ssize_t size);
+static PyObject * _PyUnicode_FromUCS2(const Py_UCS2 *s, Py_ssize_t size);
+static PyObject * _PyUnicode_FromUCS4(const Py_UCS4 *s, Py_ssize_t size);
 
 // partially taken from CPython "Objects/unicodeobject.c"
 static Py_ssize_t unicode_aswidechar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
@@ -116,9 +129,7 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
 
 MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc) {
     size_t fmt_size = strlen(fmt) + 1;
-    // n.b. avoid using 'strdup' for compatiblity with MUSL libc
-    char* fmtcpy = (char*) malloc(fmt_size*sizeof(char));
-    memcpy(fmtcpy, fmt, fmt_size);
+    char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
     int use_valist = args == NULL;
 
@@ -208,6 +219,7 @@ PyObject* PyUnicode_FromFormatV(const char* format, va_list va) {
     return PyTruffle_Unicode_FromFormat(format, va, NULL, 0);
 }
 
+NO_INLINE
 PyObject* PyUnicode_FromFormat(const char* format, ...) {
     CallWithPolyglotArgs(PyObject* result, format, 1, PyTruffle_Unicode_FromFormat, format);
     return result;
@@ -387,6 +399,77 @@ int PyUnicode_Compare(PyObject *left, PyObject *right) {
 
 int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
 	return UPCALL_CEXT_I(_jls_PyUnicode_Compare, native_to_java(left), polyglot_from_string(right, SRC_CS)) == 0;
+}
+
+static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
+	// CPython assumes latin1 when decoding an UCS1 array
+	return polyglot_from_string((const char *) u, "ISO-8859-1");
+}
+
+UPCALL_ID(PyTruffle_Unicode_FromWchar);
+static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
+	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i16_array(u, size), 2, NULL);
+}
+
+static PyObject* _PyUnicode_FromUCS4(const Py_UCS4 *u, Py_ssize_t size) {
+	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i32_array(u, size), 4, NULL);
+}
+
+// taken from CPython "Python/Objects/unicodeobject.c"
+PyObject*
+PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
+{
+    if (size < 0) {
+        PyErr_SetString(PyExc_ValueError, "size must be positive");
+        return NULL;
+    }
+    switch (kind) {
+    case PyUnicode_1BYTE_KIND:
+        return _PyUnicode_FromUCS1(buffer, size);
+    case PyUnicode_2BYTE_KIND:
+        return _PyUnicode_FromUCS2(buffer, size);
+    case PyUnicode_4BYTE_KIND:
+        return _PyUnicode_FromUCS4(buffer, size);
+    default:
+        PyErr_SetString(PyExc_SystemError, "invalid kind");
+        return NULL;
+    }
+}
+
+PyObject * PyUnicode_FromOrdinal(int ordinal) {
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("chr", SRC_CS), ordinal);
+}
+
+// taken from CPython "Python/Objects/unicodeobject.c"
+PyObject * PyUnicode_DecodeUTF8(const char *s, Py_ssize_t size, const char *errors) {
+    return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
+}
+
+UPCALL_ID(PyUnicode_DecodeUTF8Stateful);
+PyObject * PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const char *errors, Py_ssize_t *consumed) {
+	PyObject* result = UPCALL_CEXT_O(_jls_PyUnicode_DecodeUTF8Stateful, polyglot_from_i8_array(s, size), polyglot_from_string(errors, SRC_CS), consumed != NULL ? 1 : 0);
+	if (result != NULL) {
+		if (consumed != NULL) {
+			*consumed = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
+		}
+		return PyTuple_GetItem(result, 0);
+	}
+	PyErr_SetString(PyExc_SystemError, "expected tuple but got NULL");
+	return NULL;
+}
+
+// partially taken from CPython "Python/Objects/unicodeobject.c"
+PyObject * _PyUnicode_FromId(_Py_Identifier *id) {
+    if (!id->object) {
+        id->object = PyUnicode_DecodeUTF8Stateful(id->string, strlen(id->string), NULL, NULL);
+        if (!id->object) {
+            return NULL;
+        }
+        PyUnicode_InternInPlace(&id->object);
+        assert(!id->next);
+        id->next = NULL;
+    }
+    return id->object;
 }
 
 UPCALL_ID(PyUnicode_AsUnicodeEscapeString);

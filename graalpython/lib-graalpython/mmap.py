@@ -54,7 +54,9 @@ PAGESIZE = 4096
 from python_cext import register_capi_hook
 
 def __register_buffer():
-    import _mmap
+    from build_capi import hint
+    with hint("_mmap"):
+        import _mmap
     _mmap.init_bufferprotocol(mmap)
     
 register_capi_hook(__register_buffer)

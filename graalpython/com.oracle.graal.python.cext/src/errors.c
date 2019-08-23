@@ -159,6 +159,7 @@ int PyErr_ExceptionMatches(PyObject *exc) {
     return PyErr_GivenExceptionMatches(PyErr_Occurred(), exc);
 }
 
+NO_INLINE
 PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
     CallWithPolyglotArgs(PyObject* formatted_msg, fmt, 2, PyTruffle_Unicode_FromFormat, fmt);
     UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(formatted_msg));
@@ -197,4 +198,58 @@ PyObject * PyErr_NewExceptionWithDoc(const char *name, const char *doc, PyObject
     }
     return UPCALL_CEXT_O(_jls_PyErr_NewExceptionWithDoc, polyglot_from_string(name, SRC_CS), polyglot_from_string(doc, SRC_CS), native_to_java(base), native_to_java(dict));
 
+}
+
+// taken from CPython "Python/errors.c"
+PyObject* PyErr_SetFromErrno(PyObject* exc) {
+    return PyErr_SetFromErrnoWithFilenameObjects(exc, NULL, NULL);
+}
+
+// taken from CPython "Python/errors.c"
+PyObject* PyErr_SetFromErrnoWithFilenameObject(PyObject* exc, PyObject* filenameObject) {
+    return PyErr_SetFromErrnoWithFilenameObjects(exc, filenameObject, NULL);
+}
+
+// partially taken from CPython "Python/errors.c"
+PyObject* PyErr_SetFromErrnoWithFilenameObjects(PyObject* exc, PyObject* filenameObject, PyObject* filenameObject2) {
+    PyObject *message;
+    PyObject *v, *args;
+    int i = errno;
+
+    if (i != 0) {
+        char *s = strerror(i);
+        // TODO(fa): use PyUnicode_DecodeLocale once available
+        // message = PyUnicode_DecodeLocale(s, "surrogateescape");
+        message = polyglot_from_string(s, SRC_CS);
+    }
+    else {
+        /* Sometimes errno didn't get set */
+        message = PyUnicode_FromString("Error");
+    }
+
+    if (message == NULL)
+    {
+        return NULL;
+    }
+
+    if (filenameObject != NULL) {
+        if (filenameObject2 != NULL)
+            args = Py_BuildValue("(iOOiO)", i, message, filenameObject, 0, filenameObject2);
+        else
+            args = Py_BuildValue("(iOO)", i, message, filenameObject);
+    } else {
+        assert(filenameObject2 == NULL);
+        args = Py_BuildValue("(iO)", i, message);
+    }
+    Py_DECREF(message);
+
+    if (args != NULL) {
+        v = PyObject_Call(exc, args, NULL);
+        Py_DECREF(args);
+        if (v != NULL) {
+            PyErr_SetObject((PyObject *) Py_TYPE(v), v);
+            Py_DECREF(v);
+        }
+    }
+    return NULL;
 }

@@ -187,7 +187,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         return ZipImporterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {

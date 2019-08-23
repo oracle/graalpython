@@ -42,8 +42,10 @@
 #define CAPI_H
 
 #define MUST_INLINE __attribute__((always_inline)) inline
+#define NO_INLINE __attribute__((noinline))
 
-#include "polyglot.h"
+#include <polyglot.h>
+
 #include "Python.h"
 
 #define SRC_CS "utf-8"
@@ -107,11 +109,11 @@ double polyglot_ensure_double(void *obj) {
 
 /* upcall functions for calling into Python */
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
-extern uint64_t(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
+extern void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 extern double(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
 extern PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
-extern uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
+extern void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 extern double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
@@ -328,7 +330,7 @@ extern PyObject* wrapped_null;
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
 /* STR */
-PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
+__attribute__((always_inline)) PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc);
 
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);

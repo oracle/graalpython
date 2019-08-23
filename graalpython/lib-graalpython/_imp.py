@@ -42,11 +42,6 @@ _py_package_context = None
 
 
 @__builtin__
-def extension_suffixes():
-    return [".bc", ".so", ".dylib", ".su"]
-
-
-@__builtin__
 def get_magic():
     return b'\x0c\xaf\xaf\xe1'
 

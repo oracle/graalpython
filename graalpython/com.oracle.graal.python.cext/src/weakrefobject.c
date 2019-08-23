@@ -43,3 +43,7 @@
 PyTypeObject _PyWeakref_RefType = PY_TRUFFLE_TYPE("weakref", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyWeakReference));
 PyTypeObject _PyWeakref_ProxyType = PY_TRUFFLE_TYPE("weakproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyWeakReference));
 PyTypeObject _PyWeakref_CallableProxyType = PY_TRUFFLE_TYPE("weakcallableproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyWeakReference));
+
+void PyObject_ClearWeakRefs(PyObject *object) {
+	// TODO: implement
+}

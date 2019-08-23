@@ -85,6 +85,7 @@ PyObject * PyExc_RecursionError = NULL;
 PyObject * PyExc_UnicodeEncodeError = NULL;
 PyObject * PyExc_GeneratorExit = NULL;
 PyObject * PyExc_EOFError = NULL;
+PyObject * PyExc_FileNotFoundError = NULL;
 
 void initialize_exceptions() {
     PyExc_AttributeError = PY_EXCEPTION("AttributeError");
@@ -126,6 +127,7 @@ void initialize_exceptions() {
     PyExc_UnicodeEncodeError = PY_EXCEPTION("UnicodeEncodeError");
     PyExc_GeneratorExit = PY_EXCEPTION("GeneratorExit");
     PyExc_EOFError = PY_EXCEPTION("EOFError");
+    PyExc_FileNotFoundError = PY_EXCEPTION("FileNotFoundError");
 }
 
 

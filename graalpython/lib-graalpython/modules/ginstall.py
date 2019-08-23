@@ -136,6 +136,11 @@ def known_packages():
         install_from_pypi("Cython==0.29.2", extra_opts=(['--no-cython-compile'] + extra_opts), **kwargs)
 
     def setuptools(**kwargs):
+        try:
+            import six as _six
+        except ImportError:
+            print("Installing required dependency: six")
+            six(**kwargs)
         install_from_pypi("setuptools==41.0.1", **kwargs)
 
     def pkgconfig(**kwargs):
@@ -1105,7 +1110,8 @@ index 8657420..f7b3f08 100644
  from pandas.compat.numpy import function as nv
  from pandas.util._decorators import Appender, Substitution, cache_readonly
 '''
-        cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
+        # workaround until Sulong toolchain fixes this
+        cflags = "-stdlib=libc++ -lc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
 
     return locals()
