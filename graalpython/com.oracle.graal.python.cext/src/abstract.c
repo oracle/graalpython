@@ -519,3 +519,23 @@ Py_ssize_t PyMapping_Size(PyObject *o) {
     PyErr_Format(PyExc_TypeError, "object of type '%s' has no len()", Py_TYPE(o)->tp_name);
     return -1;
 }
+
+UPCALL_ID(PySequence_Repeat);
+PyObject* PySequence_Repeat(PyObject *o, Py_ssize_t count) {
+	return UPCALL_CEXT_O(_jls_PySequence_Repeat, native_to_java(o), count);
+}
+
+UPCALL_ID(PySequence_Concat);
+PyObject* PySequence_Concat(PyObject *s, PyObject *o) {
+	return UPCALL_CEXT_O(_jls_PySequence_Concat, native_to_java(s), native_to_java(o));
+}
+
+UPCALL_ID(PySequence_InPlaceRepeat);
+PyObject* PySequence_InPlaceRepeat(PyObject *o, Py_ssize_t count) {
+	return UPCALL_CEXT_O(_jls_PySequence_Repeat, native_to_java(o), count);
+}
+
+UPCALL_ID(PySequence_InPlaceConcat);
+PyObject* PySequence_InPlaceConcat(PyObject *s, PyObject *o) {
+	return UPCALL_CEXT_O(_jls_PySequence_Concat, native_to_java(s), native_to_java(o));
+}

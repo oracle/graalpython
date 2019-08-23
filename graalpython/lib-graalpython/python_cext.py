@@ -603,6 +603,36 @@ def PySequence_Contains(haystack, needle):
     return needle in haystack
 
 
+@may_raise
+def PySequence_Repeat(obj, n):
+    if not PyTruffle_IsSequence(obj):
+        raise TypeError("'%p' object can't be repeated", obj)
+    return obj * n
+
+
+@may_raise
+def PySequence_InPlaceRepeat(obj, n):
+    if not PyTruffle_IsSequence(obj):
+        raise TypeError("'%p' object can't be repeated", obj)
+    obj *= n
+    return obj
+
+
+@may_raise
+def PySequence_Concat(s, o):
+    if not (PyTruffle_IsSequence(s) and PyTruffle_IsSequence(o)):
+        raise TypeError("'%p' object can't be repeated", s)
+    return s + o
+
+
+@may_raise
+def PySequence_InPlaceConcat(s, o):
+    if not (PyTruffle_IsSequence(s) and PyTruffle_IsSequence(o)):
+        raise TypeError("'%p' object can't be repeated", s)
+    s += o
+    return s
+
+
 ##################### UNICODE
 
 

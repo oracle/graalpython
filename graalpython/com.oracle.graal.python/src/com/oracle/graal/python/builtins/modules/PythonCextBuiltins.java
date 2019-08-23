@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeNullNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
@@ -148,7 +149,10 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -180,6 +184,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -872,6 +877,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected <T> T raiseNative(VirtualFrame frame, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
             return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
+        }
+
+        protected static <T> T raiseNative(PythonBuiltinBaseNode n, VirtualFrame frame, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+            return NativeBuiltin.raiseNative(n, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
         }
 
         protected static <T> T raiseNative(PythonBuiltinBaseNode n, PFrame.Reference frameInfo, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
@@ -2568,4 +2577,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffle_IsSequence", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_IsSequence extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        boolean doGeneric(VirtualFrame frame, Object object,
+                        @Cached IsSequenceNode isSequenceNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            try (PDataModelEmulationContextManager cm = isSequenceNode.withGlobalState(contextRef, frame)) {
+                return cm.execute(object);
+            }
+        }
+    }
 }
