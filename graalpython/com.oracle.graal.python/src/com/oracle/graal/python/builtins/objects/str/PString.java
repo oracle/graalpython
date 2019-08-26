@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -86,7 +87,7 @@ public final class PString extends PImmutableSequence {
     }
 
     public boolean isNative() {
-        return getNativeWrapper() != null && getNativeWrapper().isNative();
+        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
     @ExportMessage

@@ -482,8 +482,10 @@ public class PThreadState extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    public long asPointer(@CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-        Object nativePointer = this.getNativePointer();
+    public long asPointer(
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+        Object nativePointer = lib.getNativePointer(this);
         if (nativePointer instanceof Long) {
             return (long) nativePointer;
         }
@@ -492,10 +494,11 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected void toNative(
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ToPyObjectNode toPyObjectNode,
                     @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
         invalidateNode.execute();
-        if (!isNative()) {
+        if (!lib.isNative(this)) {
             setNativePointer(toPyObjectNode.execute(this));
         }
     }

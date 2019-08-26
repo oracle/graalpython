@@ -57,6 +57,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -86,8 +87,8 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    public PythonManagedClass getPythonClass() {
-        return (PythonManagedClass) getDelegate();
+    public PythonManagedClass getPythonClass(PythonNativeWrapperLibrary lib) {
+        return (PythonManagedClass) lib.getDelegate(this);
     }
 
     @ExportMessage
@@ -107,10 +108,11 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadMethodNode readMethodNode,
                     @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         // translate key to attribute name
-        return toSulongNode.execute(readMethodNode.execute(getPythonClass(), member));
+        return toSulongNode.execute(readMethodNode.execute(getPythonClass(lib), member));
     }
 
     @ExportMessage

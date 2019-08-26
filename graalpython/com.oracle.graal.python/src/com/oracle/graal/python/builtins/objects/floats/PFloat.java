@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -66,7 +67,7 @@ public class PFloat extends PythonBuiltinObject {
     }
 
     public boolean isNative() {
-        return getNativeWrapper() != null && getNativeWrapper().isNative();
+        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
     public static PFloat create(double value) {

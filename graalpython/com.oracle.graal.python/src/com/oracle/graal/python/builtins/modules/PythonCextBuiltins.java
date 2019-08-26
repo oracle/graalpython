@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -646,10 +647,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class CheckFunctionResultNode extends PNodeWithContext {
         public abstract Object execute(String name, Object result);
 
-        @Specialization
+        @Specialization(limit = "1")
         Object doNativeWrapper(String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
+                        @CachedLibrary(value = "result") PythonNativeWrapperLibrary lib,
                         @Cached("create()") CheckFunctionResultNode recursive) {
-            return recursive.execute(name, result.getDelegate());
+            return recursive.execute(name, lib.getDelegate(result));
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
@@ -1264,15 +1266,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        byte[] doCArrayWrapper(CByteArrayWrapper o, long n) {
-            return subRangeIfNeeded(o.getByteArray(), n);
+        @Specialization(limit = "1")
+        byte[] doCArrayWrapper(CByteArrayWrapper o, long n,
+                        @CachedLibrary("o") PythonNativeWrapperLibrary lib) {
+            return subRangeIfNeeded(o.getByteArray(lib), n);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         byte[] doSequenceArrayWrapper(VirtualFrame frame, PySequenceArrayWrapper obj, long n,
+                        @CachedLibrary(value = "obj") PythonNativeWrapperLibrary lib,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return subRangeIfNeeded(toBytesNode.execute(frame, obj.getDelegate()), n);
+            return subRangeIfNeeded(toBytesNode.execute(frame, lib.getDelegate(obj)), n);
         }
 
         @Specialization(limit = "5")
@@ -1402,9 +1406,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child private GetTypeFlagsNode getTypeFlagsNode;
         @Child private GetClassNode getClassNode;
 
-        @Specialization
-        long doPythonObject(PythonNativeWrapper nativeWrapper) {
-            PythonAbstractClass pclass = getGetClassNode().execute(nativeWrapper.getDelegate());
+        @Specialization(limit = "1")
+        long doPythonObject(PythonNativeWrapper nativeWrapper,
+                        @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib) {
+            PythonAbstractClass pclass = getGetClassNode().execute(lib.getDelegate(nativeWrapper));
             return getGetTypeFlagsNode().execute(pclass);
         }
 
@@ -1435,9 +1440,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_Set_SulongType extends NativeBuiltin {
 
-        @Specialization
-        Object doPythonObject(PythonClassNativeWrapper klass, Object ptr) {
-            ((PythonManagedClass) klass.getPythonObject()).setSulongType(ptr);
+        @Specialization(limit = "1")
+        Object doPythonObject(PythonClassNativeWrapper klass, Object ptr,
+                        @CachedLibrary("klass") PythonNativeWrapperLibrary lib) {
+            ((PythonManagedClass) lib.getDelegate(klass)).setSulongType(ptr);
             return ptr;
         }
     }

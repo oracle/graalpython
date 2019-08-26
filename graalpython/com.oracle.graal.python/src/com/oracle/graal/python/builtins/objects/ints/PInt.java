@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.ints;
 import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -313,7 +314,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     public boolean isNative() {
-        return getNativeWrapper() != null && getNativeWrapper().isNative();
+        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
 }

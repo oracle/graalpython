@@ -59,6 +59,7 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
@@ -125,6 +126,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected Object execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PythonAbstractObject.PExecuteNode executeNode,
                         @Cached ToJavaNode toJavaNode,
@@ -139,7 +141,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             converted[1] = toJavaNode.execute(arguments[1]);
             Object result;
             try {
-                result = toSulongNode.execute(executeNode.execute(getDelegate(), converted));
+                result = toSulongNode.execute(executeNode.execute(lib.getDelegate(this), converted));
             } catch (PException e) {
                 // TODO move to node
                 e.expectAttributeError(errProfile);
@@ -167,6 +169,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected int execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached PythonAbstractObject.PExecuteNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws ArityException, UnsupportedMessageException {
@@ -178,7 +181,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             converted[1] = toJavaNode.execute(arguments[1]);
             converted[2] = toJavaNode.execute(arguments[2]);
             try {
-                executeNode.execute(getDelegate(), converted);
+                executeNode.execute(lib.getDelegate(this), converted);
                 return 0;
             } catch (PException e) {
                 PythonContext context = contextRef.get();
@@ -199,6 +202,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         @Specialization
         protected Object execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PythonAbstractObject.PExecuteNode executeNode,
                         @Cached ToJavaNode toJavaNode,
@@ -213,7 +217,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             converted[1] = arguments[1];
             Object result;
             try {
-                result = toSulongNode.execute(executeNode.execute(getDelegate(), converted));
+                result = toSulongNode.execute(executeNode.execute(lib.getDelegate(this), converted));
             } catch (PException e) {
                 PythonContext context = contextRef.get();
                 e.getExceptionObject().reifyException(context.peekTopFrameInfo());
