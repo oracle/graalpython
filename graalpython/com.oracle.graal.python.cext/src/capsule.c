@@ -57,6 +57,11 @@ void* PyCapsule_GetContext(PyObject *o) {
     return result;
 }
 
+UPCALL_ID(PyCapsule_SetContext);
+int PyCapsule_SetContext(PyObject *o, void *context) {
+    return UPCALL_CEXT_I(_jls_PyCapsule_SetContext, native_to_java(o), (uint64_t)context);
+}
+
 UPCALL_ID(PyCapsule_GetPointer);
 void* PyCapsule_GetPointer(PyObject *o, const char *name) {
     void* result = UPCALL_CEXT_PTR(_jls_PyCapsule_GetPointer, native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
@@ -77,3 +82,4 @@ UPCALL_ID(PyCapsule_IsValid);
 int PyCapsule_IsValid(PyObject *o, const char *name) {
     return o != NULL && UPCALL_CEXT_I(_jls_PyCapsule_IsValid, native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
 }
+

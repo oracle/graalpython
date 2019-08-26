@@ -98,3 +98,21 @@ class TestPyCapsule(CPyExtTestCase):
         callfunction="wrap_PyCapsule_Check",
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyCapsule_SetContext = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            ("hello", 0xDEADBEEF),
+        ),
+        code='''Py_ssize_t wrap_PyCapsule_SetContext(char * name, Py_ssize_t ptr) {
+            PyObject* capsule = PyCapsule_New((void*)ptr, name, NULL);
+            PyCapsule_SetContext(capsule, (void*)ptr);
+            return PyCapsule_GetContext(capsule);
+        }
+        ''',
+        resultspec="n",
+        argspec='sn',
+        arguments=["char* name", "Py_ssize_t ptr"],
+        callfunction="wrap_PyCapsule_SetContext",
+        cmpfunc=unhandled_error_compare
+    )

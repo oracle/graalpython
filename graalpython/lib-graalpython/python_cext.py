@@ -764,6 +764,14 @@ def PyCapsule_GetContext(obj):
     return obj.context
 
 
+@may_raise(-1)
+def PyCapsule_SetContext(obj, ptr):
+    if not isinstance(obj, PyCapsule):
+        raise ValueError("PyCapsule_SetContext called with invalid PyCapsule object")
+    obj.context = ptr
+    return 0
+
+
 @may_raise
 def PyCapsule_GetPointer(obj, name):
     if not isinstance(obj, PyCapsule) or obj.pointer is None:
