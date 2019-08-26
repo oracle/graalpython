@@ -41,12 +41,12 @@
 
 package com.oracle.graal.python.test.parser;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonParser;
 import static com.oracle.graal.python.test.parser.ParserTestBase.readFile;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.source.Source;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ import org.junit.Assume;
 public class PerformanceTests extends ParserTestBase {
     int count = 1;
 
-    private static String[] paths = new String[]{
+    private static final String[] PATHS = new String[]{
                     "/home/petr/labs/sstparser/graalpython/graalpython/lib-graalpython",
                     "/home/petr/labs/sstparser/graalpython/graalpython/lib-python"
     };
@@ -72,11 +72,11 @@ public class PerformanceTests extends ParserTestBase {
         long start;
         long end;
         long time = 0;
-        long folderTime = 0;
+        long folderTime;
         StringBuilder sb = new StringBuilder();
         int[] parseResult;
 
-        for (String path : paths) {
+        for (String path : PATHS) {
             File folder = new File(path);
             assertTrue(path + " doesn't found.", folder.exists());
             assertTrue(path + " is not folder.", folder.isDirectory());
@@ -106,7 +106,7 @@ public class PerformanceTests extends ParserTestBase {
         StringBuilder sb = new StringBuilder();
         long[] parseResult;
 
-        for (String path : paths) {
+        for (String path : PATHS) {
             File folder = new File(path);
             assertTrue(path + " doesn't found.", folder.exists());
             assertTrue(path + " is not folder.", folder.isDirectory());
@@ -131,11 +131,8 @@ public class PerformanceTests extends ParserTestBase {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         Date date = new Date(System.currentTimeMillis());
         content = content + "\n" + formatter.format(date) + ": " + record;
-        FileWriter fw = new FileWriter(statistics);
-        try {
+        try (FileWriter fw = new FileWriter(statistics)) {
             fw.write(content);
-        } finally {
-            fw.close();
         }
     }
 
@@ -156,13 +153,7 @@ public class PerformanceTests extends ParserTestBase {
         long end = System.currentTimeMillis();
         long time = end - start;
 
-        for (File file : folder.listFiles(new FileFilter() {
-
-            @Override
-            public boolean accept(File file) {
-                return file.isDirectory();
-            }
-        })) {
+        for (File file : folder.listFiles((File file) -> file.isDirectory())) {
             long[] result = parseFolderOfSources(file);
             numberOfOKParsed += result[0];
             numberOfWrongParsed += result[1];
@@ -173,14 +164,9 @@ public class PerformanceTests extends ParserTestBase {
 
     private List<Source> getSources(File folder) throws Exception {
         List<Source> sources = new ArrayList<>();
-        for (File file : folder.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File file) {
-                return file.getName().endsWith(".py");
-            }
-        })) {
-            TruffleFile src = context.getEnv().getTruffleFile(file.getAbsolutePath());
-            Source source = context.getLanguage().newSource(context, src, getFileName(file));
+        for (File file : folder.listFiles((File file) -> file.getName().endsWith(".py"))) {
+            TruffleFile src = context.getEnv().getInternalTruffleFile(file.getAbsolutePath());
+            Source source = PythonLanguage.newSource(context, src, getFileName(file));
             sources.add(source);
         }
         return sources;
@@ -189,13 +175,7 @@ public class PerformanceTests extends ParserTestBase {
     private int[] parseFolder(File folder) throws Exception {
         int numberOfOKParsed = 0;
         int numberOfWrongParsed = 0;
-        for (File file : folder.listFiles(new FileFilter() {
-
-            @Override
-            public boolean accept(File file) {
-                return file.isDirectory() || file.getName().endsWith(".py");
-            }
-        })) {
+        for (File file : folder.listFiles((File file) -> file.isDirectory() || file.getName().endsWith(".py"))) {
             if (file.isDirectory()) {
                 int[] result = parseFolder(file);
                 numberOfOKParsed += result[0];
@@ -212,8 +192,8 @@ public class PerformanceTests extends ParserTestBase {
     }
 
     private boolean parseFile(File file) throws Exception {
-        TruffleFile src = context.getEnv().getTruffleFile(file.getAbsolutePath());
-        Source source = context.getLanguage().newSource(context, src, getFileName(file));
+        TruffleFile src = context.getEnv().getInternalTruffleFile(file.getAbsolutePath());
+        Source source = PythonLanguage.newSource(context, src, getFileName(file));
         PythonParser parser = context.getCore().getParser();
         try {
             parser.parse(PythonParser.ParserMode.File, context.getCore(), source, null);

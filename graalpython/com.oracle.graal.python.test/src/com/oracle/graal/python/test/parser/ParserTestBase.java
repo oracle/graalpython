@@ -89,8 +89,8 @@ public class ParserTestBase {
     }
 
     protected Source createSource(File testFile) throws Exception {
-        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
-        return context.getLanguage().newSource(context, src, getFileName(testFile));
+        TruffleFile src = context.getEnv().getInternalTruffleFile(testFile.getAbsolutePath());
+        return PythonLanguage.newSource(context, src, getFileName(testFile));
     }
 
     protected RootNode parseOld(String src, String moduleName, PythonParser.ParserMode mode, Frame frame) {
@@ -148,19 +148,16 @@ public class ParserTestBase {
 
     public void saveNewTreeResult(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
-        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
-        Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
+        TruffleFile src = context.getEnv().getInternalTruffleFile(testFile.getAbsolutePath());
+        Source source = PythonLanguage.newSource(context, src, getFileName(testFile));
         Node resultNew = parseNew(source, PythonParser.ParserMode.File);
         String tree = printTreeToString(resultNew);
         File newGoldenFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + NEW_GOLDEN_FILE_EXT)
                         : getGoldenFile(NEW_GOLDEN_FILE_EXT);
         if (!newGoldenFile.exists()) {
-            FileWriter fw = new FileWriter(newGoldenFile);
-            try {
+            try (FileWriter fw = new FileWriter(newGoldenFile)) {
                 fw.write(tree);
-            } finally {
-                fw.close();
             }
 
         }
@@ -168,8 +165,8 @@ public class ParserTestBase {
 
     public void checkTreeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
-        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
-        Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
+        TruffleFile src = context.getEnv().getInternalTruffleFile(testFile.getAbsolutePath());
+        Source source = PythonLanguage.newSource(context, src, getFileName(testFile));
         Node resultNew = parseNew(source, PythonParser.ParserMode.File);
         String tree = printTreeToString(resultNew);
         File goldenFile = goldenFileNextToTestFile
@@ -183,11 +180,8 @@ public class ParserTestBase {
             if (correctIssues) {
                 oldTree = correctKnownIssues(tree, oldTree);
             }
-            FileWriter fw = new FileWriter(goldenFile);
-            try {
+            try (FileWriter fw = new FileWriter(goldenFile)) {
                 fw.write(oldTree);
-            } finally {
-                fw.close();
             }
 
         }
@@ -196,8 +190,8 @@ public class ParserTestBase {
 
     public void saveNewScope(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
-        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
-        Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
+        TruffleFile src = context.getEnv().getInternalTruffleFile(testFile.getAbsolutePath());
+        Source source = PythonLanguage.newSource(context, src, getFileName(testFile));
         parseNew(source, PythonParser.ParserMode.File);
         ScopeInfo scopeNew = getLastGlobalScope();
         StringBuilder scopes = new StringBuilder();
@@ -206,19 +200,16 @@ public class ParserTestBase {
                         ? new File(testFile.getParentFile(), getFileName(testFile) + NEW_SCOPE_FILE_EXT)
                         : getGoldenFile(NEW_SCOPE_FILE_EXT);
         if (!newScopeFile.exists()) {
-            FileWriter fw = new FileWriter(newScopeFile);
-            try {
+            try (FileWriter fw = new FileWriter(newScopeFile)) {
                 fw.write(scopes.toString());
-            } finally {
-                fw.close();
             }
         }
     }
 
     public void checkScopeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
-        TruffleFile src = context.getEnv().getTruffleFile(testFile.getAbsolutePath());
-        Source source = context.getLanguage().newSource(context, src, getFileName(testFile));
+        TruffleFile src = context.getEnv().getInternalTruffleFile(testFile.getAbsolutePath());
+        Source source = PythonLanguage.newSource(context, src, getFileName(testFile));
         parseNew(source, PythonParser.ParserMode.File);
         ScopeInfo scopeNew = getLastGlobalScope();
         StringBuilder scopes = new StringBuilder();
@@ -230,11 +221,8 @@ public class ParserTestBase {
             parseOld(source, PythonParser.ParserMode.File);
             StringBuilder oldScope = new StringBuilder();
             getLastGlobalScope().debugPrint(oldScope, 0);
-            FileWriter fw = new FileWriter(goldenScopeFile);
-            try {
+            try (FileWriter fw = new FileWriter(goldenScopeFile)) {
                 fw.write(oldScope.toString());
-            } finally {
-                fw.close();
             }
 
         }
@@ -259,11 +247,8 @@ public class ParserTestBase {
             if (correctIssues) {
                 oldTree = correctKnownIssues(tree, oldTree);
             }
-            FileWriter fw = new FileWriter(goldenFile);
-            try {
+            try (FileWriter fw = new FileWriter(goldenFile)) {
                 fw.write(oldTree);
-            } finally {
-                fw.close();
             }
 
         }
@@ -284,11 +269,8 @@ public class ParserTestBase {
             parseOld(source, name.getMethodName(), mode);
             StringBuilder oldScope = new StringBuilder();
             getLastGlobalScope().debugPrint(oldScope, 0);
-            FileWriter fw = new FileWriter(goldenScopeFile);
-            try {
+            try (FileWriter fw = new FileWriter(goldenScopeFile)) {
                 fw.write(oldScope.toString());
-            } finally {
-                fw.close();
             }
 
         }
@@ -306,11 +288,8 @@ public class ParserTestBase {
             if (!goldenFile.createNewFile()) {
                 assertTrue("Cannot create file " + goldenFile.getAbsolutePath(), false);
             }
-            FileWriter fw = new FileWriter(goldenFile);
-            try {
+            try (FileWriter fw = new FileWriter(goldenFile)) {
                 fw.write(actual);
-            } finally {
-                fw.close();
             }
             assertTrue("Created generated golden file " + goldenFile.getAbsolutePath() + "\nPlease re-run the test.", false);
         }
@@ -320,7 +299,8 @@ public class ParserTestBase {
         final String actualTrimmed = actual.trim();
 
         if (expectedTrimmed.equals(actualTrimmed)) {
-            return; // Actual and expected content are equals --> Test passed
+            // Actual and expected content are equals --> Test passed
+            
         } else {
             // We want to ignore different line separators (like \r\n against \n) because they
             // might be causing failing tests on a different operation systems like Windows :]
@@ -387,7 +367,6 @@ public class ParserTestBase {
                                     : newLine.contains("LongLiteralNode")
                                                     ? newLine.indexOf("LongLiteralNode")
                                                     : newLine.indexOf("PIntLiteralNode");
-                    ;
                     boolean wasCorrected = false;
                     if (oldIndex == newIndex) {
                         if (odlLineIndex + 4 < oldLines.size() && oldLines.get(odlLineIndex + 1).contains("LookupAndCallUnaryNodeGen") && oldLines.get(odlLineIndex + 2).contains("Op: __neg__")) {
