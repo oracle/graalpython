@@ -42,16 +42,16 @@
 package com.oracle.graal.python.parser.sst;
 
 public class DelSSTNode extends SSTNode {
-    
+
     protected SSTNode[] expressions;
 
     public DelSSTNode(SSTNode[] expressions, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.expressions = expressions;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

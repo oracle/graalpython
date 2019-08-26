@@ -51,10 +51,10 @@ public class DecoratorSSTNode extends SSTNode {
         this.name = name;
         this.arg = arg;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

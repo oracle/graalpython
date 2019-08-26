@@ -45,256 +45,255 @@ import java.io.File;
 import org.junit.Test;
 
 public class GeneratorAndCompForTests extends ParserTestBase {
-    
+
     @Test
     public void generator01() throws Exception {
         checkScopeAndTree("(x*x for x in range(10))");
     }
-    
+
     @Test
     public void list01() throws Exception {
         checkScopeAndTree("[x**y for x in range(20)]");
     }
-    
+
     @Test
     public void list02() throws Exception {
         checkScopeAndTree("[x**y for x in range(20) if x*y % 3]");
     }
-    
+
     @Test
     public void argument01() throws Exception {
         checkScopeAndTree("foo(x+2 for x in range(10))");
     }
-    
+
     @Test
     public void set01() throws Exception {
         checkScopeAndTree("{x**y for x in range(20)}");
     }
-    
+
     @Test
     public void dict01() throws Exception {
         checkScopeAndTree("{x:x*x for x in range(20)}");
     }
-    
+
     @Test
     public void dict02() throws Exception {
         checkScopeAndTree(
-                "dict1 = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}\n" +
-                "double_dict1 = {k:v*2 for (k,v) in dict1.items()}"
-        );
+                        "dict1 = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}\n" +
+                                        "double_dict1 = {k:v*2 for (k,v) in dict1.items()}");
     }
-    
+
     @Test
     public void generator02() throws Exception {
         checkScopeAndTree(
-                "def fn():\n" + 
-                "  (x*x for x in range(10))");
+                        "def fn():\n" +
+                                        "  (x*x for x in range(10))");
     }
-      
+
     @Test
     public void generator03() throws Exception {
         checkScopeAndTree(
-                "def fn():\n" +
-                "  c = 10\n" +
-                "  (x + c for x in range(10))");
+                        "def fn():\n" +
+                                        "  c = 10\n" +
+                                        "  (x + c for x in range(10))");
     }
-    
+
     @Test
     public void generator04() throws Exception {
         checkScopeAndTree(
-                "def fn():\n" +
-                "  yield 1\n" +
-                "  yield 2");
+                        "def fn():\n" +
+                                        "  yield 1\n" +
+                                        "  yield 2");
     }
-    
+
     @Test
     public void generator05() throws Exception {
         checkScopeAndTree(
-                "def fn(self):\n" +
-                "    caretspace = (c.isspace() for c in caretspace)\n" +
-                "    yield caretspace");
+                        "def fn(self):\n" +
+                                        "    caretspace = (c.isspace() for c in caretspace)\n" +
+                                        "    yield caretspace");
     }
-    
+
     @Test
     public void generator06() throws Exception {
         checkScopeAndTree(
-                "def format_exception_only(self):\n" +
-                "        if a():\n" +
-                "            yield \"neco\"\n" +
-                "            return\n" +
-                "        if badline is not None:\n" +
-                "            yield '\\n'\n" +
-                "            if offset is not None:\n" +
-                "                caretspace = (c.isspace() for c in caretspace)\n" +
-                "                yield caretspace\n" +
-                "        yield \"message\"");
+                        "def format_exception_only(self):\n" +
+                                        "        if a():\n" +
+                                        "            yield \"neco\"\n" +
+                                        "            return\n" +
+                                        "        if badline is not None:\n" +
+                                        "            yield '\\n'\n" +
+                                        "            if offset is not None:\n" +
+                                        "                caretspace = (c.isspace() for c in caretspace)\n" +
+                                        "                yield caretspace\n" +
+                                        "        yield \"message\"");
     }
-    
+
     @Test
     public void generator07() throws Exception {
         checkScopeAndTree(
-                "def merge(h):\n" +
-                "    while len(h) > 1:\n" +
-                "        while True:\n" +
-                "            value, order, next = s = h[0]\n" +
-                "            yield value");
+                        "def merge(h):\n" +
+                                        "    while len(h) > 1:\n" +
+                                        "        while True:\n" +
+                                        "            value, order, next = s = h[0]\n" +
+                                        "            yield value");
     }
-    
+
     @Test
     public void generator08() throws Exception {
         checkScopeAndTree(
-                "def merge(h):\n" +
-                "    for order, it in b():\n" +
-                "        value = next()\n" +
-                "    while len(h) > 1:\n" +
-                "        yield value");
+                        "def merge(h):\n" +
+                                        "    for order, it in b():\n" +
+                                        "        value = next()\n" +
+                                        "    while len(h) > 1:\n" +
+                                        "        yield value");
     }
-    
+
     @Test
     public void generator09() throws Exception {
         checkScopeAndTree(
-                "def merge(h):\n" +
-                "    while True:\n" +
-                "        value = next()\n" +
-                "    while h > 1:\n" +
-                "        yield value");
+                        "def merge(h):\n" +
+                                        "    while True:\n" +
+                                        "        value = next()\n" +
+                                        "    while h > 1:\n" +
+                                        "        yield value");
     }
-    
+
     @Test
     public void generator10() throws Exception {
         checkScopeAndTree(
-                "def non_empty_lines(path):\n" +
-                "    with open(path) as f:\n" +
-                "        for line in f:\n" +
-                "            line = line.strip()\n" +
-                "            if line:\n" +
-                "                yield line");
+                        "def non_empty_lines(path):\n" +
+                                        "    with open(path) as f:\n" +
+                                        "        for line in f:\n" +
+                                        "            line = line.strip()\n" +
+                                        "            if line:\n" +
+                                        "                yield line");
     }
-    
+
     @Test
     public void generatorWithNonLocal() throws Exception {
         checkScopeAndTree(
-                "def b_func():\n" +
-                "  exec_gen = False\n" +
-                "  def _inner_func():\n" +
-                "    def doit():\n" +
-                "      nonlocal exec_gen\n" +
-                "      exec_gen = True\n" +
-                "      return [1]\n" +
-                "    for A in doit():\n" +
-                "      for C in Y:\n" +
-                "        yield A\n" +
-                "  gen = _inner_func()\n" +
-                "  Y = [1, 2]\n" +
-                "  list(gen)\n" +
-                "  return gen");
+                        "def b_func():\n" +
+                                        "  exec_gen = False\n" +
+                                        "  def _inner_func():\n" +
+                                        "    def doit():\n" +
+                                        "      nonlocal exec_gen\n" +
+                                        "      exec_gen = True\n" +
+                                        "      return [1]\n" +
+                                        "    for A in doit():\n" +
+                                        "      for C in Y:\n" +
+                                        "        yield A\n" +
+                                        "  gen = _inner_func()\n" +
+                                        "  Y = [1, 2]\n" +
+                                        "  list(gen)\n" +
+                                        "  return gen");
     }
-    
+
     @Test
     public void param01() throws Exception {
         checkScopeAndTree(
-                "def fn(a):\n" +
-                "  yield a\n" +
-                "  yield 2");
+                        "def fn(a):\n" +
+                                        "  yield a\n" +
+                                        "  yield 2");
     }
-    
+
     @Test
     public void param02() throws Exception {
         checkScopeAndTree(
-                "def fn(a, b):\n" +
-                "  yield a\n" +
-                "  yield b");
+                        "def fn(a, b):\n" +
+                                        "  yield a\n" +
+                                        "  yield b");
     }
-    
+
     @Test
     public void param03() throws Exception {
         checkScopeAndTree(
-                "def fn(a, b=1):\n" +
-                "  yield a\n" +
-                "  yield b");
+                        "def fn(a, b=1):\n" +
+                                        "  yield a\n" +
+                                        "  yield b");
     }
-    
+
     @Test
     public void param04() throws Exception {
         checkScopeAndTree(
-                "def fn(*arg):\n" +
-                "  for p in arg:\n" +
-                "    yield p");
+                        "def fn(*arg):\n" +
+                                        "  for p in arg:\n" +
+                                        "    yield p");
     }
-    
+
     @Test
     public void param05() throws Exception {
         checkScopeAndTree(
-                "def fn(**arg):\n" +
-                "  for p in arg:\n" +
-                "    yield p");
+                        "def fn(**arg):\n" +
+                                        "  for p in arg:\n" +
+                                        "    yield p");
     }
-    
+
     @Test
     public void param06() throws Exception {
         checkScopeAndTree(
-                "def fn(files, dirs):\n" +
-                "  a = [join(dir, file) for dir in dirs for file in files]");
+                        "def fn(files, dirs):\n" +
+                                        "  a = [join(dir, file) for dir in dirs for file in files]");
     }
-    
+
     @Test
     public void doc01() throws Exception {
         checkScopeAndTree(
-                "def fn():\n" +
-                "  \"This is a doc\"\n" +
-                "  yield \"neco\"");
+                        "def fn():\n" +
+                                        "  \"This is a doc\"\n" +
+                                        "  yield \"neco\"");
     }
-    
+
     @Test
     public void doc02() throws Exception {
         checkScopeAndTree(
-                "def walk_stack(f):\n" +
-                "    \"\"\"Documentation\"\"\"\n" +
-                "    if f is None:\n" +
-                "        f = a()\n" +
-                "    while f is not None:\n" +
-                "        yield f\n");
+                        "def walk_stack(f):\n" +
+                                        "    \"\"\"Documentation\"\"\"\n" +
+                                        "    if f is None:\n" +
+                                        "        f = a()\n" +
+                                        "    while f is not None:\n" +
+                                        "        yield f\n");
     }
 
     @Test
     public void class01() throws Exception {
         checkScopeAndTree(
-                "class OrderedDict(dict):\n" +
-                "    def __reversed__(self):\n" +
-                "        root = self.__root\n" +
-                "        curr = root.prev\n" +
-                "        while curr is not root:\n" +
-                "            yield curr.key\n" +
-                "            curr = curr.prev");
+                        "class OrderedDict(dict):\n" +
+                                        "    def __reversed__(self):\n" +
+                                        "        root = self.__root\n" +
+                                        "        curr = root.prev\n" +
+                                        "        while curr is not root:\n" +
+                                        "            yield curr.key\n" +
+                                        "            curr = curr.prev");
     }
-    
+
     @Test
     public void class02() throws Exception {
         checkScopeAndTree(
-                "class Counter(dict):\n" +
-                "    def _keep_positive(self):\n" +
-                "        nonpositive = [elem for elem, count in self.items() if not count > 0]\n" +
-                "        for elem in nonpositive:\n" +
-                "            del self[elem]\n" +
-                "        return self");
+                        "class Counter(dict):\n" +
+                                        "    def _keep_positive(self):\n" +
+                                        "        nonpositive = [elem for elem, count in self.items() if not count > 0]\n" +
+                                        "        for elem in nonpositive:\n" +
+                                        "            del self[elem]\n" +
+                                        "        return self");
     }
-    
+
     @Test
     public void comp01() throws Exception {
         checkScopeAndTree("resutl = {i: tuple(j for j in t if i != j)\n" +
-                          "                     for t in something for i in t}");
+                        "                     for t in something for i in t}");
     }
-    
+
     @Test
     public void comp02() throws Exception {
         checkScopeAndTree(
-                "def mro(cls, abcs=None):\n" +
-                "    for base in abcs:\n" +
-                "        if not any(issubclass(b, base) for b in cls.__bases__):\n" +
-                "            abstract_bases.append(base)\n" +
-                "    other = [mro(base, abcs=abcs) for base in other]");
+                        "def mro(cls, abcs=None):\n" +
+                                        "    for base in abcs:\n" +
+                                        "        if not any(issubclass(b, base) for b in cls.__bases__):\n" +
+                                        "            abstract_bases.append(base)\n" +
+                                        "    other = [mro(base, abcs=abcs) for base in other]");
     }
-    
+
     @Test
     public void genFromPip() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();

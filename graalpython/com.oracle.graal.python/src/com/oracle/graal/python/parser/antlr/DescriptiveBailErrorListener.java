@@ -88,8 +88,8 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
     }
 
     private static PIncompleteSourceException handleRecognitionException(IntervalSet et, String message, Throwable cause, int line) {
-        if (et.contains(Python3Parser.INDENT) || et.contains(Python3Parser.FINALLY) || et.contains(Python3Parser.EXCEPT) || et.contains(Python3Parser.NEWLINE)
-                || et.contains(Python3NewParser.INDENT) || et.contains(Python3NewParser.FINALLY) || et.contains(Python3NewParser.EXCEPT) || et.contains(Python3Parser.NEWLINE)&& et.size() == 1) {
+        if (et.contains(Python3Parser.INDENT) || et.contains(Python3Parser.FINALLY) || et.contains(Python3Parser.EXCEPT) || et.contains(Python3Parser.NEWLINE) ||
+                        et.contains(Python3NewParser.INDENT) || et.contains(Python3NewParser.FINALLY) || et.contains(Python3NewParser.EXCEPT) || et.contains(Python3Parser.NEWLINE) && et.size() == 1) {
             return new PIncompleteSourceException(message, cause, line);
         }
         return null;

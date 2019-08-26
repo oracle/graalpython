@@ -54,7 +54,7 @@ public class ImportSSTNode extends SSTNode {
         this.asName = asName;
         this.scope = scope;
     }
-    
+
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);

@@ -43,65 +43,63 @@ package com.oracle.graal.python.test.parser;
 
 import org.junit.Test;
 
-public class AssignmentTests extends ParserTestBase{
+public class AssignmentTests extends ParserTestBase {
 
     @Test
     public void assignment01() throws Exception {
         checkTreeResult("a = 1");
     }
-    
+
     @Test
     public void assignment02() throws Exception {
         checkTreeResult("a = b = 1");
     }
-    
+
     @Test
     public void assignment03() throws Exception {
-        checkTreeResult("a = 0\n"
-                + "b = a\n"
-                + "c = a + a + b");
+        checkTreeResult("a = 0\n" + "b = a\n" + "c = a + a + b");
     }
-    
+
     @Test
     public void assignment04() throws Exception {
         checkTreeResult("a = b = c = d = e");
     }
-    
+
     @Test
     public void assignment05() throws Exception {
         checkTreeResult("a, b, c = 1, 2, 3");
     }
-    
+
     @Test
     public void assignment06() throws Exception {
         checkScopeAndTree("def fn():\n  a = b = c = d = e");
     }
-    
+
     @Test
     public void assignment07() throws Exception {
         checkScopeAndTree("def fn():\n  a, b, c = 1, 2, 3");
     }
-    
+
     @Test
     public void assignment08() throws Exception {
         checkTreeResult("a.b = 1");
     }
-    
+
     @Test
     public void assignment09() throws Exception {
         checkTreeResult("f().b = 1");
     }
-    
+
     @Test
     public void assignment10() throws Exception {
         checkTreeResult("i, j, k = x = a");
     }
-    
+
     @Test
     public void augassign01() throws Exception {
         checkTreeResult("a += b");
     }
-    
+
     @Test
     public void augassign02() throws Exception {
         checkTreeResult("a -= b");
@@ -150,23 +148,23 @@ public class AssignmentTests extends ParserTestBase{
     @Test
     public void augassign11() throws Exception {
         checkTreeResult("a >>= b");
-    }   
+    }
 
     @Test
     public void augassign12() throws Exception {
         checkTreeResult("a **= b");
     }
-    
+
     @Test
     public void augassign13() throws Exception {
         checkScopeAndTree("def fn (): x += 3");
     }
-    
+
     @Test
     public void augassign14() throws Exception {
         checkScopeAndTree(
-                "def _method(*args, **keywords):\n" +
-                "    cls_or_self, *rest = args");
+                        "def _method(*args, **keywords):\n" +
+                                        "    cls_or_self, *rest = args");
     }
 
 }

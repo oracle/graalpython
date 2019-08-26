@@ -48,5 +48,5 @@ public final class IntegerLiteralNode extends LiteralNode {
     public int getValue() {
         return value;
     }
-    
+
 }

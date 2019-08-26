@@ -47,7 +47,7 @@ import com.oracle.graal.python.parser.ScopeInfo;
  *
  * @author petr
  */
-public class ImportFromSSTNode  extends SSTNode {
+public class ImportFromSSTNode extends SSTNode {
     protected final String from;
     protected final String[][] asNames;
     protected final ScopeInfo scope;
@@ -58,7 +58,7 @@ public class ImportFromSSTNode  extends SSTNode {
         this.asNames = asNames;
         this.scope = scope;
     }
-    
+
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);

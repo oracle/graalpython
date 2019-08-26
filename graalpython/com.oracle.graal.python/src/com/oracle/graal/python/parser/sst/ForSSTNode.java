@@ -57,9 +57,9 @@ public class ForSSTNode extends SSTNode {
         this.elseStatement = null;
         this.containsContinue = containsContinue;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
@@ -70,6 +70,5 @@ public class ForSSTNode extends SSTNode {
     public void setContainsBreak(boolean containsBreak) {
         this.containsBreak = containsBreak;
     }
-    
-    
+
 }

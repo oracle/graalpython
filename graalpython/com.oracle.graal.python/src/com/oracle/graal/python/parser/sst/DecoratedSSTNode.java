@@ -41,9 +41,8 @@
 
 package com.oracle.graal.python.parser.sst;
 
-
 public class DecoratedSSTNode extends SSTNode {
-    
+
     protected final DecoratorSSTNode[] decorators;
     protected final SSTNode decorated;
 
@@ -52,10 +51,10 @@ public class DecoratedSSTNode extends SSTNode {
         this.decorators = decorators;
         this.decorated = decorated;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

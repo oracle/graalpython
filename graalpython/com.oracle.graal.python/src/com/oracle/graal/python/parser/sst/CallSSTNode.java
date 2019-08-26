@@ -50,9 +50,9 @@ public class CallSSTNode extends SSTNode {
         this.target = target;
         this.parameters = parameters;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

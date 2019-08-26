@@ -40,15 +40,16 @@
  */
 
 package com.oracle.graal.python.test.parser;
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  BasicTests.class,
-  FunctionDefFromCPTests.class,
+                BasicTests.class,
+                FunctionDefFromCPTests.class,
 })
 
 public class ParserTestSuite {
-    
+
 }

@@ -58,7 +58,7 @@ public abstract class AbstractYieldNode extends ExpressionNode {
     public int getFlagSlot() {
         return flagSlot;
     }
-    
+
     public AbstractYieldNode() {
         super();
     }

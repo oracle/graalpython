@@ -56,14 +56,14 @@ public class WhileSSTNode extends SSTNode {
         this.containsContinue = containsContinue;
         this.containsBreak = containsBreak;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     public void setElse(SSTNode elseStatement) {
         this.elseStatement = elseStatement;
     }
-    
+
 }

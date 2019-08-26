@@ -44,7 +44,7 @@ package com.oracle.graal.python.test.parser;
 import org.junit.Test;
 
 public class AwaitAndAsyncTests extends ParserTestBase {
-      
+
     @Test
     public void await01() throws Exception {
         checkScopeAndTree("async def f():\n await smth()");
@@ -74,7 +74,7 @@ public class AwaitAndAsyncTests extends ParserTestBase {
     public void await06() throws Exception {
         checkScopeAndTree("async def f():\n await foo(); return 42");
     }
-    
+
     @Test
     public void asyncWith01() throws Exception {
         checkScopeAndTree("async def f():\n async with 1: pass");
@@ -84,7 +84,7 @@ public class AwaitAndAsyncTests extends ParserTestBase {
     public void asyncWith02() throws Exception {
         checkScopeAndTree("async def f():\n async with a as b, c as d: pass");
     }
-        
+
     @Test
     public void asyncFor01() throws Exception {
         checkScopeAndTree("async def f():\n async for i in (): pass");

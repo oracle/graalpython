@@ -54,12 +54,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StringUtils {
-    
+
     public static StringLiteralNode extractDoc(StatementNode node) {
         if (node instanceof ExpressionNode.ExpressionStatementNode) {
             return extractDoc(((ExpressionNode.ExpressionStatementNode) node).getExpression());
         } else if (node instanceof BaseBlockNode) {
-            StatementNode[] statements = ((BaseBlockNode)node).getStatements();
+            StatementNode[] statements = ((BaseBlockNode) node).getStatements();
             if (statements != null && statements.length > 0) {
                 return extractDoc(statements[0]);
             }
@@ -72,9 +72,9 @@ public class StringUtils {
         if (node instanceof StringLiteralNode) {
             return (StringLiteralNode) node;
         } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
-            return extractDoc(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
+            return extractDoc(((ExpressionNode.ExpressionWithSideEffect) node).getSideEffect());
         } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
-            StatementNode[] sideEffects = ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
+            StatementNode[] sideEffects = ((ExpressionNode.ExpressionWithSideEffects) node).getSideEffects();
             if (sideEffects != null && sideEffects.length > 0) {
                 return extractDoc(sideEffects[0]);
             }
@@ -82,17 +82,18 @@ public class StringUtils {
         return null;
     }
 
-//    public static StringLiteralNode getDoc(BlockSSTNode block, NodeFactory nodeFactory, PythonParser.ParserErrorCallback errors) {
-//        if (block.statements.length > 0 && block.statements[0] instanceof StringLiteralSSTNode) {
-//            SSTNode node = block.statements[0];
-//            PNode result =  parseString(((StringLiteralSSTNode)node).values, nodeFactory, errors);
-//            if (result instanceof StringLiteralNode) {
-//                return (StringLiteralNode)result;
-//            }
-//        }
-//        return null;
-//    }
-    
+    // public static StringLiteralNode getDoc(BlockSSTNode block, NodeFactory nodeFactory,
+    // PythonParser.ParserErrorCallback errors) {
+    // if (block.statements.length > 0 && block.statements[0] instanceof StringLiteralSSTNode) {
+    // SSTNode node = block.statements[0];
+    // PNode result = parseString(((StringLiteralSSTNode)node).values, nodeFactory, errors);
+    // if (result instanceof StringLiteralNode) {
+    // return (StringLiteralNode)result;
+    // }
+    // }
+    // return null;
+    // }
+
     private static class BytesBuilder {
         List<byte[]> bytes = new ArrayList<>();
         int len = 0;
@@ -112,7 +113,7 @@ public class StringUtils {
             return output;
         }
     }
-    
+
     public static PNode parseString(String[] strings, NodeFactory nodeFactory, PythonParser.ParserErrorCallback errors) {
         StringBuilder sb = null;
         BytesBuilder bb = null;

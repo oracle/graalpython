@@ -58,13 +58,12 @@ import org.junit.Assume;
 
 public class PerformanceTests extends ParserTestBase {
     int count = 1;
-    
-    private static String[] paths = new String[]{
-            "/home/petr/labs/sstparser/graalpython/graalpython/lib-graalpython",
-            "/home/petr/labs/sstparser/graalpython/graalpython/lib-python"
-        };
 
-    
+    private static String[] paths = new String[]{
+                    "/home/petr/labs/sstparser/graalpython/graalpython/lib-graalpython",
+                    "/home/petr/labs/sstparser/graalpython/graalpython/lib-python"
+    };
+
     @Test
     public void folders01() throws Exception {
         Assume.assumeTrue("/home/petr/".equals(System.getProperty("user.home")));
@@ -76,9 +75,9 @@ public class PerformanceTests extends ParserTestBase {
         long folderTime = 0;
         StringBuilder sb = new StringBuilder();
         int[] parseResult;
-        
-        for (String path: paths) {
-            File folder = new File (path);
+
+        for (String path : paths) {
+            File folder = new File(path);
             assertTrue(path + " doesn't found.", folder.exists());
             assertTrue(path + " is not folder.", folder.isDirectory());
             start = System.currentTimeMillis();
@@ -90,11 +89,11 @@ public class PerformanceTests extends ParserTestBase {
             numberOfWrongParsed += parseResult[1];
             sb.append(path).append(" ").append(parseResult[0] + parseResult[1]).append(" files parsed in ").append(folderTime).append(" ms\n");
         }
-        sb.append("\n Overall parsed " ).append(numberOfOKParsed + numberOfWrongParsed).append(" (").append(numberOfWrongParsed).append(" was parsed with an error) in ").append(time).append("ms.\n");
+        sb.append("\n Overall parsed ").append(numberOfOKParsed + numberOfWrongParsed).append(" (").append(numberOfWrongParsed).append(" was parsed with an error) in ").append(time).append("ms.\n");
         System.out.println(sb.toString());
         addRecordToStatisticFile("folders01 - " + (numberOfOKParsed + numberOfWrongParsed) + " (" + numberOfWrongParsed + " was parsed with and error ) in " + time + "ms.");
     }
-    
+
     @Test
     public void folders02() throws Exception {
         Assume.assumeTrue("/home/petr/".equals(System.getProperty("user.home")));
@@ -106,9 +105,9 @@ public class PerformanceTests extends ParserTestBase {
         long time = 0;
         StringBuilder sb = new StringBuilder();
         long[] parseResult;
-        
-        for (String path: paths) {
-            File folder = new File (path);
+
+        for (String path : paths) {
+            File folder = new File(path);
             assertTrue(path + " doesn't found.", folder.exists());
             assertTrue(path + " is not folder.", folder.isDirectory());
             parseResult = parseFolderOfSources(folder);
@@ -117,54 +116,53 @@ public class PerformanceTests extends ParserTestBase {
             time += parseResult[2];
             sb.append(path).append(" ").append(parseResult[0] + parseResult[1]).append(" files parsed in ").append(parseResult[2]).append(" ms\n");
         }
-        sb.append("\n Overall parsed " ).append(numberOfOKParsed + numberOfWrongParsed).append(" (").append(numberOfWrongParsed).append(" was parsed with an error) in ").append(time).append("ms.\n");
+        sb.append("\n Overall parsed ").append(numberOfOKParsed + numberOfWrongParsed).append(" (").append(numberOfWrongParsed).append(" was parsed with an error) in ").append(time).append("ms.\n");
         System.out.println(sb.toString());
         addRecordToStatisticFile("folders02 - " + (numberOfOKParsed + numberOfWrongParsed) + " (" + numberOfWrongParsed + " was parsed with and error ) in " + time + "ms.");
     }
-    
+
     private void addRecordToStatisticFile(String record) throws Exception {
         String dataDirPath = System.getProperty("python.home");
         dataDirPath += "/com.oracle.graal.python.test/src/com/oracle/graal/python/test/parser/";
-        File folder =  new File(dataDirPath);
+        File folder = new File(dataDirPath);
         File statistics = new File(folder, "PerformanceTests.statistics.txt");
         String content = statistics.exists() ? readFile(statistics) : "";
         content = content.trim();
-        SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         Date date = new Date(System.currentTimeMillis());
         content = content + "\n" + formatter.format(date) + ": " + record;
         FileWriter fw = new FileWriter(statistics);
         try {
             fw.write(content);
-        }
-        finally{
+        } finally {
             fw.close();
         }
     }
-    
+
     private long[] parseFolderOfSources(File folder) throws Exception {
         int numberOfOKParsed = 0;
         int numberOfWrongParsed = 0;
-        
+
         List<Source> sources = getSources(folder);
-        
+
         long start = System.currentTimeMillis();
-        for( Source source : sources) {
+        for (Source source : sources) {
             if (parseSource(source)) {
-                numberOfOKParsed ++;
+                numberOfOKParsed++;
             } else {
                 numberOfWrongParsed++;
             }
         }
         long end = System.currentTimeMillis();
         long time = end - start;
-        
+
         for (File file : folder.listFiles(new FileFilter() {
-                
-                @Override
-                public boolean accept(File file) {
-                    return file.isDirectory();
-                }
-            })) {
+
+            @Override
+            public boolean accept(File file) {
+                return file.isDirectory();
+            }
+        })) {
             long[] result = parseFolderOfSources(file);
             numberOfOKParsed += result[0];
             numberOfWrongParsed += result[1];
@@ -172,32 +170,32 @@ public class PerformanceTests extends ParserTestBase {
         }
         return new long[]{numberOfOKParsed, numberOfWrongParsed, time};
     }
-    
+
     private List<Source> getSources(File folder) throws Exception {
         List<Source> sources = new ArrayList<>();
         for (File file : folder.listFiles(new FileFilter() {
-                @Override
-                public boolean accept(File file) {
-                    return file.getName().endsWith(".py");
-                }
-            })) {
+            @Override
+            public boolean accept(File file) {
+                return file.getName().endsWith(".py");
+            }
+        })) {
             TruffleFile src = context.getEnv().getTruffleFile(file.getAbsolutePath());
             Source source = context.getLanguage().newSource(context, src, getFileName(file));
             sources.add(source);
         }
         return sources;
     }
-    
+
     private int[] parseFolder(File folder) throws Exception {
         int numberOfOKParsed = 0;
         int numberOfWrongParsed = 0;
         for (File file : folder.listFiles(new FileFilter() {
-                
-                @Override
-                public boolean accept(File file) {
-                    return file.isDirectory() || file.getName().endsWith(".py");
-                }
-            })) {
+
+            @Override
+            public boolean accept(File file) {
+                return file.isDirectory() || file.getName().endsWith(".py");
+            }
+        })) {
             if (file.isDirectory()) {
                 int[] result = parseFolder(file);
                 numberOfOKParsed += result[0];
@@ -212,7 +210,7 @@ public class PerformanceTests extends ParserTestBase {
         }
         return new int[]{numberOfOKParsed, numberOfWrongParsed};
     }
-    
+
     private boolean parseFile(File file) throws Exception {
         TruffleFile src = context.getEnv().getTruffleFile(file.getAbsolutePath());
         Source source = context.getLanguage().newSource(context, src, getFileName(file));
@@ -222,9 +220,9 @@ public class PerformanceTests extends ParserTestBase {
             return true;
         } catch (Exception e) {
             return false;
-        }       
+        }
     }
-    
+
     private boolean parseSource(Source source) throws Exception {
         PythonParser parser = context.getCore().getParser();
         try {
@@ -234,30 +232,29 @@ public class PerformanceTests extends ParserTestBase {
             return false;
         }
     }
-    
+
     private void executePerformanceTest(File file) throws Exception {
         String source = readFile(file);
-        
+
         System.out.println(name.getMethodName() + " count:" + count);
         long start = System.currentTimeMillis();
-        for(int i = 0; i < count; i++) {
+        for (int i = 0; i < count; i++) {
             parseOld(source, name.getMethodName(), PythonParser.ParserMode.File);
         }
-        
+
         long end = System.currentTimeMillis();
         System.out.println(name.getMethodName() + " old parsing took: " + (end - start));
 
-        for(int i = 0; i < 30; i++) {
-            parseNew(source,name.getMethodName(), PythonParser.ParserMode.File);
+        for (int i = 0; i < 30; i++) {
+            parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
         }
         System.out.println(name.getMethodName() + " count:" + count);
         start = System.currentTimeMillis();
-        for(int i = 0; i < count; i++) {
+        for (int i = 0; i < count; i++) {
             parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
         }
         end = System.currentTimeMillis();
         System.out.println(name.getMethodName() + " new parsing took: " + (end - start));
     }
-    
-    
+
 }

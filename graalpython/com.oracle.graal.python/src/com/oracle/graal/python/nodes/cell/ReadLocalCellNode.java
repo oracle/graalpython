@@ -58,7 +58,7 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
         this.readLocal = ReadLocalVariableNode.create(frameSlot);
         this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
     }
-    
+
     ReadLocalCellNode(FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
         this.frameSlot = frameSlot;
         this.readLocal = readLocal;
@@ -68,7 +68,7 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
     public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar);
     }
-    
+
     public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar, readLocal);
     }

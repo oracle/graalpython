@@ -44,108 +44,107 @@ package com.oracle.graal.python.test.parser;
 import org.junit.Test;
 
 public class NumberTests extends ParserTestBase {
-    
-    //Test
+
+    // Test
     public void int01() throws Exception {
         checkTreeResult("1");
     }
-    
-    //Test
+
+    // Test
     public void int02() throws Exception {
         checkTreeResult("-1");
     }
-    
-    //Test
+
+    // Test
     public void int03() throws Exception {
         checkTreeResult("-0");
     }
-    
-    //Test
+
+    // Test
     public void int04() throws Exception {
         checkTreeResult("h == -1");
     }
-    
-    //Test
+
+    // Test
     public void maxint() throws Exception {
         checkTreeResult("2147483647");
     }
-    
-    //Test
+
+    // Test
     public void minint() throws Exception {
         checkTreeResult("-2147483648");
     }
-    
-    //Test
+
+    // Test
     public void minlong() throws Exception {
         checkTreeResult("-9223372036854775808");
     }
-    
-    //Test
+
+    // Test
     public void maxNegLong() throws Exception {
         checkTreeResult("-2147483649");
     }
-    
-    //Test
+
+    // Test
     public void minPosLong() throws Exception {
         checkTreeResult("2147483648");
     }
-    
-    //Test
+
+    // Test
     public void maxlong() throws Exception {
         checkTreeResult("9223372036854775807");
     }
-    
-    //Test
+
+    // Test
     public void minPosPInt() throws Exception {
         checkTreeResult("9223372036854775808");
     }
-    
-    //Test
+
+    // Test
     public void maxNegPInt() throws Exception {
         checkTreeResult("-9223372036854775809");
     }
-    
-    
-    //Test
+
+    // Test
     public void bin01() throws Exception {
         checkTreeResult("0b101");
     }
-    
-    //Test
+
+    // Test
     public void bin02() throws Exception {
         checkTreeResult("-0b101");
     }
-    
-    //Test
+
+    // Test
     public void bin03() throws Exception {
         checkTreeResult("0b1111111111111111111111111111111111111111111111111111111111111111");
     }
-    
-    //Test
+
+    // Test
     public void complex01() throws Exception {
         checkTreeResult("0+1j");
     }
-    
+
     @Test
     public void underscore01() throws Exception {
         checkTreeResult("1_0");
     }
-    
+
     @Test
     public void underscore02() throws Exception {
         checkTreeResult("1_0_6");
     }
-    
+
     @Test
     public void underscore03() throws Exception {
         checkTreeResult("0b1_1");
     }
-    
+
     @Test
     public void underscore04() throws Exception {
         checkTreeResult("0o1_7");
     }
-    
+
     @Test
     public void underscore05() throws Exception {
         checkTreeResult("0x1_f");

@@ -70,12 +70,12 @@ import org.antlr.v4.runtime.ParserRuleContext;
 public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     public static String CLASS_VAR_PREFIX = "<>class";
-    
+
     private final NodeFactory factory;
 
     private ScopeInfo currentScope;
     private ScopeInfo globalScope;
-    
+
     private final HashMap<String, List<ScopeInfo>> unresolvedVars = new HashMap<>();
 
     public ScopeEnvironment(NodeFactory factory) {
@@ -85,7 +85,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     public ScopeInfo getCurrentScope() {
         return currentScope;
     }
-    
+
     public ScopeInfo pushScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind) {
         return pushScope(ctx, kind, null);
     }
@@ -98,7 +98,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         }
         return currentScope;
     }
-    
+
     public ScopeInfo pushScope(String name, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
         ScopeInfo newScope = new ScopeInfo(name, kind, frameDescriptor, currentScope);
         currentScope = newScope;
@@ -115,8 +115,8 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         ScopeInfo.ScopeKind definingScopeKind = definingScope.getScopeKind();
         if (localySeenVars != null || !unresolvedVars.isEmpty()) {
             for (Object identifier : identifiers) {
-                String name = (String)identifier;
-         
+                String name = (String) identifier;
+
                 if (localySeenVars != null) {
                     // remove the localy declared variable
                     if (definingScopeKind == ScopeInfo.ScopeKind.Class && name.startsWith("<>class")) {
@@ -125,18 +125,17 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                         localySeenVars.remove(name);
                     }
                 }
-                
+
                 List<ScopeInfo> usedInScopes = unresolvedVars.get(name);
                 // was the declared varibale seen before?
-                if (usedInScopes != null 
-                        && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) {
+                if (usedInScopes != null && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) {
                     // make the varible freevar and cellvar in scopes, where is used
                     List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
                     for (ScopeInfo scope : copy) {
                         // we need to find out, whether the scope is a under the defing scope
                         ScopeInfo tmpScope = scope;
                         ScopeInfo parentDefiningScope = definingScope.getParent();
-                        while(tmpScope != null && tmpScope != definingScope && tmpScope != parentDefiningScope) {
+                        while (tmpScope != null && tmpScope != definingScope && tmpScope != parentDefiningScope) {
                             tmpScope = tmpScope.getParent();
                         }
                         if (definingScope == tmpScope) {
@@ -144,31 +143,29 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                             scope.addFreeVar(name, true);
                             definingScope.addCellVar(name);
                             scope = scope.getParent();
-                            while(scope != null && scope != definingScope && (scope.findFrameSlot(name) == null 
-                                    || !scope.isFreeVar(name))) {
+                            while (scope != null && scope != definingScope && (scope.findFrameSlot(name) == null || !scope.isFreeVar(name))) {
                                 scope.addFreeVar(name, true);
                                 scope = scope.getParent();
                             }
-                        } 
+                        }
                     }
                     if (usedInScopes.isEmpty()) {
                         unresolvedVars.remove(name);
                     }
-                } /*else if (usedInScopes == null && definingScopeKind == ScopeInfo.ScopeKind.Class) {
-                    if (name.startsWith("<>class")) {
-                        definingScope.getFrameDescriptor().removeFrameSlot(identifier);
-                        name = name.substring(7);
-                        definingScope.createSlotIfNotPresent(name);
-                    }
-                }*/
-            } 
+                } /*
+                   * else if (usedInScopes == null && definingScopeKind ==
+                   * ScopeInfo.ScopeKind.Class) { if (name.startsWith("<>class")) {
+                   * definingScope.getFrameDescriptor().removeFrameSlot(identifier); name =
+                   * name.substring(7); definingScope.createSlotIfNotPresent(name); } }
+                   */
+            }
         }
-            
+
         // are in current scope used variables that are not defined
         if ((localySeenVars != null && !localySeenVars.isEmpty()) && definingScopeKind != ScopeInfo.ScopeKind.Module) {
             // note this scope in global unresolved vars
             List<ScopeInfo> usedInScopes;
-            for (String varName: localySeenVars) {
+            for (String varName : localySeenVars) {
                 if (!isGlobal(varName)) {
                     usedInScopes = unresolvedVars.get(varName);
                     if (usedInScopes == null) {
@@ -183,7 +180,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         }
         if (definingScopeKind == ScopeInfo.ScopeKind.Class) {
             for (Object identifier : identifiers) {
-                String name = (String)identifier;
+                String name = (String) identifier;
                 if (name.startsWith("<>class")) {
                     definingScope.getFrameDescriptor().removeFrameSlot(identifier);
                     name = name.substring(7);
@@ -194,7 +191,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         currentScope = currentScope.getParent();
         return definingScope;
     }
-    
+
     public void addSeenVar(String name) {
         currentScope.addSeenVar(name);
     }
@@ -214,7 +211,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         assert name != null : "name is null!";
         currentScope.addExplicitNonlocalVariable(name);
     }
-    
+
     public boolean atModuleLevel() {
         assert currentScope != null;
         return currentScope == globalScope;
@@ -232,11 +229,11 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     private boolean isCellInCurrentScope(String name) {
         return currentScope.isFreeVar(name) || currentScope.isCellVar(name);
     }
-    
+
     public boolean isInFunctionScope() {
         return getScopeKind() == ScopeInfo.ScopeKind.Function || getScopeKind() == ScopeInfo.ScopeKind.Generator;
     }
-    
+
     public boolean isInGeneratorScope() {
         return getScopeKind() == ScopeInfo.ScopeKind.Generator;
     }
@@ -249,11 +246,11 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     public boolean isGlobaScope(ScopeInfo scope) {
         return globalScope == scope;
     }
-    
+
     public ScopeInfo getGlobalScope() {
         return globalScope;
     }
-    
+
     public boolean isNonlocal(String name) {
         assert name != null : "name is null!";
         return currentScope.isExplicitNonlocalVariable(name);
@@ -266,21 +263,21 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     public FrameSlot getReturnSlot() {
         return currentScope.createSlotIfNotPresent(RETURN_SLOT_ID);
     }
-    
+
     public FrameDescriptor getCurrentFrame() {
         FrameDescriptor frameDescriptor = currentScope.getFrameDescriptor();
         assert frameDescriptor != null;
         return frameDescriptor;
     }
-    
+
     public ExecutionCellSlots getExecutionCellSlots() {
         return new ExecutionCellSlots(this);
     }
-    
+
     public DefinitionCellSlots getDefinitionCellSlots() {
         return new DefinitionCellSlots(this);
     }
-    
+
     public void createLocal(String name) {
         assert name != null : "name is null!";
         if (currentScope.getScopeKind() == ScopeInfo.ScopeKind.Module) {
@@ -317,7 +314,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return null;
     }
 
-     private ReadNode findVariableNodeLEGB(String name) {
+    private ReadNode findVariableNodeLEGB(String name) {
         // 1 (local scope) & 2 (enclosing scope(s))
         ReadNode readNode = findVariableInLocalOrEnclosingScopes(name);
         if (readNode != null) {
@@ -327,9 +324,9 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         // 3 (global scope) & 4 (builtin)
         return findVariableInGlobalOrBuiltinScope(name);
     }
-     
+
     private ReadNode findVariableNodeInGenerator(String name) {
-        
+
         FrameSlot slot = currentScope.findFrameSlot(name);
         if (slot != null && !isCellInCurrentScope(name)) {
             // is local in generater?
@@ -337,7 +334,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         } else if (slot != null && isCellInCurrentScope(name)) {
             return ReadLocalCellNode.create(slot, currentScope.isFreeVar(name), ReadGeneratorFrameVariableNode.create(slot));
         }
-        
+
         return findVariableNodeLEGB(name);
     }
 
@@ -385,7 +382,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                 throw new IllegalStateException("Unexpected scopeKind " + getScopeKind());
         }
     }
-    
+
     public ReadNode findVariable(String name, ScopeInfo scope) {
         ScopeInfo oldCurrent = currentScope;
         currentScope = scope;
@@ -408,18 +405,18 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     public FrameSlot[] getFreeVarDefinitionSlots() {
         return currentScope.getFreeVarSlotsInParentScope();
     }
-    
+
     private StatementNode getWriteNode(String name, FrameSlot slot, ExpressionNode right) {
         if (isCellInCurrentScope(name)) {
             return currentScope.getScopeKind() != ScopeInfo.ScopeKind.Generator
-                    ? factory.createWriteLocalCell(right, slot)
-                    : WriteLocalCellNode.create(slot, ReadGeneratorFrameVariableNode.create(slot), right);
+                            ? factory.createWriteLocalCell(right, slot)
+                            : WriteLocalCellNode.create(slot, ReadGeneratorFrameVariableNode.create(slot), right);
         }
         return currentScope.getScopeKind() != ScopeInfo.ScopeKind.Generator
-                ? factory.createWriteLocal(right, slot)
-                :  WriteGeneratorFrameVariableNode.create(slot, right);
+                        ? factory.createWriteLocal(right, slot)
+                        : WriteGeneratorFrameVariableNode.create(slot, right);
     }
-    
+
     private StatementNode getWriteNode(String name, ReadArgumentNode readNode) {
         ExpressionNode right = readNode.asExpression();
         return getWriteNode(name, currentScope.findFrameSlot(name), right);
@@ -428,25 +425,25 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     public StatementNode getWriteArgumentToLocal(String name, int index) {
         return getWriteNode(name, ReadIndexedArgumentNode.create(index));
     }
-    
+
     public StatementNode getWriteVarArgsToLocal(String name, int index) {
         return getWriteNode(name, ReadVarArgsNode.create(index));
     }
-    
+
     public StatementNode getWriteKwArgsToLocal(String name, String[] names) {
         return getWriteNode(name, ReadVarKeywordsNode.createForUserFunction(names));
     }
-    
+
     public ScopeInfo setCurrentScope(ScopeInfo info) {
         ScopeInfo oldCurrent = currentScope;
         currentScope = info;
         return oldCurrent;
-    } 
-    
+    }
+
     public void setToGeneratorScope() {
         currentScope.setAsGenerator();
     }
-    
+
     public void setFreeVarsInRootScope(Frame frame) {
         if (frame != null) {
             for (Object identifier : frame.getFrameDescriptor().getIdentifiers()) {

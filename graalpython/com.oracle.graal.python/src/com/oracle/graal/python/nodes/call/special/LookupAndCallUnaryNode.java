@@ -112,7 +112,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     public String getMethodName() {
         return name;
     }
-    
+
     protected PythonUnaryBuiltinNode getBuiltin(Object receiver) {
         assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String || receiver instanceof PNone;
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), name);

@@ -47,25 +47,25 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PythonParserImpl implements PythonParser {
-    
+
     private final boolean useExperimentalParser;
     private final boolean logFiles;
     private final int timeStatistics;
     private long timeInParser = 0;
     private long numberOfFiles = 0;
-    
+
     public PythonParserImpl(Env env) {
         this.useExperimentalParser = env.getOptions().get(PythonOptions.UseExperimentalParser);
         this.logFiles = env.getOptions().get(PythonOptions.ParserLogFiles);
         this.timeStatistics = env.getOptions().get(PythonOptions.ParserStatistics);
     }
-    
+
     private static Python3Parser getPython3Parser(String string) {
         Python3Parser parser = Builder.createParser(CharStreams.fromString(string));
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
     }
-    
+
     private static Python3NewParser getPython3NewParser(Source source, ParserErrorCallback errors) {
         Python3NewLexer lexer = new Python3NewLexer(CharStreams.fromString(source.getCharacters().toString()));
         lexer.removeErrorListeners();
@@ -79,35 +79,35 @@ public final class PythonParserImpl implements PythonParser {
     }
 
     private ParserRuleContext lastTree;
-    
+
     public ParserRuleContext getLastAntlrTree() {
         return lastTree;
     }
-    
+
     private ScopeInfo lastGlobalScope;
-    
+
     public ScopeInfo getLastGlobaScope() {
         return lastGlobalScope;
     }
-    
+
     @Override
     public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         if (logFiles) {
             if (source.getPath() == null) {
-                    System.out.println("Parsing source without path " + source.getCharacters().length());
-                    CharSequence chars = source.getCharacters();
-                    System.out.println(chars.length() < 200 
-                        ? chars.toString() 
-                        : chars.subSequence(0, 197).toString() + "...");
-                } else {
-                    System.out.print("Parsing: " + source.getPath());
-                }
+                System.out.println("Parsing source without path " + source.getCharacters().length());
+                CharSequence chars = source.getCharacters();
+                System.out.println(chars.length() < 200
+                                ? chars.toString()
+                                : chars.subSequence(0, 197).toString() + "...");
+            } else {
+                System.out.print("Parsing: " + source.getPath());
+            }
         }
-        
+
         Node result;
         if (timeStatistics <= 0) {
             if (useExperimentalParser) {
-                if(logFiles) {
+                if (logFiles) {
                     System.out.println(" with experimental parser.");
                 }
                 result = parseN(mode, errors, source, currentFrame);
@@ -120,7 +120,7 @@ public final class PythonParserImpl implements PythonParser {
         } else {
             long start = System.currentTimeMillis();
             if (useExperimentalParser) {
-                if(logFiles) {
+                if (logFiles) {
                     System.out.print(" with experimental parser");
                 }
                 result = parseN(mode, errors, source, currentFrame);
@@ -144,7 +144,7 @@ public final class PythonParserImpl implements PythonParser {
         }
         return result;
     }
-    
+
     @TruffleBoundary
     public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
@@ -152,7 +152,7 @@ public final class PythonParserImpl implements PythonParser {
         Python3NewParser parser = getPython3NewParser(source, errors);
         parser.factory = new PythonNodeFactory(errors.getLanguage(), source);
         SSTNode parserSSTResult = null;
-        
+
         try {
             switch (mode) {
                 case Eval:
@@ -184,14 +184,13 @@ public final class PythonParserImpl implements PythonParser {
                 throw handleParserError(errors, source, e);
             }
         }
-        
+
         lastGlobalScope = parser.factory.getScopeEnvironment().getGlobalScope();
         return parser.factory.createParserResult(parserSSTResult, mode, errors, source, currentFrame);
-        
+
     }
-    
-    
-//    @Override
+
+    // @Override
     @TruffleBoundary
     public Node parseO(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         // ANTLR parsing
@@ -238,7 +237,7 @@ public final class PythonParserImpl implements PythonParser {
         // create frame slots for cell and free vars
         defineScopes.setFreeVarsInRootScope(currentFrame);
         defineScopes.createFrameSlotsForCellAndFreeVars();
-        
+
         lastGlobalScope = environment.getGlobalScope();
         // create Truffle ASTs
         return PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode);

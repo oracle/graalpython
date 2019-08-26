@@ -42,8 +42,8 @@
 package com.oracle.graal.python.parser.sst;
 
 public class SubscriptSSTNode extends SSTNode {
-    
-    protected final SSTNode receiver; 
+
+    protected final SSTNode receiver;
     protected final SSTNode subscript;
 
     public SubscriptSSTNode(SSTNode receiver, SSTNode subscript, int startOffset, int endOffset) {
@@ -51,9 +51,9 @@ public class SubscriptSSTNode extends SSTNode {
         this.receiver = receiver;
         this.subscript = subscript;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

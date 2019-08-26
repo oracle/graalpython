@@ -192,5 +192,5 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     public ExpressionNode getDoc() {
         return doc;
     }
-    
+
 }

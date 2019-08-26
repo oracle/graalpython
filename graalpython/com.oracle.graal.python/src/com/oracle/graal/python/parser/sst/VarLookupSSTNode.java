@@ -44,20 +44,19 @@ package com.oracle.graal.python.parser.sst;
 public class VarLookupSSTNode extends SSTNode {
 
     protected final String name;
-    
+
     public VarLookupSSTNode(String name, int start, int end) {
         super(start, end);
         this.name = name;
     }
 
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     public String getName() {
         return name;
     }
-    
-    
+
 }

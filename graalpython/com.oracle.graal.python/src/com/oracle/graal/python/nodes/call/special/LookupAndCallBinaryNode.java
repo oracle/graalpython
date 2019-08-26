@@ -337,6 +337,5 @@ public abstract class LookupAndCallBinaryNode extends Node {
     public String getRname() {
         return rname;
     }
-    
-    
+
 }

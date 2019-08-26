@@ -44,12 +44,12 @@ package com.oracle.graal.python.test.parser;
 import org.junit.Test;
 
 public class ImportTests extends ParserTestBase {
-    
+
     @Test
     public void basic01() throws Exception {
         checkTreeResult("import sys");
     }
-    
+
     @Test
     public void basic02() throws Exception {
         checkTreeResult("import sys as system");
@@ -59,42 +59,42 @@ public class ImportTests extends ParserTestBase {
     public void basic03() throws Exception {
         checkTreeResult("import sys, math");
     }
-    
+
     @Test
     public void basic04() throws Exception {
         checkTreeResult("import sys as system, math");
     }
-    
+
     @Test
     public void basic05() throws Exception {
         checkTreeResult("import sys, math as my_math");
     }
-    
+
     @Test
     public void basic06() throws Exception {
         checkTreeResult("import encodings.aliases");
     }
-    
+
     @Test
     public void basic07() throws Exception {
         checkTreeResult("import encodings.aliases as a");
     }
-    
+
     @Test
     public void basic08() throws Exception {
         checkTreeResult("import encodings.aliases.something");
     }
-    
+
     @Test
     public void basic09() throws Exception {
         checkTreeResult("import encodings.aliases.something as a");
     }
-    
+
     @Test
     public void basicInFn01() throws Exception {
         checkScopeAndTree("def fn():\n  import sys");
     }
-    
+
     @Test
     public void basicInFn02() throws Exception {
         checkScopeAndTree("def fn():\n  import sys as system");
@@ -104,27 +104,27 @@ public class ImportTests extends ParserTestBase {
     public void basicInFn03() throws Exception {
         checkScopeAndTree("def fn():\n  import sys, math");
     }
-    
+
     @Test
     public void basicInFn04() throws Exception {
         checkScopeAndTree("def fn():\n  import sys as system, math");
     }
-    
+
     @Test
     public void basicInFn05() throws Exception {
         checkScopeAndTree("def fn():\n  import sys, math as my_math");
     }
-    
+
     @Test
     public void fromImport01() throws Exception {
         checkTreeResult("from sys.path import *");
     }
-    
+
     @Test
     public void fromImport02() throws Exception {
         checkTreeResult("from sys.path import dirname");
     }
-    
+
     @Test
     public void fromImport03() throws Exception {
         checkTreeResult("from sys.path import (dirname)");
@@ -184,10 +184,12 @@ public class ImportTests extends ParserTestBase {
     public void fromImport15() throws Exception {
         checkTreeResult("from sys.path import dirname, basename as my_basename");
     }
+
     @Test
     public void fromImport16() throws Exception {
         checkTreeResult("from sys.path import (dirname, basename as my_basename)");
     }
+
     @Test
     public void fromImport17() throws Exception {
         checkTreeResult("from sys.path import (dirname, basename as my_basename,)");
@@ -197,32 +199,32 @@ public class ImportTests extends ParserTestBase {
     public void fromImport18() throws Exception {
         checkTreeResult("from .bogus import x");
     }
-    
+
     @Test
     public void fromImportInFn01() throws Exception {
         checkSyntaxError("def fn():\n  from sys.path import *");
     }
-    
+
     @Test
     public void fromImportInFn02() throws Exception {
         checkScopeAndTree("def fn():\n  from sys.path import dirname");
     }
-    
+
     @Test
     public void fromImportInFn03() throws Exception {
         checkScopeAndTree("def fn():\n  from sys.path import dirname as my_dirname");
     }
-    
+
     @Test
     public void fromImportInFn04() throws Exception {
         checkScopeAndTree("def fn():\n  from sys.path import (dirname as my_dirname, basename)");
     }
-    
+
     @Test
     public void relativeImport01() throws Exception {
         checkTreeResult("from . import name");
     }
-    
+
     @Test
     public void relativeImport02() throws Exception {
         checkTreeResult("from .. import name");

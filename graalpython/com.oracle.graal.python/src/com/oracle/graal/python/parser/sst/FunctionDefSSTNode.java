@@ -43,8 +43,7 @@ package com.oracle.graal.python.parser.sst;
 
 import com.oracle.graal.python.parser.ScopeInfo;
 
-
-public class FunctionDefSSTNode extends SSTNode{
+public class FunctionDefSSTNode extends SSTNode {
     protected final String name;
     protected final String enclosingClassName;
     protected final ArgDefListBuilder argBuilder;
@@ -59,10 +58,10 @@ public class FunctionDefSSTNode extends SSTNode{
         this.body = body;
         this.functionScope = functionScope;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

@@ -50,7 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class ArgDefListBuilder {
-    
+
     private static String SPLAT_MARKER_NAME = "*";
 
     private class Parameter {
@@ -62,22 +62,22 @@ public final class ArgDefListBuilder {
             this.name = name;
             this.type = type;
         }
-        
+
     }
-    
+
     private class ParameterWithDefValue extends Parameter {
-        
+
         protected final SSTNode value;
 
         public ParameterWithDefValue(String name, SSTNode type, SSTNode value) {
             super(name, type);
             this.value = value;
         }
-        
+
     }
-    
+
     private final ScopeEnvironment scopeEnvironment;
-    
+
     private static ExpressionNode[] EMPTY = new ExpressionNode[0];
     private List<Parameter> args;
     private List<ParameterWithDefValue> argsWithDefValue;
@@ -85,25 +85,23 @@ public final class ArgDefListBuilder {
     private List<ParameterWithDefValue> kwargsWithDefValue;
     private int splatIndex = -1;
     private int kwarIndex = -1;
-    
-    
+
     private int firstDefaultValueParam = -1;
     private int defaultParameterCount = 0;
 
     public ArgDefListBuilder(ScopeEnvironment scopeEnvironment) {
         this.scopeEnvironment = scopeEnvironment;
     }
-    
-    
+
     public void addParam(String name, SSTNode type, SSTNode defValue) {
-//        System.out.println("Param: " + name);
+        // System.out.println("Param: " + name);
         Parameter arg = defValue == null ? new Parameter(name, type) : new ParameterWithDefValue(name, type, defValue);
         if (splatIndex == -1) {
             if (defValue != null) {
                 if (argsWithDefValue == null) {
                     argsWithDefValue = new ArrayList<>(5);
                 }
-                argsWithDefValue.add((ParameterWithDefValue)arg);
+                argsWithDefValue.add((ParameterWithDefValue) arg);
             }
             if (args == null) {
                 args = new ArrayList<>();
@@ -114,7 +112,7 @@ public final class ArgDefListBuilder {
                 if (kwargsWithDefValue == null) {
                     kwargsWithDefValue = new ArrayList<>(4);
                 }
-                kwargsWithDefValue.add((ParameterWithDefValue)arg);
+                kwargsWithDefValue.add((ParameterWithDefValue) arg);
             }
             if (kwargs == null) {
                 kwargs = new ArrayList<>(4);
@@ -124,7 +122,7 @@ public final class ArgDefListBuilder {
     }
 
     public void addSplat(String name, SSTNode type) {
-//        System.out.println("Splat: " + name);
+        // System.out.println("Splat: " + name);
         if (args == null) {
             args = new ArrayList<>();
         }
@@ -133,7 +131,7 @@ public final class ArgDefListBuilder {
     }
 
     public void addKwargs(String name, SSTNode type) {
-//        System.out.println("KwArg: " + name);
+        // System.out.println("KwArg: " + name);
         if (kwargs == null) {
             kwargs = new ArrayList<>();
         }
@@ -145,7 +143,7 @@ public final class ArgDefListBuilder {
     private ExpressionNode[] defaultParameterValues;
     private Signature signature;
     private int kwargsParameterCount = 0;
-    
+
     private int positionalParameterCount = 0;
 
     public boolean hasDefaultParameter() {
@@ -154,7 +152,7 @@ public final class ArgDefListBuilder {
 
     public void defineParamsInScope(ScopeInfo functionScope) {
         if (args != null) {
-            for(Parameter param: args) {
+            for (Parameter param : args) {
                 if (param.name != null) {
                     // don't put splat marker
                     functionScope.createSlotIfNotPresent(param.name);
@@ -164,44 +162,48 @@ public final class ArgDefListBuilder {
             }
         }
         if (kwargs != null) {
-            for(Parameter param: kwargs) {
+            for (Parameter param : kwargs) {
                 functionScope.createSlotIfNotPresent(param.name);
             }
         }
     }
-    
+
     private void build(FactorySSTVisitor visitor) {
-//        parameterNodes = new StatementNode[parameters.size()];
-//        defaultParameterValues = defaultParameterCount > 0 ? new ExpressionNode[defaultParameterCount] : null;
-//        String[] parametersId = new String[positionalParameterCount];
-//        String[] keyWordNames = new String[kwargsParameterCount];
-//        boolean takesVarKeywordArgs = false;
-//        int takesVarArgs = -1;
-//        boolean varArgsMarker = false;
-//        int index = 0;
-//        int defaultParameterValueIndex = 0;
-//        int kwargsIndex = 0;
-//
-//        for (Parameter param : parameters) {
-//            parameterNodes[index] = param.getArgumentReadNode(index);
-//            if (param instanceof ParameterWithDefValue) {
-//                parametersId[index] = param.getName();
-//            }
-//            if (param instanceof SplatParameter) {
-//                takesVarArgs = index;
-//            }
-//            if (param instanceof ParameterWithDefValue && ((ParameterWithDefValue) param).getDefValue() != null) {
-//                defaultParameterValues[defaultParameterValueIndex++] = ((ParameterWithDefValue) param).getDefValue();
-//            }
-//            index++;
-//        }
-//        signature = new Signature(takesVarKeywordArgs, takesVarArgs, varArgsMarker, parametersId, keyWordNames);
+        // parameterNodes = new StatementNode[parameters.size()];
+        // defaultParameterValues = defaultParameterCount > 0 ? new
+        // ExpressionNode[defaultParameterCount] : null;
+        // String[] parametersId = new String[positionalParameterCount];
+        // String[] keyWordNames = new String[kwargsParameterCount];
+        // boolean takesVarKeywordArgs = false;
+        // int takesVarArgs = -1;
+        // boolean varArgsMarker = false;
+        // int index = 0;
+        // int defaultParameterValueIndex = 0;
+        // int kwargsIndex = 0;
+        //
+        // for (Parameter param : parameters) {
+        // parameterNodes[index] = param.getArgumentReadNode(index);
+        // if (param instanceof ParameterWithDefValue) {
+        // parametersId[index] = param.getName();
+        // }
+        // if (param instanceof SplatParameter) {
+        // takesVarArgs = index;
+        // }
+        // if (param instanceof ParameterWithDefValue && ((ParameterWithDefValue)
+        // param).getDefValue() != null) {
+        // defaultParameterValues[defaultParameterValueIndex++] = ((ParameterWithDefValue)
+        // param).getDefValue();
+        // }
+        // index++;
+        // }
+        // signature = new Signature(takesVarKeywordArgs, takesVarArgs, varArgsMarker, parametersId,
+        // keyWordNames);
     }
 
     public boolean hasSplatStarMarker() {
         return splatIndex > -1 && args != null && args.get(splatIndex).name == null;
     }
-    
+
     public StatementNode[] getArgumentNodes(FactorySSTVisitor visitor) {
         if (args == null && kwargs == null) {
             return new StatementNode[0];
@@ -211,8 +213,8 @@ public final class ArgDefListBuilder {
         int argsLen = args == null ? 0 : args.size();
         int kwargsLen = kwargs == null ? 0 : kwargs.size();
         StatementNode[] nodes = new StatementNode[argsLen + kwargsLen - delta];
-        
-        for(int i = 0; i < argsLen - delta ; i++) {
+
+        for (int i = 0; i < argsLen - delta; i++) {
             if (splatIndex == i) {
                 if (!starMarker) {
                     nodes[i] = scopeEnvironment.getWriteVarArgsToLocal(args.get(i).name, i);
@@ -221,7 +223,7 @@ public final class ArgDefListBuilder {
                 nodes[i] = scopeEnvironment.getWriteArgumentToLocal(args.get(i).name, i);
             }
         }
-        
+
         String[] kwId = kwarIndex == -1 ? new String[0] : new String[kwargsLen - (kwarIndex == -1 ? 0 : 1)];
         delta = argsLen - delta;
         int starMarkerDelta = starMarker ? 0 : 1;
@@ -243,19 +245,19 @@ public final class ArgDefListBuilder {
             return EMPTY;
         }
         ExpressionNode[] nodes = new ExpressionNode[argsWithDefValue.size()];
-        for(int i = 0; i < argsWithDefValue.size(); i++) {
-            nodes[i] = (ExpressionNode)argsWithDefValue.get(i).value.accept(visitor);
+        for (int i = 0; i < argsWithDefValue.size(); i++) {
+            nodes[i] = (ExpressionNode) argsWithDefValue.get(i).value.accept(visitor);
         }
         return nodes;
     }
-    
+
     public FunctionDefinitionNode.KwDefaultExpressionNode[] getKwDefaultParameterValues(FactorySSTVisitor visitor) {
         if (kwargsWithDefValue == null) {
             return null;
         }
         FunctionDefinitionNode.KwDefaultExpressionNode[] nodes = new FunctionDefinitionNode.KwDefaultExpressionNode[kwargsWithDefValue.size()];
-        for(int i = 0; i < kwargsWithDefValue.size(); i++) {
-            nodes[i] = FunctionDefinitionNode.KwDefaultExpressionNode.create(kwargsWithDefValue.get(i).name, (ExpressionNode)kwargsWithDefValue.get(i).value.accept(visitor));
+        for (int i = 0; i < kwargsWithDefValue.size(); i++) {
+            nodes[i] = FunctionDefinitionNode.KwDefaultExpressionNode.create(kwargsWithDefValue.get(i).name, (ExpressionNode) kwargsWithDefValue.get(i).value.accept(visitor));
         }
         return nodes;
     }
@@ -290,8 +292,7 @@ public final class ArgDefListBuilder {
                 }
             }
         }
-        return new Signature(kwarIndex > -1, splatMarker ? -1 : splatIndex , splatMarker, ids, kwids);
+        return new Signature(kwarIndex > -1, splatMarker ? -1 : splatIndex, splatMarker, ids, kwids);
     }
 
-    
 }

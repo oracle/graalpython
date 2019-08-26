@@ -127,6 +127,5 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
     public void reportError(Parser recognizer, RecognitionException e) {
         handlePythonSyntaxError(recognizer, e);
     }
-    
-    
+
 }

@@ -48,10 +48,10 @@ public class NotSSTNode extends SSTNode {
         super(startOffset, endOffset);
         this.value = value;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

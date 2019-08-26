@@ -52,9 +52,9 @@ public class ComparisonSSTNode extends SSTNode {
         this.operations = operations;
         this.otherValues = otherValues;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

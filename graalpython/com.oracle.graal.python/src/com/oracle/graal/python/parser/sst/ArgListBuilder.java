@@ -75,7 +75,7 @@ public final class ArgListBuilder {
             int len = args.size();
             result = new ExpressionNode[len];
             for (int i = 0; i < len; i++) {
-                result[i] = (ExpressionNode)args.get(i).accept(visitor);
+                result[i] = (ExpressionNode) args.get(i).accept(visitor);
             }
         }
         return result;
@@ -84,7 +84,7 @@ public final class ArgListBuilder {
     public SSTNode[] getArgs() {
         return args == null ? EMPTY_SSTN : args.toArray(new SSTNode[args.size()]);
     }
-    
+
     public void addNamedArg(String name, SSTNode value) {
         if (nameArgNodes == null) {
             nameArgNodes = new ArrayList<>();
@@ -102,7 +102,7 @@ public final class ArgListBuilder {
             int len = nameArgNodes.size();
             result = new ExpressionNode[len];
             for (int i = 0; i < len; i++) {
-                result[i] = new KeywordLiteralNode((ExpressionNode)nameArgNodes.get(i).accept(visitor), nameArgNames.get(i));
+                result[i] = new KeywordLiteralNode((ExpressionNode) nameArgNodes.get(i).accept(visitor), nameArgNames.get(i));
             }
         }
         return result;
@@ -118,7 +118,7 @@ public final class ArgListBuilder {
         }
         kwArg.add(value);
     }
-    
+
     public boolean hasKwArg() {
         return kwArg != null;
     }
@@ -128,11 +128,11 @@ public final class ArgListBuilder {
         if (kwArg != null && !kwArg.isEmpty()) {
             int len = kwArg.size();
             if (len == 1) {
-                result = (ExpressionNode)kwArg.get(0).accept(visitor);
+                result = (ExpressionNode) kwArg.get(0).accept(visitor);
             } else {
                 ExpressionNode[] expressions = new ExpressionNode[len];
                 for (int i = 0; i < len; i++) {
-                    expressions[i] =(ExpressionNode)kwArg.get(i).accept(visitor);
+                    expressions[i] = (ExpressionNode) kwArg.get(i).accept(visitor);
                 }
                 result = DictConcatNode.create(expressions);
             }
@@ -150,9 +150,9 @@ public final class ArgListBuilder {
     public ExpressionNode getStarArgs(SSTreeVisitor<PNode> visitor) {
         ExpressionNode result = null;
         if (starArg != null && !starArg.isEmpty()) {
-            result = (ExpressionNode)starArg.get(0).accept(visitor);
+            result = (ExpressionNode) starArg.get(0).accept(visitor);
             for (int i = 1; i < starArg.size(); i++) {
-                result = BinaryArithmetic.Add.create(result, (ExpressionNode)starArg.get(i).accept(visitor));
+                result = BinaryArithmetic.Add.create(result, (ExpressionNode) starArg.get(i).accept(visitor));
             }
         }
         return result;

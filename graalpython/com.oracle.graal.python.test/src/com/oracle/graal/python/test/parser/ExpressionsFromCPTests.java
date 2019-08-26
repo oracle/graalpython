@@ -49,17 +49,17 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void expression01() throws Exception {
         checkTreeResult("def f(): pass");
     }
-    
+
     @Test
     public void expression02() throws Exception {
         checkTreeResult("foo(1)");
     }
-    
+
     @Test
     public void expression03() throws Exception {
         checkTreeResult("[1, 2, 3]");
     }
-    
+
     @Test
     public void expression04() throws Exception {
         checkTreeResult("...");
@@ -69,17 +69,17 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void expression05() throws Exception {
         checkTreeResult("a[...]");
     }
-    
+
     @Test
     public void setComprehensions01() throws Exception {
         checkTreeResult("{x for x in seq}");
     }
-    
+
     @Test
     public void setComprehensions02() throws Exception {
         checkTreeResult("{f(x) for x in seq}");
     }
-    
+
     @Test
     public void setComprehensions03() throws Exception {
         checkTreeResult("{f(x) for x in seq if condition(x)}");
@@ -89,22 +89,22 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void dictComprehensions01() throws Exception {
         checkTreeResult("{x:x for x in seq}");
     }
-    
+
     @Test
     public void dictComprehensions02() throws Exception {
         checkTreeResult("{x**2:x[3] for x in seq if condition(x)}");
     }
-    
+
     @Test
     public void dictComprehensions03() throws Exception {
         checkScopeAndTree("{x:x for x in seq1 for y in seq2 if condition(x, y)}");
     }
-    
+
     @Test
     public void generator01() throws Exception {
         checkScopeAndTree("[x**3 for x in range(20)]");
     }
-    
+
     @Test
     public void generator02() throws Exception {
         checkScopeAndTree("[x**3 for x in range(20) if x % 3]");
@@ -124,7 +124,7 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void generator05() throws Exception {
         checkScopeAndTree("list(x**3 for x in range(20) if x % 3)");
     }
-    
+
     @Test
     public void generator06() throws Exception {
         checkScopeAndTree("list(x**3 for x in range(20) if x % 2 if x % 3)");
@@ -134,7 +134,7 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void generator07() throws Exception {
         checkScopeAndTree("(x for x in range(10))");
     }
-    
+
     @Test
     public void generator08() throws Exception {
         checkScopeAndTree("foo(x for x in range(10))");
@@ -159,42 +159,42 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void fnCall04() throws Exception {
         checkTreeResult("foo(key=value)");
     }
-    
+
     @Test
     public void fnCall05() throws Exception {
         checkTreeResult("foo(key=value, *args)");
     }
-    
+
     @Test
     public void fnCall06() throws Exception {
         checkTreeResult("foo(key=value, *args, **kw)");
     }
-    
+
     @Test
     public void fnCall07() throws Exception {
         checkTreeResult("foo(key=value, **kw)");
     }
-    
+
     @Test
     public void fnCall08() throws Exception {
         checkTreeResult("foo(a, b, c, *args)");
     }
-    
+
     @Test
     public void fnCall09() throws Exception {
         checkTreeResult("foo(a, b, c, *args, **kw)");
     }
-    
+
     @Test
     public void fnCall10() throws Exception {
         checkTreeResult("foo(a, b, c, **kw)");
     }
-    
+
     @Test
     public void fnCall11() throws Exception {
         checkTreeResult("foo(a, *args, keyword=23)");
     }
-    
+
     @Test
     public void binOp01() throws Exception {
         checkTreeResult("foo + bar");
@@ -224,17 +224,17 @@ public class ExpressionsFromCPTests extends ParserTestBase {
     public void lambda01() throws Exception {
         checkScopeAndTree("lambda: 0");
     }
-    
+
     @Test
     public void lambda02() throws Exception {
         checkScopeAndTree("lambda x: 0");
     }
-    
+
     @Test
     public void lambda03() throws Exception {
         checkScopeAndTree("lambda *y: 0");
     }
-    
+
     @Test
     public void lambda04() throws Exception {
         checkScopeAndTree("lambda *y, **z: 0");

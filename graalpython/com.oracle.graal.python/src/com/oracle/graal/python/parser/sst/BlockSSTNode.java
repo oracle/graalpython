@@ -52,15 +52,14 @@ public class BlockSSTNode extends SSTNode {
         super(startOffset, endOffset);
         this.statements = statements;
     }
-    
+
     public BlockSSTNode(SSTNode[] statements) {
         this(statements, -1, -1);
     }
 
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
-    
+
 }

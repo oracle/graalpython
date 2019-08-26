@@ -58,10 +58,10 @@ public class BinaryArithmeticSSTNode extends SSTNode {
         this.left = left;
         this.right = right;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

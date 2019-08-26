@@ -42,7 +42,7 @@
 package com.oracle.graal.python.parser.sst;
 
 public abstract class SSTNode {
-    
+
     protected int startOffset;
     protected int endOffset;
 
@@ -66,6 +66,6 @@ public abstract class SSTNode {
     public void setEndOffset(int endOffset) {
         this.endOffset = endOffset;
     }
-    
-    public abstract <T>T accept(SSTreeVisitor<T> visitor);
+
+    public abstract <T> T accept(SSTreeVisitor<T> visitor);
 }

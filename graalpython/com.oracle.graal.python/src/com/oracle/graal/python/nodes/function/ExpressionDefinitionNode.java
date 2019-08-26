@@ -86,6 +86,5 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
     public FrameSlot[] getFreeVarDefinitionSlots() {
         return freeVarDefinitionSlots;
     }
-    
-    
+
 }

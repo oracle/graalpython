@@ -41,18 +41,18 @@
 
 package com.oracle.graal.python.parser.sst;
 
-public class YieldExpressionSSTNode extends SSTNode{
+public class YieldExpressionSSTNode extends SSTNode {
     protected final SSTNode value;
     protected final boolean isFrom;
-    
+
     public YieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.value = value;
         this.isFrom = isFrom;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

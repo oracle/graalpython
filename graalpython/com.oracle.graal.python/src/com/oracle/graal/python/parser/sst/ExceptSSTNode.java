@@ -52,9 +52,9 @@ public class ExceptSSTNode extends SSTNode {
         this.asName = asName;
         this.body = body;
     }
-     
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

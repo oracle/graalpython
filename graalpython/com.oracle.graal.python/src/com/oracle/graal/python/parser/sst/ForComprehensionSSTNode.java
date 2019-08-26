@@ -47,7 +47,7 @@ import com.oracle.graal.python.parser.ScopeInfo;
 public class ForComprehensionSSTNode extends SSTNode {
     protected final boolean async;
     protected final SSTNode target;
-    protected final SSTNode name; 
+    protected final SSTNode name;
     protected final SSTNode[] variables;
     protected final SSTNode iterator;
     protected final SSTNode[] conditions;
@@ -59,7 +59,8 @@ public class ForComprehensionSSTNode extends SSTNode {
      */
     protected final int level;
 
-    public ForComprehensionSSTNode(ScopeInfo scope, boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType, int line, int level, int startOffset, int endOffset) {
+    public ForComprehensionSSTNode(ScopeInfo scope, boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType,
+                    int line, int level, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.async = async;
         this.target = target;
@@ -72,10 +73,10 @@ public class ForComprehensionSSTNode extends SSTNode {
         this.line = line;
         this.level = level;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

@@ -116,5 +116,5 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     public FrameDescriptor getFrameDescriptor() {
         return frameDescriptor;
     }
-    
+
 }

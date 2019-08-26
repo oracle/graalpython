@@ -52,10 +52,10 @@ public class SliceSSTNode extends SSTNode {
         this.stop = stop;
         this.step = step;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

@@ -54,9 +54,9 @@ public class LambdaSSTNode extends SSTNode {
         this.body = body;
         this.functionScope = functionScope;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

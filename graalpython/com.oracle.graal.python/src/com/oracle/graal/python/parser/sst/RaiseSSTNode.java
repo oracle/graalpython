@@ -42,8 +42,8 @@
 package com.oracle.graal.python.parser.sst;
 
 public class RaiseSSTNode extends SSTNode {
-    
-    protected final SSTNode value; 
+
+    protected final SSTNode value;
     protected final SSTNode from;
 
     public RaiseSSTNode(SSTNode value, SSTNode from, int startOffset, int endOffset) {
@@ -51,10 +51,10 @@ public class RaiseSSTNode extends SSTNode {
         this.value = value;
         this.from = from;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

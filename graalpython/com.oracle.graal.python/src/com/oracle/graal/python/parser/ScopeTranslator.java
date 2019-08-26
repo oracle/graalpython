@@ -331,7 +331,7 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             return visitGenerator(ctx, ctx.comp_for(), c -> super.visitTestlist_comp(ctx));
         } else {
             return super.visitTestlist_comp(ctx);
-    }
+        }
     }
 
     @Override

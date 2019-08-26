@@ -41,9 +41,8 @@
 
 package com.oracle.graal.python.parser.sst;
 
-
 public class GetAttributeSSTNode extends SSTNode {
-    
+
     protected final SSTNode receiver;
     protected final String name;
 
@@ -52,9 +51,9 @@ public class GetAttributeSSTNode extends SSTNode {
         this.receiver = receiver;
         this.name = name;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

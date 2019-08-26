@@ -42,18 +42,25 @@
 package com.oracle.graal.python.parser.sst;
 
 public class SimpleSSTNode extends SSTNode {
-    public static enum Type {BREAK, CONTINUE,  PASS, NONE, ELLIPSIS, EMPTY };
-    
+    public static enum Type {
+        BREAK,
+        CONTINUE,
+        PASS,
+        NONE,
+        ELLIPSIS,
+        EMPTY
+    };
+
     protected final Type type;
 
     public SimpleSSTNode(Type type, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.type = type;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

@@ -67,7 +67,7 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
     public int getFlagSlot() {
         return flagSlot;
     }
-    
+
     @Override
     public Object execute(VirtualFrame frame) {
         if (!gen.isActive(frame, flagSlot)) {

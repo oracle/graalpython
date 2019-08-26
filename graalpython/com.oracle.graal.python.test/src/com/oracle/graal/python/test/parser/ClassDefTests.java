@@ -45,58 +45,57 @@ import com.oracle.graal.python.runtime.PythonParser;
 import java.io.File;
 import org.junit.Test;
 
-
 public class ClassDefTests extends ParserTestBase {
-    
+
     @Test
     public void classDef01() throws Exception {
         checkScopeAndTree("class foo():pass");
     }
-    
+
     @Test
     public void classDef02() throws Exception {
         checkScopeAndTree("class foo(object):pass");
     }
-    
+
     @Test
     public void classDef03() throws Exception {
         checkScopeAndTree();
     }
-    
+
     @Test
     public void classDef04() throws Exception {
         checkScopeAndTree();
     }
-    
+
     @Test
     public void classDef05() throws Exception {
-        checkScopeAndTree("def fn():\n"
-                + "  class DerivedClassName(modname.BaseClassName): pass");
+        checkScopeAndTree("def fn():\n" + "  class DerivedClassName(modname.BaseClassName): pass");
     }
-    
+
     @Test
     public void classDef06() throws Exception {
         checkScopeAndTree("class DerivedClassName(Base1, Base2, Base3): pass");
     }
-    
+
     @Test
     public void classDef07() throws Exception {
         checkScopeAndTree(
-                "class OrderedDict(dict):\n" +
-                "  def setup(dict_setitem = dict.__setitem__):\n" +
-                "    dict_setitem()\n" +
-                "    dict.clear()");
+                        "class OrderedDict(dict):\n" +
+                                        "  def setup(dict_setitem = dict.__setitem__):\n" +
+                                        "    dict_setitem()\n" +
+                                        "    dict.clear()");
     }
+
     @Test
     public void classDef08() throws Exception {
         checkScopeAndTree(
-                "class Test():\n" +
-                "    def fn1(format):\n" +
-                "        return (format % args)\n" +
-                "    def fn2(*args, **kwds):\n" +
-                "        return self(*args, **kwds)\n");
+                        "class Test():\n" +
+                                        "    def fn1(format):\n" +
+                                        "        return (format % args)\n" +
+                                        "    def fn2(*args, **kwds):\n" +
+                                        "        return self(*args, **kwds)\n");
     }
-    
+
     @Test
     public void classDef09() throws Exception {
         checkScopeAndTree("class Enum(metaclass=EnumMeta): pass");
@@ -105,53 +104,53 @@ public class ClassDefTests extends ParserTestBase {
     @Test
     public void classDef10() throws Exception {
         checkScopeAndTree(
-                "def test(arg):\n" +
-                "  pass\n" +
-                "class FalseRec:\n" +
-                "  def test(self, arg):\n" +
-                "    return test(arg+1)");
+                        "def test(arg):\n" +
+                                        "  pass\n" +
+                                        "class FalseRec:\n" +
+                                        "  def test(self, arg):\n" +
+                                        "    return test(arg+1)");
     }
-    
+
     @Test
     public void classDef11() throws Exception {
         checkScopeAndTree(
-                "def make_named_tuple_class(name, fields):\n" +
-                "    class named_tuple(tuple):\n" +
-                "        __name__ = name\n" +
-                "        n_sequence_fields = len(fields)\n" +
-                "        fields = fields\n" +
-                "        def __repr__(self):\n" +
-                "            sb = name\n" +
-                "            for f in fields:\n" +
-                "                pass\n" +
-                "    return named_tuple");
+                        "def make_named_tuple_class(name, fields):\n" +
+                                        "    class named_tuple(tuple):\n" +
+                                        "        __name__ = name\n" +
+                                        "        n_sequence_fields = len(fields)\n" +
+                                        "        fields = fields\n" +
+                                        "        def __repr__(self):\n" +
+                                        "            sb = name\n" +
+                                        "            for f in fields:\n" +
+                                        "                pass\n" +
+                                        "    return named_tuple");
     }
-    
+
     @Test
     public void classDef12() throws Exception {
         checkScopeAndTree(
-                "def fn():\n" +
-                "    def get_nested_class():\n" +
-                "        method_and_var = \"var\"\n" +
-                "        class Test(object):\n" +
-                "            def method_and_var(self):\n" +
-                "                return \"method\"\n" +
-                "            def test(self):\n" +
-                "                return method_and_var\n" +
-                "            def actual_global(self):\n" +
-                "                return str(\"global\")\n" +
-                "            def str(self):\n" +
-                "                return str(self)\n" +
-                "        return Test()\n" +
-                "    t = get_nested_class()\n");
+                        "def fn():\n" +
+                                        "    def get_nested_class():\n" +
+                                        "        method_and_var = \"var\"\n" +
+                                        "        class Test(object):\n" +
+                                        "            def method_and_var(self):\n" +
+                                        "                return \"method\"\n" +
+                                        "            def test(self):\n" +
+                                        "                return method_and_var\n" +
+                                        "            def actual_global(self):\n" +
+                                        "                return str(\"global\")\n" +
+                                        "            def str(self):\n" +
+                                        "                return str(self)\n" +
+                                        "        return Test()\n" +
+                                        "    t = get_nested_class()\n");
     }
-    
+
     @Test
     public void decorator01() throws Exception {
         checkScopeAndTree("@class_decorator\n" +
-                         "class foo():pass");
+                        "class foo():pass");
     }
-    
+
     @Test
     public void decorator02() throws Exception {
         checkScopeAndTree("@decorator1\n" +
@@ -162,61 +161,62 @@ public class ClassDefTests extends ParserTestBase {
     @Test
     public void classDoc01() throws Exception {
         checkTreeResult(
-                "class Test():\n" +
-                "    \"\"\"Class doc\"\"\"\n" +
-                "    def method():\n" +
-                "        \"\"\"Method doc\"\"\"");
+                        "class Test():\n" +
+                                        "    \"\"\"Class doc\"\"\"\n" +
+                                        "    def method():\n" +
+                                        "        \"\"\"Method doc\"\"\"");
     }
-    
+
     @Test
     public void localMember01() throws Exception {
         checkScopeAndTree(
-                "def fn():\n" +
-                "    a_local_var = \"a local var\"\n" +
-                "\n" +
-                "    def f():\n" +
-                "        class C(object):\n" +
-                "            a_local_var = a_local_var\n" +
-                "\n" +
-                "        return C.a_local_var");
+                        "def fn():\n" +
+                                        "    a_local_var = \"a local var\"\n" +
+                                        "\n" +
+                                        "    def f():\n" +
+                                        "        class C(object):\n" +
+                                        "            a_local_var = a_local_var\n" +
+                                        "\n" +
+                                        "        return C.a_local_var");
     }
-    
+
     @Test
     public void localMember02() throws Exception {
         checkScopeAndTree(
-                "def fn():\n" +
-                "    a_local_var_out = \"a local var\"\n" +
-                "\n" +
-                "    def f():\n" +
-                "        class C(object):\n" +
-                "            a_local_var = a_local_var_out\n" +
-                "\n" +
-                "        return C.a_local_var");
+                        "def fn():\n" +
+                                        "    a_local_var_out = \"a local var\"\n" +
+                                        "\n" +
+                                        "    def f():\n" +
+                                        "        class C(object):\n" +
+                                        "            a_local_var = a_local_var_out\n" +
+                                        "\n" +
+                                        "        return C.a_local_var");
     }
-    
+
     @Test
     public void localMember03() throws Exception {
         checkScopeAndTree(
-                "def fn():\n" +
-                "    a_local_var = \"a local var\"\n" +
-                "\n" +
-                "    def f():\n" +
-                "        class C(object):\n" +
-                "            a_local_var = a_local_var\n" +
-                "            def method01():\n" +
-                "                return a_local_var\n" +
-                "        return C.a_local_var");
+                        "def fn():\n" +
+                                        "    a_local_var = \"a local var\"\n" +
+                                        "\n" +
+                                        "    def f():\n" +
+                                        "        class C(object):\n" +
+                                        "            a_local_var = a_local_var\n" +
+                                        "            def method01():\n" +
+                                        "                return a_local_var\n" +
+                                        "        return C.a_local_var");
     }
-    
+
     @Test
     public void metaclass01() throws Exception {
         checkScopeAndTree(
-                "class A:\n" +
-                "    class B:\n" +
-                "        pass\n", PythonParser.ParserMode.Statement);
+                        "class A:\n" +
+                                        "    class B:\n" +
+                                        "        pass\n",
+                        PythonParser.ParserMode.Statement);
     }
-    
-    private void checkScopeAndTree()  throws Exception{
+
+    private void checkScopeAndTree() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);
         checkTreeFromFile(testFile, true);

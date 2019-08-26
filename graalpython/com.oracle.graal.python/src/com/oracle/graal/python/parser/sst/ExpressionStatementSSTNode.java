@@ -50,8 +50,8 @@ public class ExpressionStatementSSTNode extends SSTNode {
     }
 
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
 }

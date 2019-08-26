@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.parser;
 
-
 import com.oracle.graal.python.PythonLanguage;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -83,24 +82,20 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import org.antlr.v4.runtime.ParserRuleContext;
 
-
-
 public final class PythonNodeFactory {
-    
+
     private final PythonLanguage language;
     private final NodeFactory nodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
-    
-    
+
     public PythonNodeFactory(PythonLanguage language, Source source) {
         this.language = language;
         this.nodeFactory = NodeFactory.create(language);
         this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
         this.source = source;
     }
-    
-    
+
     private void logIndent() {
         ScopeInfo currentScope = scopeEnvironment.getCurrentScope();
         while (currentScope != null && currentScope.getParent() != null) {
@@ -108,16 +103,16 @@ public final class PythonNodeFactory {
             currentScope = currentScope.getParent();
         }
     }
-    
+
     void log(Object... args) {
-//        logIndent();
-//        StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
-//        System.out.print(stackTrace[1].getMethodName());
-//        for (Object o : args) {
-//            System.out.print(' ');
-//            print(o);
-//        }
-//        System.out.println();
+        // logIndent();
+        // StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
+        // System.out.print(stackTrace[1].getMethodName());
+        // for (Object o : args) {
+        // System.out.print(' ');
+        // print(o);
+        // }
+        // System.out.println();
     }
 
     private static void print(Object o) {
@@ -143,9 +138,7 @@ public final class PythonNodeFactory {
     public ScopeEnvironment getScopeEnvironment() {
         return scopeEnvironment;
     }
-    
-    
-    
+
     public ExpressionNode asExpression(PNode node) {
         if (node instanceof ExpressionNode.ExpressionStatementNode) {
             return ((ExpressionNode.ExpressionStatementNode) node).getExpression();
@@ -168,14 +161,14 @@ public final class PythonNodeFactory {
         scopeEnvironment.createLocal(asName == null ? name : asName);
         return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
     }
-    
+
     public SSTNode createImportFrom(String from, String[][] asNames, int startOffset, int endOffset) {
         if (asNames != null) {
             for (String[] asName : asNames) {
                 scopeEnvironment.createLocal(asName[1] == null ? asName[0] : asName[1]);
             }
         }
-    
+
         return new ImportFromSSTNode(scopeEnvironment.getCurrentScope(), from, asNames, startOffset, endOffset);
     }
 
@@ -183,9 +176,9 @@ public final class PythonNodeFactory {
         scopeEnvironment.addSeenVar(name);
         return new VarLookupSSTNode(name, start, stop);
     }
-    
-    public SSTNode createClassDefinition(String name,  ArgListBuilder baseClasses, SSTNode body, int start, int stop) {
-//        scopeEnvironment.createLocal(name);
+
+    public SSTNode createClassDefinition(String name, ArgListBuilder baseClasses, SSTNode body, int start, int stop) {
+        // scopeEnvironment.createLocal(name);
         return new ClassSSTNode(scopeEnvironment.getCurrentScope(), name, baseClasses, body, start, stop);
     }
 
@@ -210,40 +203,40 @@ public final class PythonNodeFactory {
     public WithSSTNode createWith(SSTNode expression, SSTNode target, SSTNode body, int start, int end) {
         String name;
         if (target instanceof VarLookupSSTNode) {
-            name = ((VarLookupSSTNode)target).getName();
+            name = ((VarLookupSSTNode) target).getName();
             scopeEnvironment.createLocal(name);
-        }        
+        }
         return new WithSSTNode(expression, target, body, start, end);
     }
-    
-    public SSTNode createForComprehension(boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType, int lineNumber, int level,  int startOffset, int endOffset) {
-        for (SSTNode variable: variables) {
+
+    public SSTNode createForComprehension(boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType, int lineNumber,
+                    int level, int startOffset, int endOffset) {
+        for (SSTNode variable : variables) {
             declareVar(variable);
         }
         return new ForComprehensionSSTNode(scopeEnvironment.getCurrentScope(), async, target, name, variables, iterator, conditions, resultType, lineNumber, level, startOffset, endOffset);
     }
-    
+
     public SSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int start, int stop) {
-        for(SSTNode variable : lhs) {
+        for (SSTNode variable : lhs) {
             declareVar(variable);
         }
         return new AssignmentSSTNode(lhs, rhs, start, stop);
     }
-    
+
     public SSTNode createAugAssignment(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {
         declareVar(lhs);
         return new AugAssignmentSSTNode(lhs, operation, rhs, startOffset, endOffset);
     }
-    
+
     private void declareVar(SSTNode value) {
         if (value instanceof VarLookupSSTNode) {
-            String name = ((VarLookupSSTNode)value).getName();
+            String name = ((VarLookupSSTNode) value).getName();
             if (!scopeEnvironment.isNonlocal(name)) {
                 scopeEnvironment.createLocal(
-                        scopeEnvironment.getCurrentScope().getScopeKind() != ScopeKind.Class
-                        ? name
-                        : ScopeEnvironment.CLASS_VAR_PREFIX + name
-                );
+                                scopeEnvironment.getCurrentScope().getScopeKind() != ScopeKind.Class
+                                                ? name
+                                                : ScopeEnvironment.CLASS_VAR_PREFIX + name);
             }
         } else if (value instanceof CollectionSSTNode) {
             CollectionSSTNode collection = (CollectionSSTNode) value;
@@ -251,67 +244,68 @@ public final class PythonNodeFactory {
                 declareVar(variable);
             }
         } else if (value instanceof StarSSTNode) {
-            declareVar(((StarSSTNode)value).getValue());
+            declareVar(((StarSSTNode) value).getValue());
         }
     }
-    
+
     public ForSSTNode createForSSTNode(SSTNode[] targets, SSTNode iterator, SSTNode body, boolean containsContinue, int startOffset, int endOffset) {
-        for(SSTNode target : targets) {
+        for (SSTNode target : targets) {
             if (target instanceof VarLookupSSTNode) {
-                scopeEnvironment.createLocal(((VarLookupSSTNode)target).getName());
+                scopeEnvironment.createLocal(((VarLookupSSTNode) target).getName());
             }
         }
         return new ForSSTNode(targets, iterator, body, containsContinue, startOffset, endOffset);
     }
-    
+
     public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
         scopeEnvironment.setToGeneratorScope();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
     }
-    
+
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Source source, Frame currentFrame) {
         Node result;
         scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         scopeEnvironment.setFreeVarsInRootScope(currentFrame);
         FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source);
-        ExpressionNode body =  mode == PythonParser.ParserMode.Eval
-                ? (ExpressionNode)parserSSTResult.accept(factoryVisitor)
-                : parserSSTResult instanceof BlockSSTNode 
-                    ? factoryVisitor.asExpression((BlockSSTNode)parserSSTResult)
-                    : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
+        ExpressionNode body = mode == PythonParser.ParserMode.Eval
+                        ? (ExpressionNode) parserSSTResult.accept(factoryVisitor)
+                        : parserSSTResult instanceof BlockSSTNode
+                                        ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
+                                        : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
         FrameDescriptor fd = currentFrame == null ? null : currentFrame.getFrameDescriptor();
         switch (mode) {
             case Eval:
                 scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
                 StatementNode evalReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(body, scopeEnvironment.getReturnSlot()));
                 ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
-                FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(), returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
+                FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(), returnTarget,
+                                scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
                 result = functionRoot;
                 break;
             case File:
                 result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor());
-                ((ModuleRootNode)result).assignSourceSection(createSourceSection(0, source.getLength()));
+                ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                 break;
             case InlineEvaluation:
                 result = body;
                 break;
             case InteractiveStatement:
                 result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd);
-                ((ModuleRootNode)result).assignSourceSection(createSourceSection(0, source.getLength()));
+                ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                 break;
             case Statement:
                 ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
                 printExpression.assignSourceSection(body.getSourceSection());
                 result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor());
-                ((ModuleRootNode)result).assignSourceSection(createSourceSection(0, source.getLength()));
+                ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                 break;
             default:
                 throw new RuntimeException("unexpected mode: " + mode);
         }
         return result;
     }
-           
-    public String getModuleDoc (ExpressionNode from) {
+
+    public String getModuleDoc(ExpressionNode from) {
         StringLiteralNode sln = StringUtils.extractDoc(from);
         String doc = null;
         if (sln != null) {
@@ -319,17 +313,17 @@ public final class PythonNodeFactory {
         }
         return doc;
     }
-    
+
     public ScopeInfo createScope(ParserRuleContext ctx, ScopeKind kind) {
         return createScope(ctx, kind, null);
     }
-    
+
     public ScopeInfo createScope(String name, ScopeKind kind) {
         log(kind, null);
         if (kind == ScopeKind.Function && !name.equals("lambda")) {
             scopeEnvironment.createLocal(scopeEnvironment.getCurrentScope().getScopeKind() == ScopeKind.Class
-                    ? ScopeEnvironment.CLASS_VAR_PREFIX + name
-                    : name);
+                            ? ScopeEnvironment.CLASS_VAR_PREFIX + name
+                            : name);
         }
         return scopeEnvironment.pushScope(name, kind, null);
     }
@@ -341,13 +335,13 @@ public final class PythonNodeFactory {
 
     public void leaveScope() {
         log();
-        scopeEnvironment.popScope();        
+        scopeEnvironment.popScope();
     }
-    
+
     public ScopeInfo getCurrentScope() {
         return scopeEnvironment.getCurrentScope();
     }
-    
+
     public boolean createGeneratorScope(SSTNode target, SSTNode name) {
         log(target, name);
         createScope(name.toString(), ScopeKind.Generator);
@@ -360,7 +354,7 @@ public final class PythonNodeFactory {
             leaveScope();
         }
     }
-    
+
     private SourceSection createSourceSection(int start, int stop) {
         if (source.getLength() > start && source.getLength() >= stop) {
             return source.createSection(start, stop - start);
@@ -368,36 +362,36 @@ public final class PythonNodeFactory {
             return source.createUnavailableSection();
         }
     }
-    
-    
-//    public static class DocExtractor {
-//        
-//        
-//        public StringLiteralNode extract(StatementNode node) {
-//            if (node instanceof ExpressionNode.ExpressionStatementNode) {
-//                return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
-//            } else if (node instanceof BaseBlockNode) {
-//                StatementNode[] statements = ((BaseBlockNode)node).getStatements();
-//                if (statements != null && statements.length > 0) {
-//                    return extract(statements[0]);
-//                }
-//                return null;
-//            }
-//            return null;
-//        }
-//        
-//        public StringLiteralNode extract(ExpressionNode node) {
-//            if (node instanceof StringLiteralNode) {
-//                return (StringLiteralNode) node;
-//            } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
-//                return extract(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
-//            } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
-//                StatementNode[] sideEffects = ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
-//                if (sideEffects != null && sideEffects.length > 0) {
-//                    return extract(sideEffects[0]);
-//                }
-//            }
-//            return null;
-//        }
-//    }
+
+    // public static class DocExtractor {
+    //
+    //
+    // public StringLiteralNode extract(StatementNode node) {
+    // if (node instanceof ExpressionNode.ExpressionStatementNode) {
+    // return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
+    // } else if (node instanceof BaseBlockNode) {
+    // StatementNode[] statements = ((BaseBlockNode)node).getStatements();
+    // if (statements != null && statements.length > 0) {
+    // return extract(statements[0]);
+    // }
+    // return null;
+    // }
+    // return null;
+    // }
+    //
+    // public StringLiteralNode extract(ExpressionNode node) {
+    // if (node instanceof StringLiteralNode) {
+    // return (StringLiteralNode) node;
+    // } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
+    // return extract(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
+    // } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
+    // StatementNode[] sideEffects =
+    // ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
+    // if (sideEffects != null && sideEffects.length > 0) {
+    // return extract(sideEffects[0]);
+    // }
+    // }
+    // return null;
+    // }
+    // }
 }

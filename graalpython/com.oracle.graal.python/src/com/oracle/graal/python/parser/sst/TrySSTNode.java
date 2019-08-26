@@ -42,7 +42,7 @@
 package com.oracle.graal.python.parser.sst;
 
 public class TrySSTNode extends SSTNode {
-    protected final SSTNode body; 
+    protected final SSTNode body;
     protected final ExceptSSTNode[] exceptNodes;
     protected final SSTNode elseStatement;
     protected final SSTNode finallyStatement;
@@ -54,9 +54,9 @@ public class TrySSTNode extends SSTNode {
         this.elseStatement = elseStatement;
         this.finallyStatement = finallyStatement;
     }
-    
+
     @Override
-    public <T>T accept(SSTreeVisitor<T> visitor) {
+    public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

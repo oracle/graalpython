@@ -171,11 +171,11 @@ public abstract class ExpressionNode extends PNode {
         public boolean hasSideEffectAsAnExpression() {
             return true;
         }
-        
+
         public ExpressionNode getExpression() {
             return node;
         }
-        
+
         public StatementNode getSideEffect() {
             return sideEffect;
         }
@@ -208,7 +208,7 @@ public abstract class ExpressionNode extends PNode {
         public boolean hasSideEffectAsAnExpression() {
             return true;
         }
-        
+
         public StatementNode[] getSideEffects() {
             return this.sideEffects;
         }
@@ -225,7 +225,7 @@ public abstract class ExpressionNode extends PNode {
             return new ExpressionWithSideEffect(this, sideEffect);
         }
     }
-    
+
     public final ExpressionNode withSideEffect(StatementNode[] sideEffects) {
         return new ExpressionWithSideEffects(this, sideEffects);
     }
