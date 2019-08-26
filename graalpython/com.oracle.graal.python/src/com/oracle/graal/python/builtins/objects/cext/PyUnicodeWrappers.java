@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
@@ -67,8 +68,8 @@ public abstract class PyUnicodeWrappers {
             super(delegate);
         }
 
-        public PString getPString() {
-            return (PString) getDelegate();
+        public PString getPString(PythonNativeWrapperLibrary lib) {
+            return (PString) lib.getDelegate(this);
         }
 
         @ExportMessage
@@ -85,10 +86,11 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         public void toNative(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToPyObjectNode toPyObjectNode,
                         @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
-            if (!isNative()) {
+            if (!lib.isNative(this)) {
                 setNativePointer(toPyObjectNode.execute(this));
             }
         }
@@ -148,6 +150,7 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         protected Object readMember(String member,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached(value = "createNativeOrder()", uncached = "getUncachedNativeOrder()") UnicodeAsWideCharNode asWideCharNode,
                         @Cached CExtNodes.SizeofWCharNode sizeofWcharNode,
                         @Exclusive @Cached StringLenNode stringLenNode) throws UnknownIdentifierException {
@@ -157,7 +160,7 @@ public abstract class PyUnicodeWrappers {
                 case NativeMemberNames.UNICODE_DATA_UCS2:
                 case NativeMemberNames.UNICODE_DATA_UCS4:
                     int elementSize = (int) sizeofWcharNode.execute();
-                    PString s = this.getPString();
+                    PString s = getPString(lib);
                     return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, stringLenNode.execute(s)), elementSize);
             }
             throw UnknownIdentifierException.create(member);
@@ -207,10 +210,11 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         protected Object readMember(String member,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
             // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
             int value = 0b000000000000000000000000_1_0_0_000_00;
-            if (onlyAscii(this.getPString().getValue())) {
+            if (onlyAscii(getPString(lib).getValue())) {
                 value |= 0b1_0_000_00;
             }
             value |= ((int) sizeofWcharNode.execute() << 2) & 0b11100;

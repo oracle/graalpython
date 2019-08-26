@@ -114,7 +114,10 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-instantiation': ITER_10 + ['50000000'],
     'c_arith-binop': ITER_25 + ['5'],
     'c_arith_binop_2': ITER_25 + ['50'],
-    'c-call-classmethod': ITER_15 + ['50000000']
+    'c-call-classmethod': ITER_15 + ['50000000'],
+    'c-issubtype-polymorphic-forced-to-native': ITER_15 + ['50000000'],
+    'c-issubtype-polymorphic': ITER_15 + ['50000000'],
+    'c-issubtype-monorphic': ITER_15 + ['50000000'],
 }
 
 

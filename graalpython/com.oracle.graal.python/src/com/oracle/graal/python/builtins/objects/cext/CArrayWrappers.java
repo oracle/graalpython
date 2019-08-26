@@ -76,8 +76,9 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         public long asPointer(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-            Object nativePointer = this.getNativePointer();
+            Object nativePointer = lib.getNativePointer(this);
             if (nativePointer instanceof Long) {
                 return (long) nativePointer;
             }
@@ -86,11 +87,12 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         public void toNative(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
-            if (!isNative()) {
-                setNativePointer(asCharPointerNode.execute(getDelegate()));
+            if (!lib.isNative(this)) {
+                setNativePointer(asCharPointerNode.execute(lib.getDelegate(this)));
             }
         }
     }
@@ -109,13 +111,10 @@ public abstract class CArrayWrappers {
             super(delegate);
         }
 
-        public String getString() {
-            return (String) getDelegate();
-        }
-
         @ExportMessage
-        final long getArraySize() {
-            return this.getString().length();
+        final long getArraySize(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return ((String) lib.getDelegate(this)).length();
         }
 
         @ExportMessage
@@ -125,10 +124,11 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final Object readArrayElement(long index) throws InvalidArrayIndexException {
+        final Object readArrayElement(long index,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
             try {
                 int idx = PInt.intValueExact(index);
-                String s = getString();
+                String s = (String) lib.getDelegate(this);
                 if (idx >= 0 && idx < s.length()) {
                     return s.charAt(idx);
                 } else if (idx == s.length()) {
@@ -141,8 +141,9 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final boolean isArrayElementReadable(long identifier) {
-            return 0 <= identifier && identifier < getArraySize();
+        final boolean isArrayElementReadable(long identifier,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return 0 <= identifier && identifier < getArraySize(lib);
         }
 
         @ExportMessage
@@ -153,8 +154,9 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         protected Object getNativeType(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
-            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, getString().length());
+            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, ((String) lib.getDelegate(this)).length());
         }
     }
 
@@ -170,13 +172,13 @@ public abstract class CArrayWrappers {
             super(delegate);
         }
 
-        public byte[] getByteArray() {
-            return (byte[]) getDelegate();
+        public final byte[] getByteArray(PythonNativeWrapperLibrary lib) {
+            return ((byte[]) lib.getDelegate(this));
         }
 
         @ExportMessage
-        final long getArraySize() {
-            return this.getByteArray().length;
+        final long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return getByteArray(lib).length;
         }
 
         @ExportMessage
@@ -186,10 +188,11 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        Object readArrayElement(long index) throws InvalidArrayIndexException {
+        Object readArrayElement(long index,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
             try {
                 int idx = PInt.intValueExact(index);
-                byte[] arr = getByteArray();
+                byte[] arr = getByteArray(lib);
                 if (idx >= 0 && idx < arr.length) {
                     return arr[idx];
                 } else if (idx == arr.length) {
@@ -202,8 +205,9 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final boolean isArrayElementReadable(long identifier) {
-            return 0 <= identifier && identifier < getArraySize();
+        final boolean isArrayElementReadable(long identifier,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return 0 <= identifier && identifier < getArraySize(lib);
         }
 
         @ExportMessage

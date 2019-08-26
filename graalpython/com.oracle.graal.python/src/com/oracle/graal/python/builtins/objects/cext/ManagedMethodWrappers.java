@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
@@ -120,6 +121,7 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
@@ -139,7 +141,7 @@ public abstract class ManagedMethodWrappers {
             PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
 
             // execute
-            return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
+            return toSulongNode.execute(callNode.execute(null, lib.getDelegate(this), pArgs, kwArgsArray));
         }
     }
 
@@ -158,6 +160,7 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode) throws ArityException, UnsupportedMessageException {
@@ -167,7 +170,7 @@ public abstract class ManagedMethodWrappers {
 
             // convert args
             Object varArgs = toJavaNode.execute(arguments[0]);
-            return toSulongNode.execute(executeNode.execute(getDelegate(), new Object[]{varArgs}));
+            return toSulongNode.execute(executeNode.execute(lib.getDelegate(this), new Object[]{varArgs}));
         }
     }
 

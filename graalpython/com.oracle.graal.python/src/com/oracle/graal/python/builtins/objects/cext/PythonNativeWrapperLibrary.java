@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,26 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.library.GenerateLibrary;
+import com.oracle.truffle.api.library.Library;
+import com.oracle.truffle.api.library.LibraryFactory;
 
-/**
- * Used to wrap {@link PythonClass} just for the time when a natively defined type is processed in
- * {@code PyType_Ready} and we need to pass the mirroring managed class to native to marry these two
- * objects.
- */
-public class PythonClassInitNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
+@GenerateLibrary
+public abstract class PythonNativeWrapperLibrary extends Library {
+    public abstract Object getDelegate(PythonNativeWrapper wrapper);
 
-    public PythonClassInitNativeWrapper(PythonClass object) {
-        super(object);
+    public abstract Object getNativePointer(PythonNativeWrapper wrapper);
+
+    public abstract boolean isNative(PythonNativeWrapper wrapper);
+
+    static final LibraryFactory<PythonNativeWrapperLibrary> FACTORY = LibraryFactory.resolve(PythonNativeWrapperLibrary.class);
+
+    public static LibraryFactory<PythonNativeWrapperLibrary> getFactory() {
+        return FACTORY;
     }
 
-    @Override
-    @TruffleBoundary
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return String.format("PythonClassNativeInitWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
+    public static PythonNativeWrapperLibrary getUncached() {
+        return FACTORY.getUncached();
     }
 }
