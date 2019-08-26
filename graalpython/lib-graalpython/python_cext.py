@@ -186,6 +186,15 @@ def PyDict_Contains(dictObj, key):
     return key in dictObj
 
 
+@may_raise(-1)
+def PyDict_Merge(a, b, override):
+    if override:
+        a.update(b)
+    else:
+        for k in b:
+            if not k in a:
+                a[k] = b[k]
+    return 0
 
 ##################### SET, FROZENSET
 
