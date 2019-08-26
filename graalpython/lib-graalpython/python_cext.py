@@ -1245,6 +1245,21 @@ def _PyErr_Warn(message, category, stack_level, source):
     return None
 
 
+@may_raise
+def PyException_SetCause(exc, cause):
+    exc.__cause__ = cause
+
+
+@may_raise
+def PyException_GetContext(exc):
+    return exc.__context__
+
+
+@may_raise
+def PyException_SetContext(exc, context):
+    exc.__context__ = context
+
+
 ## FILE
 
 @may_raise(-1)

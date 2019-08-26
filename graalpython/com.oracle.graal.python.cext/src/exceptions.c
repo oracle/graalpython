@@ -139,3 +139,18 @@ int PyException_SetTraceback(PyObject *self, PyObject *tb) {
         return 0;
     }
 }
+
+UPCALL_ID(PyException_SetCause);
+void PyException_SetCause(PyObject *self, PyObject *cause) {
+	UPCALL_CEXT_VOID(_jls_PyException_SetCause, native_to_java(self), native_to_java(cause));
+}
+
+UPCALL_ID(PyException_GetContext);
+PyObject * PyException_GetContext(PyObject *self) {
+    return UPCALL_CEXT_O(_jls_PyException_GetContext, native_to_java(self));
+}
+
+UPCALL_ID(PyException_SetContext);
+void PyException_SetContext(PyObject *self, PyObject *context) {
+    UPCALL_CEXT_VOID(_jls_PyException_SetContext, native_to_java(self), native_to_java(context));
+}
