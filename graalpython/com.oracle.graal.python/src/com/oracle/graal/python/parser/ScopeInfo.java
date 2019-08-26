@@ -37,7 +37,6 @@ import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultEx
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
-import java.util.HashMap;
 
 public final class ScopeInfo {
 
@@ -272,14 +271,14 @@ public final class ScopeInfo {
 
     public void createFrameSlotsForCellAndFreeVars() {
         if (cellVars != null) {
-            for (String identifier : cellVars) {
+            cellVars.forEach((identifier) -> {
                 createSlotIfNotPresent(identifier);
-            }
+            });
         }
         if (freeVars != null) {
-            for (String identifier : freeVars) {
+            freeVars.forEach((identifier) -> {
                 createSlotIfNotPresent(identifier);
-            }
+            });
         }
     }
 
@@ -303,10 +302,10 @@ public final class ScopeInfo {
         sb.append("Scope: ").append(scopeId).append("\n");
         indent(sb, indent + 1);
         sb.append("Kind: ").append(scopeKind).append("\n");
-        Set<String> names = new HashSet();
-        for (Object id : frameDescriptor.getIdentifiers()) {
+        Set<String> names = new HashSet<>();
+        frameDescriptor.getIdentifiers().forEach((id) -> {
             names.add((String) id);
-        }
+        });
         indent(sb, indent + 1);
         sb.append("FrameDescriptor: ");
         printSet(sb, names);
