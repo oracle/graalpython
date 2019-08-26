@@ -18,4 +18,6 @@ ModuleRootNode Name: <module 'fromImport18'> SourceSection: [0,20]`from .bogus i
             EmptyNode SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattr__
   CalleeContext SourceSection: None

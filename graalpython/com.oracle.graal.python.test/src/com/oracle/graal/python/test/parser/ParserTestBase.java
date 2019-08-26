@@ -48,9 +48,7 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -78,6 +76,8 @@ public class ParserTestBase {
      * replaced with the lines from the new tree. 
      */
     protected boolean correctIssues = true;
+    
+    protected int printOnlyDiffIfLenIsBigger = 1000;
     
     @Rule public TestName name = new TestName();
 
@@ -564,16 +564,21 @@ public class ParserTestBase {
     
     private String getContentDifferences(String expected, String actual) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Expected content is:").
-           append(lineSeparator(2)).
-           append(expected).
-           append(lineSeparator(2)).
-           append("but actual is:").
-           append(lineSeparator(2)).
-           append(actual).
-           append(lineSeparator(2)).
-           append("It differs in the following things:").
-           append(lineSeparator(2));
+        if (expected.length() < printOnlyDiffIfLenIsBigger && actual.length() < printOnlyDiffIfLenIsBigger) {
+            sb.append("Expected content is:").
+               append(lineSeparator(2)).
+               append(expected).
+               append(lineSeparator(2)).
+               append("but actual is:").
+               append(lineSeparator(2)).
+               append(actual).
+               append(lineSeparator(2)).
+               append("It differs in the following things:").
+               append(lineSeparator(2));
+        } else {
+            sb.append("Expected and actual differ in the following things:").
+               append(lineSeparator(2));
+        }
 
         List<String> expectedLines = Arrays.asList(expected.split("\n"));
         List<String> actualLines = Arrays.asList(actual.split("\n"));

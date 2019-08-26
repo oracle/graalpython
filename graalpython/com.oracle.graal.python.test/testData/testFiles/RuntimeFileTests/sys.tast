@@ -47,6 +47,8 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                         EmptyNode SourceSection: None
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __getattribute__
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __getattr__
                     WriteLocalVariableNodeGen SourceSection: [2103,2230]`version_info_type = ...`
                       Identifier: version_info_type
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -162,6 +164,8 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                         EmptyNode SourceSection: None
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __getattribute__
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __getattr__
                     WriteLocalVariableNodeGen SourceSection: [2616,2674]`get_set_descriptor =...`
                       Identifier: get_set_descriptor
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -469,6 +473,8 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                         EmptyNode SourceSection: None
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __getattribute__
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __getattr__
                     FrameReturnNode SourceSection: [3399,3669]`return make_named_tu...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -551,6 +557,8 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                         EmptyNode SourceSection: None
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __getattribute__
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __getattr__
                     FrameReturnNode SourceSection: [3830,4059]`return make_named_tu...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>

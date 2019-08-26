@@ -23,6 +23,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       TryFinallyNode SourceSection: [118,226]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [127,163]`from _collections im...`
@@ -34,6 +36,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               EmptyNode SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            LookupAndCallBinaryNodeGen SourceSection: None
+              Op: __getattr__
           ExceptNode SourceSection: None
             ImportFromNode SourceSection: [188,223]`from collections imp...`
               Importee: collections
@@ -44,6 +48,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 EmptyNode SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattr__
             ReadNameNodeGen SourceSection: [171,182]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None

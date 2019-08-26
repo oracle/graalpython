@@ -1018,6 +1018,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       WriteNameNodeGen SourceSection: [3632,4211]`@__builtin__↵def var...`
         Identifier: vars
         PythonCallNodeGen SourceSection: [3632,3644]`@__builtin__`

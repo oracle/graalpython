@@ -29,6 +29,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       ImportFromNode SourceSection: [170,199]`from _thread import ...`
         Importee: _thread
         Level: 0
@@ -38,6 +40,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       WriteNameNodeGen SourceSection: [201,1178]`def recursive_repr(f...`
         Identifier: recursive_repr
         FunctionDefinitionNode Name: recursive_repr SourceSection: None

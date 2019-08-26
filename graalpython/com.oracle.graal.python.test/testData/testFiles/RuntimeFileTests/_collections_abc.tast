@@ -20,6 +20,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       WriteNameNodeGen SourceSection: [262,265]`sys`
         Identifier: sys
         ImportExpression SourceSection: None

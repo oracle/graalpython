@@ -2377,6 +2377,8 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                               EmptyNode SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattr__
                                           IfNode SourceSection: [14036,14109]`if isinstance(flags,...`
                                             YesNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [14039,14067]`isinstance(flags, Re...`

@@ -49,6 +49,8 @@ ModuleRootNode Name: <module 'fromImportInFn04'> SourceSection: [0,66]`def fn():
                         EmptyNode SourceSection: None
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __getattribute__
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __getattr__
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

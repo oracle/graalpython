@@ -24,6 +24,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       WriteNameNodeGen SourceSection: [515,1619]`class error(Exceptio...`
         Identifier: error
         ExpressionWithSideEffects SourceSection: None

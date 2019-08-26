@@ -34,6 +34,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               EmptyNode SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            LookupAndCallBinaryNodeGen SourceSection: None
+              Op: __getattr__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [712,716]`pass`
               EmptyNode SourceSection: [712,716]`pass`
@@ -50,6 +52,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       ImportFromNode SourceSection: [749,783]`from collections imp...`
         Importee: collections
         Level: 0
@@ -59,6 +63,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       ImportFromNode SourceSection: [841,875]`from reprlib import ...`
         Importee: reprlib
         Level: 0
@@ -68,6 +74,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       ImportFromNode SourceSection: [876,901]`from _thread import ...`
         Importee: _thread
         Level: 0
@@ -77,6 +85,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
           EmptyNode SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __getattr__
       WriteNameNodeGen SourceSection: [1222,1339]`WRAPPER_ASSIGNMENTS ...`
         Identifier: WRAPPER_ASSIGNMENTS
         TupleLiteralNode SourceSection: [1244,1339]`('__module__', '__na...`
@@ -2470,6 +2480,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               EmptyNode SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            LookupAndCallBinaryNodeGen SourceSection: None
+              Op: __getattr__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [8792,8796]`pass`
               EmptyNode SourceSection: [8792,8796]`pass`
@@ -3767,6 +3779,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               EmptyNode SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            LookupAndCallBinaryNodeGen SourceSection: None
+              Op: __getattr__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [11859,11863]`pass`
               EmptyNode SourceSection: [11859,11863]`pass`
@@ -7048,6 +7062,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               EmptyNode SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
+            LookupAndCallBinaryNodeGen SourceSection: None
+              Op: __getattr__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [23279,23283]`pass`
               EmptyNode SourceSection: [23279,23283]`pass`
@@ -9422,6 +9438,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               EmptyNode SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattr__
                                           DestructuringAssignmentNodeGen SourceSection: [31472,31527]`argname, cls = next(...`
                                             PythonCallNodeGen SourceSection: [31487,31527]`next(iter(get_type_h...`
                                               CachedCallNodeGen SourceSection: None
