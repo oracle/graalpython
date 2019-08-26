@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -70,8 +71,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object defaultValue(@SuppressWarnings("unused") PNone noValue,
+                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(PNone.NO_VALUE); // NULL
+            return toSulongNode.execute(getNativeNullNode.execute()); // NULL
         }
 
         @Specialization

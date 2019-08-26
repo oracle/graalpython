@@ -93,6 +93,10 @@ def python(args):
     """run a Python program or shell"""
     if '--python.WithJavaStacktrace' not in args:
         args.insert(0, '--python.WithJavaStacktrace')
+
+    if not any([x.startswith("--python.CAPI") for x in args]):
+        args.insert(1, mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"))
+
     do_run_python(args)
 
 
@@ -128,6 +132,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
 
     graalpython_args.insert(0, '--experimental-options=true')
+    graalpython_args.insert(1, '-ensure-capi')
 
     vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk)
 
@@ -151,6 +156,10 @@ def punittest(args):
     args += ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
              "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
              "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
+
+    # ensure that C API was built (we may need on-demand compilation)
+    do_run_python(["-m", "build_capi"], nonZeroIsFatal=True)
+
     mx_unittest.unittest(args)
 
 
@@ -306,9 +315,15 @@ def _graalpytest_root():
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None):
     args = args or []
-    args = ["--experimental-options=true", "--python.CatchAllExceptions=true"] + args
+    args = ["--experimental-options=true", 
+            "--python.CatchAllExceptions=true", 
+            mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"),
+            ] + args
     exclude = exclude or []
     paths = paths or [_graalpytest_root()]
+
+    # ensure that C API was built (we may need on-demand compilation)
+    mx.run([python_binary] + args + ["-m", "build_capi"], nonZeroIsFatal=True)
 
     # list of excluded tests
     if aot_compatible:

@@ -21,7 +21,7 @@ wrapper scripts and makes the implementation usable from shell as standard Pytho
 execute the following command in the project directory:
 
 ```
-mx graalpython -m venv <dir-to-venv>
+mx python -m venv <dir-to-venv>
 ```
 
 To activate the environment in your shell session call:
@@ -31,6 +31,41 @@ source <dir-to-venv>/bin/activate
 ```
 
 In the venv multiple executables are available, like `python`, `python3` and `graalpython`. 
+
+### Using modules with C extensions
+
+This Python implementation is able to load and run modules with C extensions.
+Supporting C extensions is one of the most difficult features for any Python 
+implementation since it requires to be compatible to CPython's C API.
+
+However, GraalVM's Python implementation is capable of executing C extensions and
+there is also no optimization boundary.
+
+In order to be able to run C extensions, a user must first build the C API
+runtime library. It is recommended to build the C API in any case because
+it will only be used if necessary. 
+The recommended way to do so is to create a venv (see [Create a virtual environment](#create-a-virtual-environment))
+and run everything within the venv.
+
+If you don't want to create and use a venv, the C API can be built using
+following command:
+```
+mx python -m build_capi
+```
+
+You can test if everything was built correctly by, for example, using 
+a memoryvew object:
+```
+(your-venv) graalpython -c "print(repr(memoryview(b'')))"
+```
+
+in the venv or
+
+```
+mx python -c "print(repr(memoryview(b'')))"
+```
+
+without a venv.
 
 ### Installing packages
 

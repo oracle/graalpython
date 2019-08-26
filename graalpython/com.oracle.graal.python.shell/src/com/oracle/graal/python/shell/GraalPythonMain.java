@@ -71,13 +71,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean quietFlag = false;
     private boolean noUserSite = false;
     private boolean noSite = false;
+    private boolean ensureCapi = false;
     private boolean stdinIsInteractive = System.console() != null;
     private boolean runLLI = false;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
     private VersionAction versionAction = VersionAction.None;
-    private String sulongLibraryPath = null;
     private List<String> givenArguments;
+    private List<String> relaunchArgs;
     private boolean wantsExperimental = false;
 
     @Override
@@ -151,25 +152,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "--show-version":
                     versionAction = VersionAction.PrintAndContinue;
                     break;
-                case "-CC":
+                case "-ensure-capi":
                     if (wantsExperimental) {
-                        GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
-                        System.exit(0);
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
-                case "-LD":
-                    if (wantsExperimental) {
-                        GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
-                        System.exit(0);
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
-                case "-LLI":
-                    if (wantsExperimental) {
-                        runLLI = true;
+                        ensureCapi = true;
                     } else {
                         unrecognized.add(arg);
                     }
@@ -234,6 +219,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     // this is the default Truffle experimental option flag. We also use it for
                     // our custom launcher options
                     wantsExperimental = true;
+                    addRelaunchArg(arg);
                     unrecognized.add(arg);
                     break;
                 default:
@@ -249,6 +235,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             arguments.add(i + 1 + j, "-" + optionChar);
                         }
                     } else {
+                        if (arg.startsWith("--llvm.")) {
+                            addRelaunchArg(arg);
+                        } else if (arg.startsWith("--python.CAPI")) {
+                            addRelaunchArg(arg);
+                        }
                         // possibly a polyglot argument
                         unrecognized.add(arg);
                     }
@@ -275,6 +266,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         return unrecognized;
     }
 
+    private void addRelaunchArg(String arg) {
+        if (relaunchArgs == null) {
+            relaunchArgs = new ArrayList<>();
+        }
+        relaunchArgs.add(arg);
+    }
+
     private static void printShortHelp() {
         print("usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
                         "Try `python -h' for more information.");
@@ -284,9 +282,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.out.println(string);
     }
 
-    private static String[] getExecutableList() {
+    private String[] getExecutableList() {
         if (ImageInfo.inImageCode()) {
-            return new String[]{getExecutable()};
+            ArrayList<String> exec_list = new ArrayList<>();
+            exec_list.add(ProcessProperties.getExecutableName());
+            if (relaunchArgs != null) {
+                exec_list.addAll(relaunchArgs);
+            }
+            return exec_list.toArray(new String[exec_list.size()]);
         } else {
             StringBuilder sb = new StringBuilder();
             ArrayList<String> exec_list = new ArrayList<>();
@@ -301,14 +304,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             exec_list.add("-classpath");
             exec_list.add(System.getProperty("java.class.path"));
             exec_list.add(GraalPythonMain.class.getName());
+            if (relaunchArgs != null) {
+                exec_list.addAll(relaunchArgs);
+            }
             return exec_list.toArray(new String[exec_list.size()]);
         }
     }
 
-    private static String getExecutable() {
-        if (ImageInfo.inImageRuntimeCode()) {
-            return ProcessProperties.getExecutableName();
-        } else if (ImageInfo.inImageBuildtimeCode()) {
+    private String getExecutable() {
+        if (ImageInfo.inImageBuildtimeCode()) {
             return "";
         } else {
             String[] executableList = getExecutableList();
@@ -371,11 +375,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
         contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
 
-        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
-        if (sulongLibraryPath != null) {
-            contextBuilder.option("llvm.libraryPath", sulongLibraryPath);
-        }
-
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
         contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
@@ -395,6 +394,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
                 }
+            }
+            if (ensureCapi) {
+                evalInternal(context, "import build_capi; build_capi.ensure_capi([" + (quietFlag ? "'-q'" : "") + "])\n");
             }
             if (!noSite) {
                 evalInternal(context, "import site\n");

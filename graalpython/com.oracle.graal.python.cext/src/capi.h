@@ -42,8 +42,10 @@
 #define CAPI_H
 
 #define MUST_INLINE __attribute__((always_inline)) inline
+#define NO_INLINE __attribute__((noinline))
 
-#include "polyglot.h"
+#include <polyglot.h>
+
 #include "Python.h"
 
 #define SRC_CS "utf-8"
@@ -107,11 +109,11 @@ double polyglot_ensure_double(void *obj) {
 
 /* upcall functions for calling into Python */
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
-extern uint64_t(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
+extern void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 extern double(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
 extern PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
-extern uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
+extern void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 extern double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
@@ -328,7 +330,7 @@ extern PyObject* wrapped_null;
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
 /* STR */
-PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
+__attribute__((always_inline)) PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc);
 
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
@@ -352,13 +354,14 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
  * together, the managed array with arguments will be escape analyzed away.
  */
 #define CallWithPolyglotArgs(result, last, off, function, ...)          \
+    va_list __va_list;                                                  \
     int __poly_argc = polyglot_get_arg_count();                         \
     int __poly_args_s = sizeof(void*) * (__poly_argc - off);            \
     void **__poly_args = truffle_managed_malloc(__poly_args_s);         \
     for (int i = off; i < __poly_argc; i++) {                           \
         __poly_args[i - off] = polyglot_get_arg(i);                     \
     }                                                                   \
-    result = function(__VA_ARGS__, NULL, __poly_args, 0)
+    result = function(__VA_ARGS__, __va_list, __poly_args, 0)
 #else
 /*
  * (tfel): Just skip the optimization with using a managed malloc and use

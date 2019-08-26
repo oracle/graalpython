@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -149,8 +150,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private String concat(Object moduleName, Object qualName) {
-            if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
+        private static String concat(Object moduleName, Object qualName) {
+            if (moduleName != PNone.NO_VALUE && !moduleName.equals(BuiltinNames.BUILTINS)) {
                 return String.format("<class '%s.%s'>", moduleName, qualName);
             }
             return String.format("<class '%s'>", qualName);
@@ -755,7 +756,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         Object getModuleType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
             String module = cls.getPublicInModule();
-            return module == null ? "builtins" : module;
+            return module == null ? BuiltinNames.BUILTINS : module;
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -794,16 +795,12 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object getModuleName(String fqname) {
+        private static Object getModuleName(String fqname) {
             int firstDotIdx = fqname.indexOf('.');
             if (firstDotIdx != -1) {
                 return fqname.substring(0, firstDotIdx);
             }
-            return getBuiltinsName();
-        }
-
-        protected String getBuiltinsName() {
-            return getCore().getBuiltins().getModuleName();
+            return BuiltinNames.BUILTINS;
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,11 @@ int PyDict_SetItem(PyObject* d, PyObject* k, PyObject* v) {
     return UPCALL_CEXT_I(_jls_PyDict_SetItem, native_to_java(d), native_to_java(k), native_to_java(v));
 }
 
+UPCALL_ID(PyDict_SetItem_KnownHash);
+int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t hash) {
+    return UPCALL_CEXT_I(_jls_PyDict_SetItem_KnownHash, native_to_java(d), native_to_java(k), native_to_java(v), hash);
+}
+
 UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
     return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
@@ -67,8 +72,12 @@ int PyDict_DelItem(PyObject *d, PyObject *k) {
 }
 
 
-UPCALL_ID(PyDict_Next);
 int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
+	return _PyDict_Next(d, ppos, pkey, pvalue, NULL);
+}
+
+UPCALL_ID(PyDict_Next);
+int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue, Py_hash_t *phash) {
     PyObject *tresult = UPCALL_CEXT_O(_jls_PyDict_Next, native_to_java(d), *ppos);
     if (tresult == NULL) {
     	if(pkey != NULL) {
@@ -86,7 +95,11 @@ int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalu
     if (pvalue != NULL) {
     	*pvalue = PyTuple_GetItem(tresult, 1);
     }
+    if (phash != NULL) {
+    	*phash = PyTuple_GetItem(tresult, 2);
+    }
     return 1;
+
 }
 
 UPCALL_ID(PyDict_Size);
@@ -174,4 +187,8 @@ PyObject** _PyObject_GetDictPtr(PyObject* obj) {
         dictoffset += (long)size;
     }
     return (PyObject **) ((char *)obj + dictoffset);
+}
+
+void PyDict_Clear(PyObject *obj) {
+	(void) UPCALL_O(to_java(obj), polyglot_from_string("clear", SRC_CS));
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,9 @@
 # SOFTWARE.
 
 
+PyCF_ONLY_AST = 0
+
+
 class AST:
     def __dir__(self):
         return []
@@ -68,6 +71,98 @@ class boolop(AST):
 
 
 class operator(AST):
+    pass
+
+
+class BitOr(operator):
+    pass
+
+
+class BitXor(operator):
+    pass
+
+
+class BitAnd(operator):
+    pass
+
+
+class LShift(operator):
+    pass
+
+
+class RShift(operator):
+    pass
+
+
+class Add(operator):
+    pass
+
+
+class Sub(operator):
+    pass
+
+
+class Mult(operator):
+    pass
+
+
+class Div(operator):
+    pass
+
+
+class FloorDiv(operator):
+    pass
+
+
+class Mod(operator):
+    pass
+
+
+class Eq(operator):
+    pass
+
+
+class NotEq(operator):
+    pass
+
+
+class Lt(operator):
+    pass
+
+
+class LtE(operator):
+    pass
+
+
+class Gt(operator):
+    pass
+
+
+class GtE(operator):
+    pass
+
+
+class Pow(operator):
+    pass
+
+
+class Is(operator):
+    pass
+
+
+class IsNot(operator):
+    pass
+
+
+class In(operator):
+    pass
+
+
+class NotIn(operator):
+    pass
+
+
+class MatMult(operator):
     pass
 
 
@@ -103,7 +198,23 @@ class Eq(cmpop):
     pass
 
 
-class In(cmpop): 
+class In(cmpop):
+    pass
+
+
+class Not(unaryop):
+    pass
+
+
+class Invert(unaryop):
+    pass
+
+
+class USub(unaryop):
+    pass
+
+
+class UAdd(unaryop):
     pass
 
 
@@ -113,4 +224,3 @@ class NotEq(cmpop):
 
 class NotIn(cmpop):
     pass
-

@@ -51,11 +51,15 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsSameNativeObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsSameNativeObjectFastNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsSameNativeObjectSlowNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -228,8 +232,22 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
                         @Cached("createClassProfile()") ValueProfile storageProfile) {
-            Object tupleObj = tpMroProfile.profile(getTpMroNode.execute(obj, NativeMemberNames.TP_MRO));
-            if (tupleObj instanceof PTuple) {
+            Object tupleObj = getTpMroNode.execute(obj, NativeMemberNames.TP_MRO);
+            if (tupleObj == PNone.NO_VALUE) {
+                // Special case: lazy type initialization (should happen at most only once per type)
+                CompilerDirectives.transferToInterpreter();
+
+                // call 'PyType_Ready' on the type
+                int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TYPE_READY, ToSulongNode.getUncached().execute(obj));
+                if (res < 0) {
+                    throw raise.raise(PythonBuiltinClassType.SystemError, "lazy initialization of type %s failed", GetNameNode.getUncached().execute(obj));
+                }
+
+                tupleObj = getTpMroNode.execute(obj, NativeMemberNames.TP_MRO);
+                assert tupleObj != PNone.NO_VALUE : "MRO object is still NULL even after lazy type initialization";
+            }
+            Object profiled = tpMroProfile.profile(tupleObj);
+            if (profiled instanceof PTuple) {
                 SequenceStorage sequenceStorage = storageProfile.profile(((PTuple) tupleObj).getSequenceStorage());
                 if (sequenceStorage instanceof MroSequenceStorage) {
                     return (MroSequenceStorage) sequenceStorage;

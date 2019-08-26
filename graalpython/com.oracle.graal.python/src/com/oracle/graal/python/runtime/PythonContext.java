@@ -26,6 +26,7 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
+import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
@@ -35,7 +36,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.LinkOption;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -55,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -77,6 +81,7 @@ public final class PythonContext {
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";
     static final String LIB_GRAALPYTHON = "/lib-graalpython";
+    static final String CAPI_HOME = "/capi";
     static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
@@ -85,6 +90,7 @@ public final class PythonContext {
     private final PythonLanguage language;
     private PythonModule mainModule;
     private final PythonCore core;
+    private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
@@ -339,7 +345,7 @@ public final class PythonContext {
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
-        builtinsModule = core.lookupBuiltinModule("builtins");
+        builtinsModule = core.lookupBuiltinModule(BUILTINS);
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
@@ -366,20 +372,22 @@ public final class PythonContext {
         isInitialized = true;
     }
 
-    private String sysPrefix, basePrefix, coreHome, stdLibHome;
+    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
         basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
         coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
+        capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
 
         PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
-                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
+                        "\n\tStdLibHome: {4}" +
+                        "\n\tC API: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -434,13 +442,40 @@ public final class PythonContext {
                 }
             }
 
+            if (capiHome.isEmpty()) {
+                // first, try dev home layout
+                try {
+                    for (TruffleFile f : home.list()) {
+                        if (f.getName().equals("com.oracle.graal.python.cext") && f.isDirectory()) {
+                            capiHome = f.getPath();
+                            break;
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+
+                // second, try dist home layout
+                if (capiHome == null) {
+                    try {
+                        for (TruffleFile f : newEnv.getInternalTruffleFile(coreHome).list()) {
+                            if (f.getName().equals("capi") && f.isDirectory()) {
+                                capiHome = f.getPath();
+                                break;
+                            }
+                        }
+                    } catch (SecurityException | IOException e) {
+                    }
+                }
+            }
+
             PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
                             "\n\tLanguage home: {0}" +
                             "\n\tSysPrefix: {1}" +
                             "\n\tSysBasePrefix: {2}" +
                             "\n\tCoreHome: {3}" +
                             "\n\tStdLibHome: {4}" +
-                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
+                            "\n\tC API: {5}" +
+                            "\n\tExecutable: {6}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, newEnv.getOptions().get(PythonOptions.Executable))));
         }
     }
 
@@ -484,6 +519,14 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
+    public String getCAPIHome() {
+        if (capiHome.isEmpty()) {
+            capiHome = getCoreHome() + CAPI_HOME;
+        }
+        return capiHome;
+    }
+
+    @TruffleBoundary
     public String getCoreHomeOrFail() {
         if (coreHome.isEmpty()) {
             throw new RuntimeException(NO_CORE_FATAL);
@@ -516,6 +559,11 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
+    public void registerShutdownHook(ShutdownHook shutdownHook) {
+        shutdownHooks.add(shutdownHook);
+    }
+
+    @TruffleBoundary
     public void registerShutdownHook(Object callable, CallTarget ct) {
         atExitHooks.put(callable, ct);
     }
@@ -530,6 +578,9 @@ public final class PythonContext {
         handler.shutdown();
         for (CallTarget f : atExitHooks.values()) {
             f.call();
+        }
+        for (ShutdownHook h : shutdownHooks) {
+            h.call(this);
         }
     }
 

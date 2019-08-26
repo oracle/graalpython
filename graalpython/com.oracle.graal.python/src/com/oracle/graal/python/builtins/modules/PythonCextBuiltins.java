@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
+import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -53,6 +54,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -76,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
@@ -141,6 +144,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -167,6 +171,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -291,6 +296,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Type extends NativeBuiltin {
+
+        private static final String[] LOOKUP_MODULES = new String[]{
+                        PythonCextBuiltins.PYTHON_CEXT,
+                        "_weakref",
+                        "builtins"
+        };
+
         @Specialization
         @TruffleBoundary
         Object doI(String typeName) {
@@ -300,13 +312,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     return core.lookupType(type);
                 }
             }
-            Object attribute = core.lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT).getAttribute(typeName);
-            if (attribute != PNone.NO_VALUE) {
-                return attribute;
-            }
-            attribute = core.lookupBuiltinModule("builtins").getAttribute(typeName);
-            if (attribute != PNone.NO_VALUE) {
-                return attribute;
+            for (String module : LOOKUP_MODULES) {
+                Object attribute = core.lookupBuiltinModule(module).getAttribute(typeName);
+                if (attribute != PNone.NO_VALUE) {
+                    return attribute;
+                }
             }
             throw raise(PythonErrorType.KeyError, "'%s'", typeName);
         }
@@ -585,25 +595,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_SetAttr", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyObject_Setattr extends PythonBuiltinNode {
+    abstract static class PyObject_Setattr extends PythonTernaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object setattr(PythonBuiltinClass object, String key, Object value) {
-            object.setAttributeUnsafe(key, value);
+        Object doBuiltinClass(PythonBuiltinClass object, String key, Object value,
+                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(object, key, value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doNativeClass(PythonNativeClass object, String key, Object value,
+                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(object, key, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
-        @TruffleBoundary
-        Object setattr(PythonObject object, String key, Object value) {
-            object.getStorage().define(key, value);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object setattr(PythonNativeClass object, String key, Object value,
-                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
-            writeAttrNode.execute(object, key, value);
+        Object doObject(PythonObject object, String key, Object value,
+                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
+            writeAttrToDynamicObjectNode.execute(object.getStorage(), key, value);
             return PNone.NONE;
         }
     }
@@ -1039,16 +1049,24 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
         @Specialization
-        Object doBytes(VirtualFrame frame, TruffleObject o, long elementSize, Object errorMarker,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
+        Object doBytes(VirtualFrame frame, Object o, long elementSize, Object errorMarker,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                ByteBuffer bytes = wrap(getByteArrayNode.execute(frame, o, -1));
+                ByteBuffer bytes;
                 if (elementSize == 2L) {
-                    return decode2(bytes);
+                    if (!lib.hasArrayElements(o)) {
+                        return raiseNative(frame, errorMarker, PythonErrorType.SystemError, "provided object is not an array", elementSize);
+                    }
+                    long size = lib.getArraySize(o);
+                    bytes = readWithSize(lib, o, (int) size);
+                    bytes.flip();
                 } else if (elementSize == 4L) {
-                    return decode4(bytes);
+                    bytes = wrap(getByteArrayNode.execute(frame, o, -1));
+                } else {
+                    return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
                 }
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
+                return decode(bytes);
             } catch (CharacterCodingException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (IllegalArgumentException e) {
@@ -1059,25 +1077,31 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doBytes(VirtualFrame frame, TruffleObject o, PInt elementSize, Object errorMarker,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
+        Object doBytes(VirtualFrame frame, Object o, PInt elementSize, Object errorMarker,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return doBytes(frame, o, elementSize.longValueExact(), errorMarker, getByteArrayNode);
+                return doBytes(frame, o, elementSize.longValueExact(), errorMarker, getByteArrayNode, lib);
             } catch (ArithmeticException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
         }
 
         @TruffleBoundary
-        private static String decode2(ByteBuffer bytes) {
-            return bytes.asCharBuffer().toString();
-        }
-
-        @TruffleBoundary
-        private static String decode4(ByteBuffer bytes) throws CharacterCodingException {
+        private static String decode(ByteBuffer bytes) throws CharacterCodingException {
             return getUTF32Charset(0).newDecoder().decode(bytes).toString();
         }
 
+        @TruffleBoundary
+        private static ByteBuffer readWithSize(InteropLibrary interopLib, Object o, int size) throws UnsupportedMessageException, InvalidArrayIndexException {
+            ByteBuffer buf = ByteBuffer.allocate(size * Integer.BYTES);
+            for (long i = 0; i < size; i++) {
+                Object elem = interopLib.readArrayElement(o, i);
+                assert elem instanceof Number && 0 <= ((Number) elem).intValue() && ((Number) elem).intValue() < (1 << 16);
+                buf.putInt(((Number) elem).intValue());
+            }
+            return buf;
+        }
     }
 
     @Builtin(name = "PyTruffle_Unicode_FromUTF8", minNumOfPositionalArgs = 2)
@@ -2436,6 +2460,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
 
+        @Specialization(guards = "isNoValue(mroTuple)")
+        Object doIt(PythonNativeClass clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
+            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+            if (nativeClassStableAssumption != null) {
+                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") (without MRO) called");
+            }
+            return PNone.NONE;
+        }
+
         @Specialization
         Object doIt(PythonNativeClass clazz, String name, PTuple mroTuple,
                         @Cached("createClassProfile()") ValueProfile profile) {
@@ -2452,4 +2485,87 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
+
+    @Builtin(name = "PyTruffle_FatalError", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonTypes.class)
+    public abstract static class PyTruffle_FatalError extends PythonBuiltinNode {
+        private static final int SIGABRT_EXIT_CODE = 134;
+
+        @Specialization
+        @TruffleBoundary
+        Object doStrings(String prefix, String msg, int status) {
+            PrintWriter stderr = new PrintWriter(getContext().getStandardErr());
+            stderr.print("Fatal Python error: ");
+            if (prefix != null) {
+                stderr.print(prefix);
+                stderr.print(": ");
+            }
+            if (msg != null) {
+                stderr.print(msg);
+            } else {
+                stderr.print("<message not set>");
+            }
+            stderr.println();
+            stderr.flush();
+
+            if (status < 0) {
+                // In CPython, this will use 'abort()' which sets a special exit code.
+                throw new PythonExitException(this, SIGABRT_EXIT_CODE);
+            }
+            throw new PythonExitException(this, status);
+        }
+
+        @Specialization
+        Object doGeneric(Object prefixObj, Object msgObj, int status) {
+            String prefix = prefixObj == PNone.NO_VALUE ? null : (String) prefixObj;
+            String msg = msgObj == PNone.NO_VALUE ? null : (String) msgObj;
+            return doStrings(prefix, msg, status);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_DecodeUTF8Stateful", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyUnicode_DecodeUTF8Stateful extends NativeUnicodeBuiltin {
+
+        @Specialization
+        Object doUtf8Decode(VirtualFrame frame, Object module, Object cByteArray, String errors, @SuppressWarnings("unused") int reportConsumed,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+
+            try {
+                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(frame, cByteArray, -1));
+                int n = remaining(inputBuffer);
+                CharBuffer resultBuffer = allocateCharBuffer(n * 4);
+                decodeUTF8(resultBuffer, inputBuffer, errors);
+                return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
+            } catch (InteropException e) {
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
+            }
+        }
+
+        @TruffleBoundary
+        private static CharBuffer allocateCharBuffer(int cap) {
+            return CharBuffer.allocate(cap);
+        }
+
+        @TruffleBoundary
+        private static String toString(CharBuffer cb) {
+            return cb.toString();
+        }
+
+        @TruffleBoundary
+        private static int remaining(ByteBuffer cb) {
+            return cb.remaining();
+        }
+
+        @TruffleBoundary
+        private CoderResult decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, String errors) {
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
+            return decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
+        }
+    }
+
 }

@@ -260,11 +260,12 @@ public abstract class ExecutionContext {
     public abstract static class IndirectCallContext {
         /**
          * Prepare a call from a Python frame to a (foreign) callable without frame. This transfer
-         * the exception state from the frame to the context.
+         * the exception state from the frame to the context and also puts the current frame info
+         * (which represents the last Python caller) in the context.
          *
-         * This is mostly useful when using methods annotated with {@code @TruffleBoundary} that
-         * again use nodes that would require a frame. Surround the usage of the callee node by a
-         * context manager and then it is allowed to pass a {@code null} frame. For example:
+         * This is also useful when using methods annotated with {@code @TruffleBoundary} that again
+         * use nodes that would require a frame. Use following pattern to call such methods and just
+         * pass a {@code null} frame.
          * <p>
          *
          * <pre>
@@ -276,10 +277,13 @@ public abstract class ExecutionContext {
          *     {@literal @}Specialization
          *     Object doSomething(VirtualFrame frame, Object arg,
          *                            {@literal @}Cached PassCaughtExceptionNode passExceptionNode,
-         *                            {@literal @}CachedContext(PythonLanguage.class) ContextReference&lt;PythonContext&gt; contextRef) {
+         *                            {@literal @}CachedContext(PythonLanguage.class) PythonContext context) {
          *         // ...
-         *         try (DefaultContextManager cm = PNodeWithGlobalState.transfertToContext(contextRef, passExceptionNode.execute(frame))) {
+         *         PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+         *         try {
          *             truffleBoundaryMethod(arg);
+         *         } finally {
+         *             IndirectCallContext.exit(context, savedExceptionState);
          *         }
          *         // ...
          *     }
@@ -307,6 +311,10 @@ public abstract class ExecutionContext {
             return ExceptionContext.enter(context, PArguments.getException(frame));
         }
 
+        /**
+         * Cleanup after an interop or {@literal @}TruffleBoundary call. For more details, see
+         * {@link #enter(VirtualFrame, PythonContext, Node)}.
+         */
         public static void exit(PythonContext context, PException savedExceptionState) {
             if (context != null) {
                 context.popTopFrameInfo();

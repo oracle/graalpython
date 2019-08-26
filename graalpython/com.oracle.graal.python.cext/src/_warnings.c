@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,3 +68,14 @@ int PyErr_WarnEx(PyObject *category, const char *text, Py_ssize_t stack_level) {
     Py_DECREF(message);
     return ret;
 }
+
+NO_INLINE int PyErr_WarnFormat(PyObject *category, Py_ssize_t stack_level, const char *format, ...) {
+    CallWithPolyglotArgs(PyObject* result, format, 3, PyTruffle_Unicode_FromFormat, format);
+    return warn_unicode(category, result, stack_level, Py_None);
+}
+
+int PyErr_ResourceWarning(PyObject *source, Py_ssize_t stack_level, const char *format, ...) {
+    CallWithPolyglotArgs(PyObject* result, format, 3, PyTruffle_Unicode_FromFormat, format);
+    return warn_unicode(PyExc_ResourceWarning, result, stack_level, source);
+}
+

@@ -339,12 +339,14 @@ class SRE_Pattern():
            returned list if always either 'str' or 'bytes'."""
         if self.__binary:
             return bytes(elem)
+        elif elem is None:
+            return None
         else:
             return str(elem)
 
     def finditer(self, string, pos=0, endpos=-1):
         self.__check_input_type(string)
-        if endpos > len(string):
+        if endpos > len(string) or len(string) == 0:
             endpos = len(string)
         elif endpos < 0:
             endpos = endpos % len(string) + 1
@@ -511,7 +513,9 @@ class SRE_Pattern():
 _tcompile = SRE_Pattern
 
 def compile(pattern, flags, code, groups, groupindex, indexgroup):
-    import _cpython_sre
+    from build_capi import hint
+    with hint("_cpython_sre"):
+        import _cpython_sre
     return _cpython_sre.compile(pattern, flags, code, groups, groupindex, indexgroup)
 
 
@@ -522,7 +526,9 @@ def getcodesize(*args, **kwargs):
 
 @__builtin__
 def getlower(char_ord, flags):
-    import _cpython_sre
+    from build_capi import hint
+    with hint("_cpython_sre"):
+        import _cpython_sre
     return _cpython_sre.getlower(char_ord, flags)
 
 

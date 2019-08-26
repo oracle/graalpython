@@ -55,64 +55,89 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
 @ReportPolymorphism
 abstract class CallSpecialMethodNode extends Node {
+
+    /** for interpreter performance: cache if we exceeded the max caller size */
+    private boolean maxSizeExceeded = false;
+
     /**
      * Returns a new instanceof the builtin if it's a subclass of the given class, and null
      * otherwise.
      */
-    private static <T extends PythonBuiltinBaseNode> T getBuiltin(PBuiltinFunction func, Class<T> clazz) {
+    private <T extends PythonBuiltinBaseNode> T getBuiltin(PBuiltinFunction func, Class<T> clazz) {
+        CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
-        if (builtinNodeFactory != null) {
-            return clazz.isAssignableFrom(builtinNodeFactory.getNodeClass()) ? clazz.cast(func.getBuiltinNodeFactory().createNode()) : null;
-        } else {
-            return null;
+        if (builtinNodeFactory != null && clazz.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
+            T builtinNode = clazz.cast(func.getBuiltinNodeFactory().createNode());
+            if (!callerExceedsMaxSize(builtinNode)) {
+                return builtinNode;
+            }
         }
+        return null;
+    }
+
+    private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (!maxSizeExceeded) {
+            int n = NodeUtil.countNodes(getRootNode());
+            // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
+            // ASTs will only we shared between contexts that have the same value for this option.
+            int maxSize = PythonOptions.getOption(lookupContextReference(PythonLanguage.class).get(), PythonOptions.BuiltinsInliningMaxCallerSize);
+            if (n >= maxSize || n + NodeUtil.countNodes(builtinNode) >= maxSize) {
+                maxSizeExceeded = true;
+                return true;
+            }
+            return false;
+        }
+        return true;
     }
 
     protected Assumption singleContextAssumption() {
         return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
-    protected static PythonUnaryBuiltinNode getUnary(Object func) {
+    PythonUnaryBuiltinNode getUnary(Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonUnaryBuiltinNode.class);
         }
         return null;
     }
 
-    protected static PythonBinaryBuiltinNode getBinary(Object func) {
+    PythonBinaryBuiltinNode getBinary(Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonBinaryBuiltinNode.class);
         }
         return null;
     }
 
-    protected static PythonTernaryBuiltinNode getTernary(Object func) {
+    PythonTernaryBuiltinNode getTernary(Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonTernaryBuiltinNode.class);
         }
         return null;
     }
 
-    protected static PythonQuaternaryBuiltinNode getQuaternary(Object func) {
+    PythonQuaternaryBuiltinNode getQuaternary(Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonQuaternaryBuiltinNode.class);
         }
         return null;
     }
 
-    protected static PythonVarargsBuiltinNode getVarargs(Object func) {
+    PythonVarargsBuiltinNode getVarargs(Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonVarargsBuiltinNode.class);
         }

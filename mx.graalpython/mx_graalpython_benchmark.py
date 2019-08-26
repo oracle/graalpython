@@ -75,6 +75,10 @@ def _check_vm_args(name, args):
                  "got {} instead".format(args))
 
 
+def is_sandboxed_configuration(conf):
+    return conf == CONFIGURATION_SANDBOXED or conf == CONFIGURATION_SANDBOXED_MULTI
+
+
 @contextmanager
 def environ(env):
     def _handle_var((k, v)):
@@ -161,6 +165,9 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
         except:
             self._iterations = None
 
+    def override_iterations(self, requested_iterations):
+        return self._iterations if self._iterations is not None else requested_iterations
+
     def _override_iterations_args(self, args):
         _args = []
         i = 0
@@ -168,14 +175,13 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
             arg = args[i]
             _args.append(arg)
             if arg == '-i':
-                _args.append(str(self._iterations))
+                _args.append(str(self.override_iterations(int(args[i + 1]))))
                 i += 1
             i += 1
         return _args
 
     def run(self, cwd, args):
-        if self._iterations is not None:
-            args = self._override_iterations_args(args)
+        args = self._override_iterations_args(args)
         return super(AbstractPythonIterationsControlVm, self).run(cwd, args)
 
 
@@ -201,6 +207,10 @@ class PyPyVm(AbstractPythonIterationsControlVm):
 
     def __init__(self, config_name, options=None, env=None, iterations=None):
         super(PyPyVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
+
+    def override_iterations(self, requested_iterations):
+        # PyPy warms up much faster, half should be enough
+        return int(requested_iterations / 2)
 
     @property
     def interpreter(self):
@@ -313,7 +323,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         return [
             # warmup curves
             StdOutRule(
-                r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
+                r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
                 {
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "warmup",
@@ -328,7 +338,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             ),
             # no warmups
             StdOutRule(
-                r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
+                r"^@@@ name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
                 {
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "time",

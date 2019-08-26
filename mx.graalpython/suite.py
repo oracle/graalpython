@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "17b272f9e2bb634c4544ffacfced6d4fcc6654bb",
+                "version": "d22c72700feb46849a5c18826fbfd0cf22ef5197",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "17b272f9e2bb634c4544ffacfced6d4fcc6654bb",
+                "version": "d22c72700feb46849a5c18826fbfd0cf22ef5197",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -119,12 +119,6 @@ suite = {
         "lib.graalpython": {
             "type": "python",
             "path": 'graalpython/lib-graalpython',
-            "source": [],
-        },
-
-        "python.site-packages": {
-            "type": "python",
-            "path": 'graalpython/site-packages',
             "source": [],
         },
 
@@ -249,9 +243,15 @@ suite = {
             "buildDependencies": [
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
+                "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_HOME>/include",
+                "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
+                "CLANG": "<toolchainGetToolPath:native,CC>",
+                "PLATFORM": "<toolchainGetIdentifier:native>",
+                "ARCH": "<arch>",
+                "OS": "<os>",
             },
         },
 
@@ -265,23 +265,6 @@ suite = {
                 "\/idle_test\/",
             ],
             "license": ["PSF-License"],
-        },
-
-        "site-packages": {
-            "subDir": "graalpython",
-            "native": True,
-            "vpath": False,
-            "output": ".",
-            "license": ["MIT"],
-            "defaultBuild": False,
-            "buildEnv": {
-                "SETUPTOOLS_ZIP": "<path:SETUPTOOLS>",
-            },
-            "buildDependencies": [
-                "SETUPTOOLS",
-                "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON",
-            ],
         },
     },
 
@@ -373,6 +356,10 @@ suite = {
                     "file:graalpython/com.oracle.graal.python.cext/include",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
+                ],
+                "./lib-graalpython/capi/": [
+                    "file:graalpython/com.oracle.graal.python.cext/src",
+                    "file:graalpython/com.oracle.graal.python.cext/modules",
                 ],
             },
             "maven": False,

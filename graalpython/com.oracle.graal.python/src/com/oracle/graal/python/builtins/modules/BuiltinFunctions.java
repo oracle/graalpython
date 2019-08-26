@@ -67,7 +67,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -106,7 +105,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -134,7 +132,8 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListContextManager;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -188,8 +187,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -203,7 +200,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
-@CoreFunctions(defineModule = "builtins")
+@CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinFunctions extends PythonBuiltins {
 
     @Override
@@ -214,7 +211,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Override
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
-        PythonModule builtinsModule = core.lookupBuiltinModule("builtins");
+        PythonModule builtinsModule = core.lookupBuiltinModule(BuiltinNames.BUILTINS);
         builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(core.getContext(), PythonOptions.PythonOptimizeFlag));
     }
 
@@ -452,7 +449,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         public String charFromInt(int arg) {
-            if (arg >= 0 && arg < 1114111) {
+            if (arg >= 0 && arg <= 1114111) {
                 return Character.toString((char) arg);
             } else {
                 throw raise(ValueError, "chr() arg not in range(0x110000)");
@@ -521,40 +518,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
-        @Child private AppendNode appendNode;
 
+        // logic like in 'Objects/object.c: _dir_locals'
         @Specialization(guards = "isNoValue(object)")
-        @SuppressWarnings("unused")
-        public Object dir(VirtualFrame frame, Object object) {
-            PList locals = factory().createList();
-            FrameDescriptor frameDescriptor = frame.getFrameDescriptor();
-            addIdsFromDescriptor(locals, frameDescriptor);
-            return locals;
-        }
+        Object locals(VirtualFrame frame, @SuppressWarnings("unused") Object object,
+                        @Cached ReadLocalsNode readLocalsNode,
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile inGenerator,
+                        @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
 
-        @TruffleBoundary
-        private void addIdsFromDescriptor(PList locals, FrameDescriptor frameDescriptor) {
-            for (FrameSlot slot : frameDescriptor.getSlots()) {
-                // XXX: remove this special case
-                if (slot.getIdentifier().equals(RETURN_SLOT_ID)) {
-                    continue;
-                }
-                getAppendNode().execute(locals, slot.getIdentifier());
+            Object localsDict = LocalsNode.getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
+            Object keysObj = callKeysNode.executeObject(frame, localsDict);
+            try (ConstructListContextManager cm = constructListNode.withGlobalState(getContextRef(), frame)) {
+                return cm.execute(keysObj);
             }
         }
 
         @Specialization(guards = "!isNoValue(object)")
-        public Object dir(VirtualFrame frame, Object object,
+        Object dir(VirtualFrame frame, Object object,
                         @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
             return dirNode.executeObject(frame, object);
-        }
-
-        private AppendNode getAppendNode() {
-            if (appendNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(AppendNode.create());
-            }
-            return appendNode;
         }
     }
 
@@ -1973,19 +1958,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "locals", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
-        private final ConditionProfile inGenerator = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public Object locals(VirtualFrame frame,
+        Object locals(VirtualFrame frame,
                         @Cached ReadLocalsNode readLocalsNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Cached MaterializeFrameNode materializeNode) {
+                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile inGenerator) {
+            return getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
+        }
+
+        static Object getLocalsDict(VirtualFrame frame, Node n, ReadLocalsNode readLocalsNode, ReadCallerFrameNode readCallerFrameNode, MaterializeFrameNode materializeNode,
+                        ConditionProfile inGenerator) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame.getArguments());
             if (inGenerator.profile(generatorFrame == null)) {
                 return readLocalsNode.execute(frame, callerFrame);
             } else {
-                return readLocalsNode.execute(frame, materializeNode.execute(frame, this, false, false, generatorFrame));
+                return readLocalsNode.execute(frame, materializeNode.execute(frame, n, false, false, generatorFrame));
             }
         }
     }

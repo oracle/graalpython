@@ -151,5 +151,9 @@ if sys.implementation.name == "graalpython":
 
 def test_import_package_all() :
     import package1
-    assert hasattr(package1, "moduleX"), "'package1' does not have attribute 'moduleX'"
+    expected_syms = ["moduleX", "lib1_hello", "lib1_world"]
+    cnt = 0
+    for expected_sym in expected_syms:
+        assert hasattr(package1, expected_sym), "'package1' does not have attribute '%s'" % expected_sym
+        cnt += 1
     assert package1.exported.__testname__ == "package1.exported", "expected 'test_import_package_all' but was '%s'" % str(package1.exported.__testname__)

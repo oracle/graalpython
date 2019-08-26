@@ -43,4 +43,10 @@ package com.oracle.graal.python.builtins.objects.type;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 public interface LazyPythonClass extends TruffleObject {
+
+    /**
+     * Returns the name of the class for debugging purposes. This method must assume that no context
+     * is available.
+     */
+    String getName();
 }
