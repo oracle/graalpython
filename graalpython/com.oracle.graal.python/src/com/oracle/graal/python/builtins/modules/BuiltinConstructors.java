@@ -1444,18 +1444,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // list([iterable])
-    @Builtin(name = LIST, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PList)
+    @Builtin(name = LIST, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PList)
     @GenerateNodeFactory
-    public abstract static class ListNode extends PythonBinaryBuiltinNode {
+    public abstract static class ListNode extends PythonVarargsBuiltinNode {
         @Specialization
-        protected PList constructList(LazyPythonClass cls, @SuppressWarnings("unused") Object value) {
+        protected PList constructList(LazyPythonClass cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords) {
             return factory().createList(cls);
         }
 
         @Fallback
-        public PList listObject(@SuppressWarnings("unused") Object cls, Object arg) {
+        @SuppressWarnings("unused")
+        public PList listObject(Object cls, Object[] arguments, PKeyword[] keywords) {
             CompilerAsserts.neverPartOfCompilation();
-            throw new RuntimeException("list does not support iterable object " + arg);
+            throw raise(PythonBuiltinClassType.TypeError, "'cls' is not a type object (%p)", cls);
         }
     }
 

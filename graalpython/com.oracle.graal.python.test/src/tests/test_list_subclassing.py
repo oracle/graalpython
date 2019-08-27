@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -62,3 +62,19 @@ def test_list_constructor():
 
     l = list(ListSubclass([1, 2, 3, 4]))
     assert l == [10, 20, 30, 40], "was: {!s}".format(l)
+
+
+def test_list_init_call():
+    class MyList(list):
+        def __init__(self, a, b=None):
+            if b:
+                list.__init__(self, [b])
+            else:
+                list.__init__(self, [a])
+
+    l = MyList(10)
+    assert l == [10]
+    l = MyList(10, 20)
+    assert l == [20]
+    l = MyList(10, b=30)
+    assert l == [30]
