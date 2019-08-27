@@ -57,6 +57,9 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.ParsePosition;
 import java.util.Arrays;
 import java.util.List;
 
@@ -86,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeNullNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
@@ -149,7 +151,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
@@ -2588,6 +2589,41 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try (PDataModelEmulationContextManager cm = isSequenceNode.withGlobalState(contextRef, frame)) {
                 return cm.execute(object);
             }
+        }
+    }
+
+    @Builtin(name = "PyTruffle_OS_StringToDouble", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_OS_StringToDouble extends NativeBuiltin {
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object module, String source, int reportPos,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+
+            if (reportPos != 0) {
+                ParsePosition pp = new ParsePosition(0);
+                Number parse = parse(source, pp);
+                if (parse != null) {
+                    return factory().createTuple(new Object[]{parse.doubleValue(), pp.getIndex()});
+                }
+            } else {
+                try {
+                    Number parse = parse(source);
+                    return factory().createTuple(new Object[]{parse.doubleValue()});
+                } catch (ParseException e) {
+                }
+            }
+            return raiseNative(frame, getNativeNullNode.execute(module), PythonBuiltinClassType.ValueError, "could not convert string to float: %s", source);
+        }
+
+        @TruffleBoundary
+        private Number parse(String source, ParsePosition pp) {
+            return DecimalFormat.getInstance().parse(source, pp);
+        }
+
+        @TruffleBoundary
+        private Number parse(String source) throws ParseException {
+            return DecimalFormat.getInstance().parse(source);
         }
     }
 }
