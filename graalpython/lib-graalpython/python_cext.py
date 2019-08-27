@@ -821,6 +821,11 @@ def PyCapsule_IsValid(obj, name):
             obj.name == name)
 
 
+@may_raise
+def PyCapsule_GetName(obj):
+    return obj.name
+
+
 def PyModule_AddObject(m, k, v):
     m.__dict__[k] = v
     return None

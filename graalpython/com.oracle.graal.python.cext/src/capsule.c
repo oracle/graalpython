@@ -83,3 +83,9 @@ int PyCapsule_IsValid(PyObject *o, const char *name) {
     return o != NULL && UPCALL_CEXT_I(_jls_PyCapsule_IsValid, native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
 }
 
+UPCALL_ID(PyCapsule_GetName);
+const char * PyCapsule_GetName(PyObject *o) {
+	return as_char_pointer(UPCALL_CEXT_O(_jls_PyCapsule_GetName, native_to_java(o)));
+}
+
+
