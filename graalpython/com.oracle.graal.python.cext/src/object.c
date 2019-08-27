@@ -609,3 +609,11 @@ PyObject * _PyObject_GetAttrId(PyObject *v, _Py_Identifier *name) {
     result = PyObject_GetAttr(v, oname);
     return result;
 }
+
+UPCALL_ID(PyObject_Bytes);
+PyObject * PyObject_Bytes(PyObject *v) {
+    if (v == NULL) {
+        return PyBytes_FromString("<NULL>");
+    }
+    return UPCALL_CEXT_O(_jls_PyObject_Bytes, native_to_java(v));
+}

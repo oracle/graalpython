@@ -293,8 +293,12 @@ def PyBytes_Join(sep, iterable):
 
 
 @may_raise
-def PyBytes_FromObject(iterable):
-    return bytes(iterable)
+def PyBytes_FromObject(obj):
+    if type(obj) == bytes:
+        return obj
+    if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
+        return bytes(obj)
+    raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
 
 
 ##################### LIST
@@ -1083,6 +1087,18 @@ def PyObject_HashNotImplemented(obj):
 
 def PyObject_IsTrue(obj):
     return 1 if obj else 0
+
+
+@may_raise
+def PyObject_Bytes(obj):
+    if type(obj) == bytes:
+        return obj
+    if hasattr(obj, "__bytes__"):
+        res = obj.__bytes__()
+        if not isinstance(res, bytes):
+            raise TypeError("__bytes__ returned non-bytes (type %s)" % type(res).__name__)
+    return PyBytes_FromObject(obj)
+
 
 ## EXCEPTIONS
 
