@@ -785,8 +785,8 @@ PyMemoryView_FromBuffer(Py_buffer *info)
 /* Create a memoryview from an object that implements the buffer protocol.
    If the object is a memoryview, the new memoryview must be registered
    with the same managed buffer. Otherwise, a new managed buffer is created. */
-PyObject *
-PyMemoryView_FromObject(PyObject *v)
+static PyObject *
+_PyMemoryView_FromObject(PyObject *v)
 {
     _PyManagedBufferObject *mbuf;
 
@@ -928,7 +928,7 @@ PyMemoryView_GetContiguous(PyObject *obj, int buffertype, char order)
     assert(buffertype == PyBUF_READ || buffertype == PyBUF_WRITE);
     assert(order == 'C' || order == 'F' || order == 'A');
 
-    mv = (PyMemoryViewObject *)PyMemoryView_FromObject(obj);
+    mv = (PyMemoryViewObject *)_PyMemoryView_FromObject(obj);
     if (mv == NULL)
         return NULL;
 
@@ -968,7 +968,7 @@ memory_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    return polyglot_from_PyMemoryViewObject((PyMemoryViewObject *)PyMemoryView_FromObject(obj));
+    return polyglot_from_PyMemoryViewObject((PyMemoryViewObject *)_PyMemoryView_FromObject(obj));
 }
 
 
