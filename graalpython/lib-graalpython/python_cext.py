@@ -234,6 +234,14 @@ def PyFrozenSet_New(iterable):
         return frozenset()
 
 
+@may_raise(-1)
+def PySet_Discard(s, key):
+    if key in s:
+        s.discard(key)
+        return 1
+    return 0
+
+
 ##################### MAPPINGPROXY
 
 

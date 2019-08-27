@@ -67,3 +67,8 @@ UPCALL_ID(PySet_Pop);
 PyObject * PySet_Pop(PyObject *set) {
     return UPCALL_CEXT_O(_jls_PySet_Pop, native_to_java(set));
 }
+
+UPCALL_ID(PySet_Discard);
+int PySet_Discard(PyObject *set, PyObject *key) {
+    return UPCALL_CEXT_I(_jls_PySet_Discard, native_to_java(set), native_to_java(key));
+}
