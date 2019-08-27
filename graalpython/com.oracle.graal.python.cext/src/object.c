@@ -274,6 +274,7 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 }
 
 UPCALL_ID(PyObject_CallMethod);
+NO_INLINE
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
@@ -284,6 +285,14 @@ PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* 
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
+NO_INLINE
+PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
+    PyObject* args;
+	CallWithPolyglotArgs(args, name, 2, PyTruffle_Tuple_Pack, 0);
+    return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(callable), native_to_java(name), native_to_java(args));
+}
+
+NO_INLINE
 PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {

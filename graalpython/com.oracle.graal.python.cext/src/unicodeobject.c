@@ -132,6 +132,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
     char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
     int use_valist = args == NULL;
+    int pos = 0;
 
     int remaining_space = 2047;
     char* buffer = (char*)calloc(sizeof(char), remaining_space + 1);
@@ -177,7 +178,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
             case 'R':
                 if (converter == NULL) converter = PyObject_Repr;
                 c[1] = 's';
-                allocated = variable = as_char_pointer(converter(use_valist ? va_arg(va, PyObject*) : (PyObject*)(args[argc++])));
+                allocated = variable = as_char_pointer(converter(use_valist ? va_arg(va, PyObject*) : (PyObject*)(args[pos++])));
                 break;
             case '%':
                 // literal %
@@ -189,7 +190,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
                 // if we're reading args from a void* array, read it now,
                 // otherwise there's nothing to do
                 if (args != NULL) {
-                    variable = args[argc++];
+                    variable = args[pos++];
                 }
             }
             // skip over next char, we checked it

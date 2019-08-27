@@ -331,6 +331,7 @@ extern PyObject* wrapped_null;
 
 /* STR */
 __attribute__((always_inline)) PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc);
+__attribute__((always_inline)) PyObject* PyTruffle_Tuple_Pack(int dummy, va_list va, void **args, int argc);
 
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
@@ -361,7 +362,7 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
     for (int i = off; i < __poly_argc; i++) {                           \
         __poly_args[i - off] = polyglot_get_arg(i);                     \
     }                                                                   \
-    result = function(__VA_ARGS__, __va_list, __poly_args, 0)
+    result = function(__VA_ARGS__, __va_list, __poly_args, __poly_argc)
 #else
 /*
  * (tfel): Just skip the optimization with using a managed malloc and use

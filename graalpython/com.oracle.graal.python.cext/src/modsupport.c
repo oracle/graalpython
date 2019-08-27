@@ -102,8 +102,9 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
 
 /* argparse */
 UPCALL_ID(__bool__);
-MUST_INLINE static int _PyTruffleArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, va_list va, void** poly_args, int offset) {
+MUST_INLINE static int _PyTruffleArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, va_list va, void** poly_args, int argc) {
     PyObject* arg;
+    int offset = 0;
     int format_idx = 0;
     unsigned char rest_optional = 0;
     unsigned char rest_keywords_only = 0;
@@ -485,8 +486,9 @@ typedef struct _build_stack {
     struct _build_stack* prev;
 } build_stack;
 
-MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list va, void** poly_args, int offset) {
+MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list va, void** poly_args, int argc) {
     PyObject* (*converter)(void*) = NULL;
+    int offset = 0;
     char argchar[2] = {'\0'};
     unsigned int format_idx = 0;
     build_stack *v = (build_stack*)calloc(1, sizeof(build_stack));
