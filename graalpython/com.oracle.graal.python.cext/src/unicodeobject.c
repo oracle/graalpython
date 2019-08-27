@@ -479,8 +479,15 @@ PyObject * PyUnicode_AsUnicodeEscapeString(PyObject *unicode) {
 
 UPCALL_ID(PyUnicode_Decode);
 PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding, const char *errors) {
+	if (errors == NULL) {
+		errors = "strict";
+	}
     if (encoding == NULL) {
         return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
     }
 	return UPCALL_CEXT_O(_jls_PyUnicode_Decode, s, size, polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
+}
+
+PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {
+	return PyUnicode_Decode(s, size, "ascii", errors);
 }
