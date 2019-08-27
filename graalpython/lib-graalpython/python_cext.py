@@ -386,6 +386,13 @@ def PyList_Sort(listObj):
     listObj.sort()
     return 0
 
+@may_raise(-1)
+def PyList_Insert(listObj, i, item):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj.insert(i, item)
+    return 0
+
 
 ##################### LONG
 

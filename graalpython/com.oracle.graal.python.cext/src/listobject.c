@@ -94,3 +94,8 @@ UPCALL_ID(PyList_Sort);
 int PyList_Sort(PyObject *l) {
 	return UPCALL_CEXT_I(_jls_PyList_Sort, native_to_java(l));
 }
+
+UPCALL_ID(PyList_Insert);
+int PyList_Insert(PyObject *op, Py_ssize_t where, PyObject *newitem) {
+    return UPCALL_CEXT_I(_jls_PyList_Insert, native_to_java(op), where, native_to_java(newitem));
+}
