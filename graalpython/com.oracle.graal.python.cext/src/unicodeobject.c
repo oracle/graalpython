@@ -476,3 +476,11 @@ UPCALL_ID(PyUnicode_AsUnicodeEscapeString);
 PyObject * PyUnicode_AsUnicodeEscapeString(PyObject *unicode) {
 	return UPCALL_CEXT_O(_jls_PyUnicode_AsUnicodeEscapeString, native_to_java(unicode));
 }
+
+UPCALL_ID(PyUnicode_Decode);
+PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding, const char *errors) {
+    if (encoding == NULL) {
+        return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
+    }
+	return UPCALL_CEXT_O(_jls_PyUnicode_Decode, s, size, polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
+}

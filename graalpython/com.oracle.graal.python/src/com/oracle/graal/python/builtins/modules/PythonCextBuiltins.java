@@ -57,6 +57,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
@@ -945,6 +946,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
             return csName;
         }
+
+        @TruffleBoundary
+        protected static CharBuffer allocateCharBuffer(int cap) {
+            return CharBuffer.allocate(cap);
+        }
+
+        @TruffleBoundary
+        protected static String toString(CharBuffer cb) {
+            return cb.toString();
+        }
+
+        @TruffleBoundary
+        protected static int remaining(ByteBuffer cb) {
+            return cb.remaining();
+        }
+
     }
 
     @Builtin(name = "TrufflePInt_AsPrimitive", minNumOfPositionalArgs = 3)
@@ -2556,21 +2573,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static CharBuffer allocateCharBuffer(int cap) {
-            return CharBuffer.allocate(cap);
-        }
-
-        @TruffleBoundary
-        private static String toString(CharBuffer cb) {
-            return cb.toString();
-        }
-
-        @TruffleBoundary
-        private static int remaining(ByteBuffer cb) {
-            return cb.remaining();
-        }
-
-        @TruffleBoundary
         private CoderResult decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, String errors) {
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
@@ -2624,6 +2626,37 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private Number parse(String source) throws ParseException {
             return DecimalFormat.getInstance().parse(source);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 5, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyUnicode_Decode extends NativeUnicodeBuiltin {
+
+        @Specialization
+        Object doDecode(VirtualFrame frame, Object module, Object cByteArray, long size, String encoding, String errors,
+                            @Cached CExtNodes.ToSulongNode toSulongNode,
+                            @Cached GetByteArrayNode getByteArrayNode,
+                            @Cached GetNativeNullNode getNativeNullNode) {
+
+            try {
+                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(frame, cByteArray, size));
+                int n = remaining(inputBuffer);
+                CharBuffer resultBuffer = allocateCharBuffer(n * 4);
+                decode(resultBuffer, inputBuffer, encoding, errors);
+                return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
+            } catch (IllegalArgumentException e) {
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.LookupError, "unknown encoding: " + encoding);
+            } catch (InteropException e) {
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
+            }
+        }
+
+        @TruffleBoundary
+        private CoderResult decode(CharBuffer resultBuffer, ByteBuffer inputBuffer, String encoding, String errors) {
+            CharsetDecoder decoder = Charset.forName(encoding).newDecoder();
+            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
+            return decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
         }
     }
 }
