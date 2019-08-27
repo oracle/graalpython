@@ -112,6 +112,11 @@ def PyModule_NewObject(name):
     return moduletype(name)
 
 
+@may_raise
+def PyModule_GetNameObject(module_obj):
+    return module_obj.__name__
+
+
 ##################### DICT
 
 def PyDict_New():
