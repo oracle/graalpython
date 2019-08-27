@@ -1478,3 +1478,7 @@ def PyMapping_Values(obj):
 def PyState_FindModule(module_name):
     return sys.modules[module_name]
 
+
+@may_raise
+def PyEval_GetBuiltins():
+    return __builtins__.__dir__
