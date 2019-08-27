@@ -46,3 +46,13 @@ void _Py_NO_RETURN Py_FatalError(const char *msg) {
 	/* should never be reached; avoids compiler warning */
 	exit(1);
 }
+
+PyOS_sighandler_t PyOS_setsig(int sig, PyOS_sighandler_t handler) {
+	PyErr_SetString(PyExc_SystemError, "'PyOS_setsig' not implemented");
+	return NULL;
+}
+
+int PyOS_InterruptOccurred(void) {
+	PyErr_SetString(PyExc_SystemError, "'PyOS_InterruptOccurred' not implemented");
+	return -1;
+}
