@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -144,7 +145,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "eq", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class EqualsNode extends PythonBinaryBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         public boolean doBoolean(boolean value1, boolean value2) {
@@ -208,9 +209,10 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
             return getItemNode.execute(value.getSequenceStorage(), index);
         }
 
-        @Fallback
-        public Object doObject(@SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object index) {
-            return PNone.NONE;
+        @Specialization
+        public Object doObject(VirtualFrame frame, Object value, Object index,
+                               @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
+            return getItemNode.executeObject(frame,value, index);
         }
     }
 
