@@ -238,7 +238,7 @@ suite = {
             "subDir": "graalpython",
             "native": True,
             "vpath": False,
-            "results": ["graalpython/lib-graalpython"],
+            "results": ["graalpython/include"],
             "output": ".",
             "buildDependencies": [
                 "sulong:SULONG_HOME",
@@ -246,10 +246,7 @@ suite = {
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
             ],
             "buildEnv": {
-                "POLYGLOT_INC": "<path:SULONG_HOME>/include",
                 "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
-                "CLANG": "<toolchainGetToolPath:native,CC>",
-                "PLATFORM": "<toolchainGetIdentifier:native>",
                 "ARCH": "<arch>",
                 "OS": "<os>",
             },
@@ -352,12 +349,13 @@ suite = {
             "description": "Graal.Python support distribution for the GraalVM",
             "layout": {
                 "./": [
-                    "dependency:com.oracle.graal.python.cext/graalpython/lib-graalpython",
-                    "file:graalpython/com.oracle.graal.python.cext/include",
+                    "dependency:com.oracle.graal.python.cext/graalpython/include",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
+                    "file:graalpython/lib-graalpython",
                 ],
                 "./lib-graalpython/capi/": [
+                    "file:graalpython/com.oracle.graal.python.cext/setup.py",
                     "file:graalpython/com.oracle.graal.python.cext/src",
                     "file:graalpython/com.oracle.graal.python.cext/modules",
                 ],
