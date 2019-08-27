@@ -634,6 +634,11 @@ def PySequence_SetItem(obj, key, value):
     return 0
 
 
+@may_raise
+def PySequence_GetSlice(obj, low, high):
+    return obj[low:high]
+
+
 @may_raise(-1)
 def PySequence_Contains(haystack, needle):
     return needle in haystack

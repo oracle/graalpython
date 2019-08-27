@@ -311,6 +311,11 @@ int PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o) {
     return UPCALL_CEXT_I(_jls_PySequence_SetItem, native_to_java(s), i, native_to_java(o));
 }
 
+UPCALL_ID(PySequence_GetSlice);
+PyObject* PySequence_GetSlice(PyObject *s, Py_ssize_t i1, Py_ssize_t i2) {
+	return UPCALL_CEXT_O(_jls_PySequence_GetSlice, native_to_java(s), i1, i2);
+}
+
 UPCALL_ID(PySequence_Tuple);
 PyObject* PySequence_Tuple(PyObject *v) {
     return UPCALL_CEXT_O(_jls_PySequence_Tuple, native_to_java(v));
