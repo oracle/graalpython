@@ -770,6 +770,13 @@ def PyUnicode_AsUnicodeEscapeString(string):
     return _codecs_module.unicode_escape_encode(string)[0]
 
 
+@may_raise(-1)
+def PyUnicode_Tailmatch(s, substr, start, end, direction):
+    if direction > 0:
+        return 1 if s[start:end].endswith(substr) else 0
+    return 1 if s[start:end].startswith(substr) else 0
+
+
 ##################### CAPSULE
 
 

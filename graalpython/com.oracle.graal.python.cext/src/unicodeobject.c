@@ -491,3 +491,8 @@ PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding
 PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {
 	return PyUnicode_Decode(s, size, "ascii", errors);
 }
+
+UPCALL_ID(PyUnicode_Tailmatch);
+Py_ssize_t PyUnicode_Tailmatch(PyObject *str, PyObject *substr, Py_ssize_t start, Py_ssize_t end, int direction) {
+	return UPCALL_CEXT_L(_jls_PyUnicode_Tailmatch, native_to_java(str), native_to_java(substr), start, end, direction);
+}
