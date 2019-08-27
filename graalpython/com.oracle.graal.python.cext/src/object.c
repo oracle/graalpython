@@ -319,6 +319,11 @@ int PyObject_SetItem(PyObject* obj, PyObject* key, PyObject* value) {
     return UPCALL_CEXT_I(_jls_PyObject_SetItem, native_to_java(obj), native_to_java(key), native_to_java(value));
 }
 
+UPCALL_ID(PyObject_DelItem);
+int PyObject_DelItem(PyObject *o, PyObject *key) {
+	return UPCALL_CEXT_I(_jls_PyObject_DelItem, native_to_java(o), native_to_java(key));
+}
+
 PyObject* PyObject_Format(PyObject* obj, PyObject* spec) {
     return UPCALL_O(native_to_java(obj), polyglot_from_string("__format__", SRC_CS), native_to_java(spec));
 }

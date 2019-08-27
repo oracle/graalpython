@@ -1037,6 +1037,12 @@ def PyObject_GetItem(obj, key):
     return obj[key]
 
 
+@may_raise(-1)
+def PyObject_DelItem(obj, key):
+    del obj[key]
+    return 0
+
+
 @may_raise(1)
 def PyObject_SetItem(obj, key, value):
     obj[key] = value
