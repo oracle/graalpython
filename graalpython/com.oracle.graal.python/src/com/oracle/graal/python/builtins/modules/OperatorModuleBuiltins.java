@@ -211,8 +211,8 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doObject(VirtualFrame frame, Object value, Object index,
-                               @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
-            return getItemNode.executeObject(frame,value, index);
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
+            return getItemNode.executeObject(frame, value, index);
         }
     }
 
