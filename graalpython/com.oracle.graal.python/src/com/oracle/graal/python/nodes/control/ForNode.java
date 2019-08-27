@@ -185,7 +185,7 @@ public final class ForNode extends LoopNode {
         }
         frame.setObject(iteratorSlot, iterator.execute(frame));
         try {
-            loopNode.execute(frame);
+            loopNode.executeLoop(frame);
         } finally {
             frame.setObject(iteratorSlot, null);
         }
