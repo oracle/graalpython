@@ -40,16 +40,16 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends PNodeWithContext {
-
+public abstract class PNodeWithGlobalState extends PNodeWithContext {
     /**
-     * Transfers the execution context to the language context and unprotects the node's execute
-     * method(s).<br>
+     * Transfers the execution context to the language context.<br>
      * Use this method to make the execution context available to nodes that cannot take a virtual
      * frame at the last location where the virtual frame is available. The recommended usage for
      * nodes implementing this interface is as follows:
@@ -61,48 +61,14 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
      *                    {@literal @}Cached SomeNodeWithGlobalState node,
      *                    {@literal @}CachedContext(PythonLanguage.class) ContextReference&lt;PythonContext&gt; contextRef) {
      *     try (SomeContextManager cm = node.withGlobalState(contextRef, frame)) {
-     *         cm.execute();
+     *         node.execute();
      *     }
      * </pre>
      * </p>
      */
-    public abstract T withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame);
-
-    /**
-     * Use this method to unprotect the node's execute method(s) if you are already sure that the
-     * exception state was already transfered to the context.<br>
-     * There are two common (legitimate) situations where to use this:<br>
-     * <ol>
-     * <li>Using a node with global state from an interop message implementation.</li>
-     * <li>Using a node with global state from another node with global state.</li>
-     * </ol>
-     * <p>
-     * Examples for 1:
-     *
-     * <pre>
-     * {@literal @}ExportMessage
-     * Object execute(Object receiver,
-     *                    {@literal @}Cached SomeNodeWithGlobalState node) {
-     *     node.passState().execute();
-     * }
-     * </pre>
-     * </p>
-     * <p>
-     * Examples for 2:
-     *
-     * <pre>
-     * public abstract static class AnotherNodeWithGlobalState extends PNodeWithGlobalState&lt;CustomContextManager&gt; {
-     *     protected abstract Object execute(Object obj);
-     *
-     *     {@literal @}Specialization
-     *     Object doSomething(Object obj,
-     *                        {@literal @}Cached SomeNodeWithGlobalState node) {
-     *         node.passState().execute();
-     *     }
-     * </pre>
-     * </p>
-     */
-    public abstract T passState();
+    public final NodeContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
+        return new NodeContextManager(contextRef.get(), frame, this);
+    }
 
     /**
      * A convenience method that allows to transfer the execution context from the frame to the
@@ -137,18 +103,37 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
      * </pre>
      * </p>
      */
-    public static DefaultContextManager transferToContext(ContextReference<PythonContext> contextRef, VirtualFrame frame, Node caller) {
+    public static NodeContextManager transferToContext(ContextReference<PythonContext> contextRef, VirtualFrame frame, Node caller) {
         if (frame != null) {
-            return new DefaultContextManager(contextRef.get(), frame, caller);
+            return new NodeContextManager(contextRef.get(), frame, caller);
         }
-        return new DefaultContextManager(null, null, caller);
+        return new NodeContextManager(null, null, null);
     }
 
-    public static final class DefaultContextManager extends NodeContextManager {
+    public static final class NodeContextManager implements AutoCloseable {
+        private final PythonContext context;
+        private final PException savedExceptionState;
 
-        public DefaultContextManager(PythonContext context, VirtualFrame frame, Node caller) {
-            super(context, frame, caller);
+        /**
+         * @param context - the current context. Can be {@code null}
+         * @param frame - the current Python-level frame. Can be {@code null}
+         * @param caller - the node causing the Python call. Can be {@code null} if {@code frame} is null.
+         */
+        public NodeContextManager(PythonContext context, VirtualFrame frame, Node caller) {
+            this.context = context;
+            if (context != null) {
+                this.savedExceptionState = context.getCaughtException();
+            } else {
+                this.savedExceptionState = null;
+            }
+            if (frame != null) {
+                IndirectCallContext.enter(frame, context, caller);
+            }
+
         }
 
+        public final void close() {
+            IndirectCallContext.exit(context, savedExceptionState);
+        }
     }
 }

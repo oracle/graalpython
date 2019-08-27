@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -1063,7 +1063,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached CastToDoubleNode toFloat,
                         @Cached IsBuiltinClassProfile stopProfile) {
             Object iterator = getIterator.executeWith(frame, iterable);
-            try (DefaultContextManager cm = withGlobalState(frame)) {
+            try (NodeContextManager cm = withGlobalState(frame)) {
                 return fsum(iterator, next, toFloat, stopProfile);
             }
         }

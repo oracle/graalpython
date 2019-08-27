@@ -44,16 +44,13 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -220,9 +217,9 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    public abstract static class IsSubtypeWithoutFrameNode extends PNodeWithGlobalState<IsSubtypeContextManager> {
+    public abstract static class IsSubtypeWithoutFrameNode extends PNodeWithGlobalState {
 
-        protected abstract boolean execute(Object derived, Object cls);
+        public abstract boolean executeWithGlobalState(Object derived, Object cls);
 
         @Specialization
         public boolean execute(Object derived, Object cls,
@@ -235,30 +232,5 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
             }
             return false;
         }
-
-        @Override
-        public IsSubtypeContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new IsSubtypeContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public IsSubtypeContextManager passState() {
-            return new IsSubtypeContextManager(this, null, null);
-        }
     }
-
-    public static final class IsSubtypeContextManager extends NodeContextManager {
-
-        private final IsSubtypeWithoutFrameNode delegate;
-
-        private IsSubtypeContextManager(IsSubtypeWithoutFrameNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public boolean execute(Object derived, Object cls) {
-            return delegate.execute(derived, cls);
-        }
-    }
-
 }

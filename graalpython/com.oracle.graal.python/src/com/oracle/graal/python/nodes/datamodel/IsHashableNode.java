@@ -56,7 +56,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class IsHashableNode extends PDataModelEmulationNode {
 
     @Override
-    protected final boolean execute(Object obj) {
+    public final boolean execute(Object obj) {
         return execute(null, obj);
     }
 

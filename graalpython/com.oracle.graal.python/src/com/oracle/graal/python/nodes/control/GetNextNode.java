@@ -44,16 +44,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -115,9 +112,9 @@ public final class GetNextNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    public abstract static class GetNextWithoutFrameNode extends PNodeWithGlobalState<NodeContextManager> {
+    public abstract static class GetNextWithoutFrameNode extends PNodeWithGlobalState {
 
-        protected abstract Object execute(Object iterator);
+        public abstract Object executeWithGlobalState(Object iterator);
 
         private static Object checkResult(PRaiseNode raiseNode, ConditionProfile notAnIterator, Object result, Object iterator) {
             if (notAnIterator.profile(result == PNone.NO_VALUE)) {
@@ -131,31 +128,7 @@ public final class GetNextNode extends PNodeWithContext {
                         @Cached LookupAndCallUnaryDynamicNode nextCall,
                         @Cached PRaiseNode raiseNode,
                         @Cached("createBinaryProfile()") ConditionProfile notAnIterator) {
-            return checkResult(raiseNode, notAnIterator, nextCall.passState().executeObject(iterator, __NEXT__), iterator);
-        }
-
-        public static final class GetNextContextManager extends NodeContextManager {
-
-            private final GetNextWithoutFrameNode delegate;
-
-            private GetNextContextManager(GetNextWithoutFrameNode delegate, PythonContext context, VirtualFrame frame) {
-                super(context, frame, delegate);
-                this.delegate = delegate;
-            }
-
-            public Object execute(Object x) {
-                return delegate.execute(x);
-            }
-        }
-
-        @Override
-        public GetNextContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new GetNextContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public GetNextContextManager passState() {
-            return new GetNextContextManager(this, null, null);
+            return checkResult(raiseNode, notAnIterator, nextCall.executeObject(iterator, __NEXT__), iterator);
         }
     }
 }

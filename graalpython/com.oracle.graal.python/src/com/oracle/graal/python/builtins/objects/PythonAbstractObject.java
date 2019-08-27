@@ -352,7 +352,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     private long getArraySizeSafe(LookupAndCallUnaryDynamicNode callLenNode) {
-        Object lenObj = callLenNode.passState().executeObject(this, SpecialMethodNames.__LEN__);
+        Object lenObj = callLenNode.executeObject(this, SpecialMethodNames.__LEN__);
         if (lenObj instanceof Number) {
             return ((Number) lenObj).longValue();
         } else if (lenObj instanceof PInt) {
@@ -469,7 +469,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         if (includeInternal) {
             // we use the internal flag to also return dictionary keys for mappings
             if (check(isMapping, this)) {
-                PList mapKeys = castToList.passState().execute(keysNode.passState().executeObject(this, SpecialMethodNames.KEYS));
+                PList mapKeys = castToList.executeWithGlobalState(keysNode.executeObject(this, SpecialMethodNames.KEYS));
                 int len = lenNode.execute(mapKeys);
                 for (int i = 0; i < len; i++) {
                     Object key = getItemNode.execute(mapKeys, i);
@@ -1054,7 +1054,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     public static boolean check(PDataModelEmulationNode isMapping, Object obj) {
-        return isMapping.passState().execute(obj);
+        return isMapping.execute(obj);
     }
 
 }

@@ -135,7 +135,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -155,7 +155,6 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
-import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -2119,7 +2118,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     // Make slots into a tuple
                 }
-                try (DefaultContextManager cm = withGlobalState(frame)) {
+                try (NodeContextManager cm = withGlobalState(frame)) {
                     PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
                     pythonClass.setAttribute(__SLOTS__, newSlots);
                     if (basesArray.length > 1) {
@@ -2583,8 +2582,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
                         @Cached("create()") IsCallableNode isCallable) {
-            try (PDataModelEmulationContextManager ctxManager = withGlobalState(isCallable, frame)) {
-                if (ctxManager.execute(func)) {
+            try (NodeContextManager ctxManager = withGlobalState(isCallable, frame)) {
+                if (isCallable.execute(func)) {
                     return factory().createMethod(self, func);
                 } else {
                     throw raise(TypeError, "first argument must be callable");
@@ -2741,8 +2740,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreter();
                 isMappingNode = insert(IsSequenceNode.create());
             }
-            try (PDataModelEmulationContextManager ctxManager = withGlobalState(isMappingNode, frame)) {
-                return ctxManager.execute(o);
+            try (NodeContextManager ctxManager = withGlobalState(isMappingNode, frame)) {
+                return isMappingNode.execute(o);
             }
         }
     }

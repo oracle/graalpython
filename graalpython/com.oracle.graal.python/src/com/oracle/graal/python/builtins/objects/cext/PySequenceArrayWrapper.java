@@ -140,7 +140,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
                     @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
-        return castToLongNode.execute(callLenNode.passState().executeObject(lib.getDelegate(this), SpecialMethodNames.__LEN__));
+        return castToLongNode.execute(callLenNode.executeObject(lib.getDelegate(this), SpecialMethodNames.__LEN__));
     }
 
     @ExportMessage

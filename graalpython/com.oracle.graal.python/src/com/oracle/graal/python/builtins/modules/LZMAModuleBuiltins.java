@@ -49,21 +49,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-import org.tukaani.xz.ARMOptions;
-import org.tukaani.xz.ARMThumbOptions;
-import org.tukaani.xz.DeltaOptions;
-import org.tukaani.xz.FilterOptions;
-import org.tukaani.xz.IA64Options;
-import org.tukaani.xz.LZMA2Options;
-import org.tukaani.xz.LZMAOutputStream;
-import org.tukaani.xz.PowerPCOptions;
-import org.tukaani.xz.SPARCOptions;
-import org.tukaani.xz.UnsupportedOptionsException;
-import org.tukaani.xz.X86Options;
-import org.tukaani.xz.XZ;
-import org.tukaani.xz.XZOutputStream;
-import org.tukaani.xz.check.Check;
-
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,8 +59,8 @@ import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
-import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -96,6 +81,21 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+
+import org.tukaani.xz.ARMOptions;
+import org.tukaani.xz.ARMThumbOptions;
+import org.tukaani.xz.DeltaOptions;
+import org.tukaani.xz.FilterOptions;
+import org.tukaani.xz.IA64Options;
+import org.tukaani.xz.LZMA2Options;
+import org.tukaani.xz.LZMAOutputStream;
+import org.tukaani.xz.PowerPCOptions;
+import org.tukaani.xz.SPARCOptions;
+import org.tukaani.xz.UnsupportedOptionsException;
+import org.tukaani.xz.X86Options;
+import org.tukaani.xz.XZ;
+import org.tukaani.xz.XZOutputStream;
+import org.tukaani.xz.check.Check;
 
 @CoreFunctions(defineModule = "_lzma")
 public class LZMAModuleBuiltins extends PythonBuiltins {
@@ -257,8 +257,8 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSequenceNode = insert(IsSequenceNode.create());
             }
-            try (PDataModelEmulationContextManager cm = isSequenceNode.withGlobalState(contextRef, frame)) {
-                return cm.execute(obj);
+            try (NodeContextManager cm = isSequenceNode.withGlobalState(contextRef, frame)) {
+                return isSequenceNode.execute(obj);
             }
         }
 

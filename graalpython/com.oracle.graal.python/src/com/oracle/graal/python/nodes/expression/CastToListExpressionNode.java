@@ -48,14 +48,13 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListContextManager;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
@@ -140,8 +139,8 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         protected PList starredIterable(VirtualFrame frame, PythonObject value,
                         @Cached ConstructListNode constructListNode,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(contextRef, frame)) {
-                return ctxManager.execute(value);
+            try (NodeContextManager ctxManager = constructListNode.withGlobalState(contextRef, frame)) {
+                return constructListNode.execute(value);
             }
         }
 
@@ -151,8 +150,8 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Cached IsBuiltinClassProfile attrProfile,
                         @Cached PRaiseNode raise,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(contextRef, frame)) {
-                return ctxManager.execute(v);
+            try (NodeContextManager ctxManager = constructListNode.withGlobalState(contextRef, frame)) {
+                return constructListNode.execute(v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
                 throw raise.raise(TypeError, "%s is not iterable", v);
@@ -181,9 +180,9 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
     }
 
-    public abstract static class CastToListInteropNode extends PNodeWithGlobalState<CastToListContextManager> {
+    public abstract static class CastToListInteropNode extends PNodeWithGlobalState {
 
-        protected abstract PList execute(Object list);
+        public abstract PList executeWithGlobalState(Object list);
 
         public static CastToListInteropNode create() {
             return new CastToListCachedNode();
@@ -192,30 +191,6 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         public static CastToListInteropNode getUncached() {
             return CastToListUncachedNode.UNCACHED;
         }
-
-        @Override
-        public CastToListContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new CastToListContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public CastToListContextManager passState() {
-            return new CastToListContextManager(this, null, null);
-        }
-    }
-
-    public static final class CastToListContextManager extends NodeContextManager {
-
-        private final CastToListInteropNode delegate;
-
-        private CastToListContextManager(CastToListInteropNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public PList execute(Object list) {
-            return delegate.execute(list);
-        }
     }
 
     private static final class CastToListCachedNode extends CastToListInteropNode {
@@ -223,7 +198,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Child private CastToListNode castToListNode = CastToListNode.create();
 
         @Override
-        protected PList execute(Object list) {
+        public PList executeWithGlobalState(Object list) {
             // NOTE: it is fine to pass 'null' frame because this is a node with global state that
             // forces the caller to take care of it
             return castToListNode.execute(null, list);
@@ -237,7 +212,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
 
         @Override
-        protected PList execute(Object list) {
+        public PList executeWithGlobalState(Object list) {
             Object builtins = contextRef.get().getBuiltins();
             Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, "list");
             LookupInheritedAttributeNode.Dynamic getCall = LookupInheritedAttributeNode.Dynamic.getUncached();
