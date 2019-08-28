@@ -277,11 +277,6 @@ public final class PythonNodeFactory {
         return scopeEnvironment.getCurrentScope();
     }
 
-    public boolean createGeneratorScope(SSTNode target, SSTNode name) {
-        createScope(name.toString(), ScopeKind.Generator);
-        return false;
-    }
-
     public void leaveGeneratorScope(boolean scopeCreated) {
         if (scopeCreated) {
             leaveScope();
