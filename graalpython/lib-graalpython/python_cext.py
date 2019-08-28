@@ -784,6 +784,11 @@ def PyUnicode_Tailmatch(s, substr, start, end, direction):
     return 1 if s[start:end].startswith(substr) else 0
 
 
+@may_raise
+def PyUnicode_AsEncodedString(s, encoding, errors):
+    return s.encode(encoding, errors)
+
+
 ##################### CAPSULE
 
 

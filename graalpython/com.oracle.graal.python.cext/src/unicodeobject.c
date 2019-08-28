@@ -497,3 +497,8 @@ UPCALL_ID(PyUnicode_Tailmatch);
 Py_ssize_t PyUnicode_Tailmatch(PyObject *str, PyObject *substr, Py_ssize_t start, Py_ssize_t end, int direction) {
 	return UPCALL_CEXT_L(_jls_PyUnicode_Tailmatch, native_to_java(str), native_to_java(substr), start, end, direction);
 }
+
+UPCALL_ID(PyUnicode_AsEncodedString);
+PyObject * PyUnicode_AsEncodedString(PyObject *unicode, const char *encoding, const char *errors) {
+	return UPCALL_CEXT_O(_jls_PyUnicode_AsEncodedString, native_to_java(unicode), polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
+}

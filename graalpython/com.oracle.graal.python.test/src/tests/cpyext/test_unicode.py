@@ -495,3 +495,21 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* str"],
         cmpfunc=unhandled_error_compare
     )
+
+
+    test_PyUnicode_AsEncodedString = CPyExtFunction(
+        lambda args: args[0].encode(args[1], args[2]),
+        lambda: (
+            ("abcd", "ascii", "report"),
+            ("abcd", "utf8", "report"),
+            ("öüä", "ascii", "report"),
+            ("öüä", "utf8", "report"),
+            ("öüä", "ascii", "ignore"),
+            ("öüä", "ascii", "replace"),
+        ),
+        resultspec="O",
+        argspec='Oss',
+        arguments=["PyObject* str", "const char* encoding", "const char* errors"],
+        cmpfunc=unhandled_error_compare
+    )
+

@@ -57,7 +57,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.nio.charset.UnsupportedCharsetException;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
@@ -2635,9 +2634,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doDecode(VirtualFrame frame, Object module, Object cByteArray, long size, String encoding, String errors,
-                            @Cached CExtNodes.ToSulongNode toSulongNode,
-                            @Cached GetByteArrayNode getByteArrayNode,
-                            @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
 
             try {
                 ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(frame, cByteArray, size));
