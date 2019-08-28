@@ -117,7 +117,8 @@ public abstract class PNodeWithGlobalState extends PNodeWithContext {
         /**
          * @param context - the current context. Can be {@code null}
          * @param frame - the current Python-level frame. Can be {@code null}
-         * @param caller - the node causing the Python call. Can be {@code null} if {@code frame} is null.
+         * @param caller - the node causing the Python call. Can be {@code null} if {@code frame} is
+         *            null.
          */
         public NodeContextManager(PythonContext context, VirtualFrame frame, Node caller) {
             this.context = context;
