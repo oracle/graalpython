@@ -631,3 +631,12 @@ PyObject * PyObject_Bytes(PyObject *v) {
     }
     return UPCALL_CEXT_O(_jls_PyObject_Bytes, native_to_java(v));
 }
+
+// taken from CPython 'Objects/object.c'
+PyObject * _PyObject_NextNotImplemented(PyObject *self) {
+    PyErr_Format(PyExc_TypeError,
+                 "'%.200s' object is not iterable",
+                 Py_TYPE(self)->tp_name);
+    return NULL;
+}
+
