@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "d22c72700feb46849a5c18826fbfd0cf22ef5197",
+                "version": "432df38e6864205e10e52aa4058ce868aedab929",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "d22c72700feb46849a5c18826fbfd0cf22ef5197",
+                "version": "432df38e6864205e10e52aa4058ce868aedab929",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -191,7 +191,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
-                "sulong:SULONG",
+                "sulong:SULONG_API",
                 "XZ-1.8",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
