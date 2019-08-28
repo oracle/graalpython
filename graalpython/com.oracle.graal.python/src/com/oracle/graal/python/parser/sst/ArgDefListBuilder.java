@@ -51,7 +51,7 @@ import java.util.List;
 
 public final class ArgDefListBuilder {
 
-    private static String SPLAT_MARKER_NAME = "*";
+    private static final String SPLAT_MARKER_NAME = "*";
 
     private class Parameter {
 
@@ -78,16 +78,13 @@ public final class ArgDefListBuilder {
 
     private final ScopeEnvironment scopeEnvironment;
 
-    private static ExpressionNode[] EMPTY = new ExpressionNode[0];
+    private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
     private List<Parameter> args;
     private List<ParameterWithDefValue> argsWithDefValue;
     private List<Parameter> kwargs;
     private List<ParameterWithDefValue> kwargsWithDefValue;
     private int splatIndex = -1;
     private int kwarIndex = -1;
-
-    private int firstDefaultValueParam = -1;
-    private int defaultParameterCount = 0;
 
     public ArgDefListBuilder(ScopeEnvironment scopeEnvironment) {
         this.scopeEnvironment = scopeEnvironment;
@@ -139,13 +136,6 @@ public final class ArgDefListBuilder {
         kwarIndex = kwargs.size() - 1;
     }
 
-    private StatementNode[] parameterNodes;
-    private ExpressionNode[] defaultParameterValues;
-    private Signature signature;
-    private int kwargsParameterCount = 0;
-
-    private int positionalParameterCount = 0;
-
     public boolean hasDefaultParameter() {
         return argsWithDefValue != null;
     }
@@ -168,43 +158,11 @@ public final class ArgDefListBuilder {
         }
     }
 
-    private void build(FactorySSTVisitor visitor) {
-        // parameterNodes = new StatementNode[parameters.size()];
-        // defaultParameterValues = defaultParameterCount > 0 ? new
-        // ExpressionNode[defaultParameterCount] : null;
-        // String[] parametersId = new String[positionalParameterCount];
-        // String[] keyWordNames = new String[kwargsParameterCount];
-        // boolean takesVarKeywordArgs = false;
-        // int takesVarArgs = -1;
-        // boolean varArgsMarker = false;
-        // int index = 0;
-        // int defaultParameterValueIndex = 0;
-        // int kwargsIndex = 0;
-        //
-        // for (Parameter param : parameters) {
-        // parameterNodes[index] = param.getArgumentReadNode(index);
-        // if (param instanceof ParameterWithDefValue) {
-        // parametersId[index] = param.getName();
-        // }
-        // if (param instanceof SplatParameter) {
-        // takesVarArgs = index;
-        // }
-        // if (param instanceof ParameterWithDefValue && ((ParameterWithDefValue)
-        // param).getDefValue() != null) {
-        // defaultParameterValues[defaultParameterValueIndex++] = ((ParameterWithDefValue)
-        // param).getDefValue();
-        // }
-        // index++;
-        // }
-        // signature = new Signature(takesVarKeywordArgs, takesVarArgs, varArgsMarker, parametersId,
-        // keyWordNames);
-    }
-
     public boolean hasSplatStarMarker() {
         return splatIndex > -1 && args != null && args.get(splatIndex).name == null;
     }
 
-    public StatementNode[] getArgumentNodes(FactorySSTVisitor visitor) {
+    public StatementNode[] getArgumentNodes() {
         if (args == null && kwargs == null) {
             return new StatementNode[0];
         }

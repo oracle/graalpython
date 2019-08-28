@@ -138,7 +138,7 @@ public class ParserTestBase {
     public void checkSyntaxError(String source) throws Exception {
         boolean thrown = false;
         try {
-            Node resultNew = parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
+            parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
         } catch (PException e) {
             thrown = e.isSyntaxError();
         }
@@ -277,7 +277,7 @@ public class ParserTestBase {
         assertDescriptionMatches(scopes.toString(), goldenScopeFile);
     }
 
-    private String printTreeToString(Node node) {
+    private static String printTreeToString(Node node) {
         ParserTreePrinter visitor = new ParserTreePrinter();
         node.accept(visitor);
         return visitor.getTree();
@@ -323,7 +323,7 @@ public class ParserTestBase {
      * 
      * @param newTT Truffle tree from new parser
      * @param oldTT Truffle tree from old parser
-     * @return
+     * @return corrected Truffle tree
      */
     private String correctKnownIssues(String newTT, String oldTT) {
         String LINE_TEXT = "\n";
@@ -393,7 +393,7 @@ public class ParserTestBase {
         return corrected.toString();
     }
 
-    private String correctSourceSection(String oldLine, String newLine) {
+    private static String correctSourceSection(String oldLine, String newLine) {
         int oldIndex = oldLine.indexOf("SourceSection:");
         int newIndex = newLine.indexOf("SourceSection:");
         if (oldIndex != newIndex || oldIndex == -1) {
@@ -406,7 +406,7 @@ public class ParserTestBase {
         return oldLine;
     }
 
-    private String correctName(String oldLine, String newLine) {
+    private static String correctName(String oldLine, String newLine) {
         int oldStart = oldLine.indexOf(" Name: ");
         int newStart = newLine.indexOf(" Name: ");
 
@@ -420,7 +420,7 @@ public class ParserTestBase {
         return oldLine;
     }
 
-    private String correctFrame(String oldLine, String newLine) {
+    private static String correctFrame(String oldLine, String newLine) {
         int oldStart = oldLine.indexOf("Frame: [");
         int newStart = newLine.indexOf("Frame: [");
         if (oldStart != newStart) {
@@ -436,7 +436,7 @@ public class ParserTestBase {
         return oldLine;
     }
 
-    private String correctSlot(String oldLine, String newLine) {
+    private static String correctSlot(String oldLine, String newLine) {
         int oldStart = oldLine.indexOf("flagSlot:");
         int newStart = newLine.indexOf("flagSlot:");
         if (oldStart != newStart) {
@@ -445,7 +445,7 @@ public class ParserTestBase {
         return newLine;
     }
 
-    private String correctDocumentation(String oldLine, String newLine) {
+    private static String correctDocumentation(String oldLine, String newLine) {
         int oldStart = oldLine.indexOf("Documentation:");
         int newStart = newLine.indexOf("Documentation:");
         if (oldStart != newStart) {
@@ -454,7 +454,7 @@ public class ParserTestBase {
         return newLine;
     }
 
-    private String correctFrameDesc(String oldLine, String newLine) {
+    private static String correctFrameDesc(String oldLine, String newLine) {
         int oldStart = oldLine.indexOf("FrameDescriptor:");
         int newStart = newLine.indexOf("FrameDescriptor:");
         if (oldStart != newStart) {
@@ -473,7 +473,7 @@ public class ParserTestBase {
         return oldLine;
     }
 
-    private String correctIdentifier(String oldLine, String newLine) {
+    private static String correctIdentifier(String oldLine, String newLine) {
         int oldStart = oldLine.indexOf("Identifier:");
         int newStart = newLine.indexOf("Identifier:");
         if (oldStart != newStart) {
@@ -593,7 +593,7 @@ public class ParserTestBase {
         return sb.toString();
     }
 
-    private String lineSeparator(int number) {
+    private static String lineSeparator(int number) {
         final String lineSeparator = System.getProperty("line.separator");
         if (number > 1) {
             final StringBuilder sb = new StringBuilder();

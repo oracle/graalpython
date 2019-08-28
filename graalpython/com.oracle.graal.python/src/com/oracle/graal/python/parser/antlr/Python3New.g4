@@ -721,9 +721,9 @@ dotted_as_name
 	dotted_name
 	(
 		'as' NAME 
-		{ push(factory.createImport($dotted_name.result, 0, $NAME.text, getStartIndex($ctx), getLastIndex($ctx)));}
+		{ push(factory.createImport($dotted_name.result, $NAME.text, getStartIndex($ctx), getLastIndex($ctx)));}
 		|
-		{ push(factory.createImport($dotted_name.result,0, null, getStartIndex($ctx), getLastIndex($ctx)));}
+		{ push(factory.createImport($dotted_name.result, null, getStartIndex($ctx), getLastIndex($ctx)));}
 	)
 ;
 dotted_as_names

@@ -887,8 +887,4 @@ public class BasicTests extends ParserTestBase {
         checkTreeFromFile(testFile, true);
     }
 
-    private void checkScopesFromFile() throws Exception {
-        File testFile = getTestFileFromTestAndTestMethod();
-        checkScopeFromFile(testFile, true);
-    }
 }

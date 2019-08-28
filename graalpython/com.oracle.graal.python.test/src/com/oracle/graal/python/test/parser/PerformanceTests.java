@@ -43,7 +43,6 @@ package com.oracle.graal.python.test.parser;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonParser;
-import static com.oracle.graal.python.test.parser.ParserTestBase.readFile;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.source.Source;
 import java.io.File;
@@ -121,7 +120,7 @@ public class PerformanceTests extends ParserTestBase {
         addRecordToStatisticFile("folders02 - " + (numberOfOKParsed + numberOfWrongParsed) + " (" + numberOfWrongParsed + " was parsed with and error ) in " + time + "ms.");
     }
 
-    private void addRecordToStatisticFile(String record) throws Exception {
+    private static void addRecordToStatisticFile(String record) throws Exception {
         String dataDirPath = System.getProperty("python.home");
         dataDirPath += "/com.oracle.graal.python.test/src/com/oracle/graal/python/test/parser/";
         File folder = new File(dataDirPath);
@@ -211,30 +210,6 @@ public class PerformanceTests extends ParserTestBase {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    private void executePerformanceTest(File file) throws Exception {
-        String source = readFile(file);
-
-        System.out.println(name.getMethodName() + " count:" + count);
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < count; i++) {
-            parseOld(source, name.getMethodName(), PythonParser.ParserMode.File);
-        }
-
-        long end = System.currentTimeMillis();
-        System.out.println(name.getMethodName() + " old parsing took: " + (end - start));
-
-        for (int i = 0; i < 30; i++) {
-            parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
-        }
-        System.out.println(name.getMethodName() + " count:" + count);
-        start = System.currentTimeMillis();
-        for (int i = 0; i < count; i++) {
-            parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
-        }
-        end = System.currentTimeMillis();
-        System.out.println(name.getMethodName() + " new parsing took: " + (end - start));
     }
 
 }

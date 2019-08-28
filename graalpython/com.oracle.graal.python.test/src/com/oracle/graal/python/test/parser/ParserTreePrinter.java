@@ -138,10 +138,6 @@ public class ParserTreePrinter implements NodeVisitor {
         addFrameDescriptor(node.getFrameDescriptor());
     }
 
-    public boolean detail(InnerRootNode module) {
-        return true;
-    }
-
     private void addFunctionDefinitionNode(FunctionDefinitionNode node) {
         indent(level);
         sb.append("Arguments:");
@@ -247,7 +243,6 @@ public class ParserTreePrinter implements NodeVisitor {
         sb.append("Expression:");
         newLine();
         visit(node.getExpression());
-        ;
         indent(level - 1);
         sb.append("SideEffect:");
         newLine();
@@ -651,8 +646,8 @@ public class ParserTreePrinter implements NodeVisitor {
         return false;
     }
 
-    private void indent(int level) {
-        for (int i = 0; i < level; i++) {
+    private void indent(int indentLevel) {
+        for (int i = 0; i < indentLevel; i++) {
             sb.append("  ");
         }
     }

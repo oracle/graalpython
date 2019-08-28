@@ -180,7 +180,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
-    protected StatementNode createAssignmentBlock(AssignmentSSTNode node, StatementNode... statements) {
+    protected StatementNode createAssignmentBlock(@SuppressWarnings("unused") AssignmentSSTNode node, StatementNode... statements) {
         return BlockNode.create(statements);
     }
 
@@ -293,25 +293,24 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return callNode;
     }
 
-    private String getQualifiedName(ScopeInfo scope, String name) {
+    private static String getQualifiedName(ScopeInfo scope, String name) {
         StringBuilder qualifiedName = new StringBuilder(name);
-        boolean addDot = false;
-        scope = scope.getParent();
-        while (scope != null) {
-            switch (scope.getScopeKind()) {
+        ScopeInfo tmpScope = scope.getParent();
+        while (tmpScope != null) {
+            switch (tmpScope.getScopeKind()) {
                 case Function:
                 case Generator:
                     qualifiedName.insert(0, ".<locals>.");
-                    qualifiedName.insert(0, scope.getScopeId());
-                    scope = scope.getParent();
+                    qualifiedName.insert(0, tmpScope.getScopeId());
+                    tmpScope = tmpScope.getParent();
                     break;
                 case Class:
                     qualifiedName.insert(0, '.');
-                    qualifiedName.insert(0, scope.getScopeId());
-                    scope = scope.getParent();
+                    qualifiedName.insert(0, tmpScope.getScopeId());
+                    tmpScope = tmpScope.getParent();
                     break;
                 case Module:
-                    scope = null;
+                    tmpScope = null;
                     break;
             }
 
@@ -542,7 +541,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(DelSSTNode node) {
         List<StatementNode> blockList = new ArrayList<>();
         for (int i = 0; i < node.expressions.length; i++) {
-            delTarget(blockList, (ExpressionNode) node.expressions[i].accept(this));
+            delTarget(blockList, node.expressions[i].accept(this));
         }
         PNode result = nodeFactory.createBlock(blockList);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
@@ -664,7 +663,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.functionScope);
         Signature signature = node.argBuilder.getSignature();
-        StatementNode argumentNodes = nodeFactory.createBlock(node.argBuilder.getArgumentNodes(this));
+        StatementNode argumentNodes = nodeFactory.createBlock(node.argBuilder.getArgumentNodes());
 
         StatementNode body;
         GeneratorFactorySSTVisitor generatorFactory = null;
@@ -837,7 +836,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          * Parameters
          */
         // Args args = visitArgs(varargslist, defaultArgs, defaultKwArgs);
-        StatementNode argumentLoads = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes(this));
+        StatementNode argumentLoads = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes());
         Signature signature = node.args == null ? Signature.EMPTY : node.args.getSignature();
 
         /**

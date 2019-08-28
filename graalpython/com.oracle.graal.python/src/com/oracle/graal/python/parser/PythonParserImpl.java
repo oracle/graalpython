@@ -186,7 +186,7 @@ public final class PythonParserImpl implements PythonParser {
         }
 
         lastGlobalScope = parser.factory.getScopeEnvironment().getGlobalScope();
-        return parser.factory.createParserResult(parserSSTResult, mode, errors, source, currentFrame);
+        return parser.factory.createParserResult(parserSSTResult, mode, errors, currentFrame);
 
     }
 

@@ -49,7 +49,6 @@ import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
@@ -84,80 +83,21 @@ import org.antlr.v4.runtime.ParserRuleContext;
 
 public final class PythonNodeFactory {
 
-    private final PythonLanguage language;
     private final NodeFactory nodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
 
     public PythonNodeFactory(PythonLanguage language, Source source) {
-        this.language = language;
         this.nodeFactory = NodeFactory.create(language);
         this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
         this.source = source;
     }
-
-    private void logIndent() {
-        ScopeInfo currentScope = scopeEnvironment.getCurrentScope();
-        while (currentScope != null && currentScope.getParent() != null) {
-            System.out.print("    ");
-            currentScope = currentScope.getParent();
-        }
-    }
-
-    void log(Object... args) {
-        // logIndent();
-        // StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
-        // System.out.print(stackTrace[1].getMethodName());
-        // for (Object o : args) {
-        // System.out.print(' ');
-        // print(o);
-        // }
-        // System.out.println();
-    }
-
-    private static void print(Object o) {
-        if (o == null) {
-            System.out.print('-');
-        } else if (o instanceof Object[]) {
-            Object[] array = (Object[]) o;
-            System.out.print('[');
-            for (int i = 0; i < array.length; i++) {
-                if (i > 0) {
-                    System.out.print(", ");
-                }
-                print(array[i]);
-            }
-            System.out.print(']');
-        } else if (o instanceof FrameDescriptor) {
-            System.out.print(((FrameDescriptor) o).getSlots());
-        } else {
-            System.out.print(o);
-        }
-    }
-
+    
     public ScopeEnvironment getScopeEnvironment() {
         return scopeEnvironment;
     }
 
-    public ExpressionNode asExpression(PNode node) {
-        if (node instanceof ExpressionNode.ExpressionStatementNode) {
-            return ((ExpressionNode.ExpressionStatementNode) node).getExpression();
-        }
-        if (node instanceof ExpressionNode) {
-            return (ExpressionNode) node;
-        }
-        if (node instanceof StatementNode) {
-            ExpressionNode emptyNode = EmptyNode.create().withSideEffect((StatementNode) node);
-            return emptyNode;
-        }
-        if (node == null) {
-            return EmptyNode.create();
-        } else {
-            throw new IllegalArgumentException("unexpected class: " + node.getClass());
-        }
-    }
-
-    public SSTNode createImport(String name, int level, String asName, int startOffset, int endOffset) {
+    public SSTNode createImport(String name, String asName, int startOffset, int endOffset) {
         scopeEnvironment.createLocal(asName == null ? name : asName);
         return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
     }
@@ -262,7 +202,7 @@ public final class PythonNodeFactory {
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
     }
 
-    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Source source, Frame currentFrame) {
+    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Frame currentFrame) {
         Node result;
         scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         scopeEnvironment.setFreeVarsInRootScope(currentFrame);
@@ -305,7 +245,7 @@ public final class PythonNodeFactory {
         return result;
     }
 
-    public String getModuleDoc(ExpressionNode from) {
+    private static String getModuleDoc(ExpressionNode from) {
         StringLiteralNode sln = StringUtils.extractDoc(from);
         String doc = null;
         if (sln != null) {
@@ -319,7 +259,6 @@ public final class PythonNodeFactory {
     }
 
     public ScopeInfo createScope(String name, ScopeKind kind) {
-        log(kind, null);
         if (kind == ScopeKind.Function && !name.equals("lambda")) {
             scopeEnvironment.createLocal(scopeEnvironment.getCurrentScope().getScopeKind() == ScopeKind.Class
                             ? ScopeEnvironment.CLASS_VAR_PREFIX + name
@@ -329,12 +268,10 @@ public final class PythonNodeFactory {
     }
 
     public ScopeInfo createScope(ParserRuleContext ctx, ScopeKind kind, FrameDescriptor locals) {
-        log(kind, locals);
         return scopeEnvironment.pushScope(ctx, kind, locals);
     }
 
     public void leaveScope() {
-        log();
         scopeEnvironment.popScope();
     }
 
@@ -343,13 +280,11 @@ public final class PythonNodeFactory {
     }
 
     public boolean createGeneratorScope(SSTNode target, SSTNode name) {
-        log(target, name);
         createScope(name.toString(), ScopeKind.Generator);
         return false;
     }
 
     public void leaveGeneratorScope(boolean scopeCreated) {
-        log(scopeCreated);
         if (scopeCreated) {
             leaveScope();
         }

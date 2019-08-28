@@ -325,13 +325,13 @@ public final class ScopeInfo {
         }
     }
 
-    private void indent(StringBuilder sb, int indent) {
+    private static void indent(StringBuilder sb, int indent) {
         for (int i = 0; i < indent; i++) {
             sb.append("    ");
         }
     }
 
-    private void printSet(StringBuilder sb, Set<String> set) {
+    private static void printSet(StringBuilder sb, Set<String> set) {
         if (set == null || set.isEmpty()) {
             sb.append("Empty");
         } else {

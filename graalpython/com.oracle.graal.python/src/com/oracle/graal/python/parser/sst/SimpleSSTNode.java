@@ -49,7 +49,7 @@ public class SimpleSSTNode extends SSTNode {
         NONE,
         ELLIPSIS,
         EMPTY
-    };
+    }
 
     protected final Type type;
 
