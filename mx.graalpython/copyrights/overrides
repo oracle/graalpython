@@ -1,3 +1,6 @@
+graalpython/benchmarks/src/host_interop/euler_java.py,benchmarks.copyright
+graalpython/benchmarks/src/host_interop/image-magix.py,pypy-image-demo.copyright
+graalpython/benchmarks/src/host_interop/image-magix-java.py,pypy-image-demo.copyright
 graalpython/benchmarks/src/macro/gcbench.py,pypy.copyright
 graalpython/benchmarks/src/meso/ai-nqueen.py,benchmarks.copyright
 graalpython/benchmarks/src/meso/binarytrees3.py,benchmarks.copyright
