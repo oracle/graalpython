@@ -82,18 +82,6 @@ public class StringUtils {
         return null;
     }
 
-    // public static StringLiteralNode getDoc(BlockSSTNode block, NodeFactory nodeFactory,
-    // PythonParser.ParserErrorCallback errors) {
-    // if (block.statements.length > 0 && block.statements[0] instanceof StringLiteralSSTNode) {
-    // SSTNode node = block.statements[0];
-    // PNode result = parseString(((StringLiteralSSTNode)node).values, nodeFactory, errors);
-    // if (result instanceof StringLiteralNode) {
-    // return (StringLiteralNode)result;
-    // }
-    // }
-    // return null;
-    // }
-
     private static class BytesBuilder {
         List<byte[]> bytes = new ArrayList<>();
         int len = 0;
@@ -121,6 +109,8 @@ public class StringUtils {
         for (String text : strings) {
             boolean isRaw = false;
             boolean isBytes = false;
+            
+            @SuppressWarnings("unused")
             boolean isFormat = false;
 
             int strStartIndex = 1;
