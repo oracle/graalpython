@@ -2618,12 +2618,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Number parse(String source, ParsePosition pp) {
+        private static Number parse(String source, ParsePosition pp) {
             return DecimalFormat.getInstance().parse(source, pp);
         }
 
         @TruffleBoundary
-        private Number parse(String source) throws ParseException {
+        private static Number parse(String source) throws ParseException {
             return DecimalFormat.getInstance().parse(source);
         }
     }
