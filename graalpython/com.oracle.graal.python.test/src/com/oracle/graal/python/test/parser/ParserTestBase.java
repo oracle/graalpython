@@ -325,7 +325,7 @@ public class ParserTestBase {
      * @param oldTT Truffle tree from old parser
      * @return corrected Truffle tree
      */
-    private String correctKnownIssues(String newTT, String oldTT) {
+    private static String correctKnownIssues(String newTT, String oldTT) {
         String LINE_TEXT = "\n";
         List<String> oldLines = Arrays.asList(oldTT.split(LINE_TEXT));
         List<String> newLines = Arrays.asList(newTT.split(LINE_TEXT));

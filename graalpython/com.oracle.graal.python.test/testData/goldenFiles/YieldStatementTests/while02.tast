@@ -40,14 +40,13 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                   GeneratorBlockNode SourceSection: None
                     ElseNode SourceSection: [15,37]`while x:↵     pass↵ ...`
                       WhileNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          WhileRepeatingNode SourceSection: None
-                            YesNodeGen SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: [21,22]`x`
-                                Frame: [0,x,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            ExpressionStatementNode SourceSection: [29,33]`pass`
-                              EmptyNode SourceSection: [29,33]`pass`
+                        WhileRepeatingNode SourceSection: None
+                          YesNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [21,22]`x`
+                              Frame: [0,x,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                          ExpressionStatementNode SourceSection: [29,33]`pass`
+                            EmptyNode SourceSection: [29,33]`pass`
                       BlockNode SourceSection: None
                     ElseNode SourceSection: [37,71]`while x:↵     x = x-...`
                       GeneratorWhileNode SourceSection: None

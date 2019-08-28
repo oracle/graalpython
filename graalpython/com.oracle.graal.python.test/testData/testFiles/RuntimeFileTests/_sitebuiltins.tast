@@ -597,70 +597,69 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         ObjectLiteralNode SourceSection: [1327,1331]`None`
                                       BreakTargetNode SourceSection: [1340,1555]`for filename in self...`
                                         ForNode SourceSection: None
-                                          DefaultLoopNode SourceSection: None
-                                            ForRepeatingNode SourceSection: None
-                                              ForNextElementNodeGen SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: filename
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [3,filename,Illegal]
-                                              TryFinallyNode SourceSection: [1386,1555]`try:↵               ...`
-                                                TryExceptNode SourceSection: None
-                                                  BlockNode SourceSection: None
-                                                    WithNode SourceSection: [1407,1492]`with open(filename, ...`
-                                                      WriteLocalVariableNodeGen SourceSection: [1459,1475]`data = fp.read()`
-                                                        Identifier: data
-                                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                                          Frame: [1,data,Illegal]
-                                                        PythonCallNodeGen SourceSection: [1466,1475]`fp.read()`
-                                                          CachedCallNodeGen SourceSection: None
-                                                            CreateArgumentsNodeGen SourceSection: None
-                                                            CallDispatchNodeGen SourceSection: None
-                                                          GetCallAttributeNodeGen SourceSection: None
-                                                            ReadLocalVariableNode SourceSection: [1466,1468]`fp`
-                                                              Frame: [2,fp,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                                      WriteLocalVariableNodeGen SourceSection: None
-                                                        Identifier: fp
-                                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                                          Frame: [2,fp,Illegal]
-                                                      PythonCallNodeGen SourceSection: [1412,1431]`open(filename, "r")`
+                                          ForRepeatingNode SourceSection: None
+                                            ForNextElementNodeGen SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: filename
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [3,filename,Illegal]
+                                            TryFinallyNode SourceSection: [1386,1555]`try:↵               ...`
+                                              TryExceptNode SourceSection: None
+                                                BlockNode SourceSection: None
+                                                  WithNode SourceSection: [1407,1492]`with open(filename, ...`
+                                                    WriteLocalVariableNodeGen SourceSection: [1459,1475]`data = fp.read()`
+                                                      Identifier: data
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [1,data,Illegal]
+                                                      PythonCallNodeGen SourceSection: [1466,1475]`fp.read()`
                                                         CachedCallNodeGen SourceSection: None
                                                           CreateArgumentsNodeGen SourceSection: None
                                                           CallDispatchNodeGen SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [1417,1425]`filename`
-                                                          Frame: [3,filename,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                        StringLiteralNode SourceSection: [1427,1430]`"r"`
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                          Identifier: open
-                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeSlowNodeGen SourceSection: None
-                                                        GetLazyClassNodeGen SourceSection: None
-                                                      LookupInheritedAttributeNode SourceSection: None
-                                                        LookupAttributeInMRONodeGen SourceSection: None
-                                                          IsSameTypeSlowNodeGen SourceSection: None
-                                                        GetLazyClassNodeGen SourceSection: None
+                                                        GetCallAttributeNodeGen SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [1466,1468]`fp`
+                                                            Frame: [2,fp,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: fp
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [2,fp,Illegal]
+                                                    PythonCallNodeGen SourceSection: [1412,1431]`open(filename, "r")`
                                                       CachedCallNodeGen SourceSection: None
                                                         CreateArgumentsNodeGen SourceSection: None
                                                         CallDispatchNodeGen SourceSection: None
-                                                      CachedCallNodeGen SourceSection: None
-                                                        CreateArgumentsNodeGen SourceSection: None
-                                                        CallDispatchNodeGen SourceSection: None
-                                                      YesNodeGen SourceSection: None
-                                                      CachedNodeGen SourceSection: None
-                                                      SaveExceptionStateNodeGen SourceSection: None
-                                                    BreakNode SourceSection: [1492,1497]`break`
-                                                  ExceptNode SourceSection: None
-                                                    ExpressionStatementNode SourceSection: [1542,1546]`pass`
-                                                      EmptyNode SourceSection: [1542,1546]`pass`
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [1517,1524]`OSError`
-                                                      Identifier: OSError
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  BlockNode SourceSection: None
-                                                  SaveExceptionStateNodeGen SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [1417,1425]`filename`
+                                                        Frame: [3,filename,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                      StringLiteralNode SourceSection: [1427,1430]`"r"`
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        Identifier: open
+                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                    LookupInheritedAttributeNode SourceSection: None
+                                                      LookupAttributeInMRONodeGen SourceSection: None
+                                                        IsSameTypeSlowNodeGen SourceSection: None
+                                                      GetLazyClassNodeGen SourceSection: None
+                                                    LookupInheritedAttributeNode SourceSection: None
+                                                      LookupAttributeInMRONodeGen SourceSection: None
+                                                        IsSameTypeSlowNodeGen SourceSection: None
+                                                      GetLazyClassNodeGen SourceSection: None
+                                                    CachedCallNodeGen SourceSection: None
+                                                      CreateArgumentsNodeGen SourceSection: None
+                                                      CallDispatchNodeGen SourceSection: None
+                                                    CachedCallNodeGen SourceSection: None
+                                                      CreateArgumentsNodeGen SourceSection: None
+                                                      CallDispatchNodeGen SourceSection: None
+                                                    YesNodeGen SourceSection: None
+                                                    CachedNodeGen SourceSection: None
+                                                    SaveExceptionStateNodeGen SourceSection: None
+                                                  BreakNode SourceSection: [1492,1497]`break`
+                                                ExceptNode SourceSection: None
+                                                  ExpressionStatementNode SourceSection: [1542,1546]`pass`
+                                                    EmptyNode SourceSection: [1542,1546]`pass`
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [1517,1524]`OSError`
+                                                    Identifier: OSError
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                BlockNode SourceSection: None
+                                                SaveExceptionStateNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [1356,1372]`self.__filenames`
                                             GetIteratorNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [1356,1372]`self.__filenames`
@@ -904,153 +903,150 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           Value: 0
                                       BreakTargetNode SourceSection: [2053,2538]`while 1:↵           ...`
                                         WhileNode SourceSection: None
-                                          DefaultLoopNode SourceSection: None
-                                            WhileRepeatingNode SourceSection: None
-                                              YesNodeGen SourceSection: None
-                                                IntegerLiteralNode SourceSection: [2059,2060]`1`
-                                                  Value: 1
-                                              TryFinallyNode SourceSection: [2074,2538]`try:↵               ...`
-                                                TryExceptNode SourceSection: None
-                                                  ElseNode SourceSection: [2095,2198]`for i in range(linen...`
-                                                    ForNode SourceSection: None
-                                                      DefaultLoopNode SourceSection: None
-                                                        ForRepeatingNode SourceSection: None
-                                                          ForNextElementNodeGen SourceSection: None
-                                                            WriteLocalVariableNodeGen SourceSection: None
-                                                              Identifier: i
-                                                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                Frame: [3,i,Illegal]
-                                                          ExpressionStatementNode SourceSection: [2163,2185]`print(self.__lines[i...`
-                                                            PythonCallNodeGen SourceSection: [2163,2185]`print(self.__lines[i...`
-                                                              CachedCallNodeGen SourceSection: None
-                                                                CreateArgumentsNodeGen SourceSection: None
-                                                                CallDispatchNodeGen SourceSection: None
-                                                              GetItemNodeGen SourceSection: [2169,2184]`self.__lines[i]`
-                                                                GetAttributeNodeGen SourceSection: None
-                                                                  GetFixedAttributeNodeGen SourceSection: None
-                                                                    Key: __lines
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                                      Op: __getattribute__
-                                                                  ReadLocalVariableNode SourceSection: [2169,2173]`self`
-                                                                    Frame: [0,self,Illegal]
-                                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                                ReadLocalVariableNode SourceSection: [2182,2183]`i`
-                                                                  Frame: [3,i,Illegal]
-                                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                                Identifier: print
-                                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      GetIteratorExpressionNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
-                                                        GetIteratorNodeGen SourceSection: None
-                                                        PythonCallNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
+                                          WhileRepeatingNode SourceSection: None
+                                            YesNodeGen SourceSection: None
+                                              IntegerLiteralNode SourceSection: [2059,2060]`1`
+                                                Value: 1
+                                            TryFinallyNode SourceSection: [2074,2538]`try:↵               ...`
+                                              TryExceptNode SourceSection: None
+                                                ElseNode SourceSection: [2095,2198]`for i in range(linen...`
+                                                  ForNode SourceSection: None
+                                                    ForRepeatingNode SourceSection: None
+                                                      ForNextElementNodeGen SourceSection: None
+                                                        WriteLocalVariableNodeGen SourceSection: None
+                                                          Identifier: i
+                                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                                            Frame: [3,i,Illegal]
+                                                      ExpressionStatementNode SourceSection: [2163,2185]`print(self.__lines[i...`
+                                                        PythonCallNodeGen SourceSection: [2163,2185]`print(self.__lines[i...`
                                                           CachedCallNodeGen SourceSection: None
                                                             CreateArgumentsNodeGen SourceSection: None
                                                             CallDispatchNodeGen SourceSection: None
-                                                          ReadLocalVariableNode SourceSection: [2110,2116]`lineno`
-                                                            Frame: [2,lineno,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                                          BinaryArithmeticExpression SourceSection: [2118,2140]`lineno + self.MAXLIN...`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __add__
-                                                            ReadLocalVariableNode SourceSection: [2118,2124]`lineno`
-                                                              Frame: [2,lineno,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                                            GetAttributeNodeGen SourceSection: [2127,2140]`self.MAXLINES`
+                                                          GetItemNodeGen SourceSection: [2169,2184]`self.__lines[i]`
+                                                            GetAttributeNodeGen SourceSection: None
                                                               GetFixedAttributeNodeGen SourceSection: None
-                                                                Key: MAXLINES
+                                                                Key: __lines
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
-                                                              ReadLocalVariableNode SourceSection: [2127,2131]`self`
+                                                              ReadLocalVariableNode SourceSection: [2169,2173]`self`
                                                                 Frame: [0,self,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ReadLocalVariableNode SourceSection: [2182,2183]`i`
+                                                              Frame: [3,i,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                            Identifier: range
+                                                            Identifier: print
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    BlockNode SourceSection: None
-                                                  ExceptNode SourceSection: None
-                                                    BreakNode SourceSection: [2233,2238]`break`
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [2205,2215]`IndexError`
-                                                      Identifier: IndexError
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  BlockNode SourceSection: None
-                                                    WriteLocalVariableNodeGen SourceSection: [2273,2296]`lineno += self.MAXLI...`
-                                                      Identifier: lineno
-                                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [2,lineno,Illegal]
-                                                      LookupAndCallInplaceNodeGen SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [2273,2279]`lineno`
+                                                    GetIteratorExpressionNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
+                                                      GetIteratorNodeGen SourceSection: None
+                                                      PythonCallNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
+                                                        CachedCallNodeGen SourceSection: None
+                                                          CreateArgumentsNodeGen SourceSection: None
+                                                          CallDispatchNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [2110,2116]`lineno`
                                                           Frame: [2,lineno,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        GetAttributeNodeGen SourceSection: [2283,2296]`self.MAXLINES`
-                                                          GetFixedAttributeNodeGen SourceSection: None
-                                                            Key: MAXLINES
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __getattribute__
-                                                          ReadLocalVariableNode SourceSection: [2283,2287]`self`
-                                                            Frame: [0,self,Illegal]
+                                                        BinaryArithmeticExpression SourceSection: [2118,2140]`lineno + self.MAXLIN...`
+                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                            Op: __add__
+                                                          ReadLocalVariableNode SourceSection: [2118,2124]`lineno`
+                                                            Frame: [2,lineno,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                    WriteLocalVariableNodeGen SourceSection: [2313,2323]`key = None`
-                                                      Identifier: key
-                                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [4,key,Illegal]
-                                                      ObjectLiteralNode SourceSection: [2319,2323]`None`
-                                                    ElseNode SourceSection: [2340,2495]`while key is None:↵ ...`
-                                                      WhileNode SourceSection: None
-                                                        DefaultLoopNode SourceSection: None
-                                                          WhileRepeatingNode SourceSection: None
-                                                            YesNodeGen SourceSection: None
-                                                              IsExpressionNodeGen SourceSection: [2346,2357]`key is None`
-                                                                ReadLocalVariableNode SourceSection: [2346,2349]`key`
+                                                          GetAttributeNodeGen SourceSection: [2127,2140]`self.MAXLINES`
+                                                            GetFixedAttributeNodeGen SourceSection: None
+                                                              Key: MAXLINES
+                                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                                Op: __getattribute__
+                                                            ReadLocalVariableNode SourceSection: [2127,2131]`self`
+                                                              Frame: [0,self,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          Identifier: range
+                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  BlockNode SourceSection: None
+                                                ExceptNode SourceSection: None
+                                                  BreakNode SourceSection: [2233,2238]`break`
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [2205,2215]`IndexError`
+                                                    Identifier: IndexError
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                BlockNode SourceSection: None
+                                                  WriteLocalVariableNodeGen SourceSection: [2273,2296]`lineno += self.MAXLI...`
+                                                    Identifier: lineno
+                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                      Frame: [2,lineno,Illegal]
+                                                    LookupAndCallInplaceNodeGen SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [2273,2279]`lineno`
+                                                        Frame: [2,lineno,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                      GetAttributeNodeGen SourceSection: [2283,2296]`self.MAXLINES`
+                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                          Key: MAXLINES
+                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                            Op: __getattribute__
+                                                        ReadLocalVariableNode SourceSection: [2283,2287]`self`
+                                                          Frame: [0,self,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                  WriteLocalVariableNodeGen SourceSection: [2313,2323]`key = None`
+                                                    Identifier: key
+                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                      Frame: [4,key,Illegal]
+                                                    ObjectLiteralNode SourceSection: [2319,2323]`None`
+                                                  ElseNode SourceSection: [2340,2495]`while key is None:↵ ...`
+                                                    WhileNode SourceSection: None
+                                                      WhileRepeatingNode SourceSection: None
+                                                        YesNodeGen SourceSection: None
+                                                          IsExpressionNodeGen SourceSection: [2346,2357]`key is None`
+                                                            ReadLocalVariableNode SourceSection: [2346,2349]`key`
+                                                              Frame: [4,key,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ObjectLiteralNode SourceSection: [2353,2357]`None`
+                                                        BlockNode SourceSection: None
+                                                          WriteLocalVariableNodeGen SourceSection: [2379,2398]`key = input(prompt)`
+                                                            Identifier: key
+                                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                                              Frame: [4,key,Illegal]
+                                                            PythonCallNodeGen SourceSection: [2385,2398]`input(prompt)`
+                                                              CachedCallNodeGen SourceSection: None
+                                                                CreateArgumentsNodeGen SourceSection: None
+                                                                CallDispatchNodeGen SourceSection: None
+                                                              ReadLocalVariableNode SourceSection: [2391,2397]`prompt`
+                                                                Frame: [1,prompt,Illegal]
+                                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                Identifier: input
+                                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                          IfNode SourceSection: [2419,2495]`if key not in ('', '...`
+                                                            NotNodeGen SourceSection: [2422,2442]`key not in ('', 'q')...`
+                                                              ContainsNodeGen SourceSection: None
+                                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                                  Op: __contains__
+                                                                YesNodeGen SourceSection: None
+                                                                TupleLiteralNode SourceSection: [2433,2442]`('', 'q')`
+                                                                  PythonObjectFactoryNodeGen SourceSection: None
+                                                                  StringLiteralNode SourceSection: [2434,2436]`''`
+                                                                  StringLiteralNode SourceSection: [2438,2441]`'q'`
+                                                                ReadLocalVariableNode SourceSection: [2422,2425]`key`
                                                                   Frame: [4,key,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                                ObjectLiteralNode SourceSection: [2353,2357]`None`
+                                                            WriteLocalVariableNodeGen SourceSection: [2468,2478]`key = None`
+                                                              Identifier: key
+                                                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                                                Frame: [4,key,Illegal]
+                                                              ObjectLiteralNode SourceSection: [2474,2478]`None`
                                                             BlockNode SourceSection: None
-                                                              WriteLocalVariableNodeGen SourceSection: [2379,2398]`key = input(prompt)`
-                                                                Identifier: key
-                                                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                  Frame: [4,key,Illegal]
-                                                                PythonCallNodeGen SourceSection: [2385,2398]`input(prompt)`
-                                                                  CachedCallNodeGen SourceSection: None
-                                                                    CreateArgumentsNodeGen SourceSection: None
-                                                                    CallDispatchNodeGen SourceSection: None
-                                                                  ReadLocalVariableNode SourceSection: [2391,2397]`prompt`
-                                                                    Frame: [1,prompt,Illegal]
-                                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                                    Identifier: input
-                                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                              IfNode SourceSection: [2419,2495]`if key not in ('', '...`
-                                                                NotNodeGen SourceSection: [2422,2442]`key not in ('', 'q')...`
-                                                                  ContainsNodeGen SourceSection: None
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                                      Op: __contains__
-                                                                    YesNodeGen SourceSection: None
-                                                                    TupleLiteralNode SourceSection: [2433,2442]`('', 'q')`
-                                                                      PythonObjectFactoryNodeGen SourceSection: None
-                                                                      StringLiteralNode SourceSection: [2434,2436]`''`
-                                                                      StringLiteralNode SourceSection: [2438,2441]`'q'`
-                                                                    ReadLocalVariableNode SourceSection: [2422,2425]`key`
-                                                                      Frame: [4,key,Illegal]
-                                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                                WriteLocalVariableNodeGen SourceSection: [2468,2478]`key = None`
-                                                                  Identifier: key
-                                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                    Frame: [4,key,Illegal]
-                                                                  ObjectLiteralNode SourceSection: [2474,2478]`None`
-                                                                BlockNode SourceSection: None
-                                                      BlockNode SourceSection: None
-                                                    IfNode SourceSection: [2495,2538]`if key == 'q':↵     ...`
-                                                      YesNodeGen SourceSection: None
-                                                        BinaryComparisonNodeGen SourceSection: [2498,2508]`key == 'q'`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __eq__
-                                                          ReadLocalVariableNode SourceSection: [2498,2501]`key`
-                                                            Frame: [4,key,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                                          StringLiteralNode SourceSection: [2505,2508]`'q'`
-                                                      BreakNode SourceSection: [2530,2535]`break`
-                                                      BlockNode SourceSection: None
-                                                  SaveExceptionStateNodeGen SourceSection: None
+                                                    BlockNode SourceSection: None
+                                                  IfNode SourceSection: [2495,2538]`if key == 'q':↵     ...`
+                                                    YesNodeGen SourceSection: None
+                                                      BinaryComparisonNodeGen SourceSection: [2498,2508]`key == 'q'`
+                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                          Op: __eq__
+                                                        ReadLocalVariableNode SourceSection: [2498,2501]`key`
+                                                          Frame: [4,key,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        StringLiteralNode SourceSection: [2505,2508]`'q'`
+                                                    BreakNode SourceSection: [2530,2535]`break`
+                                                    BlockNode SourceSection: None
+                                                SaveExceptionStateNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [6,<return_val>,Illegal]

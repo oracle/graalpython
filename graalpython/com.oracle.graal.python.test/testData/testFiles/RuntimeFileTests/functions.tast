@@ -131,25 +131,24 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                     BlockNode SourceSection: None
                       ElseNode SourceSection: [2149,2210]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
-                          DefaultLoopNode SourceSection: None
-                            ForRepeatingNode SourceSection: None
-                              ForNextElementNodeGen SourceSection: None
+                          ForRepeatingNode SourceSection: None
+                            ForNextElementNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: i
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [1,i,Illegal]
+                            IfNode SourceSection: [2176,2210]`if i:↵            re...`
+                              YesNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [2179,2180]`i`
+                                  Frame: [1,i,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              FrameReturnNode SourceSection: [2194,2205]`return True`
                                 WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: i
+                                  Identifier: <return_val>
                                   WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [1,i,Illegal]
-                              IfNode SourceSection: [2176,2210]`if i:↵            re...`
-                                YesNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [2179,2180]`i`
-                                    Frame: [1,i,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                FrameReturnNode SourceSection: [2194,2205]`return True`
-                                  WriteLocalVariableNodeGen SourceSection: None
-                                    Identifier: <return_val>
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
-                                    BooleanLiteralNode SourceSection: [2201,2205]`True`
-                                BlockNode SourceSection: None
+                                    Frame: [2,<return_val>,Illegal]
+                                  BooleanLiteralNode SourceSection: [2201,2205]`True`
+                              BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2158,2166]`iterable`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2158,2166]`iterable`
@@ -206,25 +205,24 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                     BlockNode SourceSection: None
                       ElseNode SourceSection: [2261,2327]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
-                          DefaultLoopNode SourceSection: None
-                            ForRepeatingNode SourceSection: None
-                              ForNextElementNodeGen SourceSection: None
+                          ForRepeatingNode SourceSection: None
+                            ForNextElementNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: i
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [1,i,Illegal]
+                            IfNode SourceSection: [2288,2327]`if not i:↵          ...`
+                              NotNodeGen SourceSection: [2291,2296]`not i`
+                                ReadLocalVariableNode SourceSection: [2295,2296]`i`
+                                  Frame: [1,i,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              FrameReturnNode SourceSection: [2310,2322]`return False`
                                 WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: i
+                                  Identifier: <return_val>
                                   WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [1,i,Illegal]
-                              IfNode SourceSection: [2288,2327]`if not i:↵          ...`
-                                NotNodeGen SourceSection: [2291,2296]`not i`
-                                  ReadLocalVariableNode SourceSection: [2295,2296]`i`
-                                    Frame: [1,i,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                FrameReturnNode SourceSection: [2310,2322]`return False`
-                                  WriteLocalVariableNodeGen SourceSection: None
-                                    Identifier: <return_val>
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
-                                    BooleanLiteralNode SourceSection: [2317,2322]`False`
-                                BlockNode SourceSection: None
+                                    Frame: [2,<return_val>,Illegal]
+                                  BooleanLiteralNode SourceSection: [2317,2322]`False`
+                              BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2270,2278]`iterable`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2270,2278]`iterable`
@@ -350,38 +348,37 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                               CalleeContext SourceSection: None
                       ElseNode SourceSection: [2460,2537]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
-                          DefaultLoopNode SourceSection: None
-                            ForRepeatingNode SourceSection: None
-                              ForNextElementNodeGen SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: i
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                          ForRepeatingNode SourceSection: None
+                            ForNextElementNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: i
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [4,i,Illegal]
+                            IfNode SourceSection: [2487,2537]`if predicate(i):↵   ...`
+                              YesNodeGen SourceSection: None
+                                PythonCallNodeGen SourceSection: [2490,2502]`predicate(i)`
+                                  CachedCallNodeGen SourceSection: None
+                                    CreateArgumentsNodeGen SourceSection: None
+                                    CallDispatchNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [2500,2501]`i`
                                     Frame: [4,i,Illegal]
-                              IfNode SourceSection: [2487,2537]`if predicate(i):↵   ...`
-                                YesNodeGen SourceSection: None
-                                  PythonCallNodeGen SourceSection: [2490,2502]`predicate(i)`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [2500,2501]`i`
-                                      Frame: [4,i,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [3,predicate,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              ExpressionStatementNode SourceSection: [2516,2532]`result.append(i)`
+                                PythonCallNodeGen SourceSection: [2516,2532]`result.append(i)`
+                                  CachedCallNodeGen SourceSection: None
+                                    CreateArgumentsNodeGen SourceSection: None
+                                    CallDispatchNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [2530,2531]`i`
+                                    Frame: [4,i,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  GetCallAttributeNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [2516,2522]`result`
+                                      Frame: [2,result,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: None
-                                      Frame: [3,predicate,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                ExpressionStatementNode SourceSection: [2516,2532]`result.append(i)`
-                                  PythonCallNodeGen SourceSection: [2516,2532]`result.append(i)`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [2530,2531]`i`
-                                      Frame: [4,i,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                    GetCallAttributeNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [2516,2522]`result`
-                                        Frame: [2,result,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                BlockNode SourceSection: None
+                              BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2469,2477]`iterable`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2469,2477]`iterable`
@@ -695,32 +692,31 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ElseNode SourceSection: [3145,3206]`for i in args:↵     ...`
                                         ForNode SourceSection: None
-                                          DefaultLoopNode SourceSection: None
-                                            ForRepeatingNode SourceSection: None
-                                              ForNextElementNodeGen SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: i
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [5,i,Illegal]
-                                              ExpressionStatementNode SourceSection: [3172,3197]`iterators.append(ite...`
-                                                PythonCallNodeGen SourceSection: [3172,3197]`iterators.append(ite...`
+                                          ForRepeatingNode SourceSection: None
+                                            ForNextElementNodeGen SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: i
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [5,i,Illegal]
+                                            ExpressionStatementNode SourceSection: [3172,3197]`iterators.append(ite...`
+                                              PythonCallNodeGen SourceSection: [3172,3197]`iterators.append(ite...`
+                                                CachedCallNodeGen SourceSection: None
+                                                  CreateArgumentsNodeGen SourceSection: None
+                                                  CallDispatchNodeGen SourceSection: None
+                                                PythonCallNodeGen SourceSection: [3189,3196]`iter(i)`
                                                   CachedCallNodeGen SourceSection: None
                                                     CreateArgumentsNodeGen SourceSection: None
                                                     CallDispatchNodeGen SourceSection: None
-                                                  PythonCallNodeGen SourceSection: [3189,3196]`iter(i)`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [3194,3195]`i`
-                                                      Frame: [5,i,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                      Identifier: iter
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  GetCallAttributeNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [3172,3181]`iterators`
-                                                      Frame: [4,iterators,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [3194,3195]`i`
+                                                    Frame: [5,i,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    Identifier: iter
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                GetCallAttributeNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [3172,3181]`iterators`
+                                                    Frame: [4,iterators,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [3154,3158]`args`
                                             GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3154,3158]`args`
@@ -782,32 +778,31 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       ElseNode SourceSection: [3286,3356]`for it in self.__ite...`
                                         ForNode SourceSection: None
-                                          DefaultLoopNode SourceSection: None
-                                            ForRepeatingNode SourceSection: None
-                                              ForNextElementNodeGen SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: it
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [2,it,Illegal]
-                                              ExpressionStatementNode SourceSection: [3326,3347]`args.append(next(it)...`
-                                                PythonCallNodeGen SourceSection: [3326,3347]`args.append(next(it)...`
+                                          ForRepeatingNode SourceSection: None
+                                            ForNextElementNodeGen SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: it
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [2,it,Illegal]
+                                            ExpressionStatementNode SourceSection: [3326,3347]`args.append(next(it)...`
+                                              PythonCallNodeGen SourceSection: [3326,3347]`args.append(next(it)...`
+                                                CachedCallNodeGen SourceSection: None
+                                                  CreateArgumentsNodeGen SourceSection: None
+                                                  CallDispatchNodeGen SourceSection: None
+                                                PythonCallNodeGen SourceSection: [3338,3346]`next(it)`
                                                   CachedCallNodeGen SourceSection: None
                                                     CreateArgumentsNodeGen SourceSection: None
                                                     CallDispatchNodeGen SourceSection: None
-                                                  PythonCallNodeGen SourceSection: [3338,3346]`next(it)`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [3343,3345]`it`
-                                                      Frame: [2,it,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                      Identifier: next
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  GetCallAttributeNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [3326,3330]`args`
-                                                      Frame: [1,args,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [3343,3345]`it`
+                                                    Frame: [2,it,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    Identifier: next
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                GetCallAttributeNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [3326,3330]`args`
+                                                    Frame: [1,args,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [3296,3312]`self.__iterators`
                                             GetIteratorNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [3296,3312]`self.__iterators`
@@ -932,31 +927,30 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                     BlockNode SourceSection: None
                                       ElseNode SourceSection: [3467,3572]`for i in map(self.__...`
                                         ForNode SourceSection: None
-                                          DefaultLoopNode SourceSection: None
-                                            ForRepeatingNode SourceSection: None
-                                              ForNextElementNodeGen SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: i
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                          ForRepeatingNode SourceSection: None
+                                            ForNextElementNodeGen SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: i
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [2,i,Illegal]
+                                            IfNode SourceSection: [3525,3572]`if x == i:↵         ...`
+                                              YesNodeGen SourceSection: None
+                                                BinaryComparisonNodeGen SourceSection: [3528,3534]`x == i`
+                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                    Op: __eq__
+                                                  ReadLocalVariableNode SourceSection: [3528,3529]`x`
+                                                    Frame: [1,x,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [3533,3534]`i`
                                                     Frame: [2,i,Illegal]
-                                              IfNode SourceSection: [3525,3572]`if x == i:↵         ...`
-                                                YesNodeGen SourceSection: None
-                                                  BinaryComparisonNodeGen SourceSection: [3528,3534]`x == i`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __eq__
-                                                    ReadLocalVariableNode SourceSection: [3528,3529]`x`
-                                                      Frame: [1,x,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [3533,3534]`i`
-                                                      Frame: [2,i,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                FrameReturnNode SourceSection: [3552,3563]`return True`
-                                                  WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: <return_val>
-                                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [4,<return_val>,Illegal]
-                                                    BooleanLiteralNode SourceSection: [3559,3563]`True`
-                                                BlockNode SourceSection: None
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              FrameReturnNode SourceSection: [3552,3563]`return True`
+                                                WriteLocalVariableNodeGen SourceSection: None
+                                                  Identifier: <return_val>
+                                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                                    Frame: [4,<return_val>,Illegal]
+                                                  BooleanLiteralNode SourceSection: [3559,3563]`True`
+                                              BlockNode SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [3476,3511]`map(self.__func, *se...`
                                             GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [3476,3511]`map(self.__func, *se...`

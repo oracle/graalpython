@@ -11,38 +11,37 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
       SideEffect:
         BreakTargetNode SourceSection: [0,94]`for i in range(1, 10...`
           ForNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              ForRepeatingNode SourceSection: None
-                ForNextElementNodeGen SourceSection: None
-                  WriteNameNodeGen SourceSection: None
-                    Identifier: i
-                BlockNode SourceSection: None
-                  IfNode SourceSection: [27,62]`if call01(i)==0:↵   ...`
-                    YesNodeGen SourceSection: None
-                      BinaryComparisonNodeGen SourceSection: [30,42]`call01(i)==0`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __eq__
-                        PythonCallNodeGen SourceSection: [30,39]`call01(i)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
-                          ReadNameNodeGen SourceSection: [37,38]`i`
-                            Identifier: i
-                          ReadNameNodeGen SourceSection: None
-                            Identifier: call01
-                        IntegerLiteralNode SourceSection: [41,42]`0`
-                          Value: 0
-                    BreakNode SourceSection: [52,57]`break`
-                    BlockNode SourceSection: None
-                  ExpressionStatementNode SourceSection: [62,70]`print(i)`
-                    PythonCallNodeGen SourceSection: [62,70]`print(i)`
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
-                      ReadNameNodeGen SourceSection: [68,69]`i`
-                        Identifier: i
-                      ReadNameNodeGen SourceSection: None
-                        Identifier: print
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: i
+              BlockNode SourceSection: None
+                IfNode SourceSection: [27,62]`if call01(i)==0:↵   ...`
+                  YesNodeGen SourceSection: None
+                    BinaryComparisonNodeGen SourceSection: [30,42]`call01(i)==0`
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __eq__
+                      PythonCallNodeGen SourceSection: [30,39]`call01(i)`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadNameNodeGen SourceSection: [37,38]`i`
+                          Identifier: i
+                        ReadNameNodeGen SourceSection: None
+                          Identifier: call01
+                      IntegerLiteralNode SourceSection: [41,42]`0`
+                        Value: 0
+                  BreakNode SourceSection: [52,57]`break`
+                  BlockNode SourceSection: None
+                ExpressionStatementNode SourceSection: [62,70]`print(i)`
+                  PythonCallNodeGen SourceSection: [62,70]`print(i)`
+                    CachedCallNodeGen SourceSection: None
+                      CreateArgumentsNodeGen SourceSection: None
+                      CallDispatchNodeGen SourceSection: None
+                    ReadNameNodeGen SourceSection: [68,69]`i`
+                      Identifier: i
+                    ReadNameNodeGen SourceSection: None
+                      Identifier: print
             GetIteratorExpressionNodeGen SourceSection: [9,21]`range(1, 10)`
               GetIteratorNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [9,21]`range(1, 10)`

@@ -11,20 +11,19 @@ ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):
       SideEffect:
         ElseNode SourceSection: [0,31]`for i in range(210):...`
           ForNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              ForRepeatingNode SourceSection: None
-                ForNextElementNodeGen SourceSection: None
-                  WriteNameNodeGen SourceSection: None
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: i
+              ExpressionStatementNode SourceSection: [23,31]`print(i)`
+                PythonCallNodeGen SourceSection: [23,31]`print(i)`
+                  CachedCallNodeGen SourceSection: None
+                    CreateArgumentsNodeGen SourceSection: None
+                    CallDispatchNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [29,30]`i`
                     Identifier: i
-                ExpressionStatementNode SourceSection: [23,31]`print(i)`
-                  PythonCallNodeGen SourceSection: [23,31]`print(i)`
-                    CachedCallNodeGen SourceSection: None
-                      CreateArgumentsNodeGen SourceSection: None
-                      CallDispatchNodeGen SourceSection: None
-                    ReadNameNodeGen SourceSection: [29,30]`i`
-                      Identifier: i
-                    ReadNameNodeGen SourceSection: None
-                      Identifier: print
+                  ReadNameNodeGen SourceSection: None
+                    Identifier: print
             GetIteratorExpressionNodeGen SourceSection: [9,19]`range(210)`
               GetIteratorNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [9,19]`range(210)`

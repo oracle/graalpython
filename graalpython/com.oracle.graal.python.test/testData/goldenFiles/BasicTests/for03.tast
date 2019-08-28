@@ -11,22 +11,21 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):�
       SideEffect:
         BreakTargetNode SourceSection: [0,43]`for x in xrange(3):↵...`
           ForNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              ForRepeatingNode SourceSection: None
-                ForNextElementNodeGen SourceSection: None
-                  WriteNameNodeGen SourceSection: None
-                    Identifier: x
-                IfNode SourceSection: [22,43]`if x == 1:↵    break...`
-                  YesNodeGen SourceSection: None
-                    BinaryComparisonNodeGen SourceSection: [25,31]`x == 1`
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __eq__
-                      ReadNameNodeGen SourceSection: [25,26]`x`
-                        Identifier: x
-                      IntegerLiteralNode SourceSection: [30,31]`1`
-                        Value: 1
-                  BreakNode SourceSection: [37,42]`break`
-                  BlockNode SourceSection: None
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: x
+              IfNode SourceSection: [22,43]`if x == 1:↵    break...`
+                YesNodeGen SourceSection: None
+                  BinaryComparisonNodeGen SourceSection: [25,31]`x == 1`
+                    LookupAndCallBinaryNodeGen SourceSection: None
+                      Op: __eq__
+                    ReadNameNodeGen SourceSection: [25,26]`x`
+                      Identifier: x
+                    IntegerLiteralNode SourceSection: [30,31]`1`
+                      Value: 1
+                BreakNode SourceSection: [37,42]`break`
+                BlockNode SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [9,18]`xrange(3)`
               GetIteratorNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [9,18]`xrange(3)`

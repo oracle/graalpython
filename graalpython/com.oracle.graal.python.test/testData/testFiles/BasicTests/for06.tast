@@ -36,52 +36,51 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0↵def fn():�
                   BlockNode SourceSection: None
                   BreakTargetNode SourceSection: [18,121]`for x in range(3):↵ ...`
                     ForNode SourceSection: None
-                      DefaultLoopNode SourceSection: None
-                        ForRepeatingNode SourceSection: None
-                          ForNextElementNodeGen SourceSection: None
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: x
-                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                Frame: [0,x,Illegal]
-                          BlockNode SourceSection: None
-                            WriteLocalVariableNodeGen SourceSection: [41,46]`x = 4`
-                              Identifier: x
-                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                Frame: [0,x,Illegal]
-                              IntegerLiteralNode SourceSection: [45,46]`4`
-                                Value: 4
-                            IfNode SourceSection: [51,121]`if x == 1:↵      pri...`
-                              YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [54,60]`x == 1`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
-                                  ReadLocalVariableNode SourceSection: [54,55]`x`
-                                    Frame: [0,x,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                  IntegerLiteralNode SourceSection: [59,60]`1`
-                                    Value: 1
-                              BlockNode SourceSection: None
-                                ExpressionStatementNode SourceSection: [68,82]`print('jedna')`
-                                  PythonCallNodeGen SourceSection: [68,82]`print('jedna')`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
-                                    StringLiteralNode SourceSection: [74,81]`'jedna'`
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                      Identifier: print
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                BreakNode SourceSection: [89,94]`break`
-                              ExpressionStatementNode SourceSection: [111,119]`print(x)`
-                                PythonCallNodeGen SourceSection: [111,119]`print(x)`
+                      ForRepeatingNode SourceSection: None
+                        ForNextElementNodeGen SourceSection: None
+                          WriteLocalVariableNodeGen SourceSection: None
+                            Identifier: x
+                            WriteLocalFrameSlotNodeGen SourceSection: None
+                              Frame: [0,x,Illegal]
+                        BlockNode SourceSection: None
+                          WriteLocalVariableNodeGen SourceSection: [41,46]`x = 4`
+                            Identifier: x
+                            WriteLocalFrameSlotNodeGen SourceSection: None
+                              Frame: [0,x,Illegal]
+                            IntegerLiteralNode SourceSection: [45,46]`4`
+                              Value: 4
+                          IfNode SourceSection: [51,121]`if x == 1:↵      pri...`
+                            YesNodeGen SourceSection: None
+                              BinaryComparisonNodeGen SourceSection: [54,60]`x == 1`
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __eq__
+                                ReadLocalVariableNode SourceSection: [54,55]`x`
+                                  Frame: [0,x,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                IntegerLiteralNode SourceSection: [59,60]`1`
+                                  Value: 1
+                            BlockNode SourceSection: None
+                              ExpressionStatementNode SourceSection: [68,82]`print('jedna')`
+                                PythonCallNodeGen SourceSection: [68,82]`print('jedna')`
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [117,118]`x`
-                                    Frame: [0,x,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  StringLiteralNode SourceSection: [74,81]`'jedna'`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: print
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              BreakNode SourceSection: [89,94]`break`
+                            ExpressionStatementNode SourceSection: [111,119]`print(x)`
+                              PythonCallNodeGen SourceSection: [111,119]`print(x)`
+                                CachedCallNodeGen SourceSection: None
+                                  CreateArgumentsNodeGen SourceSection: None
+                                  CallDispatchNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [117,118]`x`
+                                  Frame: [0,x,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: print
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       GetIteratorExpressionNodeGen SourceSection: [27,35]`range(3)`
                         GetIteratorNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [27,35]`range(3)`

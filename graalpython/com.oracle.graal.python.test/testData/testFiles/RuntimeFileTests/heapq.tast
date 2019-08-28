@@ -464,27 +464,26 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [7961,8016]`for i in reversed(ra...`
                       ForNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          ForRepeatingNode SourceSection: None
-                            ForNextElementNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: i
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [2,i,Illegal]
-                            ExpressionStatementNode SourceSection: [8001,8014]`_siftup(x, i)`
-                              PythonCallNodeGen SourceSection: [8001,8014]`_siftup(x, i)`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [8009,8010]`x`
-                                  Frame: [0,x,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [8012,8013]`i`
-                                  Frame: [2,i,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: _siftup
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: None
+                              Identifier: i
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [2,i,Illegal]
+                          ExpressionStatementNode SourceSection: [8001,8014]`_siftup(x, i)`
+                            PythonCallNodeGen SourceSection: [8001,8014]`_siftup(x, i)`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [8009,8010]`x`
+                                Frame: [0,x,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [8012,8013]`i`
+                                Frame: [2,i,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: _siftup
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [7970,7991]`reversed(range(n//2)...`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [7970,7991]`reversed(range(n//2)...`
@@ -749,27 +748,26 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [8651,8879]`for i in reversed(ra...`
                       ForNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          ForRepeatingNode SourceSection: None
-                            ForNextElementNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: i
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [2,i,Illegal]
-                            ExpressionStatementNode SourceSection: [8691,8708]`_siftup_max(x, i)`
-                              PythonCallNodeGen SourceSection: [8691,8708]`_siftup_max(x, i)`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [8703,8704]`x`
-                                  Frame: [0,x,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [8706,8707]`i`
-                                  Frame: [2,i,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: _siftup_max
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: None
+                              Identifier: i
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [2,i,Illegal]
+                          ExpressionStatementNode SourceSection: [8691,8708]`_siftup_max(x, i)`
+                            PythonCallNodeGen SourceSection: [8691,8708]`_siftup_max(x, i)`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [8703,8704]`x`
+                                Frame: [0,x,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [8706,8707]`i`
+                                Frame: [2,i,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: _siftup_max
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [8660,8681]`reversed(range(n//2)...`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [8660,8681]`reversed(range(n//2)...`
@@ -859,80 +857,79 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadVariableFromFrameNodeGen SourceSection: None
                     BreakTargetNode SourceSection: [9040,9257]`while pos > startpos...`
                       WhileNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          WhileRepeatingNode SourceSection: None
-                            YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [9046,9060]`pos > startpos`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __gt__
-                                ReadLocalVariableNode SourceSection: [9046,9049]`pos`
-                                  Frame: [2,pos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [9052,9060]`startpos`
-                                  Frame: [1,startpos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                            ContinueTargetNode SourceSection: None
-                              BlockNode SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: [9070,9096]`parentpos = (pos - 1...`
-                                  Identifier: parentpos
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [4,parentpos,Illegal]
-                                  BinaryArithmeticExpression SourceSection: [9082,9096]`(pos - 1) >> 1`
+                        WhileRepeatingNode SourceSection: None
+                          YesNodeGen SourceSection: None
+                            BinaryComparisonNodeGen SourceSection: [9046,9060]`pos > startpos`
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __gt__
+                              ReadLocalVariableNode SourceSection: [9046,9049]`pos`
+                                Frame: [2,pos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [9052,9060]`startpos`
+                                Frame: [1,startpos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                          ContinueTargetNode SourceSection: None
+                            BlockNode SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: [9070,9096]`parentpos = (pos - 1...`
+                                Identifier: parentpos
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [4,parentpos,Illegal]
+                                BinaryArithmeticExpression SourceSection: [9082,9096]`(pos - 1) >> 1`
+                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                    Op: __rshift__
+                                  BinaryArithmeticExpression SourceSection: [9083,9090]`pos - 1`
                                     LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __rshift__
-                                    BinaryArithmeticExpression SourceSection: [9083,9090]`pos - 1`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __sub__
-                                      ReadLocalVariableNode SourceSection: [9083,9086]`pos`
-                                        Frame: [2,pos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      IntegerLiteralNode SourceSection: [9089,9090]`1`
-                                        Value: 1
-                                    IntegerLiteralNode SourceSection: [9095,9096]`1`
+                                      Op: __sub__
+                                    ReadLocalVariableNode SourceSection: [9083,9086]`pos`
+                                      Frame: [2,pos,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    IntegerLiteralNode SourceSection: [9089,9090]`1`
                                       Value: 1
-                                WriteLocalVariableNodeGen SourceSection: [9105,9129]`parent = heap[parent...`
-                                  Identifier: parent
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [5,parent,Illegal]
-                                  GetItemNodeGen SourceSection: [9114,9129]`heap[parentpos]`
+                                  IntegerLiteralNode SourceSection: [9095,9096]`1`
+                                    Value: 1
+                              WriteLocalVariableNodeGen SourceSection: [9105,9129]`parent = heap[parent...`
+                                Identifier: parent
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [5,parent,Illegal]
+                                GetItemNodeGen SourceSection: [9114,9129]`heap[parentpos]`
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [0,heap,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [9119,9128]`parentpos`
+                                    Frame: [4,parentpos,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              IfNode SourceSection: [9138,9247]`if newitem < parent:...`
+                                YesNodeGen SourceSection: None
+                                  BinaryComparisonNodeGen SourceSection: [9141,9157]`newitem < parent`
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __lt__
+                                    ReadLocalVariableNode SourceSection: [9141,9148]`newitem`
+                                      Frame: [3,newitem,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [9151,9157]`parent`
+                                      Frame: [5,parent,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                BlockNode SourceSection: None
+                                  SetItemNodeGen SourceSection: [9171,9189]`heap[pos] = parent`
                                     ReadLocalVariableNode SourceSection: None
                                       Frame: [0,heap,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [9119,9128]`parentpos`
+                                    ReadLocalVariableNode SourceSection: [9176,9179]`pos`
+                                      Frame: [2,pos,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [9183,9189]`parent`
+                                      Frame: [5,parent,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: [9202,9217]`pos = parentpos`
+                                    Identifier: pos
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [2,pos,Illegal]
+                                    ReadLocalVariableNode SourceSection: [9208,9217]`parentpos`
                                       Frame: [4,parentpos,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: [9138,9247]`if newitem < parent:...`
-                                  YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [9141,9157]`newitem < parent`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __lt__
-                                      ReadLocalVariableNode SourceSection: [9141,9148]`newitem`
-                                        Frame: [3,newitem,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [9151,9157]`parent`
-                                        Frame: [5,parent,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                  BlockNode SourceSection: None
-                                    SetItemNodeGen SourceSection: [9171,9189]`heap[pos] = parent`
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [0,heap,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [9176,9179]`pos`
-                                        Frame: [2,pos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [9183,9189]`parent`
-                                        Frame: [5,parent,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: [9202,9217]`pos = parentpos`
-                                      Identifier: pos
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [2,pos,Illegal]
-                                      ReadLocalVariableNode SourceSection: [9208,9217]`parentpos`
-                                        Frame: [4,parentpos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    ContinueNode SourceSection: [9230,9238]`continue`
-                                  BlockNode SourceSection: None
-                                BreakNode SourceSection: [9247,9252]`break`
+                                  ContinueNode SourceSection: [9230,9238]`continue`
+                                BlockNode SourceSection: None
+                              BreakNode SourceSection: [9247,9252]`break`
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [9257,9276]`heap[pos] = newitem`
                       ReadLocalVariableNode SourceSection: None
@@ -1039,108 +1036,107 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Value: 1
                     ElseNode SourceSection: [11547,12021]`while childpos < end...`
                       WhileNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          WhileRepeatingNode SourceSection: None
-                            YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [11553,11570]`childpos < endpos`
+                        WhileRepeatingNode SourceSection: None
+                          YesNodeGen SourceSection: None
+                            BinaryComparisonNodeGen SourceSection: [11553,11570]`childpos < endpos`
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __lt__
+                              ReadLocalVariableNode SourceSection: [11553,11561]`childpos`
+                                Frame: [5,childpos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [11564,11570]`endpos`
+                                Frame: [2,endpos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                          BlockNode SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: [11630,11653]`rightpos = childpos ...`
+                              Identifier: rightpos
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [6,rightpos,Illegal]
+                              BinaryArithmeticExpression SourceSection: [11641,11653]`childpos + 1`
                                 LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __lt__
-                                ReadLocalVariableNode SourceSection: [11553,11561]`childpos`
+                                  Op: __add__
+                                ReadLocalVariableNode SourceSection: [11641,11649]`childpos`
                                   Frame: [5,childpos,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [11564,11570]`endpos`
-                                  Frame: [2,endpos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                            BlockNode SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: [11630,11653]`rightpos = childpos ...`
-                                Identifier: rightpos
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [6,rightpos,Illegal]
-                                BinaryArithmeticExpression SourceSection: [11641,11653]`childpos + 1`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
-                                  ReadLocalVariableNode SourceSection: [11641,11649]`childpos`
-                                    Frame: [5,childpos,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                  IntegerLiteralNode SourceSection: [11652,11653]`1`
-                                    Value: 1
-                              IfNode SourceSection: [11662,11801]`if rightpos < endpos...`
-                                YesNodeGen SourceSection: None
-                                  AndNode SourceSection: [11665,11722]`rightpos < endpos an...`
-                                    BinaryComparisonNodeGen SourceSection: [11665,11682]`rightpos < endpos`
+                                IntegerLiteralNode SourceSection: [11652,11653]`1`
+                                  Value: 1
+                            IfNode SourceSection: [11662,11801]`if rightpos < endpos...`
+                              YesNodeGen SourceSection: None
+                                AndNode SourceSection: [11665,11722]`rightpos < endpos an...`
+                                  BinaryComparisonNodeGen SourceSection: [11665,11682]`rightpos < endpos`
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __lt__
+                                    ReadLocalVariableNode SourceSection: [11665,11673]`rightpos`
+                                      Frame: [6,rightpos,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [11676,11682]`endpos`
+                                      Frame: [2,endpos,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  NotNodeGen SourceSection: [11687,11722]`not heap[childpos] <...`
+                                    BinaryComparisonNodeGen SourceSection: [11691,11722]`heap[childpos] < hea...`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __lt__
-                                      ReadLocalVariableNode SourceSection: [11665,11673]`rightpos`
-                                        Frame: [6,rightpos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [11676,11682]`endpos`
-                                        Frame: [2,endpos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    NotNodeGen SourceSection: [11687,11722]`not heap[childpos] <...`
-                                      BinaryComparisonNodeGen SourceSection: [11691,11722]`heap[childpos] < hea...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __lt__
-                                        GetItemNodeGen SourceSection: [11691,11705]`heap[childpos]`
-                                          ReadLocalVariableNode SourceSection: None
-                                            Frame: [0,heap,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [11696,11704]`childpos`
-                                            Frame: [5,childpos,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetItemNodeGen SourceSection: [11708,11722]`heap[rightpos]`
-                                          ReadLocalVariableNode SourceSection: None
-                                            Frame: [0,heap,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [11713,11721]`rightpos`
-                                            Frame: [6,rightpos,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                    YesNodeGen SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: [11736,11755]`childpos = rightpos`
-                                  Identifier: childpos
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [5,childpos,Illegal]
-                                  ReadLocalVariableNode SourceSection: [11747,11755]`rightpos`
-                                    Frame: [6,rightpos,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                BlockNode SourceSection: None
-                              SetItemNodeGen SourceSection: [11801,11827]`heap[pos] = heap[chi...`
-                                ReadLocalVariableNode SourceSection: None
-                                  Frame: [0,heap,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [11806,11809]`pos`
-                                  Frame: [1,pos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: [11813,11827]`heap[childpos]`
-                                  ReadLocalVariableNode SourceSection: None
-                                    Frame: [0,heap,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [11818,11826]`childpos`
-                                    Frame: [5,childpos,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: [11836,11850]`pos = childpos`
-                                Identifier: pos
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [1,pos,Illegal]
-                                ReadLocalVariableNode SourceSection: [11842,11850]`childpos`
-                                  Frame: [5,childpos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: [11859,11879]`childpos = 2*pos + 1...`
+                                      GetItemNodeGen SourceSection: [11691,11705]`heap[childpos]`
+                                        ReadLocalVariableNode SourceSection: None
+                                          Frame: [0,heap,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [11696,11704]`childpos`
+                                          Frame: [5,childpos,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                      GetItemNodeGen SourceSection: [11708,11722]`heap[rightpos]`
+                                        ReadLocalVariableNode SourceSection: None
+                                          Frame: [0,heap,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [11713,11721]`rightpos`
+                                          Frame: [6,rightpos,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                  YesNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: [11736,11755]`childpos = rightpos`
                                 Identifier: childpos
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [5,childpos,Illegal]
-                                BinaryArithmeticExpression SourceSection: [11870,11879]`2*pos + 1`
+                                ReadLocalVariableNode SourceSection: [11747,11755]`rightpos`
+                                  Frame: [6,rightpos,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              BlockNode SourceSection: None
+                            SetItemNodeGen SourceSection: [11801,11827]`heap[pos] = heap[chi...`
+                              ReadLocalVariableNode SourceSection: None
+                                Frame: [0,heap,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [11806,11809]`pos`
+                                Frame: [1,pos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              GetItemNodeGen SourceSection: [11813,11827]`heap[childpos]`
+                                ReadLocalVariableNode SourceSection: None
+                                  Frame: [0,heap,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [11818,11826]`childpos`
+                                  Frame: [5,childpos,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: [11836,11850]`pos = childpos`
+                              Identifier: pos
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [1,pos,Illegal]
+                              ReadLocalVariableNode SourceSection: [11842,11850]`childpos`
+                                Frame: [5,childpos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: [11859,11879]`childpos = 2*pos + 1...`
+                              Identifier: childpos
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [5,childpos,Illegal]
+                              BinaryArithmeticExpression SourceSection: [11870,11879]`2*pos + 1`
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __add__
+                                BinaryArithmeticExpression SourceSection: [11870,11875]`2*pos`
                                   LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
-                                  BinaryArithmeticExpression SourceSection: [11870,11875]`2*pos`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __mul__
-                                    IntegerLiteralNode SourceSection: [11870,11871]`2`
-                                      Value: 2
-                                    ReadLocalVariableNode SourceSection: [11872,11875]`pos`
-                                      Frame: [1,pos,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  IntegerLiteralNode SourceSection: [11878,11879]`1`
-                                    Value: 1
+                                    Op: __mul__
+                                  IntegerLiteralNode SourceSection: [11870,11871]`2`
+                                    Value: 2
+                                  ReadLocalVariableNode SourceSection: [11872,11875]`pos`
+                                    Frame: [1,pos,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                IntegerLiteralNode SourceSection: [11878,11879]`1`
+                                  Value: 1
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [12021,12040]`heap[pos] = newitem`
                       ReadLocalVariableNode SourceSection: None
@@ -1233,80 +1229,79 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadVariableFromFrameNodeGen SourceSection: None
                     BreakTargetNode SourceSection: [12277,12494]`while pos > startpos...`
                       WhileNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          WhileRepeatingNode SourceSection: None
-                            YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [12283,12297]`pos > startpos`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __gt__
-                                ReadLocalVariableNode SourceSection: [12283,12286]`pos`
-                                  Frame: [2,pos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [12289,12297]`startpos`
-                                  Frame: [1,startpos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                            ContinueTargetNode SourceSection: None
-                              BlockNode SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: [12307,12333]`parentpos = (pos - 1...`
-                                  Identifier: parentpos
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [4,parentpos,Illegal]
-                                  BinaryArithmeticExpression SourceSection: [12319,12333]`(pos - 1) >> 1`
+                        WhileRepeatingNode SourceSection: None
+                          YesNodeGen SourceSection: None
+                            BinaryComparisonNodeGen SourceSection: [12283,12297]`pos > startpos`
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __gt__
+                              ReadLocalVariableNode SourceSection: [12283,12286]`pos`
+                                Frame: [2,pos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [12289,12297]`startpos`
+                                Frame: [1,startpos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                          ContinueTargetNode SourceSection: None
+                            BlockNode SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: [12307,12333]`parentpos = (pos - 1...`
+                                Identifier: parentpos
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [4,parentpos,Illegal]
+                                BinaryArithmeticExpression SourceSection: [12319,12333]`(pos - 1) >> 1`
+                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                    Op: __rshift__
+                                  BinaryArithmeticExpression SourceSection: [12320,12327]`pos - 1`
                                     LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __rshift__
-                                    BinaryArithmeticExpression SourceSection: [12320,12327]`pos - 1`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __sub__
-                                      ReadLocalVariableNode SourceSection: [12320,12323]`pos`
-                                        Frame: [2,pos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      IntegerLiteralNode SourceSection: [12326,12327]`1`
-                                        Value: 1
-                                    IntegerLiteralNode SourceSection: [12332,12333]`1`
+                                      Op: __sub__
+                                    ReadLocalVariableNode SourceSection: [12320,12323]`pos`
+                                      Frame: [2,pos,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    IntegerLiteralNode SourceSection: [12326,12327]`1`
                                       Value: 1
-                                WriteLocalVariableNodeGen SourceSection: [12342,12366]`parent = heap[parent...`
-                                  Identifier: parent
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [5,parent,Illegal]
-                                  GetItemNodeGen SourceSection: [12351,12366]`heap[parentpos]`
+                                  IntegerLiteralNode SourceSection: [12332,12333]`1`
+                                    Value: 1
+                              WriteLocalVariableNodeGen SourceSection: [12342,12366]`parent = heap[parent...`
+                                Identifier: parent
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [5,parent,Illegal]
+                                GetItemNodeGen SourceSection: [12351,12366]`heap[parentpos]`
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [0,heap,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [12356,12365]`parentpos`
+                                    Frame: [4,parentpos,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              IfNode SourceSection: [12375,12484]`if parent < newitem:...`
+                                YesNodeGen SourceSection: None
+                                  BinaryComparisonNodeGen SourceSection: [12378,12394]`parent < newitem`
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __lt__
+                                    ReadLocalVariableNode SourceSection: [12378,12384]`parent`
+                                      Frame: [5,parent,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [12387,12394]`newitem`
+                                      Frame: [3,newitem,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                BlockNode SourceSection: None
+                                  SetItemNodeGen SourceSection: [12408,12426]`heap[pos] = parent`
                                     ReadLocalVariableNode SourceSection: None
                                       Frame: [0,heap,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [12356,12365]`parentpos`
+                                    ReadLocalVariableNode SourceSection: [12413,12416]`pos`
+                                      Frame: [2,pos,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [12420,12426]`parent`
+                                      Frame: [5,parent,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: [12439,12454]`pos = parentpos`
+                                    Identifier: pos
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [2,pos,Illegal]
+                                    ReadLocalVariableNode SourceSection: [12445,12454]`parentpos`
                                       Frame: [4,parentpos,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                IfNode SourceSection: [12375,12484]`if parent < newitem:...`
-                                  YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [12378,12394]`parent < newitem`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __lt__
-                                      ReadLocalVariableNode SourceSection: [12378,12384]`parent`
-                                        Frame: [5,parent,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [12387,12394]`newitem`
-                                        Frame: [3,newitem,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                  BlockNode SourceSection: None
-                                    SetItemNodeGen SourceSection: [12408,12426]`heap[pos] = parent`
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [0,heap,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [12413,12416]`pos`
-                                        Frame: [2,pos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [12420,12426]`parent`
-                                        Frame: [5,parent,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: [12439,12454]`pos = parentpos`
-                                      Identifier: pos
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [2,pos,Illegal]
-                                      ReadLocalVariableNode SourceSection: [12445,12454]`parentpos`
-                                        Frame: [4,parentpos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    ContinueNode SourceSection: [12467,12475]`continue`
-                                  BlockNode SourceSection: None
-                                BreakNode SourceSection: [12484,12489]`break`
+                                  ContinueNode SourceSection: [12467,12475]`continue`
+                                BlockNode SourceSection: None
+                              BreakNode SourceSection: [12484,12489]`break`
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [12494,12513]`heap[pos] = newitem`
                       ReadLocalVariableNode SourceSection: None
@@ -1413,108 +1408,107 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Value: 1
                     ElseNode SourceSection: [12755,13227]`while childpos < end...`
                       WhileNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          WhileRepeatingNode SourceSection: None
-                            YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [12761,12778]`childpos < endpos`
+                        WhileRepeatingNode SourceSection: None
+                          YesNodeGen SourceSection: None
+                            BinaryComparisonNodeGen SourceSection: [12761,12778]`childpos < endpos`
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __lt__
+                              ReadLocalVariableNode SourceSection: [12761,12769]`childpos`
+                                Frame: [5,childpos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [12772,12778]`endpos`
+                                Frame: [2,endpos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                          BlockNode SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: [12837,12860]`rightpos = childpos ...`
+                              Identifier: rightpos
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [6,rightpos,Illegal]
+                              BinaryArithmeticExpression SourceSection: [12848,12860]`childpos + 1`
                                 LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __lt__
-                                ReadLocalVariableNode SourceSection: [12761,12769]`childpos`
+                                  Op: __add__
+                                ReadLocalVariableNode SourceSection: [12848,12856]`childpos`
                                   Frame: [5,childpos,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [12772,12778]`endpos`
-                                  Frame: [2,endpos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                            BlockNode SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: [12837,12860]`rightpos = childpos ...`
-                                Identifier: rightpos
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [6,rightpos,Illegal]
-                                BinaryArithmeticExpression SourceSection: [12848,12860]`childpos + 1`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
-                                  ReadLocalVariableNode SourceSection: [12848,12856]`childpos`
-                                    Frame: [5,childpos,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                  IntegerLiteralNode SourceSection: [12859,12860]`1`
-                                    Value: 1
-                              IfNode SourceSection: [12869,13007]`if rightpos < endpos...`
-                                YesNodeGen SourceSection: None
-                                  AndNode SourceSection: [12872,12929]`rightpos < endpos an...`
-                                    BinaryComparisonNodeGen SourceSection: [12872,12889]`rightpos < endpos`
+                                IntegerLiteralNode SourceSection: [12859,12860]`1`
+                                  Value: 1
+                            IfNode SourceSection: [12869,13007]`if rightpos < endpos...`
+                              YesNodeGen SourceSection: None
+                                AndNode SourceSection: [12872,12929]`rightpos < endpos an...`
+                                  BinaryComparisonNodeGen SourceSection: [12872,12889]`rightpos < endpos`
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __lt__
+                                    ReadLocalVariableNode SourceSection: [12872,12880]`rightpos`
+                                      Frame: [6,rightpos,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [12883,12889]`endpos`
+                                      Frame: [2,endpos,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  NotNodeGen SourceSection: [12894,12929]`not heap[rightpos] <...`
+                                    BinaryComparisonNodeGen SourceSection: [12898,12929]`heap[rightpos] < hea...`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __lt__
-                                      ReadLocalVariableNode SourceSection: [12872,12880]`rightpos`
-                                        Frame: [6,rightpos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [12883,12889]`endpos`
-                                        Frame: [2,endpos,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    NotNodeGen SourceSection: [12894,12929]`not heap[rightpos] <...`
-                                      BinaryComparisonNodeGen SourceSection: [12898,12929]`heap[rightpos] < hea...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __lt__
-                                        GetItemNodeGen SourceSection: [12898,12912]`heap[rightpos]`
-                                          ReadLocalVariableNode SourceSection: None
-                                            Frame: [0,heap,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [12903,12911]`rightpos`
-                                            Frame: [6,rightpos,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetItemNodeGen SourceSection: [12915,12929]`heap[childpos]`
-                                          ReadLocalVariableNode SourceSection: None
-                                            Frame: [0,heap,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [12920,12928]`childpos`
-                                            Frame: [5,childpos,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                    YesNodeGen SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: [12943,12962]`childpos = rightpos`
-                                  Identifier: childpos
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [5,childpos,Illegal]
-                                  ReadLocalVariableNode SourceSection: [12954,12962]`rightpos`
-                                    Frame: [6,rightpos,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                BlockNode SourceSection: None
-                              SetItemNodeGen SourceSection: [13007,13033]`heap[pos] = heap[chi...`
-                                ReadLocalVariableNode SourceSection: None
-                                  Frame: [0,heap,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [13012,13015]`pos`
-                                  Frame: [1,pos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                GetItemNodeGen SourceSection: [13019,13033]`heap[childpos]`
-                                  ReadLocalVariableNode SourceSection: None
-                                    Frame: [0,heap,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [13024,13032]`childpos`
-                                    Frame: [5,childpos,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: [13042,13056]`pos = childpos`
-                                Identifier: pos
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [1,pos,Illegal]
-                                ReadLocalVariableNode SourceSection: [13048,13056]`childpos`
-                                  Frame: [5,childpos,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: [13065,13085]`childpos = 2*pos + 1...`
+                                      GetItemNodeGen SourceSection: [12898,12912]`heap[rightpos]`
+                                        ReadLocalVariableNode SourceSection: None
+                                          Frame: [0,heap,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [12903,12911]`rightpos`
+                                          Frame: [6,rightpos,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                      GetItemNodeGen SourceSection: [12915,12929]`heap[childpos]`
+                                        ReadLocalVariableNode SourceSection: None
+                                          Frame: [0,heap,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [12920,12928]`childpos`
+                                          Frame: [5,childpos,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                  YesNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: [12943,12962]`childpos = rightpos`
                                 Identifier: childpos
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [5,childpos,Illegal]
-                                BinaryArithmeticExpression SourceSection: [13076,13085]`2*pos + 1`
+                                ReadLocalVariableNode SourceSection: [12954,12962]`rightpos`
+                                  Frame: [6,rightpos,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              BlockNode SourceSection: None
+                            SetItemNodeGen SourceSection: [13007,13033]`heap[pos] = heap[chi...`
+                              ReadLocalVariableNode SourceSection: None
+                                Frame: [0,heap,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [13012,13015]`pos`
+                                Frame: [1,pos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              GetItemNodeGen SourceSection: [13019,13033]`heap[childpos]`
+                                ReadLocalVariableNode SourceSection: None
+                                  Frame: [0,heap,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [13024,13032]`childpos`
+                                  Frame: [5,childpos,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: [13042,13056]`pos = childpos`
+                              Identifier: pos
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [1,pos,Illegal]
+                              ReadLocalVariableNode SourceSection: [13048,13056]`childpos`
+                                Frame: [5,childpos,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: [13065,13085]`childpos = 2*pos + 1...`
+                              Identifier: childpos
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [5,childpos,Illegal]
+                              BinaryArithmeticExpression SourceSection: [13076,13085]`2*pos + 1`
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __add__
+                                BinaryArithmeticExpression SourceSection: [13076,13081]`2*pos`
                                   LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
-                                  BinaryArithmeticExpression SourceSection: [13076,13081]`2*pos`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __mul__
-                                    IntegerLiteralNode SourceSection: [13076,13077]`2`
-                                      Value: 2
-                                    ReadLocalVariableNode SourceSection: [13078,13081]`pos`
-                                      Frame: [1,pos,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  IntegerLiteralNode SourceSection: [13084,13085]`1`
-                                    Value: 1
+                                    Op: __mul__
+                                  IntegerLiteralNode SourceSection: [13076,13077]`2`
+                                    Value: 2
+                                  ReadLocalVariableNode SourceSection: [13078,13081]`pos`
+                                    Frame: [1,pos,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                IntegerLiteralNode SourceSection: [13084,13085]`1`
+                                  Value: 1
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [13227,13246]`heap[pos] = newitem`
                       ReadLocalVariableNode SourceSection: None
@@ -1672,84 +1666,83 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                     GeneratorBlockNode SourceSection: None
                       ElseNode SourceSection: [14295,14520]`for order, it in enu...`
                         ForNode SourceSection: None
-                          DefaultLoopNode SourceSection: None
-                            ForRepeatingNode SourceSection: None
-                              ForNextElementNodeGen SourceSection: None
-                                DestructuringAssignmentNodeGen SourceSection: None
-                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                    Identifier: <>temp15
+                          ForRepeatingNode SourceSection: None
+                            ForNextElementNodeGen SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: <>temp15
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [15,<>temp15,Illegal]
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: <>temp16
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [16,<>temp16,Illegal]
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: order
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [10,order,Illegal]
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [15,<>temp15,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: it
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [11,it,Illegal]
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [16,<>temp16,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                            TryFinallyNode SourceSection: [14357,14520]`try:↵               ...`
+                              TryExceptNode SourceSection: None
+                                BlockNode SourceSection: None
+                                  WriteGeneratorFrameVariableNodeGen SourceSection: [14378,14396]`next = it.__next__`
+                                    Identifier: next
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [15,<>temp15,Illegal]
-                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                    Identifier: <>temp16
-                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [16,<>temp16,Illegal]
-                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                    Identifier: order
-                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [10,order,Illegal]
-                                    ReadGeneratorFrameVariableNode SourceSection: None
-                                      Frame: [15,<>temp15,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                    Identifier: it
-                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [11,it,Illegal]
-                                    ReadGeneratorFrameVariableNode SourceSection: None
-                                      Frame: [16,<>temp16,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                              TryFinallyNode SourceSection: [14357,14520]`try:↵               ...`
-                                TryExceptNode SourceSection: None
-                                  BlockNode SourceSection: None
-                                    WriteGeneratorFrameVariableNodeGen SourceSection: [14378,14396]`next = it.__next__`
-                                      Identifier: next
-                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [9,next,Illegal]
-                                      GetAttributeNodeGen SourceSection: [14385,14396]`it.__next__`
-                                        GetFixedAttributeNodeGen SourceSection: None
-                                          Key: __next__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __getattribute__
-                                        ReadGeneratorFrameVariableNode SourceSection: [14385,14387]`it`
-                                          Frame: [11,it,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                    ExpressionStatementNode SourceSection: [14413,14456]`h_append([next(), or...`
-                                      PythonCallNodeGen SourceSection: [14413,14456]`h_append([next(), or...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
-                                        ListLiteralNode SourceSection: [14422,14455]`[next(), order * dir...`
-                                          PythonObjectFactoryNodeGen SourceSection: None
-                                          PythonCallNodeGen SourceSection: [14423,14429]`next()`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
-                                            ReadGeneratorFrameVariableNode SourceSection: None
-                                              Frame: [9,next,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                          BinaryArithmeticExpression SourceSection: [14431,14448]`order * direction`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mul__
-                                            ReadGeneratorFrameVariableNode SourceSection: [14431,14436]`order`
-                                              Frame: [10,order,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGeneratorFrameVariableNode SourceSection: [14439,14448]`direction`
-                                              Frame: [8,direction,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [14450,14454]`next`
+                                      Frame: [9,next,Illegal]
+                                    GetAttributeNodeGen SourceSection: [14385,14396]`it.__next__`
+                                      GetFixedAttributeNodeGen SourceSection: None
+                                        Key: __next__
+                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                          Op: __getattribute__
+                                      ReadGeneratorFrameVariableNode SourceSection: [14385,14387]`it`
+                                        Frame: [11,it,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  ExpressionStatementNode SourceSection: [14413,14456]`h_append([next(), or...`
+                                    PythonCallNodeGen SourceSection: [14413,14456]`h_append([next(), or...`
+                                      CachedCallNodeGen SourceSection: None
+                                        CreateArgumentsNodeGen SourceSection: None
+                                        CallDispatchNodeGen SourceSection: None
+                                      ListLiteralNode SourceSection: [14422,14455]`[next(), order * dir...`
+                                        PythonObjectFactoryNodeGen SourceSection: None
+                                        PythonCallNodeGen SourceSection: [14423,14429]`next()`
+                                          CachedCallNodeGen SourceSection: None
+                                            CreateArgumentsNodeGen SourceSection: None
+                                            CallDispatchNodeGen SourceSection: None
+                                          ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [9,next,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: None
-                                          Frame: [4,h_append,Illegal]
+                                        BinaryArithmeticExpression SourceSection: [14431,14448]`order * direction`
+                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                            Op: __mul__
+                                          ReadGeneratorFrameVariableNode SourceSection: [14431,14436]`order`
+                                            Frame: [10,order,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadGeneratorFrameVariableNode SourceSection: [14439,14448]`direction`
+                                            Frame: [8,direction,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [14450,14454]`next`
+                                          Frame: [9,next,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                  ExceptNode SourceSection: None
-                                    ExpressionStatementNode SourceSection: [14507,14511]`pass`
-                                      EmptyNode SourceSection: [14507,14511]`pass`
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: [14476,14489]`StopIteration`
-                                      Identifier: StopIteration
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  BlockNode SourceSection: None
-                                  SaveExceptionStateNodeGen SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: None
+                                        Frame: [4,h_append,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                ExceptNode SourceSection: None
+                                  ExpressionStatementNode SourceSection: [14507,14511]`pass`
+                                    EmptyNode SourceSection: [14507,14511]`pass`
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14476,14489]`StopIteration`
+                                    Identifier: StopIteration
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                BlockNode SourceSection: None
+                                SaveExceptionStateNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [14312,14343]`enumerate(map(iter, ...`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [14312,14343]`enumerate(map(iter, ...`
@@ -2001,101 +1994,100 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                     BlockNode SourceSection: None
                   ElseNode SourceSection: [15131,15370]`for order, it in enu...`
                     ForNode SourceSection: None
-                      DefaultLoopNode SourceSection: None
-                        ForRepeatingNode SourceSection: None
-                          ForNextElementNodeGen SourceSection: None
-                            DestructuringAssignmentNodeGen SourceSection: None
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: <>temp24
+                      ForRepeatingNode SourceSection: None
+                        ForNextElementNodeGen SourceSection: None
+                          DestructuringAssignmentNodeGen SourceSection: None
+                            WriteGeneratorFrameVariableNodeGen SourceSection: None
+                              Identifier: <>temp24
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [24,<>temp24,Illegal]
+                            WriteGeneratorFrameVariableNodeGen SourceSection: None
+                              Identifier: <>temp25
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [25,<>temp25,Illegal]
+                            WriteGeneratorFrameVariableNodeGen SourceSection: None
+                              Identifier: order
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [10,order,Illegal]
+                              ReadGeneratorFrameVariableNode SourceSection: None
+                                Frame: [24,<>temp24,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            WriteGeneratorFrameVariableNodeGen SourceSection: None
+                              Identifier: it
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [11,it,Illegal]
+                              ReadGeneratorFrameVariableNode SourceSection: None
+                                Frame: [25,<>temp25,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                        TryFinallyNode SourceSection: [15189,15370]`try:↵            nex...`
+                          TryExceptNode SourceSection: None
+                            BlockNode SourceSection: None
+                              WriteGeneratorFrameVariableNodeGen SourceSection: [15206,15224]`next = it.__next__`
+                                Identifier: next
                                 WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [24,<>temp24,Illegal]
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: <>temp25
+                                  Frame: [9,next,Illegal]
+                                GetAttributeNodeGen SourceSection: [15213,15224]`it.__next__`
+                                  GetFixedAttributeNodeGen SourceSection: None
+                                    Key: __next__
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __getattribute__
+                                  ReadGeneratorFrameVariableNode SourceSection: [15213,15215]`it`
+                                    Frame: [11,it,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              WriteGeneratorFrameVariableNodeGen SourceSection: [15237,15251]`value = next()`
+                                Identifier: value
                                 WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [25,<>temp25,Illegal]
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: order
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [10,order,Illegal]
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [24,<>temp24,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: it
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [11,it,Illegal]
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [25,<>temp25,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                          TryFinallyNode SourceSection: [15189,15370]`try:↵            nex...`
-                            TryExceptNode SourceSection: None
-                              BlockNode SourceSection: None
-                                WriteGeneratorFrameVariableNodeGen SourceSection: [15206,15224]`next = it.__next__`
-                                  Identifier: next
-                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                  Frame: [12,value,Illegal]
+                                PythonCallNodeGen SourceSection: [15245,15251]`next()`
+                                  CachedCallNodeGen SourceSection: None
+                                    CreateArgumentsNodeGen SourceSection: None
+                                    CallDispatchNodeGen SourceSection: None
+                                  ReadGeneratorFrameVariableNode SourceSection: None
                                     Frame: [9,next,Illegal]
-                                  GetAttributeNodeGen SourceSection: [15213,15224]`it.__next__`
-                                    GetFixedAttributeNodeGen SourceSection: None
-                                      Key: __next__
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __getattribute__
-                                    ReadGeneratorFrameVariableNode SourceSection: [15213,15215]`it`
-                                      Frame: [11,it,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                WriteGeneratorFrameVariableNodeGen SourceSection: [15237,15251]`value = next()`
-                                  Identifier: value
-                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                    Frame: [12,value,Illegal]
-                                  PythonCallNodeGen SourceSection: [15245,15251]`next()`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
-                                    ReadGeneratorFrameVariableNode SourceSection: None
-                                      Frame: [9,next,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                ExpressionStatementNode SourceSection: [15264,15318]`h_append([key(value)...`
-                                  PythonCallNodeGen SourceSection: [15264,15318]`h_append([key(value)...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
-                                    ListLiteralNode SourceSection: [15273,15317]`[key(value), order *...`
-                                      PythonObjectFactoryNodeGen SourceSection: None
-                                      PythonCallNodeGen SourceSection: [15274,15284]`key(value)`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: [15278,15283]`value`
-                                          Frame: [12,value,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: None
-                                          Frame: [1,key,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                      BinaryArithmeticExpression SourceSection: [15286,15303]`order * direction`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __mul__
-                                        ReadGeneratorFrameVariableNode SourceSection: [15286,15291]`order`
-                                          Frame: [10,order,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: [15294,15303]`direction`
-                                          Frame: [8,direction,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: [15305,15310]`value`
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              ExpressionStatementNode SourceSection: [15264,15318]`h_append([key(value)...`
+                                PythonCallNodeGen SourceSection: [15264,15318]`h_append([key(value)...`
+                                  CachedCallNodeGen SourceSection: None
+                                    CreateArgumentsNodeGen SourceSection: None
+                                    CallDispatchNodeGen SourceSection: None
+                                  ListLiteralNode SourceSection: [15273,15317]`[key(value), order *...`
+                                    PythonObjectFactoryNodeGen SourceSection: None
+                                    PythonCallNodeGen SourceSection: [15274,15284]`key(value)`
+                                      CachedCallNodeGen SourceSection: None
+                                        CreateArgumentsNodeGen SourceSection: None
+                                        CallDispatchNodeGen SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [15278,15283]`value`
                                         Frame: [12,value,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: [15312,15316]`next`
-                                        Frame: [9,next,Illegal]
+                                      ReadGeneratorFrameVariableNode SourceSection: None
+                                        Frame: [1,key,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGeneratorFrameVariableNode SourceSection: None
-                                      Frame: [4,h_append,Illegal]
+                                    BinaryArithmeticExpression SourceSection: [15286,15303]`order * direction`
+                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                        Op: __mul__
+                                      ReadGeneratorFrameVariableNode SourceSection: [15286,15291]`order`
+                                        Frame: [10,order,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [15294,15303]`direction`
+                                        Frame: [8,direction,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [15305,15310]`value`
+                                      Frame: [12,value,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                              ExceptNode SourceSection: None
-                                ExpressionStatementNode SourceSection: [15361,15365]`pass`
-                                  EmptyNode SourceSection: [15361,15365]`pass`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [15334,15347]`StopIteration`
-                                  Identifier: StopIteration
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              BlockNode SourceSection: None
-                              SaveExceptionStateNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [15312,15316]`next`
+                                      Frame: [9,next,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [4,h_append,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                            ExceptNode SourceSection: None
+                              ExpressionStatementNode SourceSection: [15361,15365]`pass`
+                                EmptyNode SourceSection: [15361,15365]`pass`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [15334,15347]`StopIteration`
+                                Identifier: StopIteration
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            BlockNode SourceSection: None
+                            SaveExceptionStateNodeGen SourceSection: None
                       GetIteratorExpressionNodeGen SourceSection: [15148,15179]`enumerate(map(iter, ...`
                         GetIteratorNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [15148,15179]`enumerate(map(iter, ...`
@@ -2839,84 +2831,83 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ElseNode SourceSection: [20077,20247]`for elem in it:↵    ...`
                           ForNode SourceSection: None
-                            DefaultLoopNode SourceSection: None
-                              ForRepeatingNode SourceSection: None
-                                ForNextElementNodeGen SourceSection: None
-                                  WriteLocalVariableNodeGen SourceSection: None
-                                    Identifier: elem
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                            ForRepeatingNode SourceSection: None
+                              ForNextElementNodeGen SourceSection: None
+                                WriteLocalVariableNodeGen SourceSection: None
+                                  Identifier: elem
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [11,elem,Illegal]
+                              IfNode SourceSection: [20105,20247]`if elem < top:↵     ...`
+                                YesNodeGen SourceSection: None
+                                  BinaryComparisonNodeGen SourceSection: [20108,20118]`elem < top`
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __lt__
+                                    ReadLocalVariableNode SourceSection: [20108,20112]`elem`
                                       Frame: [11,elem,Illegal]
-                                IfNode SourceSection: [20105,20247]`if elem < top:↵     ...`
-                                  YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [20108,20118]`elem < top`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __lt__
-                                      ReadLocalVariableNode SourceSection: [20108,20112]`elem`
-                                        Frame: [11,elem,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [20115,20118]`top`
+                                      Frame: [7,top,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                BlockNode SourceSection: None
+                                  ExpressionStatementNode SourceSection: [20136,20171]`_heapreplace(result,...`
+                                    PythonCallNodeGen SourceSection: [20136,20171]`_heapreplace(result,...`
+                                      CachedCallNodeGen SourceSection: None
+                                        CreateArgumentsNodeGen SourceSection: None
+                                        CallDispatchNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [20149,20155]`result`
+                                        Frame: [5,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [20115,20118]`top`
-                                        Frame: [7,top,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                  BlockNode SourceSection: None
-                                    ExpressionStatementNode SourceSection: [20136,20171]`_heapreplace(result,...`
-                                      PythonCallNodeGen SourceSection: [20136,20171]`_heapreplace(result,...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [20149,20155]`result`
-                                          Frame: [5,result,Illegal]
+                                      TupleLiteralNode SourceSection: [20157,20170]`(elem, order)`
+                                        PythonObjectFactoryNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [20158,20162]`elem`
+                                          Frame: [11,elem,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        TupleLiteralNode SourceSection: [20157,20170]`(elem, order)`
-                                          PythonObjectFactoryNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [20158,20162]`elem`
-                                            Frame: [11,elem,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [20164,20169]`order`
-                                            Frame: [8,order,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [9,_heapreplace,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                    DestructuringAssignmentNodeGen SourceSection: [20188,20211]`top, _order = result...`
-                                      GetItemNodeGen SourceSection: [20202,20211]`result[0]`
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [5,result,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        IntegerLiteralNode SourceSection: [20209,20210]`0`
-                                          Value: 0
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp15
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [15,<>temp15,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp16
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [16,<>temp16,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: top
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [7,top,Illegal]
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [15,<>temp15,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: _order
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [10,_order,Illegal]
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [16,<>temp16,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: [20228,20238]`order += 1`
-                                      Identifier: order
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [8,order,Illegal]
-                                      LookupAndCallInplaceNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [20228,20233]`order`
+                                        ReadLocalVariableNode SourceSection: [20164,20169]`order`
                                           Frame: [8,order,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        IntegerLiteralNode SourceSection: [20237,20238]`1`
-                                          Value: 1
-                                  BlockNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [9,_heapreplace,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  DestructuringAssignmentNodeGen SourceSection: [20188,20211]`top, _order = result...`
+                                    GetItemNodeGen SourceSection: [20202,20211]`result[0]`
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [5,result,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      IntegerLiteralNode SourceSection: [20209,20210]`0`
+                                        Value: 0
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: <>temp15
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [15,<>temp15,Illegal]
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: <>temp16
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [16,<>temp16,Illegal]
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: top
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [7,top,Illegal]
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [15,<>temp15,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: _order
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [10,_order,Illegal]
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [16,<>temp16,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: [20228,20238]`order += 1`
+                                    Identifier: order
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [8,order,Illegal]
+                                    LookupAndCallInplaceNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [20228,20233]`order`
+                                        Frame: [8,order,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      IntegerLiteralNode SourceSection: [20237,20238]`1`
+                                        Value: 1
+                                BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20089,20091]`it`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [20089,20091]`it`
@@ -3204,115 +3195,114 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [20583,20762]`for elem in it:↵    ...`
                       ForNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          ForRepeatingNode SourceSection: None
-                            ForNextElementNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: elem
-                                WriteLocalFrameSlotNodeGen SourceSection: None
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: None
+                              Identifier: elem
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [11,elem,Illegal]
+                          BlockNode SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: [20607,20620]`k = key(elem)`
+                              Identifier: k
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [12,k,Illegal]
+                              PythonCallNodeGen SourceSection: [20611,20620]`key(elem)`
+                                CachedCallNodeGen SourceSection: None
+                                  CreateArgumentsNodeGen SourceSection: None
+                                  CallDispatchNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [20615,20619]`elem`
                                   Frame: [11,elem,Illegal]
-                            BlockNode SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: [20607,20620]`k = key(elem)`
-                                Identifier: k
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [12,k,Illegal]
-                                PythonCallNodeGen SourceSection: [20611,20620]`key(elem)`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [20615,20619]`elem`
-                                    Frame: [11,elem,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [2,key,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadLocalCellNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: None
-                                      Frame: [2,key,Illegal]
+                                  ReadFromCellNodeGen SourceSection: None
+                            IfNode SourceSection: [20629,20762]`if k < top:↵        ...`
+                              YesNodeGen SourceSection: None
+                                BinaryComparisonNodeGen SourceSection: [20632,20639]`k < top`
+                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                    Op: __lt__
+                                  ReadLocalVariableNode SourceSection: [20632,20633]`k`
+                                    Frame: [12,k,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [20636,20639]`top`
+                                    Frame: [7,top,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              BlockNode SourceSection: None
+                                ExpressionStatementNode SourceSection: [20653,20691]`_heapreplace(result,...`
+                                  PythonCallNodeGen SourceSection: [20653,20691]`_heapreplace(result,...`
+                                    CachedCallNodeGen SourceSection: None
+                                      CreateArgumentsNodeGen SourceSection: None
+                                      CallDispatchNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [20666,20672]`result`
+                                      Frame: [5,result,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadFromCellNodeGen SourceSection: None
-                              IfNode SourceSection: [20629,20762]`if k < top:↵        ...`
-                                YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [20632,20639]`k < top`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __lt__
-                                    ReadLocalVariableNode SourceSection: [20632,20633]`k`
-                                      Frame: [12,k,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [20636,20639]`top`
-                                      Frame: [7,top,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                BlockNode SourceSection: None
-                                  ExpressionStatementNode SourceSection: [20653,20691]`_heapreplace(result,...`
-                                    PythonCallNodeGen SourceSection: [20653,20691]`_heapreplace(result,...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [20666,20672]`result`
-                                        Frame: [5,result,Illegal]
+                                    TupleLiteralNode SourceSection: [20674,20690]`(k, order, elem)`
+                                      PythonObjectFactoryNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [20675,20676]`k`
+                                        Frame: [12,k,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      TupleLiteralNode SourceSection: [20674,20690]`(k, order, elem)`
-                                        PythonObjectFactoryNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [20675,20676]`k`
-                                          Frame: [12,k,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [20678,20683]`order`
-                                          Frame: [8,order,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [20685,20689]`elem`
-                                          Frame: [11,elem,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [9,_heapreplace,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                  DestructuringAssignmentNodeGen SourceSection: [20704,20734]`top, _order, _elem =...`
-                                    GetItemNodeGen SourceSection: [20725,20734]`result[0]`
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [5,result,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      IntegerLiteralNode SourceSection: [20732,20733]`0`
-                                        Value: 0
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <>temp17
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [17,<>temp17,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <>temp18
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [18,<>temp18,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <>temp19
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [19,<>temp19,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: top
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [7,top,Illegal]
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [17,<>temp17,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: _order
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [10,_order,Illegal]
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [18,<>temp18,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: _elem
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [13,_elem,Illegal]
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [19,<>temp19,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                  WriteLocalVariableNodeGen SourceSection: [20747,20757]`order += 1`
-                                    Identifier: order
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [8,order,Illegal]
-                                    LookupAndCallInplaceNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [20747,20752]`order`
+                                      ReadLocalVariableNode SourceSection: [20678,20683]`order`
                                         Frame: [8,order,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      IntegerLiteralNode SourceSection: [20756,20757]`1`
-                                        Value: 1
-                                BlockNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [20685,20689]`elem`
+                                        Frame: [11,elem,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [9,_heapreplace,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                DestructuringAssignmentNodeGen SourceSection: [20704,20734]`top, _order, _elem =...`
+                                  GetItemNodeGen SourceSection: [20725,20734]`result[0]`
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [5,result,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    IntegerLiteralNode SourceSection: [20732,20733]`0`
+                                      Value: 0
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp17
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [17,<>temp17,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp18
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [18,<>temp18,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp19
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [19,<>temp19,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: top
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [7,top,Illegal]
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [17,<>temp17,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: _order
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [10,_order,Illegal]
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [18,<>temp18,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: _elem
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [13,_elem,Illegal]
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [19,<>temp19,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                WriteLocalVariableNodeGen SourceSection: [20747,20757]`order += 1`
+                                  Identifier: order
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [8,order,Illegal]
+                                  LookupAndCallInplaceNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [20747,20752]`order`
+                                      Frame: [8,order,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    IntegerLiteralNode SourceSection: [20756,20757]`1`
+                                      Value: 1
+                              BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [20595,20597]`it`
                           GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [20595,20597]`it`
@@ -3863,84 +3853,83 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ElseNode SourceSection: [21856,22026]`for elem in it:↵    ...`
                           ForNode SourceSection: None
-                            DefaultLoopNode SourceSection: None
-                              ForRepeatingNode SourceSection: None
-                                ForNextElementNodeGen SourceSection: None
-                                  WriteLocalVariableNodeGen SourceSection: None
-                                    Identifier: elem
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                            ForRepeatingNode SourceSection: None
+                              ForNextElementNodeGen SourceSection: None
+                                WriteLocalVariableNodeGen SourceSection: None
+                                  Identifier: elem
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [11,elem,Illegal]
+                              IfNode SourceSection: [21884,22026]`if top < elem:↵     ...`
+                                YesNodeGen SourceSection: None
+                                  BinaryComparisonNodeGen SourceSection: [21887,21897]`top < elem`
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __lt__
+                                    ReadLocalVariableNode SourceSection: [21887,21890]`top`
+                                      Frame: [7,top,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [21893,21897]`elem`
                                       Frame: [11,elem,Illegal]
-                                IfNode SourceSection: [21884,22026]`if top < elem:↵     ...`
-                                  YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [21887,21897]`top < elem`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __lt__
-                                      ReadLocalVariableNode SourceSection: [21887,21890]`top`
-                                        Frame: [7,top,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                BlockNode SourceSection: None
+                                  ExpressionStatementNode SourceSection: [21915,21950]`_heapreplace(result,...`
+                                    PythonCallNodeGen SourceSection: [21915,21950]`_heapreplace(result,...`
+                                      CachedCallNodeGen SourceSection: None
+                                        CreateArgumentsNodeGen SourceSection: None
+                                        CallDispatchNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [21928,21934]`result`
+                                        Frame: [5,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [21893,21897]`elem`
-                                        Frame: [11,elem,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                  BlockNode SourceSection: None
-                                    ExpressionStatementNode SourceSection: [21915,21950]`_heapreplace(result,...`
-                                      PythonCallNodeGen SourceSection: [21915,21950]`_heapreplace(result,...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [21928,21934]`result`
-                                          Frame: [5,result,Illegal]
+                                      TupleLiteralNode SourceSection: [21936,21949]`(elem, order)`
+                                        PythonObjectFactoryNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [21937,21941]`elem`
+                                          Frame: [11,elem,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        TupleLiteralNode SourceSection: [21936,21949]`(elem, order)`
-                                          PythonObjectFactoryNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [21937,21941]`elem`
-                                            Frame: [11,elem,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [21943,21948]`order`
-                                            Frame: [8,order,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [9,_heapreplace,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                    DestructuringAssignmentNodeGen SourceSection: [21967,21990]`top, _order = result...`
-                                      GetItemNodeGen SourceSection: [21981,21990]`result[0]`
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [5,result,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        IntegerLiteralNode SourceSection: [21988,21989]`0`
-                                          Value: 0
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp15
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [15,<>temp15,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp16
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [16,<>temp16,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: top
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [7,top,Illegal]
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [15,<>temp15,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: _order
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [10,_order,Illegal]
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [16,<>temp16,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: [22007,22017]`order -= 1`
-                                      Identifier: order
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [8,order,Illegal]
-                                      LookupAndCallInplaceNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [22007,22012]`order`
+                                        ReadLocalVariableNode SourceSection: [21943,21948]`order`
                                           Frame: [8,order,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        IntegerLiteralNode SourceSection: [22016,22017]`1`
-                                          Value: 1
-                                  BlockNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [9,_heapreplace,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  DestructuringAssignmentNodeGen SourceSection: [21967,21990]`top, _order = result...`
+                                    GetItemNodeGen SourceSection: [21981,21990]`result[0]`
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [5,result,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      IntegerLiteralNode SourceSection: [21988,21989]`0`
+                                        Value: 0
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: <>temp15
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [15,<>temp15,Illegal]
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: <>temp16
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [16,<>temp16,Illegal]
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: top
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [7,top,Illegal]
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [15,<>temp15,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: _order
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [10,_order,Illegal]
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [16,<>temp16,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: [22007,22017]`order -= 1`
+                                    Identifier: order
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [8,order,Illegal]
+                                    LookupAndCallInplaceNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [22007,22012]`order`
+                                        Frame: [8,order,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      IntegerLiteralNode SourceSection: [22016,22017]`1`
+                                        Value: 1
+                                BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [21868,21870]`it`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [21868,21870]`it`
@@ -4244,115 +4233,114 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [22373,22552]`for elem in it:↵    ...`
                       ForNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          ForRepeatingNode SourceSection: None
-                            ForNextElementNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: elem
-                                WriteLocalFrameSlotNodeGen SourceSection: None
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: None
+                              Identifier: elem
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [11,elem,Illegal]
+                          BlockNode SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: [22397,22410]`k = key(elem)`
+                              Identifier: k
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [12,k,Illegal]
+                              PythonCallNodeGen SourceSection: [22401,22410]`key(elem)`
+                                CachedCallNodeGen SourceSection: None
+                                  CreateArgumentsNodeGen SourceSection: None
+                                  CallDispatchNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [22405,22409]`elem`
                                   Frame: [11,elem,Illegal]
-                            BlockNode SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: [22397,22410]`k = key(elem)`
-                                Identifier: k
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [12,k,Illegal]
-                                PythonCallNodeGen SourceSection: [22401,22410]`key(elem)`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [22405,22409]`elem`
-                                    Frame: [11,elem,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [2,key,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadLocalCellNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: None
-                                      Frame: [2,key,Illegal]
+                                  ReadFromCellNodeGen SourceSection: None
+                            IfNode SourceSection: [22419,22552]`if top < k:↵        ...`
+                              YesNodeGen SourceSection: None
+                                BinaryComparisonNodeGen SourceSection: [22422,22429]`top < k`
+                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                    Op: __lt__
+                                  ReadLocalVariableNode SourceSection: [22422,22425]`top`
+                                    Frame: [7,top,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [22428,22429]`k`
+                                    Frame: [12,k,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              BlockNode SourceSection: None
+                                ExpressionStatementNode SourceSection: [22443,22481]`_heapreplace(result,...`
+                                  PythonCallNodeGen SourceSection: [22443,22481]`_heapreplace(result,...`
+                                    CachedCallNodeGen SourceSection: None
+                                      CreateArgumentsNodeGen SourceSection: None
+                                      CallDispatchNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [22456,22462]`result`
+                                      Frame: [5,result,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadFromCellNodeGen SourceSection: None
-                              IfNode SourceSection: [22419,22552]`if top < k:↵        ...`
-                                YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [22422,22429]`top < k`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __lt__
-                                    ReadLocalVariableNode SourceSection: [22422,22425]`top`
-                                      Frame: [7,top,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [22428,22429]`k`
-                                      Frame: [12,k,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                BlockNode SourceSection: None
-                                  ExpressionStatementNode SourceSection: [22443,22481]`_heapreplace(result,...`
-                                    PythonCallNodeGen SourceSection: [22443,22481]`_heapreplace(result,...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [22456,22462]`result`
-                                        Frame: [5,result,Illegal]
+                                    TupleLiteralNode SourceSection: [22464,22480]`(k, order, elem)`
+                                      PythonObjectFactoryNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [22465,22466]`k`
+                                        Frame: [12,k,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      TupleLiteralNode SourceSection: [22464,22480]`(k, order, elem)`
-                                        PythonObjectFactoryNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [22465,22466]`k`
-                                          Frame: [12,k,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [22468,22473]`order`
-                                          Frame: [8,order,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [22475,22479]`elem`
-                                          Frame: [11,elem,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [9,_heapreplace,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                  DestructuringAssignmentNodeGen SourceSection: [22494,22524]`top, _order, _elem =...`
-                                    GetItemNodeGen SourceSection: [22515,22524]`result[0]`
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [5,result,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      IntegerLiteralNode SourceSection: [22522,22523]`0`
-                                        Value: 0
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <>temp17
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [17,<>temp17,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <>temp18
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [18,<>temp18,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <>temp19
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [19,<>temp19,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: top
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [7,top,Illegal]
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [17,<>temp17,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: _order
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [10,_order,Illegal]
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [18,<>temp18,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: _elem
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [13,_elem,Illegal]
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [19,<>temp19,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                  WriteLocalVariableNodeGen SourceSection: [22537,22547]`order -= 1`
-                                    Identifier: order
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [8,order,Illegal]
-                                    LookupAndCallInplaceNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [22537,22542]`order`
+                                      ReadLocalVariableNode SourceSection: [22468,22473]`order`
                                         Frame: [8,order,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      IntegerLiteralNode SourceSection: [22546,22547]`1`
-                                        Value: 1
-                                BlockNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [22475,22479]`elem`
+                                        Frame: [11,elem,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [9,_heapreplace,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                DestructuringAssignmentNodeGen SourceSection: [22494,22524]`top, _order, _elem =...`
+                                  GetItemNodeGen SourceSection: [22515,22524]`result[0]`
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [5,result,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    IntegerLiteralNode SourceSection: [22522,22523]`0`
+                                      Value: 0
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp17
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [17,<>temp17,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp18
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [18,<>temp18,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp19
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [19,<>temp19,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: top
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [7,top,Illegal]
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [17,<>temp17,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: _order
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [10,_order,Illegal]
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [18,<>temp18,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: _elem
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [13,_elem,Illegal]
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [19,<>temp19,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                WriteLocalVariableNodeGen SourceSection: [22537,22547]`order -= 1`
+                                  Identifier: order
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [8,order,Illegal]
+                                  LookupAndCallInplaceNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [22537,22542]`order`
+                                      Frame: [8,order,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    IntegerLiteralNode SourceSection: [22546,22547]`1`
+                                      Value: 1
+                              BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [22385,22387]`it`
                           GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [22385,22387]`it`

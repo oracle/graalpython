@@ -11,38 +11,37 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):�
       SideEffect:
         ElseNode SourceSection: [0,68]`for x in range(10):↵...`
           ForNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              ForRepeatingNode SourceSection: None
-                ForNextElementNodeGen SourceSection: None
-                  WriteNameNodeGen SourceSection: None
-                    Identifier: x
-                ContinueTargetNode SourceSection: None
-                  BlockNode SourceSection: None
-                    IfNode SourceSection: [24,60]`if x % 2 == 0:↵     ...`
-                      YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [27,37]`x % 2 == 0`
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: x
+              ContinueTargetNode SourceSection: None
+                BlockNode SourceSection: None
+                  IfNode SourceSection: [24,60]`if x % 2 == 0:↵     ...`
+                    YesNodeGen SourceSection: None
+                      BinaryComparisonNodeGen SourceSection: [27,37]`x % 2 == 0`
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __eq__
+                        BinaryArithmeticExpression SourceSection: [27,32]`x % 2`
                           LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
-                          BinaryArithmeticExpression SourceSection: [27,32]`x % 2`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mod__
-                            ReadNameNodeGen SourceSection: [27,28]`x`
-                              Identifier: x
-                            IntegerLiteralNode SourceSection: [31,32]`2`
-                              Value: 2
-                          IntegerLiteralNode SourceSection: [36,37]`0`
-                            Value: 0
-                      ContinueNode SourceSection: [47,55]`continue`
-                      BlockNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [60,68]`print(x)`
-                      PythonCallNodeGen SourceSection: [60,68]`print(x)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
-                        ReadNameNodeGen SourceSection: [66,67]`x`
-                          Identifier: x
-                        ReadNameNodeGen SourceSection: None
-                          Identifier: print
+                            Op: __mod__
+                          ReadNameNodeGen SourceSection: [27,28]`x`
+                            Identifier: x
+                          IntegerLiteralNode SourceSection: [31,32]`2`
+                            Value: 2
+                        IntegerLiteralNode SourceSection: [36,37]`0`
+                          Value: 0
+                    ContinueNode SourceSection: [47,55]`continue`
+                    BlockNode SourceSection: None
+                  ExpressionStatementNode SourceSection: [60,68]`print(x)`
+                    PythonCallNodeGen SourceSection: [60,68]`print(x)`
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      ReadNameNodeGen SourceSection: [66,67]`x`
+                        Identifier: x
+                      ReadNameNodeGen SourceSection: None
+                        Identifier: print
             GetIteratorExpressionNodeGen SourceSection: [9,18]`range(10)`
               GetIteratorNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [9,18]`range(10)`

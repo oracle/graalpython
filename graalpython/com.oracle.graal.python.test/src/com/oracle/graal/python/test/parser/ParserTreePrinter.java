@@ -45,10 +45,14 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
@@ -64,7 +68,6 @@ import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultEx
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
-import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
@@ -74,6 +77,9 @@ import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.nodes.argument.keywords.*;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
@@ -552,6 +558,11 @@ public class ParserTreePrinter implements NodeVisitor {
 
     @Override
     public boolean visit(Node node) {
+        if (!node.getClass().getPackage().getName().startsWith("com.oracle.graal.python")) {
+            // print only python nodes
+            visitChildren(node);
+            return false;
+        }
         if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') {
             indent(level);
         }

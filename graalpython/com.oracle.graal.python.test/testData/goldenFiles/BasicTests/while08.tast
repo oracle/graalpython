@@ -11,24 +11,23 @@ ModuleRootNode Name: <module 'while08'> SourceSection: [0,86]`while True:↵  if
       SideEffect:
         BreakTargetNode SourceSection: [0,86]`while True:↵  if Fal...`
           WhileNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              WhileRepeatingNode SourceSection: None
-                YesNodeGen SourceSection: None
-                  BooleanLiteralNode SourceSection: [6,10]`True`
-                ContinueTargetNode SourceSection: None
-                  BlockNode SourceSection: None
-                    IfNode SourceSection: [14,36]`if False:↵    break↵...`
-                      YesNodeGen SourceSection: None
-                        BooleanLiteralNode SourceSection: [17,22]`False`
-                      BreakNode SourceSection: [28,33]`break`
-                      BlockNode SourceSection: None
-                    IfNode SourceSection: [36,60]`if True:↵    continu...`
-                      YesNodeGen SourceSection: None
-                        BooleanLiteralNode SourceSection: [39,43]`True`
-                      ContinueNode SourceSection: [49,57]`continue`
-                      BlockNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [60,64]`pass`
-                      EmptyNode SourceSection: [60,64]`pass`
+            WhileRepeatingNode SourceSection: None
+              YesNodeGen SourceSection: None
+                BooleanLiteralNode SourceSection: [6,10]`True`
+              ContinueTargetNode SourceSection: None
+                BlockNode SourceSection: None
+                  IfNode SourceSection: [14,36]`if False:↵    break↵...`
+                    YesNodeGen SourceSection: None
+                      BooleanLiteralNode SourceSection: [17,22]`False`
+                    BreakNode SourceSection: [28,33]`break`
+                    BlockNode SourceSection: None
+                  IfNode SourceSection: [36,60]`if True:↵    continu...`
+                    YesNodeGen SourceSection: None
+                      BooleanLiteralNode SourceSection: [39,43]`True`
+                    ContinueNode SourceSection: [49,57]`continue`
+                    BlockNode SourceSection: None
+                  ExpressionStatementNode SourceSection: [60,64]`pass`
+                    EmptyNode SourceSection: [60,64]`pass`
           ExpressionStatementNode SourceSection: [73,86]`print('done')`
             PythonCallNodeGen SourceSection: [73,86]`print('done')`
               CachedCallNodeGen SourceSection: None

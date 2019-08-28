@@ -190,20 +190,19 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ElseNode SourceSection: [137,197]`for elem in nonposit...`
                                           ForNode SourceSection: None
-                                            DefaultLoopNode SourceSection: None
-                                              ForRepeatingNode SourceSection: None
-                                                ForNextElementNodeGen SourceSection: None
-                                                  WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: elem
-                                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [2,elem,Illegal]
-                                                DeleteItemNodeGen SourceSection: [174,188]`del self[elem]`
-                                                  ReadLocalVariableNode SourceSection: None
-                                                    Frame: [0,self,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [183,187]`elem`
+                                            ForRepeatingNode SourceSection: None
+                                              ForNextElementNodeGen SourceSection: None
+                                                WriteLocalVariableNodeGen SourceSection: None
+                                                  Identifier: elem
+                                                  WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [2,elem,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              DeleteItemNodeGen SourceSection: [174,188]`del self[elem]`
+                                                ReadLocalVariableNode SourceSection: None
+                                                  Frame: [0,self,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [183,187]`elem`
+                                                  Frame: [2,elem,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [149,160]`nonpositive`
                                               GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [149,160]`nonpositive`

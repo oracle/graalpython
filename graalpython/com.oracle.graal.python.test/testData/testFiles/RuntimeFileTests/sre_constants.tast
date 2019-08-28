@@ -1153,37 +1153,36 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ElseNode SourceSection: [5670,5758]`for item in items:↵ ...`
                               ForNode SourceSection: None
-                                DefaultLoopNode SourceSection: None
-                                  ForRepeatingNode SourceSection: None
-                                    ForNextElementNodeGen SourceSection: None
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: item
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [4,item,Illegal]
-                                    ExpressionStatementNode SourceSection: [5701,5753]`f.write("#define %s_...`
-                                      PythonCallNodeGen SourceSection: [5701,5753]`f.write("#define %s_...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
-                                        BinaryArithmeticExpression SourceSection: [5709,5752]`"#define %s_%s %d\n"...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
-                                          StringLiteralNode SourceSection: [5709,5729]`"#define %s_%s %d\n"...`
-                                          TupleLiteralNode SourceSection: [5732,5752]`(prefix, item, item)...`
-                                            PythonObjectFactoryNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [5733,5739]`prefix`
-                                              Frame: [2,prefix,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [5741,5745]`item`
-                                              Frame: [4,item,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [5747,5751]`item`
-                                              Frame: [4,item,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetCallAttributeNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [5701,5702]`f`
-                                            Frame: [0,f,Illegal]
+                                ForRepeatingNode SourceSection: None
+                                  ForNextElementNodeGen SourceSection: None
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: item
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [4,item,Illegal]
+                                  ExpressionStatementNode SourceSection: [5701,5753]`f.write("#define %s_...`
+                                    PythonCallNodeGen SourceSection: [5701,5753]`f.write("#define %s_...`
+                                      CachedCallNodeGen SourceSection: None
+                                        CreateArgumentsNodeGen SourceSection: None
+                                        CallDispatchNodeGen SourceSection: None
+                                      BinaryArithmeticExpression SourceSection: [5709,5752]`"#define %s_%s %d\n"...`
+                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                          Op: __mod__
+                                        StringLiteralNode SourceSection: [5709,5729]`"#define %s_%s %d\n"...`
+                                        TupleLiteralNode SourceSection: [5732,5752]`(prefix, item, item)...`
+                                          PythonObjectFactoryNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [5733,5739]`prefix`
+                                            Frame: [2,prefix,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [5741,5745]`item`
+                                            Frame: [4,item,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [5747,5751]`item`
+                                            Frame: [4,item,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                      GetCallAttributeNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [5701,5702]`f`
+                                          Frame: [0,f,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [5682,5687]`items`
                                   GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [5682,5687]`items`

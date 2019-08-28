@@ -11,32 +11,31 @@ ModuleRootNode Name: <module 'try06'> SourceSection: [0,124]`for cls in (B, C, D
       SideEffect:
         ElseNode SourceSection: [0,124]`for cls in (B, C, D)...`
           ForNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              ForRepeatingNode SourceSection: None
-                ForNextElementNodeGen SourceSection: None
-                  WriteNameNodeGen SourceSection: None
-                    Identifier: cls
-                TryFinallyNode SourceSection: [26,124]`try:↵        pass↵  ...`
-                  TryExceptNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [39,43]`pass`
-                      EmptyNode SourceSection: [39,43]`pass`
-                    ExceptNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [66,70]`pass`
-                        EmptyNode SourceSection: [66,70]`pass`
-                      ReadNameNodeGen SourceSection: [55,56]`D`
-                        Identifier: D
-                    ExceptNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [93,97]`pass`
-                        EmptyNode SourceSection: [93,97]`pass`
-                      ReadNameNodeGen SourceSection: [82,83]`C`
-                        Identifier: C
-                    ExceptNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [120,124]`pass`
-                        EmptyNode SourceSection: [120,124]`pass`
-                      ReadNameNodeGen SourceSection: [109,110]`B`
-                        Identifier: B
-                    BlockNode SourceSection: None
-                    SaveExceptionStateNodeGen SourceSection: None
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: cls
+              TryFinallyNode SourceSection: [26,124]`try:↵        pass↵  ...`
+                TryExceptNode SourceSection: None
+                  ExpressionStatementNode SourceSection: [39,43]`pass`
+                    EmptyNode SourceSection: [39,43]`pass`
+                  ExceptNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [66,70]`pass`
+                      EmptyNode SourceSection: [66,70]`pass`
+                    ReadNameNodeGen SourceSection: [55,56]`D`
+                      Identifier: D
+                  ExceptNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [93,97]`pass`
+                      EmptyNode SourceSection: [93,97]`pass`
+                    ReadNameNodeGen SourceSection: [82,83]`C`
+                      Identifier: C
+                  ExceptNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [120,124]`pass`
+                      EmptyNode SourceSection: [120,124]`pass`
+                    ReadNameNodeGen SourceSection: [109,110]`B`
+                      Identifier: B
+                  BlockNode SourceSection: None
+                  SaveExceptionStateNodeGen SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [11,20]`(B, C, D)`
               GetIteratorNodeGen SourceSection: None
               TupleLiteralNode SourceSection: [11,20]`(B, C, D)`

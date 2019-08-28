@@ -40,21 +40,20 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):�
                   GeneratorBlockNode SourceSection: None
                     ElseNode SourceSection: [18,57]`while True:↵        ...`
                       WhileNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          WhileRepeatingNode SourceSection: None
-                            YesNodeGen SourceSection: None
-                              BooleanLiteralNode SourceSection: [24,28]`True`
-                            WriteGeneratorFrameVariableNodeGen SourceSection: [38,52]`value = next()`
-                              Identifier: value
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [1,value,Illegal]
-                              PythonCallNodeGen SourceSection: [46,52]`next()`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: next
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        WhileRepeatingNode SourceSection: None
+                          YesNodeGen SourceSection: None
+                            BooleanLiteralNode SourceSection: [24,28]`True`
+                          WriteGeneratorFrameVariableNodeGen SourceSection: [38,52]`value = next()`
+                            Identifier: value
+                            WriteGeneraterFrameSlotNodeGen SourceSection: None
+                              Frame: [1,value,Illegal]
+                            PythonCallNodeGen SourceSection: [46,52]`next()`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: next
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     ElseNode SourceSection: [57,89]`while h > 1:↵       ...`
                       GeneratorWhileNode SourceSection: None

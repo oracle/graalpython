@@ -11,22 +11,21 @@ ModuleRootNode Name: <module 'while04'> SourceSection: [0,61]`while True:↵  if
       SideEffect:
         BreakTargetNode SourceSection: [0,61]`while True:↵  if Fal...`
           WhileNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              WhileRepeatingNode SourceSection: None
-                YesNodeGen SourceSection: None
-                  BooleanLiteralNode SourceSection: [6,10]`True`
-                BlockNode SourceSection: None
-                  IfNode SourceSection: [14,36]`if False:↵    break↵...`
-                    YesNodeGen SourceSection: None
-                      BooleanLiteralNode SourceSection: [17,22]`False`
-                    BreakNode SourceSection: [28,33]`break`
-                    BlockNode SourceSection: None
-                  IfNode SourceSection: [36,57]`if True:↵    break↵ ...`
-                    YesNodeGen SourceSection: None
-                      BooleanLiteralNode SourceSection: [39,43]`True`
-                    BreakNode SourceSection: [49,54]`break`
-                    BlockNode SourceSection: None
-                  ExpressionStatementNode SourceSection: [57,61]`pass`
-                    EmptyNode SourceSection: [57,61]`pass`
+            WhileRepeatingNode SourceSection: None
+              YesNodeGen SourceSection: None
+                BooleanLiteralNode SourceSection: [6,10]`True`
+              BlockNode SourceSection: None
+                IfNode SourceSection: [14,36]`if False:↵    break↵...`
+                  YesNodeGen SourceSection: None
+                    BooleanLiteralNode SourceSection: [17,22]`False`
+                  BreakNode SourceSection: [28,33]`break`
+                  BlockNode SourceSection: None
+                IfNode SourceSection: [36,57]`if True:↵    break↵ ...`
+                  YesNodeGen SourceSection: None
+                    BooleanLiteralNode SourceSection: [39,43]`True`
+                  BreakNode SourceSection: [49,54]`break`
+                  BlockNode SourceSection: None
+                ExpressionStatementNode SourceSection: [57,61]`pass`
+                  EmptyNode SourceSection: [57,61]`pass`
           BlockNode SourceSection: None
   CalleeContext SourceSection: None

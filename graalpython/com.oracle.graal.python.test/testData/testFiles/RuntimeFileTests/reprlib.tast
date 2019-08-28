@@ -1825,73 +1825,72 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       ElseNode SourceSection: [3579,3787]`for key in islice(_p...`
                                         ForNode SourceSection: None
-                                          DefaultLoopNode SourceSection: None
-                                            ForRepeatingNode SourceSection: None
-                                              ForNextElementNodeGen SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: key
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                          ForRepeatingNode SourceSection: None
+                                            ForNextElementNodeGen SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: key
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [9,key,Illegal]
+                                            BlockNode SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: [3645,3675]`keyrepr = repr1(key,...`
+                                                Identifier: keyrepr
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [7,keyrepr,Illegal]
+                                                PythonCallNodeGen SourceSection: [3655,3675]`repr1(key, newlevel)...`
+                                                  CachedCallNodeGen SourceSection: None
+                                                    CreateArgumentsNodeGen SourceSection: None
+                                                    CallDispatchNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [3661,3664]`key`
                                                     Frame: [9,key,Illegal]
-                                              BlockNode SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: [3645,3675]`keyrepr = repr1(key,...`
-                                                  Identifier: keyrepr
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [7,keyrepr,Illegal]
-                                                  PythonCallNodeGen SourceSection: [3655,3675]`repr1(key, newlevel)...`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [3661,3664]`key`
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [3666,3674]`newlevel`
+                                                    Frame: [4,newlevel,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: None
+                                                    Frame: [5,repr1,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: [3688,3721]`valrepr = repr1(x[ke...`
+                                                Identifier: valrepr
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [8,valrepr,Illegal]
+                                                PythonCallNodeGen SourceSection: [3698,3721]`repr1(x[key], newlev...`
+                                                  CachedCallNodeGen SourceSection: None
+                                                    CreateArgumentsNodeGen SourceSection: None
+                                                    CallDispatchNodeGen SourceSection: None
+                                                  GetItemNodeGen SourceSection: [3704,3710]`x[key]`
+                                                    ReadLocalVariableNode SourceSection: None
+                                                      Frame: [1,x,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [3706,3709]`key`
                                                       Frame: [9,key,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [3666,3674]`newlevel`
-                                                      Frame: [4,newlevel,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: None
-                                                      Frame: [5,repr1,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: [3688,3721]`valrepr = repr1(x[ke...`
-                                                  Identifier: valrepr
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [8,valrepr,Illegal]
-                                                  PythonCallNodeGen SourceSection: [3698,3721]`repr1(x[key], newlev...`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
-                                                    GetItemNodeGen SourceSection: [3704,3710]`x[key]`
-                                                      ReadLocalVariableNode SourceSection: None
-                                                        Frame: [1,x,Illegal]
+                                                  ReadLocalVariableNode SourceSection: [3712,3720]`newlevel`
+                                                    Frame: [4,newlevel,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: None
+                                                    Frame: [5,repr1,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              ExpressionStatementNode SourceSection: [3734,3778]`pieces.append('%s: %...`
+                                                PythonCallNodeGen SourceSection: [3734,3778]`pieces.append('%s: %...`
+                                                  CachedCallNodeGen SourceSection: None
+                                                    CreateArgumentsNodeGen SourceSection: None
+                                                    CallDispatchNodeGen SourceSection: None
+                                                  BinaryArithmeticExpression SourceSection: [3748,3777]`'%s: %s' % (keyrepr,...`
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __mod__
+                                                    StringLiteralNode SourceSection: [3748,3756]`'%s: %s'`
+                                                    TupleLiteralNode SourceSection: [3759,3777]`(keyrepr, valrepr)`
+                                                      PythonObjectFactoryNodeGen SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [3760,3767]`keyrepr`
+                                                        Frame: [7,keyrepr,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [3706,3709]`key`
-                                                        Frame: [9,key,Illegal]
+                                                      ReadLocalVariableNode SourceSection: [3769,3776]`valrepr`
+                                                        Frame: [8,valrepr,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [3712,3720]`newlevel`
-                                                      Frame: [4,newlevel,Illegal]
+                                                  GetCallAttributeNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [3734,3740]`pieces`
+                                                      Frame: [6,pieces,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: None
-                                                      Frame: [5,repr1,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                ExpressionStatementNode SourceSection: [3734,3778]`pieces.append('%s: %...`
-                                                  PythonCallNodeGen SourceSection: [3734,3778]`pieces.append('%s: %...`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
-                                                    BinaryArithmeticExpression SourceSection: [3748,3777]`'%s: %s' % (keyrepr,...`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __mod__
-                                                      StringLiteralNode SourceSection: [3748,3756]`'%s: %s'`
-                                                      TupleLiteralNode SourceSection: [3759,3777]`(keyrepr, valrepr)`
-                                                        PythonObjectFactoryNodeGen SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [3760,3767]`keyrepr`
-                                                          Frame: [7,keyrepr,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [3769,3776]`valrepr`
-                                                          Frame: [8,valrepr,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                    GetCallAttributeNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [3734,3740]`pieces`
-                                                        Frame: [6,pieces,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [3590,3631]`islice(_possibly_sor...`
                                             GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [3590,3631]`islice(_possibly_sor...`

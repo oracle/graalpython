@@ -35,34 +35,33 @@ ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():â
                     BlockNode SourceSection: None
                     ElseNode SourceSection: [22,42]`for i, b in (): pass...`
                       ForNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          ForRepeatingNode SourceSection: None
-                            ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNodeGen SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <>temp2
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [2,<>temp2,Illegal]
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <>temp3
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [3,<>temp3,Illegal]
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: i
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [0,i,Illegal]
-                                  ReadLocalVariableNode SourceSection: None
-                                    Frame: [2,<>temp2,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: b
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [1,b,Illegal]
-                                  ReadLocalVariableNode SourceSection: None
-                                    Frame: [3,<>temp3,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                            ExpressionStatementNode SourceSection: [38,42]`pass`
-                              EmptyNode SourceSection: [38,42]`pass`
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            DestructuringAssignmentNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp2
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [2,<>temp2,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp3
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [3,<>temp3,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: i
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [0,i,Illegal]
+                                ReadLocalVariableNode SourceSection: None
+                                  Frame: [2,<>temp2,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: b
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [1,b,Illegal]
+                                ReadLocalVariableNode SourceSection: None
+                                  Frame: [3,<>temp3,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                          ExpressionStatementNode SourceSection: [38,42]`pass`
+                            EmptyNode SourceSection: [38,42]`pass`
                         GetIteratorExpressionNodeGen SourceSection: [34,36]`()`
                           GetIteratorNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [34,36]`()`

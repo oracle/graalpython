@@ -11,11 +11,10 @@ ModuleRootNode Name: <module 'while01'> SourceSection: [0,18]`while True:↵  pa
       SideEffect:
         ElseNode SourceSection: [0,18]`while True:↵  pass`
           WhileNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              WhileRepeatingNode SourceSection: None
-                YesNodeGen SourceSection: None
-                  BooleanLiteralNode SourceSection: [6,10]`True`
-                ExpressionStatementNode SourceSection: [14,18]`pass`
-                  EmptyNode SourceSection: [14,18]`pass`
+            WhileRepeatingNode SourceSection: None
+              YesNodeGen SourceSection: None
+                BooleanLiteralNode SourceSection: [6,10]`True`
+              ExpressionStatementNode SourceSection: [14,18]`pass`
+                EmptyNode SourceSection: [14,18]`pass`
           BlockNode SourceSection: None
   CalleeContext SourceSection: None

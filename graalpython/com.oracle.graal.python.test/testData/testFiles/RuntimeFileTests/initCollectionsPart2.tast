@@ -224,35 +224,34 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                     BlockNode SourceSection: None
                                       ElseNode SourceSection: [1028,1223]`for mapping in self....`
                                         ForNode SourceSection: None
-                                          DefaultLoopNode SourceSection: None
-                                            ForRepeatingNode SourceSection: None
-                                              ForNextElementNodeGen SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: mapping
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [2,mapping,Illegal]
-                                              TryFinallyNode SourceSection: [1066,1223]`try:↵               ...`
-                                                TryExceptNode SourceSection: None
-                                                  FrameReturnNode SourceSection: [1087,1106]`return mapping[key]`
-                                                    WriteLocalVariableNodeGen SourceSection: None
-                                                      Identifier: <return_val>
-                                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [4,<return_val>,Illegal]
-                                                      GetItemNodeGen SourceSection: [1094,1106]`mapping[key]`
-                                                        ReadLocalVariableNode SourceSection: None
-                                                          Frame: [2,mapping,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [1102,1105]`key`
-                                                          Frame: [1,key,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ExceptNode SourceSection: None
-                                                    ExpressionStatementNode SourceSection: [1210,1214]`pass`
-                                                      EmptyNode SourceSection: [1210,1214]`pass`
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [1184,1192]`KeyError`
-                                                      Identifier: KeyError
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  BlockNode SourceSection: None
-                                                  SaveExceptionStateNodeGen SourceSection: None
+                                          ForRepeatingNode SourceSection: None
+                                            ForNextElementNodeGen SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: mapping
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [2,mapping,Illegal]
+                                            TryFinallyNode SourceSection: [1066,1223]`try:↵               ...`
+                                              TryExceptNode SourceSection: None
+                                                FrameReturnNode SourceSection: [1087,1106]`return mapping[key]`
+                                                  WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: <return_val>
+                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                      Frame: [4,<return_val>,Illegal]
+                                                    GetItemNodeGen SourceSection: [1094,1106]`mapping[key]`
+                                                      ReadLocalVariableNode SourceSection: None
+                                                        Frame: [2,mapping,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [1102,1105]`key`
+                                                        Frame: [1,key,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                ExceptNode SourceSection: None
+                                                  ExpressionStatementNode SourceSection: [1210,1214]`pass`
+                                                    EmptyNode SourceSection: [1210,1214]`pass`
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [1184,1192]`KeyError`
+                                                    Identifier: KeyError
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                BlockNode SourceSection: None
+                                                SaveExceptionStateNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [1043,1052]`self.maps`
                                             GetIteratorNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [1043,1052]`self.maps`
@@ -480,25 +479,24 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       ElseNode SourceSection: [1560,1692]`for mapping in rever...`
                                         ForNode SourceSection: None
-                                          DefaultLoopNode SourceSection: None
-                                            ForRepeatingNode SourceSection: None
-                                              ForNextElementNodeGen SourceSection: None
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: mapping
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [2,mapping,Illegal]
-                                              ExpressionStatementNode SourceSection: [1608,1625]`d.update(mapping)`
-                                                PythonCallNodeGen SourceSection: [1608,1625]`d.update(mapping)`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [1617,1624]`mapping`
-                                                    Frame: [2,mapping,Illegal]
+                                          ForRepeatingNode SourceSection: None
+                                            ForNextElementNodeGen SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: mapping
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [2,mapping,Illegal]
+                                            ExpressionStatementNode SourceSection: [1608,1625]`d.update(mapping)`
+                                              PythonCallNodeGen SourceSection: [1608,1625]`d.update(mapping)`
+                                                CachedCallNodeGen SourceSection: None
+                                                  CreateArgumentsNodeGen SourceSection: None
+                                                  CallDispatchNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [1617,1624]`mapping`
+                                                  Frame: [2,mapping,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                GetCallAttributeNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [1608,1609]`d`
+                                                    Frame: [1,d,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetCallAttributeNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [1608,1609]`d`
-                                                      Frame: [1,d,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [1575,1594]`reversed(self.maps)`
                                             GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [1575,1594]`reversed(self.maps)`
@@ -2611,23 +2609,22 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         ElseNode SourceSection: [5902,5958]`for key in iterable:...`
                                           ForNode SourceSection: None
-                                            DefaultLoopNode SourceSection: None
-                                              ForRepeatingNode SourceSection: None
-                                                ForNextElementNodeGen SourceSection: None
-                                                  WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: key
-                                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [4,key,Illegal]
-                                                SetItemNodeGen SourceSection: [5935,5949]`d[key] = value`
-                                                  ReadLocalVariableNode SourceSection: None
-                                                    Frame: [3,d,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [5937,5940]`key`
+                                            ForRepeatingNode SourceSection: None
+                                              ForNextElementNodeGen SourceSection: None
+                                                WriteLocalVariableNodeGen SourceSection: None
+                                                  Identifier: key
+                                                  WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [4,key,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [5944,5949]`value`
-                                                    Frame: [2,value,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              SetItemNodeGen SourceSection: [5935,5949]`d[key] = value`
+                                                ReadLocalVariableNode SourceSection: None
+                                                  Frame: [3,d,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [5937,5940]`key`
+                                                  Frame: [4,key,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [5944,5949]`value`
+                                                  Frame: [2,value,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [5913,5921]`iterable`
                                               GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [5913,5921]`iterable`

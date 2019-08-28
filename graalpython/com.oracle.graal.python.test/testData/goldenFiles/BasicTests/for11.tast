@@ -11,30 +11,29 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
       SideEffect:
         ElseNode SourceSection: [0,20]`for i, b in (): pass...`
           ForNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              ForRepeatingNode SourceSection: None
-                ForNextElementNodeGen SourceSection: None
-                  DestructuringAssignmentNodeGen SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: None
-                      Identifier: <>temp0
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,<>temp0,Illegal]
-                    WriteLocalVariableNodeGen SourceSection: None
-                      Identifier: <>temp1
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,<>temp1,Illegal]
-                    WriteNameNodeGen SourceSection: None
-                      Identifier: i
-                      ReadLocalVariableNode SourceSection: None
-                        Frame: [0,<>temp0,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
-                    WriteNameNodeGen SourceSection: None
-                      Identifier: b
-                      ReadLocalVariableNode SourceSection: None
-                        Frame: [1,<>temp1,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
-                ExpressionStatementNode SourceSection: [16,20]`pass`
-                  EmptyNode SourceSection: [16,20]`pass`
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                DestructuringAssignmentNodeGen SourceSection: None
+                  WriteLocalVariableNodeGen SourceSection: None
+                    Identifier: <>temp0
+                    WriteLocalFrameSlotNodeGen SourceSection: None
+                      Frame: [0,<>temp0,Illegal]
+                  WriteLocalVariableNodeGen SourceSection: None
+                    Identifier: <>temp1
+                    WriteLocalFrameSlotNodeGen SourceSection: None
+                      Frame: [1,<>temp1,Illegal]
+                  WriteNameNodeGen SourceSection: None
+                    Identifier: i
+                    ReadLocalVariableNode SourceSection: None
+                      Frame: [0,<>temp0,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+                  WriteNameNodeGen SourceSection: None
+                    Identifier: b
+                    ReadLocalVariableNode SourceSection: None
+                      Frame: [1,<>temp1,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+              ExpressionStatementNode SourceSection: [16,20]`pass`
+                EmptyNode SourceSection: [16,20]`pass`
             GetIteratorExpressionNodeGen SourceSection: [12,14]`()`
               GetIteratorNodeGen SourceSection: None
               TupleLiteralNode SourceSection: [12,14]`()`

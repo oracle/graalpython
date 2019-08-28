@@ -11,13 +11,12 @@ ModuleRootNode Name: <module 'for01'> SourceSection: [0,23]`for i in 'ahoj':↵ 
       SideEffect:
         ElseNode SourceSection: [0,23]`for i in 'ahoj':↵  p...`
           ForNode SourceSection: None
-            DefaultLoopNode SourceSection: None
-              ForRepeatingNode SourceSection: None
-                ForNextElementNodeGen SourceSection: None
-                  WriteNameNodeGen SourceSection: None
-                    Identifier: i
-                ExpressionStatementNode SourceSection: [19,23]`pass`
-                  EmptyNode SourceSection: [19,23]`pass`
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: i
+              ExpressionStatementNode SourceSection: [19,23]`pass`
+                EmptyNode SourceSection: [19,23]`pass`
             GetIteratorExpressionNodeGen SourceSection: [9,15]`'ahoj'`
               GetIteratorNodeGen SourceSection: None
               StringLiteralNode SourceSection: [9,15]`'ahoj'`

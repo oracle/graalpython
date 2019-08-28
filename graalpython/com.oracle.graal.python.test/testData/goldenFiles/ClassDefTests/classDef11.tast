@@ -211,15 +211,14 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                           ReadFromCellNodeGen SourceSection: None
                                                       ElseNode SourceSection: [222,264]`for f in fields:↵   ...`
                                                         ForNode SourceSection: None
-                                                          DefaultLoopNode SourceSection: None
-                                                            ForRepeatingNode SourceSection: None
-                                                              ForNextElementNodeGen SourceSection: None
-                                                                WriteLocalVariableNodeGen SourceSection: None
-                                                                  Identifier: f
-                                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                    Frame: [2,f,Illegal]
-                                                              ExpressionStatementNode SourceSection: [255,259]`pass`
-                                                                EmptyNode SourceSection: [255,259]`pass`
+                                                          ForRepeatingNode SourceSection: None
+                                                            ForNextElementNodeGen SourceSection: None
+                                                              WriteLocalVariableNodeGen SourceSection: None
+                                                                Identifier: f
+                                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                                  Frame: [2,f,Illegal]
+                                                            ExpressionStatementNode SourceSection: [255,259]`pass`
+                                                              EmptyNode SourceSection: [255,259]`pass`
                                                           GetIteratorExpressionNodeGen SourceSection: [231,237]`fields`
                                                             GetIteratorNodeGen SourceSection: None
                                                             ReadLocalCellNodeGen SourceSection: [231,237]`fields`

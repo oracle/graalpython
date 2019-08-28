@@ -863,168 +863,167 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         Value: 0
                     ElseNode SourceSection: [2176,2625]`for i, base in enume...`
                       ForNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          ForRepeatingNode SourceSection: None
-                            ForNextElementNodeGen SourceSection: None
-                              DestructuringAssignmentNodeGen SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <>temp7
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [7,<>temp7,Illegal]
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <>temp8
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [8,<>temp8,Illegal]
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: i
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [5,i,Illegal]
-                                  ReadLocalVariableNode SourceSection: None
-                                    Frame: [7,<>temp7,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: base
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [6,base,Illegal]
-                                  ReadLocalVariableNode SourceSection: None
-                                    Frame: [8,<>temp8,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                            ContinueTargetNode SourceSection: None
-                              BlockNode SourceSection: None
-                                IfNode SourceSection: [2217,2273]`if isinstance(base, ...`
-                                  YesNodeGen SourceSection: None
-                                    PythonCallNodeGen SourceSection: [2220,2242]`isinstance(base, typ...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [2231,2235]`base`
-                                        Frame: [6,base,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: [2237,2241]`type`
-                                        Identifier: type
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                        Identifier: isinstance
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ContinueNode SourceSection: [2256,2264]`continue`
-                                  BlockNode SourceSection: None
-                                IfNode SourceSection: [2273,2343]`if not hasattr(base,...`
-                                  NotNodeGen SourceSection: [2276,2312]`not hasattr(base, "_...`
-                                    PythonCallNodeGen SourceSection: [2280,2312]`hasattr(base, "__mro...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [2288,2292]`base`
-                                        Frame: [6,base,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      StringLiteralNode SourceSection: [2294,2311]`"__mro_entries__"`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                        Identifier: hasattr
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ContinueNode SourceSection: [2326,2334]`continue`
-                                  BlockNode SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: [2343,2381]`new_base = base.__mr...`
-                                  Identifier: new_base
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [4,new_base,Illegal]
-                                  PythonCallNodeGen SourceSection: [2354,2381]`base.__mro_entries__...`
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            DestructuringAssignmentNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp7
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [7,<>temp7,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp8
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [8,<>temp8,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: i
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [5,i,Illegal]
+                                ReadLocalVariableNode SourceSection: None
+                                  Frame: [7,<>temp7,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: base
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [6,base,Illegal]
+                                ReadLocalVariableNode SourceSection: None
+                                  Frame: [8,<>temp8,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                          ContinueTargetNode SourceSection: None
+                            BlockNode SourceSection: None
+                              IfNode SourceSection: [2217,2273]`if isinstance(base, ...`
+                                YesNodeGen SourceSection: None
+                                  PythonCallNodeGen SourceSection: [2220,2242]`isinstance(base, typ...`
                                     CachedCallNodeGen SourceSection: None
                                       CreateArgumentsNodeGen SourceSection: None
                                       CallDispatchNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [2375,2380]`bases`
-                                      Frame: [0,bases,Illegal]
+                                    ReadLocalVariableNode SourceSection: [2231,2235]`base`
+                                      Frame: [6,base,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    GetCallAttributeNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [2354,2358]`base`
-                                        Frame: [6,base,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: [2390,2404]`updated = True`
-                                  Identifier: updated
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [2,updated,Illegal]
-                                  BooleanLiteralNode SourceSection: [2400,2404]`True`
-                                IfNode SourceSection: [2413,2625]`if not isinstance(ne...`
-                                  NotNodeGen SourceSection: [2416,2447]`not isinstance(new_b...`
-                                    PythonCallNodeGen SourceSection: [2420,2447]`isinstance(new_base,...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [2431,2439]`new_base`
-                                        Frame: [4,new_base,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: [2441,2446]`tuple`
-                                        Identifier: tuple
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                        Identifier: isinstance
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  RaiseNodeGen SourceSection: [2461,2515]`raise TypeError("__m...`
-                                    PythonCallNodeGen SourceSection: [2467,2515]`TypeError("__mro_ent...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
-                                      StringLiteralNode SourceSection: [2477,2514]`"__mro_entries__ mus...`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                        Identifier: TypeError
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
-                                  BlockNode SourceSection: None
-                                    SetItemNodeGen SourceSection: [2542,2581]`new_bases[i+shift:i+...`
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [1,new_bases,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      SliceLiteralNodeGen SourceSection: [2552,2569]`i+shift:i+shift+1`
-                                        PythonObjectFactoryNodeGen SourceSection: None
-                                        BinaryArithmeticExpression SourceSection: [2552,2559]`i+shift`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
-                                          ReadLocalVariableNode SourceSection: [2552,2553]`i`
-                                            Frame: [5,i,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [2554,2559]`shift`
-                                            Frame: [3,shift,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                        BinaryArithmeticExpression SourceSection: [2560,2569]`i+shift+1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
-                                          BinaryArithmeticExpression SourceSection: [2560,2567]`i+shift`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
-                                            ReadLocalVariableNode SourceSection: [2560,2561]`i`
-                                              Frame: [5,i,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [2562,2567]`shift`
-                                              Frame: [3,shift,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                          IntegerLiteralNode SourceSection: [2568,2569]`1`
-                                            Value: 1
-                                        EmptyNode SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [2573,2581]`new_base`
-                                        Frame: [4,new_base,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: [2594,2620]`shift += len(new_bas...`
-                                      Identifier: shift
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [3,shift,Illegal]
-                                      LookupAndCallInplaceNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [2594,2599]`shift`
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [2237,2241]`type`
+                                      Identifier: type
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      Identifier: isinstance
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ContinueNode SourceSection: [2256,2264]`continue`
+                                BlockNode SourceSection: None
+                              IfNode SourceSection: [2273,2343]`if not hasattr(base,...`
+                                NotNodeGen SourceSection: [2276,2312]`not hasattr(base, "_...`
+                                  PythonCallNodeGen SourceSection: [2280,2312]`hasattr(base, "__mro...`
+                                    CachedCallNodeGen SourceSection: None
+                                      CreateArgumentsNodeGen SourceSection: None
+                                      CallDispatchNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [2288,2292]`base`
+                                      Frame: [6,base,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    StringLiteralNode SourceSection: [2294,2311]`"__mro_entries__"`
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      Identifier: hasattr
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                ContinueNode SourceSection: [2326,2334]`continue`
+                                BlockNode SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: [2343,2381]`new_base = base.__mr...`
+                                Identifier: new_base
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [4,new_base,Illegal]
+                                PythonCallNodeGen SourceSection: [2354,2381]`base.__mro_entries__...`
+                                  CachedCallNodeGen SourceSection: None
+                                    CreateArgumentsNodeGen SourceSection: None
+                                    CallDispatchNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [2375,2380]`bases`
+                                    Frame: [0,bases,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  GetCallAttributeNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [2354,2358]`base`
+                                      Frame: [6,base,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: [2390,2404]`updated = True`
+                                Identifier: updated
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [2,updated,Illegal]
+                                BooleanLiteralNode SourceSection: [2400,2404]`True`
+                              IfNode SourceSection: [2413,2625]`if not isinstance(ne...`
+                                NotNodeGen SourceSection: [2416,2447]`not isinstance(new_b...`
+                                  PythonCallNodeGen SourceSection: [2420,2447]`isinstance(new_base,...`
+                                    CachedCallNodeGen SourceSection: None
+                                      CreateArgumentsNodeGen SourceSection: None
+                                      CallDispatchNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [2431,2439]`new_base`
+                                      Frame: [4,new_base,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [2441,2446]`tuple`
+                                      Identifier: tuple
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      Identifier: isinstance
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                RaiseNodeGen SourceSection: [2461,2515]`raise TypeError("__m...`
+                                  PythonCallNodeGen SourceSection: [2467,2515]`TypeError("__mro_ent...`
+                                    CachedCallNodeGen SourceSection: None
+                                      CreateArgumentsNodeGen SourceSection: None
+                                      CallDispatchNodeGen SourceSection: None
+                                    StringLiteralNode SourceSection: [2477,2514]`"__mro_entries__ mus...`
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      Identifier: TypeError
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  EmptyNode SourceSection: None
+                                BlockNode SourceSection: None
+                                  SetItemNodeGen SourceSection: [2542,2581]`new_bases[i+shift:i+...`
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [1,new_bases,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    SliceLiteralNodeGen SourceSection: [2552,2569]`i+shift:i+shift+1`
+                                      PythonObjectFactoryNodeGen SourceSection: None
+                                      BinaryArithmeticExpression SourceSection: [2552,2559]`i+shift`
+                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                          Op: __add__
+                                        ReadLocalVariableNode SourceSection: [2552,2553]`i`
+                                          Frame: [5,i,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [2554,2559]`shift`
                                           Frame: [3,shift,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        BinaryArithmeticExpression SourceSection: [2603,2620]`len(new_base) - 1`
+                                      BinaryArithmeticExpression SourceSection: [2560,2569]`i+shift+1`
+                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                          Op: __add__
+                                        BinaryArithmeticExpression SourceSection: [2560,2567]`i+shift`
                                           LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __sub__
-                                          PythonCallNodeGen SourceSection: [2603,2616]`len(new_base)`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [2607,2615]`new_base`
-                                              Frame: [4,new_base,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                              Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          IntegerLiteralNode SourceSection: [2619,2620]`1`
-                                            Value: 1
+                                            Op: __add__
+                                          ReadLocalVariableNode SourceSection: [2560,2561]`i`
+                                            Frame: [5,i,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [2562,2567]`shift`
+                                            Frame: [3,shift,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                        IntegerLiteralNode SourceSection: [2568,2569]`1`
+                                          Value: 1
+                                      EmptyNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [2573,2581]`new_base`
+                                      Frame: [4,new_base,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: [2594,2620]`shift += len(new_bas...`
+                                    Identifier: shift
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [3,shift,Illegal]
+                                    LookupAndCallInplaceNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [2594,2599]`shift`
+                                        Frame: [3,shift,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      BinaryArithmeticExpression SourceSection: [2603,2620]`len(new_base) - 1`
+                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                          Op: __sub__
+                                        PythonCallNodeGen SourceSection: [2603,2616]`len(new_base)`
+                                          CachedCallNodeGen SourceSection: None
+                                            CreateArgumentsNodeGen SourceSection: None
+                                            CallDispatchNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [2607,2615]`new_base`
+                                            Frame: [4,new_base,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            Identifier: len
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        IntegerLiteralNode SourceSection: [2619,2620]`1`
+                                          Value: 1
                         GetIteratorExpressionNodeGen SourceSection: [2191,2207]`enumerate(bases)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [2191,2207]`enumerate(bases)`
@@ -1345,81 +1344,80 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         ReadVariableFromFrameNodeGen SourceSection: None
                     ElseNode SourceSection: [3859,4315]`for base in bases:↵ ...`
                       ForNode SourceSection: None
-                        DefaultLoopNode SourceSection: None
-                          ForRepeatingNode SourceSection: None
-                            ForNextElementNodeGen SourceSection: None
-                              WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: base
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: None
+                              Identifier: base
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [4,base,Illegal]
+                          ContinueTargetNode SourceSection: None
+                            BlockNode SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: [3886,3908]`base_meta = type(bas...`
+                                Identifier: base_meta
                                 WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [4,base,Illegal]
-                            ContinueTargetNode SourceSection: None
-                              BlockNode SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: [3886,3908]`base_meta = type(bas...`
-                                  Identifier: base_meta
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [3,base_meta,Illegal]
-                                  PythonCallNodeGen SourceSection: [3898,3908]`type(base)`
+                                  Frame: [3,base_meta,Illegal]
+                                PythonCallNodeGen SourceSection: [3898,3908]`type(base)`
+                                  CachedCallNodeGen SourceSection: None
+                                    CreateArgumentsNodeGen SourceSection: None
+                                    CallDispatchNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [3903,3907]`base`
+                                    Frame: [4,base,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    Identifier: type
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              IfNode SourceSection: [3917,3980]`if issubclass(winner...`
+                                YesNodeGen SourceSection: None
+                                  PythonCallNodeGen SourceSection: [3920,3949]`issubclass(winner, b...`
                                     CachedCallNodeGen SourceSection: None
                                       CreateArgumentsNodeGen SourceSection: None
                                       CallDispatchNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [3903,3907]`base`
-                                      Frame: [4,base,Illegal]
+                                    ReadLocalVariableNode SourceSection: [3931,3937]`winner`
+                                      Frame: [2,winner,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [3939,3948]`base_meta`
+                                      Frame: [3,base_meta,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                      Identifier: type
+                                      Identifier: issubclass
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                IfNode SourceSection: [3917,3980]`if issubclass(winner...`
-                                  YesNodeGen SourceSection: None
-                                    PythonCallNodeGen SourceSection: [3920,3949]`issubclass(winner, b...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [3931,3937]`winner`
-                                        Frame: [2,winner,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [3939,3948]`base_meta`
-                                        Frame: [3,base_meta,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                        Identifier: issubclass
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ContinueNode SourceSection: [3963,3971]`continue`
-                                  BlockNode SourceSection: None
-                                IfNode SourceSection: [3980,4090]`if issubclass(base_m...`
-                                  YesNodeGen SourceSection: None
-                                    PythonCallNodeGen SourceSection: [3983,4012]`issubclass(base_meta...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [3994,4003]`base_meta`
-                                        Frame: [3,base_meta,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [4005,4011]`winner`
-                                        Frame: [2,winner,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                        Identifier: issubclass
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  BlockNode SourceSection: None
-                                    WriteLocalVariableNodeGen SourceSection: [4026,4044]`winner = base_meta`
-                                      Identifier: winner
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [2,winner,Illegal]
-                                      ReadLocalVariableNode SourceSection: [4035,4044]`base_meta`
-                                        Frame: [3,base_meta,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                    ContinueNode SourceSection: [4057,4065]`continue`
-                                  BlockNode SourceSection: None
-                                RaiseNodeGen SourceSection: [4090,4310]`raise TypeError("met...`
-                                  PythonCallNodeGen SourceSection: [4096,4310]`TypeError("metaclass...`
+                                ContinueNode SourceSection: [3963,3971]`continue`
+                                BlockNode SourceSection: None
+                              IfNode SourceSection: [3980,4090]`if issubclass(base_m...`
+                                YesNodeGen SourceSection: None
+                                  PythonCallNodeGen SourceSection: [3983,4012]`issubclass(base_meta...`
                                     CachedCallNodeGen SourceSection: None
                                       CreateArgumentsNodeGen SourceSection: None
                                       CallDispatchNodeGen SourceSection: None
-                                    StringLiteralNode SourceSection: [4106,4309]`"metaclass conflict:...`
+                                    ReadLocalVariableNode SourceSection: [3994,4003]`base_meta`
+                                      Frame: [3,base_meta,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [4005,4011]`winner`
+                                      Frame: [2,winner,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                      Identifier: TypeError
+                                      Identifier: issubclass
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                BlockNode SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: [4026,4044]`winner = base_meta`
+                                    Identifier: winner
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [2,winner,Illegal]
+                                    ReadLocalVariableNode SourceSection: [4035,4044]`base_meta`
+                                      Frame: [3,base_meta,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  ContinueNode SourceSection: [4057,4065]`continue`
+                                BlockNode SourceSection: None
+                              RaiseNodeGen SourceSection: [4090,4310]`raise TypeError("met...`
+                                PythonCallNodeGen SourceSection: [4096,4310]`TypeError("metaclass...`
+                                  CachedCallNodeGen SourceSection: None
+                                    CreateArgumentsNodeGen SourceSection: None
+                                    CallDispatchNodeGen SourceSection: None
+                                  StringLiteralNode SourceSection: [4106,4309]`"metaclass conflict:...`
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    Identifier: TypeError
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3871,3876]`bases`
                           GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3871,3876]`bases`
