@@ -402,12 +402,22 @@ int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
 	return UPCALL_CEXT_I(_jls_PyUnicode_Compare, native_to_java(left), polyglot_from_string(right, SRC_CS)) == 0;
 }
 
+UPCALL_ID(PyTruffle_Unicode_FromWchar);
+PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
+#if SIZEOF_WCHAR_T == 1
+	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i8_array(u, size), 1, NULL);
+#elif SIZEOF_WCHAR_T == 2
+	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i32_array(u, size), 2, NULL);
+#elif SIZEOF_WCHAR_T == 4
+	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i32_array(u, size), 4, NULL);
+#endif
+}
+
 static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
 	// CPython assumes latin1 when decoding an UCS1 array
 	return polyglot_from_string((const char *) u, "ISO-8859-1");
 }
 
-UPCALL_ID(PyTruffle_Unicode_FromWchar);
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
 	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i16_array(u, size), 2, NULL);
 }
