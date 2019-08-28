@@ -512,3 +512,8 @@ UPCALL_ID(PyUnicode_AsEncodedString);
 PyObject * PyUnicode_AsEncodedString(PyObject *unicode, const char *encoding, const char *errors) {
 	return UPCALL_CEXT_O(_jls_PyUnicode_AsEncodedString, native_to_java(unicode), polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
 }
+
+UPCALL_ID(PyUnicode_Replace);
+PyObject * PyUnicode_Replace(PyObject *str, PyObject *substr, PyObject *replstr, Py_ssize_t maxcount) {
+	return UPCALL_CEXT_O(_jls_PyUnicode_Replace, native_to_java(str), native_to_java(substr), native_to_java(replstr), maxcount);
+}

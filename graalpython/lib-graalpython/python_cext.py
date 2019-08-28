@@ -789,6 +789,11 @@ def PyUnicode_AsEncodedString(s, encoding, errors):
     return s.encode(encoding, errors)
 
 
+@may_raise
+def PyUnicode_Replace(s, substr, replstr, count):
+    return s.replace(substr, replstr, count)
+
+
 ##################### CAPSULE
 
 
