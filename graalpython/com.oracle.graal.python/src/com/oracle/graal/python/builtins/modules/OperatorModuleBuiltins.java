@@ -48,15 +48,21 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -133,6 +139,80 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
                 return false;
             }
             return (int) result != 0;
+        }
+    }
+
+    @Builtin(name = "eq", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public boolean doBoolean(boolean value1, boolean value2) {
+            return value1 == value2;
+        }
+
+        @Specialization
+        public boolean doNone(@SuppressWarnings("unused") PNone value1, @SuppressWarnings("unused") PNone value2) {
+            return true;
+        }
+
+        @Specialization
+        public boolean doInt(long value1, long value2) {
+            return value1 == value2;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public boolean doPInt(PInt value1, PInt value2) {
+            return value1.getValue().equals(value2.getValue());
+        }
+
+        @Specialization
+        public boolean doDouble(double value1, double value2) {
+            return value1 == value2;
+        }
+
+        @Specialization
+        public boolean doString(String value1, String value2) {
+            return value1.equals(value2);
+        }
+
+        private @Child BinaryComparisonNode equalsNode;
+
+        @Fallback
+        public boolean doObject(VirtualFrame frame, Object value1, Object value2) {
+            if (value1 == value2) {
+                return true;
+            }
+            if (equalsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                equalsNode = insert((BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==")));
+            }
+            return equalsNode.executeBool(frame, value1, value2);
+        }
+    }
+
+    @Builtin(name = "getitem", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public Object doDict(PDict dict, Object item) {
+            return dict.getItem(item);
+        }
+
+        @Specialization
+        public Object doSequence(PSequence value, Object index,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
+            return getItemNode.execute(value.getSequenceStorage(), index);
+        }
+
+        @Specialization
+        public Object doObject(VirtualFrame frame, Object value, Object index,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
+            return getItemNode.executeObject(frame, value, index);
         }
     }
 

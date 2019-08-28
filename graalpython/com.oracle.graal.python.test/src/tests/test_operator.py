@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,45 +36,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import operator
+import unittest
 
-def test_subclassing_can_add_methods():
-    class ListSubclass(list):
-        def join(self, string):
-            return string.join(self)
+class OperatorTest(unittest.TestCase):
 
-    l = ListSubclass(["1", "2", "3", "4"])
-    assert l.join(",") == ",".join(l)
-
-
-def test_subclassing_can_override_methods():
-    class ListSubclass(list):
-        def __getitem__(self, slice):
-            return super(ListSubclass, self).__getitem__(slice) + ".."
-
-    l = ListSubclass(["1", "2", "3", "4"])
-    assert [l[0], l[1], l[2], l[3]] == ["1..", "2..", "3..", "4.."]
-
-
-def test_list_constructor():
-    class ListSubclass(list):
-        def __iter__(self):
-            return iter([10, 20, 30, 40])
-
-    l = list(ListSubclass([1, 2, 3, 4]))
-    assert l == [10, 20, 30, 40], "was: {!s}".format(l)
+    def test_eq(self):
+        class C(object):
+            def __eq__(self, other):
+                raise SyntaxError
+        self.assertRaises(TypeError, operator.eq)
+        self.assertRaises(SyntaxError, operator.eq, C(), C())
+        self.assertFalse(operator.eq(1, 0))
+        self.assertFalse(operator.eq(1, 0.0))
+        self.assertTrue(operator.eq(1, 1))
+        self.assertTrue(operator.eq(1, 1.0))
+        self.assertFalse(operator.eq(1, 2))
+        self.assertFalse(operator.eq(1, 2.0))
 
 
-def test_list_init_call():
-    class MyList(list):
-        def __init__(self, a, b=None):
-            if b:
-                list.__init__(self, [b])
-            else:
-                list.__init__(self, [a])
-
-    l = MyList(10)
-    assert l == [10]
-    l = MyList(10, 20)
-    assert l == [20]
-    l = MyList(10, b=30)
-    assert l == [30]
+    def test_getitem(self):
+        a = range(10)
+        self.assertRaises(TypeError, operator.getitem)
+        self.assertRaises(TypeError, operator.getitem, a, None)
+        self.assertEqual(operator.getitem(a, 2), 2)
