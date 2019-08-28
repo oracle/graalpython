@@ -71,6 +71,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
@@ -82,6 +83,9 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
     @Child InteropLibrary interopLib;
+
+    private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile everHandled = ConditionProfile.createBinaryProfile();
 
     private final boolean shouldCatchAll;
     private final boolean shouldCatchJavaExceptions;
@@ -160,24 +164,28 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             // we want a constant loop iteration count for ExplodeLoop to work,
             // so we always run through all except handlers
             if (!wasHandled) {
-                if (exceptNode.matchesException(frame, exception)) {
-                    try {
-                        exceptNode.executeExcept(frame, exception);
-                    } catch (ExceptionHandledException e) {
-                        wasHandled = true;
-                    } catch (ControlFlowException e) {
+                if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
+                    if (everHandled.profile(wasHandled = handleException(frame, exception, exceptionState, wasHandled, exceptNode))) {
                         // restore previous exception state, this won't happen if the except block
                         // raises an exception
                         restoreExceptionState(frame, exceptionState);
-                        throw e;
                     }
                 }
             }
         }
-        if (wasHandled) {
+        return wasHandled;
+    }
+
+    private boolean handleException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState, boolean wasHandled, ExceptNode exceptNode) {
+        try {
+            exceptNode.executeExcept(frame, exception);
+        } catch (ExceptionHandledException e) {
+            return true;
+        } catch (ControlFlowException e) {
             // restore previous exception state, this won't happen if the except block
             // raises an exception
             restoreExceptionState(frame, exceptionState);
+            throw e;
         }
         return wasHandled;
     }
