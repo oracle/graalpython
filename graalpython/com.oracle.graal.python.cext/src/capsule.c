@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,11 @@ void* PyCapsule_GetContext(PyObject *o) {
     return result;
 }
 
+UPCALL_ID(PyCapsule_SetContext);
+int PyCapsule_SetContext(PyObject *o, void *context) {
+    return UPCALL_CEXT_I(_jls_PyCapsule_SetContext, native_to_java(o), (uint64_t)context);
+}
+
 UPCALL_ID(PyCapsule_GetPointer);
 void* PyCapsule_GetPointer(PyObject *o, const char *name) {
     void* result = UPCALL_CEXT_PTR(_jls_PyCapsule_GetPointer, native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
@@ -77,3 +82,10 @@ UPCALL_ID(PyCapsule_IsValid);
 int PyCapsule_IsValid(PyObject *o, const char *name) {
     return o != NULL && UPCALL_CEXT_I(_jls_PyCapsule_IsValid, native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
 }
+
+UPCALL_ID(PyCapsule_GetName);
+const char * PyCapsule_GetName(PyObject *o) {
+	return as_char_pointer(UPCALL_CEXT_O(_jls_PyCapsule_GetName, native_to_java(o)));
+}
+
+

@@ -57,6 +57,9 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.ParsePosition;
 import java.util.Arrays;
 import java.util.List;
 
@@ -150,6 +153,8 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -181,6 +186,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -876,6 +882,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
         }
 
+        protected static <T> T raiseNative(PythonBuiltinBaseNode n, VirtualFrame frame, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+            return NativeBuiltin.raiseNative(n, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
+        }
+
         protected static <T> T raiseNative(PythonBuiltinBaseNode n, PFrame.Reference frameInfo, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
             try {
                 throw n.raise(errType, fmt, args);
@@ -937,6 +947,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
             return csName;
         }
+
+        @TruffleBoundary
+        protected static CharBuffer allocateCharBuffer(int cap) {
+            return CharBuffer.allocate(cap);
+        }
+
+        @TruffleBoundary
+        protected static String toString(CharBuffer cb) {
+            return cb.toString();
+        }
+
+        @TruffleBoundary
+        protected static int remaining(ByteBuffer cb) {
+            return cb.remaining();
+        }
+
     }
 
     @Builtin(name = "TrufflePInt_AsPrimitive", minNumOfPositionalArgs = 3)
@@ -2552,21 +2578,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static CharBuffer allocateCharBuffer(int cap) {
-            return CharBuffer.allocate(cap);
-        }
-
-        @TruffleBoundary
-        private static String toString(CharBuffer cb) {
-            return cb.toString();
-        }
-
-        @TruffleBoundary
-        private static int remaining(ByteBuffer cb) {
-            return cb.remaining();
-        }
-
-        @TruffleBoundary
         private CoderResult decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, String errors) {
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
@@ -2574,4 +2585,83 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffle_IsSequence", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_IsSequence extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        boolean doGeneric(VirtualFrame frame, Object object,
+                        @Cached IsSequenceNode isSequenceNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            try (PDataModelEmulationContextManager cm = isSequenceNode.withGlobalState(contextRef, frame)) {
+                return cm.execute(object);
+            }
+        }
+    }
+
+    @Builtin(name = "PyTruffle_OS_StringToDouble", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_OS_StringToDouble extends NativeBuiltin {
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object module, String source, int reportPos,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+
+            if (reportPos != 0) {
+                ParsePosition pp = new ParsePosition(0);
+                Number parse = parse(source, pp);
+                if (parse != null) {
+                    return factory().createTuple(new Object[]{parse.doubleValue(), pp.getIndex()});
+                }
+            } else {
+                try {
+                    Number parse = parse(source);
+                    return factory().createTuple(new Object[]{parse.doubleValue()});
+                } catch (ParseException e) {
+                }
+            }
+            return raiseNative(frame, getNativeNullNode.execute(module), PythonBuiltinClassType.ValueError, "could not convert string to float: %s", source);
+        }
+
+        @TruffleBoundary
+        private static Number parse(String source, ParsePosition pp) {
+            return DecimalFormat.getInstance().parse(source, pp);
+        }
+
+        @TruffleBoundary
+        private static Number parse(String source) throws ParseException {
+            return DecimalFormat.getInstance().parse(source);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 5, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyUnicode_Decode extends NativeUnicodeBuiltin {
+
+        @Specialization
+        Object doDecode(VirtualFrame frame, Object module, Object cByteArray, long size, String encoding, String errors,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+
+            try {
+                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(frame, cByteArray, size));
+                int n = remaining(inputBuffer);
+                CharBuffer resultBuffer = allocateCharBuffer(n * 4);
+                decode(resultBuffer, inputBuffer, encoding, errors);
+                return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
+            } catch (IllegalArgumentException e) {
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.LookupError, "unknown encoding: " + encoding);
+            } catch (InteropException e) {
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
+            }
+        }
+
+        @TruffleBoundary
+        private CoderResult decode(CharBuffer resultBuffer, ByteBuffer inputBuffer, String encoding, String errors) {
+            CharsetDecoder decoder = Charset.forName(encoding).newDecoder();
+            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
+            return decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
+        }
+    }
 }

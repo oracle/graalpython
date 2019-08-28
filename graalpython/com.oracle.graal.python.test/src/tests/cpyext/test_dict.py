@@ -113,6 +113,16 @@ def _reference_clear(args):
         raise SystemError
 
 
+def _reference_merge(args):
+    a, b, override = args
+    if override:
+        a.update(b)
+    else:
+        for k in b:
+            if not k in a:
+                a[k] = b[k]
+    return 0
+
 class SubDict(dict):
     pass
 
@@ -354,5 +364,19 @@ class TestPyDict(CPyExtTestCase):
             return self;
         }''',
         callfunction="wrap_PyDict_Clear",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyDict_Merge = CPyExtFunction(
+        _reference_merge,
+        lambda: (
+            (dict({"a": 1}), {"b": 2}, 0),
+            (dict(), {"b": 2}, 0),
+            (dict({"a": 1}), {"a": 2}, 0),
+            (dict({"a": 1}), {"a": 2}, 1),
+        ),
+        resultspec="i",
+        argspec="OOi",
+        arguments=["PyObject* a", "PyObject* b", "int override"],
         cmpfunc=unhandled_error_compare
     )

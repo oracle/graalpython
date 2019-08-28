@@ -132,6 +132,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
     char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
     int use_valist = args == NULL;
+    int pos = 0;
 
     int remaining_space = 2047;
     char* buffer = (char*)calloc(sizeof(char), remaining_space + 1);
@@ -177,7 +178,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
             case 'R':
                 if (converter == NULL) converter = PyObject_Repr;
                 c[1] = 's';
-                allocated = variable = as_char_pointer(converter(use_valist ? va_arg(va, PyObject*) : (PyObject*)(args[argc++])));
+                allocated = variable = as_char_pointer(converter(use_valist ? va_arg(va, PyObject*) : (PyObject*)(args[pos++])));
                 break;
             case '%':
                 // literal %
@@ -189,7 +190,7 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, 
                 // if we're reading args from a void* array, read it now,
                 // otherwise there's nothing to do
                 if (args != NULL) {
-                    variable = args[argc++];
+                    variable = args[pos++];
                 }
             }
             // skip over next char, we checked it
@@ -401,12 +402,22 @@ int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
 	return UPCALL_CEXT_I(_jls_PyUnicode_Compare, native_to_java(left), polyglot_from_string(right, SRC_CS)) == 0;
 }
 
+UPCALL_ID(PyTruffle_Unicode_FromWchar);
+PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
+#if SIZEOF_WCHAR_T == 1
+	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i8_array(u, size), 1, NULL);
+#elif SIZEOF_WCHAR_T == 2
+	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i32_array(u, size), 2, NULL);
+#elif SIZEOF_WCHAR_T == 4
+	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i32_array(u, size), 4, NULL);
+#endif
+}
+
 static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
 	// CPython assumes latin1 when decoding an UCS1 array
 	return polyglot_from_string((const char *) u, "ISO-8859-1");
 }
 
-UPCALL_ID(PyTruffle_Unicode_FromWchar);
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
 	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i16_array(u, size), 2, NULL);
 }
@@ -475,4 +486,34 @@ PyObject * _PyUnicode_FromId(_Py_Identifier *id) {
 UPCALL_ID(PyUnicode_AsUnicodeEscapeString);
 PyObject * PyUnicode_AsUnicodeEscapeString(PyObject *unicode) {
 	return UPCALL_CEXT_O(_jls_PyUnicode_AsUnicodeEscapeString, native_to_java(unicode));
+}
+
+UPCALL_ID(PyUnicode_Decode);
+PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding, const char *errors) {
+	if (errors == NULL) {
+		errors = "strict";
+	}
+    if (encoding == NULL) {
+        return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
+    }
+	return UPCALL_CEXT_O(_jls_PyUnicode_Decode, s, size, polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
+}
+
+PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {
+	return PyUnicode_Decode(s, size, "ascii", errors);
+}
+
+UPCALL_ID(PyUnicode_Tailmatch);
+Py_ssize_t PyUnicode_Tailmatch(PyObject *str, PyObject *substr, Py_ssize_t start, Py_ssize_t end, int direction) {
+	return UPCALL_CEXT_L(_jls_PyUnicode_Tailmatch, native_to_java(str), native_to_java(substr), start, end, direction);
+}
+
+UPCALL_ID(PyUnicode_AsEncodedString);
+PyObject * PyUnicode_AsEncodedString(PyObject *unicode, const char *encoding, const char *errors) {
+	return UPCALL_CEXT_O(_jls_PyUnicode_AsEncodedString, native_to_java(unicode), polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
+}
+
+UPCALL_ID(PyUnicode_Replace);
+PyObject * PyUnicode_Replace(PyObject *str, PyObject *substr, PyObject *replstr, Py_ssize_t maxcount) {
+	return UPCALL_CEXT_O(_jls_PyUnicode_Replace, native_to_java(str), native_to_java(substr), native_to_java(replstr), maxcount);
 }

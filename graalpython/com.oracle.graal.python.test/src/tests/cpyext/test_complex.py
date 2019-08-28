@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -54,12 +54,12 @@ def _float_compare(x, y):
         return x == y or isNan(x) and isNan(y)
 
 
-def _reference_asdouble(args):
+def _reference_realasdouble(args):
     n = args[0]
-    if isinstance(n, float):
-        return n
+    if isinstance(n, complex):
+        return n.real
     try:
-        return float(n)
+        return n.__float__()
     except:
         if sys.version_info.minor >= 6:
             raise SystemError
@@ -119,3 +119,32 @@ class TestPyComplex(CPyExtTestCase):
         resulttype="int",
         callfunction="wrap_PyComplex_AsCComplex",
     )
+
+    test_PyComplex_RealAsDouble = CPyExtFunction(
+        _reference_realasdouble,
+        lambda: (
+            (complex(0.0, 2.0), ),
+            (complex(1.0, 2.0), ),
+            (DummyComplexSubclass(2.0, 3.0), ),
+            ("10.0", ),
+        ),
+        resultspec="f",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyComplex_ImagAsDouble = CPyExtFunction(
+        lambda args: args[0].imag if isinstance(args[0], complex) else 0.0,
+        lambda: (
+            (complex(0.0, 2.0), ),
+            (complex(1.0, 2.0), ),
+            (DummyComplexSubclass(2.0, 3.0), ),
+            ("10.0", ),
+        ),
+        resultspec="f",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+

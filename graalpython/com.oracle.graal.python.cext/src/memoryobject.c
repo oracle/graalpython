@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,4 +45,11 @@ PyTypeObject PyBuffer_Type = PY_TRUFFLE_TYPE("buffer", &PyType_Type, Py_TPFLAGS_
 
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags) {
     return PyBuffer_FillInfo(view, (PyObject*)self, polyglot_get_member(self, "buf_delegate"), PyObject_Size((PyObject *)self) * sizeof(PyObject*), self->readonly, flags);
+}
+
+PyObject * PyMemoryView_FromObject(PyObject *v) {
+	// TODO(fa): This needs to be fixed. The actual implementation is located in
+	// '_memoryview.c'. However, the current way we use it does not allow C exts
+	// to link to it. We need to restructure this.
+	return NULL;
 }

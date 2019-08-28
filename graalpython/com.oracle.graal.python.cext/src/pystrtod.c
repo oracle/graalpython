@@ -38,21 +38,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 #include "capi.h"
 
-UPCALL_ID(PyTruffle_FatalError);
-void _Py_NO_RETURN Py_FatalError(const char *msg) {
-	UPCALL_CEXT_VOID(_jls_PyTruffle_FatalError, Py_NoValue, polyglot_from_string(msg, SRC_CS), -1);
-	/* should never be reached; avoids compiler warning */
-	exit(1);
-}
-
-PyOS_sighandler_t PyOS_setsig(int sig, PyOS_sighandler_t handler) {
-	PyErr_SetString(PyExc_SystemError, "'PyOS_setsig' not implemented");
-	return NULL;
-}
-
-int PyOS_InterruptOccurred(void) {
-	PyErr_SetString(PyExc_SystemError, "'PyOS_InterruptOccurred' not implemented");
-	return -1;
+UPCALL_ID(PyTruffle_OS_StringToDouble);
+double PyOS_string_to_double(const char *s, char **endptr, PyObject *overflow_exception) {
+	double result = -1.0;
+	PyObject* resultTuple = UPCALL_CEXT_O(_jls_PyTruffle_OS_StringToDouble, polyglot_from_string(s, "ascii"), endptr != NULL);
+	if (resultTuple != NULL) {
+		result = as_double(PyTuple_GetItem(resultTuple, 0));
+		if (endptr != NULL) {
+			*endptr = s + as_long(PyTuple_GetItem(resultTuple, 1));
+		}
+	}
+	return result;
 }
