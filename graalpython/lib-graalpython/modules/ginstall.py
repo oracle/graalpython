@@ -173,6 +173,7 @@ def known_packages():
     def Werkzeug(**kwargs):
         install_from_pypi("Werkzeug==0.15.4", **kwargs)
 
+    # Does not yet work
     # def h5py(**kwargs):
     #     try:
     #         import pkgconfig
@@ -187,7 +188,6 @@ def known_packages():
     #         pkgconfig(**kwargs)
     #     install_from_pypi("six==1.12.0", **kwargs)
     #
-    # # Does not yet work
     # def keras_applications(**kwargs):
     #     try:
     #         import h5py
