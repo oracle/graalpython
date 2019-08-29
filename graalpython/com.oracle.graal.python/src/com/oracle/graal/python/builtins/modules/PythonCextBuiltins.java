@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -174,6 +175,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -207,6 +209,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -1072,44 +1075,50 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(PythonOptions.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
-        @Specialization
-        Object doBytes(VirtualFrame frame, Object o, long elementSize, Object errorMarker,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode,
-                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
+        @Specialization(guards = "elementSize == cachedElementSize", limit = "getVariableArgumentInlineCacheLimit()")
+        Object doBytes(VirtualFrame frame, Object arr, long n, long elementSize, Object errorMarker,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached("elementSize") long cachedElementSize,
+                        @CachedLibrary("arr") InteropLibrary lib,
+                        @CachedLibrary(limit = "1") InteropLibrary elemLib) {
             try {
                 ByteBuffer bytes;
-                if (elementSize == 2L) {
-                    if (!lib.hasArrayElements(o)) {
+                if (cachedElementSize == 1L || cachedElementSize == 2L || cachedElementSize == 4L) {
+                    if (!lib.hasArrayElements(arr)) {
                         return raiseNative(frame, errorMarker, PythonErrorType.SystemError, "provided object is not an array", elementSize);
                     }
-                    long size = lib.getArraySize(o);
-                    bytes = readWithSize(lib, o, (int) size);
+                    bytes = readWithSize(lib, elemLib, arr, PInt.intValueExact(n), (int) cachedElementSize);
                     bytes.flip();
-                } else if (elementSize == 4L) {
-                    bytes = wrap(getByteArrayNode.execute(frame, o, -1));
                 } else {
                     return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
                 }
-                return decode(bytes);
+                return toSulongNode.execute(decode(bytes));
+            } catch (ArithmeticException e) {
+                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "array size too large");
             } catch (CharacterCodingException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (IllegalArgumentException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "%m", e);
             } catch (InteropException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
+            } catch (IllegalElementTypeException e) {
+                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeDecodeError, "Invalid input element type '%p'", e.elem);
             }
         }
 
-        @Specialization
-        Object doBytes(VirtualFrame frame, Object o, PInt elementSize, Object errorMarker,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode,
-                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
+        @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
+        Object doBytes(VirtualFrame frame, Object arr, PInt n, PInt elementSize, Object errorMarker,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @CachedLibrary("arr") InteropLibrary lib,
+                        @CachedLibrary(limit = "1") InteropLibrary elemLib) {
             try {
-                return doBytes(frame, o, elementSize.longValueExact(), errorMarker, getByteArrayNode, lib);
+                long es = elementSize.longValueExact();
+                return doBytes(frame, arr, n.longValueExact(), es, errorMarker, toSulongNode, es, lib, elemLib);
             } catch (ArithmeticException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
@@ -1120,15 +1129,57 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return getUTF32Charset(0).newDecoder().decode(bytes).toString();
         }
 
-        @TruffleBoundary
-        private static ByteBuffer readWithSize(InteropLibrary interopLib, Object o, int size) throws UnsupportedMessageException, InvalidArrayIndexException {
-            ByteBuffer buf = ByteBuffer.allocate(size * Integer.BYTES);
-            for (long i = 0; i < size; i++) {
-                Object elem = interopLib.readArrayElement(o, i);
-                assert elem instanceof Number && 0 <= ((Number) elem).intValue() && ((Number) elem).intValue() < (1 << 16);
-                buf.putInt(((Number) elem).intValue());
+        private static ByteBuffer readWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object o, int size, int elementSize)
+                        throws UnsupportedMessageException, InvalidArrayIndexException, IllegalElementTypeException {
+            ByteBuffer buf = allocate(size * Integer.BYTES);
+            for (int i = 0; i < size; i += elementSize) {
+                putInt(buf, readElement(arrLib, elemLib, o, i, elementSize));
             }
             return buf;
+        }
+
+        @ExplodeLoop
+        private static int readElement(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int i, int elementSize)
+                        throws InvalidArrayIndexException, UnsupportedMessageException, IllegalElementTypeException {
+            byte[] barr = new byte[4];
+            for (int j = 0; j < elementSize; j++) {
+                Object elem = arrLib.readArrayElement(arr, i + j);
+                // The array object could be one of our wrappers (e.g. 'PySequenceArrayWrapper').
+                // Since the Interop library does not allow to specify how many bytes we want to
+                // read when we do readArrayElement, our wrappers always return long. So, we check
+                // for 'long' here and cast down to 'byte'.
+                if (elemLib.fitsInLong(elem)) {
+                    barr[j] = (byte) elemLib.asLong(elem);
+                } else {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalElementTypeException(elem);
+                }
+            }
+            return toInt(barr);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static int toInt(byte[] barr) {
+            return ByteBuffer.wrap(barr).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static ByteBuffer allocate(int cap) {
+            return ByteBuffer.allocate(cap);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static void putInt(ByteBuffer buf, int element) {
+            buf.putInt(element);
+        }
+
+        private static final class IllegalElementTypeException extends Exception {
+            private static final long serialVersionUID = 0L;
+            private final Object elem;
+
+            IllegalElementTypeException(Object elem) {
+                this.elem = elem;
+            }
         }
     }
 

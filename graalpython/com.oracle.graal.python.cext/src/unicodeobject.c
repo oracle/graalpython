@@ -418,12 +418,20 @@ static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
 	return polyglot_from_string((const char *) u, "ISO-8859-1");
 }
 
+typedef PyObject*(*PyTruffle_Unicode_FromWchar_t)(int8_t*, int64_t, int64_t, void*);
+
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
-	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i16_array(u, size), 2, NULL);
+	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
+	// 'PyTruffle_Unicode_FromWchar' really expects the bare pointer.
+	int64_t bsize = size * sizeof(Py_UCS2);
+	return ((PyTruffle_Unicode_FromWchar_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_i8_array((int8_t*)u, bsize), bsize, 2, NULL);
 }
 
 static PyObject* _PyUnicode_FromUCS4(const Py_UCS4 *u, Py_ssize_t size) {
-	return UPCALL_CEXT_O(_jls_PyTruffle_Unicode_FromWchar, polyglot_from_i32_array(u, size), 4, NULL);
+	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
+	// 'PyTruffle_Unicode_FromWchar' really expects the bare pointer.
+	int64_t bsize = size * sizeof(Py_UCS4);
+	return ((PyTruffle_Unicode_FromWchar_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_i8_array((int8_t*)u, bsize), bsize, 4, NULL);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
