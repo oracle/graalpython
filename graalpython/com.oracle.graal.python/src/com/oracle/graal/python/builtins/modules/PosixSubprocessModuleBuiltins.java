@@ -61,16 +61,17 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -100,9 +101,13 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
                         @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
 
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContext();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return forkExec(args, execList, closeFds, fdsToKeep, cwd, env, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, errpipe_read, errpipe_write, restore_signals, call_setsid,
                                 preexec_fn);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 

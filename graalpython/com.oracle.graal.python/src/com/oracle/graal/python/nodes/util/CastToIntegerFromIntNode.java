@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -93,7 +93,7 @@ public class CastToIntegerFromIntNode extends Node {
 
     @GenerateUncached
     @ImportStatic(MathGuards.class)
-    public abstract static class Dynamic extends PNodeWithGlobalState {
+    public abstract static class Dynamic extends PNodeWithContext {
 
         public abstract Object execute(Object x, Function<Object, Byte> typeErrorHandler);
 

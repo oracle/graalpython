@@ -53,14 +53,14 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -92,8 +92,12 @@ public abstract class CodeNodes {
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
-            try (NodeContextManager cm = PNodeWithGlobalState.transferToContext(getContextRef(), frame, this)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 

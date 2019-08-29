@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -68,6 +67,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -257,8 +257,12 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSequenceNode = insert(IsSequenceNode.create());
             }
-            try (NodeContextManager cm = isSequenceNode.withGlobalState(contextRef, frame)) {
+            PythonContext context = contextRef.get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return isSequenceNode.execute(obj);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 

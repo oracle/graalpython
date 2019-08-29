@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -110,6 +109,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1314,7 +1314,9 @@ public abstract class CExtNodes {
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
-            try (NodeContextManager ctxManager = callFloatFunc.withGlobalState(contextRef, frame)) {
+            PythonContext context = contextRef.get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 Object result = callFloatFunc.executeObject(value, __FLOAT__);
                 if (PGuards.isPFloat(result)) {
                     return ((PFloat) result).getValue();
@@ -1323,6 +1325,8 @@ public abstract class CExtNodes {
                 } else {
                     throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
                 }
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
     }

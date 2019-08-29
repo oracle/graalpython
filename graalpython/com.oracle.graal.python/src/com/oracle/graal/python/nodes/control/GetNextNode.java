@@ -45,7 +45,6 @@ import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -112,7 +111,7 @@ public final class GetNextNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    public abstract static class GetNextWithoutFrameNode extends PNodeWithGlobalState {
+    public abstract static class GetNextWithoutFrameNode extends PNodeWithContext {
 
         public abstract Object executeWithGlobalState(Object iterator);
 

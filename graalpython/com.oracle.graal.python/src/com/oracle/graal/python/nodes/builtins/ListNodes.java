@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.AppendNodeGen;
@@ -427,7 +426,7 @@ public abstract class ListNodes {
         }
     }
 
-    public abstract static class CreateStorageFromIteratorInteropNode extends PNodeWithGlobalState {
+    public abstract static class CreateStorageFromIteratorInteropNode extends PNodeWithContext {
 
         protected static final CreateStorageFromIteratorInteropHelper HELPER = new CreateStorageFromIteratorInteropHelper();
 
@@ -478,7 +477,7 @@ public abstract class ListNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ConstructListNode extends PNodeWithGlobalState {
+    public abstract static class ConstructListNode extends PNodeWithContext {
 
         public final PList execute(Object value) {
             return execute(PythonBuiltinClassType.PList, value);

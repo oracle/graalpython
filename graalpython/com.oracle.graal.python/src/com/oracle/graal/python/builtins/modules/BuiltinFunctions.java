@@ -118,7 +118,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -531,9 +530,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             Object localsDict = LocalsNode.getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
             Object keysObj = callKeysNode.executeObject(frame, localsDict);
-            try (NodeContextManager cm = constructListNode.withGlobalState(getContextRef(), frame)) {
-                return constructListNode.execute(keysObj);
-            }
+            return constructListNode.execute(keysObj);
         }
 
         @Specialization(guards = "!isNoValue(object)")

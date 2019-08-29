@@ -45,7 +45,6 @@ import java.util.function.Supplier;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -222,7 +221,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     }
 
     @GenerateUncached
-    public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithGlobalState {
+    public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithContext {
 
         public abstract Object executeObject(Object receiver, String name);
 

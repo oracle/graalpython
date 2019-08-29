@@ -46,7 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -61,7 +61,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CastToJavaLongNode extends PNodeWithGlobalState {
+public abstract class CastToJavaLongNode extends PNodeWithContext {
 
     public abstract long execute(Object x);
 

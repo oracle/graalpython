@@ -80,8 +80,7 @@ import com.oracle.graal.python.builtins.objects.str.LazyString;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -99,6 +98,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -292,10 +292,6 @@ public abstract class HashingStorageNodes {
                 passExceptionNode = insert(PassCaughtExceptionNode.create());
             }
             return passExceptionNode.execute(frame);
-        }
-
-        protected final NodeContextManager withGlobalState(VirtualFrame frame) {
-            return PNodeWithGlobalState.transferToContext(getContextRef(), frame, this);
         }
 
         protected static EconomicMapStorage switchToEconomicMap(HashingStorage storage, Equivalence equiv) {
@@ -592,8 +588,12 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "!isJavaString(name)")
         @SuppressWarnings("try")
         protected boolean readUncached(VirtualFrame frame, PythonObjectHybridDictStorage storage, Object name) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return storage.hasKey(name, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -619,16 +619,24 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return storage.hasKey(key, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
         @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return storage.hasKey(key, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -708,16 +716,24 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return storage.hasKey(key, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
         @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return storage.hasKey(key, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -777,8 +793,12 @@ public abstract class HashingStorageNodes {
         protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, String key, Object value) {
             // immediately replace storage since empty storage is immutable
             DynamicObjectSetItemNode ensureDynamicObjectSetItemNode = ensureDynamicObjectSetItemNode();
-            try (NodeContextManager cm = ensureDynamicObjectSetItemNode.withGlobalState(getContextRef(), frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return ensureDynamicObjectSetItemNode.execute(switchToFastDictStorage(storage), key, value);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -786,8 +806,12 @@ public abstract class HashingStorageNodes {
         protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, PString key, Object value) {
             // immediately replace storage since empty storage is immutable
             DynamicObjectSetItemNode ensureDynamicObjectSetItemNode = ensureDynamicObjectSetItemNode();
-            try (NodeContextManager cm = ensureDynamicObjectSetItemNode.withGlobalState(getContextRef(), frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return ensureDynamicObjectSetItemNode.execute(switchToFastDictStorage(storage), cast(key), value);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -795,26 +819,38 @@ public abstract class HashingStorageNodes {
         @SuppressWarnings("try")
         protected HashingStorage doEmptyStorage(VirtualFrame frame, @SuppressWarnings("unused") EmptyStorage storage, Object key, Object value) {
             // immediately replace storage since empty storage is immutable
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 EconomicMapStorage newStorage = EconomicMapStorage.create(false);
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
         @Specialization
         protected HashingStorage doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, String key, Object value) {
             DynamicObjectSetItemNode ensureDynamicObjectSetItemNode = ensureDynamicObjectSetItemNode();
-            try (NodeContextManager cm = ensureDynamicObjectSetItemNode.withGlobalState(getContextRef(), frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return ensureDynamicObjectSetItemNode.execute(storage, key, value);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
         @Specialization(guards = "wrappedString(key)")
         protected HashingStorage doDynamicObjectPString(VirtualFrame frame, DynamicObjectStorage storage, PString key, Object value) {
             DynamicObjectSetItemNode ensureDynamicObjectSetItemNode = ensureDynamicObjectSetItemNode();
-            try (NodeContextManager cm = ensureDynamicObjectSetItemNode.withGlobalState(getContextRef(), frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return ensureDynamicObjectSetItemNode.execute(storage, cast(key), value);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -835,10 +871,14 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         @SuppressWarnings("try")
         protected HashingStorage doLocalsGeneralize(VirtualFrame frame, LocalsStorage storage, Object key, Object value) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 HashingStorage newStorage = switchToEconomicMap(storage);
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -860,8 +900,12 @@ public abstract class HashingStorageNodes {
         @SuppressWarnings("try")
         protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, PythonObjectDictStorage storage, Object key, Object value) {
             HashingStorage newStorage = switchToHybridDictStorage(storage);
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 newStorage.setItem(key, value, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
             return newStorage;
         }
@@ -869,10 +913,14 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         @SuppressWarnings("try")
         protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, FastDictStorage storage, Object key, Object value) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 HashingStorage newStorage = switchToEconomicMap(storage);
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -881,9 +929,13 @@ public abstract class HashingStorageNodes {
         protected HashingStorage doKeywordsGeneralize(VirtualFrame frame, KeywordsStorage storage, Object key, Object value) {
             // immediately replace storage since keywords storage is immutable
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 newStorage.addAll(storage, getEquivalence());
                 newStorage.setItem(key, value, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
             return newStorage;
         }
@@ -891,19 +943,26 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("try")
         protected HashingStorage doHashMap(VirtualFrame frame, EconomicMapStorage storage, Object key, Object value) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 storage.setItem(key, value, getEquivalence());
-
                 return storage;
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
         @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("try")
         protected HashingStorage doHashMap(VirtualFrame frame, HashMapStorage storage, Object key, Object value) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 storage.setItem(key, value, getEquivalence());
                 return storage;
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -1088,10 +1147,6 @@ public abstract class HashingStorageNodes {
         public static DynamicObjectSetItemNode getUncached() {
             return DynamicObjectSetItemUncachedNode.INSTANCE;
         }
-
-        public NodeContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new NodeContextManager(contextRef.get(), frame, this);
-        }
     }
 
     public abstract static class GetItemNode extends DictStorageBaseNode {
@@ -1217,7 +1272,7 @@ public abstract class HashingStorageNodes {
         }
     }
 
-    public abstract static class GetItemInteropNode extends PNodeWithGlobalState {
+    public abstract static class GetItemInteropNode extends PNodeWithContext {
 
         private static final GetItemUncachedNode UNCACHED = new GetItemUncachedNode();
 
@@ -1272,8 +1327,12 @@ public abstract class HashingStorageNodes {
         @SuppressWarnings("try")
         boolean doLocals(VirtualFrame frame, LocalsStorage selfStorage, LocalsStorage other) {
             if (selfStorage.getFrame().getFrameDescriptor() == other.getFrame().getFrameDescriptor()) {
-                try (NodeContextManager cm = withGlobalState(frame)) {
+                PythonContext context = getContextRef().get();
+                PException caughtException = IndirectCallContext.enter(frame, context, this);
+                try {
                     return equalsGeneric(selfStorage, other);
+                } finally {
+                    IndirectCallContext.exit(context, caughtException);
                 }
             }
             return false;
@@ -1282,8 +1341,12 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "selfStorage.length() == other.length()")
         @SuppressWarnings("try")
         boolean doGeneric(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return equalsGeneric(selfStorage, other);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -1486,16 +1549,24 @@ public abstract class HashingStorageNodes {
         @Specialization
         @SuppressWarnings("try")
         protected boolean doEconomicMap(VirtualFrame frame, @SuppressWarnings("unused") PHashingCollection container, EconomicMapStorage storage, Object key) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return storage.remove(key, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
         @Specialization
         @SuppressWarnings("try")
         protected boolean doHashMap(VirtualFrame frame, @SuppressWarnings("unused") PHashingCollection container, HashMapStorage storage, Object key) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return storage.remove(key, getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -1522,8 +1593,12 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = {"!isImmutableStorage(storage)", "!isDynamicObjectStorage(storage)"})
         @SuppressWarnings("try")
         HashingStorage doGeneric(VirtualFrame frame, HashingStorage storage) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return storage.copy(getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -1585,7 +1660,9 @@ public abstract class HashingStorageNodes {
         @SuppressWarnings("try")
         public HashingStorage doGenericSet(VirtualFrame frame, HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 for (Object key : left.keys()) {
                     newStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }
@@ -1593,6 +1670,8 @@ public abstract class HashingStorageNodes {
                     newStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }
                 return newStorage;
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -1600,10 +1679,14 @@ public abstract class HashingStorageNodes {
         @SuppressWarnings("try")
         public HashingStorage doGeneric(VirtualFrame frame, HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 newStorage.addAll(left, getEquivalence());
                 newStorage.addAll(right, getEquivalence());
                 return newStorage;
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -1744,8 +1827,12 @@ public abstract class HashingStorageNodes {
             }
             if (rightClass.cast(right).length() == 0) {
                 rightEmpty.enter();
-                try (NodeContextManager cm = withGlobalState(frame)) {
+                PythonContext context = getContextRef().get();
+                PException caughtException = IndirectCallContext.enter(frame, context, this);
+                try {
                     return leftClass.cast(left).copy(getEquivalence());
+                } finally {
+                    IndirectCallContext.exit(context, caughtException);
                 }
             }
             neitherEmpty.enter();
@@ -1762,8 +1849,12 @@ public abstract class HashingStorageNodes {
         @SuppressWarnings("try")
         public HashingStorage doRightEmpty(VirtualFrame frame, HashingStorage left, @SuppressWarnings("unused") HashingStorage right,
                         @SuppressWarnings("unused") @Cached("right.getClass()") Class<? extends HashingStorage> rightClass) {
-            try (NodeContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return left.copy(getEquivalence());
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 

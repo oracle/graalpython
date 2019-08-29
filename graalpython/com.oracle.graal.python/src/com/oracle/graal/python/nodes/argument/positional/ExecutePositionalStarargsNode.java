@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorWithoutFrameNode;
@@ -149,7 +149,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @GenerateUncached
-    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithGlobalState {
+    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithContext {
         public abstract Object[] executeWithGlobalState(Object starargs);
 
         @Specialization

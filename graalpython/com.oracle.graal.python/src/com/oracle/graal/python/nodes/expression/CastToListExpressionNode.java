@@ -49,8 +49,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -60,6 +59,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -139,8 +139,12 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         protected PList starredIterable(VirtualFrame frame, PythonObject value,
                         @Cached ConstructListNode constructListNode,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            try (NodeContextManager ctxManager = constructListNode.withGlobalState(contextRef, frame)) {
+            PythonContext context = contextRef.get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return constructListNode.execute(value);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -150,11 +154,15 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Cached IsBuiltinClassProfile attrProfile,
                         @Cached PRaiseNode raise,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            try (NodeContextManager ctxManager = constructListNode.withGlobalState(contextRef, frame)) {
+            PythonContext context = contextRef.get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return constructListNode.execute(v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
                 throw raise.raise(TypeError, "%s is not iterable", v);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -180,7 +188,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
     }
 
-    public abstract static class CastToListInteropNode extends PNodeWithGlobalState {
+    public abstract static class CastToListInteropNode extends PNodeWithContext {
 
         public abstract PList executeWithGlobalState(Object list);
 

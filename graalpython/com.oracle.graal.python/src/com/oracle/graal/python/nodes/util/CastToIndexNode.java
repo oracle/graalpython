@@ -50,7 +50,7 @@ import java.util.function.Function;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -66,7 +66,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
  */
 @TypeSystemReference(PythonArithmeticTypes.class)
-public abstract class CastToIndexNode extends PNodeWithGlobalState {
+public abstract class CastToIndexNode extends PNodeWithContext {
 
     private static final UncachedNode UNCACHED = new UncachedNode();
 

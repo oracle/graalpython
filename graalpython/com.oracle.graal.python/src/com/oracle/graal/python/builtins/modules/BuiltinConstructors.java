@@ -135,7 +135,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.NodeContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -173,6 +172,8 @@ import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -2118,7 +2119,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     // Make slots into a tuple
                 }
-                try (NodeContextManager cm = withGlobalState(frame)) {
+                PythonContext context = getContextRef().get();
+                PException caughtException = IndirectCallContext.enter(frame, context, this);
+                try {
                     PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
                     pythonClass.setAttribute(__SLOTS__, newSlots);
                     if (basesArray.length > 1) {
@@ -2130,6 +2133,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (pythonClass.needsNativeAllocation()) {
                         addNativeSlots(pythonClass, newSlots);
                     }
+                } finally {
+                    IndirectCallContext.exit(context, caughtException);
                 }
             }
 
@@ -2582,12 +2587,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
                         @Cached("create()") IsCallableNode isCallable) {
-            try (NodeContextManager ctxManager = withGlobalState(isCallable, frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 if (isCallable.execute(func)) {
                     return factory().createMethod(self, func);
                 } else {
                     throw raise(TypeError, "first argument must be callable");
                 }
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
     }
@@ -2740,8 +2749,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreter();
                 isMappingNode = insert(IsSequenceNode.create());
             }
-            try (NodeContextManager ctxManager = withGlobalState(isMappingNode, frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return isMappingNode.execute(o);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
     }

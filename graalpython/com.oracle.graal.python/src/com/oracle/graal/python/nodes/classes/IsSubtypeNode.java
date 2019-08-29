@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -217,7 +216,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    public abstract static class IsSubtypeWithoutFrameNode extends PNodeWithGlobalState {
+    public abstract static class IsSubtypeWithoutFrameNode extends PNodeWithContext {
 
         public abstract boolean executeWithGlobalState(Object derived, Object cls);
 

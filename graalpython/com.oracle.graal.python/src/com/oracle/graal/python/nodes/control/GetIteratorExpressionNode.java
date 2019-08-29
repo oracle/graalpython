@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -87,7 +87,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    public abstract static class GetIteratorWithoutFrameNode extends PNodeWithGlobalState {
+    public abstract static class GetIteratorWithoutFrameNode extends PNodeWithContext {
         public abstract Object executeWithGlobalState(Object value);
 
         @Specialization
