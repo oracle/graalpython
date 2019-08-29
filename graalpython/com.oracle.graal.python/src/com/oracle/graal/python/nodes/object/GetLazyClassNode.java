@@ -46,11 +46,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -144,6 +146,14 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     @Specialization
     protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonBuiltinClassType object) {
         return PythonBuiltinClassType.PythonClass;
+    }
+
+    @Specialization(limit = "1")
+    protected static PythonAbstractClass getIt(PythonAbstractNativeObject object,
+                    @CachedLibrary("object") PythonObjectLibrary lib) {
+        // n.b.: native objects never store lazy enum class values, they
+        // always store resolved classes
+        return (PythonAbstractClass) lib.getLazyPythonClass(object);
     }
 
     @Specialization
