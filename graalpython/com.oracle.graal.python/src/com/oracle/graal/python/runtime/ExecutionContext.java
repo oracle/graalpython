@@ -193,6 +193,7 @@ public abstract class ExecutionContext {
 
         @Child private MaterializeFrameNode materializeNode;
 
+        private final ConditionProfile everEscapedProfile = ConditionProfile.createBinaryProfile();
         @CompilationFinal private boolean everEscaped = false;
         @CompilationFinal private boolean firstRequest = true;
 
@@ -219,7 +220,7 @@ public abstract class ExecutionContext {
              * deal with explicitly escaped frames.
              */
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-            if (info.isEscaped()) {
+            if (everEscapedProfile.profile(info.isEscaped())) {
                 if (!everEscaped) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     everEscaped = true;
