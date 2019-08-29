@@ -154,7 +154,6 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
-import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -2593,8 +2592,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         boolean doGeneric(VirtualFrame frame, Object object,
                         @Cached IsSequenceNode isSequenceNode,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            try (PDataModelEmulationContextManager cm = isSequenceNode.withGlobalState(contextRef, frame)) {
-                return cm.execute(object);
+            PythonContext context = contextRef.get();
+            PException caughtException = IndirectCallContext.enter(frame, context, isSequenceNode);
+            try {
+                return isSequenceNode.execute(object);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
     }
