@@ -132,8 +132,8 @@ def known_packages():
     def six(**kwargs):
         install_from_pypi("six==1.12.0", **kwargs)
 
-    def Cython(extra_opts=[], **kwargs):
-        install_from_pypi("Cython==0.29.2", extra_opts=(['--no-cython-compile'] + extra_opts), **kwargs)
+    def Cython(**kwargs):
+        install_from_pypi("Cython==0.29.2", **kwargs)
 
     def setuptools(**kwargs):
         try:
@@ -173,7 +173,6 @@ def known_packages():
     def Werkzeug(**kwargs):
         install_from_pypi("Werkzeug==0.15.4", **kwargs)
 
-    # Does not yet work
     # def h5py(**kwargs):
     #     try:
     #         import pkgconfig
@@ -181,8 +180,14 @@ def known_packages():
     #         print("Installing required dependency: pkgconfig")
     #         pkgconfig(**kwargs)
     #     install_from_pypi("h5py==2.9.0", **kwargs)
-
-    # Does not yet work
+    #     try:
+    #         import six
+    #     except ImportError:
+    #         print("Installing required dependency: six")
+    #         pkgconfig(**kwargs)
+    #     install_from_pypi("six==1.12.0", **kwargs)
+    #
+    # # Does not yet work
     # def keras_applications(**kwargs):
     #     try:
     #         import h5py
