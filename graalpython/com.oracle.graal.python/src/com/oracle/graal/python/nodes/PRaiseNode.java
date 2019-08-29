@@ -132,7 +132,7 @@ public abstract class PRaiseNode extends Node {
     PException doPythonBuiltinClassCachedMulti(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType.getType()") PythonBuiltinClassType cachedType,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Cached PythonObjectFactory factory) {
         throw raise(factory.createBaseException(cachedType));
     }
 
