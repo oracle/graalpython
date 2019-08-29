@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -193,7 +194,6 @@ public abstract class ExecutionContext {
 
         @Child private MaterializeFrameNode materializeNode;
 
-        private final ConditionProfile everEscapedProfile = ConditionProfile.createBinaryProfile();
         @CompilationFinal private boolean everEscaped = false;
         @CompilationFinal private boolean firstRequest = true;
 
@@ -220,7 +220,8 @@ public abstract class ExecutionContext {
              * deal with explicitly escaped frames.
              */
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-            if (everEscapedProfile.profile(info.isEscaped())) {
+            CompilerAsserts.partialEvaluationConstant(node);
+            if (node.getFrameEscapedProfile().profile(info.isEscaped())) {
                 if (!everEscaped) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     everEscaped = true;
@@ -254,7 +255,6 @@ public abstract class ExecutionContext {
                 }
 
                 // force the frame so that it can be accessed later
-                node.getExitedEscapedWithoutFrameProfile().enter();
                 ensureMaterializeNode().execute(frame, node, false, true);
                 info.materialize(frame, node);
                 // if this frame escaped we must ensure that also f_back does
