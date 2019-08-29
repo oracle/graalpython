@@ -170,11 +170,11 @@ public final class PBaseException extends PythonObject {
 
     /**
      * Associate this exception with a frame info that represents the {@link PFrame} instance that
-     * caught the exception. Furthermore, store the location at which this exception was caught
-     * so we can later reconstruct the correct traceback location.<br>
+     * caught the exception. Furthermore, store the location at which this exception was caught so
+     * we can later reconstruct the correct traceback location.<br>
      * <p>
-     * The use case for calling this method is when an exception is caught and the ExceptNode
-     * needs to be recorded so that we can later have the correct info.
+     * The use case for calling this method is when an exception is caught and the ExceptNode needs
+     * to be recorded so that we can later have the correct info.
      * </p>
      */
     public void reifyException(PFrame.Reference info, ExceptNode node) {

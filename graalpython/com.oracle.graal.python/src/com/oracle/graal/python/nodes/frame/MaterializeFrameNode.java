@@ -121,7 +121,8 @@ public abstract class MaterializeFrameNode extends Node {
         return escapedFrame;
     }
 
-    @Specialization(guards = {"cachedFD == frameToMaterialize.getFrameDescriptor()", "getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)", "!isGeneratorFrame(frameToMaterialize)"}, limit = "1")
+    @Specialization(guards = {"cachedFD == frameToMaterialize.getFrameDescriptor()", "getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)",
+                    "!isGeneratorFrame(frameToMaterialize)"}, limit = "1")
     static PFrame freshPFrameCachedFD(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Cached("frameToMaterialize.getFrameDescriptor()") FrameDescriptor cachedFD,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,

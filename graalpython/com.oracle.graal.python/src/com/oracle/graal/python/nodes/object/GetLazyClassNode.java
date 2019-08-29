@@ -185,16 +185,16 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
 
     // n.b.: only remove the specializations relating to PythonAbstractObjects
     @Specialization(replaces = {
-                        "getGetSetDescriptor",
-                        "getPCell",
-                        "getPNone",
-                        "getPNotImplemented",
-                        "getPEllipsis",
-                        "getPythonAbstractNativeObject",
-                        "getPythonNativeVoidPtr",
-                        "getPythonClassCachedSingle",
-                        "getPythonClassCached"
-                    })
+                    "getGetSetDescriptor",
+                    "getPCell",
+                    "getPNone",
+                    "getPNotImplemented",
+                    "getPEllipsis",
+                    "getPythonAbstractNativeObject",
+                    "getPythonNativeVoidPtr",
+                    "getPythonClassCachedSingle",
+                    "getPythonClassCached"
+    })
     protected static LazyPythonClass getPythonClassGeneric(PythonAbstractObject object,
                     @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
         return lib.getLazyPythonClass(object);

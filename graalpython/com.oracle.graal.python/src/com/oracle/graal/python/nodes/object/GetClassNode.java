@@ -138,12 +138,9 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
-                        "cachedLazyClass == getLazyClass.execute(object)",
-                        "isPythonBuiltinClassType(cachedLazyClass)"
-                    },
-                    replaces = {"getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached"},
-                    assumptions = "singleContextAssumption()",
-                    limit = "3")
+                    "cachedLazyClass == getLazyClass.execute(object)",
+                    "isPythonBuiltinClassType(cachedLazyClass)"
+    }, replaces = {"getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached"}, assumptions = "singleContextAssumption()", limit = "3")
     protected PythonAbstractClass getPythonClassCached(@SuppressWarnings("unused") Object object,
                     @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                     @SuppressWarnings("unused") @Cached GetLazyClassNode getLazyClass,
@@ -153,10 +150,10 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {
-                        "getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached",
-                        "getBoolean", "getInt", "getLong", "getDouble",
-                        "getPythonClassCached",
-                    })
+                    "getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached",
+                    "getBoolean", "getInt", "getLong", "getDouble",
+                    "getPythonClassCached",
+    })
     protected PythonAbstractClass getPythonClassGeneric(Object object,
                     @Cached GetLazyClassNode getLazyClass,
                     @Cached("createBinaryProfile()") ConditionProfile getClassProfile,

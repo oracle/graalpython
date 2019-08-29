@@ -118,12 +118,11 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
-                        "cachedDerived != null",
-                        "cachedCls != null",
-                        "getType(derived) == cachedDerived",
-                        "getType(cls) == cachedCls"
-                    },
-                    limit = "getVariableArgumentInlineCacheLimit()")
+                    "cachedDerived != null",
+                    "cachedCls != null",
+                    "getType(derived) == cachedDerived",
+                    "getType(cls) == cachedCls"
+    }, limit = "getVariableArgumentInlineCacheLimit()")
     @SuppressWarnings("unused")
     // n.b.: in multi-context, we only cache PythonBuiltinClassType, so no need
     // for assumptions. we also use a larger limit here, because these generate
@@ -136,11 +135,9 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
-                        "cachedCls != null",
-                        "getType(cls) == cachedCls"
-                    },
-                    replaces = "isSubtypeOfCachedMultiContext",
-                    limit = "getVariableArgumentInlineCacheLimit()")
+                    "cachedCls != null",
+                    "getType(cls) == cachedCls"
+    }, replaces = "isSubtypeOfCachedMultiContext", limit = "getVariableArgumentInlineCacheLimit()")
     boolean isVariableSubtypeOfConstantTypeCachedMultiContext(LazyPythonClass derived, @SuppressWarnings("unused") LazyPythonClass cls,
                     @Cached("getType(cls)") PythonBuiltinClassType cachedCls,
                     @Cached("getMro(cachedCls).getInternalClassArray().length") int baseMroLen) {
@@ -148,18 +145,15 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
-                        "isSameType(isSameDerivedNode, derived, cachedDerived)",
-                        "isSameType(isSameClsNode, cls, cachedCls)",
-                    },
-                    limit = "getVariableArgumentInlineCacheLimit()",
-                    replaces = {
-                        "isSubtypeOfCachedMultiContext",
-                        "isVariableSubtypeOfConstantTypeCachedMultiContext",
-                    },
-                    assumptions = {
-                        "mro.getLookupStableAssumption()",
-                        "singleContextAssumption()"
-                    })
+                    "isSameType(isSameDerivedNode, derived, cachedDerived)",
+                    "isSameType(isSameClsNode, cls, cachedCls)",
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+    }, assumptions = {
+                    "mro.getLookupStableAssumption()",
+                    "singleContextAssumption()"
+    })
     @SuppressWarnings("unused")
     boolean isSubtypeOfCached(LazyPythonClass derived, LazyPythonClass cls,
                     @Cached("derived") LazyPythonClass cachedDerived,
@@ -172,19 +166,16 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
-                        "isSameType(isSameDerivedNode, derived, cachedDerived)",
-                        "mro.getInternalClassArray().length < 32"
-                    },
-                    limit = "getVariableArgumentInlineCacheLimit()",
-                    replaces = {
-                        "isSubtypeOfCachedMultiContext",
-                        "isVariableSubtypeOfConstantTypeCachedMultiContext",
-                        "isSubtypeOfCached"
-                    },
-                    assumptions = {
-                        "mro.getLookupStableAssumption()",
-                        "singleContextAssumption()"
-                    })
+                    "isSameType(isSameDerivedNode, derived, cachedDerived)",
+                    "mro.getInternalClassArray().length < 32"
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+                    "isSubtypeOfCached"
+    }, assumptions = {
+                    "mro.getLookupStableAssumption()",
+                    "singleContextAssumption()"
+    })
     boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") LazyPythonClass derived, LazyPythonClass cls,
                     @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
                     @Cached("getMro(cachedDerived)") MroSequenceStorage mro,
@@ -194,19 +185,16 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
-                        "isSameType(isSameClsNode, cls, cachedCls)",
-                    },
-                    limit = "getVariableArgumentInlineCacheLimit()",
-                    replaces = {
-                        "isSubtypeOfCachedMultiContext",
-                        "isVariableSubtypeOfConstantTypeCachedMultiContext",
-                        "isSubtypeOfCached",
-                        "isSubtypeOfVariableTypeCached",
-                    },
-                    assumptions = {
-                        "baseMro.getLookupStableAssumption()",
-                        "singleContextAssumption()"
-                    })
+                    "isSameType(isSameClsNode, cls, cachedCls)",
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+                    "isSubtypeOfCached",
+                    "isSubtypeOfVariableTypeCached",
+    }, assumptions = {
+                    "baseMro.getLookupStableAssumption()",
+                    "singleContextAssumption()"
+    })
     boolean isVariableSubtypeOfConstantTypeCached(LazyPythonClass derived, @SuppressWarnings("unused") LazyPythonClass cls,
                     @Cached("cls") @SuppressWarnings("unused") LazyPythonClass cachedCls,
                     @SuppressWarnings("unused") @Cached("getMro(cachedCls)") MroSequenceStorage baseMro,
@@ -216,12 +204,12 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {
-                        "isVariableSubtypeOfConstantTypeCached",
-                        "isSubtypeOfCachedMultiContext",
-                        "isVariableSubtypeOfConstantTypeCachedMultiContext",
-                        "isSubtypeOfCached",
-                        "isSubtypeOfVariableTypeCached"
-                    })
+                    "isVariableSubtypeOfConstantTypeCached",
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+                    "isSubtypeOfCached",
+                    "isSubtypeOfVariableTypeCached"
+    })
     boolean issubTypeGeneric(LazyPythonClass derived, LazyPythonClass cls) {
         for (PythonAbstractClass n : getMro(derived).getInternalClassArray()) {
             if (isSameType(n, cls)) {

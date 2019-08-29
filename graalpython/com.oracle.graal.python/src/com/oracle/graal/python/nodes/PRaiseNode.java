@@ -121,14 +121,16 @@ public abstract class PRaiseNode extends Node {
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType == cachedType"}, limit = "3", assumptions = "singleContextAssumption()")
-    PException doPythonBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
+    PException doPythonBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
+                    @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType") PythonBuiltinClass cachedType,
                     @Cached PythonObjectFactory factory) {
         throw raise(factory.createBaseException(cachedType));
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType.getType() == cachedType"}, limit = "3")
-    PException doPythonBuiltinClassCachedMulti(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
+    PException doPythonBuiltinClassCachedMulti(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
+                    @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType.getType()") PythonBuiltinClassType cachedType,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         throw raise(factory.createBaseException(cachedType));
