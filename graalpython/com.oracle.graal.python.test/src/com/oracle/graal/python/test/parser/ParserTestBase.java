@@ -336,7 +336,6 @@ public class ParserTestBase {
         int newLineIndex = 0;
         String oldLine;
         String newLine;
-        int ssIndex;
 
         while (odlLineIndex < oldLines.size()) {
             oldLine = oldLines.get(odlLineIndex);
