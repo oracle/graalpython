@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -250,7 +251,11 @@ public abstract class MaterializeFrameNode extends Node {
 
     protected static boolean inModuleRoot(Node location) {
         assert location != null;
-        return location.getRootNode() instanceof ModuleRootNode;
+        if (location instanceof PRootNode) {
+            return location instanceof ModuleRootNode;
+        } else {
+            return location.getRootNode() instanceof ModuleRootNode;
+        }
     }
 
     protected final SyncFrameValuesNode createSyncNode() {
