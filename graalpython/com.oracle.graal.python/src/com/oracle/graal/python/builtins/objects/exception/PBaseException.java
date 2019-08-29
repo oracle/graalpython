@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -165,6 +166,20 @@ public final class PBaseException extends PythonObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return getFormattedMessage(null);
+    }
+
+    /**
+     * Associate this exception with a frame info that represents the {@link PFrame} instance that
+     * caught the exception. Furthermore, store the location at which this exception was caught
+     * so we can later reconstruct the correct traceback location.<br>
+     * <p>
+     * The use case for calling this method is when an exception is caught and the ExceptNode
+     * needs to be recorded so that we can later have the correct info.
+     * </p>
+     */
+    public void reifyException(PFrame.Reference info, ExceptNode node) {
+        info.setCallNode(node);
+        reifyException(info);
     }
 
     /**

@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -38,8 +39,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
@@ -69,7 +68,6 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private WriteNode exceptName;
     @Child private ExpressionNode exceptType;
 
-    @Child private MaterializeFrameNode materializeFrameNode;
     @Child private PythonObjectFactory factory;
     @Child private ExceptMatchNode matchNode;
 
@@ -91,16 +89,9 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             SetCaughtExceptionNode.execute(frame, pE);
             if (exceptName != null) {
                 PBaseException exceptionObject = pE.getExceptionObject();
-                if (materializeFrameNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    materializeFrameNode = insert(MaterializeFrameNodeGen.create());
-                }
-                PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false);
-                if (factory == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    factory = insert(PythonObjectFactory.create());
-                }
-                exceptionObject.reifyException(escapedFrame, factory);
+                PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
+                info.markAsEscaped();
+                exceptionObject.reifyException(info, this);
                 exceptName.doWrite(frame, exceptionObject);
             }
         } else if (exceptName != null) {
