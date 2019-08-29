@@ -782,10 +782,6 @@ def PyUnicode_AsUnicodeEscapeString(string):
         import _codecs as _codecs_module 
     return _codecs_module.unicode_escape_encode(string)[0]
 
-def PyUnicode_FromOrdinal(int):
-    return chr(int)
-
-
 @may_raise(-1)
 def PyUnicode_Tailmatch(s, substr, start, end, direction):
     if direction > 0:
