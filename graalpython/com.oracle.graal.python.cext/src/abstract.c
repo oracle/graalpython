@@ -542,5 +542,5 @@ PyObject* PySequence_InPlaceRepeat(PyObject *o, Py_ssize_t count) {
 
 UPCALL_ID(PySequence_InPlaceConcat);
 PyObject* PySequence_InPlaceConcat(PyObject *s, PyObject *o) {
-	return UPCALL_CEXT_O(_jls_PySequence_Concat, native_to_java(s), native_to_java(o));
+	return UPCALL_CEXT_O(_jls_PySequence_InPlaceConcat, native_to_java(s), native_to_java(o));
 }
