@@ -111,6 +111,12 @@ def PyModule_SetDocString(module, string):
 def PyModule_NewObject(name):
     return moduletype(name)
 
+##################### ABSTRACT
+
+@may_raise(-1)
+def PySequence_DelItem(o,i):
+    del o[i]
+    return 0
 
 @may_raise
 def PyModule_GetNameObject(module_obj):
@@ -775,7 +781,6 @@ def PyUnicode_AsUnicodeEscapeString(string):
     if not _codecs_module:
         import _codecs as _codecs_module 
     return _codecs_module.unicode_escape_encode(string)[0]
-
 
 @may_raise(-1)
 def PyUnicode_Tailmatch(s, substr, start, end, direction):

@@ -426,6 +426,10 @@ int PyBuffer_FillInfo(Py_buffer *view, PyObject *obj, void *buf, Py_ssize_t len,
     return 0;
 }
 
+UPCALL_ID(PySequence_DelItem);
+int PySequence_DelItem(PyObject *s, Py_ssize_t i) {
+    return UPCALL_CEXT_I(_jls_PySequence_DelItem, native_to_java(s), i);
+}
 // taken from CPython "Objects/abstract.c"
 static int _IsFortranContiguous(const Py_buffer *view) {
     Py_ssize_t sd, dim;
