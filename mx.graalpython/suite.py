@@ -289,6 +289,7 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
+                "PYTHON_USERBASE",
             ],
             "description": "GraalPython launcher",
         },
@@ -380,6 +381,16 @@ suite = {
             "layout": {
                 "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
                 "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
+            },
+            "maven": False,
+        },
+
+        "PYTHON_USERBASE": {
+            "native": True,
+            "platformDependent": False,
+            "description": "Blub",
+            "layout": {
+                "./README.md": "string:User base directory for development purpose.",
             },
             "maven": False,
         },
