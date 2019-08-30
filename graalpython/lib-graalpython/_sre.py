@@ -198,7 +198,7 @@ class SRE_Match():
         idxarg = self.__groupidx__(idx)
         start = self.result.getStart(idxarg)
         if start < 0:
-            return None
+            return ""
         else:
             return self.input_str[start:self.result.getEnd(idxarg)]
 

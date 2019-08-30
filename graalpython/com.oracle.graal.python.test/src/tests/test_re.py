@@ -457,5 +457,3 @@ class ReTests(unittest.TestCase):
             r"(//?| ==?)|([[]]+)")
         for m in regex.finditer(''):
             self.fail()
-
-
