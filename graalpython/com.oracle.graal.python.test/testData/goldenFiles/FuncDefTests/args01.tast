@@ -1,0 +1,122 @@
+ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg,...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,65]`def fn(a, b=0, *arg,...`
+    ExpressionWithSideEffect SourceSection: [0,65]`def fn(a, b=0, *arg,...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,65]`def fn(a, b=0, *arg,...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments:
+              IntegerLiteralNode SourceSection: [12,13]`0`
+                Value: 0
+            KwArguments:
+              KwDefaultExpressionNode SourceSection: None
+                Name: k2
+                Value: IntegerLiteralNode SourceSection: [28,29]`0`
+                  Value: 0
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,65]`def fn(a, b=0, *arg,...`
+              Name: fn
+              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+                Param Names: a, b
+                Keyword Names: k1, k2
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 6 slots [a, b, arg, k1, k2, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,65]`def fn(a, b=0, *arg,...`
+                ReturnTargetNode SourceSection: [0,65]`def fn(a, b=0, *arg,...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,a,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: b
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,b,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: arg
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,arg,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadVarArgsNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: k1
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [3,k1,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 2
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: k2
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [4,k2,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 3
+                    FrameReturnNode SourceSection: [32,65]`return a + b + k1 + ...`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <return_val>
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [5,<return_val>,Illegal]
+                        BinaryArithmeticExpression SourceSection: [39,65]`a + b + k1 + k2 + su...`
+                          LookupAndCallBinaryNodeGen SourceSection: None
+                            Op: __add__
+                          BinaryArithmeticExpression SourceSection: [39,54]`a + b + k1 + k2`
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __add__
+                            BinaryArithmeticExpression SourceSection: [39,49]`a + b + k1`
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __add__
+                              BinaryArithmeticExpression SourceSection: [39,44]`a + b`
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __add__
+                                ReadLocalVariableNode SourceSection: [39,40]`a`
+                                  Frame: [0,a,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [43,44]`b`
+                                  Frame: [1,b,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [47,49]`k1`
+                                Frame: [3,k1,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [52,54]`k2`
+                              Frame: [4,k2,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonCallNodeGen SourceSection: [57,65]`sum(arg)`
+                            CachedCallNodeGen SourceSection: None
+                              CreateArgumentsNodeGen SourceSection: None
+                              CallDispatchNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [61,64]`arg`
+                              Frame: [2,arg,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: sum
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [5,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None

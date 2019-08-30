@@ -164,6 +164,10 @@ public final class ArgDefListBuilder {
     public boolean hasSplatStarMarker() {
         return splatIndex > -1 && args != null && args.get(splatIndex).name == null;
     }
+    
+    public boolean hasSplat() {
+        return splatIndex > -1;
+    }
 
     public StatementNode[] getArgumentNodes() {
         if (args == null && kwargs == null) {

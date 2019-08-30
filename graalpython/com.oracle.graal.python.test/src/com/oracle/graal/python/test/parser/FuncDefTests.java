@@ -47,6 +47,11 @@ import org.junit.Test;
 public class FuncDefTests extends ParserTestBase {
 
     @Test
+    public void args01() throws Exception {
+        checkScopeAndTree("def fn(a, b=0, *arg, k1, k2=0): return a + b + k1 + k2 + sum(arg)");
+    }
+
+    @Test
     public void functionDoc01() throws Exception {
         checkScopeAndTree();
     }
