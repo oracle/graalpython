@@ -47,9 +47,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -61,10 +60,8 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.IsIter
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -90,8 +87,8 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    public abstract static class GetIteratorWithoutFrameNode extends PNodeWithGlobalState<GetIteratorContextManager> {
-        protected abstract Object execute(Object value);
+    public abstract static class GetIteratorWithoutFrameNode extends PNodeWithContext {
+        public abstract Object executeWithGlobalState(Object value);
 
         @Specialization
         static PythonObject doPZip(PZip value) {
@@ -120,36 +117,12 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
             return GetIteratorNode.doNone(none, raiseNode);
         }
 
-        @Override
-        public GetIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new GetIteratorContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public GetIteratorContextManager passState() {
-            return new GetIteratorContextManager(this, null, null);
-        }
-
         public static GetIteratorWithoutFrameNode create() {
             return GetIteratorWithoutFrameNodeGen.create();
         }
 
         public static GetIteratorWithoutFrameNode getUncached() {
             return GetIteratorWithoutFrameNodeGen.getUncached();
-        }
-    }
-
-    public static final class GetIteratorContextManager extends NodeContextManager {
-
-        private final GetIteratorWithoutFrameNode delegate;
-
-        private GetIteratorContextManager(GetIteratorWithoutFrameNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public Object execute(Object x) {
-            return delegate.execute(x);
         }
     }
 

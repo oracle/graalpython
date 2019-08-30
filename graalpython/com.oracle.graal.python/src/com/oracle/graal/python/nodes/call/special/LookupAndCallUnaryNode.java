@@ -44,16 +44,12 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -225,9 +221,9 @@ public abstract class LookupAndCallUnaryNode extends Node {
     }
 
     @GenerateUncached
-    public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithGlobalState<NodeContextManager> {
+    public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithContext {
 
-        protected abstract Object executeObject(Object receiver, String name);
+        public abstract Object executeObject(Object receiver, String name);
 
         @Specialization
         static Object doObject(Object receiver, String name,
@@ -244,36 +240,12 @@ public abstract class LookupAndCallUnaryNode extends Node {
             return PNone.NO_VALUE;
         }
 
-        @Override
-        public CallUnaryContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new CallUnaryContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public CallUnaryContextManager passState() {
-            return new CallUnaryContextManager(this, null, null);
-        }
-
         public static LookupAndCallUnaryDynamicNode create() {
             return LookupAndCallUnaryNodeGen.LookupAndCallUnaryDynamicNodeGen.create();
         }
 
         public static LookupAndCallUnaryDynamicNode getUncached() {
             return LookupAndCallUnaryNodeGen.LookupAndCallUnaryDynamicNodeGen.getUncached();
-        }
-    }
-
-    public static final class CallUnaryContextManager extends NodeContextManager {
-
-        private final LookupAndCallUnaryDynamicNode delegate;
-
-        private CallUnaryContextManager(LookupAndCallUnaryDynamicNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public Object executeObject(Object receiver, String name) {
-            return delegate.executeObject(receiver, name);
         }
     }
 }

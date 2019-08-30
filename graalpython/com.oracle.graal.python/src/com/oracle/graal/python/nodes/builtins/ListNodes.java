@@ -57,10 +57,8 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.AppendNodeGen;
@@ -74,7 +72,6 @@ import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode
 import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextWithoutFrameNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -91,7 +88,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -390,7 +386,7 @@ public abstract class ListNodes {
 
         @Override
         protected boolean nextBoolean(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) throws UnexpectedResultException {
-            Object value = nextNode.passState().execute(iterator);
+            Object value = nextNode.executeWithGlobalState(iterator);
             if (value instanceof Boolean) {
                 return (boolean) value;
             }
@@ -399,7 +395,7 @@ public abstract class ListNodes {
 
         @Override
         protected int nextInt(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) throws UnexpectedResultException {
-            Object value = nextNode.passState().execute(iterator);
+            Object value = nextNode.executeWithGlobalState(iterator);
             if (value instanceof Integer) {
                 return (int) value;
             }
@@ -408,7 +404,7 @@ public abstract class ListNodes {
 
         @Override
         protected long nextLong(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) throws UnexpectedResultException {
-            Object value = nextNode.passState().execute(iterator);
+            Object value = nextNode.executeWithGlobalState(iterator);
             if (value instanceof Long) {
                 return (long) value;
             }
@@ -417,7 +413,7 @@ public abstract class ListNodes {
 
         @Override
         protected double nextDouble(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) throws UnexpectedResultException {
-            Object value = nextNode.passState().execute(iterator);
+            Object value = nextNode.executeWithGlobalState(iterator);
             if (value instanceof Double) {
                 return (double) value;
             }
@@ -426,25 +422,15 @@ public abstract class ListNodes {
 
         @Override
         protected Object nextObject(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) {
-            return nextNode.passState().execute(iterator);
+            return nextNode.executeWithGlobalState(iterator);
         }
     }
 
-    public abstract static class CreateStorageFromIteratorInteropNode extends PNodeWithGlobalState<CreateStorageFromIteratorContextManager> {
+    public abstract static class CreateStorageFromIteratorInteropNode extends PNodeWithContext {
 
         protected static final CreateStorageFromIteratorInteropHelper HELPER = new CreateStorageFromIteratorInteropHelper();
 
         protected abstract SequenceStorage execute(Object iterator);
-
-        @Override
-        public CreateStorageFromIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new CreateStorageFromIteratorContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public CreateStorageFromIteratorContextManager passState() {
-            return new CreateStorageFromIteratorContextManager(this, null, null);
-        }
 
         public static CreateStorageFromIteratorInteropNode create() {
             return new CreateStorageFromIteratorCachedNode();
@@ -452,20 +438,6 @@ public abstract class ListNodes {
 
         public static CreateStorageFromIteratorInteropNode getUncached() {
             return CreateStorageFromIteratorUncachedNode.INSTANCE;
-        }
-    }
-
-    public static final class CreateStorageFromIteratorContextManager extends NodeContextManager {
-
-        private final CreateStorageFromIteratorInteropNode delegate;
-
-        private CreateStorageFromIteratorContextManager(CreateStorageFromIteratorInteropNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public Object execute(Object x) {
-            return delegate.execute(x);
         }
     }
 
@@ -505,7 +477,7 @@ public abstract class ListNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ConstructListNode extends PNodeWithGlobalState<NodeContextManager> {
+    public abstract static class ConstructListNode extends PNodeWithContext {
 
         public final PList execute(Object value) {
             return execute(PythonBuiltinClassType.PList, value);
@@ -546,7 +518,7 @@ public abstract class ListNodes {
                         @Cached CreateStorageFromIteratorInteropNode createStorageFromIteratorNode,
                         @Cached PythonObjectFactory factory) {
 
-            Object iterObj = getIteratorNode.passState().execute(iterable);
+            Object iterObj = getIteratorNode.executeWithGlobalState(iterable);
             SequenceStorage storage = createStorageFromIteratorNode.execute(iterObj);
             return factory.createList(cls, storage);
         }
@@ -563,30 +535,6 @@ public abstract class ListNodes {
 
         public static ConstructListNode getUncached() {
             return ConstructListNodeGen.getUncached();
-        }
-
-        @Override
-        public ConstructListContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new ConstructListContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public ConstructListContextManager passState() {
-            return new ConstructListContextManager(this, null, null);
-        }
-    }
-
-    public static final class ConstructListContextManager extends NodeContextManager {
-
-        private final ConstructListNode delegate;
-
-        private ConstructListContextManager(ConstructListNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public PList execute(Object x) {
-            return delegate.execute(x);
         }
     }
 

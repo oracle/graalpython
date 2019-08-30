@@ -37,21 +37,7 @@ PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
 PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
 
-# TODO: add/enable interop benchmarks
-# PATH_INTEROP = os.path.join(_BASE_PATH, 'interop')
-#
-#
-# def _compile_interop():
-#     cc = os.path.join(_graalpython_suite.dir, 'graalpython', 'bin', 'sulongcc')
-#     fp = os.path.join(_graalpython_suite.dir, PATH_INTEROP)
-#     src = "%s/cextmodule.c" % fp
-#     bc = "%s/cextmodule.bc" % fp
-#     if os.path.exists(cc):
-#         if not os.path.exists(bc) or os.stat(src).st_atime > os.stat(bc).st_atime:
-#             os.system("%s %s 2>/dev/null >/dev/null" % (cc, src))
-#
-#
-# _compile_interop()
+PATH_INTEROP = os.path.join(_BASE_PATH, 'host_interop')
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -161,10 +147,11 @@ MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
 }
 
-# INTEROP_BENCHMARKS = {
-#     'cext-modulo': [],
-#     'for-range-cext': [],
-# }
+INTEROP_BENCHMARKS = {
+    'euler_java': ITER_10 + ['200'],
+    'image-magix': ITER_10 + ['10000'],
+    'image-magix-java': ITER_10 + ['10000'],
+}
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -176,5 +163,5 @@ BENCHMARKS = {
     "micro-native": [PATH_MICRO, MICRO_NATIVE_BENCHMARKS],
     "meso": [PATH_MESO, MESO_BENCHMARKS],
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
-    # "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
+    "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
 }

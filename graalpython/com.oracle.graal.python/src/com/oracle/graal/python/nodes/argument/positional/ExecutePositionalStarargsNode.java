@@ -49,19 +49,16 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.NodeContextManager;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -152,8 +149,8 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @GenerateUncached
-    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithGlobalState<ExecutePositionalStarargsContextManager> {
-        protected abstract Object[] executeWith(Object starargs);
+    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithContext {
+        public abstract Object[] executeWithGlobalState(Object starargs);
 
         @Specialization
         static Object[] starargs(Object[] starargs) {
@@ -196,12 +193,12 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                         @Cached GetIteratorWithoutFrameNode getIterator,
                         @Cached GetNextWithoutFrameNode next,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            Object iterator = getIterator.passState().execute(object);
+            Object iterator = getIterator.executeWithGlobalState(object);
             if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
                 ArrayList<Object> internalStorage = new ArrayList<>();
                 while (true) {
                     try {
-                        addToList(internalStorage, next.passState().execute(iterator));
+                        addToList(internalStorage, next.executeWithGlobalState(iterator));
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile);
                         return toArray(internalStorage);
@@ -209,31 +206,6 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                 }
             }
             throw raise.raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
-        }
-
-        @Override
-        public ExecutePositionalStarargsContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new ExecutePositionalStarargsContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public ExecutePositionalStarargsContextManager passState() {
-            return new ExecutePositionalStarargsContextManager(this, null, null);
-        }
-
-    }
-
-    public static final class ExecutePositionalStarargsContextManager extends NodeContextManager {
-
-        private final ExecutePositionalStarargsInteropNode delegate;
-
-        private ExecutePositionalStarargsContextManager(ExecutePositionalStarargsInteropNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public Object[] executeWith(Object starargs) {
-            return delegate.executeWith(starargs);
         }
     }
 }

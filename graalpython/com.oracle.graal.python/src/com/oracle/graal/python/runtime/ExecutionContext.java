@@ -297,6 +297,9 @@ public abstract class ExecutionContext {
          * </p>
          */
         public static PException enter(VirtualFrame frame, PythonContext context, Node callNode) {
+            if (frame == null || context == null) {
+                return null;
+            }
             if (!context.getSingleThreadedAssumption().isValid()) {
                 context.acquireInteropLock();
             }

@@ -95,7 +95,6 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.CallUnaryContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -110,6 +109,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1314,8 +1314,10 @@ public abstract class CExtNodes {
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
-            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(contextRef, frame)) {
-                Object result = ctxManager.executeObject(value, __FLOAT__);
+            PythonContext context = contextRef.get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
+                Object result = callFloatFunc.executeObject(value, __FLOAT__);
                 if (PGuards.isPFloat(result)) {
                     return ((PFloat) result).getValue();
                 } else if (result instanceof Double) {
@@ -1323,6 +1325,8 @@ public abstract class CExtNodes {
                 } else {
                     throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
                 }
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
     }

@@ -136,7 +136,7 @@ public abstract class ManagedMethodWrappers {
             Object starArgs = toJavaNode.execute(arguments[1]);
             Object kwArgs = toJavaNode.execute(arguments[2]);
 
-            Object[] starArgsArray = posStarargsNode.passState().executeWith(starArgs);
+            Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
             Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
             PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
 
