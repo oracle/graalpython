@@ -90,7 +90,7 @@ def test_none_value():
                     if special or text ])
     n = next(stream)
     assert not n[0]
-    assert str(n[0]) == '', repr(n[0])
+    assert str(n[0]) == 'None'
 
 class S(str):
     def __getitem__(self, index):
@@ -457,3 +457,5 @@ class ReTests(unittest.TestCase):
             r"(//?| ==?)|([[]]+)")
         for m in regex.finditer(''):
             self.fail()
+
+
