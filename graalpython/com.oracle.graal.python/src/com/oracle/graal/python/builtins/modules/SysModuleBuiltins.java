@@ -186,6 +186,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+        sys.setAttribute("graal_python_jython_emulation_enabled", PythonOptions.getOption(context, PythonOptions.EmulateJython));
         sys.setAttribute("graal_python_host_import_enabled", context.getEnv().isHostLookupAllowed());
         sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         sys.setAttribute("graal_python_core_home", context.getCoreHome());
@@ -266,11 +267,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
     }
 
     private static String getCapiHome(Env env, PythonModule sys) {
-        return String.join(env.getFileNameSeparator(), getCapiUserBase(env, sys), "lib", "capi");
+        String pythonSubdir = "python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR;
+        return String.join(env.getFileNameSeparator(), getCapiUserBase(env, sys), "lib", pythonSubdir, "capi");
     }
 
     // similar to 'sysconfig._getuserbase()'
     private static String getCapiUserBase(Env env, PythonModule sys) {
+        String customUserBase = env.getEnvironment().get("PYTHONUSERBASE");
+        if (customUserBase != null) {
+            return customUserBase;
+        }
+
         Object osName = sys.getAttribute("platform");
         if (FRAMEWORK != PNone.NONE && PLATFORM_DARWIN.equals(osName)) {
             String _framework = FRAMEWORK.toString();

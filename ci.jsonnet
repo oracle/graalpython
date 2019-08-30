@@ -27,6 +27,7 @@ local builder = import 'ci_common/builder.libsonnet';
         builder.testGateTime(type="tagged-unittest", platform="darwin", timelimit=const.TIME_LIMIT["2h"]),
         builder.testGate(type="svm-unittest", platform="linux"),
         builder.testGate(type="svm-unittest", platform="darwin"),
+        builder.testGate(type="unittest-jython", platform="linux"),
 
         // junit
         builder.testGate(type="junit", platform="linux"),

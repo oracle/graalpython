@@ -160,6 +160,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
     public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2250);
 
+    @Option(category = OptionCategory.USER, help = "Emulate some Jython features that can cause performance degradation") //
+    public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }

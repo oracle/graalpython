@@ -393,4 +393,8 @@ public abstract class PGuards {
     public static boolean cannotBeOverridden(LazyPythonClass clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
+
+    public static boolean isKindOfBuiltinClass(LazyPythonClass clazz) {
+        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
 }

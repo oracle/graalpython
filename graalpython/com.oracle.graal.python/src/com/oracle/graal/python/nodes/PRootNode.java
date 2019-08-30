@@ -49,10 +49,11 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PRootNode extends RootNode {
-    private final BranchProfile exitedEscapedWithoutFrameProfile = BranchProfile.create();
+    private final ConditionProfile frameEscapedWithoutAllocation = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile frameEscaped = ConditionProfile.createBinaryProfile();
 
     @CompilationFinal private Assumption dontNeedCallerFrame = createCallerFrameAssumption();
 
@@ -71,8 +72,12 @@ public abstract class PRootNode extends RootNode {
         super(language, frameDescriptor);
     }
 
-    public BranchProfile getExitedEscapedWithoutFrameProfile() {
-        return exitedEscapedWithoutFrameProfile;
+    public ConditionProfile getFrameEscapedProfile() {
+        return frameEscaped;
+    }
+
+    public ConditionProfile getFrameEscapedWithoutAllocationProfile() {
+        return frameEscapedWithoutAllocation;
     }
 
     public boolean needsCallerFrame() {

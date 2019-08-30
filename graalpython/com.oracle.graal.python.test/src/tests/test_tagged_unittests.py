@@ -80,7 +80,12 @@ WORKING_TESTS = working_tests()
 for idx, working_test in enumerate(WORKING_TESTS):
     def make_test_func(working_test):
         def fun(self):
-            cmd = [sys.executable, "-S", "-m", "unittest"]
+            cmd = [sys.executable]
+            if "--inspect" in sys.argv:
+                cmd.append("--inspect")
+            if "-debug-java" in sys.argv:
+                cmd.append("-debug-java")
+            cmd += ["-S", "-m", "unittest"]
             for testpattern in working_test[1]:
                 cmd.extend(["-k", testpattern])
             testmod = working_test[0].rpartition(".")[2]

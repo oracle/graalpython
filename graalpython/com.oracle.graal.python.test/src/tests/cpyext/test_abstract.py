@@ -366,8 +366,8 @@ class TestAbstract(CPyExtTestCase):
 
     test_PyNumber_Lshift = CPyExtFunction(
         lambda args: args[0] << args[1],
-        lambda: ( 
-            (0, 0), 
+        lambda: (
+            (0, 0),
             (0, -1),
             (3, 2),
             (10, 5),
@@ -875,7 +875,7 @@ class TestAbstract(CPyExtTestCase):
     )
 
     test_PySequence_InPlaceConcat = CPyExtFunction(
-        lambda args: args[0] + args[1],
+        lambda args: args[0] + list(args[1]) if isinstance(args[0], list) else args[0] + args[1],
         lambda: (
             ((1,), tuple()),
             ((1,), list()),
@@ -895,4 +895,3 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* s", "PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
-

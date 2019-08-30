@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
+import static com.oracle.graal.python.runtime.PythonOptions.EmulateJython;
 
 import java.util.ArrayList;
 
@@ -51,11 +52,11 @@ import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -70,6 +71,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
@@ -80,13 +82,16 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private PythonObjectFactory ofactory;
     @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
+    @Child InteropLibrary interopLib;
+
+    private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile everHandled = ConditionProfile.createBinaryProfile();
 
     private final boolean shouldCatchAll;
-    private final Assumption singleContextAssumption;
+    private final boolean shouldCatchJavaExceptions;
     private final ContextReference<PythonContext> contextRef;
 
     @CompilationFinal private CatchesFunction catchesFunction;
-    @CompilationFinal boolean seenException;
 
     public TryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse) {
         this.body = body;
@@ -95,7 +100,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         this.orelse = orelse;
         this.contextRef = PythonLanguage.getContextRef();
         this.shouldCatchAll = PythonOptions.getOption(contextRef.get(), CatchAllExceptions);
-        this.singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+        this.shouldCatchJavaExceptions = PythonOptions.getOption(contextRef.get(), EmulateJython);
     }
 
     protected PythonContext getContext() {
@@ -117,15 +122,17 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
-            catchException(frame, ex, exceptionState);
+            if (!catchException(frame, ex, exceptionState)) {
+                throw ex;
+            }
             return;
         } catch (Exception e) {
-            if (!seenException) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                seenException = true;
+            if (shouldCatchJavaExceptions && contextRef.get().getEnv().isHostException(e)) {
+                if (catchException(frame, (TruffleException) e, exceptionState)) {
+                    return;
+                }
             }
-
-            if (shouldCatchAll()) {
+            if (shouldCatchAll) {
                 if (e instanceof ControlFlowException) {
                     throw e;
                 } else {
@@ -145,46 +152,42 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         orelse.executeVoid(frame);
     }
 
-    private boolean shouldCatchAll() {
-        if (singleContextAssumption.isValid()) {
-            return shouldCatchAll;
-        } else {
-            return PythonOptions.getOption(getContext(), CatchAllExceptions);
-        }
-    }
-
     @TruffleBoundary
     private PBaseException getBaseException(Exception t) {
         return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{t});
     }
 
     @ExplodeLoop
-    private void catchException(VirtualFrame frame, PException exception, ExceptionState exceptionState) {
+    private boolean catchException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState) {
         boolean wasHandled = false;
         for (ExceptNode exceptNode : exceptNodes) {
             // we want a constant loop iteration count for ExplodeLoop to work,
             // so we always run through all except handlers
             if (!wasHandled) {
-                if (exceptNode.matchesException(frame, exception)) {
-                    try {
-                        exceptNode.executeExcept(frame, exception);
-                    } catch (ExceptionHandledException e) {
-                        wasHandled = true;
-                    } catch (ControlFlowException e) {
+                if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
+                    if (everHandled.profile(wasHandled = handleException(frame, exception, exceptionState, wasHandled, exceptNode))) {
                         // restore previous exception state, this won't happen if the except block
                         // raises an exception
                         restoreExceptionState(frame, exceptionState);
-                        throw e;
                     }
                 }
             }
         }
-        if (!wasHandled) {
-            throw exception;
+        return wasHandled;
+    }
+
+    private boolean handleException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState, boolean wasHandled, ExceptNode exceptNode) {
+        try {
+            exceptNode.executeExcept(frame, exception);
+        } catch (ExceptionHandledException e) {
+            return true;
+        } catch (ControlFlowException e) {
+            // restore previous exception state, this won't happen if the except block
+            // raises an exception
+            restoreExceptionState(frame, exceptionState);
+            throw e;
         }
-        // restore previous exception state, this won't happen if the except block
-        // raises an exception
-        restoreExceptionState(frame, exceptionState);
+        return wasHandled;
     }
 
     public StatementNode getBody() {

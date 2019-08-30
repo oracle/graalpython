@@ -15,8 +15,8 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Fix `dict.__contains__` for dictionaries with only `str` keys for subclasses of `str`
 * Support NumPy 1.16.4 and Pandas 0.25.0
 * Support `timeit` module
-* Support importing Java classes using normal Python import syntax when the package is known
 * Improve performance across many Python benchmarks
+* Add a new `--python.EmulateJython` flag to support importing Java classes using normal Python import syntax when the package is known and to catch Java exceptions from Python code
 
 ## Version 19.2.0
 

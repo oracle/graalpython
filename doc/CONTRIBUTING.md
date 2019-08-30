@@ -98,3 +98,67 @@ For debugging java implemented code execute:
 
 The command will also start a debug server, which can be used in an IDE. If the IDE was initialized properly 
 by using the command mentioned above, the existing `GraalDebug` run configuration can be used to debug.
+
+### Advanced commands to develop and debug
+
+Here are some advanced commands to debug test failures and fix issues.
+
+First, we have three sets of unittests in the base repository:
+1. Our own Python-bases unittests
+2. JUnit tests
+3. Python's standard library tests
+
+To run the first, you can use this command:
+
+    mx python-gate --tags python-unittest
+
+If some of the tests fail, you can re-run just a single test like this,
+substituting TEST-PATTERN (and possibly the file glob on the third line) with
+the test you want to run. Note that you can insert `-d` to debug on the Java
+level or use `--inspect` to debug in the Chrome debugger.
+
+    mx [-d] python3 [--inspect] \
+        graalpython/com.oracle.graal.python.test/src/graalpytest.py \
+        graalpython/com.oracle.graal.python.test/src/tests/test_*.py \
+        -k TEST-PATTERN
+
+To run the JUnit tests, you can use this command:
+
+    mx python-gate --tags python-junit
+
+To run a subset of the tests, you can use the following. Again, you can use `-d`
+to attach with a Java debugger.
+
+    mx [-d] unittest JAVA-TEST-CLASSNAME
+
+To run the Python standard library tests, you can use the following:
+
+    mx python-gate --tags python-tagged-unittest
+
+Note that we use "tag files", small `.txt` files that select which tests to run,
+so we only run tests that we know should pass. To run a subset of those tests,
+use the following command. However, the way we run those tests is by spawning a
+sub-process for every stdlib tests, to avoid interference while our
+implementation isn't quite ready, so you have to put the flags somewhere else to
+debug. You can see `-debug-java` and `--inspect` below, to debug in Java
+debugger or Chromium, respectively.
+
+    ENABLE_CPYTHON_TAGGED_UNITTESTS=true mx python3 \
+        graalpython/com.oracle.graal.python.test/src/graalpytest.py \
+        [-debug-java] [--inspect] \
+        graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py \
+        -k NAME-OF-CPYTHON-UNITTEST
+
+There's also multiple other gates that may fail with changes. One of these is
+our *style* gate, which checks formatting rules and copyrights. To auto-fix most
+issues, run the following command. Anything that's reported as error after this
+command you have to fix manually.
+
+    mx python-style --fix
+
+Another important gate is the gate that checks if you broke the native image
+building. To test if building a native image still works, you can use the
+following command. This will create a native executable called `graalpython` and
+print its path as the last output, if successful.
+
+    mx python-svm
