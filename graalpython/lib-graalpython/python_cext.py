@@ -113,7 +113,7 @@ def PyModule_NewObject(name):
 
 ##################### ABSTRACT
 
-@may_raise
+@may_raise(-1)
 def PySequence_DelItem(o,i):
     del o[i]
     return 0
