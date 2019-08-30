@@ -266,11 +266,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
     }
 
     private static String getCapiHome(Env env, PythonModule sys) {
-        return String.join(env.getFileNameSeparator(), getCapiUserBase(env, sys), "lib", "capi");
+        String pythonSubdir = "python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR;
+        return String.join(env.getFileNameSeparator(), getCapiUserBase(env, sys), "lib", pythonSubdir, "capi");
     }
 
     // similar to 'sysconfig._getuserbase()'
     private static String getCapiUserBase(Env env, PythonModule sys) {
+        String customUserBase = env.getEnvironment().get("PYTHONUSERBASE");
+        if (customUserBase != null) {
+            return customUserBase;
+        }
+
         Object osName = sys.getAttribute("platform");
         if (FRAMEWORK != PNone.NONE && PLATFORM_DARWIN.equals(osName)) {
             String _framework = FRAMEWORK.toString();
