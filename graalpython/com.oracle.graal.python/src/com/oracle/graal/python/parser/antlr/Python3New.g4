@@ -239,7 +239,8 @@ import java.util.Arrays;
     
 
     private static class PythonRecognitionException extends RecognitionException{
-                    
+        static final long serialVersionUID = 1L;
+            
         public PythonRecognitionException(String message, Recognizer<?, ?> recognizer, IntStream input, ParserRuleContext ctx, Token offendingToken) {
             super(message, recognizer, input, ctx);
             setOffendingToken(offendingToken);
