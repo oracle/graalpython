@@ -39,6 +39,11 @@ imported directly without going through the `java` module.
     type(org.antlr.v4.runtime) # => module
     org.antlr.v4.runtime.Token
 
+The downside of this is that everytime an import fails (and there are many
+speculative imports in the standard library), we ask the Java classloader to
+list currently available packages and traverse them to check if we should create
+a Java package. This slows down startup significantly.
+
 ## Interacting with Java objects
 
 Once you get hold of a Java object or class, interaction in both modes works
