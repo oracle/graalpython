@@ -482,17 +482,27 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["int ordinal"],
         cmpfunc=unhandled_error_compare
     )
-    
 
-    test_PyUnicode_AsUnicodeEscapeString = CPyExtFunction(
-        _reference_unicode_escape,
+    # NOTE: this test assumes that Python uses UTF-8 encoding for source files
+    test_PyUnicode_FromKindAndData = CPyExtFunction(
+        lambda args: args[3],
         lambda: (
-            ("abcd", ),
-            ("öüä", ),
+            (4, bytearray([0xA2, 0x0E, 0x02, 0x00]), 1, "𠺢"),
+            (4, bytearray([0xA2, 0x0E, 0x02, 0x00, 0x4C, 0x0F, 0x02, 0x00]), 2, "𠺢𠽌"),
+            (2, bytearray([0x30, 0x20]), 1, "‰"),
+            (2, bytearray([0x30, 0x20, 0x3C, 0x20]), 2, "‰‼"),
         ),
+        code='''PyObject* wrap_PyUnicode_FromKindAndData(int kind, Py_buffer buffer, Py_ssize_t size, PyObject* dummy) {
+            PyObject* res;
+            res = PyUnicode_FromKindAndData(kind, (const char *)buffer.buf, size);
+            Py_XINCREF(res);
+            return res;
+        }
+        ''',
         resultspec="O",
-        argspec='O',
-        arguments=["PyObject* str"],
+        argspec='iy*nO',
+        arguments=["int kind", "Py_buffer buffer", "Py_ssize_t size", "PyObject* dummy"],
+        callfunction="wrap_PyUnicode_FromKindAndData",
         cmpfunc=unhandled_error_compare
     )
 
