@@ -60,9 +60,11 @@ class ThreadPool():
     if os.environ.get(b"ENABLE_THREADED_GRAALPYTEST") == b"true":
         maxcnt = min(os.cpu_count(), 16)
         sleep = time.sleep
+        start_new_thread = _thread.start_new_thread
         print("Running with %d threads" % maxcnt)
     else:
         sleep = lambda x: x
+        start_new_thread = lambda f, args: f(*args)
         maxcnt = 1
 
     @classmethod
@@ -73,7 +75,7 @@ class ThreadPool():
                 function()
             finally:
                 self.release_token()
-        _thread.start_new_thread(runner, ())
+        self.start_new_thread(runner, ())
         self.sleep(0.5)
 
     @classmethod
