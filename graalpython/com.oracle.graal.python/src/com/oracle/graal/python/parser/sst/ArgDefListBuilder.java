@@ -56,10 +56,9 @@ public final class ArgDefListBuilder {
     private class Parameter {
 
         protected final String name;
-        
-        // We don't use type now, but in future ... 
-        @SuppressWarnings("unused")
-        protected final SSTNode type;
+
+        // We don't use type now, but in future ...
+        @SuppressWarnings("unused") protected final SSTNode type;
 
         public Parameter(String name, SSTNode type) {
             this.name = name;
@@ -164,7 +163,7 @@ public final class ArgDefListBuilder {
     public boolean hasSplatStarMarker() {
         return splatIndex > -1 && args != null && args.get(splatIndex).name == null;
     }
-    
+
     public boolean hasSplat() {
         return splatIndex > -1;
     }

@@ -300,7 +300,7 @@ public class ParserTestBase {
 
         if (expectedTrimmed.equals(actualTrimmed)) {
             // Actual and expected content are equals --> Test passed
-            
+
         } else {
             // We want to ignore different line separators (like \r\n against \n) because they
             // might be causing failing tests on a different operation systems like Windows :]

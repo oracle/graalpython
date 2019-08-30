@@ -90,7 +90,7 @@ public final class PythonNodeFactory {
         this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
         this.source = source;
     }
-    
+
     public ScopeEnvironment getScopeEnvironment() {
         return scopeEnvironment;
     }

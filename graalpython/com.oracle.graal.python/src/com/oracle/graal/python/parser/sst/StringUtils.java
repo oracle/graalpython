@@ -109,7 +109,7 @@ public class StringUtils {
         for (String text : strings) {
             boolean isRaw = false;
             boolean isBytes = false;
-            
+
             @SuppressWarnings("unused")
             boolean isFormat = false;
 
