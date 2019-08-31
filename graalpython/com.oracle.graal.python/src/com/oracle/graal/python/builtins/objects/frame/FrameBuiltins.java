@@ -79,7 +79,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     }
                     return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
                 } else {
-                    return globals != null ? globals : PNone.NONE;
+                    return globals != null ? globals : factory().createDict();
                 }
             }
             return factory().createDict();

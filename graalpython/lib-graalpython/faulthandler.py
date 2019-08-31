@@ -49,3 +49,8 @@ def disable():
 @__builtin__
 def is_enabled():
     return _enabled
+
+
+@__builtin__
+def cancel_dump_traceback_later():
+    pass
