@@ -174,7 +174,6 @@ public class PosixResources {
     public PosixResources() {
         files = Collections.synchronizedSortedMap(new TreeMap<>());
         filePaths = Collections.synchronizedMap(new HashMap<>());
-        sockets = Collections.synchronizedList(new ArrayList<>());
         children = Collections.synchronizedList(new ArrayList<>());
         String osProperty = System.getProperty("os.name");
 
