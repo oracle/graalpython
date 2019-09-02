@@ -113,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -509,15 +510,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fd > 2")
-        Object setInheritable(int fd, @SuppressWarnings("unused") Object inheritable) {
-            try {
-                String path = getResources().getFilePath(fd);
-                TruffleFile f = getContext().getEnv().getTruffleFile(path);
-                if (!f.exists()) {
-                    throw raise(OSError, "No such file or directory: '%s'", path);
-                }
-            } catch (NullPointerException e) {
-                throw raise(OSError, "Not a valid file descriptor, maybe a socket?'");
+        Object setInheritable(VirtualFrame frame, int fd, @SuppressWarnings("unused") Object inheritable) {
+            Channel ch = getResources().getFileChannel(fd);
+            if (ch == null || ch instanceof PSocket) {
+                throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
             }
             // TODO: investigate how to map this to the truffle file api (if supported)
             return PNone.NONE;
