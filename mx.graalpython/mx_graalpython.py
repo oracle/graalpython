@@ -112,6 +112,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             check_vm()
 
     dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
+    env["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -147,7 +148,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         vm_args += extra_vm_args
 
     vm_args.append("com.oracle.graal.python.shell.GraalPythonMain")
-    return mx.run_java(vm_args + graalpython_args, jdk=jdk, **kwargs)
+    return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
 def punittest(args):
@@ -199,6 +200,7 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     unittest_sandboxed = 'python-unittest-sandboxed'
+    unittest_jython = 'python-unittest-jython'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
@@ -273,7 +275,7 @@ def set_env(**environ):
 
 def python_gvm(args=None):
     "Build and run a GraalVM graalpython launcher"
-    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher(args or [])
 
 
@@ -375,6 +377,10 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
             run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+
+    with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
+        if task:
+            run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:

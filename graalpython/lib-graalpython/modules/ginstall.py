@@ -63,7 +63,67 @@ def known_packages():
         attrs(**kwargs)
         packaging(**kwargs)
         py(**kwargs)
-        install_from_pypi("pytest==5.0.1", **kwargs)
+        patch = """
+diff --git a/src/_pytest/_code/code.py b/src/_pytest/_code/code.py
+index aa4dcff..029e659 100644
+--- a/src/_pytest/_code/code.py
++++ b/src/_pytest/_code/code.py
+@@ -211,15 +211,17 @@ class TracebackEntry:
+             if key is not None:
+                 astnode = astcache.get(key, None)
+         start = self.getfirstlinesource()
+-        try:
+-            astnode, _, end = getstatementrange_ast(
+-                self.lineno, source, astnode=astnode
+-            )
+-        except SyntaxError:
+-            end = self.lineno + 1
+-        else:
+-            if key is not None:
+-                astcache[key] = astnode
++        end = -1
++        # GraalPython: no support for the ast module so the source cannot be retrieved correctly 
++        # try:
++        #     astnode, _, end = getstatementrange_ast(
++        #         self.lineno, source, astnode=astnode
++        #     )
++        # except SyntaxError:
++        #     end = self.lineno + 1
++        # else:
++        #     if key is not None:
++        #         astcache[key] = astnode
+         return source[start:end]
+ 
+     source = property(getsource)
+diff --git a/src/_pytest/python.py b/src/_pytest/python.py
+index 66d8530..8bb2ab6 100644
+--- a/src/_pytest/python.py
++++ b/src/_pytest/python.py
+@@ -494,8 +494,10 @@ class Module(nodes.File, PyCollector):
+     def _importtestmodule(self):
+         # we assume we are only called once per module
+         importmode = self.config.getoption("--import-mode")
++        imported = False
+         try:
+             mod = self.fspath.pyimport(ensuresyspath=importmode)
++            imported = True
+         except SyntaxError:
+             raise self.CollectError(
+                 _pytest._code.ExceptionInfo.from_current().getrepr(style="short")
+@@ -538,6 +540,10 @@ class Module(nodes.File, PyCollector):
+                 "or @pytest.mark.skipif decorators instead, and to skip a "
+                 "module use `pytestmark = pytest.mark.{skip,skipif}."
+             )
++        finally:
++            # this is needed for GraalPython: some modules fail with java level exceptions (the finally block still executes)
++            if not imported:
++                raise self.CollectError("Module could not be imported, the test could be unsupported by GraalPython")
+         self.config.pluginmanager.consider_module(mod)
+         return mod
+ 
+        
+        """
+        install_from_pypi("pytest==5.0.1", patch=patch, **kwargs)
 
     def py(**kwargs):
         install_from_pypi("py==1.8.0", **kwargs)
@@ -132,8 +192,8 @@ def known_packages():
     def six(**kwargs):
         install_from_pypi("six==1.12.0", **kwargs)
 
-    def Cython(extra_opts=[], **kwargs):
-        install_from_pypi("Cython==0.29.2", extra_opts=(['--no-cython-compile'] + extra_opts), **kwargs)
+    def Cython(**kwargs):
+        install_from_pypi("Cython==0.29.2", **kwargs)
 
     def setuptools(**kwargs):
         try:
@@ -181,8 +241,13 @@ def known_packages():
     #         print("Installing required dependency: pkgconfig")
     #         pkgconfig(**kwargs)
     #     install_from_pypi("h5py==2.9.0", **kwargs)
-
-    # Does not yet work
+    #     try:
+    #         import six
+    #     except ImportError:
+    #         print("Installing required dependency: six")
+    #         pkgconfig(**kwargs)
+    #     install_from_pypi("six==1.12.0", **kwargs)
+    #
     # def keras_applications(**kwargs):
     #     try:
     #         import h5py

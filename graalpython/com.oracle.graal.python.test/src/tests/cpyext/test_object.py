@@ -39,9 +39,22 @@
 
 import sys
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare
 
 __dir__ = __file__.rpartition("/")[0]
+
+
+def _reference_bytes(args):
+    obj = args[0]
+    if type(obj) == bytes:
+        return obj
+    if hasattr(obj, "__bytes__"):
+        res = obj.__bytes__()
+        if not isinstance(res, bytes):
+            raise TypeError("__bytes__ returned non-bytes (type %s)" % type(res).__name__)
+    if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
+        return bytes(obj)
+    raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
 
 
 class AttroClass(object):
@@ -360,5 +373,20 @@ class TestObjectFunctions(CPyExtTestCase):
         arguments=["PyObject* callable"],
         resultspec="i",
         argspec="O",
+    )
+
+    test_PyObject_Bytes = CPyExtFunction(
+        _reference_bytes,
+        lambda: (
+            (0,),
+            ("hello",),
+            (memoryview(b"world"),),
+            (1.234,),
+            (bytearray(b"blah"),),
+        ),
+        arguments=["PyObject* obj"],
+        resultspec="O",
+        argspec="O",
+        cmpfunc=unhandled_error_compare
     )
 

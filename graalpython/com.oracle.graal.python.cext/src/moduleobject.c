@@ -142,3 +142,17 @@ void* PyModule_GetState(PyObject *m) {
     }
     return ((PyModuleObject *)m)->md_state;
 }
+
+UPCALL_ID(PyModule_GetNameObject);
+PyObject* PyModule_GetNameObject(PyObject *m) {
+	return UPCALL_CEXT_O(_jls_PyModule_GetNameObject, native_to_java(m));
+}
+
+// partially taken from CPython "Objects/moduleobject.c"
+const char * PyModule_GetName(PyObject *m) {
+    PyObject *name = PyModule_GetNameObject(m);
+    if (name == NULL) {
+        return NULL;
+    }
+    return PyUnicode_AsUTF8(name);
+}

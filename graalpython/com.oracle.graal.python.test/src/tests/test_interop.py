@@ -338,14 +338,24 @@ if sys.implementation.name == "graalpython":
             from java.util import ArrayList
             assert repr(ArrayList()) == "[]"
 
-            assert java.util.ArrayList == ArrayList
+            if sys.graal_python_jython_emulation_enabled:
+                assert java.util.ArrayList == ArrayList
 
-            import sun
-            assert type(sun.misc) is type(java)
+                import sun
+                assert type(sun.misc) is type(java)
 
-            import sun.misc.Signal
-            assert sun.misc.Signal is not None
+                import sun.misc.Signal
+                assert sun.misc.Signal is not None
 
+    def test_java_exceptions():
+        if sys.graal_python_jython_emulation_enabled:
+            from java.lang import Integer, NumberFormatException
+            try:
+                Integer.parseInt("99", 8)
+            except NumberFormatException as e:
+                assert True
+            else:
+                assert False
 
     def test_foreign_object_does_not_leak_Javas_toString():
         try:

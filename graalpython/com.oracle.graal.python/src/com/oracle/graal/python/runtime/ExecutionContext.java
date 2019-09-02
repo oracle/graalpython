@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -67,7 +68,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class ExecutionContext {
 
     public static final class CallContext extends Node {
-
+        @CompilationFinal boolean neededCallerFrame;
+        @CompilationFinal boolean neededExceptionState;
         private static final CallContext INSTANCE = new CallContext(false);
 
         @Child private MaterializeFrameNode materializeNode;
@@ -78,6 +80,8 @@ public abstract class ExecutionContext {
 
         private CallContext(boolean adoptable) {
             this.adoptable = adoptable;
+            this.neededExceptionState = !adoptable;
+            this.neededCallerFrame = !adoptable;
         }
 
         /**
@@ -94,6 +98,11 @@ public abstract class ExecutionContext {
             // must only be used when calling from Python to Python
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             if (calleeRootNode.needsCallerFrame()) {
+                if (!neededCallerFrame) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    neededCallerFrame = true;
+                    reportPolymorphicSpecialize();
+                }
                 PFrame.Reference thisInfo;
 
                 if (isPythonFrame(frame, callNode)) {
@@ -113,6 +122,11 @@ public abstract class ExecutionContext {
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
             if (calleeRootNode.needsExceptionState()) {
+                if (!neededExceptionState) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    neededExceptionState = true;
+                    reportPolymorphicSpecialize();
+                }
                 PException curExc = null;
                 if (isPythonFrame(frame, callNode)) {
                     curExc = PArguments.getException(frame);
@@ -180,6 +194,7 @@ public abstract class ExecutionContext {
 
         @Child private MaterializeFrameNode materializeNode;
 
+        @CompilationFinal private boolean everEscaped = false;
         @CompilationFinal private boolean firstRequest = true;
 
         /**
@@ -205,7 +220,13 @@ public abstract class ExecutionContext {
              * deal with explicitly escaped frames.
              */
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-            if (info.isEscaped()) {
+            CompilerAsserts.partialEvaluationConstant(node);
+            if (node.getFrameEscapedProfile().profile(info.isEscaped())) {
+                if (!everEscaped) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    everEscaped = true;
+                    reportPolymorphicSpecialize();
+                }
                 // This assumption acts as our branch profile here
                 PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
                 if (callerInfo == null) {
@@ -234,7 +255,6 @@ public abstract class ExecutionContext {
                 }
 
                 // force the frame so that it can be accessed later
-                node.getExitedEscapedWithoutFrameProfile().enter();
                 ensureMaterializeNode().execute(frame, node, false, true);
                 info.materialize(frame, node);
                 // if this frame escaped we must ensure that also f_back does
@@ -297,6 +317,9 @@ public abstract class ExecutionContext {
          * </p>
          */
         public static PException enter(VirtualFrame frame, PythonContext context, Node callNode) {
+            if (frame == null || context == null) {
+                return null;
+            }
             if (!context.getSingleThreadedAssumption().isValid()) {
                 context.acquireInteropLock();
             }

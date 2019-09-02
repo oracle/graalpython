@@ -274,6 +274,7 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 }
 
 UPCALL_ID(PyObject_CallMethod);
+NO_INLINE
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
@@ -284,6 +285,14 @@ PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* 
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
+NO_INLINE
+PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
+    PyObject* args;
+	CallWithPolyglotArgs(args, name, 2, PyTruffle_Tuple_Pack, 0);
+    return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(callable), native_to_java(name), native_to_java(args));
+}
+
+NO_INLINE
 PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
@@ -317,6 +326,11 @@ PyObject* PyObject_GetItem(PyObject* obj, PyObject* key) {
 UPCALL_ID(PyObject_SetItem);
 int PyObject_SetItem(PyObject* obj, PyObject* key, PyObject* value) {
     return UPCALL_CEXT_I(_jls_PyObject_SetItem, native_to_java(obj), native_to_java(key), native_to_java(value));
+}
+
+UPCALL_ID(PyObject_DelItem);
+int PyObject_DelItem(PyObject *o, PyObject *key) {
+	return UPCALL_CEXT_I(_jls_PyObject_DelItem, native_to_java(o), native_to_java(key));
 }
 
 PyObject* PyObject_Format(PyObject* obj, PyObject* spec) {
@@ -609,3 +623,20 @@ PyObject * _PyObject_GetAttrId(PyObject *v, _Py_Identifier *name) {
     result = PyObject_GetAttr(v, oname);
     return result;
 }
+
+UPCALL_ID(PyObject_Bytes);
+PyObject * PyObject_Bytes(PyObject *v) {
+    if (v == NULL) {
+        return PyBytes_FromString("<NULL>");
+    }
+    return UPCALL_CEXT_O(_jls_PyObject_Bytes, native_to_java(v));
+}
+
+// taken from CPython 'Objects/object.c'
+PyObject * _PyObject_NextNotImplemented(PyObject *self) {
+    PyErr_Format(PyExc_TypeError,
+                 "'%.200s' object is not iterable",
+                 Py_TYPE(self)->tp_name);
+    return NULL;
+}
+

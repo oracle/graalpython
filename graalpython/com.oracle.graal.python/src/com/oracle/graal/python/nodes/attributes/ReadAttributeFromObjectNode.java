@@ -187,7 +187,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
-        Object value = getItemNode.passState().execute(getDictStorage.execute(lib.getDict(object)), key);
+        Object value = getItemNode.executeWithGlobalState(getDictStorage.execute(lib.getDict(object)), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -255,7 +255,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     private static Object readNative(Object key, Object dict, HashingStorageNodes.GetItemInteropNode getItemNode, HashingCollectionNodes.GetDictStorageNode getDictStorage) {
         if (dict instanceof PHashingCollection) {
-            Object result = getItemNode.passState().execute(getDictStorage.execute((PHashingCollection) dict), key);
+            Object result = getItemNode.executeWithGlobalState(getDictStorage.execute((PHashingCollection) dict), key);
             if (result != null) {
                 return result;
             }

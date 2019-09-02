@@ -224,3 +224,22 @@ _Py_c_abs(Py_complex z)
         errno = 0;
     return result;
 }
+
+UPCALL_ID(PyComplex_RealAsDouble);
+double PyComplex_RealAsDouble(PyObject *op) {
+	return UPCALL_CEXT_D(_jls_PyComplex_RealAsDouble, native_to_java(op));
+}
+
+UPCALL_ID(PyComplex_ImagAsDouble);
+double PyComplex_ImagAsDouble(PyObject *op) {
+	return UPCALL_CEXT_D(_jls_PyComplex_ImagAsDouble, native_to_java(op));
+}
+
+UPCALL_ID(PyComplex_FromDoubles);
+PyObject * PyComplex_FromDoubles(double real, double imag) {
+	return UPCALL_CEXT_O(_jls_PyComplex_FromDoubles, real, imag);
+}
+
+PyObject * PyComplex_FromCComplex(Py_complex cval) {
+	return UPCALL_CEXT_O(_jls_PyComplex_FromDoubles, cval.real, cval.imag);
+}

@@ -47,24 +47,20 @@ import java.util.function.Function;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNodeFactory.DynamicNodeGen;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
@@ -95,27 +91,9 @@ public class CastToIntegerFromIntNode extends Node {
         return new CastToIntegerFromIntNode(typeErrorHandler);
     }
 
-    public static final class CastToIntegerContextManager extends NodeContextManager {
-
-        private final Dynamic delegate;
-
-        private CastToIntegerContextManager(Dynamic delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public Object execute(Object x) {
-            return delegate.execute(x);
-        }
-
-        public Object execute(Object x, Function<Object, Byte> typeErrorHandler) {
-            return delegate.execute(x, typeErrorHandler);
-        }
-    }
-
     @GenerateUncached
     @ImportStatic(MathGuards.class)
-    public abstract static class Dynamic extends PNodeWithGlobalState<CastToIntegerContextManager> {
+    public abstract static class Dynamic extends PNodeWithContext {
 
         public abstract Object execute(Object x, Function<Object, Byte> typeErrorHandler);
 
@@ -152,7 +130,7 @@ public class CastToIntegerFromIntNode extends Node {
         Object fromObject(Object x, Function<Object, Byte> typeErrorHandler,
                         @Cached LookupAndCallUnaryDynamicNode callIndexNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            Object result = callIndexNode.passState().executeObject(x, SpecialMethodNames.__INT__);
+            Object result = callIndexNode.executeObject(x, SpecialMethodNames.__INT__);
             if (result == PNone.NO_VALUE) {
                 if (typeErrorHandler != null) {
                     return typeErrorHandler.apply(x);
@@ -164,16 +142,6 @@ public class CastToIntegerFromIntNode extends Node {
                 throw raiseNode.raise(TypeError, " __int__ returned non-int (type %p)", result);
             }
             return result;
-        }
-
-        @Override
-        public CastToIntegerContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new CastToIntegerContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public CastToIntegerContextManager passState() {
-            return new CastToIntegerContextManager(this, null, null);
         }
 
         public static Dynamic create() {

@@ -38,33 +38,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
+#include "capi.h"
 
-public abstract class NodeContextManager implements AutoCloseable {
-
-    private final PythonContext context;
-    private final PException savedExceptionState;
-
-    public NodeContextManager(PythonContext context, VirtualFrame frame, Node caller) {
-        this.context = context;
-        if (context != null) {
-            this.savedExceptionState = context.getCaughtException();
-        } else {
-            this.savedExceptionState = null;
-        }
-        if (frame != null) {
-            IndirectCallContext.enter(frame, context, caller);
-        }
-
-    }
-
-    public final void close() {
-        IndirectCallContext.exit(context, savedExceptionState);
-    }
+UPCALL_ID(PyTruffle_OS_StringToDouble);
+double PyOS_string_to_double(const char *s, char **endptr, PyObject *overflow_exception) {
+	double result = -1.0;
+	PyObject* resultTuple = UPCALL_CEXT_O(_jls_PyTruffle_OS_StringToDouble, polyglot_from_string(s, "ascii"), endptr != NULL);
+	if (resultTuple != NULL) {
+		result = as_double(PyTuple_GetItem(resultTuple, 0));
+		if (endptr != NULL) {
+			*endptr = s + as_long(PyTuple_GetItem(resultTuple, 1));
+		}
+	}
+	return result;
 }

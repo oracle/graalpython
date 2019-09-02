@@ -65,6 +65,15 @@ PyThreadState* PyEval_SaveThread() {
 void PyEval_RestoreThread(PyThreadState *ptr) {
 }
 
+UPCALL_ID(PyEval_GetBuiltins);
+PyObject* PyEval_GetBuiltins() {
+	return UPCALL_CEXT_O(_jls_PyEval_GetBuiltins);
+}
+
+int PyEval_MergeCompilerFlags(PyCompilerFlags *cf) {
+    return 0;
+}
+
 UPCALL_ID(PyThread_allocate_lock);
 void* PyThread_allocate_lock() {
     return UPCALL_CEXT_O(_jls_PyThread_allocate_lock);

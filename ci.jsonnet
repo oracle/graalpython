@@ -3,7 +3,7 @@ local const = import 'ci_common/constants.libsonnet';
 local builder = import 'ci_common/builder.libsonnet';
 
 {
-    overlay: "4aeece36c7b5f22de14d72fe2f740f40d4e3ab63",
+    overlay: "7ad24fb14b37e95aeac98c4dacf2e1350b928ad2",
 
     // ======================================================================================================
     //
@@ -27,6 +27,7 @@ local builder = import 'ci_common/builder.libsonnet';
         builder.testGateTime(type="tagged-unittest", platform="darwin", timelimit=const.TIME_LIMIT["2h"]),
         builder.testGate(type="svm-unittest", platform="linux"),
         builder.testGate(type="svm-unittest", platform="darwin"),
+        builder.testGate(type="unittest-jython", platform="linux"),
 
         // junit
         builder.testGate(type="junit", platform="linux"),

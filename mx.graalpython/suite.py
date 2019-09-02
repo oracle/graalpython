@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "d22c72700feb46849a5c18826fbfd0cf22ef5197",
+                "version": "432df38e6864205e10e52aa4058ce868aedab929",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "d22c72700feb46849a5c18826fbfd0cf22ef5197",
+                "version": "432df38e6864205e10e52aa4058ce868aedab929",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -191,7 +191,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
-                "sulong:SULONG",
+                "sulong:SULONG_API",
                 "XZ-1.8",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
@@ -289,6 +289,7 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
+                "PYTHON_USERBASE",
             ],
             "description": "GraalPython launcher",
         },
@@ -380,6 +381,16 @@ suite = {
             "layout": {
                 "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
                 "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
+            },
+            "maven": False,
+        },
+
+        "PYTHON_USERBASE": {
+            "native": True,
+            "platformDependent": False,
+            "description": "Blub",
+            "layout": {
+                "./README.md": "string:User base directory for development purpose.",
             },
             "maven": False,
         },

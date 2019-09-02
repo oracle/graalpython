@@ -366,8 +366,8 @@ class TestAbstract(CPyExtTestCase):
 
     test_PyNumber_Lshift = CPyExtFunction(
         lambda args: args[0] << args[1],
-        lambda: ( 
-            (0, 0), 
+        lambda: (
+            (0, 0),
             (0, -1),
             (3, 2),
             (10, 5),
@@ -812,20 +812,86 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PyMapping_Check = CPyExtFunction(
-        lambda args: 1 if isinstance(args[0], (dict, str, tuple, list)) else 0,
+    test_PySequence_Repeat = CPyExtFunction(
+        lambda args: args[0] * args[1],
         lambda: (
-            (dict(), ),
-            ("not a number", ),
-            ({}, ),
-            ({"a": "yes"}, ),
-            (tuple(), ),
-            (list(), ),
-            (1, ),
-            (None, ),
+            ((1,), 0),
+            ((1,), 1),
+            ((1,), 3),
+            ([1], 0),
+            ([1], 1),
+            ([1], 3),
+            ("hello", 0),
+            ("hello", 1),
+            ("hello", 3),
+            ({}, 0),
         ),
-        resultspec="i",
-        argspec='O',
-        arguments=["PyObject* obj"],
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* obj", "Py_ssize_t n"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_InPlaceRepeat = CPyExtFunction(
+        lambda args: args[0] * args[1],
+        lambda: (
+            ((1,), 0),
+            ((1,), 1),
+            ((1,), 3),
+            ([1], 0),
+            ([1], 1),
+            ([1], 3),
+            ("hello", 0),
+            ("hello", 1),
+            ("hello", 3),
+            ({}, 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* obj", "Py_ssize_t n"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Concat = CPyExtFunction(
+        lambda args: args[0] + args[1],
+        lambda: (
+            ((1,), tuple()),
+            ((1,), list()),
+            ((1,), (2,)),
+            ((1,), [2,]),
+            ([1], tuple()),
+            ([1], list()),
+            ([1], (2,)),
+            ([1], [2,]),
+            ("hello", "world"),
+            ("hello", ""),
+            ({}, []),
+            ([], {}),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* s", "PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_InPlaceConcat = CPyExtFunction(
+        lambda args: args[0] + list(args[1]) if isinstance(args[0], list) else args[0] + args[1],
+        lambda: (
+            ((1,), tuple()),
+            ((1,), list()),
+            ((1,), (2,)),
+            ((1,), [2,]),
+            ([1], tuple()),
+            ([1], list()),
+            ([1], (2,)),
+            ([1], [2,]),
+            ("hello", "world"),
+            ("hello", ""),
+            ({}, []),
+            ([], {}),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* s", "PyObject* o"],
         cmpfunc=unhandled_error_compare
     )

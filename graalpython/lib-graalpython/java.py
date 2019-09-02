@@ -41,32 +41,53 @@ import _frozen_importlib
 
 
 class JavaPackageLoader:
-    @staticmethod
-    def is_java_package(name):
-        try:
-            package = type("java.lang.Package")
-            return any(p.getName().startswith(name) for p in package.getPackages())
-        except KeyError:
-            if sys.flags.verbose:
-                from _warnings import _warn
-                _warn("Host lookup allowed, but java.lang.Package not available. Importing from Java cannot work.")
-            return False
+    if sys.graal_python_jython_emulation_enabled:
+        @staticmethod
+        def is_java_package(name):
+            try:
+                package = type("java.lang.Package")
+                return any(p.getName().startswith(name) for p in package.getPackages())
+            except KeyError:
+                if sys.flags.verbose:
+                    from _warnings import _warn
+                    _warn("Host lookup allowed, but java.lang.Package not available. Importing from Java cannot work.")
+                return False
 
-    @staticmethod
-    def _make_getattr(modname):
-        modname = modname + "."
-        def __getattr__(key, default=None):
-            if sys.graal_python_host_import_enabled:
-                loadname = modname + key
-                if JavaPackageLoader.is_java_package(loadname):
-                    return JavaPackageLoader._create_module(loadname)
-                else:
+        @staticmethod
+        def _make_getattr(modname):
+            modname = modname + "."
+            def __getattr__(key, default=None):
+                if sys.graal_python_host_import_enabled:
+                    loadname = modname + key
+                    if JavaPackageLoader.is_java_package(loadname):
+                        return JavaPackageLoader._create_module(loadname)
+                    else:
+                        try:
+                            return type(modname + key)
+                        except KeyError:
+                            pass
+                raise AttributeError(key)
+            return __getattr__
+    else:
+        @staticmethod
+        def _make_getattr(modname):
+            if modname.startswith("java."):
+                modname_wo = modname[len("java."):] + "."
+            else:
+                modname_wo = None
+            modname = modname + "."
+            def __getattr__(key, default=None):
+                try:
+                    return type(modname + key)
+                except KeyError:
+                    pass
+                if modname_wo:
                     try:
-                        return type(modname + key)
+                        return type(modname_wo + key)
                     except KeyError:
                         pass
-            raise AttributeError(key)
-        return __getattr__
+                raise AttributeError(key)
+            return __getattr__
 
     @staticmethod
     def create_module(spec):
@@ -89,15 +110,26 @@ class JavaTypeLoader:
     def create_module(spec):
         pass
 
-    @staticmethod
-    def exec_module(module):
-        sys.modules[module.__name__] = type(module.__name__)
+    if sys.graal_python_jython_emulation_enabled:
+        @staticmethod
+        def exec_module(module):
+            sys.modules[module.__name__] = type(module.__name__)
+    else:
+        @staticmethod
+        def exec_module(module):
+            try:
+                sys.modules[module.__name__] = type(module.__name__)
+            except KeyError:
+                if module.__name__.startswith("java."):
+                    sys.modules[module.__name__] = type(module.__name__[len("java."):])
+                else:
+                    raise
 
 
 class JavaImportFinder:
-    @staticmethod
-    def find_spec(fullname, path, target=None):
-        if sys.graal_python_host_import_enabled:
+    if sys.graal_python_jython_emulation_enabled:
+        @staticmethod
+        def find_spec(fullname, path, target=None):
             if JavaPackageLoader.is_java_package(fullname):
                 return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
             else:
@@ -106,7 +138,16 @@ class JavaImportFinder:
                     return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
                 except KeyError:
                     pass
+    else:
+        @staticmethod
+        def find_spec(fullname, path, target=None):
+            if path and path == __path__:
+                if fullname.rpartition('.')[2].islower():
+                   return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
+                else:
+                    return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
 
 
 sys.meta_path.append(JavaImportFinder)
-__getattr__ = JavaPackageLoader._make_getattr("java")
+if sys.graal_python_jython_emulation_enabled:
+    __getattr__ = JavaPackageLoader._make_getattr("java")

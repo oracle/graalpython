@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -93,4 +93,9 @@ int PyList_SetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
 UPCALL_ID(PyList_Sort);
 int PyList_Sort(PyObject *l) {
 	return UPCALL_CEXT_I(_jls_PyList_Sort, native_to_java(l));
+}
+
+UPCALL_ID(PyList_Insert);
+int PyList_Insert(PyObject *op, Py_ssize_t where, PyObject *newitem) {
+    return UPCALL_CEXT_I(_jls_PyList_Insert, native_to_java(op), where, native_to_java(newitem));
 }

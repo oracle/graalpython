@@ -48,11 +48,8 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -144,14 +141,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
             passExceptionNode = insert(PassCaughtExceptionNode.create());
         }
         return passExceptionNode.execute(frame);
-    }
-
-    protected final DefaultContextManager withGlobalState(VirtualFrame frame) {
-        return PNodeWithGlobalState.transferToContext(getContextRef(), frame, this);
-    }
-
-    protected final <T extends NodeContextManager> T withGlobalState(PNodeWithGlobalState<T> node, VirtualFrame frame) {
-        return node.withGlobalState(getContextRef(), frame);
     }
 
     public final PException raise(PBaseException exc) {

@@ -111,6 +111,17 @@ def PyModule_SetDocString(module, string):
 def PyModule_NewObject(name):
     return moduletype(name)
 
+##################### ABSTRACT
+
+@may_raise(-1)
+def PySequence_DelItem(o,i):
+    del o[i]
+    return 0
+
+@may_raise
+def PyModule_GetNameObject(module_obj):
+    return module_obj.__name__
+
 
 ##################### DICT
 
@@ -186,6 +197,15 @@ def PyDict_Contains(dictObj, key):
     return key in dictObj
 
 
+@may_raise(-1)
+def PyDict_Merge(a, b, override):
+    if override:
+        a.update(b)
+    else:
+        for k in b:
+            if not k in a:
+                a[k] = b[k]
+    return 0
 
 ##################### SET, FROZENSET
 
@@ -218,6 +238,14 @@ def PyFrozenSet_New(iterable):
         return frozenset(iterable)
     else:
         return frozenset()
+
+
+@may_raise(-1)
+def PySet_Discard(s, key):
+    if key in s:
+        s.discard(key)
+        return 1
+    return 0
 
 
 ##################### MAPPINGPROXY
@@ -284,8 +312,12 @@ def PyBytes_Join(sep, iterable):
 
 
 @may_raise
-def PyBytes_FromObject(iterable):
-    return bytes(iterable)
+def PyBytes_FromObject(obj):
+    if type(obj) == bytes:
+        return obj
+    if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
+        return bytes(obj)
+    raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
 
 
 ##################### LIST
@@ -360,6 +392,13 @@ def PyList_Sort(listObj):
     listObj.sort()
     return 0
 
+@may_raise(-1)
+def PyList_Insert(listObj, i, item):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj.insert(i, item)
+    return 0
+
 
 ##################### LONG
 
@@ -403,7 +442,25 @@ def PyFloat_FromDouble(n):
 @may_raise
 def PyComplex_AsCComplex(n):
     obj = complex(n)
-    return (obj.real, obj.imag) 
+    return (obj.real, obj.imag)
+
+
+@may_raise(-1.0)
+def PyComplex_RealAsDouble(n):
+    if isinstance(n, complex):
+        return n.real
+    return n.__float__()
+
+
+def PyComplex_ImagAsDouble(n):
+    if isinstance(n, complex):
+        return n.imag
+    return 0.0
+
+
+@may_raise
+def PyComplex_FromDoubles(real, imag):
+    return complex(real, imag)
 
 
 ##################### NUMBER
@@ -598,9 +655,44 @@ def PySequence_SetItem(obj, key, value):
     return 0
 
 
+@may_raise
+def PySequence_GetSlice(obj, low, high):
+    return obj[low:high]
+
+
 @may_raise(-1)
 def PySequence_Contains(haystack, needle):
     return needle in haystack
+
+
+@may_raise
+def PySequence_Repeat(obj, n):
+    if not PyTruffle_IsSequence(obj):
+        raise TypeError("'%p' object can't be repeated", obj)
+    return obj * n
+
+
+@may_raise
+def PySequence_InPlaceRepeat(obj, n):
+    if not PyTruffle_IsSequence(obj):
+        raise TypeError("'%p' object can't be repeated", obj)
+    obj *= n
+    return obj
+
+
+@may_raise
+def PySequence_Concat(s, o):
+    if not (PyTruffle_IsSequence(s) and PyTruffle_IsSequence(o)):
+        raise TypeError("'%p' object can't be repeated", s)
+    return s + o
+
+
+@may_raise
+def PySequence_InPlaceConcat(s, o):
+    if not (PyTruffle_IsSequence(s) and PyTruffle_IsSequence(o)):
+        raise TypeError("'%p' object can't be repeated", s)
+    s += o
+    return s
 
 
 ##################### UNICODE
@@ -690,6 +782,22 @@ def PyUnicode_AsUnicodeEscapeString(string):
         import _codecs as _codecs_module 
     return _codecs_module.unicode_escape_encode(string)[0]
 
+@may_raise(-1)
+def PyUnicode_Tailmatch(s, substr, start, end, direction):
+    if direction > 0:
+        return 1 if s[start:end].endswith(substr) else 0
+    return 1 if s[start:end].startswith(substr) else 0
+
+
+@may_raise
+def PyUnicode_AsEncodedString(s, encoding, errors):
+    return s.encode(encoding, errors)
+
+
+@may_raise
+def PyUnicode_Replace(s, substr, replstr, count):
+    return s.replace(substr, replstr, count)
+
 
 ##################### CAPSULE
 
@@ -714,6 +822,14 @@ def PyCapsule_GetContext(obj):
     if not isinstance(obj, PyCapsule) or obj.pointer is None:
         raise ValueError("PyCapsule_GetContext called with invalid PyCapsule object")
     return obj.context
+
+
+@may_raise(-1)
+def PyCapsule_SetContext(obj, ptr):
+    if not isinstance(obj, PyCapsule):
+        raise ValueError("PyCapsule_SetContext called with invalid PyCapsule object")
+    obj.context = ptr
+    return 0
 
 
 @may_raise
@@ -745,6 +861,11 @@ def PyCapsule_IsValid(obj, name):
     return (isinstance(obj, PyCapsule) and
             obj.pointer != None and
             obj.name == name)
+
+
+@may_raise
+def PyCapsule_GetName(obj):
+    return obj.name
 
 
 def PyModule_AddObject(m, k, v):
@@ -958,6 +1079,12 @@ def PyObject_GetItem(obj, key):
     return obj[key]
 
 
+@may_raise(-1)
+def PyObject_DelItem(obj, key):
+    del obj[key]
+    return 0
+
+
 @may_raise(1)
 def PyObject_SetItem(obj, key, value):
     obj[key] = value
@@ -1018,6 +1145,18 @@ def PyObject_HashNotImplemented(obj):
 
 def PyObject_IsTrue(obj):
     return 1 if obj else 0
+
+
+@may_raise
+def PyObject_Bytes(obj):
+    if type(obj) == bytes:
+        return obj
+    if hasattr(obj, "__bytes__"):
+        res = obj.__bytes__()
+        if not isinstance(res, bytes):
+            raise TypeError("__bytes__ returned non-bytes (type %s)" % type(res).__name__)
+    return PyBytes_FromObject(obj)
+
 
 ## EXCEPTIONS
 
@@ -1187,6 +1326,21 @@ def _PyErr_Warn(message, category, stack_level, source):
     # TODO: pass source again once we update to newer lib-python
     warnings.warn(message, category, stack_level)
     return None
+
+
+@may_raise
+def PyException_SetCause(exc, cause):
+    exc.__cause__ = cause
+
+
+@may_raise
+def PyException_GetContext(exc):
+    return exc.__context__
+
+
+@may_raise
+def PyException_SetContext(exc, context):
+    exc.__context__ = context
 
 
 ## FILE
@@ -1398,3 +1552,7 @@ def PyMapping_Values(obj):
 def PyState_FindModule(module_name):
     return sys.modules[module_name]
 
+
+@may_raise
+def PyEval_GetBuiltins():
+    return __builtins__.__dir__

@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -83,6 +82,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -175,8 +175,12 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("try")
         public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @CachedLibrary(limit = "1") InteropLibrary interop) {
-            try (DefaultContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return run(moduleSpec, interop);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 
@@ -269,6 +273,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
                 } catch (IOException | RuntimeException e) {
                     PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath()));
+                    PythonLanguage.getLogger().fine(() -> "Original error was: " + e);
                     throw raise(PythonErrorType.ImportError, CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals

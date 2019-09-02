@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -58,6 +57,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -1063,8 +1064,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached CastToDoubleNode toFloat,
                         @Cached IsBuiltinClassProfile stopProfile) {
             Object iterator = getIterator.executeWith(frame, iterable);
-            try (DefaultContextManager cm = withGlobalState(frame)) {
+            PythonContext context = getContextRef().get();
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            try {
                 return fsum(iterator, next, toFloat, stopProfile);
+            } finally {
+                IndirectCallContext.exit(context, caughtException);
             }
         }
 

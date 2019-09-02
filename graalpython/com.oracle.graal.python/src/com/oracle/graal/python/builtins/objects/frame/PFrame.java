@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -93,9 +94,8 @@ public final class PFrame extends PythonBuiltinObject {
         public void materialize(Frame targetFrame, PRootNode location) {
             Reference curFrameInfo = PArguments.getCurrentFrameInfo(targetFrame);
             boolean inClassScope = PArguments.getSpecialArgument(targetFrame) instanceof ClassBodyRootNode;
-
-            if (this.pyFrame == null || this.pyFrame.virtualFrameInfo == null) {
-                location.getExitedEscapedWithoutFrameProfile().enter();
+            CompilerAsserts.partialEvaluationConstant(location);
+            if (location.getFrameEscapedWithoutAllocationProfile().profile(this.pyFrame == null || this.pyFrame.virtualFrameInfo == null)) {
                 if (this.pyFrame == null) {
                     // TODO: frames: this doesn't go through the factory
                     this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, curFrameInfo, location, inClassScope);

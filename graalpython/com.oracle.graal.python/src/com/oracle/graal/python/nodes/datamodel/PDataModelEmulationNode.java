@@ -40,48 +40,28 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
-public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PDataModelEmulationContextManager> {
+public abstract class PDataModelEmulationNode extends PNodeWithContext {
 
-    protected abstract boolean execute(Object object);
-
-    @Override
-    public PDataModelEmulationContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-        return new PDataModelEmulationContextManager(this, contextRef.get(), frame);
-    }
-
-    @Override
-    public PDataModelEmulationContextManager passState() {
-        return new PDataModelEmulationContextManager(this, null, null);
-    }
+    public abstract boolean execute(Object object);
 
     public static boolean check(PDataModelEmulationNode isMapping, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object obj) {
-        try (PDataModelEmulationContextManager ctxManager = isMapping.withGlobalState(contextRef, frame)) {
-            return ctxManager.execute(obj);
-        }
-    }
-
-    public static final class PDataModelEmulationContextManager extends NodeContextManager {
-
-        private final PDataModelEmulationNode delegate;
-
-        public PDataModelEmulationContextManager(PDataModelEmulationNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public boolean execute(Object object) {
-            return delegate.execute(object);
+        PythonContext context = contextRef.get();
+        PException caughtException = IndirectCallContext.enter(frame, context, isMapping);
+        try {
+            return isMapping.execute(obj);
+        } finally {
+            IndirectCallContext.exit(context, caughtException);
         }
     }
 }
