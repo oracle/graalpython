@@ -99,8 +99,8 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    static protected Map<String, List<Service>> services;
-    static protected Map<String, Integer> protocols;
+    protected static Map<String, List<Service>> services;
+    protected static Map<String, Integer> protocols;
 
     @TruffleBoundary
     private static Map<String, List<Service>> parseServices() {
@@ -191,7 +191,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
     static {
         if (ImageInfo.inImageBuildtimeCode()) {
-
             services = parseServices();
             protocols = parseProtocols();
         }
