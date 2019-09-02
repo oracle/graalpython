@@ -601,4 +601,23 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "setsockopt", minNumOfPositionalArgs = 4)
+    @GenerateNodeFactory
+    abstract static class SetSockOptionNode extends PythonBuiltinNode {
+        @Specialization
+        Object setSockOpt(PSocket socket, @SuppressWarnings("unused") Object level, Object option, Object value) {
+            // TODO: Implement these
+            socket.setSockOpt(option, value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "getsockopt", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class GetSockOptionNode extends PythonBuiltinNode {
+        @Specialization
+        Object setSockOpt(PSocket socket, @SuppressWarnings("unused") Object level, Object option) {
+            return socket.getSockOpt(option);
+        }
+    }
 }

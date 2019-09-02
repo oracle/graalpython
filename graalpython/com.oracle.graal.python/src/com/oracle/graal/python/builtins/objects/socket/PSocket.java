@@ -45,9 +45,12 @@ import java.net.InetSocketAddress;
 import java.nio.channels.Channel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PSocket extends PythonBuiltinObject implements Channel {
     public static final int AF_UNSPEC = 0;
@@ -97,6 +100,8 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     private ServerSocketChannel serverSocket;
     private boolean blocking;
+
+    private HashMap<Object, Object> options;
 
     public PSocket(LazyPythonClass cls, int family, int type, int proto) {
         super(cls);
@@ -183,5 +188,21 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         if (getSocket() != null) {
             getSocket().close();
         }
+    }
+
+    @TruffleBoundary
+    public void setSockOpt(Object option, Object value) {
+        if (options == null) {
+            options = new HashMap<>();
+        }
+        options.put(option, value);
+    }
+
+    @TruffleBoundary
+    public Object getSockOpt(Object option) {
+        if (options != null) {
+            return options.getOrDefault(option, PNone.NONE);
+        }
+        return PNone.NONE;
     }
 }
