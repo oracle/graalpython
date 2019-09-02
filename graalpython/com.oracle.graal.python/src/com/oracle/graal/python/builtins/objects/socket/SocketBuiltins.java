@@ -41,7 +41,10 @@
 package com.oracle.graal.python.builtins.objects.socket;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -57,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -69,7 +71,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
 @SuppressWarnings("unused")
@@ -158,7 +159,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
             }
-            getContext().getResources().closeSocket(socket.getFileno());
+            getContext().getResources().close(socket.getFileno());
             return PNone.NONE;
         }
     }
