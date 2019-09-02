@@ -81,7 +81,8 @@ def is_sandboxed_configuration(conf):
 
 @contextmanager
 def environ(env):
-    def _handle_var((k, v)):
+    def _handle_var(key_value):
+        (k, v) = key_value
         if v is None:
             del os.environ[k]
         else:
@@ -89,7 +90,7 @@ def environ(env):
 
     if env:
         prev_env = {v: os.getenv(v) for v in env}
-        map(_handle_var, env.items())
+        list(map(_handle_var, list(env.items())))
     else:
         prev_env = None
 
@@ -97,7 +98,7 @@ def environ(env):
         yield
     finally:
         if prev_env:
-            map(_handle_var, prev_env.items())
+            list(map(_handle_var, list(prev_env.items())))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -105,9 +106,7 @@ def environ(env):
 # the vm definitions
 #
 # ----------------------------------------------------------------------------------------------------------------------
-class AbstractPythonVm(Vm):
-    __metaclass__ = ABCMeta
-
+class AbstractPythonVm(Vm, metaclass=ABCMeta):
     def __init__(self, config_name, options=None, env=None):
         super(AbstractPythonVm, self).__init__()
         self._config_name = config_name
@@ -155,9 +154,7 @@ class AbstractPythonVm(Vm):
         return ret_code, out.data
 
 
-class AbstractPythonIterationsControlVm(AbstractPythonVm):
-    __metaclass__ = ABCMeta
-
+class AbstractPythonIterationsControlVm(AbstractPythonVm, metaclass=ABCMeta):
     def __init__(self, config_name, options=None, env=None, iterations=None):
         super(AbstractPythonIterationsControlVm, self).__init__(config_name, options=options, env=env)
         try:
@@ -420,7 +417,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             for pth in self._python_path:
                 if hasattr(pth, '__call__'):
                     pth = pth()
-                assert isinstance(pth, (str, unicode))
+                assert isinstance(pth, str)
                 python_path.append(pth)
             cmd_args += ['-p', ",".join(python_path)]
 
@@ -434,7 +431,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         return vm_options + vm_args + cmd_args
 
     def benchmarkList(self, bm_suite_args):
-        return self._benchmarks.keys()
+        return list(self._benchmarks.keys())
 
     def benchmarks(self):
         raise FutureWarning('the benchmarks method has been deprecated for VmBenchmarkSuite instances, '

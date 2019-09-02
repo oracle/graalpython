@@ -854,7 +854,7 @@ def import_python_sources(args):
 
     7. Run the tests and fix any remaining issues.
     """.format(mapping))
-    raw_input("Got it?")
+    input("Got it?")
 
     cpy_files = []
     pypy_files = []
@@ -918,9 +918,9 @@ def import_python_sources(args):
 
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
-    raw_input("Check that the updated files look as intended, then press RETURN...")
+    input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update Python inlined files: %s" % import_version)
-    answer = raw_input("Should we push python-import (y/N)? ")
+    answer = input("Should we push python-import (y/N)? ")
     if answer and answer in "Yy":
         SUITE.vc.git_command(SUITE.dir, ["push", "origin", "python-import:python-import"])
     SUITE.vc.update(SUITE.dir, rev=tip)
