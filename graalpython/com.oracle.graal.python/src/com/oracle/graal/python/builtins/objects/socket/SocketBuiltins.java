@@ -347,7 +347,7 @@ public class SocketBuiltins extends PythonBuiltins {
             int length = fillBuffer(socket, targetBuffer);
             // TODO: seems dirty, is there a better way to fill a byte array?
 
-            for (int i = 0; i < targetBuffer.length; i++) {
+            for (int i = 0; i < length; i++) {
                 buffer.getSequenceStorage().insertItem(i, targetBuffer[i]);
             }
 
