@@ -79,6 +79,25 @@ def is_sandboxed_configuration(conf):
     return conf == CONFIGURATION_SANDBOXED or conf == CONFIGURATION_SANDBOXED_MULTI
 
 
+# from six
+def add_metaclass(metaclass):
+    """Class decorator for creating a class with a metaclass."""
+    def wrapper(cls):
+        orig_vars = cls.__dict__.copy()
+        slots = orig_vars.get('__slots__')
+        if slots is not None:
+            if isinstance(slots, str):
+                slots = [slots]
+            for slots_var in slots:
+                orig_vars.pop(slots_var)
+        orig_vars.pop('__dict__', None)
+        orig_vars.pop('__weakref__', None)
+        if hasattr(cls, '__qualname__'):
+            orig_vars['__qualname__'] = cls.__qualname__
+        return metaclass(cls.__name__, cls.__bases__, orig_vars)
+    return wrapper
+
+
 @contextmanager
 def environ(env):
     def _handle_var(key_value):
@@ -106,7 +125,8 @@ def environ(env):
 # the vm definitions
 #
 # ----------------------------------------------------------------------------------------------------------------------
-class AbstractPythonVm(Vm, metaclass=ABCMeta):
+@add_metaclass(ABCMeta)
+class AbstractPythonVm(Vm):
     def __init__(self, config_name, options=None, env=None):
         super(AbstractPythonVm, self).__init__()
         self._config_name = config_name
@@ -154,7 +174,8 @@ class AbstractPythonVm(Vm, metaclass=ABCMeta):
         return ret_code, out.data
 
 
-class AbstractPythonIterationsControlVm(AbstractPythonVm, metaclass=ABCMeta):
+@add_metaclass(ABCMeta)
+class AbstractPythonIterationsControlVm(AbstractPythonVm):
     def __init__(self, config_name, options=None, env=None, iterations=None):
         super(AbstractPythonIterationsControlVm, self).__init__(config_name, options=options, env=env)
         try:

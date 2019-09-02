@@ -50,6 +50,12 @@ SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
 
+# compatibility between Python versions
+PY3 = sys.version_info[0] == 3
+if PY3:
+    raw_input = input
+
+
 def _get_core_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-graalpython")
 
@@ -854,7 +860,7 @@ def import_python_sources(args):
 
     7. Run the tests and fix any remaining issues.
     """.format(mapping))
-    input("Got it?")
+    raw_input("Got it?")
 
     cpy_files = []
     pypy_files = []
@@ -918,9 +924,9 @@ def import_python_sources(args):
 
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
-    input("Check that the updated files look as intended, then press RETURN...")
+    raw_input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update Python inlined files: %s" % import_version)
-    answer = input("Should we push python-import (y/N)? ")
+    answer = raw_input("Should we push python-import (y/N)? ")
     if answer and answer in "Yy":
         SUITE.vc.git_command(SUITE.dir, ["push", "origin", "python-import:python-import"])
     SUITE.vc.update(SUITE.dir, rev=tip)
