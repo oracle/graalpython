@@ -25,6 +25,10 @@ local mixins = import 'mixins.libsonnet';
     local common = base + mixins.labsjdk8 + {
         dynamicImports:: "/compiler",
 
+        environment +: {
+            MX_PYTHON_VERSION: "3",
+        },
+
         setup +: [
             ["mx", "sforceimports"],
             ["mx", "--dynamicimports", self.dynamicImports, "build"],
