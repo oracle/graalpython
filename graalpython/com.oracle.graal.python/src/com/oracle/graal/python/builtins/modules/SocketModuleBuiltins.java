@@ -79,6 +79,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -453,69 +454,49 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getaddrinfo", parameterNames = {"host", "port", "family", "type", "proto", "flags"})
     @GenerateNodeFactory
     public abstract static class GetAddrInfoNode extends PythonBuiltinNode {
+        BranchProfile stringPortProfile = BranchProfile.create();
+        BranchProfile nonePortProfile = BranchProfile.create();
+        BranchProfile intPortProfile = BranchProfile.create();
+
         @Specialization
-        Object getAddrInfo(String host, int port, int family, int type, int proto, PInt flags) {
-            return getAddrInfo(host, port, family, type, proto, flags.asInt());
+        Object getAddrInfoPString(PString host, Object port, Object family, Object type, Object proto, Object flags,
+                           @Cached CastToIndexNode cast) {
+            return getAddrInfoString(host.getValue(), port, family, type, proto, flags, cast);
         }
 
         @Specialization
-        Object getAddrInfo(String host, Integer port, PInt family, PInt type, Integer proto, Integer flags) {
-            return getAddrInfo(host, port, family.asInt(), type.asInt(), proto, flags);
+        Object getAddrInfoNone(@SuppressWarnings("unused") PNone host, Object port, Object family, Object type, Object proto, Object flags,
+                               @Cached CastToIndexNode cast) {
+            return getAddrInfoString("localhost", port, family, type, proto, flags, cast);
         }
 
         @Specialization
-        Object getAddrInfo(String host, String port, int family, int type, int proto, PInt flags) {
-            return getAddrInfo(host, port, family, type, proto, flags.asInt());
+        Object getAddrInfoString(String host, Object port, Object family, Object type, Object proto, Object flags,
+                           @Cached CastToIndexNode cast) {
+            String stringPort = null;
+            if (port instanceof PString) {
+                stringPort = ((PString) port).getValue();
+            } else if (port instanceof String) {
+                stringPort = (String) port;
+            }
+
+            if (stringPort != null) {
+                stringPortProfile.enter();
+                return getAddrInfo(host, stringPort, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
+            }
+
+            if (port instanceof PNone) {
+                nonePortProfile.enter();
+                InetAddress[] adresses = resolveHost(host);
+                return mergeAdressesAndServices(adresses, null, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
+            }
+
+            intPortProfile.enter();
+            return getAddrInfo(host, cast.execute(port), cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
         }
 
-        @Specialization
         @TruffleBoundary
-        Object getAddrInfo(@SuppressWarnings("unused") PNone host, Integer port, PInt family, PInt type, Integer proto, PInt flags) {
-            return getAddrInfo(host, port, family.intValue(), type.intValue(), proto, flags.intValue());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object getAddrInfo(@SuppressWarnings("unused") PNone host, String port, int family, int type, int proto, int flags) {
-            return getAddrInfo("localhost", port, family, type, proto, flags);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object getAddrInfo(@SuppressWarnings("unused") PNone host, int port, int family, int type, int proto, int flags) {
-            return getAddrInfo("localhost", port, family, type, proto, flags);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object getAddrInfo(String host, @SuppressWarnings("unused") PNone port, PInt family, Integer type, Integer proto, Integer flags) {
-            return getAddrInfo(host, port, family.intValue(), type, proto, flags);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object getAddrInfo(String host, @SuppressWarnings("unused") PNone port, Integer family, Integer type, Integer proto, PInt flags) {
-            return getAddrInfo(host, port, family, type, proto, flags.intValue());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object getAddrInfo(String host, @SuppressWarnings("unused") PNone port, Integer family, PInt type, Integer proto, Integer flags) {
-            return getAddrInfo(host, port, family, type.intValue(), proto, flags);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object getAddrInfo(String host, @SuppressWarnings("unused") PNone port, int family, int type, int proto, int flags) {
-            List<Service> serviceList = new LinkedList<>();
-
-            InetAddress[] adresses = resolveHost(host);
-            return mergeAdressesAndServices(adresses, serviceList, family, type, proto, flags);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object getAddrInfo(String host, int port, int family, int type, int proto, int flags) {
+        private Object getAddrInfo(String host, int port, int family, int type, int proto, int flags) {
             InetAddress[] adresses = resolveHost(host);
             List<Service> serviceList = new ArrayList<>();
             serviceList.add(new Service(port, "tcp"));
@@ -523,18 +504,15 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             return mergeAdressesAndServices(adresses, serviceList, family, type, proto, flags);
         }
 
-        @Specialization
         @TruffleBoundary
-        Object getAddrInfo(String host, String port, int family, int type, int proto, int flags) {
+        private Object getAddrInfo(String host, String port, int family, int type, int proto, int flags) {
             if (!StandardCharsets.US_ASCII.newEncoder().canEncode(port)) {
                 throw raise(PythonBuiltinClassType.UnicodeEncodeError);
             }
-
             if (services == null) {
                 services = parseServices();
             }
             List<Service> serviceList = services.get(port);
-
             InetAddress[] adresses = resolveHost(host);
             return mergeAdressesAndServices(adresses, serviceList, family, type, proto, flags);
         }
@@ -545,16 +523,17 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 protocols = parseProtocols();
             }
             List<Object> addressTuples = new ArrayList<>();
-
             for (InetAddress addr : adresses) {
-                for (Service srv : serviceList) {
-                    int protocol = protocols.get(srv.protocol);
-                    if (proto != 0 && proto != protocol) {
-                        continue;
-                    }
-                    PTuple addrTuple = createAddressTuple(addr, srv.port, family, type, protocol, flags);
-                    if (addrTuple != null) {
-                        addressTuples.add(addrTuple);
+                if (serviceList != null) {
+                    for (Service srv : serviceList) {
+                        int protocol = protocols.get(srv.protocol);
+                        if (proto != 0 && proto != protocol) {
+                            continue;
+                        }
+                        PTuple addrTuple = createAddressTuple(addr, srv.port, family, type, protocol, flags);
+                        if (addrTuple != null) {
+                            addressTuples.add(addrTuple);
+                        }
                     }
                 }
             }
@@ -585,6 +564,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{addressFamily, addressType, proto, canonname, sockAddr});
         }
 
+        @TruffleBoundary
         InetAddress[] resolveHost(String host) {
             try {
                 return InetAddress.getAllByName(host);
