@@ -77,7 +77,6 @@ public class PosixResources {
     /** Context-local file-descriptor mappings and PID mappings */
     private final SortedMap<Integer, ChannelWrapper> files;
     private final Map<Integer, String> filePaths;
-    private final List<PSocket> sockets;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
@@ -272,8 +271,9 @@ public class PosixResources {
 
     @TruffleBoundary
     public PSocket getSocket(int fd) {
-        if (sockets.size() > fd) {
-            return sockets.get(fd);
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null && channelWrapper.channel instanceof PSocket) {
+            return (PSocket) channelWrapper.channel;
         }
         return null;
     }
@@ -287,22 +287,15 @@ public class PosixResources {
     }
 
     @TruffleBoundary
-    public void closeSocket(int fd) {
-        if (sockets.size() > fd) {
-            sockets.set(fd, null);
-        }
-    }
-
-    @TruffleBoundary
     public int openSocket(PSocket socket) {
-        int fd = nextFreeSocketFd();
-        sockets.set(fd, socket);
+        int fd = nextFreeFd();
+        addFD(fd, socket);
         return fd;
     }
 
     @TruffleBoundary
     public void reopenSocket(PSocket socket, int fd) {
-        sockets.set(fd, socket);
+        addFD(fd, socket);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -377,20 +370,6 @@ public class PosixResources {
                 }
             }
             return files.lastKey() + 1;
-        }
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private int nextFreeSocketFd() {
-        synchronized (sockets) {
-            for (int i = 0; i < sockets.size(); i++) {
-                PSocket socket = sockets.get(i);
-                if (socket == null) {
-                    return i;
-                }
-            }
-            sockets.add(null);
-            return sockets.size() - 1;
         }
     }
 

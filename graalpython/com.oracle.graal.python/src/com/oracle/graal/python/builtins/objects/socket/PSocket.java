@@ -40,14 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.Channel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
-public class PSocket extends PythonBuiltinObject {
+public class PSocket extends PythonBuiltinObject implements Channel {
     public static final int AF_UNSPEC = 0;
     public static final int AF_INET = 2;
     public static final int AF_INET6 = 23;
@@ -76,9 +78,7 @@ public class PSocket extends PythonBuiltinObject {
 
     public static final int IPPROTO_TCP = 6;
 
-
     private static final InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
-    private static Integer nextFd = 0;
 
     private final int family;
     private final int type;
@@ -173,5 +173,15 @@ public class PSocket extends PythonBuiltinObject {
 
     public void setBlocking(boolean blocking) {
         this.blocking = blocking;
+    }
+
+    public boolean isOpen() {
+        return getSocket() != null && getSocket().isOpen();
+    }
+
+    public void close() throws IOException {
+        if (getSocket() != null) {
+            getSocket().close();
+        }
     }
 }
