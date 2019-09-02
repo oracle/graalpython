@@ -188,13 +188,21 @@ public final class PythonNodeFactory {
 
     public ForSSTNode createForSSTNode(SSTNode[] targets, SSTNode iterator, SSTNode body, boolean containsContinue, int startOffset, int endOffset) {
         for (SSTNode target : targets) {
-            if (target instanceof VarLookupSSTNode) {
-                scopeEnvironment.createLocal(((VarLookupSSTNode) target).getName());
-            }
+            createLocalVariable(target);
         }
         return new ForSSTNode(targets, iterator, body, containsContinue, startOffset, endOffset);
     }
 
+    private void createLocalVariable(SSTNode var) {
+        if (var instanceof VarLookupSSTNode) {
+            scopeEnvironment.createLocal(((VarLookupSSTNode) var).getName());
+        } else if (var instanceof CollectionSSTNode) {
+            for (SSTNode item : ((CollectionSSTNode)var).getValues()) {
+                createLocalVariable(item);
+            }
+        }
+    }
+    
     public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
         scopeEnvironment.setToGeneratorScope();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);

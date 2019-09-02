@@ -1,0 +1,83 @@
+ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵  ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,87]`def formatyear():↵  ...`
+    ExpressionWithSideEffect SourceSection: [0,87]`def formatyear():↵  ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,87]`def formatyear():↵  ...`
+          Identifier: formatyear
+          FunctionDefinitionNode Name: formatyear SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,87]`def formatyear():↵  ...`
+              Name: formatyear
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 5 slots [i, row, <>temp2, <>temp3, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,87]`def formatyear():↵  ...`
+                ReturnTargetNode SourceSection: [0,87]`def formatyear():↵  ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      ElseNode SourceSection: [26,78]`for (i, row) in some...`
+                        ForNode SourceSection: None
+                          ForRepeatingNode SourceSection: None
+                            ForNextElementNodeGen SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
+                                WriteLocalVariableNodeGen SourceSection: None
+                                  Identifier: <>temp2
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [2,<>temp2,Illegal]
+                                WriteLocalVariableNodeGen SourceSection: None
+                                  Identifier: <>temp3
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [3,<>temp3,Illegal]
+                                WriteLocalVariableNodeGen SourceSection: None
+                                  Identifier: i
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [0,i,Illegal]
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [2,<>temp2,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                WriteLocalVariableNodeGen SourceSection: None
+                                  Identifier: row
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [1,row,Illegal]
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [3,<>temp3,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                            ExpressionStatementNode SourceSection: [65,69]`pass`
+                              EmptyNode SourceSection: [65,69]`pass`
+                          GetIteratorExpressionNodeGen SourceSection: [42,51]`something`
+                            GetIteratorNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [42,51]`something`
+                              Identifier: something
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        BlockNode SourceSection: None
+                      FrameReturnNode SourceSection: [78,87]`return 10`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [4,<return_val>,Illegal]
+                          IntegerLiteralNode SourceSection: [85,87]`10`
+                            Value: 10
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [4,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+              CalleeContext SourceSection: None
+  CalleeContext SourceSection: None
