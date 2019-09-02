@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -73,9 +74,11 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -169,7 +172,8 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         return null;
     }
 
-    private static String[] cleanLine(String line) {
+    private static String[] cleanLine(String input) {
+        String line = input;
         if (line.startsWith("#")) {
             return null;
         }
@@ -203,67 +207,34 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             return createSocketInternal(cls, PSocket.AF_INET, PSocket.SOCK_STREAM, 0);
         }
 
-        @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)"})
-        Object socket(LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, int fileno) {
-            return createSocketInternal(cls, -1, -1, -1, fileno);
+        @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "!isNoValue(fileno)"})
+        Object socket(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, Object fileno,
+                      @Cached CastToIndexNode cast) {
+            return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
         }
 
-        @Specialization(guards = {"isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, PInt family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
-            return createSocketInternal(cls, family.intValue(), PSocket.SOCK_STREAM, 0);
-        }
-
-        @Specialization(guards = {"isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
+        @Specialization(guards = {"!isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToIndexNode cast) {
             return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
         }
 
-        @Specialization(guards = {"isNoValue(proto)", "isNoValue(fileno)"})
+        @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToIndexNode cast) {
             return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
         }
 
-        @Specialization(guards = {"isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, int family, long type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
-            return createSocketInternal(cls, family, ((int) type), 0);
-        }
-
-        @Specialization(guards = {"isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, PInt family, long type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
-            return createSocketInternal(cls, family.asInt(), ((int) type), 0);
-        }
-
-        @Specialization(guards = {"isNoValue(fileno)"})
+        @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
                         @Cached CastToIndexNode cast) {
             return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
         }
 
-        @Specialization(guards = {"isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, PInt family, PInt type, Integer proto, @SuppressWarnings("unused") PNone fileno) {
-            return createSocketInternal(cls, family.asInt(), type.asInt(), proto);
-        }
-
-        @Specialization()
-        Object socket(LazyPythonClass cls, PInt family, PInt type, PInt proto, int fileno) {
-            return createSocketInternal(cls, family.intValue(), type.intValue(), proto.intValue(), fileno);
-        }
-
-        @Specialization()
-        Object socket(LazyPythonClass cls, PInt family, PInt type, int proto, int fileno) {
-            return createSocketInternal(cls, family.intValue(), type.intValue(), proto, fileno);
-        }
-
-        @Specialization()
-        Object socket(LazyPythonClass cls, int family, int type, int proto, int fileno) {
-            return createSocketInternal(cls, family, type, proto, fileno);
-        }
-
-        @Specialization()
-        Object socket(LazyPythonClass cls, long family, long type, int proto, int fileno) {
-            return createSocketInternal(cls, ((int) family), ((int) type), proto, fileno);
+        @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "!isNoValue(fileno)"})
+        Object socket(VirtualFrame frame, LazyPythonClass cls, Object family, Object type, Object proto, Object fileno,
+                        @Cached CastToIndexNode cast) {
+            return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
         }
 
         private Object createSocketInternal(LazyPythonClass cls, int family, int type, int proto) {
@@ -273,16 +244,15 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 newSocket.setFileno(fd);
                 return newSocket;
             } else {
-                throw raise(PythonErrorType.OSError, "creating sockets not allowed");
+                throw raise(PythonErrorType.RuntimeError, "creating sockets not allowed");
             }
         }
 
-        @TruffleBoundary
-        private Object createSocketInternal(LazyPythonClass cls, int family, int type, int proto, int fileno) {
+        private Object createSocketInternal(VirtualFrame frame, LazyPythonClass cls, int family, int type, int proto, int fileno) {
             if (getContext().getEnv().isNativeAccessAllowed()) {
                 PSocket oldSocket = getContext().getResources().getSocket(fileno);
                 if (oldSocket == null) {
-                    throw raise(PythonErrorType.OSError, "bad filedescriptor");
+                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
                 }
                 PSocket newSocket = factory().createSocket(cls, family == -1 ? oldSocket.getFamily() : family, type == -1 ? oldSocket.getType() : type, proto == -1 ? oldSocket.getProto() : proto, fileno);
                 if (oldSocket.getSocket() != null) {
@@ -293,7 +263,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 getContext().getResources().reopenSocket(newSocket, fileno);
                 return newSocket;
             } else {
-                throw raise(PythonErrorType.OSError, "creating sockets not allowed");
+                throw raise(PythonErrorType.RuntimeError, "creating sockets not allowed");
             }
         }
     }
@@ -629,14 +599,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class moduleCloseNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object close(@SuppressWarnings("unused") PNone fd) {
-            throw raise(PythonBuiltinClassType.TypeError);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object close(int fd) {
+        Object close(VirtualFrame frame, int fd) {
             if (fd < 0) {
                 throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
             }
@@ -644,33 +607,38 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             PSocket socket = getContext().getResources().getSocket(fd);
 
             if (socket == null) {
-                throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
             }
 
             if (socket.getSocket() != null) {
                 if (!socket.getSocket().isOpen()) {
-                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
                 }
 
                 try {
                     socket.getSocket().close();
                 } catch (IOException e) {
-                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
                 }
             }
             else if (socket.getServerSocket() != null) {
                 if (!socket.getServerSocket().isOpen()) {
-                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
                 }
 
                 try {
                     socket.getServerSocket().close();
                 } catch (IOException e) {
-                    throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
+                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
                 }
             }
-            getContext().getResources().closeSocket(socket.getFileno());
+            getContext().getResources().close(socket.getFileno());
             return PNone.NONE;
+        }
+
+        @Fallback
+        Object close(@SuppressWarnings("unused") Object fd) {
+            throw raise(PythonBuiltinClassType.TypeError);
         }
     }
 }
