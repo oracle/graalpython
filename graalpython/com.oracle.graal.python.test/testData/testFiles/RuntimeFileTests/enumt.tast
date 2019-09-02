@@ -4508,6 +4508,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ExceptNode SourceSection: None
                                               ExpressionStatementNode SourceSection: [17224,17228]`pass`
                                                 EmptyNode SourceSection: [17224,17228]`pass`
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: exc
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [22,exc,Illegal]
                                               TupleLiteralNode SourceSection: [17171,17199]`(AttributeError, Val...`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [17172,17186]`AttributeError`
@@ -4516,10 +4520,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [17188,17198]`ValueError`
                                                   Identifier: ValueError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: exc
-                                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                                  Frame: [22,exc,Illegal]
                                             BlockNode SourceSection: None
                                             SaveExceptionStateNodeGen SourceSection: None
                                         BlockNode SourceSection: None

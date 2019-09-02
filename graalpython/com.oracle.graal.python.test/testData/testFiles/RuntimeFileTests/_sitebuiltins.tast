@@ -649,7 +649,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       CreateArgumentsNodeGen SourceSection: None
                                                       CallDispatchNodeGen SourceSection: None
                                                     YesNodeGen SourceSection: None
-                                                    CachedNodeGen SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                     SaveExceptionStateNodeGen SourceSection: None
                                                   BreakNode SourceSection: [1492,1497]`break`
                                                 ExceptNode SourceSection: None

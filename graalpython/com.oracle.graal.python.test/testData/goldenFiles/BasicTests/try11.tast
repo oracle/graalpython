@@ -49,13 +49,13 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
-                            Identifier: Exception
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: err
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [0,err,Illegal]
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
+                            Identifier: Exception
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                         SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

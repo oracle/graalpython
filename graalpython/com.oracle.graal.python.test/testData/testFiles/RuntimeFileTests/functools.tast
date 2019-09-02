@@ -6471,7 +6471,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           CreateArgumentsNodeGen SourceSection: None
                                           CallDispatchNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                        CachedNodeGen SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                         SaveExceptionStateNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [20634,20671]`result = user_functi...`
                                         Identifier: result
@@ -6792,7 +6792,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           CreateArgumentsNodeGen SourceSection: None
                                           CallDispatchNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                        CachedNodeGen SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                         SaveExceptionStateNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [22691,22704]`return result`
                                         WriteLocalVariableNodeGen SourceSection: None
@@ -6891,7 +6891,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
                                   YesNodeGen SourceSection: None
-                                  CachedNodeGen SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                                   SaveExceptionStateNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [6,<return_val>,Illegal]
@@ -7013,7 +7013,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       CreateArgumentsNodeGen SourceSection: None
                                       CallDispatchNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
-                                    CachedNodeGen SourceSection: None
+                                    GetClassNodeGen SourceSection: None
                                     SaveExceptionStateNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [7,<return_val>,Illegal]

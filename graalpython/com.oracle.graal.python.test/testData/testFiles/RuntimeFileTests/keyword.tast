@@ -224,7 +224,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                      CachedNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [1366,1425]`nl = format[0][len(f...`
                       Identifier: nl
@@ -395,7 +395,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                      CachedNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [1764,1776]`lines.sort()`
                       PythonCallNodeGen SourceSection: [1764,1776]`lines.sort()`
@@ -550,7 +550,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                      CachedNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]

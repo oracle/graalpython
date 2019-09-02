@@ -63,7 +63,7 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
-                        CachedNodeGen SourceSection: None
+                        GetClassNodeGen SourceSection: None
                         SaveExceptionStateNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: a
@@ -91,7 +91,7 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                      CachedNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]

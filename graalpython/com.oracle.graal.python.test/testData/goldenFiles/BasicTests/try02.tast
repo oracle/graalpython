@@ -16,10 +16,10 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,43]`try:↵  pass↵exce
             ExceptNode SourceSection: None
               ExpressionStatementNode SourceSection: [39,43]`pass`
                 EmptyNode SourceSection: [39,43]`pass`
-              ReadNameNodeGen SourceSection: [19,29]`ValueError`
-                Identifier: ValueError
               WriteNameNodeGen SourceSection: None
                 Identifier: va
+              ReadNameNodeGen SourceSection: [19,29]`ValueError`
+                Identifier: ValueError
             BlockNode SourceSection: None
             SaveExceptionStateNodeGen SourceSection: None
   CalleeContext SourceSection: None

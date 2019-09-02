@@ -1143,7 +1143,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                      CachedNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                     IfNode SourceSection: [6809,6850]`if reset:↵        kn...`
                       YesNodeGen SourceSection: None
@@ -3794,7 +3794,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                          CachedNodeGen SourceSection: None
+                          GetClassNodeGen SourceSection: None
                           SaveExceptionStateNodeGen SourceSection: None
                         BlockNode SourceSection: [16967,17009]`sys.prefix = sys.exe...`
                           WriteLocalVariableNodeGen SourceSection: None
@@ -3953,13 +3953,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               RaiseNodeGen SourceSection: [17747,17752]`raise`
                                 EmptyNode SourceSection: None
                                 EmptyNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [17628,17639]`ImportError`
-                              Identifier: ImportError
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: exc
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,exc,Illegal]
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [17628,17639]`ImportError`
+                              Identifier: ImportError
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
                           SaveExceptionStateNodeGen SourceSection: None
                       ExceptNode SourceSection: None
@@ -4033,13 +4033,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [17882,17885]`sys`
                                     Identifier: sys
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [17764,17773]`Exception`
-                          Identifier: Exception
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: err
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,err,Illegal]
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [17764,17773]`Exception`
+                          Identifier: Exception
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4101,13 +4101,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               RaiseNodeGen SourceSection: [18324,18329]`raise`
                                 EmptyNode SourceSection: None
                                 EmptyNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [18205,18216]`ImportError`
-                              Identifier: ImportError
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: exc
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,exc,Illegal]
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [18205,18216]`ImportError`
+                              Identifier: ImportError
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
                           SaveExceptionStateNodeGen SourceSection: None
                       ExceptNode SourceSection: None
@@ -4181,13 +4181,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [18459,18462]`sys`
                                     Identifier: sys
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [18341,18350]`Exception`
-                          Identifier: Exception
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: err
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [2,err,Illegal]
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [18341,18350]`Exception`
+                          Identifier: Exception
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None

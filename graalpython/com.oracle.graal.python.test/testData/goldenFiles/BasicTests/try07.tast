@@ -16,10 +16,10 @@ ModuleRootNode Name: <module 'try07'> SourceSection: [0,91]`try:↵    pass↵ex
             ExceptNode SourceSection: None
               ExpressionStatementNode SourceSection: [41,45]`pass`
                 EmptyNode SourceSection: [41,45]`pass`
-              ReadNameNodeGen SourceSection: [21,28]`OSError`
-                Identifier: OSError
               WriteNameNodeGen SourceSection: None
                 Identifier: err
+              ReadNameNodeGen SourceSection: [21,28]`OSError`
+                Identifier: OSError
             ExceptNode SourceSection: None
               ExpressionStatementNode SourceSection: [69,73]`pass`
                 EmptyNode SourceSection: [69,73]`pass`

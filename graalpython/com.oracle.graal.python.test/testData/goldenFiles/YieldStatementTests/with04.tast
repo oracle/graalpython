@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                         CreateArgumentsNodeGen SourceSection: None
                         CallDispatchNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                      CachedNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -100,7 +100,7 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                       CreateArgumentsNodeGen SourceSection: None
                       CallDispatchNodeGen SourceSection: None
                     YesNodeGen SourceSection: None
-                    CachedNodeGen SourceSection: None
+                    GetClassNodeGen SourceSection: None
                     SaveExceptionStateNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None

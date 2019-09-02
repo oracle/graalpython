@@ -111,7 +111,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                       CreateArgumentsNodeGen SourceSection: None
                       CallDispatchNodeGen SourceSection: None
                     YesNodeGen SourceSection: None
-                    CachedNodeGen SourceSection: None
+                    GetClassNodeGen SourceSection: None
                     SaveExceptionStateNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None

@@ -1447,7 +1447,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                   CreateArgumentsNodeGen SourceSection: None
                   CallDispatchNodeGen SourceSection: None
                 YesNodeGen SourceSection: None
-                CachedNodeGen SourceSection: None
+                GetClassNodeGen SourceSection: None
                 SaveExceptionStateNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [7163,7176]`print("done")`
                 PythonCallNodeGen SourceSection: [7163,7176]`print("done")`

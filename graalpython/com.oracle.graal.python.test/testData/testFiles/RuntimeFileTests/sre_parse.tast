@@ -10277,13 +10277,13 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             Frame: [0,source,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                       ObjectLiteralNode SourceSection: [30588,30592]`None`
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [30506,30511]`error`
-                                                      Identifier: error
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: err
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [42,err,Illegal]
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [30506,30511]`error`
+                                                      Identifier: error
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                   SaveExceptionStateNodeGen SourceSection: None
                                               BlockNode SourceSection: None

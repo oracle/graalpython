@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
               CreateArgumentsNodeGen SourceSection: None
               CallDispatchNodeGen SourceSection: None
             YesNodeGen SourceSection: None
-            CachedNodeGen SourceSection: None
+            GetClassNodeGen SourceSection: None
             SaveExceptionStateNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: a
@@ -61,6 +61,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
             CreateArgumentsNodeGen SourceSection: None
             CallDispatchNodeGen SourceSection: None
           YesNodeGen SourceSection: None
-          CachedNodeGen SourceSection: None
+          GetClassNodeGen SourceSection: None
           SaveExceptionStateNodeGen SourceSection: None
   CalleeContext SourceSection: None
