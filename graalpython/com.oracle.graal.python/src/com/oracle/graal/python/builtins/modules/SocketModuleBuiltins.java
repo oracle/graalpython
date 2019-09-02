@@ -80,19 +80,19 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
-                      @Cached CastToIndexNode cast) {
+                        @Cached CastToIndexNode cast) {
             return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
         }
 
         @Specialization(guards = {"isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
-                      @Cached CastToIndexNode cast) {
+                        @Cached CastToIndexNode cast) {
             return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
         }
 
         @Specialization(guards = {"isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
-                      @Cached CastToIndexNode cast) {
+                        @Cached CastToIndexNode cast) {
             return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
         }
 
