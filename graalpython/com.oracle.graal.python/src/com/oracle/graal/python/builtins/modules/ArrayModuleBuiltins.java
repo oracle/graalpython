@@ -117,12 +117,41 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return typeCode.charAt(0) == 'b';
         }
 
+        protected boolean isCharArray(String typeCode) {
+            return typeCode.charAt(0) == 'B';
+        }
+
         protected boolean isDoubleArray(String typeCode) {
             return typeCode.charAt(0) == 'd';
         }
 
         @Specialization(guards = "isByteArray(typeCode)")
         PArray arrayByteInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("createCast()") CastToByteNode castToByteNode,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+            Object iter = getIterator.executeWith(frame, initializer);
+            int i = 0;
+            byte[] byteArray = new byte[lenNode.execute(initializer)];
+
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(frame, iter);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+                byteArray[i++] = castToByteNode.execute(nextValue);
+            }
+
+            return factory().createArray(cls, byteArray);
+        }
+
+        @Specialization(guards = "isCharArray(typeCode)")
+        PArray arrayCharInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("createCast()") CastToByteNode castToByteNode,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
@@ -238,9 +267,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PArray arrayWithObjectInitializer(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
-            if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode))) {
+            if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode) || isCharArray(typeCode))) {
                 // TODO implement support for typecodes: b, B, u, h, H, i, I, l, L, q, Q, f or d
-                throw raise(ValueError, "bad typecode (must be i, d, b, or l)");
+                throw raise(ValueError, "bad typecode (must be i, d, b, B, or l)");
             }
             throw new RuntimeException("Unsupported initializer " + initializer);
         }
@@ -259,8 +288,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             switch (type) {
                 case 'c':
                 case 'b':
+                    return factory().createArray(cls, new byte[0]);
                 case 'B':
-                    return factory().createArray(cls, new char[0]);
+                    return factory().createArray(cls, new byte[0]);
                 case 'i':
                     return factory().createArray(cls, new int[0]);
                 case 'd':
