@@ -1103,10 +1103,15 @@ factor returns [SSTNode result]
 	factor 
             { 
                 SSTNode fResult = $factor.result;
-                if (isNeg && fResult instanceof NumberLiteralSSTNode  && !((NumberLiteralSSTNode)fResult).isNegative()) {
-                    ((NumberLiteralSSTNode)fResult).setIsNegative(true);
-                    fResult.setStartOffset($m.getStartIndex());
-                    $result = fResult;
+                if (isNeg && fResult instanceof NumberLiteralSSTNode) {
+                    if (((NumberLiteralSSTNode)fResult).isNegative()) {
+                        // solving cases like --2
+                        $result =  new UnarySSTNode(UnaryArithmetic.Neg, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); 
+                    } else {
+                        ((NumberLiteralSSTNode)fResult).setIsNegative(true);
+                        fResult.setStartOffset($m.getStartIndex());
+                        $result =  fResult;
+                    }
                 } else {
                     $result = new UnarySSTNode(arithmetic, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); 
                 }
