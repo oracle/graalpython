@@ -49,8 +49,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsFactory.ArrayNoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -68,6 +71,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -298,4 +302,40 @@ public class ArrayBuiltins extends PythonBuiltins {
             return self.len();
         }
     }
+
+    /**
+     * Does not allow any generalization but compatible types.
+     */
+    @GenerateUncached
+    public abstract static class ArrayNoGeneralizationNode extends SequenceStorageNodes.NoGeneralizationNode {
+
+        public static final GenNodeSupplier SUPPLIER = new GenNodeSupplier() {
+
+            public GeneralizationNode create() {
+                return ArrayNoGeneralizationNodeGen.create();
+            }
+
+            public GeneralizationNode getUncached() {
+                return ArrayNoGeneralizationNodeGen.getUncached();
+            }
+        };
+
+        @Override
+        protected String getErrorMessage() {
+            return "signed short integer is greater than maximum";
+        }
+    }
+
+    // bytearray.append(x)
+    @Builtin(name = "append", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ArrayAppendNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PArray append(PArray array, Object arg,
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
+            appendNode.execute(array.getSequenceStorage(), arg, ArrayNoGeneralizationNode.SUPPLIER);
+            return array;
+        }
+    }
+
 }
