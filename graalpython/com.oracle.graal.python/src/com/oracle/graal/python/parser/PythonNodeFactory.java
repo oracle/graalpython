@@ -197,12 +197,12 @@ public final class PythonNodeFactory {
         if (var instanceof VarLookupSSTNode) {
             scopeEnvironment.createLocal(((VarLookupSSTNode) var).getName());
         } else if (var instanceof CollectionSSTNode) {
-            for (SSTNode item : ((CollectionSSTNode)var).getValues()) {
+            for (SSTNode item : ((CollectionSSTNode) var).getValues()) {
                 createLocalVariable(item);
             }
         }
     }
-    
+
     public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
         scopeEnvironment.setToGeneratorScope();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);

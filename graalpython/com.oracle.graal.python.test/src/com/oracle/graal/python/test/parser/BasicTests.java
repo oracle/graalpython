@@ -483,13 +483,13 @@ public class BasicTests extends ParserTestBase {
                                         "            break");
     }
 
-        @Test
+    @Test
     public void for15() throws Exception {
         checkScopeAndTree(
                         "def formatyear():\n" +
-                        "        for (i, row) in something:\n" +
-                        "            pass\n" +
-                        "        return 10");
+                                        "        for (i, row) in something:\n" +
+                                        "            pass\n" +
+                                        "        return 10");
     }
 
     @Test
