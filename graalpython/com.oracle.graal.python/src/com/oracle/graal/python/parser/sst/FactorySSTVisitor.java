@@ -890,7 +890,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(NumberLiteralSSTNode node) {
-        final long max = node.isNegative ? Long.MIN_VALUE : -Long.MAX_VALUE;
+        final long max = node.negative ? Long.MIN_VALUE : -Long.MAX_VALUE;
         final long moltmax = max / node.base;
         int i = node.start;
         long result = 0;
@@ -918,7 +918,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                     bigResult = bigResult.multiply(bigBase).subtract(BigInteger.valueOf(digitValue(node.value.charAt(i))));
                     i++;
                 }
-                if (!node.isNegative) {
+                if (!node.negative) {
                     bigResult = bigResult.negate();
                 }
                 PIntLiteralNode intLiteral = new PIntLiteralNode(bigResult);
@@ -929,7 +929,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             i++;
         }
 
-        if (!node.isNegative) {
+        if (!node.negative) {
             result = -1 * result;
         }
 

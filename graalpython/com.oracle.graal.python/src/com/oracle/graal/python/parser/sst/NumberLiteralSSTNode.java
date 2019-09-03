@@ -45,7 +45,7 @@ public class NumberLiteralSSTNode extends SSTNode {
     protected final String value;
     protected final int start;
     protected final int base;
-    protected boolean isNegative;
+    protected boolean negative;
 
     public NumberLiteralSSTNode(String value, int start, int base, int startIndex, int endIndex) {
         super(startIndex, endIndex);
@@ -54,8 +54,12 @@ public class NumberLiteralSSTNode extends SSTNode {
         this.base = base;
     }
 
+    public boolean isNegative() {
+        return negative;
+    }
+
     public void setIsNegative(boolean isNegative) {
-        this.isNegative = isNegative;
+        this.negative = isNegative;
     }
 
     @Override

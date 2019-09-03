@@ -1103,7 +1103,7 @@ factor returns [SSTNode result]
 	factor 
             { 
                 SSTNode fResult = $factor.result;
-                if (isNeg && fResult instanceof NumberLiteralSSTNode) {
+                if (isNeg && fResult instanceof NumberLiteralSSTNode  && !((NumberLiteralSSTNode)fResult).isNegative()) {
                     ((NumberLiteralSSTNode)fResult).setIsNegative(true);
                     fResult.setStartOffset($m.getStartIndex());
                     $result = fResult;

@@ -1,0 +1,14 @@
+ModuleRootNode Name: <module 'complex01'> SourceSection: [0,4]`0+1j`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,4]`0+1j`
+    BinaryArithmeticExpression SourceSection: [0,4]`0+1j`
+      LookupAndCallBinaryNodeGen SourceSection: None
+        Op: __add__
+      IntegerLiteralNode SourceSection: [0,1]`0`
+        Value: 0
+      ComplexLiteralNode SourceSection: [2,4]`1j`
+  CalleeContext SourceSection: None
