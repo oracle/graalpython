@@ -43,8 +43,24 @@ import os
 import shutil
 import site
 import subprocess
-import sys
 import tempfile
+import importlib
+import sys
+
+
+def pip_package(name=None):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            _name = name if name else func.__name__
+            try:
+                importlib.import_module(_name)
+                del sys.modules[_name]
+            except ImportError:
+                print("Installing required dependency: {}".format(_name))
+                func(*args, **kwargs)
+        return wrapper
+    return decorator
+
 
 def system(cmd, msg=""):
     print("+", cmd)
@@ -54,6 +70,7 @@ def system(cmd, msg=""):
 
 
 def known_packages():
+    @pip_package()
     def pytest(**kwargs):
         wcwidth(**kwargs)
         importlib_metadata(**kwargs)
@@ -125,9 +142,11 @@ index 66d8530..8bb2ab6 100644
         """
         install_from_pypi("pytest==5.0.1", patch=patch, **kwargs)
 
+    @pip_package()
     def py(**kwargs):
         install_from_pypi("py==1.8.0", **kwargs)
 
+    @pip_package()
     def attrs(**kwargs):
         patch = """
 --- a/setup.py
@@ -143,17 +162,21 @@ index 66d8530..8bb2ab6 100644
 """
         install_from_pypi("attrs==19.1.0", patch=patch, **kwargs)
 
+    @pip_package()
     def pyparsing(**kwargs):
         install_from_pypi("pyparsing==2.4.2", **kwargs)
 
+    @pip_package()
     def packaging(**kwargs):
         six(**kwargs)
         pyparsing(**kwargs)
         install_from_pypi("packaging==19.0", **kwargs)
 
+    @pip_package()
     def more_itertools(**kwargs):
         install_from_pypi("more-itertools==7.0.0", **kwargs)
 
+    @pip_package()
     def atomicwrites(**kwargs):
         patch = """
 --- a/setup.py
@@ -171,65 +194,80 @@ index 66d8530..8bb2ab6 100644
 """
         install_from_pypi("atomicwrites==1.3.0", patch=patch, **kwargs)
 
+    @pip_package()
     def pluggy(**kwargs):
         zipp(**kwargs)
         install_from_pypi("pluggy==0.12.0", **kwargs)
 
+    @pip_package()
     def zipp(**kwargs):
         setuptools_scm(**kwargs)
         install_from_pypi("zipp==0.5.0", **kwargs)
 
+    @pip_package()
     def importlib_metadata(**kwargs):
         zipp(**kwargs)
         install_from_pypi("importlib-metadata==0.19", **kwargs)
 
+    @pip_package()
     def wcwidth(**kwargs):
+        six(**kwargs)
         install_from_pypi("wcwidth==0.1.7", **kwargs)
 
+    @pip_package()
     def PyYAML(**kwargs):
         install_from_pypi("PyYAML==3.13", **kwargs)
 
+    @pip_package()
     def six(**kwargs):
         install_from_pypi("six==1.12.0", **kwargs)
 
+    @pip_package()
     def Cython(**kwargs):
         install_from_pypi("Cython==0.29.2", **kwargs)
 
+    @pip_package()
     def setuptools(**kwargs):
-        try:
-            import six as _six
-        except ImportError:
-            print("Installing required dependency: six")
-            six(**kwargs)
+        six(**kwargs)
         install_from_pypi("setuptools==41.0.1", **kwargs)
 
+    @pip_package()
     def pkgconfig(**kwargs):
         install_from_pypi("pkgconfig==1.5.1", **kwargs)
 
+    @pip_package()
     def wheel(**kwargs):
         install_from_pypi("wheel==0.33.4", **kwargs)
 
+    @pip_package()
     def protobuf(**kwargs):
         install_from_pypi("protobuf==3.8.0", **kwargs)
 
+    @pip_package()
     def Keras_preprocessing(**kwargs):
         install_from_pypi("Keras-Preprocessing==1.0.5", **kwargs)
 
+    @pip_package()
     def gast(**kwargs):
         install_from_pypi("gast==0.2.2", **kwargs)
 
+    @pip_package()
     def astor(**kwargs):
         install_from_pypi("astor==0.8.0", **kwargs)
 
+    @pip_package()
     def absl_py(**kwargs):
         install_from_pypi("absl-py==0.7.1", **kwargs)
 
+    @pip_package()
     def mock(**kwargs):
         install_from_pypi("mock==3.0.5", **kwargs)
 
+    @pip_package()
     def Markdown(**kwargs):
         install_from_pypi("Markdown==3.1.1", **kwargs)
 
+    @pip_package()
     def Werkzeug(**kwargs):
         install_from_pypi("Werkzeug==0.15.4", **kwargs)
 
@@ -256,16 +294,13 @@ index 66d8530..8bb2ab6 100644
     #         h5py(**kwargs)
     #     install_from_pypi("Keras-Applications==1.0.6", **kwargs)
 
+    @pip_package()
     def setuptools_scm(**kwargs):
         install_from_pypi("setuptools_scm==1.15.0", **kwargs)
 
+    @pip_package()
     def numpy(**kwargs):
-        try:
-            import setuptools as st
-        except ImportError:
-            print("Installing required dependency: setuptools")
-            setuptools(**kwargs)
-
+        setuptools(**kwargs)
         patch = r'''
 diff --git a/numpy/__init__.py b/numpy/__init__.py
 index ba88c73..e4db404 100644
@@ -1092,44 +1127,21 @@ index 8b2ded1..8a9295a 100755
 '''
         install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"})
 
-
+    @pip_package()
     def dateutil(**kwargs):
-        try:
-            import setuptools_scm as st_scm
-        except ImportError:
-            print("Installing required dependency: setuptools_scm")
-            setuptools_scm(**kwargs)
+        setuptools_scm(**kwargs)
         install_from_pypi("python-dateutil==2.7.5", **kwargs)
 
-
+    @pip_package()
     def pytz(**kwargs):
         install_from_pypi("pytz==2018.7", **kwargs)
 
-
+    @pip_package()
     def pandas(**kwargs):
-        try:
-            import pytz as _dummy_pytz
-        except ImportError:
-            print("Installing required dependency: pytz")
-            pytz(**kwargs)
-
-        try:
-            import six as _dummy_six
-        except ImportError:
-            print("Installing required dependency: six")
-            six(**kwargs)
-
-        try:
-            import dateutil as __dummy_dateutil
-        except ImportError:
-            print("Installing required dependency: dateutil")
-            dateutil(**kwargs)
-
-        try:
-            import numpy as np
-        except ImportError:
-            print("Installing required dependency: numpy")
-            numpy(**kwargs)
+        pytz(**kwargs)
+        six(**kwargs)
+        dateutil(**kwargs)
+        numpy(**kwargs)
 
         # download pandas-0.25.0
         patch = r'''diff --git a/pandas/io/msgpack/_packer.cpp b/pandas/io/msgpack/_packer.cpp
@@ -1384,7 +1396,6 @@ def main(argv):
     elif args.command == "pypi":
         for pkg in args.package.split(","):
             install_from_pypi(pkg, ignore_errors=False)
-
 
 
 if __name__ == "__main__":
