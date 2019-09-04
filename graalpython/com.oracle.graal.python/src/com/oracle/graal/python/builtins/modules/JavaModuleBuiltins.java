@@ -47,6 +47,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -108,6 +109,11 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object type(PString name) {
             return get(name.getValue());
+        }
+
+        @Fallback
+        Object doError(Object object) {
+            throw raise(PythonBuiltinClassType.TypeError, "unsupported operand '%p'", object);
         }
     }
 
