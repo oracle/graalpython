@@ -192,7 +192,6 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         ExpressionNode returnTarget;
 
         if (body instanceof BlockNode) {
-            System.out.println(" NOt implemented block node");
             returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
         } else {
             returnTarget = new GeneratorReturnTargetNode(BlockNode.create(), body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()), numOfActiveFlags++);
