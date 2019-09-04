@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -152,26 +153,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isCharArray(typeCode)")
         PArray arrayCharInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @Cached("createCast()") CastToByteNode castToByteNode,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
-                        @Cached("create()") SequenceNodes.LenNode lenNode) {
-            Object iter = getIterator.executeWith(frame, initializer);
-            int i = 0;
-            byte[] byteArray = new byte[lenNode.execute(initializer)];
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
 
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = next.execute(frame, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
-                }
-                byteArray[i++] = castToByteNode.execute(nextValue);
-            }
-
+            byte[] byteArray = toByteArrayNode.execute(getSequenceStorageNode.execute(initializer));
             return factory().createArray(cls, byteArray);
         }
 

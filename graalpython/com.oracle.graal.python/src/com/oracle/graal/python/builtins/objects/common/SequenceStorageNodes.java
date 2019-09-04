@@ -161,6 +161,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -2009,15 +2010,28 @@ public abstract class SequenceStorageNodes {
             return barr;
         }
 
-        @Specialization
-        byte[] doGeneric(SequenceStorage s,
-                        @Cached PRaiseNode raiseNode) {
-            if (s instanceof ByteSequenceStorage) {
-                return doByteSequenceStorage((ByteSequenceStorage) s);
-            } else if (s instanceof NativeSequenceStorage && isByteStorage((NativeSequenceStorage) s)) {
-                return doNativeByte((NativeSequenceStorage) s);
+        @Specialization(guards = { "len(lenNode, s) == cachedLen", "cachedLen <= 32"})
+        @ExplodeLoop
+        byte[] doGenericLenCached(SequenceStorage s,
+                                  @Cached CastToByteNode castToByteNode,
+                                  @Cached @SuppressWarnings("unused") LenNode lenNode,
+                                  @Cached("len(lenNode, s)") int cachedLen) {
+            byte[] barr = new byte[cachedLen];
+            for (int i = 0; i < cachedLen; i++) {
+                barr[i] = castToByteNode.execute(getGetItemNode().execute(s, i));
             }
-            throw raiseNode.raise(TypeError, "expected a bytes-like object");
+            return barr;
+        }
+
+        @Specialization(replaces = "doGenericLenCached")
+        byte[] doGeneric(SequenceStorage s,
+                        @Cached CastToByteNode castToByteNode,
+                        @Cached LenNode lenNode) {
+            byte[] barr = new byte[lenNode.execute(s)];
+            for (int i = 0; i < barr.length; i++) {
+                barr[i] = castToByteNode.execute(getGetItemNode().execute(s, i));
+            }
+            return barr;
         }
 
         private static byte[] exactCopy(byte[] barr, int len) {
@@ -2030,6 +2044,10 @@ public abstract class SequenceStorageNodes {
                 getItemNode = insert(GetItemScalarNode.create());
             }
             return getItemNode;
+        }
+
+        protected static int len(LenNode lenNode, SequenceStorage s) {
+            return lenNode.execute(s);
         }
 
         public static ToByteArrayNode create() {
