@@ -318,7 +318,7 @@ def _graalpytest_root():
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None):
     args = args or []
     args = ["--experimental-options=true", 
-            "--python.CatchAllExceptions=true", 
+            "--python.CatchAllExceptions=true",
             mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"),
             ] + args
     exclude = exclude or []

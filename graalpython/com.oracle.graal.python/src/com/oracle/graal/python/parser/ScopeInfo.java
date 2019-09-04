@@ -54,7 +54,7 @@ public final class ScopeInfo {
     }
 
     private final String scopeId;
-    private final FrameDescriptor frameDescriptor;
+    private FrameDescriptor frameDescriptor;
     private final ArrayList<String> identifierToIndex;
     private ScopeKind scopeKind;
     private final ScopeInfo parent;
@@ -131,6 +131,10 @@ public final class ScopeInfo {
         return frameDescriptor;
     }
 
+    public void setFrameDescriptor(FrameDescriptor frameDescriptor) {
+        this.frameDescriptor = frameDescriptor;
+    }
+    
     public ScopeInfo getParent() {
         return parent;
     }

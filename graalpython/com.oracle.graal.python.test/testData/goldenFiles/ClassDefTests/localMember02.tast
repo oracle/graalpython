@@ -127,7 +127,7 @@ ModuleRootNode Name: <module 'localMember02'> SourceSection: [0,156]`def fn():â†
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: None
-                                                              Frame: [2,a_local_var_out,Illegal]
+                                                              Frame: [1,a_local_var_out,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                     Return Expresssion: ObjectLiteralNode SourceSection: None

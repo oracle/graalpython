@@ -179,13 +179,19 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             localySeenVars.clear();
         }
         if (definingScopeKind == ScopeInfo.ScopeKind.Class) {
+            boolean copy = false;
             for (Object identifier : identifiers) {
                 String name = (String) identifier;
                 if (name.startsWith("<>class")) {
                     definingScope.getFrameDescriptor().removeFrameSlot(identifier);
                     name = name.substring(7);
                     definingScope.createSlotIfNotPresent(name);
+                    copy = true;
                 }
+            }
+            if (copy) {
+                // we copy it because the idexes are now wrong due the issue GR-17984
+                definingScope.setFrameDescriptor(definingScope.getFrameDescriptor().copy());
             }
         }
         currentScope = currentScope.getParent();

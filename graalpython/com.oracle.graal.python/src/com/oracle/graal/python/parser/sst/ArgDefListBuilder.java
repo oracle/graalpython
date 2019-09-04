@@ -188,7 +188,7 @@ public final class ArgDefListBuilder {
             }
         }
 
-        String[] kwId = kwarIndex == -1 ? new String[0] : new String[kwargsLen - (kwarIndex == -1 ? 0 : 1)];
+        String[] kwId = kwarIndex == -1 ? new String[0] : new String[kwargsLen - 1];
         delta = argsLen - delta;
         int starMarkerDelta = starMarker ? 0 : 1;
         for (int i = 0; i < kwargsLen; i++) {

@@ -127,7 +127,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: None
-                                                              Frame: [2,a_local_var,Illegal]
+                                                              Frame: [0,a_local_var,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                       SetItemNodeGen SourceSection: [131,190]`def method01():â†µ    ...`

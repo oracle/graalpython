@@ -76,7 +76,7 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
                 throw handleRecognitionException;
             }
         } else if (recognizer instanceof Python3NewParser) {
-            PIncompleteSourceException handleRecognitionException = handleRecognitionException(((Python3Parser) recognizer).getExpectedTokens(), entireMessage, null, line);
+            PIncompleteSourceException handleRecognitionException = handleRecognitionException(((Python3NewParser) recognizer).getExpectedTokens(), entireMessage, null, line);
             if (handleRecognitionException != null) {
                 throw handleRecognitionException;
             }

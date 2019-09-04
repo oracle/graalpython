@@ -808,7 +808,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                   CelVars: __class__
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 26 slots [__init__, __setitem__, __delitem__, __iter__, __reversed__, clear, popitem, move_to_end, __sizeof__, update, __update, keys, items, values, __ne__, __marker, pop, setdefault, __repr__, __reduce__, copy, fromkeys, __eq__, __class__, <>temp47, __doc__]
+                  FrameDescriptor: 26 slots [__init__, __setitem__, __delitem__, __iter__, __reversed__, clear, popitem, move_to_end, __sizeof__, update, __update, keys, items, values, __ne__, __marker, pop, setdefault, __repr__, __reduce__, copy, fromkeys, __eq__, __class__, <>temp24, __doc__]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: __class__, 
@@ -2447,9 +2447,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               CalleeContext SourceSection: None
                         BlockNode SourceSection: [8311,8369]`update = __update = ...`
                           WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <>temp47
+                            Identifier: <>temp24
                             WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [47,<>temp47,Illegal]
+                              Frame: [24,<>temp24,Illegal]
                             GetAttributeNodeGen SourceSection: [8331,8369]`_collections_abc.Mut...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: update
@@ -2475,7 +2475,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             ReadLocalVariableNode SourceSection: None
-                              Frame: [47,<>temp47,Illegal]
+                              Frame: [24,<>temp24,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: None
                             ArgumentExpressionNode SourceSection: None
@@ -2483,7 +2483,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             ReadLocalVariableNode SourceSection: None
-                              Frame: [47,<>temp47,Illegal]
+                              Frame: [24,<>temp24,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [8375,8507]`def keys(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None

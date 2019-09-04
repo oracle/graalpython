@@ -111,7 +111,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: None
-                                                Frame: [8,name,Illegal]
+                                                Frame: [4,name,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
                                         SetItemNodeGen SourceSection: [104,135]`n_sequence_fields = ...`
@@ -134,7 +134,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: None
-                                                  Frame: [6,fields,Illegal]
+                                                  Frame: [2,fields,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                             ReadClassAttributeNodeGen SourceSection: None
@@ -162,7 +162,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: None
-                                                Frame: [6,fields,Illegal]
+                                                Frame: [2,fields,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
                                         SetItemNodeGen SourceSection: [168,264]`def __repr__(self):↵...`

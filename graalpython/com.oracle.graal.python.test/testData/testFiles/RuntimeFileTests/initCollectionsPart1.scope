@@ -165,7 +165,7 @@ Scope: []
             FreeVars: Empty
     Scope: OrderedDict
         Kind: Class
-        FrameDescriptor: [move_to_end, fromkeys, keys, setdefault, values, update, __delitem__, pop, __update, __marker, popitem, copy, __reduce__, <>temp47, __iter__, clear, __reversed__, __eq__, __class__, __setitem__, __sizeof__, __repr__, __doc__, __init__, items, __ne__]
+        FrameDescriptor: [move_to_end, fromkeys, keys, setdefault, values, update, __delitem__, pop, __update, __marker, popitem, copy, __reduce__, <>temp24, __iter__, clear, __reversed__, __eq__, __class__, __setitem__, __sizeof__, __repr__, __doc__, __init__, items, __ne__]
         CellVars: [__class__]
         FreeVars: Empty
         Scope: __eq__

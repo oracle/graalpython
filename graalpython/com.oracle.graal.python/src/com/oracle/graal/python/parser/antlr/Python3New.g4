@@ -303,7 +303,7 @@ locals
 [ com.oracle.graal.python.parser.ScopeInfo scope, ArrayList<StatementNode> list ]
 :
 	{
-	    if ($interactive && $curInlineLocals != null) {
+	    if (!$interactive && $curInlineLocals != null) {
                 factory.createScope(_localctx, ScopeInfo.ScopeKind.Function, $curInlineLocals);
             } else {
                 factory.createScope(_localctx, ScopeInfo.ScopeKind.Module);
@@ -333,8 +333,10 @@ locals
 		NEWLINE
 		| stmt
 	)* EOF
-	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), 
-                $stmt.stop != null ?  getStopIndex($stmt.stop) : getLastIndex($ctx)); }
+	{ 
+            Token stopToken = $stmt.stop;
+            $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), 
+                stopToken != null ?  getStopIndex(stopToken) : getLastIndex($ctx)); }
 	{ 
             factory.leaveScope(); 
         }
@@ -1102,11 +1104,12 @@ factor returns [SSTNode result]
 	( '+' { arithmetic = UnaryArithmetic.Pos; } | m='-' { arithmetic = UnaryArithmetic.Neg; isNeg = true; } | '~' { arithmetic = UnaryArithmetic.Invert; } )
 	factor 
             { 
+                assert _localctx.factor != null;
                 SSTNode fResult = $factor.result;
                 if (isNeg && fResult instanceof NumberLiteralSSTNode) {
                     if (((NumberLiteralSSTNode)fResult).isNegative()) {
                         // solving cases like --2
-                        $result =  new UnarySSTNode(UnaryArithmetic.Neg, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); 
+                        $result =  new UnarySSTNode(UnaryArithmetic.Neg, fResult, getStartIndex($ctx), getStopIndex($factor.stop)); 
                     } else {
                         ((NumberLiteralSSTNode)fResult).setIsNegative(true);
                         fResult.setStartOffset($m.getStartIndex());
@@ -1135,7 +1138,11 @@ atom_expr returns [SSTNode result]
 	(
 		'(' arglist CloseB=')' { $result = new CallSSTNode($result, $arglist.result, getStartIndex($ctx), $CloseB.getStopIndex() + 1);}
 		| '[' subscriptlist c=']' { $result = new SubscriptSSTNode($result, $subscriptlist.result, getStartIndex($ctx), $c.getStopIndex() + 1);}
-		| '.' NAME { $result = new GetAttributeSSTNode($result, $NAME.text, getStartIndex($ctx), $NAME.getStopIndex() + 1);}
+		| '.' NAME 
+                {   
+                    assert $NAME != null;
+                    $result = new GetAttributeSSTNode($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
+                }
 	)*
 ;
 
@@ -1192,13 +1199,41 @@ atom returns [SSTNode result]
                 $result.setEndOffset($endIndex.getStopIndex() + 1);
             }
         }
-	| NAME { $result = factory.createVariableLookup($NAME.text,  $NAME.getStartIndex(), $NAME.getStopIndex() + 1); }
-	| DECIMAL_INTEGER { $result = new NumberLiteralSSTNode($DECIMAL_INTEGER.text, 0, 10, $DECIMAL_INTEGER.getStartIndex(), $DECIMAL_INTEGER.getStopIndex() + 1); }
-	| OCT_INTEGER { $result = new NumberLiteralSSTNode($OCT_INTEGER.text, 2, 8, $OCT_INTEGER.getStartIndex(), $OCT_INTEGER.getStopIndex() + 1); }
-	| HEX_INTEGER { $result = new NumberLiteralSSTNode($HEX_INTEGER.text, 2, 16, $HEX_INTEGER.getStartIndex(), $HEX_INTEGER.getStopIndex() + 1); }
-	| BIN_INTEGER { $result = new NumberLiteralSSTNode($BIN_INTEGER.text, 2, 2, $BIN_INTEGER.getStartIndex(), $BIN_INTEGER.getStopIndex() + 1); }
-	| FLOAT_NUMBER { $result = new FloatLiteralSSTNode($FLOAT_NUMBER.text, false, $FLOAT_NUMBER.getStartIndex(), $FLOAT_NUMBER.getStopIndex() + 1); }
-	| IMAG_NUMBER { $result = new FloatLiteralSSTNode($IMAG_NUMBER.text, true, $IMAG_NUMBER.getStartIndex(), $IMAG_NUMBER.getStopIndex() + 1); }
+	| NAME 
+            {   
+                String text = $NAME.text;
+                $result = text != null ? factory.createVariableLookup(text,  $NAME.getStartIndex(), $NAME.getStopIndex() + 1) : null; 
+            }
+	| DECIMAL_INTEGER 
+            { 
+                String text = $DECIMAL_INTEGER.text;
+                $result = text != null ? new NumberLiteralSSTNode(text, 0, 10, $DECIMAL_INTEGER.getStartIndex(), $DECIMAL_INTEGER.getStopIndex() + 1) : null; 
+            }
+	| OCT_INTEGER 
+            { 
+                String text = $OCT_INTEGER.text;
+                $result = text != null ? new NumberLiteralSSTNode(text, 2, 8, $OCT_INTEGER.getStartIndex(), $OCT_INTEGER.getStopIndex() + 1) : null; 
+            }
+	| HEX_INTEGER 
+            { 
+                String text = $HEX_INTEGER.text;
+                $result = text != null ? new NumberLiteralSSTNode(text, 2, 16, $HEX_INTEGER.getStartIndex(), $HEX_INTEGER.getStopIndex() + 1) : null; 
+            }
+	| BIN_INTEGER 
+            { 
+                String text = $BIN_INTEGER.text;
+                $result = text != null ? new NumberLiteralSSTNode(text, 2, 2, $BIN_INTEGER.getStartIndex(), $BIN_INTEGER.getStopIndex() + 1) : null; 
+            }
+	| FLOAT_NUMBER 
+            {   
+                String text = $FLOAT_NUMBER.text;
+                $result = text != null ? new FloatLiteralSSTNode(text, false, $FLOAT_NUMBER.getStartIndex(), $FLOAT_NUMBER.getStopIndex() + 1) : null; 
+            }
+	| IMAG_NUMBER 
+            { 
+                String text = $IMAG_NUMBER.text;
+                $result = text != null ? new FloatLiteralSSTNode(text, true, $IMAG_NUMBER.getStartIndex(), $IMAG_NUMBER.getStopIndex() + 1) : null; 
+            }
 	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = new StringLiteralSSTNode(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
 	| t='...' { int start = $t.getStartIndex(); $result = new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS,  start, start + 3);}
 	| t='None' { int start = $t.getStartIndex(); $result = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  start, start + 4);}
