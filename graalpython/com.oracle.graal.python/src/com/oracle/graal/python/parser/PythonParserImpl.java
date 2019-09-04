@@ -53,7 +53,7 @@ public final class PythonParserImpl implements PythonParser {
     private final int timeStatistics;
     private long timeInParser = 0;
     private long numberOfFiles = 0;
-    
+
     public PythonParserImpl(Env env) {
         this.useExperimentalParser = env.getOptions().get(PythonOptions.UseExperimentalParser);
         this.logFiles = env.getOptions().get(PythonOptions.ParserLogFiles);
@@ -77,7 +77,7 @@ public final class PythonParserImpl implements PythonParser {
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
     }
-    
+
     private ScopeInfo lastGlobalScope;
 
     public ScopeInfo getLastGlobaScope() {

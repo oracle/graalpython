@@ -134,7 +134,7 @@ public final class ScopeInfo {
     public void setFrameDescriptor(FrameDescriptor frameDescriptor) {
         this.frameDescriptor = frameDescriptor;
     }
-    
+
     public ScopeInfo getParent() {
         return parent;
     }
