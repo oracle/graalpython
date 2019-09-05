@@ -49,7 +49,6 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [1,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                  CalleeContext SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,37]`def bla():â†µ  install...`
           Identifier: bla
@@ -95,5 +94,3 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

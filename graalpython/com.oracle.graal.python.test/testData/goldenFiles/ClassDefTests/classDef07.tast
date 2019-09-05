@@ -120,9 +120,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
-                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 ReadNameNodeGen SourceSection: [18,22]`dict`
                   Identifier: dict
@@ -135,4 +133,3 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

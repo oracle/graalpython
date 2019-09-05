@@ -12,4 +12,3 @@ ModuleRootNode Name: <module 'binOp02'> SourceSection: [0,9]`foo - bar`
         Identifier: foo
       ReadNameNodeGen SourceSection: [6,9]`bar`
         Identifier: bar
-  CalleeContext SourceSection: None

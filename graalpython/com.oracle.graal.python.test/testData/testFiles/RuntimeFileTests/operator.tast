@@ -133,7 +133,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1133,1188]`def le(a, b):↵    "S...`
         Identifier: le
         FunctionDefinitionNode Name: le SourceSection: None
@@ -190,7 +189,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1188,1243]`def eq(a, b):↵    "S...`
         Identifier: eq
         FunctionDefinitionNode Name: eq SourceSection: None
@@ -247,7 +245,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1243,1298]`def ne(a, b):↵    "S...`
         Identifier: ne
         FunctionDefinitionNode Name: ne SourceSection: None
@@ -304,7 +301,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1298,1353]`def ge(a, b):↵    "S...`
         Identifier: ge
         FunctionDefinitionNode Name: ge SourceSection: None
@@ -361,7 +357,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1353,1488]`def gt(a, b):↵    "S...`
         Identifier: gt
         FunctionDefinitionNode Name: gt SourceSection: None
@@ -418,7 +413,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1488,1540]`def not_(a):↵    "Sa...`
         Identifier: not_
         FunctionDefinitionNode Name: not_ SourceSection: None
@@ -462,7 +456,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1540,1636]`def truth(a):↵    "R...`
         Identifier: truth
         FunctionDefinitionNode Name: truth SourceSection: None
@@ -509,7 +502,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1636,1692]`def is_(a, b):↵    "...`
         Identifier: is_
         FunctionDefinitionNode Name: is_ SourceSection: None
@@ -564,7 +556,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1692,1841]`def is_not(a, b):↵  ...`
         Identifier: is_not
         FunctionDefinitionNode Name: is_not SourceSection: None
@@ -620,7 +611,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1841,1895]`def abs(a):↵    "Sam...`
         Identifier: abs
         FunctionDefinitionNode Name: abs SourceSection: None
@@ -670,7 +660,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1895,1949]`def add(a, b):↵    "...`
         Identifier: add
         FunctionDefinitionNode Name: add SourceSection: None
@@ -727,7 +716,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1949,2004]`def and_(a, b):↵    ...`
         Identifier: and_
         FunctionDefinitionNode Name: and_ SourceSection: None
@@ -784,7 +772,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2004,2065]`def floordiv(a, b):↵...`
         Identifier: floordiv
         FunctionDefinitionNode Name: floordiv SourceSection: None
@@ -841,7 +828,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2065,2134]`def index(a):↵    "S...`
         Identifier: index
         FunctionDefinitionNode Name: index SourceSection: None
@@ -889,7 +875,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2134,2178]`def inv(a):↵    "Sam...`
         Identifier: inv
         FunctionDefinitionNode Name: inv SourceSection: None
@@ -935,7 +920,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2178,2190]`invert = inv`
         Identifier: invert
         ReadNameNodeGen SourceSection: [2187,2190]`inv`
@@ -996,7 +980,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2251,2305]`def mod(a, b):↵    "...`
         Identifier: mod
         FunctionDefinitionNode Name: mod SourceSection: None
@@ -1053,7 +1036,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2305,2359]`def mul(a, b):↵    "...`
         Identifier: mul
         FunctionDefinitionNode Name: mul SourceSection: None
@@ -1110,7 +1092,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2359,2416]`def matmul(a, b):↵  ...`
         Identifier: matmul
         FunctionDefinitionNode Name: matmul SourceSection: None
@@ -1167,7 +1148,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2416,2461]`def neg(a):↵    "Sam...`
         Identifier: neg
         FunctionDefinitionNode Name: neg SourceSection: None
@@ -1213,7 +1193,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2461,2515]`def or_(a, b):↵    "...`
         Identifier: or_
         FunctionDefinitionNode Name: or_ SourceSection: None
@@ -1270,7 +1249,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2515,2560]`def pos(a):↵    "Sam...`
         Identifier: pos
         FunctionDefinitionNode Name: pos SourceSection: None
@@ -1316,7 +1294,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2560,2616]`def pow(a, b):↵    "...`
         Identifier: pow
         FunctionDefinitionNode Name: pow SourceSection: None
@@ -1373,7 +1350,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2616,2675]`def rshift(a, b):↵  ...`
         Identifier: rshift
         FunctionDefinitionNode Name: rshift SourceSection: None
@@ -1430,7 +1406,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2675,2729]`def sub(a, b):↵    "...`
         Identifier: sub
         FunctionDefinitionNode Name: sub SourceSection: None
@@ -1487,7 +1462,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2729,2787]`def truediv(a, b):↵ ...`
         Identifier: truediv
         FunctionDefinitionNode Name: truediv SourceSection: None
@@ -1544,7 +1518,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2787,2923]`def xor(a, b):↵    "...`
         Identifier: xor
         FunctionDefinitionNode Name: xor SourceSection: None
@@ -1601,7 +1574,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2923,3139]`def concat(a, b):↵  ...`
         Identifier: concat
         FunctionDefinitionNode Name: concat SourceSection: None
@@ -1709,7 +1681,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3139,3225]`def contains(a, b):↵...`
         Identifier: contains
         FunctionDefinitionNode Name: contains SourceSection: None
@@ -1767,7 +1738,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3225,3382]`def countOf(a, b):↵ ...`
         Identifier: countOf
         FunctionDefinitionNode Name: countOf SourceSection: None
@@ -1861,7 +1831,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3382,3439]`def delitem(a, b):↵ ...`
         Identifier: delitem
         FunctionDefinitionNode Name: delitem SourceSection: None
@@ -1911,7 +1880,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3439,3495]`def getitem(a, b):↵ ...`
         Identifier: getitem
         FunctionDefinitionNode Name: getitem SourceSection: None
@@ -1966,7 +1934,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3495,3700]`def indexOf(a, b):↵ ...`
         Identifier: indexOf
         FunctionDefinitionNode Name: indexOf SourceSection: None
@@ -2078,7 +2045,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3700,3760]`def setitem(a, b, c)...`
         Identifier: setitem
         FunctionDefinitionNode Name: setitem SourceSection: None
@@ -2138,7 +2104,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3760,4937]`def length_hint(obj,...`
         Identifier: length_hint
         FunctionDefinitionNode Name: length_hint SourceSection: None
@@ -2433,7 +2398,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4937,6321]`class attrgetter:↵  ...`
         Identifier: attrgetter
         ExpressionWithSideEffects SourceSection: None
@@ -2674,7 +2638,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                     Frame: [3,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                         SetAttributeNodeGen SourceSection: [5730,5747]`self._call = func`
                                           Attribute: _call
                                           ReadLocalVariableNode SourceSection: [5730,5734]`self`
@@ -2829,7 +2792,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                   BlockNode SourceSection: None
                                                                   GeneratorAccessNode SourceSection: None
                                                                   PRaiseNodeGen SourceSection: None
-                                                              CalleeContext SourceSection: None
                                                             GetIteratorExpressionNodeGen SourceSection: [5944,5951]`getters`
                                                               GetIteratorNodeGen SourceSection: None
                                                               ReadLocalCellNodeGen SourceSection: [5944,5951]`getters`
@@ -2844,7 +2806,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                         SetAttributeNodeGen SourceSection: [5965,5982]`self._call = func`
                                           Attribute: _call
                                           ReadLocalVariableNode SourceSection: [5965,5969]`self`
@@ -2856,7 +2817,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5988,6049]`def __call__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2918,7 +2878,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6049,6255]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3017,7 +2976,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6255,6321]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3078,9 +3036,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -3269,7 +3225,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6769,6786]`self._call = func`
                                           Attribute: _call
                                           ReadLocalVariableNode SourceSection: [6769,6773]`self`
@@ -3411,7 +3366,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                   BlockNode SourceSection: None
                                                                   GeneratorAccessNode SourceSection: None
                                                                   PRaiseNodeGen SourceSection: None
-                                                              CalleeContext SourceSection: None
                                                             GetIteratorExpressionNodeGen SourceSection: [6923,6928]`items`
                                                               GetIteratorNodeGen SourceSection: None
                                                               ReadLocalCellNodeGen SourceSection: [6923,6928]`items`
@@ -3426,7 +3380,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6942,6959]`self._call = func`
                                           Attribute: _call
                                           ReadLocalVariableNode SourceSection: [6942,6946]`self`
@@ -3438,7 +3391,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6965,7026]`def __call__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3500,7 +3452,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7026,7228]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3599,7 +3550,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7228,7294]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3660,9 +3610,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -3888,7 +3836,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8011,8110]`def __call__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3982,7 +3929,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8110,8442]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4146,7 +4092,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [8256,8276]`self._kwargs.items()...`
                                               GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [8256,8276]`self._kwargs.items()...`
@@ -4216,7 +4161,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8442,8778]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4363,9 +4307,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -4438,7 +4380,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8841,8904]`def iand(a, b):↵    ...`
         Identifier: iand
         FunctionDefinitionNode Name: iand SourceSection: None
@@ -4501,7 +4442,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8904,9129]`def iconcat(a, b):↵ ...`
         Identifier: iconcat
         FunctionDefinitionNode Name: iconcat SourceSection: None
@@ -4614,7 +4554,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9129,9199]`def ifloordiv(a, b):...`
         Identifier: ifloordiv
         FunctionDefinitionNode Name: ifloordiv SourceSection: None
@@ -4677,7 +4616,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9199,9267]`def ilshift(a, b):↵ ...`
         Identifier: ilshift
         FunctionDefinitionNode Name: ilshift SourceSection: None
@@ -4740,7 +4678,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9267,9330]`def imod(a, b):↵    ...`
         Identifier: imod
         FunctionDefinitionNode Name: imod SourceSection: None
@@ -4803,7 +4740,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9330,9393]`def imul(a, b):↵    ...`
         Identifier: imul
         FunctionDefinitionNode Name: imul SourceSection: None
@@ -4866,7 +4802,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9393,9459]`def imatmul(a, b):↵ ...`
         Identifier: imatmul
         FunctionDefinitionNode Name: imatmul SourceSection: None
@@ -4929,7 +4864,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9459,9521]`def ior(a, b):↵    "...`
         Identifier: ior
         FunctionDefinitionNode Name: ior SourceSection: None
@@ -4992,7 +4926,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9521,9585]`def ipow(a, b):↵    ...`
         Identifier: ipow
         FunctionDefinitionNode Name: ipow SourceSection: None
@@ -5055,7 +4988,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9585,9653]`def irshift(a, b):↵ ...`
         Identifier: irshift
         FunctionDefinitionNode Name: irshift SourceSection: None
@@ -5118,7 +5050,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9653,9716]`def isub(a, b):↵    ...`
         Identifier: isub
         FunctionDefinitionNode Name: isub SourceSection: None
@@ -5181,7 +5112,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9716,9783]`def itruediv(a, b):↵...`
         Identifier: itruediv
         FunctionDefinitionNode Name: itruediv SourceSection: None
@@ -5244,7 +5174,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9783,9847]`def ixor(a, b):↵    ...`
         Identifier: ixor
         FunctionDefinitionNode Name: ixor SourceSection: None
@@ -5307,7 +5236,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [9847,10090]`try:↵    from _opera...`
         TryExceptNode SourceSection: None
           ImportStarNode SourceSection: [9856,9879]`from _operator impor...`
@@ -5512,4 +5440,3 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             Identifier: __ixor__
             ReadNameNodeGen SourceSection: [10858,10862]`ixor`
               Identifier: ixor
-  CalleeContext SourceSection: None

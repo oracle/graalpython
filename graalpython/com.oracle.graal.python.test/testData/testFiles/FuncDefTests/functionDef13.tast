@@ -93,7 +93,6 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                       ExpressionStatementNode SourceSection: [98,105]`inner()`
                         PythonCallNodeGen SourceSection: [98,105]`inner()`
                           CachedCallNodeGen SourceSection: None
@@ -117,5 +116,3 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

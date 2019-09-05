@@ -19,4 +19,3 @@ ModuleRootNode Name: <module 'moduleDoc04'> SourceSection: [0,58]`# some comment
           WriteNameNodeGen SourceSection: [44,54]`a = "ahoj"`
             Identifier: a
             StringLiteralNode SourceSection: [48,54]`"ahoj"`
-  CalleeContext SourceSection: None

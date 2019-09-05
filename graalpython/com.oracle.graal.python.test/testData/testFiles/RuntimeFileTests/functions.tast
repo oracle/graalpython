@@ -90,7 +90,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [1999,2011]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [2113,2225]`@__builtin__↵def any...`
@@ -164,7 +163,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [2113,2125]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [2225,2341]`@__builtin__↵def all...`
@@ -238,7 +236,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [2225,2237]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [2341,2618]`@__builtin__↵def fil...`
@@ -345,7 +342,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [1,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       ElseNode SourceSection: [2460,2537]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
                           ForRepeatingNode SourceSection: None
@@ -403,7 +399,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [2341,2353]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [2618,3007]`def __build_class__(...`
@@ -566,7 +561,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3007,3588]`class map(object):↵ ...`
         Identifier: map
         ExpressionWithSideEffects SourceSection: None
@@ -734,7 +728,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [3240,3387]`def __next__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -835,7 +828,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [3387,3432]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -881,7 +873,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [3432,3588]`def __contains__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -988,9 +979,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [3017,3023]`object`
                 Identifier: object
@@ -1150,7 +1139,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [3632,3644]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [4211,4503]`@__builtin__↵def for...`
@@ -1226,7 +1214,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [4211,4223]`@__builtin__`
             Identifier: __builtin__
       ExpressionWithSideEffect SourceSection: None
@@ -1332,7 +1319,5 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [4,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                  CalleeContext SourceSection: None
               ReadNameNodeGen SourceSection: [4503,4515]`@__builtin__`
                 Identifier: __builtin__
-  CalleeContext SourceSection: None

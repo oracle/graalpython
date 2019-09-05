@@ -57,5 +57,3 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

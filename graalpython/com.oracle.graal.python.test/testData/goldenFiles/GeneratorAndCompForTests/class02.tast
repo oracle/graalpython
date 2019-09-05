@@ -173,7 +173,6 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
-                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [98,110]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [98,110]`self.items()`
@@ -220,9 +219,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
-                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 ReadNameNodeGen SourceSection: [14,18]`dict`
                   Identifier: dict
@@ -235,4 +232,3 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

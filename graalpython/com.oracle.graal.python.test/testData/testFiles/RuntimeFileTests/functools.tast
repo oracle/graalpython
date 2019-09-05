@@ -283,7 +283,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2590,3686]`def wraps(wrapped,↵ ...`
         Identifier: wraps
         FunctionDefinitionNode Name: wraps SourceSection: None
@@ -368,7 +367,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3686,3967]`def _gt_from_lt(self...`
         Identifier: _gt_from_lt
         FunctionDefinitionNode Name: _gt_from_lt SourceSection: None
@@ -474,7 +472,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3967,4178]`def _le_from_lt(self...`
         Identifier: _le_from_lt
         FunctionDefinitionNode Name: _le_from_lt SourceSection: None
@@ -561,7 +558,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4178,4429]`def _ge_from_lt(self...`
         Identifier: _ge_from_lt
         FunctionDefinitionNode Name: _ge_from_lt SourceSection: None
@@ -656,7 +652,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4429,4710]`def _ge_from_le(self...`
         Identifier: _ge_from_le
         FunctionDefinitionNode Name: _ge_from_le SourceSection: None
@@ -762,7 +757,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4710,4984]`def _lt_from_le(self...`
         Identifier: _lt_from_le
         FunctionDefinitionNode Name: _lt_from_le SourceSection: None
@@ -867,7 +861,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4984,5235]`def _gt_from_le(self...`
         Identifier: _gt_from_le
         FunctionDefinitionNode Name: _gt_from_le SourceSection: None
@@ -962,7 +955,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5235,5516]`def _lt_from_gt(self...`
         Identifier: _lt_from_gt
         FunctionDefinitionNode Name: _lt_from_gt SourceSection: None
@@ -1068,7 +1060,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5516,5727]`def _ge_from_gt(self...`
         Identifier: _ge_from_gt
         FunctionDefinitionNode Name: _ge_from_gt SourceSection: None
@@ -1155,7 +1146,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5727,5978]`def _le_from_gt(self...`
         Identifier: _le_from_gt
         FunctionDefinitionNode Name: _le_from_gt SourceSection: None
@@ -1250,7 +1240,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5978,6259]`def _le_from_ge(self...`
         Identifier: _le_from_ge
         FunctionDefinitionNode Name: _le_from_ge SourceSection: None
@@ -1356,7 +1345,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6259,6533]`def _gt_from_ge(self...`
         Identifier: _gt_from_ge
         FunctionDefinitionNode Name: _gt_from_ge SourceSection: None
@@ -1461,7 +1449,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6533,6784]`def _lt_from_ge(self...`
         Identifier: _lt_from_ge
         FunctionDefinitionNode Name: _lt_from_ge SourceSection: None
@@ -1556,7 +1543,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6784,7281]`_convert = {↵    '__...`
         Identifier: _convert
         DictLiteralNode SourceSection: [6795,7281]`{↵    '__lt__': [('_...`
@@ -1757,7 +1743,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [7470,7478]`_convert`
                             GetIteratorNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7470,7478]`_convert`
@@ -1888,7 +1873,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8082,8725]`def cmp_to_key(mycmp...`
         Identifier: cmp_to_key
         FunctionDefinitionNode Name: cmp_to_key SourceSection: None
@@ -2027,7 +2011,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [3,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                       SetItemNodeGen SourceSection: [8277,8360]`def __lt__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2108,7 +2091,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                       SetItemNodeGen SourceSection: [8360,8443]`def __gt__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2189,7 +2171,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                       SetItemNodeGen SourceSection: [8443,8527]`def __eq__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2270,7 +2251,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                       SetItemNodeGen SourceSection: [8527,8611]`def __le__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2351,7 +2331,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                       SetItemNodeGen SourceSection: [8611,8695]`def __ge__(self, oth...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2432,7 +2411,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                       SetItemNodeGen SourceSection: [8695,8710]`__hash__ = None`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2440,7 +2418,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         StringLiteralNode SourceSection: None
                                         ObjectLiteralNode SourceSection: [8706,8710]`None`
                                     Return Expresssion: ObjectLiteralNode SourceSection: None
-                                CalleeContext SourceSection: None
                             StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8172,8178]`object`
                               Identifier: object
@@ -2465,7 +2442,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [8725,9042]`try:↵    from _funct...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [8734,8767]`from _functools impo...`
@@ -2858,7 +2834,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [10,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10003,10310]`def __call__(*args, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3011,7 +2986,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10310,10710]`@recursive_repr()↵  ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3150,7 +3124,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
-                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [10465,10474]`self.args`
                                                 GetIteratorNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [10465,10474]`self.args`
@@ -3235,7 +3208,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
-                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [10523,10544]`self.keywords.items(...`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [10523,10544]`self.keywords.items(...`
@@ -3293,7 +3265,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             PythonCallNodeGen SourceSection: [10310,10327]`@recursive_repr()`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -3411,7 +3382,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10862,11795]`def __setstate__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3752,9 +3722,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [11,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -4048,7 +4016,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [13009,13563]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4195,7 +4162,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [13173,13194]`self.keywords.items(...`
                                               GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [13173,13194]`self.keywords.items(...`
@@ -4284,7 +4250,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [13563,14019]`def _make_unbound_me...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4484,7 +4449,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                   Frame: [9,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                       SetAttributeNodeGen SourceSection: [13896,13952]`_method.__isabstract...`
                                         Attribute: __isabstractmethod__
                                         ReadLocalVariableNode SourceSection: [13896,13903]`_method`
@@ -4521,7 +4485,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [14019,14798]`def __get__(self, ob...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4740,7 +4703,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [14798,15107]`@property↵    def __...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4804,7 +4766,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [14798,14807]`@property`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -4815,7 +4776,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 Identifier: property
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [11906,11912]`object`
                 Identifier: object
@@ -4986,7 +4946,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [15550,15601]`def __hash__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5037,9 +4996,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [15205,15209]`list`
                 Identifier: list
@@ -5293,7 +5250,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [16651,16655]`args`
                                   GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [16651,16655]`args`
@@ -5376,7 +5332,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         BlockNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                         PRaiseNodeGen SourceSection: None
-                                    CalleeContext SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [16716,16729]`kwds.values()`
                                     GetIteratorNodeGen SourceSection: None
                                     PythonCallNodeGen SourceSection: [16716,16729]`kwds.values()`
@@ -5463,7 +5418,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [16835,18354]`def lru_cache(maxsiz...`
         Identifier: lru_cache
         FunctionDefinitionNode Name: lru_cache SourceSection: None
@@ -5630,7 +5584,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [4,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     FrameReturnNode SourceSection: [18326,18352]`return decorating_fu...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -5642,7 +5595,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [18354,23204]`def _lru_cache_wrapp...`
         Identifier: _lru_cache_wrapper
         FunctionDefinitionNode Name: _lru_cache_wrapper SourceSection: None
@@ -5994,7 +5946,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                       IfNode SourceSection: None
                         YesNodeGen SourceSection: None
                           IsExpressionNodeGen SourceSection: [19392,19407]`maxsize is None`
@@ -6187,7 +6138,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [12,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [19879,22710]`def wrapper(*args, *...`
                           Identifier: wrapper
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6805,7 +6755,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [33,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [22710,22856]`def cache_info():↵  ...`
                       Identifier: cache_info
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6896,7 +6845,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [6,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [22856,23114]`def cache_clear():↵ ...`
                       Identifier: cache_clear
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7018,7 +6966,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [7,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     SetAttributeNodeGen SourceSection: [23114,23145]`wrapper.cache_info =...`
                       Attribute: cache_info
                       ReadLocalVariableNode SourceSection: [23114,23121]`wrapper`
@@ -7046,7 +6993,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [26,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [23204,23515]`try:↵    from _funct...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [23213,23254]`from _functools impo...`
@@ -7173,7 +7119,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         BlockNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                         PRaiseNodeGen SourceSection: None
-                                    CalleeContext SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [23756,23765]`sequences`
                                     GetIteratorNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [23756,23765]`sequences`
@@ -7332,7 +7277,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [24428,26555]`def _c3_mro(cls, abc...`
         Identifier: _c3_mro
         FunctionDefinitionNode Name: _c3_mro SourceSection: None
@@ -7653,7 +7597,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             BlockNode SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                             PRaiseNodeGen SourceSection: None
-                                        CalleeContext SourceSection: None
                                       GetIteratorExpressionNodeGen SourceSection: [25902,25915]`cls.__bases__`
                                         GetIteratorNodeGen SourceSection: None
                                         GetAttributeNodeGen SourceSection: [25902,25915]`cls.__bases__`
@@ -7795,7 +7738,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [26222,26236]`explicit_bases`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [26222,26236]`explicit_bases`
@@ -7877,7 +7819,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [26299,26313]`abstract_bases`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [26299,26313]`abstract_bases`
@@ -7959,7 +7900,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [26373,26384]`other_bases`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [26373,26384]`other_bases`
@@ -8033,7 +7973,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [13,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [26555,28154]`def _compose_mro(cls...`
         Identifier: _compose_mro
         FunctionDefinitionNode Name: _compose_mro SourceSection: None
@@ -8183,7 +8122,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [27069,27112]`types = [n for n in ...`
                       Identifier: types
                       ReadLocalVariableNode SourceSection: None
@@ -8256,7 +8194,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [27089,27094]`types`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [27089,27094]`types`
@@ -8363,7 +8300,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [27381,27432]`types = [n for n in ...`
                       Identifier: types
                       ReadLocalVariableNode SourceSection: None
@@ -8437,7 +8373,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [27401,27406]`types`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [27401,27406]`types`
@@ -8600,7 +8535,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
-                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [27774,27785]`sub.__mro__`
                                                 GetIteratorNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [27774,27785]`sub.__mro__`
@@ -8759,7 +8693,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [11,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [28154,29187]`def _find_impl(cls, ...`
         Identifier: _find_impl
         FunctionDefinitionNode Name: _find_impl SourceSection: None
@@ -8977,7 +8910,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -9232,7 +9164,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         WriteLocalCellNodeGen SourceSection: [30673,31866]`def register(cls, fu...`
                           Identifier: register
                           ReadLocalVariableNode SourceSection: None
@@ -9364,7 +9295,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                           Frame: [3,<return_val>,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                    CalleeContext SourceSection: None
                                             BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [31003,31044]`ann = getattr(cls, '...`
                                             Identifier: ann
@@ -9568,7 +9498,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [9,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [31866,31953]`def wrapper(*args, *...`
                           Identifier: wrapper
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -9653,7 +9582,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [31953,31976]`registry[object] = f...`
                           ReadLocalCellNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: None
@@ -9744,5 +9672,3 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [9,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
-                CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

@@ -19,4 +19,3 @@ ModuleRootNode Name: <module 'assignment09'> SourceSection: [0,9]`f().b = 1`
               Identifier: f
           IntegerLiteralNode SourceSection: [8,9]`1`
             Value: 1
-  CalleeContext SourceSection: None

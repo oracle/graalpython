@@ -93,7 +93,6 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                       ExpressionStatementNode SourceSection: [77,94]`recursionInner(0)`
                         PythonCallNodeGen SourceSection: [77,94]`recursionInner(0)`
                           CachedCallNodeGen SourceSection: None
@@ -109,5 +108,3 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

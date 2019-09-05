@@ -289,7 +289,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [2204,2205]`t`
                                   GetIteratorNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: [2204,2205]`t`
@@ -331,7 +330,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [2247,2260]`_equivalences`
               GetIteratorNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [2247,2260]`_equivalences`
@@ -453,7 +451,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2480,8912]`def _compile(code, p...`
         Identifier: _compile
         FunctionDefinitionNode Name: _compile SourceSection: None
@@ -2871,7 +2868,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [38,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8912,9731]`def _compile_charset...`
         Identifier: _compile_charset
         FunctionDefinitionNode Name: _compile_charset SourceSection: None
@@ -3212,7 +3208,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [8,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9731,14664]`def _optimize_charse...`
         Identifier: _optimize_charset
         FunctionDefinitionNode Name: _optimize_charset SourceSection: None
@@ -4458,7 +4453,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [26,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [14664,14693]`_CODEBITS = _sre.COD...`
         Identifier: _CODEBITS
         BinaryArithmeticExpression SourceSection: [14676,14693]`_sre.CODESIZE * 8`
@@ -4664,7 +4658,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [14914,14942]`range(len(s), 0, -_C...`
                               GetIteratorNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [14914,14942]`range(len(s), 0, -_C...`
@@ -4703,7 +4696,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [14945,15146]`def _bytes_to_codes(...`
         Identifier: _bytes_to_codes
         FunctionDefinitionNode Name: _bytes_to_codes SourceSection: None
@@ -4829,7 +4821,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [15146,15379]`def _simple(p):↵    ...`
         Identifier: _simple
         FunctionDefinitionNode Name: _simple SourceSection: None
@@ -4971,7 +4962,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [15379,16094]`def _generate_overla...`
         Identifier: _generate_overlap_table
         FunctionDefinitionNode Name: _generate_overlap_table SourceSection: None
@@ -5158,7 +5148,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [16094,16326]`def _get_iscased(fla...`
         Identifier: _get_iscased
         FunctionDefinitionNode Name: _get_iscased SourceSection: None
@@ -5259,7 +5248,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [16326,17403]`def _get_literal_pre...`
         Identifier: _get_literal_prefix
         FunctionDefinitionNode Name: _get_literal_prefix SourceSection: None
@@ -5671,7 +5659,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [25,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [17403,18749]`def _get_charset_pre...`
         Identifier: _get_charset_prefix
         FunctionDefinitionNode Name: _get_charset_prefix SourceSection: None
@@ -6268,7 +6255,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [11,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [18749,20591]`def _compile_info(co...`
         Identifier: _compile_info
         FunctionDefinitionNode Name: _compile_info SourceSection: None
@@ -6883,7 +6869,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [20,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [20591,20652]`def isstring(obj):↵ ...`
         Identifier: isstring
         FunctionDefinitionNode Name: isstring SourceSection: None
@@ -6941,7 +6926,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [20652,20889]`def _code(p, flags):...`
         Identifier: _code
         FunctionDefinitionNode Name: _code SourceSection: None
@@ -7073,7 +7057,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [20889,20989]`def _hex_code(code):...`
         Identifier: _hex_code
         FunctionDefinitionNode Name: _hex_code SourceSection: None
@@ -7189,7 +7172,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20982,20986]`code`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [20982,20986]`code`
@@ -7201,7 +7183,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [20989,26271]`def dis(code):↵    i...`
         Identifier: dis
         FunctionDefinitionNode Name: dis SourceSection: None
@@ -7520,7 +7501,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                               Frame: [7,<return_val>,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        CalleeContext SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [21446,21575]`def print_2(*args):↵...`
                                     Identifier: print_2
                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7618,7 +7598,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                               Frame: [4,<return_val>,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        CalleeContext SourceSection: None
                                   ExpressionStatementNode SourceSection: [21575,21589]`nonlocal level`
                                     EmptyNode SourceSection: [21575,21589]`nonlocal level`
                                   WriteLocalCellNodeGen SourceSection: [21598,21608]`level += 1`
@@ -8411,7 +8390,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           BlockNode SourceSection: None
                                                                           GeneratorAccessNode SourceSection: None
                                                                           PRaiseNodeGen SourceSection: None
-                                                                      CalleeContext SourceSection: None
                                                                     GetIteratorExpressionNodeGen SourceSection: [23386,23417]`code[i: i + 256//_sr...`
                                                                       GetIteratorNodeGen SourceSection: None
                                                                       GetItemNodeGen SourceSection: [23386,23417]`code[i: i + 256//_sr...`
@@ -9607,7 +9585,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                               BlockNode SourceSection: None
                                                                                               GeneratorAccessNode SourceSection: None
                                                                                               PRaiseNodeGen SourceSection: None
-                                                                                          CalleeContext SourceSection: None
                                                                                         GetIteratorExpressionNodeGen SourceSection: [25738,25744]`prefix`
                                                                                           GetIteratorNodeGen SourceSection: None
                                                                                           ReadLocalVariableNode SourceSection: [25738,25744]`prefix`
@@ -9817,7 +9794,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [39,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     ExpressionStatementNode SourceSection: [26250,26268]`dis_(0, len(code))`
                       PythonCallNodeGen SourceSection: [26250,26268]`dis_(0, len(code))`
                         CachedCallNodeGen SourceSection: None
@@ -9845,7 +9821,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [26271,26882]`def compile(p, flags...`
         Identifier: compile
         FunctionDefinitionNode Name: compile SourceSection: None
@@ -10140,7 +10115,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -10165,4 +10139,3 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
               GetCallAttributeNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [26892,26896]`_sre`
                   Identifier: _sre
-  CalleeContext SourceSection: None

@@ -87,7 +87,6 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                               BlockNode SourceSection: None
                               GeneratorAccessNode SourceSection: None
                               PRaiseNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [26,35]`range(10)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [26,35]`range(10)`
@@ -103,5 +102,3 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

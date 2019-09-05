@@ -158,9 +158,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                           Index: 0
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
-                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 ReadNameNodeGen SourceSection: [18,22]`dict`
                   Identifier: dict
@@ -173,4 +171,3 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

@@ -88,5 +88,3 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

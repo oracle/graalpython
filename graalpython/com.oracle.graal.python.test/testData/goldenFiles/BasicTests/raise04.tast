@@ -19,4 +19,3 @@ ModuleRootNode Name: <module 'raise04'> SourceSection: [0,33]`raise NameError('P
               Identifier: NameError
           ReadNameNodeGen SourceSection: [30,33]`exc`
             Identifier: exc
-  CalleeContext SourceSection: None

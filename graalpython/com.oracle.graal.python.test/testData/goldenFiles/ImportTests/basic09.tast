@@ -24,4 +24,3 @@ ModuleRootNode Name: <module 'basic09'> SourceSection: [0,39]`import encodings.a
               ImportExpression SourceSection: None
                 ImportNode SourceSection: None
                   Module: encodings.aliases.something
-  CalleeContext SourceSection: None

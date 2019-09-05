@@ -56,7 +56,6 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
-          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [12,15]`seq`
           GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [12,15]`seq`
@@ -65,4 +64,3 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-  CalleeContext SourceSection: None

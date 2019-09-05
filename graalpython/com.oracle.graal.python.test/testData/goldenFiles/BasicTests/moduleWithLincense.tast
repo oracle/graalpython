@@ -17,4 +17,3 @@ ModuleRootNode Name: <module 'moduleWithLincense'> SourceSection: [0,179]`# Copy
       SideEffect:
         ExpressionStatementNode SourceSection: [143,161]`"""MODULE A DOC"""`
           StringLiteralNode SourceSection: [143,161]`"""MODULE A DOC"""`
-  CalleeContext SourceSection: None

@@ -62,7 +62,6 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
-          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [15,24]`range(20)`
@@ -77,4 +76,3 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-  CalleeContext SourceSection: None

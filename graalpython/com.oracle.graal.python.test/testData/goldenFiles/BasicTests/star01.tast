@@ -9,4 +9,3 @@ ModuleRootNode Name: <module 'star01'> SourceSection: [0,2]`*a`
       CastToListExpressionNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [1,2]`a`
           Identifier: a
-  CalleeContext SourceSection: None

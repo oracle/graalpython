@@ -124,7 +124,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [439,527]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -189,7 +188,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [527,773]`def __call__(self, c...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -270,9 +268,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [343,349]`object`
                 Identifier: object
@@ -529,7 +525,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [1188,1192]`dirs`
                                               GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1188,1192]`dirs`
@@ -542,7 +537,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [1249,1687]`def __setup(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -726,7 +720,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [1687,1915]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -845,7 +838,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [1915,2538]`def __call__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1051,9 +1043,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [788,794]`object`
                 Identifier: object
@@ -1161,7 +1151,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [3018,3115]`def __call__(self, *...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -1247,9 +1236,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
-                      CalleeContext SourceSection: None
                   StringLiteralNode SourceSection: None
                   ReadNameNodeGen SourceSection: [2552,2558]`object`
                     Identifier: object
@@ -1262,4 +1249,3 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
               ReadLocalVariableNode SourceSection: None
                 Frame: [2,<>temp2,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

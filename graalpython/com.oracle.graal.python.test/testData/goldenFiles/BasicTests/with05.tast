@@ -64,5 +64,3 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

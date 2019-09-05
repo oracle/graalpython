@@ -12,4 +12,3 @@ ModuleRootNode Name: <module 'comparision01'> SourceSection: [0,6]`3 < 10`
         Value: 3
       IntegerLiteralNode SourceSection: [4,6]`10`
         Value: 10
-  CalleeContext SourceSection: None

@@ -72,5 +72,3 @@ ModuleRootNode Name: <module 'assignment06'> SourceSection: [0,29]`def fn():↵ 
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

@@ -39,4 +39,3 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
               TupleLiteralNode SourceSection: [12,14]`()`
                 PythonObjectFactoryNodeGen SourceSection: None
           BlockNode SourceSection: None
-  CalleeContext SourceSection: None

@@ -13,4 +13,3 @@ ModuleRootNode Name: <module 'spaceEnd'> SourceSection: [0,4]`x=5 `
           Identifier: x
           IntegerLiteralNode SourceSection: [2,3]`5`
             Value: 5
-  CalleeContext SourceSection: None

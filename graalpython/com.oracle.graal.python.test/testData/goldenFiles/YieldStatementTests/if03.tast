@@ -95,5 +95,3 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
                           Index: 1
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

@@ -10,4 +10,3 @@ ModuleRootNode Name: <module 'unary02'> SourceSection: [0,2]`-u`
         Op: __neg__
       ReadNameNodeGen SourceSection: [1,2]`u`
         Identifier: u
-  CalleeContext SourceSection: None

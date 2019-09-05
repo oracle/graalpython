@@ -6,4 +6,3 @@ ModuleRootNode Name: <module 'expression04'> SourceSection: [0,3]`...`
   Documentation: None
   InnerRootNode SourceSection: [0,3]`...`
     ObjectLiteralNode SourceSection: [0,3]`...`
-  CalleeContext SourceSection: None

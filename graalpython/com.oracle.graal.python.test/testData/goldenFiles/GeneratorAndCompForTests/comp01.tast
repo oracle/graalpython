@@ -115,7 +115,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                         BlockNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                         PRaiseNodeGen SourceSection: None
-                                    CalleeContext SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [30,31]`t`
                                     GetIteratorNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: [30,31]`t`
@@ -157,7 +156,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                     BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                     PRaiseNodeGen SourceSection: None
-                CalleeContext SourceSection: None
               GetIteratorExpressionNodeGen SourceSection: [73,82]`something`
                 GetIteratorNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [73,82]`something`
@@ -166,4 +164,3 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
             ReadGlobalOrBuiltinNodeGen SourceSection: None
               Identifier: dict
               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-  CalleeContext SourceSection: None

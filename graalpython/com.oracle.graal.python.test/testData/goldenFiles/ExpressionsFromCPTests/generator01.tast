@@ -61,7 +61,6 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
-          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [15,24]`range(20)`
@@ -76,4 +75,3 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-  CalleeContext SourceSection: None

@@ -42,7 +42,5 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
-                CalleeContext SourceSection: None
             ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
               Identifier: staticmethod
-  CalleeContext SourceSection: None

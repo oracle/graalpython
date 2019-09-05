@@ -97,7 +97,6 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                       ExpressionStatementNode SourceSection: [129,136]`inner()`
                         PythonCallNodeGen SourceSection: [129,136]`inner()`
                           CachedCallNodeGen SourceSection: None
@@ -123,5 +122,3 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

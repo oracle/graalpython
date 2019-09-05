@@ -20,4 +20,3 @@ ModuleRootNode Name: <module 'while10'> SourceSection: [0,26]`while tb is not No
               ExpressionStatementNode SourceSection: [22,26]`pass`
                 EmptyNode SourceSection: [22,26]`pass`
           BlockNode SourceSection: None
-  CalleeContext SourceSection: None

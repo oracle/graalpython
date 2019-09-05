@@ -61,4 +61,3 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
           Identifier: iters
           IntegerLiteralNode SourceSection: [8,9]`0`
             Value: 0
-  CalleeContext SourceSection: None

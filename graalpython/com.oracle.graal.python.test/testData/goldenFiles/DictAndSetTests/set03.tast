@@ -11,4 +11,3 @@ ModuleRootNode Name: <module 'set03'> SourceSection: [0,6]`{2, 3}`
         Value: 2
       IntegerLiteralNode SourceSection: [4,5]`3`
         Value: 3
-  CalleeContext SourceSection: None

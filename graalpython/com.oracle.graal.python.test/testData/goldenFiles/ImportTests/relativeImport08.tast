@@ -20,4 +20,3 @@ ModuleRootNode Name: <module 'relativeImport08'> SourceSection: [0,24]`from ....
             Op: __getattribute__
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattr__
-  CalleeContext SourceSection: None

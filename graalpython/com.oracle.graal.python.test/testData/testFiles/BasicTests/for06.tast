@@ -96,11 +96,9 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       PythonCallNodeGen SourceSection: [121,125]`fn()`
         CachedCallNodeGen SourceSection: None
           CreateArgumentsNodeGen SourceSection: None
           CallDispatchNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: None
           Identifier: fn
-  CalleeContext SourceSection: None

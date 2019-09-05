@@ -67,7 +67,6 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
-          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [16,25]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [16,25]`range(20)`
@@ -82,4 +81,3 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-  CalleeContext SourceSection: None

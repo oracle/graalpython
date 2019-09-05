@@ -75,5 +75,3 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
                           Index: 1
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

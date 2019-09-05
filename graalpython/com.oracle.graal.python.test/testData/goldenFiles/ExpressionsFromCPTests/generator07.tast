@@ -52,7 +52,6 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
             BlockNode SourceSection: None
             GeneratorAccessNode SourceSection: None
             PRaiseNodeGen SourceSection: None
-        CalleeContext SourceSection: None
       GetIteratorExpressionNodeGen SourceSection: [12,21]`range(10)`
         GetIteratorNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [12,21]`range(10)`
@@ -64,4 +63,3 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
           ReadNameNodeGen SourceSection: None
             Identifier: range
       PythonObjectFactoryNodeGen SourceSection: None
-  CalleeContext SourceSection: None

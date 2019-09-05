@@ -125,7 +125,6 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                           BlockNode SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                           PRaiseNodeGen SourceSection: None
-                                      CalleeContext SourceSection: None
                                     GetIteratorExpressionNodeGen SourceSection: [95,108]`cls.__bases__`
                                       GetIteratorNodeGen SourceSection: None
                                       GetAttributeNodeGen SourceSection: [95,108]`cls.__bases__`
@@ -235,7 +234,6 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [197,202]`other`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [197,202]`other`
@@ -248,5 +246,3 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

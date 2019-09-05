@@ -59,7 +59,5 @@ ModuleRootNode Name: <module 'yeild17'> SourceSection: [0,37]`generator = type((
                       BlockNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                       PRaiseNodeGen SourceSection: None
-                  CalleeContext SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: type
-  CalleeContext SourceSection: None

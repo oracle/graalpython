@@ -6,4 +6,3 @@ ModuleRootNode Name: <module 'simpleExpression04'> SourceSection: [0,4]`None`
   Documentation: None
   InnerRootNode SourceSection: [0,4]`None`
     ObjectLiteralNode SourceSection: [0,4]`None`
-  CalleeContext SourceSection: None

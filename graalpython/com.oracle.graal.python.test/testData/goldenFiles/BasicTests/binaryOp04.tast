@@ -17,4 +17,3 @@ ModuleRootNode Name: <module 'binaryOp04'> SourceSection: [0,11]`3 ** 2 ** 2`
           Value: 2
         IntegerLiteralNode SourceSection: [10,11]`2`
           Value: 2
-  CalleeContext SourceSection: None

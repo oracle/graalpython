@@ -47,4 +47,3 @@ ModuleRootNode Name: <module 'try06'> SourceSection: [0,124]`for cls in (B, C, D
                 ReadNameNodeGen SourceSection: [18,19]`D`
                   Identifier: D
           BlockNode SourceSection: None
-  CalleeContext SourceSection: None

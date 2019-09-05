@@ -101,5 +101,3 @@ ModuleRootNode Name: <module 'while06'> SourceSection: [0,110]`def gen(x):↵   
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

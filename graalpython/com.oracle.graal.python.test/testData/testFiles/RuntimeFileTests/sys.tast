@@ -106,7 +106,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2407,2450]`implementation = mak...`
         Identifier: implementation
         PythonCallNodeGen SourceSection: [2424,2450]`make_implementation_...`
@@ -313,7 +312,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        CalleeContext SourceSection: None
                                   FrameReturnNode SourceSection: [3092,3103]`return func`
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <return_val>
@@ -325,7 +323,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [2,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     ElseNode SourceSection: [3109,3242]`for i, f in enumerat...`
                       ForNode SourceSection: None
                         ForRepeatingNode SourceSection: None
@@ -421,7 +418,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [9,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3263,3291]`flags = make_flags_c...`
         Identifier: flags
         PythonCallNodeGen SourceSection: [3271,3291]`make_flags_class()()...`
@@ -503,7 +499,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3670,3718]`float_info = make_fl...`
         Identifier: float_info
         PythonCallNodeGen SourceSection: [3683,3718]`make_float_info_clas...`
@@ -585,7 +580,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4060,4180]`hash_info = make_has...`
         Identifier: hash_info
         PythonCallNodeGen SourceSection: [4072,4180]`make_hash_info_class...`
@@ -713,7 +707,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [4494,4506]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [4552,5557]`def make_excepthook(...`
@@ -987,7 +980,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [5144,5528]`def __print_tracebac...`
                       Identifier: __print_traceback__
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1138,7 +1130,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [6,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     FrameReturnNode SourceSection: [5528,5554]`return __print_trace...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -1150,7 +1141,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5557,5591]`__excepthook__ = mak...`
         Identifier: __excepthook__
         PythonCallNodeGen SourceSection: [5574,5591]`make_excepthook()`
@@ -1445,7 +1435,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [11,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [5642,5654]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [6407,6442]`__breakpointhook__ =...`
@@ -1490,7 +1479,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [6445,6457]`@__builtin__`
             Identifier: __builtin__
       WriteNameNodeGen SourceSection: [6501,7057]`@__builtin__↵def dis...`
@@ -1694,7 +1682,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           ReadNameNodeGen SourceSection: [6501,6513]`@__builtin__`
             Identifier: __builtin__
       ExpressionWithSideEffect SourceSection: None
@@ -1705,4 +1692,3 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
             Identifier: __displayhook__
             ReadNameNodeGen SourceSection: [7075,7086]`displayhook`
               Identifier: displayhook
-  CalleeContext SourceSection: None

@@ -24,4 +24,3 @@ ModuleRootNode Name: <module 'fnCall11'> SourceSection: [0,25]`foo(a, *args, key
           EmptyNode SourceSection: None
       ReadNameNodeGen SourceSection: None
         Identifier: foo
-  CalleeContext SourceSection: None

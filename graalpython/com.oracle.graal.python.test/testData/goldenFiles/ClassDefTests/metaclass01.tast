@@ -108,7 +108,6 @@ ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵  
                                               ExpressionStatementNode SourceSection: [30,34]`pass`
                                                 EmptyNode SourceSection: [30,34]`pass`
                                             Return Expresssion: ObjectLiteralNode SourceSection: None
-                                        CalleeContext SourceSection: None
                                     StringLiteralNode SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       BuiltinsLiteralNode SourceSection: None
@@ -120,7 +119,6 @@ ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵  
                                   Frame: [2,<>temp2,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
-                      CalleeContext SourceSection: None
                   StringLiteralNode SourceSection: None
                   GetCallAttributeNodeGen SourceSection: None
                     BuiltinsLiteralNode SourceSection: None
@@ -131,4 +129,3 @@ ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵  
               ReadLocalVariableNode SourceSection: None
                 Frame: [0,<>temp0,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

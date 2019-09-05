@@ -70,4 +70,3 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
           Identifier: var
           IntegerLiteralNode SourceSection: [6,9]`100`
             Value: 100
-  CalleeContext SourceSection: None

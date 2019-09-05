@@ -358,9 +358,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [527,536]`Exception`
                 Identifier: Exception
@@ -512,7 +510,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [1799,1848]`def __str__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -563,7 +560,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [1848,1866]`__repr__ = __str__`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -579,7 +575,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               Identifier: __str__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [1643,1646]`int`
                 Identifier: int
@@ -736,7 +731,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2035,2051]`enumerate(names)`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [2035,2051]`enumerate(names)`
@@ -819,7 +813,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [2103,2108]`items`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2103,2108]`items`
@@ -848,7 +841,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2206,2868]`OPCODES = _makecodes...`
         Identifier: OPCODES
         PythonCallNodeGen SourceSection: [2216,2868]`_makecodes("""↵    F...`
@@ -1192,7 +1184,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                           Frame: [5,<return_val>,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                    CalleeContext SourceSection: None
               WithNode SourceSection: [5758,7163]`with open("sre_const...`
                 BlockNode SourceSection: None
                   ExpressionStatementNode SourceSection: [5806,6190]`f.write("""\↵/*↵ * S...`
@@ -1458,4 +1449,3 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                   ReadNameNodeGen SourceSection: None
                     Identifier: print
             BlockNode SourceSection: None
-  CalleeContext SourceSection: None

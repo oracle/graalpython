@@ -13,4 +13,3 @@ ModuleRootNode Name: <module 'list04'> SourceSection: [0,6]`l = []`
           Identifier: l
           ListLiteralNode SourceSection: [4,6]`[]`
             PythonObjectFactoryNodeGen SourceSection: None
-  CalleeContext SourceSection: None

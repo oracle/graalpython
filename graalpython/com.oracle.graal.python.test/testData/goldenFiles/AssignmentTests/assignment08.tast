@@ -15,4 +15,3 @@ ModuleRootNode Name: <module 'assignment08'> SourceSection: [0,7]`a.b = 1`
             Identifier: a
           IntegerLiteralNode SourceSection: [6,7]`1`
             Value: 1
-  CalleeContext SourceSection: None

@@ -70,5 +70,3 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

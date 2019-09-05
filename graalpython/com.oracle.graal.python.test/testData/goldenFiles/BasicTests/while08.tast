@@ -36,4 +36,3 @@ ModuleRootNode Name: <module 'while08'> SourceSection: [0,86]`while True:↵  if
               StringLiteralNode SourceSection: [79,85]`'done'`
               ReadNameNodeGen SourceSection: None
                 Identifier: print
-  CalleeContext SourceSection: None

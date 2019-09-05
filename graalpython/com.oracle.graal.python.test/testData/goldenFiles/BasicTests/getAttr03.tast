@@ -33,4 +33,3 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
                     CallDispatchNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: None
                     Identifier: a
-  CalleeContext SourceSection: None

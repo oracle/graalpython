@@ -32,4 +32,3 @@ ModuleRootNode Name: <module 'slice05'> SourceSection: [0,16]`a()[b():c():d()]`
             CallDispatchNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: d
-  CalleeContext SourceSection: None

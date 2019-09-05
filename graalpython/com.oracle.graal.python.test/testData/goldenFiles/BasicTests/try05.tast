@@ -18,4 +18,3 @@ ModuleRootNode Name: <module 'try05'> SourceSection: [0,26]`try:↵  pass↵exce
                 EmptyNode SourceSection: [22,26]`pass`
             BlockNode SourceSection: None
             SaveExceptionStateNodeGen SourceSection: None
-  CalleeContext SourceSection: None

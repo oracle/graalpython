@@ -284,7 +284,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2419,2547]`class _OrderedDictKe...`
         Identifier: _OrderedDictKeysView
         ExpressionWithSideEffects SourceSection: None
@@ -392,9 +391,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [2446,2471]`_collections_abc.Key...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -546,9 +543,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [2575,2601]`_collections_abc.Ite...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -695,9 +690,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [2751,2778]`_collections_abc.Val...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -769,7 +762,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             StringLiteralNode SourceSection: [2945,2950]`'key'`
                             StringLiteralNode SourceSection: [2952,2965]`'__weakref__'`
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [2904,2910]`object`
                 Identifier: object
@@ -1075,7 +1067,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [9,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [4579,5195]`def __setitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1342,7 +1333,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [14,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5195,5709]`def __delitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1496,7 +1486,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5709,5957]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1604,7 +1593,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [5957,6225]`def __reversed__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1712,7 +1700,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6225,6420]`def clear(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1813,7 +1800,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [6420,7123]`def popitem(self, la...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2031,7 +2017,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [9,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7123,7871]`def move_to_end(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2261,7 +2246,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [10,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [7871,8311]`def __sizeof__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2444,7 +2428,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         BlockNode SourceSection: [8311,8369]`update = __update = ...`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <>temp24
@@ -2537,7 +2520,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8507,8643]`def items(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2590,7 +2572,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8643,8775]`def values(self):↵  ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2643,7 +2624,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [8775,8822]`__ne__ = _collection...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2823,7 +2803,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [9288,9606]`def setdefault(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2921,7 +2900,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [9606,9840]`@_recursive_repr()↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3033,7 +3011,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             PythonCallNodeGen SourceSection: [9606,9624]`@_recursive_repr()`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -3181,7 +3158,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10105,10206]`def copy(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3235,7 +3211,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10206,10473]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3337,7 +3312,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [6,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [10206,10218]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3472,9 +3446,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [2985,2989]`dict`
                 Identifier: dict
@@ -4251,7 +4223,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     BlockNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [14131,14142]`field_names`
                                 GetIteratorNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [14131,14142]`field_names`
@@ -4473,7 +4444,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [6,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [14714,14726]`@classmethod`
                           Identifier: classmethod
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4593,7 +4563,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [4,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     SetAttributeNodeGen SourceSection: [15286,15410]`_replace.__doc__ = (...`
                       Attribute: __doc__
                       ReadLocalVariableNode SourceSection: [15286,15294]`_replace`
@@ -4668,7 +4637,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [2,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15556,15707]`def _asdict(self):↵ ...`
                       Identifier: _asdict
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4735,7 +4703,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [15707,15904]`def __getnewargs__(s...`
                       Identifier: __getnewargs__
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4787,7 +4754,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     ElseNode SourceSection: [15904,16169]`for method in (__new...`
                       ForNode SourceSection: None
                         ForRepeatingNode SourceSection: None
@@ -5121,7 +5087,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [35,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [17741,17927]`def _count_elements(...`
         Identifier: _count_elements
         FunctionDefinitionNode Name: _count_elements SourceSection: None
@@ -5215,7 +5180,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [17927,18080]`try:                ...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [18009,18049]`from _collections im...`
@@ -5452,7 +5416,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [21061,21239]`def __missing__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5505,7 +5468,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [21239,21745]`def most_common(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5635,7 +5597,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [21745,22609]`def elements(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5704,7 +5665,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [22609,22923]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5772,7 +5732,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [22609,22621]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -6090,7 +6049,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [12,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [24706,26171]`def subtract(*args, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6396,7 +6354,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [12,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [26171,26261]`def copy(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6450,7 +6407,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [26261,26333]`def __reduce__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6515,7 +6471,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [26333,26512]`def __delitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6590,7 +6545,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [26512,27260]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6758,7 +6712,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [27260,27838]`def __add__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6997,7 +6950,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [27838,28445]`def __sub__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7241,7 +7193,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [28445,29119]`def __or__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7495,7 +7446,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [29119,29643]`def __and__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7677,7 +7627,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [29643,29900]`def __pos__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7794,7 +7743,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [29900,30219]`def __neg__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7916,7 +7864,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [30219,30486]`def _keep_positive(s...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8039,7 +7986,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [30370,30382]`self.items()`
                                               GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [30370,30382]`self.items()`
@@ -8086,7 +8032,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [30486,30838]`def __iadd__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8202,7 +8147,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [30838,31190]`def __isub__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8318,7 +8262,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [31190,31618]`def __ior__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8450,7 +8393,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [31618,32191]`def __iand__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8582,9 +8524,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [18094,18098]`dict`
                 Identifier: dict
@@ -8711,7 +8651,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [32961,33022]`def __missing__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8769,7 +8708,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [33022,33343]`def __getitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8873,7 +8811,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [33343,33435]`def get(self, key, d...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8954,7 +8891,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [33435,33547]`def __len__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9026,7 +8962,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [33547,33742]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9124,7 +9059,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [33742,33824]`def __contains__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9233,7 +9167,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [33808,33817]`self.maps`
                                               GetIteratorNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [33808,33817]`self.maps`
@@ -9251,7 +9184,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [33824,33879]`def __bool__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9309,7 +9241,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [33879,34031]`@_recursive_repr()↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9389,7 +9320,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             PythonCallNodeGen SourceSection: [33879,33897]`@_recursive_repr()`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -9487,7 +9417,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [34031,34043]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -9580,7 +9509,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [34385,34400]`__copy__ = copy`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9682,7 +9610,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [34708,34885]`@property↵    def pa...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9754,7 +9681,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [34708,34717]`@property`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -9834,7 +9760,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [34959,35147]`def __delitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9921,7 +9846,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [35147,35408]`def popitem(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9998,7 +9922,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [35408,35707]`def pop(self, key, *...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10106,7 +10029,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [35707,35981]`def clear(self):↵   ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10161,9 +10083,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [32206,32237]`_collections_abc.Mut...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -10475,7 +10395,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [36850,36895]`def __len__(self): r...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10533,7 +10452,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [36895,37126]`def __getitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10670,7 +10588,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [37126,37186]`def __setitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10738,7 +10655,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [37186,37237]`def __delitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10796,7 +10712,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [37237,37365]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10854,7 +10769,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [37365,37493]`def __contains__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10920,7 +10834,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [37493,37540]`def __repr__(self): ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -10978,7 +10891,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [37540,37848]`def copy(self):↵    ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11131,7 +11043,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [37848,38176]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11233,7 +11144,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [6,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [37848,37860]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -11244,7 +11154,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [35996,36027]`_collections_abc.Mut...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -11477,7 +11386,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [38709,38756]`def __repr__(self): ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11535,7 +11443,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [38756,38824]`def __lt__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11608,7 +11515,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [38824,38892]`def __le__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11681,7 +11587,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [38892,38960]`def __eq__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11754,7 +11659,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [38960,39028]`def __gt__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11827,7 +11731,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39028,39096]`def __ge__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11900,7 +11803,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39096,39193]`def __cast(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -11977,7 +11879,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39193,39252]`def __contains__(sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12043,7 +11944,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39252,39297]`def __len__(self): r...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12101,7 +12001,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39297,39347]`def __getitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12164,7 +12063,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39347,39403]`def __setitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12232,7 +12130,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39403,39450]`def __delitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12290,7 +12187,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39450,39735]`def __add__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12473,7 +12369,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [39735,40021]`def __radd__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12656,7 +12551,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40021,40279]`def __iadd__(self, o...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12816,7 +12710,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40279,40348]`def __mul__(self, n)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12889,7 +12782,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40348,40366]`__rmul__ = __mul__`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -12975,7 +12867,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40441,40492]`def append(self, ite...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13038,7 +12929,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40492,40549]`def insert(self, i, ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13111,7 +13001,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40549,40598]`def pop(self, i=-1):...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13180,7 +13069,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40598,40649]`def remove(self, ite...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13243,7 +13131,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40649,40688]`def clear(self): sel...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13295,7 +13182,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40688,40736]`def copy(self): retu...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13349,7 +13235,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40736,40792]`def count(self, item...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13416,7 +13301,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40792,40862]`def index(self, item...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13495,7 +13379,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40862,40905]`def reverse(self): s...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13547,7 +13430,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40905,40970]`def sort(self, *args...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13626,7 +13508,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [40970,41307]`def extend(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -13726,9 +13607,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNodeGen SourceSection: [38191,38223]`_collections_abc.Mut...`
                 GetFixedAttributeNodeGen SourceSection: None
@@ -13909,7 +13788,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [41571,41616]`def __str__(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -13967,7 +13845,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [41616,41663]`def __repr__(self): ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14025,7 +13902,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [41663,41708]`def __int__(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14083,7 +13959,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [41708,41757]`def __float__(self):...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14141,7 +14016,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [41757,41810]`def __complex__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14199,7 +14073,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [41810,41857]`def __hash__(self): ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14257,7 +14130,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [41857,41919]`def __getnewargs__(s...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14316,7 +14188,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [41919,42071]`def __eq__(self, str...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14422,7 +14293,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [42071,42221]`def __lt__(self, str...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14528,7 +14398,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [42221,42373]`def __le__(self, str...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14634,7 +14503,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [42373,42523]`def __gt__(self, str...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14740,7 +14608,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [42523,42676]`def __ge__(self, str...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14846,7 +14713,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [42676,42814]`def __contains__(sel...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14941,7 +14807,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [42814,42859]`def __len__(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -14999,7 +14864,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [42859,42933]`def __getitem__(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15070,7 +14934,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [42933,43207]`def __add__(self, ot...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15241,7 +15104,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [43207,43380]`def __radd__(self, o...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15365,7 +15227,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [43380,43449]`def __mul__(self, n)...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15438,7 +15299,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [43449,43467]`__rmul__ = __mul__`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15525,7 +15385,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [43549,43690]`def __rmod__(self, f...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15593,7 +15452,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [43690,43762]`def capitalize(self)...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15657,7 +15515,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [43762,43838]`def casefold(self):↵...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15721,7 +15578,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [43838,43936]`def center(self, wid...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15808,7 +15664,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [43936,44104]`def count(self, sub,...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -15940,7 +15795,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [44104,44404]`def encode(self, enc...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16096,7 +15950,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [44404,44517]`def endswith(self, s...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16199,7 +16052,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [44517,44615]`def expandtabs(self,...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16276,7 +16128,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [44615,44781]`def find(self, sub, ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16408,7 +16259,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [44781,44865]`def format(self, *ar...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16491,7 +16341,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [44865,44945]`def format_map(self,...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16558,7 +16407,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [44945,45046]`def index(self, sub,...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16661,7 +16509,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45046,45096]`def isalpha(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16717,7 +16564,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45096,45146]`def isalnum(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16773,7 +16619,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45146,45196]`def isascii(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16829,7 +16674,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45196,45250]`def isdecimal(self):...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16885,7 +16729,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45250,45300]`def isdigit(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16941,7 +16784,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45300,45360]`def isidentifier(sel...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -16997,7 +16839,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45360,45410]`def islower(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17053,7 +16894,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45410,45464]`def isnumeric(self):...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17109,7 +16949,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45464,45522]`def isprintable(self...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17165,7 +17004,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45522,45572]`def isspace(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17221,7 +17059,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45572,45622]`def istitle(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17277,7 +17114,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45622,45672]`def isupper(self): r...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17333,7 +17169,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45672,45724]`def join(self, seq):...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17400,7 +17235,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45724,45820]`def ljust(self, widt...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17487,7 +17321,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45820,45882]`def lower(self): ret...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17551,7 +17384,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45882,45963]`def lstrip(self, cha...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17627,7 +17459,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [45963,45988]`maketrans = str.make...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17713,7 +17544,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [46063,46312]`def replace(self, ol...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17867,7 +17697,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [46312,46480]`def rfind(self, sub,...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -17999,7 +17828,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [46480,46583]`def rindex(self, sub...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18102,7 +17930,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [46583,46679]`def rjust(self, widt...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18189,7 +18016,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [46679,46751]`def rpartition(self,...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18256,7 +18082,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [46751,46840]`def rstrip(self, cha...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18332,7 +18157,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [46840,46930]`def split(self, sep=...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18412,7 +18236,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [46930,47022]`def rsplit(self, sep...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18492,7 +18315,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [47022,47102]`def splitlines(self,...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18560,7 +18382,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [47102,47219]`def startswith(self,...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18663,7 +18484,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [47219,47298]`def strip(self, char...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18739,7 +18559,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [47298,47366]`def swapcase(self): ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18803,7 +18622,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [47366,47428]`def title(self): ret...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18867,7 +18685,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [47428,47518]`def translate(self, ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -18944,7 +18761,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [47518,47580]`def upper(self): ret...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -19008,7 +18824,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [47580,47650]`def zfill(self, widt...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -19083,9 +18898,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
-                      CalleeContext SourceSection: None
                   StringLiteralNode SourceSection: None
                   GetAttributeNodeGen SourceSection: [41324,41349]`_collections_abc.Seq...`
                     GetFixedAttributeNodeGen SourceSection: None
@@ -19103,4 +18916,3 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
               ReadLocalVariableNode SourceSection: None
                 Frame: [9,<>temp9,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

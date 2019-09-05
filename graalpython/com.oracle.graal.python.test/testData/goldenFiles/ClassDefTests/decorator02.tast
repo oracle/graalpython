@@ -62,7 +62,6 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
                               ExpressionStatementNode SourceSection: [36,40]`pass`
                                 EmptyNode SourceSection: [36,40]`pass`
                             Return Expresssion: ObjectLiteralNode SourceSection: None
-                        CalleeContext SourceSection: None
                     StringLiteralNode SourceSection: None
                     GetCallAttributeNodeGen SourceSection: None
                       BuiltinsLiteralNode SourceSection: None
@@ -77,4 +76,3 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
                 Identifier: decorator1
             ReadNameNodeGen SourceSection: [0,11]`@decorator1`
               Identifier: decorator1
-  CalleeContext SourceSection: None

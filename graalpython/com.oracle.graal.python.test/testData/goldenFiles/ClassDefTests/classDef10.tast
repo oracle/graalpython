@@ -118,9 +118,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    CalleeContext SourceSection: None
                             Return Expresssion: ObjectLiteralNode SourceSection: None
-                        CalleeContext SourceSection: None
                     StringLiteralNode SourceSection: None
                     GetCallAttributeNodeGen SourceSection: None
                       BuiltinsLiteralNode SourceSection: None
@@ -168,5 +166,3 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

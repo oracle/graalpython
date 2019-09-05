@@ -83,7 +83,6 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
-          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [20,23]`seq`
           GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [20,23]`seq`
@@ -92,4 +91,3 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-  CalleeContext SourceSection: None

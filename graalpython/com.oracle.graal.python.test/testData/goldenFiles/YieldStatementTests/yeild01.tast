@@ -48,5 +48,3 @@ ModuleRootNode Name: <module 'yeild01'> SourceSection: [0,16]`def f(): yield 1`
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

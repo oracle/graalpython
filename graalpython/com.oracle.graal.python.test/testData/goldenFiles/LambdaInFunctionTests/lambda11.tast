@@ -107,9 +107,6 @@ ModuleRootNode Name: <module 'lambda11'> SourceSection: [0,51]`def fn():↵  lam
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [4,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

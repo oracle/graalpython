@@ -59,5 +59,3 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [1,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
-                CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

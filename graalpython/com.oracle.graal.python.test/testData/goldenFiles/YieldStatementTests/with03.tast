@@ -85,5 +85,3 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

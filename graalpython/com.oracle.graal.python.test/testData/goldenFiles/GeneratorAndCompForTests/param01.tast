@@ -64,5 +64,3 @@ ModuleRootNode Name: <module 'param01'> SourceSection: [0,30]`def fn(a):↵  yie
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

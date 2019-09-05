@@ -21,4 +21,3 @@ ModuleRootNode Name: <module 'try08'> SourceSection: [0,53]`try:↵    pass↵ex
             ExpressionStatementNode SourceSection: [49,53]`pass`
               EmptyNode SourceSection: [49,53]`pass`
             SaveExceptionStateNodeGen SourceSection: None
-  CalleeContext SourceSection: None

@@ -167,7 +167,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3696,4329]`def abs_paths():↵   ...`
         Identifier: abs_paths
         FunctionDefinitionNode Name: abs_paths SourceSection: None
@@ -349,7 +348,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4329,5005]`def removeduppaths()...`
         Identifier: removeduppaths
         FunctionDefinitionNode Name: removeduppaths SourceSection: None
@@ -511,7 +509,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5005,5336]`def _init_pathinfo()...`
         Identifier: _init_pathinfo
         FunctionDefinitionNode Name: _init_pathinfo SourceSection: None
@@ -653,7 +650,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5336,6871]`def addpackage(sited...`
         Identifier: addpackage
         FunctionDefinitionNode Name: addpackage SourceSection: None
@@ -1167,7 +1163,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [16,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6871,7597]`def addsitedir(sited...`
         Identifier: addsitedir
         FunctionDefinitionNode Name: addsitedir SourceSection: None
@@ -1406,7 +1401,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [7421,7426]`names`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [7421,7426]`names`
@@ -1476,7 +1470,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [8,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [7597,8580]`def check_enableuser...`
         Identifier: check_enableusersite
         FunctionDefinitionNode Name: check_enableusersite SourceSection: None
@@ -1643,7 +1636,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8580,9149]`def _getuserbase():↵...`
         Identifier: _getuserbase
         FunctionDefinitionNode Name: _getuserbase SourceSection: None
@@ -1773,7 +1765,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     IfNode SourceSection: [8781,8894]`if os.name == "nt":↵...`
                       YesNodeGen SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [8784,8799]`os.name == "nt"`
@@ -1910,7 +1901,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9149,9507]`def _get_path(userba...`
         Identifier: _get_path
         FunctionDefinitionNode Name: _get_path SourceSection: None
@@ -2062,7 +2052,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9507,9845]`def getuserbase():↵ ...`
         Identifier: getuserbase
         FunctionDefinitionNode Name: getuserbase SourceSection: None
@@ -2118,7 +2107,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9845,10216]`def getusersitepacka...`
         Identifier: getusersitepackages
         FunctionDefinitionNode Name: getusersitepackages SourceSection: None
@@ -2188,7 +2176,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10216,10668]`def addusersitepacka...`
         Identifier: addusersitepackages
         FunctionDefinitionNode Name: addusersitepackages SourceSection: None
@@ -2281,7 +2268,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10668,11862]`def getsitepackages(...`
         Identifier: getsitepackages
         FunctionDefinitionNode Name: getsitepackages SourceSection: None
@@ -2549,7 +2535,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11862,12102]`def addsitepackages(...`
         Identifier: addsitepackages
         FunctionDefinitionNode Name: addsitepackages SourceSection: None
@@ -2656,7 +2641,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [12102,12516]`def setquit():↵    "...`
         Identifier: setquit
         FunctionDefinitionNode Name: setquit SourceSection: None
@@ -2743,7 +2727,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [12516,13553]`def setcopyright():↵...`
         Identifier: setcopyright
         FunctionDefinitionNode Name: setcopyright SourceSection: None
@@ -2994,7 +2977,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [13553,13615]`def sethelper():↵   ...`
         Identifier: sethelper
         FunctionDefinitionNode Name: sethelper SourceSection: None
@@ -3035,7 +3017,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [13615,15675]`def enablerlcomplete...`
         Identifier: enablerlcompleter
         FunctionDefinitionNode Name: enablerlcompleter SourceSection: None
@@ -3286,7 +3267,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [5,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     SetAttributeNodeGen SourceSection: [15630,15673]`sys.__interactivehoo...`
                       Attribute: __interactivehook__
                       ReadGlobalOrBuiltinNodeGen SourceSection: [15630,15633]`sys`
@@ -3298,7 +3278,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [15675,17478]`def venv(known_paths...`
         Identifier: venv
         FunctionDefinitionNode Name: venv SourceSection: None
@@ -3553,7 +3532,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [16139,16257]`(↵            os.pat...`
                             GetIteratorNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [16139,16257]`(↵            os.pat...`
@@ -3897,7 +3875,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [20,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [17478,18055]`def execsitecustomiz...`
         Identifier: execsitecustomize
         FunctionDefinitionNode Name: execsitecustomize SourceSection: None
@@ -4045,7 +4022,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [18055,18632]`def execusercustomiz...`
         Identifier: execusercustomize
         FunctionDefinitionNode Name: execusercustomize SourceSection: None
@@ -4193,7 +4169,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [18632,19631]`def main():↵    """A...`
         Identifier: main
         FunctionDefinitionNode Name: main SourceSection: None
@@ -4407,7 +4382,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       IfNode SourceSection: [19631,19669]`if not sys.flags.no_...`
         NotNodeGen SourceSection: [19634,19655]`not sys.flags.no_sit...`
           GetAttributeNodeGen SourceSection: [19638,19655]`sys.flags.no_site`
@@ -4872,7 +4846,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -4893,4 +4866,3 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                 ReadNameNodeGen SourceSection: None
                   Identifier: _script
             BlockNode SourceSection: None
-  CalleeContext SourceSection: None

@@ -107,9 +107,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
-                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 GetCallAttributeNodeGen SourceSection: None
                   BuiltinsLiteralNode SourceSection: None
@@ -120,4 +118,3 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

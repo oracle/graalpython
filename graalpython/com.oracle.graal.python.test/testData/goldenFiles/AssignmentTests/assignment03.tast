@@ -32,4 +32,3 @@ ModuleRootNode Name: <module 'assignment03'> SourceSection: [0,25]`a = 0↵b = a
                   Identifier: a
               ReadNameNodeGen SourceSection: [24,25]`b`
                 Identifier: b
-  CalleeContext SourceSection: None

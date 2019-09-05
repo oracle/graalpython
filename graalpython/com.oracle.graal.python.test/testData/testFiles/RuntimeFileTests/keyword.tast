@@ -555,7 +555,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -576,4 +575,3 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                 ReadNameNodeGen SourceSection: None
                   Identifier: main
             BlockNode SourceSection: None
-  CalleeContext SourceSection: None

@@ -16,4 +16,3 @@ ModuleRootNode Name: <module 'fnCall03'> SourceSection: [0,9]`foo(**kw)`
             Identifier: kw
       ReadNameNodeGen SourceSection: None
         Identifier: foo
-  CalleeContext SourceSection: None

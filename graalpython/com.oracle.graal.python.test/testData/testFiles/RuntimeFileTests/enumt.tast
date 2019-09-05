@@ -141,7 +141,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [564,791]`def _is_dunder(name)...`
         Identifier: _is_dunder
         FunctionDefinitionNode Name: _is_dunder SourceSection: None
@@ -271,7 +270,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [791,1012]`def _is_sunder(name)...`
         Identifier: _is_sunder
         FunctionDefinitionNode Name: _is_sunder SourceSection: None
@@ -389,7 +387,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1012,1270]`def _make_class_unpi...`
         Identifier: _make_class_unpicklable
         FunctionDefinitionNode Name: _make_class_unpicklable SourceSection: None
@@ -482,7 +479,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [2,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     SetAttributeNodeGen SourceSection: [1194,1235]`cls.__reduce_ex__ = ...`
                       Attribute: __reduce_ex__
                       ReadLocalVariableNode SourceSection: [1194,1197]`cls`
@@ -500,7 +496,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1270,1291]`_auto_null = object(...`
         Identifier: _auto_null
         PythonCallNodeGen SourceSection: [1283,1291]`object()`
@@ -572,7 +567,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               Identifier: _auto_null
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -703,7 +697,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [1766,3954]`def __setitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -1221,9 +1214,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [1436,1440]`dict`
                 Identifier: dict
@@ -1422,7 +1413,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [9,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [4023,4035]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -1706,7 +1696,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [5329,5352]`classdict._member_na...`
                                               GetIteratorNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [5329,5352]`classdict._member_na...`
@@ -1973,7 +1962,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [6388,6404]`enum_class.mro()`
                                               GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [6388,6404]`enum_class.mro()`
@@ -2096,7 +2084,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           BlockNode SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                           PRaiseNodeGen SourceSection: None
-                                                      CalleeContext SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [7446,7453]`methods`
                                                       GetIteratorNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [7446,7453]`methods`
@@ -2747,7 +2734,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [34,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [11215,11329]`def __bool__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2791,7 +2777,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [11329,12747]`def __call__(cls, va...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2954,7 +2939,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [9,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [12747,13118]`def __contains__(cls...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3080,7 +3064,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [13118,13425]`def __delattr__(cls,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3182,7 +3165,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [13425,13558]`def __dir__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3242,7 +3224,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [13558,14112]`def __getattr__(cls,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3351,7 +3332,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [14112,14183]`def __getitem__(cls,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3414,7 +3394,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [14183,14278]`def __iter__(cls):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3513,7 +3492,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 BlockNode SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [14253,14271]`cls._member_names_`
                                             GetIteratorNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [14253,14271]`cls._member_names_`
@@ -3530,7 +3508,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [14278,14340]`def __len__(cls):↵  ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3588,7 +3565,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [14340,14629]`@property↵    def __...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3650,7 +3626,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [14340,14349]`@property`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3714,7 +3689,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [14695,14804]`def __reversed__(cls...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3813,7 +3787,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 BlockNode SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
-                                            CalleeContext SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [14769,14797]`reversed(cls._member...`
                                             GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [14769,14797]`reversed(cls._member...`
@@ -3837,7 +3810,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [14804,15299]`def __setattr__(cls,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -3953,7 +3925,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [15299,17473]`def _create_(cls, cl...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4576,7 +4547,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [34,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [17473,19272]`@staticmethod↵    de...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -4863,7 +4833,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [5,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [17473,17486]`@staticmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -5120,7 +5089,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [10,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [19272,19285]`@staticmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -5131,7 +5099,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Identifier: staticmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [3983,3987]`type`
                 Identifier: type
@@ -5371,7 +5338,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [22042,22301]`def _generate_next_v...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5482,7 +5448,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [22301,22423]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5558,7 +5523,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [22301,22313]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -5645,7 +5609,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [22549,22637]`def __str__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5715,7 +5678,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [22637,22945]`def __dir__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -5860,7 +5822,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [22728,22748]`self.__class__.mro()...`
                                               GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [22728,22748]`self.__class__.mro()...`
@@ -5901,7 +5862,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [22945,23434]`def __format__(self,...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6028,7 +5988,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [23434,23492]`def __hash__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6086,7 +6045,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [23492,23976]`def __reduce_ex__(se...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6157,7 +6115,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [23976,24094]`@DynamicClassAttribu...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -6212,7 +6169,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [23976,23998]`@DynamicClassAttribu...`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -6276,7 +6232,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [24094,24116]`@DynamicClassAttribu...`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -6494,7 +6449,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
-                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [25264,25277]`source.keys()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [25264,25277]`source.keys()`
@@ -6571,7 +6525,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                               Frame: [1,<return_val>,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                        CalleeContext SourceSection: None
                                                   CompactKeywordsNodeGen SourceSection: None
                                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                                     EmptyNode SourceSection: None
@@ -6630,7 +6583,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                                 Frame: [1,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                          CalleeContext SourceSection: None
                                                     CompactKeywordsNodeGen SourceSection: None
                                                     ExecuteKeywordStarargsNodeGen SourceSection: None
                                                       EmptyNode SourceSection: None
@@ -6714,7 +6666,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [8,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [24215,24227]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -6725,7 +6676,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Identifier: classmethod
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               KeywordArgumentsNodeGen SourceSection: None
                 KeywordLiteralNode SourceSection: None
@@ -6792,7 +6742,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           StringLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: [25783,25835]`"""Enum where member...`
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [25767,25770]`int`
                 Identifier: int
@@ -6862,7 +6811,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [25897,29992]`class Flag(Enum):↵  ...`
         Identifier: Flag
         ExpressionWithSideEffects SourceSection: None
@@ -7073,7 +7021,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [26625,26923]`@classmethod↵    def...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7196,7 +7143,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [5,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [26625,26637]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -7414,7 +7360,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [8,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [26923,26935]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -7555,7 +7500,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [28180,28590]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -7788,7 +7732,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           BlockNode SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                           PRaiseNodeGen SourceSection: None
-                                                      CalleeContext SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [28526,28533]`members`
                                                       GetIteratorNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [28526,28533]`members`
@@ -7811,7 +7754,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [28590,29097]`def __str__(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8098,7 +8040,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             BlockNode SourceSection: None
                                                             GeneratorAccessNode SourceSection: None
                                                             PRaiseNodeGen SourceSection: None
-                                                        CalleeContext SourceSection: None
                                                       GetIteratorExpressionNodeGen SourceSection: [29059,29066]`members`
                                                         GetIteratorNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [29059,29066]`members`
@@ -8113,7 +8054,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [29097,29156]`def __bool__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8171,7 +8111,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [29156,29330]`def __or__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8279,7 +8218,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [29330,29505]`def __and__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8387,7 +8325,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [29505,29680]`def __xor__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8495,7 +8432,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [29680,29992]`def __invert__(self)...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -8678,9 +8614,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [25908,25912]`Enum`
                 Identifier: Enum
@@ -8856,7 +8790,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [30065,30077]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -9186,7 +9119,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [11,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [30311,30323]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -9323,7 +9255,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [31827,32025]`def __and__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9444,7 +9375,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [32025,32223]`def __xor__(self, ot...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9565,7 +9495,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [32223,32239]`__ror__ = __or__`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -9677,9 +9606,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [30006,30009]`int`
                 Identifier: int
@@ -9746,7 +9673,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [32516,33039]`def unique(enumerati...`
         Identifier: unique
         FunctionDefinitionNode Name: unique SourceSection: None
@@ -9960,7 +9886,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [32894,32904]`duplicates`
                                   GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [32894,32904]`duplicates`
@@ -10005,7 +9930,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [33039,34454]`def _decompose(flag,...`
         Identifier: _decompose
         FunctionDefinitionNode Name: _decompose SourceSection: None
@@ -10164,7 +10088,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [33548,33585]`list(flag._value2mem...`
                               GetIteratorNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [33548,33585]`list(flag._value2mem...`
@@ -10297,7 +10220,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [33786,33823]`list(flag._value2mem...`
                               GetIteratorNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [33786,33823]`list(flag._value2mem...`
@@ -10510,7 +10432,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [1,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                           KeywordLiteralNode SourceSection: None
                             BooleanLiteralNode SourceSection: [34269,34273]`True`
                           CompactKeywordsNodeGen SourceSection: None
@@ -10584,7 +10505,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -10667,5 +10587,3 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [1,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
-                CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

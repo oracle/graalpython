@@ -54,7 +54,6 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
                           ExpressionStatementNode SourceSection: [18,22]`pass`
                             EmptyNode SourceSection: [18,22]`pass`
                         Return Expresssion: ObjectLiteralNode SourceSection: None
-                    CalleeContext SourceSection: None
                 StringLiteralNode SourceSection: None
                 ReadNameNodeGen SourceSection: [10,16]`object`
                   Identifier: object
@@ -67,4 +66,3 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

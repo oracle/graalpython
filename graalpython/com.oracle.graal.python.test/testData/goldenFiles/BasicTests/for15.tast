@@ -79,5 +79,3 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

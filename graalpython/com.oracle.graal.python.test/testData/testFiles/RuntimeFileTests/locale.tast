@@ -144,7 +144,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1312,1446]`def _strxfrm(s):↵   ...`
         Identifier: _strxfrm
         FunctionDefinitionNode Name: _strxfrm SourceSection: None
@@ -187,7 +186,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [1446,2901]`try:↵↵    from _loca...`
         TryExceptNode SourceSection: None
           ImportStarNode SourceSection: [1456,1477]`from _locale import ...`
@@ -311,7 +309,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                           Frame: [0,<return_val>,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                    CalleeContext SourceSection: None
               WriteNameNodeGen SourceSection: [2553,2901]`def setlocale(catego...`
                 Identifier: setlocale
                 FunctionDefinitionNode Name: setlocale SourceSection: None
@@ -387,7 +384,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                           Frame: [2,<return_val>,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                    CalleeContext SourceSection: None
             ReadNameNodeGen SourceSection: [1486,1497]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
@@ -505,7 +501,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
           PythonCallNodeGen SourceSection: [3179,3208]`@functools.wraps(_lo...`
             CachedCallNodeGen SourceSection: None
               CreateArgumentsNodeGen SourceSection: None
@@ -652,7 +647,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Index: 0
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3952,4916]`def _group(s, moneta...`
         Identifier: _group
         FunctionDefinitionNode Name: _group SourceSection: None
@@ -1013,7 +1007,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4916,5159]`def _strip_padding(s...`
         Identifier: _strip_padding
         FunctionDefinitionNode Name: _strip_padding SourceSection: None
@@ -1189,7 +1182,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5159,5288]`_percent_re = re.com...`
         Identifier: _percent_re
         PythonCallNodeGen SourceSection: [5173,5288]`re.compile(r'%(?:\((...`
@@ -1548,7 +1540,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [13,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6192,7537]`def format_string(f,...`
         Identifier: format_string
         FunctionDefinitionNode Name: format_string SourceSection: None
@@ -1958,7 +1949,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [7537,8175]`def format(percent, ...`
         Identifier: format
         FunctionDefinitionNode Name: format SourceSection: None
@@ -2156,7 +2146,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8175,9703]`def currency(val, sy...`
         Identifier: currency
         FunctionDefinitionNode Name: currency SourceSection: None
@@ -2643,7 +2632,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [12,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9703,9818]`def str(val):↵    ""...`
         Identifier: str
         FunctionDefinitionNode Name: str SourceSection: None
@@ -2694,7 +2682,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [9818,10216]`def delocalize(strin...`
         Identifier: delocalize
         FunctionDefinitionNode Name: delocalize SourceSection: None
@@ -2811,7 +2798,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10216,10350]`def atof(string, fun...`
         Identifier: atof
         FunctionDefinitionNode Name: atof SourceSection: None
@@ -2878,7 +2864,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10350,10476]`def atoi(string):↵  ...`
         Identifier: atoi
         FunctionDefinitionNode Name: atoi SourceSection: None
@@ -2935,7 +2920,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10476,10892]`def _test():↵    set...`
         Identifier: _test
         FunctionDefinitionNode Name: _test SourceSection: None
@@ -3048,7 +3032,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10892,10914]`_setlocale = setloca...`
         Identifier: _setlocale
         ReadNameNodeGen SourceSection: [10905,10914]`setlocale`
@@ -3295,7 +3278,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11898,12275]`def _append_modifier...`
         Identifier: _append_modifier
         FunctionDefinitionNode Name: _append_modifier SourceSection: None
@@ -3482,7 +3464,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [12275,15168]`def normalize(locale...`
         Identifier: normalize
         FunctionDefinitionNode Name: normalize SourceSection: None
@@ -4197,7 +4178,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [13,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [15168,16245]`def _parse_localenam...`
         Identifier: _parse_localename
         FunctionDefinitionNode Name: _parse_localename SourceSection: None
@@ -4398,7 +4378,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [16245,16838]`def _build_localenam...`
         Identifier: _build_localename
         FunctionDefinitionNode Name: _build_localename SourceSection: None
@@ -4529,7 +4508,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [16838,18825]`def getdefaultlocale...`
         Identifier: getdefaultlocale
         FunctionDefinitionNode Name: getdefaultlocale SourceSection: None
@@ -4805,7 +4783,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [18825,19428]`def getlocale(catego...`
         Identifier: getlocale
         FunctionDefinitionNode Name: getlocale SourceSection: None
@@ -4904,7 +4881,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [19428,20007]`def setlocale(catego...`
         Identifier: setlocale
         FunctionDefinitionNode Name: setlocale SourceSection: None
@@ -5010,7 +4986,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [20007,20288]`def resetlocale(cate...`
         Identifier: resetlocale
         FunctionDefinitionNode Name: resetlocale SourceSection: None
@@ -5072,7 +5047,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       IfNode SourceSection: [20288,22737]`if sys.platform.star...`
         YesNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [20291,20321]`sys.platform.startsw...`
@@ -5167,7 +5141,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
         TryFinallyNode SourceSection: [20691,22737]`try:↵        CODESET...`
           TryExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [20704,20711]`CODESET`
@@ -5226,7 +5199,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Return Expresssion: ReadLocalVariableNode SourceSection: None
                             Frame: [1,<return_val>,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                      CalleeContext SourceSection: None
                 WriteNameNodeGen SourceSection: [21088,21544]`def getpreferredenco...`
                   Identifier: getpreferredencoding
                   FunctionDefinitionNode Name: getpreferredencoding SourceSection: None
@@ -5320,7 +5292,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Return Expresssion: ReadLocalVariableNode SourceSection: None
                             Frame: [2,<return_val>,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                      CalleeContext SourceSection: None
               ReadNameNodeGen SourceSection: [20723,20732]`NameError`
                 Identifier: NameError
             WriteNameNodeGen SourceSection: [21558,22737]`def getpreferredenco...`
@@ -5472,7 +5443,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [4,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                  CalleeContext SourceSection: None
             SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [22737,25081]`locale_encoding_alia...`
         Identifier: locale_encoding_alias
@@ -7576,7 +7546,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [5,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                     ExpressionStatementNode SourceSection: [76284,76302]`_init_categories()`
                       PythonCallNodeGen SourceSection: [76284,76302]`_init_categories()`
                         CachedCallNodeGen SourceSection: None
@@ -8188,7 +8157,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [20,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [77783,77872]`try:↵    LC_MESSAGES...`
         TryExceptNode SourceSection: None
           ExpressionStatementNode SourceSection: [77792,77803]`LC_MESSAGES`
@@ -8274,4 +8242,3 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   ReadNameNodeGen SourceSection: None
                     Identifier: _test
             BlockNode SourceSection: None
-  CalleeContext SourceSection: None

@@ -10,4 +10,3 @@ ModuleRootNode Name: <module 'dict06'> SourceSection: [0,6]`{**{}}`
         PythonObjectFactoryNodeGen SourceSection: None
       DictLiteralNode SourceSection: [3,5]`{}`
         PythonObjectFactoryNodeGen SourceSection: None
-  CalleeContext SourceSection: None

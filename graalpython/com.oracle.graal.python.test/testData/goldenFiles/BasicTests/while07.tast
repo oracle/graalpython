@@ -29,4 +29,3 @@ ModuleRootNode Name: <module 'while07'> SourceSection: [0,74]`while True:↵  if
                   EmptyNode SourceSection: [57,61]`pass`
           ExpressionStatementNode SourceSection: [70,74]`pass`
             EmptyNode SourceSection: [70,74]`pass`
-  CalleeContext SourceSection: None

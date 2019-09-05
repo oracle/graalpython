@@ -36,4 +36,3 @@ ModuleRootNode Name: <module 'comparision04'> SourceSection: [0,12]`x < y() <= z
         ReadNameNodeGen SourceSection: [11,12]`z`
           Identifier: z
       YesNodeGen SourceSection: None
-  CalleeContext SourceSection: None

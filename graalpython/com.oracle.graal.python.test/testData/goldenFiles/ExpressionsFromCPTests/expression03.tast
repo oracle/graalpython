@@ -13,4 +13,3 @@ ModuleRootNode Name: <module 'expression03'> SourceSection: [0,9]`[1, 2, 3]`
         Value: 2
       IntegerLiteralNode SourceSection: [7,8]`3`
         Value: 3
-  CalleeContext SourceSection: None

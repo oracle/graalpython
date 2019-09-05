@@ -81,7 +81,6 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                       WriteLocalCellNodeGen SourceSection: [54,60]`x = 12`
                         Identifier: x
                         ReadLocalVariableNode SourceSection: None
@@ -100,5 +99,3 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
@@ -554,6 +555,10 @@ public class ParserTreePrinter implements NodeVisitor {
         if (!node.getClass().getPackage().getName().startsWith("com.oracle.graal.python")) {
             // print only python nodes
             visitChildren(node);
+            return false;
+        }
+        if (node instanceof ExecutionContext.CalleeContext) {
+            // these nodes shouldn't be printed in the result.
             return false;
         }
         if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') {

@@ -6,4 +6,3 @@ ModuleRootNode Name: <module 'global02'> SourceSection: [0,8]`global x`
   Documentation: None
   InnerRootNode SourceSection: [0,8]`global x`
     EmptyNode SourceSection: [0,8]`global x`
-  CalleeContext SourceSection: None

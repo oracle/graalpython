@@ -62,4 +62,3 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
               StringLiteralNode SourceSection: [87,93]`"test"`
               ReadNameNodeGen SourceSection: None
                 Identifier: print
-  CalleeContext SourceSection: None

@@ -9,4 +9,3 @@ ModuleRootNode Name: <module 'expression05'> SourceSection: [0,6]`a[...]`
       ReadNameNodeGen SourceSection: None
         Identifier: a
       ObjectLiteralNode SourceSection: [2,5]`...`
-  CalleeContext SourceSection: None

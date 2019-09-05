@@ -12,4 +12,3 @@ ModuleRootNode Name: <module 'getAttr01'> SourceSection: [0,3]`a.b`
           Op: __getattribute__
       ReadNameNodeGen SourceSection: [0,1]`a`
         Identifier: a
-  CalleeContext SourceSection: None

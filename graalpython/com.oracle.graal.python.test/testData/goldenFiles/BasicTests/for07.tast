@@ -53,4 +53,3 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                 ReadNameNodeGen SourceSection: None
                   Identifier: range
           BlockNode SourceSection: None
-  CalleeContext SourceSection: None

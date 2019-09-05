@@ -19,4 +19,3 @@ ModuleRootNode Name: <module 'tuple13'> SourceSection: [0,29]`b = (↵  (0x69, 0
                 Value: 105
               IntegerLiteralNode SourceSection: [15,20]`0x131`
                 Value: 305
-  CalleeContext SourceSection: None

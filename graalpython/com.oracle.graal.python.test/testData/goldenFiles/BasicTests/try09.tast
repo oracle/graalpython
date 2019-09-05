@@ -25,4 +25,3 @@ ModuleRootNode Name: <module 'try09'> SourceSection: [0,68]`try:↵   raise Keyb
               StringLiteralNode SourceSection: [50,67]`'Goodbye, world!'`
               ReadNameNodeGen SourceSection: None
                 Identifier: print
-  CalleeContext SourceSection: None

@@ -91,5 +91,3 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

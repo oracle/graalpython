@@ -22,4 +22,3 @@ ModuleRootNode Name: <module 'tuple11'> SourceSection: [0,10]`a += 1,2,3`
                 Value: 2
               IntegerLiteralNode SourceSection: [9,10]`3`
                 Value: 3
-  CalleeContext SourceSection: None

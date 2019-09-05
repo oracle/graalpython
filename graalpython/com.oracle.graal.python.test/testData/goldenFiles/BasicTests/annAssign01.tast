@@ -13,4 +13,3 @@ ModuleRootNode Name: <module 'annAssign01'> SourceSection: [0,10]`a: int = 1`
           Identifier: a
           IntegerLiteralNode SourceSection: [9,10]`1`
             Value: 1
-  CalleeContext SourceSection: None

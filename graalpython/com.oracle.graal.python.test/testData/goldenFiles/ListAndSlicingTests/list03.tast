@@ -7,4 +7,3 @@ ModuleRootNode Name: <module 'list03'> SourceSection: [0,2]`[]`
   InnerRootNode SourceSection: [0,2]`[]`
     ListLiteralNode SourceSection: [0,2]`[]`
       PythonObjectFactoryNodeGen SourceSection: None
-  CalleeContext SourceSection: None

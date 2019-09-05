@@ -26,4 +26,3 @@ ModuleRootNode Name: <module 'try04'> SourceSection: [0,63]`try:↵  pass↵exce
                   Identifier: NameError
             BlockNode SourceSection: None
             SaveExceptionStateNodeGen SourceSection: None
-  CalleeContext SourceSection: None

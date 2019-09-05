@@ -13,4 +13,3 @@ ModuleRootNode Name: <module 'tuple03'> SourceSection: [0,6]`t = ()`
           Identifier: t
           TupleLiteralNode SourceSection: [4,6]`()`
             PythonObjectFactoryNodeGen SourceSection: None
-  CalleeContext SourceSection: None

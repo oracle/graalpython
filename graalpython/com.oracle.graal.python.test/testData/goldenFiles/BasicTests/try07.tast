@@ -31,4 +31,3 @@ ModuleRootNode Name: <module 'try07'> SourceSection: [0,91]`try:↵    pass↵ex
                 EmptyNode SourceSection: None
             BlockNode SourceSection: None
             SaveExceptionStateNodeGen SourceSection: None
-  CalleeContext SourceSection: None

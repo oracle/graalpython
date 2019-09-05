@@ -163,7 +163,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [890,1471]`def format_list(extr...`
         Identifier: format_list
         FunctionDefinitionNode Name: format_list SourceSection: None
@@ -219,7 +218,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1471,1866]`def print_tb(tb, lim...`
         Identifier: print_tb
         FunctionDefinitionNode Name: print_tb SourceSection: None
@@ -305,7 +303,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [1866,2010]`def format_tb(tb, li...`
         Identifier: format_tb
         FunctionDefinitionNode Name: format_tb SourceSection: None
@@ -377,7 +374,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2010,2645]`def extract_tb(tb, l...`
         Identifier: extract_tb
         FunctionDefinitionNode Name: extract_tb SourceSection: None
@@ -452,7 +448,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [2645,2752]`_cause_message = (↵ ...`
         Identifier: _cause_message
         StringLiteralNode SourceSection: [2668,2751]`"\nThe above excepti...`
@@ -629,7 +624,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [3876,4660]`def format_exception...`
         Identifier: format_exception
         FunctionDefinitionNode Name: format_exception SourceSection: None
@@ -751,7 +745,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [4660,5392]`def format_exception...`
         Identifier: format_exception_only
         FunctionDefinitionNode Name: format_exception_only SourceSection: None
@@ -825,7 +818,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5392,5607]`def _format_final_ex...`
         Identifier: _format_final_exc_line
         FunctionDefinitionNode Name: _format_final_exc_line SourceSection: None
@@ -931,7 +923,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5607,5747]`def _some_str(value)...`
         Identifier: _some_str
         FunctionDefinitionNode Name: _some_str SourceSection: None
@@ -1010,7 +1001,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5747,5945]`def print_exc(limit=...`
         Identifier: print_exc
         FunctionDefinitionNode Name: print_exc SourceSection: None
@@ -1097,7 +1087,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [5945,6114]`def format_exc(limit...`
         Identifier: format_exc
         FunctionDefinitionNode Name: format_exc SourceSection: None
@@ -1182,7 +1171,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6114,6521]`def print_last(limit...`
         Identifier: print_last
         FunctionDefinitionNode Name: print_last SourceSection: None
@@ -1301,7 +1289,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6521,6939]`def print_stack(f=No...`
         Identifier: print_stack
         FunctionDefinitionNode Name: print_stack SourceSection: None
@@ -1414,7 +1401,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6939,7150]`def format_stack(f=N...`
         Identifier: format_stack
         FunctionDefinitionNode Name: format_stack SourceSection: None
@@ -1515,7 +1501,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [7150,7724]`def extract_stack(f=...`
         Identifier: extract_stack
         FunctionDefinitionNode Name: extract_stack SourceSection: None
@@ -1633,7 +1618,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [7724,8040]`def clear_frames(tb)...`
         Identifier: clear_frames
         FunctionDefinitionNode Name: clear_frames SourceSection: None
@@ -1715,7 +1699,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8040,10444]`class FrameSummary:↵...`
         Identifier: FrameSummary
         ExpressionWithSideEffects SourceSection: None
@@ -2003,7 +1986,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     BlockNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
-                                                CalleeContext SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [9431,9445]`locals.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [9431,9445]`locals.items()`
@@ -2022,7 +2004,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [9,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [9472,9897]`def __eq__(self, oth...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2241,7 +2222,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [9897,10001]`def __getitem__(self...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2330,7 +2310,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10001,10098]`def __iter__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2414,7 +2393,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10098,10276]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2494,7 +2472,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                         SetItemNodeGen SourceSection: [10276,10444]`@property↵    def li...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2597,7 +2574,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [10276,10285]`@property`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2608,7 +2584,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 Identifier: property
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 BuiltinsLiteralNode SourceSection: None
@@ -2732,7 +2707,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                       Index: 0
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [10824,11144]`def walk_tb(tb):↵   ...`
         Identifier: walk_tb
         GeneratorFunctionDefinitionNode Name: walk_tb SourceSection: None
@@ -2819,7 +2793,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                       Index: 0
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11144,15801]`class StackSummary(l...`
         Identifier: StackSummary
         ExpressionWithSideEffects SourceSection: None
@@ -3305,7 +3278,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [17,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [11204,11216]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3507,7 +3479,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [13,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [13095,13107]`@classmethod`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -3975,9 +3946,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [13,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                  CalleeContext SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [11163,11167]`list`
                 Identifier: list
@@ -4621,7 +4590,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [12,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [19613,19814]`@classmethod↵    def...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -4730,7 +4698,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                                           Frame: [5,<return_val>,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                    CalleeContext SourceSection: None
                                 ReadClassAttributeNodeGen SourceSection: [19613,19625]`@classmethod`
                                   GetItemNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
@@ -4856,7 +4823,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [20108,20185]`def __eq__(self, oth...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -4926,7 +4892,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [20185,20234]`def __str__(self):↵ ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -4977,7 +4942,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [20234,22055]`def format_exception...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -5398,7 +5362,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           BlockNode SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                           PRaiseNodeGen SourceSection: None
-                                                      CalleeContext SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [21882,21892]`caretspace`
                                                       GetIteratorNodeGen SourceSection: None
                                                       ReadGeneratorFrameVariableNode SourceSection: [21882,21892]`caretspace`
@@ -5472,7 +5435,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             Index: 0
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                             SetItemNodeGen SourceSection: [22055,23096]`def format(self, *, ...`
                               ArgumentExpressionNode SourceSection: None
                                 ReadIndexedArgumentNodeGen SourceSection: None
@@ -5704,9 +5666,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               Index: 1
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
-                      CalleeContext SourceSection: None
                   StringLiteralNode SourceSection: None
                   GetCallAttributeNodeGen SourceSection: None
                     BuiltinsLiteralNode SourceSection: None
@@ -5717,4 +5677,3 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
               ReadLocalVariableNode SourceSection: None
                 Frame: [2,<>temp2,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
-  CalleeContext SourceSection: None

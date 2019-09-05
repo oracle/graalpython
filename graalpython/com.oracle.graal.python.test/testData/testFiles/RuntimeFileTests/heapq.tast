@@ -106,7 +106,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6360,6673]`def heappop(heap):↵ ...`
         Identifier: heappop
         FunctionDefinitionNode Name: heappop SourceSection: None
@@ -209,7 +208,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [6673,7287]`def heapreplace(heap...`
         Identifier: heapreplace
         FunctionDefinitionNode Name: heapreplace SourceSection: None
@@ -293,7 +291,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [7287,7488]`def heappushpop(heap...`
         Identifier: heappushpop
         FunctionDefinitionNode Name: heappushpop SourceSection: None
@@ -415,7 +412,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [7488,8016]`def heapify(x):↵    ...`
         Identifier: heapify
         FunctionDefinitionNode Name: heapify SourceSection: None
@@ -512,7 +508,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8016,8300]`def _heappop_max(hea...`
         Identifier: _heappop_max
         FunctionDefinitionNode Name: _heappop_max SourceSection: None
@@ -615,7 +610,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8300,8541]`def _heapreplace_max...`
         Identifier: _heapreplace_max
         FunctionDefinitionNode Name: _heapreplace_max SourceSection: None
@@ -699,7 +693,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8541,8879]`def _heapify_max(x):...`
         Identifier: _heapify_max
         FunctionDefinitionNode Name: _heapify_max SourceSection: None
@@ -796,7 +789,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [8879,11343]`def _siftdown(heap, ...`
         Identifier: _siftdown
         FunctionDefinitionNode Name: _siftdown SourceSection: None
@@ -944,7 +936,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [11343,12077]`def _siftup(heap, po...`
         Identifier: _siftup
         FunctionDefinitionNode Name: _siftup SourceSection: None
@@ -1168,7 +1159,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [12077,12515]`def _siftdown_max(he...`
         Identifier: _siftdown_max
         FunctionDefinitionNode Name: _siftdown_max SourceSection: None
@@ -1316,7 +1306,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [12515,13287]`def _siftup_max(heap...`
         Identifier: _siftup_max
         FunctionDefinitionNode Name: _siftup_max SourceSection: None
@@ -1540,7 +1529,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [7,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [13287,18959]`def merge(*iterables...`
         Identifier: merge
         GeneratorFunctionDefinitionNode Name: merge SourceSection: None
@@ -2407,7 +2395,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         Index: 1
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [18959,20826]`def nsmallest(n, ite...`
         Identifier: nsmallest
         FunctionDefinitionNode Name: nsmallest SourceSection: None
@@ -2750,7 +2737,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     BlockNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [19887,19904]`zip(range(n), it)`
                                 GetIteratorNodeGen SourceSection: None
                                 PythonCallNodeGen SourceSection: [19887,19904]`zip(range(n), it)`
@@ -2998,7 +2984,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [20303,20309]`result`
                                   GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [20303,20309]`result`
@@ -3114,7 +3099,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [20421,20438]`zip(range(n), it)`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [20421,20438]`zip(range(n), it)`
@@ -3404,7 +3388,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20817,20823]`result`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [20817,20823]`result`
@@ -3417,7 +3400,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       WriteNameNodeGen SourceSection: [20826,22665]`def nlargest(n, iter...`
         Identifier: nlargest
         FunctionDefinitionNode Name: nlargest SourceSection: None
@@ -3762,7 +3744,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     BlockNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
-                                CalleeContext SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [21667,21692]`zip(range(0, -n, -1)...`
                                 GetIteratorNodeGen SourceSection: None
                                 PythonCallNodeGen SourceSection: [21667,21692]`zip(range(0, -n, -1)...`
@@ -4026,7 +4007,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
-                                  CalleeContext SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [22094,22100]`result`
                                   GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [22094,22100]`result`
@@ -4142,7 +4122,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [22212,22237]`zip(range(0, -n, -1)...`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [22212,22237]`zip(range(0, -n, -1)...`
@@ -4448,7 +4427,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                              CalleeContext SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [22619,22625]`result`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [22619,22625]`result`
@@ -4461,7 +4439,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
-            CalleeContext SourceSection: None
       TryFinallyNode SourceSection: [22665,22724]`try:↵    from _heapq...`
         TryExceptNode SourceSection: None
           ImportStarNode SourceSection: [22674,22694]`from _heapq import *...`
@@ -4565,4 +4542,3 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                   ReadNameNodeGen SourceSection: None
                     Identifier: print
             BlockNode SourceSection: None
-  CalleeContext SourceSection: None

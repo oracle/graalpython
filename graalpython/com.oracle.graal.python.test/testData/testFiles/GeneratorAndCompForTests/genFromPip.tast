@@ -202,7 +202,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               BlockNode SourceSection: None
                               GeneratorAccessNode SourceSection: None
                               PRaiseNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [369,376]`entries`
                           GetIteratorNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [369,376]`entries`
@@ -350,5 +349,3 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           Index: 2
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

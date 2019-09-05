@@ -63,4 +63,3 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
           YesNodeGen SourceSection: None
           GetClassNodeGen SourceSection: None
           SaveExceptionStateNodeGen SourceSection: None
-  CalleeContext SourceSection: None

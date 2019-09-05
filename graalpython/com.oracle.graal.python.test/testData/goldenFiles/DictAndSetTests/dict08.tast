@@ -30,4 +30,3 @@ ModuleRootNode Name: <module 'dict08'> SourceSection: [0,30]`{1:2, **{}, 3:4, **
           Value: 6
         IntegerLiteralNode SourceSection: [27,28]`8`
           Value: 8
-  CalleeContext SourceSection: None

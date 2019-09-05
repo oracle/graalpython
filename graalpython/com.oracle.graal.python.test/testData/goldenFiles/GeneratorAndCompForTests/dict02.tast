@@ -93,7 +93,6 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                         BlockNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                         PRaiseNodeGen SourceSection: None
-                    CalleeContext SourceSection: None
                   GetIteratorExpressionNodeGen SourceSection: [84,97]`dict1.items()`
                     GetIteratorNodeGen SourceSection: None
                     PythonCallNodeGen SourceSection: [84,97]`dict1.items()`
@@ -127,4 +126,3 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
               Value: 4
             IntegerLiteralNode SourceSection: [46,47]`5`
               Value: 5
-  CalleeContext SourceSection: None

@@ -131,7 +131,6 @@ ModuleRootNode Name: <module 'localMember02'> SourceSection: [0,156]`def fn():â†
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                     Return Expresssion: ObjectLiteralNode SourceSection: None
-                                                CalleeContext SourceSection: None
                                             StringLiteralNode SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [76,82]`object`
                                               Identifier: object
@@ -161,9 +160,6 @@ ModuleRootNode Name: <module 'localMember02'> SourceSection: [0,156]`def fn():â†
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

@@ -42,11 +42,9 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
-                CalleeContext SourceSection: None
             PythonCallNodeGen SourceSection: [0,12]`@funcattrs()`
               CachedCallNodeGen SourceSection: None
                 CreateArgumentsNodeGen SourceSection: None
                 CallDispatchNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: None
                 Identifier: funcattrs
-  CalleeContext SourceSection: None

@@ -52,5 +52,3 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,61]`def fn():â†µ  try:â†
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

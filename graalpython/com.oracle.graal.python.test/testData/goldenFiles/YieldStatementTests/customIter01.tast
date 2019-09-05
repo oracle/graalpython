@@ -124,7 +124,6 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                         SetItemNodeGen SourceSection: [88,148]`def __next__(self):↵...`
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -173,9 +172,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                                  CalleeContext SourceSection: None
                               StringLiteralNode SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 BuiltinsLiteralNode SourceSection: None
@@ -245,7 +242,6 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                       WriteLocalCellNodeGen SourceSection: [218,228]`ret = None`
                         Identifier: ret
                         ReadLocalVariableNode SourceSection: None
@@ -270,5 +266,3 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

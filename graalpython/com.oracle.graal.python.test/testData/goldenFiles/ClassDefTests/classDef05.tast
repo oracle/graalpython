@@ -80,7 +80,6 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                                       ExpressionStatementNode SourceSection: [59,63]`pass`
                                         EmptyNode SourceSection: [59,63]`pass`
                                     Return Expresssion: ObjectLiteralNode SourceSection: None
-                                CalleeContext SourceSection: None
                             StringLiteralNode SourceSection: None
                             GetAttributeNodeGen SourceSection: [35,56]`modname.BaseClassNam...`
                               GetFixedAttributeNodeGen SourceSection: None
@@ -102,5 +101,3 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

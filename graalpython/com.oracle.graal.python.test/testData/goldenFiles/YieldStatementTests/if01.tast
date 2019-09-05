@@ -60,5 +60,3 @@ ModuleRootNode Name: <module 'if01'> SourceSection: [0,52]`def gen():â†µ  if b:â
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

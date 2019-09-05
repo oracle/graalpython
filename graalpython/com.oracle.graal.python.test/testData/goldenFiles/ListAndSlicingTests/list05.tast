@@ -21,4 +21,3 @@ ModuleRootNode Name: <module 'list05'> SourceSection: [0,15]`[*{2}, 3, *[4]]`
             PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [12,13]`4`
               Value: 4
-  CalleeContext SourceSection: None

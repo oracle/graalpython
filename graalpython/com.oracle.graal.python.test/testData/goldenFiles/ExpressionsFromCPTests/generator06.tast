@@ -83,7 +83,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
-          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [19,28]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [19,28]`range(20)`
@@ -97,4 +96,3 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
         PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: None
         Identifier: list
-  CalleeContext SourceSection: None

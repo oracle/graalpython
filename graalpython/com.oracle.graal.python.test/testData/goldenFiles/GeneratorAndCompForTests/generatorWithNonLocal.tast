@@ -117,7 +117,6 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                               Frame: [1,<return_val>,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        CalleeContext SourceSection: None
                                   ElseNode SourceSection: [137,190]`for A in doit():↵   ...`
                                     GeneratorForNode SourceSection: None
                                       ElseNode SourceSection: [160,190]`for C in Y:↵        ...`
@@ -170,7 +169,6 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                            CalleeContext SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [190,209]`gen = _inner_func()`
                         Identifier: gen
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -215,5 +213,3 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

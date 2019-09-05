@@ -94,7 +94,6 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                               BlockNode SourceSection: None
                               GeneratorAccessNode SourceSection: None
                               PRaiseNodeGen SourceSection: None
-                          CalleeContext SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [53,63]`caretspace`
                           GetIteratorNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [53,63]`caretspace`
@@ -121,5 +120,3 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                         Index: 0
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

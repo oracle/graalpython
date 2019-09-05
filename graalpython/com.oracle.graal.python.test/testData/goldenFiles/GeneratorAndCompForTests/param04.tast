@@ -71,5 +71,3 @@ ModuleRootNode Name: <module 'param04'> SourceSection: [0,41]`def fn(*arg):↵  
                         PythonObjectFactoryNodeGen SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None

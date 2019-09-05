@@ -23,4 +23,3 @@ ModuleRootNode Name: <module 'fromImport10'> SourceSection: [0,41]`from sys.path
             Op: __getattribute__
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattr__
-  CalleeContext SourceSection: None

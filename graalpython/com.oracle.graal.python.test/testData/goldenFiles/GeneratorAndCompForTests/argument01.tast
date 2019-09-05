@@ -61,7 +61,6 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
-          CalleeContext SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [17,26]`range(10)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [17,26]`range(10)`
@@ -75,4 +74,3 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
         PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: None
         Identifier: foo
-  CalleeContext SourceSection: None

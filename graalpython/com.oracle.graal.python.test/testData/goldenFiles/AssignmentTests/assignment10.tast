@@ -49,4 +49,3 @@ ModuleRootNode Name: <module 'assignment10'> SourceSection: [0,15]`i, j, k = x =
           Frame: [0,<>temp0,Illegal]
           ReadVariableFromFrameNodeGen SourceSection: None
       EmptyNode SourceSection: None
-  CalleeContext SourceSection: None

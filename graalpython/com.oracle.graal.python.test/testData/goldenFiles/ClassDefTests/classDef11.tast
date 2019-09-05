@@ -230,9 +230,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                     Frame: [6,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              CalleeContext SourceSection: None
                                       Return Expresssion: ObjectLiteralNode SourceSection: None
-                                  CalleeContext SourceSection: None
                               StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [64,69]`tuple`
                                 Identifier: tuple
@@ -257,5 +255,3 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-              CalleeContext SourceSection: None
-  CalleeContext SourceSection: None
