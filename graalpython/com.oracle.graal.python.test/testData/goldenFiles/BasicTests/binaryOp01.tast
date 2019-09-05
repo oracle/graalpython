@@ -1,0 +1,14 @@
+ModuleRootNode Name: <module 'binaryOp01'> SourceSection: [0,6]`1 + 10`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,6]`1 + 10`
+    BinaryArithmeticExpression SourceSection: [0,6]`1 + 10`
+      LookupAndCallBinaryNodeGen SourceSection: None
+        Op: __add__
+      IntegerLiteralNode SourceSection: [0,1]`1`
+        Value: 1
+      IntegerLiteralNode SourceSection: [4,6]`10`
+        Value: 10

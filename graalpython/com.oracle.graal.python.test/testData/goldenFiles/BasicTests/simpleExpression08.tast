@@ -1,0 +1,21 @@
+FunctionRootNode SourceSection: [0,8]`"\uD800"`
+  Name: simpleExpression08
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  CelVars: None
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<return_val>]
+  ExecutionSlots:
+    FreeVarsSlots: None
+    CellVarsSlots: None
+  InnerRootNode SourceSection: None
+    ReturnTargetNode SourceSection: None
+      Body: FrameReturnNode SourceSection: None
+        WriteLocalVariableNodeGen SourceSection: None
+          Identifier: <return_val>
+          WriteLocalFrameSlotNodeGen SourceSection: None
+            Frame: [0,<return_val>,Illegal]
+          StringLiteralNode SourceSection: [0,8]`"\uD800"`
+      Return Expresssion: ReadLocalVariableNode SourceSection: None
+        Frame: [0,<return_val>,Illegal]
+        ReadVariableFromFrameNodeGen SourceSection: None

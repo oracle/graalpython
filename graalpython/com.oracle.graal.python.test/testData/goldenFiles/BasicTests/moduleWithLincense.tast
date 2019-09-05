@@ -1,0 +1,19 @@
+ModuleRootNode Name: <module 'moduleWithLincense'> SourceSection: [0,179]`# Copyright (c) 2018...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: `MODULE A DOC`
+  InnerRootNode SourceSection: [0,179]`# Copyright (c) 2018...`
+    ExpressionWithSideEffect SourceSection: [142,179]`↵"""MODULE A DOC"""↵...`
+      Expression:
+        PythonCallNodeGen SourceSection: [162,179]`print("module A")`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [168,178]`"module A"`
+          ReadNameNodeGen SourceSection: None
+            Identifier: print
+      SideEffect:
+        ExpressionStatementNode SourceSection: [143,161]`"""MODULE A DOC"""`
+          StringLiteralNode SourceSection: [143,161]`"""MODULE A DOC"""`

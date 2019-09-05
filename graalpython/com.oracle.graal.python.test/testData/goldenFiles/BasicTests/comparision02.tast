@@ -1,0 +1,20 @@
+ModuleRootNode Name: <module 'comparision02'> SourceSection: [0,15]`1 < '10' > True`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,15]`1 < '10' > True`
+    AndNode SourceSection: [0,15]`1 < '10' > True`
+      BinaryComparisonNodeGen SourceSection: None
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __lt__
+        IntegerLiteralNode SourceSection: [0,1]`1`
+          Value: 1
+        StringLiteralNode SourceSection: [4,8]`'10'`
+      BinaryComparisonNodeGen SourceSection: None
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __gt__
+        StringLiteralNode SourceSection: [4,8]`'10'`
+        BooleanLiteralNode SourceSection: [11,15]`True`
+      YesNodeGen SourceSection: None

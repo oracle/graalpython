@@ -1,0 +1,98 @@
+ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with A()...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,45]`def fn():↵  with A()...`
+    ExpressionWithSideEffect SourceSection: [0,45]`def fn():↵  with A()...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,45]`def fn():↵  with A()...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,45]`def fn():↵  with A()...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 3 slots [b, a, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,45]`def fn():↵  with A()...`
+                ReturnTargetNode SourceSection: [0,45]`def fn():↵  with A()...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    WithNode SourceSection: [12,45]`with A() as a, B() a...`
+                      WithNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [41,45]`pass`
+                          EmptyNode SourceSection: [41,45]`pass`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: b
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [0,b,Illegal]
+                        PythonCallNodeGen SourceSection: [27,30]`B()`
+                          CachedCallNodeGen SourceSection: None
+                            CreateArgumentsNodeGen SourceSection: None
+                            CallDispatchNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: B
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeSlowNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeSlowNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        YesNodeGen SourceSection: None
+                        GetClassNodeGen SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,a,Illegal]
+                      PythonCallNodeGen SourceSection: [17,20]`A()`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: A
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      LookupInheritedAttributeNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
+                      LookupInheritedAttributeNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      YesNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [2,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

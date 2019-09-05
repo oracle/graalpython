@@ -1,0 +1,39 @@
+ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  pas...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,21]`with A() as a:↵  pas...`
+    ExpressionWithSideEffect SourceSection: [0,21]`with A() as a:↵  pas...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WithNode SourceSection: [0,21]`with A() as a:↵  pas...`
+          ExpressionStatementNode SourceSection: [17,21]`pass`
+            EmptyNode SourceSection: [17,21]`pass`
+          WriteNameNodeGen SourceSection: None
+            Identifier: a
+          PythonCallNodeGen SourceSection: [5,8]`A()`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: None
+              Identifier: A
+          LookupInheritedAttributeNode SourceSection: None
+            LookupAttributeInMRONodeGen SourceSection: None
+              IsSameTypeSlowNodeGen SourceSection: None
+            GetLazyClassNodeGen SourceSection: None
+          LookupInheritedAttributeNode SourceSection: None
+            LookupAttributeInMRONodeGen SourceSection: None
+              IsSameTypeSlowNodeGen SourceSection: None
+            GetLazyClassNodeGen SourceSection: None
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          YesNodeGen SourceSection: None
+          GetClassNodeGen SourceSection: None
+          SaveExceptionStateNodeGen SourceSection: None

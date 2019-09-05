@@ -1,0 +1,11 @@
+ModuleRootNode Name: <module 'expression05'> SourceSection: [0,6]`a[...]`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,6]`a[...]`
+    GetItemNodeGen SourceSection: [0,6]`a[...]`
+      ReadNameNodeGen SourceSection: None
+        Identifier: a
+      ObjectLiteralNode SourceSection: [2,5]`...`

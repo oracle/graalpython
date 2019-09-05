@@ -1,0 +1,90 @@
+ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():↵ asyn...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,47]`async def f():↵ asyn...`
+    ExpressionWithSideEffect SourceSection: [0,47]`async def f():↵ asyn...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [6,47]`def f():↵ async with...`
+          Identifier: f
+          FunctionDefinitionNode Name: f SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [6,47]`def f():↵ async with...`
+              Name: f
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 3 slots [d, b, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [6,47]`def f():↵ async with...`
+                ReturnTargetNode SourceSection: [6,47]`def f():↵ async with...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    WithNode SourceSection: [22,47]`with a as b, c as d:...`
+                      WithNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [43,47]`pass`
+                          EmptyNode SourceSection: [43,47]`pass`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: d
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [0,d,Illegal]
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [35,36]`c`
+                          Identifier: c
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeSlowNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeSlowNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        YesNodeGen SourceSection: None
+                        GetClassNodeGen SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: b
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,b,Illegal]
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [27,28]`a`
+                        Identifier: a
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      LookupInheritedAttributeNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
+                      LookupInheritedAttributeNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeSlowNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      YesNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [2,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

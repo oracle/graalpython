@@ -1,0 +1,15 @@
+ModuleRootNode Name: <module 'expression02'> SourceSection: [0,6]`foo(1)`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,6]`foo(1)`
+    PythonCallNodeGen SourceSection: [0,6]`foo(1)`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      IntegerLiteralNode SourceSection: [4,5]`1`
+        Value: 1
+      ReadNameNodeGen SourceSection: None
+        Identifier: foo

@@ -1,0 +1,55 @@
+ModuleRootNode Name: <module 'functionDef10'> SourceSection: [0,30]`def foo(*args): ↵  p...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,30]`def foo(*args): ↵  p...`
+    ExpressionWithSideEffect SourceSection: [0,30]`def foo(*args): ↵  p...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,30]`def foo(*args): ↵  p...`
+          Identifier: foo
+          FunctionDefinitionNode Name: foo SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,30]`def foo(*args): ↵  p...`
+              Name: foo
+              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [args, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,30]`def foo(*args): ↵  p...`
+                ReturnTargetNode SourceSection: [0,30]`def foo(*args): ↵  p...`
+                  Body: BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: args
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,args,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadVarArgsNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
+                    ExpressionStatementNode SourceSection: [19,30]`print(args)`
+                      PythonCallNodeGen SourceSection: [19,30]`print(args)`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [25,29]`args`
+                          Frame: [0,args,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: print
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

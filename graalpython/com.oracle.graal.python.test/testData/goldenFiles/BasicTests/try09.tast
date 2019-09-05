@@ -1,0 +1,27 @@
+ModuleRootNode Name: <module 'try09'> SourceSection: [0,68]`try:↵   raise Keyboa...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,68]`try:↵   raise Keyboa...`
+    ExpressionWithSideEffect SourceSection: [0,68]`try:↵   raise Keyboa...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        TryFinallyNode SourceSection: [0,68]`try:↵   raise Keyboa...`
+          TryExceptNode SourceSection: None
+            RaiseNodeGen SourceSection: [8,31]`raise KeyboardInterr...`
+              ReadNameNodeGen SourceSection: [14,31]`KeyboardInterrupt`
+                Identifier: KeyboardInterrupt
+              EmptyNode SourceSection: None
+            BlockNode SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None
+          ExpressionStatementNode SourceSection: [44,68]`print('Goodbye, worl...`
+            PythonCallNodeGen SourceSection: [44,68]`print('Goodbye, worl...`
+              CachedCallNodeGen SourceSection: None
+                CreateArgumentsNodeGen SourceSection: None
+                CallDispatchNodeGen SourceSection: None
+              StringLiteralNode SourceSection: [50,67]`'Goodbye, world!'`
+              ReadNameNodeGen SourceSection: None
+                Identifier: print

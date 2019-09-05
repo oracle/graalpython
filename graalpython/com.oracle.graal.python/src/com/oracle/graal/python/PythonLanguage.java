@@ -193,7 +193,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected PythonContext createContext(Env env) {
         assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
         this.isWithThread = PythonOptions.isWithThread(env);
-        Python3Core newCore = new Python3Core(new PythonParserImpl());
+        Python3Core newCore = new Python3Core(new PythonParserImpl(env));
         final PythonContext context = new PythonContext(this, env, newCore);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
         return context;

@@ -47,19 +47,27 @@ TARGETS=${PARSER_PATH}/Python3BaseVisitor.java \
 	${PARSER_PATH}/Python3Parser.java \
 	${PARSER_PATH}/Python3Lexer.java
 
+TARGETSNEW=${PARSER_PATH}/Python3NewParser.java \
+	${PARSER_PATH}/Python3NewLexer.java
+
 SOURCE=${PARSER_PATH}/Python3.g4
 STAMP=${SOURCE}.stamp
 
-.PHONY: default clean
-default: ${TARGETS}
+SOURCENEW=${PARSER_PATH}/Python3New.g4
+STAMPNEW=${SOURCENEW}.stamp
 
-${STAMP}: ${SOURCE} ${POSTPROCESSOR}
+.PHONY: default clean
+default: ${TARGETS} ${TARGETSNEW}
+	
+
+${STAMP}: ${SOURCE} ${SOURCENEW} ${POSTPROCESSOR}
 	$(QUIETLY) touch $@
 	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCENEW}
 
 # postprocessing to make source compile without warnings
 ${PARSER_PATH}/%.java: ${STAMP}
-	$(QUIETLY) python ${POSTPROCESSOR} $@
+	python ${POSTPROCESSOR} $@
 
 clean:
 ifeq ($(wildcard ${SOURCE}),)
@@ -67,3 +75,5 @@ ifeq ($(wildcard ${SOURCE}),)
 endif
 	$(QUIETLY) rm -f ${TARGETS}
 	$(QUIETLY) rm -f ${STAMP}
+	$(QUIETLY) rm -f ${TARGETSNEW}
+	$(QUIETLY) rm -f ${STAMPNEW}

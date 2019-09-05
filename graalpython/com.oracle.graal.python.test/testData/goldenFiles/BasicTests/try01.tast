@@ -1,0 +1,22 @@
+ModuleRootNode Name: <module 'try01'> SourceSection: [0,37]`try:↵  pass↵except V...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,37]`try:↵  pass↵except V...`
+    ExpressionWithSideEffect SourceSection: [0,37]`try:↵  pass↵except V...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        TryFinallyNode SourceSection: [0,37]`try:↵  pass↵except V...`
+          TryExceptNode SourceSection: None
+            ExpressionStatementNode SourceSection: [7,11]`pass`
+              EmptyNode SourceSection: [7,11]`pass`
+            ExceptNode SourceSection: None
+              ExpressionStatementNode SourceSection: [33,37]`pass`
+                EmptyNode SourceSection: [33,37]`pass`
+              ReadNameNodeGen SourceSection: [19,29]`ValueError`
+                Identifier: ValueError
+            BlockNode SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None

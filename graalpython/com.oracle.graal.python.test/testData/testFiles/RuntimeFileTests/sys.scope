@@ -1,0 +1,70 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: displayhook
+        Kind: Function
+        FrameDescriptor: [builtins, bytes, text, value, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: getrecursionlimit
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: breakpointhook
+        Kind: Function
+        FrameDescriptor: [hookname, funcname, os, <>temp14, <>temp13, kws, warnings, module, modname, dot, <>temp12, args, importlib, hook, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: make_excepthook
+        Kind: Function
+        FrameDescriptor: [simple_print_traceback, __print_traceback__, <return_val>]
+        CellVars: [simple_print_traceback]
+        FreeVars: Empty
+        Scope: __print_traceback__
+            Kind: Function
+            FrameDescriptor: [exc, simple_print_traceback, typ, value, traceback, <return_val>, tb]
+            CellVars: Empty
+            FreeVars: [simple_print_traceback]
+        Scope: simple_print_traceback
+            Kind: Function
+            FrameDescriptor: [msg, e, <return_val>, tb]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: exit
+        Kind: Function
+        FrameDescriptor: [arg, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: make_hash_info_class
+        Kind: Function
+        FrameDescriptor: [make_named_tuple_class, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: make_float_info_class
+        Kind: Function
+        FrameDescriptor: [make_named_tuple_class, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: make_flags_class
+        Kind: Function
+        FrameDescriptor: [flags_class, make_func, make_named_tuple_class, names, get_set_descriptor, <>temp7, f, <>temp8, i, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: make_func
+            Kind: Function
+            FrameDescriptor: [func, i, <return_val>]
+            CellVars: [i]
+            FreeVars: Empty
+            Scope: func
+                Kind: Function
+                FrameDescriptor: [self, i, <return_val>]
+                CellVars: Empty
+                FreeVars: [i]
+    Scope: make_implementation_info
+        Kind: Function
+        FrameDescriptor: [make_named_tuple_class, version_info_type, <return_val>, SimpleNamespace]
+        CellVars: Empty
+        FreeVars: Empty

@@ -1,0 +1,135 @@
+ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedDict(di...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,106]`class OrderedDict(di...`
+    ExpressionWithSideEffect SourceSection: [0,106]`class OrderedDict(di...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,106]`class OrderedDict(di...`
+          Identifier: OrderedDict
+          ExpressionWithSideEffects SourceSection: None
+            WriteLocalVariableNodeGen SourceSection: None
+              Identifier: <>temp0
+              WriteLocalFrameSlotNodeGen SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+              PythonCallNodeGen SourceSection: [0,106]`class OrderedDict(di...`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                FunctionDefinitionNode Name: OrderedDict SourceSection: None
+                  Arguments: None
+                  KwArguments: None
+                  Documentation: None
+                  FreeVarSlots: None
+                  ExecutionSlots:
+                    FreeVarsSlots: None
+                    CellVarsSlots: __class__, 
+                  ClassBodyRootNode SourceSection: [0,106]`class OrderedDict(di...`
+                    Name: OrderedDict
+                    Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                      Param Names: namespace
+                    CelVars: __class__
+                    FreeVars: None
+                    NeedsCellFrame: False
+                    FrameDescriptor: 2 slots [setup, __class__]
+                    ExecutionSlots:
+                      FreeVarsSlots: None
+                      CellVarsSlots: __class__, 
+                    InnerRootNode SourceSection: None
+                      ReturnTargetNode SourceSection: None
+                        Body: BlockNode SourceSection: None
+                          ClassDefinitionPrologueNode SourceSection: None
+                            QualName: OrderedDict
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: __name__
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
+                            SetItemIfNotPresentNodeGen SourceSection: None
+                              SetItemNodeGen SourceSection: None
+                          SetItemNodeGen SourceSection: [27,106]`def setup(dict_setit...`
+                            ArgumentExpressionNode SourceSection: None
+                              ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
+                            StringLiteralNode SourceSection: None
+                            FunctionDefinitionNode Name: setup SourceSection: None
+                              Arguments:
+                                GetAttributeNodeGen SourceSection: [52,68]`dict.__setitem__`
+                                  GetFixedAttributeNodeGen SourceSection: None
+                                    Key: __setitem__
+                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                      Op: __getattribute__
+                                  ReadClassAttributeNodeGen SourceSection: [52,56]`dict`
+                                    GetItemNodeGen SourceSection: None
+                                      ArgumentExpressionNode SourceSection: None
+                                        ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
+                                      StringLiteralNode SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      Identifier: dict
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              KwArguments: None
+                              Documentation: StringLiteralNode: Empty
+                              FreeVarSlots: __class__, 
+                              ExecutionSlots:
+                                FreeVarsSlots: __class__, 
+                                CellVarsSlots: None
+                              FunctionRootNode SourceSection: [27,106]`def setup(dict_setit...`
+                                Name: setup
+                                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                  Param Names: dict_setitem
+                                CelVars: None
+                                FreeVars: __class__
+                                NeedsCellFrame: False
+                                FrameDescriptor: 3 slots [dict_setitem, __class__, <return_val>]
+                                ExecutionSlots:
+                                  FreeVarsSlots: __class__, 
+                                  CellVarsSlots: None
+                                InnerRootNode SourceSection: [27,106]`def setup(dict_setit...`
+                                  ReturnTargetNode SourceSection: [27,106]`def setup(dict_setit...`
+                                    Body: BlockNode SourceSection: None
+                                      WriteLocalVariableNodeGen SourceSection: None
+                                        Identifier: dict_setitem
+                                        WriteLocalFrameSlotNodeGen SourceSection: None
+                                          Frame: [0,dict_setitem,Illegal]
+                                        ArgumentExpressionNode SourceSection: None
+                                          ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
+                                      BlockNode SourceSection: None
+                                        ExpressionStatementNode SourceSection: [75,89]`dict_setitem()`
+                                          PythonCallNodeGen SourceSection: [75,89]`dict_setitem()`
+                                            CachedCallNodeGen SourceSection: None
+                                              CreateArgumentsNodeGen SourceSection: None
+                                              CallDispatchNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: None
+                                              Frame: [0,dict_setitem,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                        ExpressionStatementNode SourceSection: [94,106]`dict.clear()`
+                                          PythonCallNodeGen SourceSection: [94,106]`dict.clear()`
+                                            CachedCallNodeGen SourceSection: None
+                                              CreateArgumentsNodeGen SourceSection: None
+                                              CallDispatchNodeGen SourceSection: None
+                                            GetCallAttributeNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [94,98]`dict`
+                                                Identifier: dict
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                      Frame: [2,<return_val>,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                        Return Expresssion: ObjectLiteralNode SourceSection: None
+                StringLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [18,22]`dict`
+                  Identifier: dict
+                GetCallAttributeNodeGen SourceSection: None
+                  BuiltinsLiteralNode SourceSection: None
+            WriteCellVarNodeGen SourceSection: None
+              ReadLocalVariableNode SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None

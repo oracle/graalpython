@@ -65,6 +65,10 @@ public class ModuleRootNode extends PClosureRootNode {
         return writeModuleDoc;
     }
 
+    public String getDoc() {
+        return doc;
+    }
+
     @Override
     public Object execute(VirtualFrame frame) {
         CalleeContext.enter(frame, customLocalsProfile);
@@ -112,5 +116,9 @@ public class ModuleRootNode extends PClosureRootNode {
     @Override
     public boolean isPythonInternal() {
         return false;
+    }
+
+    public void assignSourceSection(SourceSection source) {
+        this.body.assignSourceSection(source);
     }
 }

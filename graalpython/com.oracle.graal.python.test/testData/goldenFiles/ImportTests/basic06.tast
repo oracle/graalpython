@@ -1,0 +1,16 @@
+ModuleRootNode Name: <module 'basic06'> SourceSection: [0,24]`import encodings.ali...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,24]`import encodings.ali...`
+    ExpressionWithSideEffect SourceSection: [0,24]`import encodings.ali...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [7,24]`encodings.aliases`
+          Identifier: encodings
+          ImportExpression SourceSection: None
+            ImportNode SourceSection: None
+              Module: encodings.aliases

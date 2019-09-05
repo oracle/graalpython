@@ -1,0 +1,12 @@
+ModuleRootNode Name: <module 'dict06'> SourceSection: [0,6]`{**{}}`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,6]`{**{}}`
+    DictConcatNode SourceSection: [0,6]`{**{}}`
+      DictLiteralNode SourceSection: None
+        PythonObjectFactoryNodeGen SourceSection: None
+      DictLiteralNode SourceSection: [3,5]`{}`
+        PythonObjectFactoryNodeGen SourceSection: None

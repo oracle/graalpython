@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: fn
+        Kind: Function
+        FrameDescriptor: [a, files, dirs, <return_val>]
+        CellVars: [files]
+        FreeVars: Empty
+        Scope: generator28
+            Kind: Generator
+            FrameDescriptor: [file, files, dir, <return_val>]
+            CellVars: Empty
+            FreeVars: [files]

@@ -1,0 +1,49 @@
+ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ foo ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,34]`async def f():↵ foo ...`
+    ExpressionWithSideEffect SourceSection: [0,34]`async def f():↵ foo ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [6,34]`def f():↵ foo = awai...`
+          Identifier: f
+          FunctionDefinitionNode Name: f SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [6,34]`def f():↵ foo = awai...`
+              Name: f
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [foo, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [6,34]`def f():↵ foo = awai...`
+                ReturnTargetNode SourceSection: [6,34]`def f():↵ foo = awai...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [16,34]`foo = await smth()`
+                      Identifier: foo
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,foo,Illegal]
+                      PythonCallNodeGen SourceSection: [22,34]`await smth()`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: smth
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

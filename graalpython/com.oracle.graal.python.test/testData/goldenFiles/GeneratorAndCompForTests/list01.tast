@@ -1,0 +1,78 @@
+ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in range...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,25]`[x**y for x in range...`
+    PythonCallNodeGen SourceSection: [0,25]`[x**y for x in range...`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      GeneratorExpressionNode SourceSection: [6,24]`for x in range(20)`
+        Name: [].<locals>.<genexp>:list01:1
+        FrameDescriptor: 2 slots [x, <return_val>]
+        Enclosing
+          FrameDescriptor:  Empty
+        Active Flags: 2
+        For Nodes: 1
+        Block Nodes: 0
+        Is Enclosing Frame Generator: false
+        FunctionRootNode SourceSection: [6,24]`for x in range(20)`
+          Name: [].<locals>.<genexp>:list01:1
+          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+          CelVars: None
+          FreeVars: None
+          NeedsCellFrame: False
+          FrameDescriptor: 2 slots [x, <return_val>]
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          InnerRootNode SourceSection: [6,24]`for x in range(20)`
+            GeneratorReturnTargetNode SourceSection: [6,24]`for x in range(20)`
+              flagSlot: 1
+              GeneratorForNode SourceSection: [6,24]`for x in range(20)`
+                ExpressionStatementNode SourceSection: [1,5]`x**y`
+                  YieldNode SourceSection: [1,5]`x**y`
+                    flagSlot: 0
+                    TernaryArithmeticExpression SourceSection: [1,5]`x**y`
+                      LookupAndCallTernaryNodeGen SourceSection: None
+                        CallTernaryMethodNodeGen SourceSection: None
+                      ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                        Frame: [0,x,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [4,5]`y`
+                        Identifier: y
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    GeneratorAccessNode SourceSection: None
+                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                  Identifier: x
+                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                    Frame: [0,x,Illegal]
+                ArgumentExpressionNode SourceSection: None
+                  ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
+                GetNextNode SourceSection: None
+                  LookupAndCallUnaryNodeGen SourceSection: None
+                    Op: __next__
+                GeneratorAccessNode SourceSection: None
+              ReadGeneratorFrameVariableNode SourceSection: None
+                Frame: [1,<return_val>,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+              BlockNode SourceSection: None
+              GeneratorAccessNode SourceSection: None
+              PRaiseNodeGen SourceSection: None
+        GetIteratorExpressionNodeGen SourceSection: [15,24]`range(20)`
+          GetIteratorNodeGen SourceSection: None
+          PythonCallNodeGen SourceSection: [15,24]`range(20)`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            IntegerLiteralNode SourceSection: [21,23]`20`
+              Value: 20
+            ReadNameNodeGen SourceSection: None
+              Identifier: range
+        PythonObjectFactoryNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: list
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

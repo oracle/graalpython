@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: DerivedClassName
+        Kind: Class
+        FrameDescriptor: [__class__]
+        CellVars: [__class__]
+        FreeVars: Empty

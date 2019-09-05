@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: find_on_path
+        Kind: Generator
+        FrameDescriptor: [importer, factory, entry, entries, path_item, filtered, path_item_entries, fullpath, only, dist, <return_val>]
+        CellVars: [only, path_item]
+        FreeVars: Empty
+        Scope: generator342
+            Kind: Generator
+            FrameDescriptor: [entry, path_item, only, <return_val>]
+            CellVars: Empty
+            FreeVars: [only, path_item]

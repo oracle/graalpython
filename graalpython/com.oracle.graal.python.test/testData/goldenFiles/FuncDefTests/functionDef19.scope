@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: __build_class__
+        Kind: Function
+        FrameDescriptor: [bases, func, name, kwargs, metaclass, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty

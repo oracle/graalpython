@@ -1,0 +1,70 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp2, <>temp0, <>temp1]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: _Helper
+        Kind: Class
+        FrameDescriptor: [__call__, __repr__, __doc__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __call__
+            Kind: Function
+            FrameDescriptor: [args, self, kwds, pydoc, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: _Printer
+        Kind: Class
+        FrameDescriptor: [MAXLINES, __call__, __repr__, __doc__, __init__, __setup, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __call__
+            Kind: Function
+            FrameDescriptor: [lineno, self, i, prompt, <return_val>, key, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __setup
+            Kind: Function
+            FrameDescriptor: [filename, data, self, fp, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [data, os, name, self, files, dirs, <return_val>, __class__]
+            CellVars: [files, os]
+            FreeVars: [__class__]
+            Scope: generator1121
+                Kind: Generator
+                FrameDescriptor: [filename, os, files, dir, <return_val>]
+                CellVars: Empty
+                FreeVars: [files, os]
+    Scope: Quitter
+        Kind: Class
+        FrameDescriptor: [__call__, __repr__, __init__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __call__
+            Kind: Function
+            FrameDescriptor: [code, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __repr__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [name, self, eof, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]

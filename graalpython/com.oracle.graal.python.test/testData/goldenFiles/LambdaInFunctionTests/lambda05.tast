@@ -1,0 +1,78 @@
+ModuleRootNode Name: <module 'lambda05'> SourceSection: [0,25]`def fn():↵  lambda *...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,25]`def fn():↵  lambda *...`
+    ExpressionWithSideEffect SourceSection: [0,25]`def fn():↵  lambda *...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,25]`def fn():↵  lambda *...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,25]`def fn():↵  lambda *...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,25]`def fn():↵  lambda *...`
+                ReturnTargetNode SourceSection: [0,25]`def fn():↵  lambda *...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [12,25]`lambda **z: 0`
+                      FunctionDefinitionNode Name: anonymous SourceSection: [12,25]`lambda **z: 0`
+                        Arguments: None
+                        KwArguments: None
+                        Documentation: None
+                        FreeVarSlots: None
+                        ExecutionSlots:
+                          FreeVarsSlots: None
+                          CellVarsSlots: None
+                        FunctionRootNode SourceSection: [12,25]`lambda **z: 0`
+                          Name: anonymous
+                          Signature: varArgs=False, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            Keyword Names: None
+                          CelVars: None
+                          FreeVars: None
+                          NeedsCellFrame: False
+                          FrameDescriptor: 2 slots [z, <return_val>]
+                          ExecutionSlots:
+                            FreeVarsSlots: None
+                            CellVarsSlots: None
+                          InnerRootNode SourceSection: [12,25]`lambda **z: 0`
+                            ReturnTargetNode SourceSection: [12,25]`lambda **z: 0`
+                              Body: BlockNode SourceSection: None
+                                WriteLocalVariableNodeGen SourceSection: None
+                                  Identifier: z
+                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                    Frame: [0,z,Illegal]
+                                  ArgumentExpressionNode SourceSection: None
+                                    ReadVarKeywordsNodeGen SourceSection: None
+                                      PythonObjectFactoryNodeGen SourceSection: None
+                                FrameReturnNode SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <return_val>
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [1,<return_val>,Illegal]
+                                    IntegerLiteralNode SourceSection: [24,25]`0`
+                                      Value: 0
+                              Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                Frame: [1,<return_val>,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

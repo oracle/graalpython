@@ -465,7 +465,7 @@ public class NodeFactory {
 
     public StatementNode createWriteLocalCell(ExpressionNode right, FrameSlot slot) {
         assert slot != null;
-        return WriteLocalCellNode.create(slot, right);
+        return WriteLocalCellNode.create(slot, ReadLocalVariableNode.create(slot), right);
     }
 
     public StatementNode createWriteLocal(ExpressionNode right, FrameSlot slot) {

@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [SOMETHING]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: install
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: setup
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty

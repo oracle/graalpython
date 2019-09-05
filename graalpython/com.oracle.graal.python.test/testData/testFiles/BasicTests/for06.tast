@@ -1,0 +1,104 @@
+ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0↵def fn():↵  fo...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,127]`x = 0↵def fn():↵  fo...`
+    ExpressionWithSideEffects SourceSection: [0,125]`x = 0↵def fn():↵  fo...`
+      WriteNameNodeGen SourceSection: [0,5]`x = 0`
+        Identifier: x
+        IntegerLiteralNode SourceSection: [4,5]`0`
+          Value: 0
+      WriteNameNodeGen SourceSection: [6,121]`def fn():↵  for x in...`
+        Identifier: fn
+        FunctionDefinitionNode Name: fn SourceSection: None
+          Arguments: None
+          KwArguments: None
+          Documentation: StringLiteralNode: Empty
+          FreeVarSlots: None
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          FunctionRootNode SourceSection: [6,121]`def fn():↵  for x in...`
+            Name: fn
+            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+            CelVars: None
+            FreeVars: None
+            NeedsCellFrame: False
+            FrameDescriptor: 2 slots [x, <return_val>]
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            InnerRootNode SourceSection: [6,121]`def fn():↵  for x in...`
+              ReturnTargetNode SourceSection: [6,121]`def fn():↵  for x in...`
+                Body: BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                  BreakTargetNode SourceSection: [18,121]`for x in range(3):↵ ...`
+                    ForNode SourceSection: None
+                      ForRepeatingNode SourceSection: None
+                        ForNextElementNodeGen SourceSection: None
+                          WriteLocalVariableNodeGen SourceSection: None
+                            Identifier: x
+                            WriteLocalFrameSlotNodeGen SourceSection: None
+                              Frame: [0,x,Illegal]
+                        BlockNode SourceSection: None
+                          WriteLocalVariableNodeGen SourceSection: [41,46]`x = 4`
+                            Identifier: x
+                            WriteLocalFrameSlotNodeGen SourceSection: None
+                              Frame: [0,x,Illegal]
+                            IntegerLiteralNode SourceSection: [45,46]`4`
+                              Value: 4
+                          IfNode SourceSection: [51,121]`if x == 1:↵      pri...`
+                            YesNodeGen SourceSection: None
+                              BinaryComparisonNodeGen SourceSection: [54,60]`x == 1`
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __eq__
+                                ReadLocalVariableNode SourceSection: [54,55]`x`
+                                  Frame: [0,x,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                IntegerLiteralNode SourceSection: [59,60]`1`
+                                  Value: 1
+                            BlockNode SourceSection: None
+                              ExpressionStatementNode SourceSection: [68,82]`print('jedna')`
+                                PythonCallNodeGen SourceSection: [68,82]`print('jedna')`
+                                  CachedCallNodeGen SourceSection: None
+                                    CreateArgumentsNodeGen SourceSection: None
+                                    CallDispatchNodeGen SourceSection: None
+                                  StringLiteralNode SourceSection: [74,81]`'jedna'`
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    Identifier: print
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              BreakNode SourceSection: [89,94]`break`
+                            ExpressionStatementNode SourceSection: [111,119]`print(x)`
+                              PythonCallNodeGen SourceSection: [111,119]`print(x)`
+                                CachedCallNodeGen SourceSection: None
+                                  CreateArgumentsNodeGen SourceSection: None
+                                  CallDispatchNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [117,118]`x`
+                                  Frame: [0,x,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: print
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      GetIteratorExpressionNodeGen SourceSection: [27,35]`range(3)`
+                        GetIteratorNodeGen SourceSection: None
+                        PythonCallNodeGen SourceSection: [27,35]`range(3)`
+                          CachedCallNodeGen SourceSection: None
+                            CreateArgumentsNodeGen SourceSection: None
+                            CallDispatchNodeGen SourceSection: None
+                          IntegerLiteralNode SourceSection: [33,34]`3`
+                            Value: 3
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: range
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    BlockNode SourceSection: None
+                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Frame: [1,<return_val>,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+      PythonCallNodeGen SourceSection: [121,125]`fn()`
+        CachedCallNodeGen SourceSection: None
+          CreateArgumentsNodeGen SourceSection: None
+          CallDispatchNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: None
+          Identifier: fn

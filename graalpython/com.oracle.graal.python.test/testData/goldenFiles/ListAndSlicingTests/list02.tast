@@ -1,0 +1,23 @@
+ModuleRootNode Name: <module 'list02'> SourceSection: [0,16]`list = [1,2,3,4]`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,16]`list = [1,2,3,4]`
+    ExpressionWithSideEffect SourceSection: [0,16]`list = [1,2,3,4]`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,16]`list = [1,2,3,4]`
+          Identifier: list
+          ListLiteralNode SourceSection: [7,16]`[1,2,3,4]`
+            PythonObjectFactoryNodeGen SourceSection: None
+            IntegerLiteralNode SourceSection: [8,9]`1`
+              Value: 1
+            IntegerLiteralNode SourceSection: [10,11]`2`
+              Value: 2
+            IntegerLiteralNode SourceSection: [12,13]`3`
+              Value: 3
+            IntegerLiteralNode SourceSection: [14,15]`4`
+              Value: 4

@@ -47,11 +47,14 @@ public final class ScopeInfo {
         // generator expression or generator function
         Generator,
         // list comprehension
-        ListComp
+        ListComp,
+
+        // new
+        Transparent
     }
 
     private final String scopeId;
-    private final FrameDescriptor frameDescriptor;
+    private FrameDescriptor frameDescriptor;
     private final ArrayList<String> identifierToIndex;
     private ScopeKind scopeKind;
     private final ScopeInfo parent;
@@ -87,6 +90,8 @@ public final class ScopeInfo {
      * function has default arguments.
      */
     private List<KwDefaultExpressionNode> kwDefaultArgumentNodes;
+
+    private TreeSet<String> seenVars;
 
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
@@ -126,6 +131,10 @@ public final class ScopeInfo {
         return frameDescriptor;
     }
 
+    public void setFrameDescriptor(FrameDescriptor frameDescriptor) {
+        this.frameDescriptor = frameDescriptor;
+    }
+
     public ScopeInfo getParent() {
         return parent;
     }
@@ -135,7 +144,7 @@ public final class ScopeInfo {
         return this.getFrameDescriptor().findFrameSlot(identifier);
     }
 
-    FrameSlot createSlotIfNotPresent(String identifier) {
+    public FrameSlot createSlotIfNotPresent(String identifier) {
         assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
@@ -144,6 +153,17 @@ public final class ScopeInfo {
         } else {
             return frameSlot;
         }
+    }
+
+    public void addSeenVar(String name) {
+        if (seenVars == null) {
+            seenVars = new TreeSet<>();
+        }
+        seenVars.add(name);
+    }
+
+    public Set<String> getSeenVars() {
+        return seenVars;
     }
 
     public void addExplicitGlobalVariable(String identifier) {
@@ -186,7 +206,7 @@ public final class ScopeInfo {
         addFreeVar(identifier, false);
     }
 
-    protected void addFreeVar(String identifier, boolean createFrameSlot) {
+    public void addFreeVar(String identifier, boolean createFrameSlot) {
         if (freeVars == null) {
             freeVars = new TreeSet<>();
         }
@@ -241,6 +261,10 @@ public final class ScopeInfo {
 
     }
 
+    public boolean isInClassScope() {
+        return getScopeKind() == ScopeKind.Class;
+    }
+
     public List<ExpressionNode> getDefaultArgumentNodes() {
         return defaultArgumentNodes;
     }
@@ -251,14 +275,14 @@ public final class ScopeInfo {
 
     public void createFrameSlotsForCellAndFreeVars() {
         if (cellVars != null) {
-            for (String identifier : cellVars) {
+            cellVars.forEach((identifier) -> {
                 createSlotIfNotPresent(identifier);
-            }
+            });
         }
         if (freeVars != null) {
-            for (String identifier : freeVars) {
+            freeVars.forEach((identifier) -> {
                 createSlotIfNotPresent(identifier);
-            }
+            });
         }
     }
 
@@ -275,6 +299,58 @@ public final class ScopeInfo {
             }
         }
         throw new IllegalStateException("Cannot find argument for name " + name + " in scope " + getScopeId());
+    }
+
+    public void debugPrint(StringBuilder sb, int indent) {
+        indent(sb, indent);
+        sb.append("Scope: ").append(scopeId).append("\n");
+        indent(sb, indent + 1);
+        sb.append("Kind: ").append(scopeKind).append("\n");
+        Set<String> names = new HashSet<>();
+        frameDescriptor.getIdentifiers().forEach((id) -> {
+            names.add((String) id);
+        });
+        indent(sb, indent + 1);
+        sb.append("FrameDescriptor: ");
+        printSet(sb, names);
+        sb.append("\n");
+        indent(sb, indent + 1);
+        sb.append("CellVars: ");
+        printSet(sb, cellVars);
+        sb.append("\n");
+        indent(sb, indent + 1);
+        sb.append("FreeVars: ");
+        printSet(sb, freeVars);
+        sb.append("\n");
+        ScopeInfo child = firstChildScope;
+        while (child != null) {
+            child.debugPrint(sb, indent + 1);
+            child = child.nextChildScope;
+        }
+    }
+
+    private static void indent(StringBuilder sb, int indent) {
+        for (int i = 0; i < indent; i++) {
+            sb.append("    ");
+        }
+    }
+
+    private static void printSet(StringBuilder sb, Set<String> set) {
+        if (set == null || set.isEmpty()) {
+            sb.append("Empty");
+        } else {
+            sb.append("[");
+            boolean first = true;
+            for (String name : set) {
+                if (first) {
+                    sb.append(name);
+                    first = false;
+                } else {
+                    sb.append(", ").append(name);
+                }
+            }
+            sb.append("]");
+        }
     }
 
 }

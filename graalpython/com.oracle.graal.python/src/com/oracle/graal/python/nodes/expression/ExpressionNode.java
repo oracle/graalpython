@@ -62,6 +62,8 @@ import com.oracle.truffle.api.source.SourceSection;
 @GenerateWrapper
 public abstract class ExpressionNode extends PNode {
 
+    public static final ExpressionNode[] EMPTY_ARRAY = new ExpressionNode[0];
+
     public abstract Object execute(VirtualFrame frame);
 
     public int executeInt(VirtualFrame frame) throws UnexpectedResultException {
@@ -169,6 +171,14 @@ public abstract class ExpressionNode extends PNode {
         public boolean hasSideEffectAsAnExpression() {
             return true;
         }
+
+        public ExpressionNode getExpression() {
+            return node;
+        }
+
+        public StatementNode getSideEffect() {
+            return sideEffect;
+        }
     }
 
     public static final class ExpressionWithSideEffects extends ExpressionNode {
@@ -198,6 +208,10 @@ public abstract class ExpressionNode extends PNode {
         public boolean hasSideEffectAsAnExpression() {
             return true;
         }
+
+        public StatementNode[] getSideEffects() {
+            return this.sideEffects;
+        }
     }
 
     /**
@@ -210,5 +224,9 @@ public abstract class ExpressionNode extends PNode {
         } else {
             return new ExpressionWithSideEffect(this, sideEffect);
         }
+    }
+
+    public final ExpressionNode withSideEffect(StatementNode[] sideEffects) {
+        return new ExpressionWithSideEffects(this, sideEffects);
     }
 }

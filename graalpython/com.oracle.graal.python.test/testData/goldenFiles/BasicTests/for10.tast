@@ -1,0 +1,55 @@
+ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10,...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,100]`for num in range(10,...`
+    ExpressionWithSideEffect SourceSection: [0,100]`for num in range(10,...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        ElseNode SourceSection: [0,100]`for num in range(10,...`
+          ForNode SourceSection: None
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: num
+              BreakTargetNode SourceSection: [28,100]`for i in range(2,num...`
+                ForNode SourceSection: None
+                  ForRepeatingNode SourceSection: None
+                    ForNextElementNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: i
+                    IfNode SourceSection: [57,84]`if True:↵         br...`
+                      YesNodeGen SourceSection: None
+                        BooleanLiteralNode SourceSection: [60,64]`True`
+                      BreakNode SourceSection: [75,80]`break`
+                      BlockNode SourceSection: None
+                  GetIteratorExpressionNodeGen SourceSection: [37,49]`range(2,num)`
+                    GetIteratorNodeGen SourceSection: None
+                    PythonCallNodeGen SourceSection: [37,49]`range(2,num)`
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      IntegerLiteralNode SourceSection: [43,44]`2`
+                        Value: 2
+                      ReadNameNodeGen SourceSection: [45,48]`num`
+                        Identifier: num
+                      ReadNameNodeGen SourceSection: None
+                        Identifier: range
+                ExpressionStatementNode SourceSection: [96,100]`pass`
+                  EmptyNode SourceSection: [96,100]`pass`
+            GetIteratorExpressionNodeGen SourceSection: [11,23]`range(10,20)`
+              GetIteratorNodeGen SourceSection: None
+              PythonCallNodeGen SourceSection: [11,23]`range(10,20)`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                IntegerLiteralNode SourceSection: [17,19]`10`
+                  Value: 10
+                IntegerLiteralNode SourceSection: [20,22]`20`
+                  Value: 20
+                ReadNameNodeGen SourceSection: None
+                  Identifier: range
+          BlockNode SourceSection: None

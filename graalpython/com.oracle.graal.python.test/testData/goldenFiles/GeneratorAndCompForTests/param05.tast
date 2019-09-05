@@ -1,0 +1,74 @@
+ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵  for...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,42]`def fn(**arg):↵  for...`
+    ExpressionWithSideEffect SourceSection: [0,42]`def fn(**arg):↵  for...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,42]`def fn(**arg):↵  for...`
+          Identifier: fn
+          GeneratorFunctionDefinitionNode Name: fn SourceSection: None
+            FrameDescriptor: 3 slots [arg, p, <return_val>]
+            Active Flags: 2
+            For Nodes: 1
+            Block Nodes: 0
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,42]`def fn(**arg):↵  for...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                Keyword Names: None
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 3 slots [arg, p, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,42]`def fn(**arg):↵  for...`
+                GeneratorReturnTargetNode SourceSection: [0,42]`def fn(**arg):↵  for...`
+                  flagSlot: 1
+                  ElseNode SourceSection: [17,42]`for p in arg:↵    yi...`
+                    GeneratorForNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [35,42]`yield p`
+                        YieldNode SourceSection: [35,42]`yield p`
+                          flagSlot: 0
+                          ReadGeneratorFrameVariableNode SourceSection: [41,42]`p`
+                            Frame: [1,p,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          GeneratorAccessNode SourceSection: None
+                      WriteGeneratorFrameVariableNodeGen SourceSection: None
+                        Identifier: p
+                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                          Frame: [1,p,Illegal]
+                      GetIteratorExpressionNodeGen SourceSection: [26,29]`arg`
+                        GetIteratorNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [26,29]`arg`
+                          Frame: [0,arg,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      GetNextNode SourceSection: None
+                        LookupAndCallUnaryNodeGen SourceSection: None
+                          Op: __next__
+                      GeneratorAccessNode SourceSection: None
+                    BlockNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [2,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                    Identifier: arg
+                    WriteGeneraterFrameSlotNodeGen SourceSection: None
+                      Frame: [0,arg,Illegal]
+                    ArgumentExpressionNode SourceSection: None
+                      ReadVarKeywordsNodeGen SourceSection: None
+                        PythonObjectFactoryNodeGen SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

@@ -1,0 +1,17 @@
+ModuleRootNode Name: <module 'assignment08'> SourceSection: [0,7]`a.b = 1`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,7]`a.b = 1`
+    ExpressionWithSideEffect SourceSection: [0,7]`a.b = 1`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        SetAttributeNodeGen SourceSection: [0,7]`a.b = 1`
+          Attribute: b
+          ReadNameNodeGen SourceSection: [0,1]`a`
+            Identifier: a
+          IntegerLiteralNode SourceSection: [6,7]`1`
+            Value: 1

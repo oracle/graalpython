@@ -1,0 +1,50 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0, <>temp1]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: dump
+        Kind: Function
+        FrameDescriptor: [item, d, f, prefix, items, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _makecodes
+        Kind: Function
+        FrameDescriptor: [names, items, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: generator2075
+            Kind: Generator
+            FrameDescriptor: [item, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+        Scope: generator1993
+            Kind: Generator
+            FrameDescriptor: [name, <>temp2, i, <>temp3, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: _NamedIntConstant
+        Kind: Class
+        FrameDescriptor: [__str__, __repr__, __new__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __str__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __new__
+            Kind: Function
+            FrameDescriptor: [name, self, cls, value, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: error
+        Kind: Class
+        FrameDescriptor: [__doc__, __init__, __module__, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [msg, newline, <>temp6, pos, pattern, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]

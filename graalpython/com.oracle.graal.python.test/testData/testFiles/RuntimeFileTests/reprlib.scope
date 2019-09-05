@@ -1,0 +1,105 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: _possibly_sorted
+        Kind: Function
+        FrameDescriptor: [x, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: Repr
+        Kind: Class
+        FrameDescriptor: [repr, repr_array, repr_int, repr1, repr_tuple, repr_str, repr_frozenset, __class__, repr_instance, repr_set, repr_list, __init__, repr_dict, _repr_iterable, repr_deque]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: repr_instance
+            Kind: Function
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_int
+            Kind: Function
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_str
+            Kind: Function
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_dict
+            Kind: Function
+            FrameDescriptor: [level, keyrepr, repr1, newlevel, n, __class__, pieces, s, x, self, valrepr, <return_val>, key]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_deque
+            Kind: Function
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_frozenset
+            Kind: Function
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_set
+            Kind: Function
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_array
+            Kind: Function
+            FrameDescriptor: [level, x, self, header, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_list
+            Kind: Function
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr_tuple
+            Kind: Function
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: _repr_iterable
+            Kind: Function
+            FrameDescriptor: [level, maxiter, repr1, right, newlevel, n, __class__, pieces, trail, s, left, x, self, <return_val>]
+            CellVars: [newlevel, repr1]
+            FreeVars: [__class__]
+            Scope: generator2158
+                Kind: Generator
+                FrameDescriptor: [elem, repr1, newlevel, <return_val>]
+                CellVars: Empty
+                FreeVars: [newlevel, repr1]
+        Scope: repr1
+            Kind: Function
+            FrameDescriptor: [level, x, parts, self, <return_val>, typename, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: repr
+            Kind: Function
+            FrameDescriptor: [x, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: recursive_repr
+        Kind: Function
+        FrameDescriptor: [decorating_function, fillvalue, <return_val>]
+        CellVars: [fillvalue]
+        FreeVars: Empty
+        Scope: decorating_function
+            Kind: Function
+            FrameDescriptor: [fillvalue, repr_running, wrapper, <return_val>, user_function]
+            CellVars: [repr_running, user_function]
+            FreeVars: [fillvalue]
+            Scope: wrapper
+                Kind: Function
+                FrameDescriptor: [result, fillvalue, self, repr_running, <return_val>, key, user_function]
+                CellVars: Empty
+                FreeVars: [fillvalue, repr_running, user_function]

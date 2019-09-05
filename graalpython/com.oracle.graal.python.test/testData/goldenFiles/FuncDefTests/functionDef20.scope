@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: __init__
+        Kind: Function
+        FrameDescriptor: [ctx, self, *, pending_work_items, <return_val>, max_size]
+        CellVars: Empty
+        FreeVars: Empty

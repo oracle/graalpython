@@ -186,4 +186,9 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     public boolean isPythonInternal() {
         return isRewritten;
     }
+
+    public ExecutionCellSlots getExecutionCellSlots() {
+        return executionCellSlots;
+    }
+
 }

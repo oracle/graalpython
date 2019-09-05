@@ -1,0 +1,1142 @@
+ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright (c) 2018...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,3601]`# Copyright (c) 2018...`
+    ExpressionWithSideEffects SourceSection: [1992,3601]`↵def _f(): pass↵Func...`
+      WriteNameNodeGen SourceSection: [1993,2008]`def _f(): pass↵`
+        Identifier: _f
+        FunctionDefinitionNode Name: _f SourceSection: None
+          Arguments: None
+          KwArguments: None
+          Documentation: StringLiteralNode: Empty
+          FreeVarSlots: None
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          FunctionRootNode SourceSection: [1993,2008]`def _f(): pass↵`
+            Name: _f
+            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+            CelVars: None
+            FreeVars: None
+            NeedsCellFrame: False
+            FrameDescriptor: 1 slots [<return_val>]
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            InnerRootNode SourceSection: [1993,2008]`def _f(): pass↵`
+              ReturnTargetNode SourceSection: [1993,2008]`def _f(): pass↵`
+                Body: BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                  ExpressionStatementNode SourceSection: [2003,2007]`pass`
+                    EmptyNode SourceSection: [2003,2007]`pass`
+                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Frame: [0,<return_val>,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: [2008,2031]`FunctionType = type(...`
+        Identifier: FunctionType
+        PythonCallNodeGen SourceSection: [2023,2031]`type(_f)`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2028,2030]`_f`
+            Identifier: _f
+          ReadNameNodeGen SourceSection: None
+            Identifier: type
+      WriteNameNodeGen SourceSection: [2032,2072]`descriptor = type(Fu...`
+        Identifier: descriptor
+        PythonCallNodeGen SourceSection: [2045,2072]`type(FunctionType.__...`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          GetAttributeNodeGen SourceSection: [2050,2071]`FunctionType.__code_...`
+            GetFixedAttributeNodeGen SourceSection: None
+              Key: __code__
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
+            ReadNameNodeGen SourceSection: [2050,2062]`FunctionType`
+              Identifier: FunctionType
+          ReadNameNodeGen SourceSection: None
+            Identifier: type
+      WriteNameNodeGen SourceSection: [2075,2974]`def make_named_tuple...`
+        Identifier: make_named_tuple_class
+        FunctionDefinitionNode Name: make_named_tuple_class SourceSection: None
+          Arguments: None
+          KwArguments: None
+          Documentation: StringLiteralNode: Empty
+          FreeVarSlots: None
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: fields, , name, , named_tuple, 
+          FunctionRootNode SourceSection: [2075,2974]`def make_named_tuple...`
+            Name: make_named_tuple_class
+            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+              Param Names: name, fields
+            CelVars: fields, name, named_tuple
+            FreeVars: None
+            NeedsCellFrame: False
+            FrameDescriptor: 6 slots [name, fields, named_tuple, _define_named_tuple_methods, <>temp4, <return_val>]
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: fields, , name, , named_tuple, 
+            InnerRootNode SourceSection: [2075,2974]`def make_named_tuple...`
+              ReturnTargetNode SourceSection: [2075,2974]`def make_named_tuple...`
+                Body: BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                    WriteLocalCellNodeGen SourceSection: None
+                      Identifier: name
+                      ReadLocalVariableNode SourceSection: None
+                        Frame: [0,name,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
+                    WriteLocalCellNodeGen SourceSection: None
+                      Identifier: fields
+                      ReadLocalVariableNode SourceSection: None
+                        Frame: [1,fields,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 1
+                  BlockNode SourceSection: None
+                    WriteLocalCellNodeGen SourceSection: [2121,2611]`class named_tuple(tu...`
+                      Identifier: named_tuple
+                      ReadLocalVariableNode SourceSection: None
+                        Frame: [2,named_tuple,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      ExpressionWithSideEffects SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <>temp4
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [4,<>temp4,Illegal]
+                          PythonCallNodeGen SourceSection: [2121,2611]`class named_tuple(tu...`
+                            CachedCallNodeGen SourceSection: None
+                              CreateArgumentsNodeGen SourceSection: None
+                              CallDispatchNodeGen SourceSection: None
+                            FunctionDefinitionNode Name: named_tuple SourceSection: None
+                              Arguments: None
+                              KwArguments: None
+                              Documentation: None
+                              FreeVarSlots: fields, , name, 
+                              ExecutionSlots:
+                                FreeVarsSlots: fields, , name, 
+                                CellVarsSlots: __class__, 
+                              ClassBodyRootNode SourceSection: [2121,2611]`class named_tuple(tu...`
+                                Name: named_tuple
+                                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                  Param Names: namespace
+                                CelVars: __class__
+                                FreeVars: fields, name
+                                NeedsCellFrame: False
+                                FrameDescriptor: 7 slots [__name__, n_sequence_fields, fields, __str__, __repr__, name, __class__]
+                                ExecutionSlots:
+                                  FreeVarsSlots: fields, , name, 
+                                  CellVarsSlots: __class__, 
+                                InnerRootNode SourceSection: None
+                                  ReturnTargetNode SourceSection: None
+                                    Body: BlockNode SourceSection: None
+                                      ClassDefinitionPrologueNode SourceSection: None
+                                        QualName: make_named_tuple_class.<locals>.named_tuple
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          Identifier: __name__
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
+                                        SetItemIfNotPresentNodeGen SourceSection: None
+                                          SetItemNodeGen SourceSection: None
+                                      SetItemNodeGen SourceSection: [2155,2170]`__name__ = name`
+                                        ArgumentExpressionNode SourceSection: None
+                                          ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
+                                        StringLiteralNode SourceSection: None
+                                        ReadClassAttributeNodeGen SourceSection: [2166,2170]`name`
+                                          GetItemNodeGen SourceSection: None
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
+                                            StringLiteralNode SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            Identifier: name
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: None
+                                              Frame: [5,name,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadFromCellNodeGen SourceSection: None
+                                      SetItemNodeGen SourceSection: [2179,2210]`n_sequence_fields = ...`
+                                        ArgumentExpressionNode SourceSection: None
+                                          ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
+                                        StringLiteralNode SourceSection: None
+                                        PythonCallNodeGen SourceSection: [2199,2210]`len(fields)`
+                                          CachedCallNodeGen SourceSection: None
+                                            CreateArgumentsNodeGen SourceSection: None
+                                            CallDispatchNodeGen SourceSection: None
+                                          ReadClassAttributeNodeGen SourceSection: [2203,2209]`fields`
+                                            GetItemNodeGen SourceSection: None
+                                              ArgumentExpressionNode SourceSection: None
+                                                ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 0
+                                              StringLiteralNode SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              Identifier: fields
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            ReadLocalCellNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: None
+                                                Frame: [2,fields,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadFromCellNodeGen SourceSection: None
+                                          ReadClassAttributeNodeGen SourceSection: None
+                                            GetItemNodeGen SourceSection: None
+                                              ArgumentExpressionNode SourceSection: None
+                                                ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 0
+                                              StringLiteralNode SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              Identifier: len
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      SetItemNodeGen SourceSection: [2219,2234]`fields = fields`
+                                        ArgumentExpressionNode SourceSection: None
+                                          ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
+                                        StringLiteralNode SourceSection: None
+                                        ReadClassAttributeNodeGen SourceSection: [2228,2234]`fields`
+                                          GetItemNodeGen SourceSection: None
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
+                                            StringLiteralNode SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            Identifier: fields
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: None
+                                              Frame: [2,fields,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadFromCellNodeGen SourceSection: None
+                                      SetItemNodeGen SourceSection: [2244,2307]`def __str__(self):↵ ...`
+                                        ArgumentExpressionNode SourceSection: None
+                                          ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
+                                        StringLiteralNode SourceSection: None
+                                        FunctionDefinitionNode Name: __str__ SourceSection: None
+                                          Arguments: None
+                                          KwArguments: None
+                                          Documentation: StringLiteralNode: Empty
+                                          FreeVarSlots: __class__, 
+                                          ExecutionSlots:
+                                            FreeVarsSlots: __class__, 
+                                            CellVarsSlots: None
+                                          FunctionRootNode SourceSection: [2244,2307]`def __str__(self):↵ ...`
+                                            Name: __str__
+                                            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                              Param Names: self
+                                            CelVars: None
+                                            FreeVars: __class__
+                                            NeedsCellFrame: False
+                                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                            ExecutionSlots:
+                                              FreeVarsSlots: __class__, 
+                                              CellVarsSlots: None
+                                            InnerRootNode SourceSection: [2244,2307]`def __str__(self):↵ ...`
+                                              ReturnTargetNode SourceSection: [2244,2307]`def __str__(self):↵ ...`
+                                                Body: BlockNode SourceSection: None
+                                                  WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: self
+                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                      Frame: [0,self,Illegal]
+                                                    ArgumentExpressionNode SourceSection: None
+                                                      ReadIndexedArgumentNodeGen SourceSection: None
+                                                        Index: 0
+                                                  FrameReturnNode SourceSection: [2275,2297]`return self.__repr__...`
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: <return_val>
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [2,<return_val>,Illegal]
+                                                      PythonCallNodeGen SourceSection: [2282,2297]`self.__repr__()`
+                                                        CachedCallNodeGen SourceSection: None
+                                                          CreateArgumentsNodeGen SourceSection: None
+                                                          CallDispatchNodeGen SourceSection: None
+                                                        GetCallAttributeNodeGen SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [2282,2286]`self`
+                                                            Frame: [0,self,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                                  Frame: [2,<return_val>,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                      SetItemNodeGen SourceSection: [2307,2611]`def __repr__(self):↵...`
+                                        ArgumentExpressionNode SourceSection: None
+                                          ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
+                                        StringLiteralNode SourceSection: None
+                                        FunctionDefinitionNode Name: __repr__ SourceSection: None
+                                          Arguments: None
+                                          KwArguments: None
+                                          Documentation: StringLiteralNode: Empty
+                                          FreeVarSlots: __class__, , fields, , name, 
+                                          ExecutionSlots:
+                                            FreeVarsSlots: __class__, , fields, , name, 
+                                            CellVarsSlots: None
+                                          FunctionRootNode SourceSection: [2307,2611]`def __repr__(self):↵...`
+                                            Name: __repr__
+                                            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                              Param Names: self
+                                            CelVars: None
+                                            FreeVars: __class__, fields, name
+                                            NeedsCellFrame: False
+                                            FrameDescriptor: 7 slots [self, sb, f, name, fields, __class__, <return_val>]
+                                            ExecutionSlots:
+                                              FreeVarsSlots: __class__, , fields, , name, 
+                                              CellVarsSlots: None
+                                            InnerRootNode SourceSection: [2307,2611]`def __repr__(self):↵...`
+                                              ReturnTargetNode SourceSection: [2307,2611]`def __repr__(self):↵...`
+                                                Body: BlockNode SourceSection: None
+                                                  WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: self
+                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                      Frame: [0,self,Illegal]
+                                                    ArgumentExpressionNode SourceSection: None
+                                                      ReadIndexedArgumentNodeGen SourceSection: None
+                                                        Index: 0
+                                                  BlockNode SourceSection: None
+                                                    WriteLocalVariableNodeGen SourceSection: [2339,2355]`sb = [name, "("]`
+                                                      Identifier: sb
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [1,sb,Illegal]
+                                                      ListLiteralNode SourceSection: [2344,2355]`[name, "("]`
+                                                        PythonObjectFactoryNodeGen SourceSection: None
+                                                        ReadLocalCellNodeGen SourceSection: [2345,2349]`name`
+                                                          ReadLocalVariableNode SourceSection: None
+                                                            Frame: [3,name,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                          ReadFromCellNodeGen SourceSection: None
+                                                        StringLiteralNode SourceSection: [2351,2354]`"("`
+                                                    ElseNode SourceSection: [2368,2539]`for f in fields:↵   ...`
+                                                      ForNode SourceSection: None
+                                                        ForRepeatingNode SourceSection: None
+                                                          ForNextElementNodeGen SourceSection: None
+                                                            WriteLocalVariableNodeGen SourceSection: None
+                                                              Identifier: f
+                                                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                                                Frame: [2,f,Illegal]
+                                                          BlockNode SourceSection: None
+                                                            ExpressionStatementNode SourceSection: [2401,2413]`sb.append(f)`
+                                                              PythonCallNodeGen SourceSection: [2401,2413]`sb.append(f)`
+                                                                CachedCallNodeGen SourceSection: None
+                                                                  CreateArgumentsNodeGen SourceSection: None
+                                                                  CallDispatchNodeGen SourceSection: None
+                                                                ReadLocalVariableNode SourceSection: [2411,2412]`f`
+                                                                  Frame: [2,f,Illegal]
+                                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                                GetCallAttributeNodeGen SourceSection: None
+                                                                  ReadLocalVariableNode SourceSection: [2401,2403]`sb`
+                                                                    Frame: [1,sb,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ExpressionStatementNode SourceSection: [2430,2444]`sb.append("=")`
+                                                              PythonCallNodeGen SourceSection: [2430,2444]`sb.append("=")`
+                                                                CachedCallNodeGen SourceSection: None
+                                                                  CreateArgumentsNodeGen SourceSection: None
+                                                                  CallDispatchNodeGen SourceSection: None
+                                                                StringLiteralNode SourceSection: [2440,2443]`"="`
+                                                                GetCallAttributeNodeGen SourceSection: None
+                                                                  ReadLocalVariableNode SourceSection: [2430,2432]`sb`
+                                                                    Frame: [1,sb,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ExpressionStatementNode SourceSection: [2461,2494]`sb.append(repr(getat...`
+                                                              PythonCallNodeGen SourceSection: [2461,2494]`sb.append(repr(getat...`
+                                                                CachedCallNodeGen SourceSection: None
+                                                                  CreateArgumentsNodeGen SourceSection: None
+                                                                  CallDispatchNodeGen SourceSection: None
+                                                                PythonCallNodeGen SourceSection: [2471,2493]`repr(getattr(self, f...`
+                                                                  CachedCallNodeGen SourceSection: None
+                                                                    CreateArgumentsNodeGen SourceSection: None
+                                                                    CallDispatchNodeGen SourceSection: None
+                                                                  PythonCallNodeGen SourceSection: [2476,2492]`getattr(self, f)`
+                                                                    CachedCallNodeGen SourceSection: None
+                                                                      CreateArgumentsNodeGen SourceSection: None
+                                                                      CallDispatchNodeGen SourceSection: None
+                                                                    ReadLocalVariableNode SourceSection: [2484,2488]`self`
+                                                                      Frame: [0,self,Illegal]
+                                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                                    ReadLocalVariableNode SourceSection: [2490,2491]`f`
+                                                                      Frame: [2,f,Illegal]
+                                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                      Identifier: getattr
+                                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                    Identifier: repr
+                                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                GetCallAttributeNodeGen SourceSection: None
+                                                                  ReadLocalVariableNode SourceSection: [2461,2463]`sb`
+                                                                    Frame: [1,sb,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ExpressionStatementNode SourceSection: [2511,2526]`sb.append(", ")`
+                                                              PythonCallNodeGen SourceSection: [2511,2526]`sb.append(", ")`
+                                                                CachedCallNodeGen SourceSection: None
+                                                                  CreateArgumentsNodeGen SourceSection: None
+                                                                  CallDispatchNodeGen SourceSection: None
+                                                                StringLiteralNode SourceSection: [2521,2525]`", "`
+                                                                GetCallAttributeNodeGen SourceSection: None
+                                                                  ReadLocalVariableNode SourceSection: [2511,2513]`sb`
+                                                                    Frame: [1,sb,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                        GetIteratorExpressionNodeGen SourceSection: [2377,2383]`fields`
+                                                          GetIteratorNodeGen SourceSection: None
+                                                          ReadLocalCellNodeGen SourceSection: [2377,2383]`fields`
+                                                            ReadLocalVariableNode SourceSection: None
+                                                              Frame: [4,fields,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ReadFromCellNodeGen SourceSection: None
+                                                      BlockNode SourceSection: None
+                                                    ExpressionStatementNode SourceSection: [2539,2547]`sb.pop()`
+                                                      PythonCallNodeGen SourceSection: [2539,2547]`sb.pop()`
+                                                        CachedCallNodeGen SourceSection: None
+                                                          CreateArgumentsNodeGen SourceSection: None
+                                                          CallDispatchNodeGen SourceSection: None
+                                                        GetCallAttributeNodeGen SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [2539,2541]`sb`
+                                                            Frame: [1,sb,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ExpressionStatementNode SourceSection: [2560,2574]`sb.append(")")`
+                                                      PythonCallNodeGen SourceSection: [2560,2574]`sb.append(")")`
+                                                        CachedCallNodeGen SourceSection: None
+                                                          CreateArgumentsNodeGen SourceSection: None
+                                                          CallDispatchNodeGen SourceSection: None
+                                                        StringLiteralNode SourceSection: [2570,2573]`")"`
+                                                        GetCallAttributeNodeGen SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [2560,2562]`sb`
+                                                            Frame: [1,sb,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                    FrameReturnNode SourceSection: [2587,2605]`return "".join(sb)`
+                                                      WriteLocalVariableNodeGen SourceSection: None
+                                                        Identifier: <return_val>
+                                                        WriteLocalFrameSlotNodeGen SourceSection: None
+                                                          Frame: [6,<return_val>,Illegal]
+                                                        PythonCallNodeGen SourceSection: [2594,2605]`"".join(sb)`
+                                                          CachedCallNodeGen SourceSection: None
+                                                            CreateArgumentsNodeGen SourceSection: None
+                                                            CallDispatchNodeGen SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [2602,2604]`sb`
+                                                            Frame: [1,sb,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                          GetCallAttributeNodeGen SourceSection: None
+                                                            StringLiteralNode SourceSection: [2594,2596]`""`
+                                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                                  Frame: [6,<return_val>,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                    Return Expresssion: ObjectLiteralNode SourceSection: None
+                            StringLiteralNode SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [2139,2144]`tuple`
+                              Identifier: tuple
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            GetCallAttributeNodeGen SourceSection: None
+                              BuiltinsLiteralNode SourceSection: None
+                        WriteCellVarNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [4,<>temp4,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [2611,2919]`def _define_named_tu...`
+                      Identifier: _define_named_tuple_methods
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [3,_define_named_tuple_methods,Illegal]
+                      FunctionDefinitionNode Name: _define_named_tuple_methods SourceSection: None
+                        Arguments: None
+                        KwArguments: None
+                        Documentation: StringLiteralNode: Empty
+                        FreeVarSlots: fields, , named_tuple, 
+                        ExecutionSlots:
+                          FreeVarsSlots: fields, , named_tuple, 
+                          CellVarsSlots: None
+                        FunctionRootNode SourceSection: [2611,2919]`def _define_named_tu...`
+                          Name: _define_named_tuple_methods
+                          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                          CelVars: None
+                          FreeVars: fields, named_tuple
+                          NeedsCellFrame: False
+                          FrameDescriptor: 8 slots [make_func, i, name, fields, named_tuple, <>temp5, <>temp6, <return_val>]
+                          ExecutionSlots:
+                            FreeVarsSlots: fields, , named_tuple, 
+                            CellVarsSlots: None
+                          InnerRootNode SourceSection: [2611,2919]`def _define_named_tu...`
+                            ReturnTargetNode SourceSection: [2611,2919]`def _define_named_tu...`
+                              Body: BlockNode SourceSection: None
+                                BlockNode SourceSection: None
+                                ElseNode SourceSection: [2654,2919]`for i, name in enume...`
+                                  ForNode SourceSection: None
+                                    ForRepeatingNode SourceSection: None
+                                      ForNextElementNodeGen SourceSection: None
+                                        DestructuringAssignmentNodeGen SourceSection: None
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: <>temp5
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [5,<>temp5,Illegal]
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: <>temp6
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [6,<>temp6,Illegal]
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: i
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [1,i,Illegal]
+                                            ReadLocalVariableNode SourceSection: None
+                                              Frame: [5,<>temp5,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: name
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [2,name,Illegal]
+                                            ReadLocalVariableNode SourceSection: None
+                                              Frame: [6,<>temp6,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                      BlockNode SourceSection: None
+                                        WriteLocalVariableNodeGen SourceSection: [2700,2825]`def make_func(i):↵  ...`
+                                          Identifier: make_func
+                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                            Frame: [0,make_func,Illegal]
+                                          FunctionDefinitionNode Name: make_func SourceSection: None
+                                            Arguments: None
+                                            KwArguments: None
+                                            Documentation: StringLiteralNode: Empty
+                                            FreeVarSlots: None
+                                            ExecutionSlots:
+                                              FreeVarsSlots: None
+                                              CellVarsSlots: i, 
+                                            FunctionRootNode SourceSection: [2700,2825]`def make_func(i):↵  ...`
+                                              Name: make_func
+                                              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                                Param Names: i
+                                              CelVars: i
+                                              FreeVars: None
+                                              NeedsCellFrame: False
+                                              FrameDescriptor: 3 slots [i, func, <return_val>]
+                                              ExecutionSlots:
+                                                FreeVarsSlots: None
+                                                CellVarsSlots: i, 
+                                              InnerRootNode SourceSection: [2700,2825]`def make_func(i):↵  ...`
+                                                ReturnTargetNode SourceSection: [2700,2825]`def make_func(i):↵  ...`
+                                                  Body: BlockNode SourceSection: None
+                                                    WriteLocalCellNodeGen SourceSection: None
+                                                      Identifier: i
+                                                      ReadLocalVariableNode SourceSection: None
+                                                        Frame: [0,i,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                      ArgumentExpressionNode SourceSection: None
+                                                        ReadIndexedArgumentNodeGen SourceSection: None
+                                                          Index: 0
+                                                    BlockNode SourceSection: None
+                                                      WriteLocalVariableNodeGen SourceSection: [2734,2801]`def func(self):↵    ...`
+                                                        Identifier: func
+                                                        WriteLocalFrameSlotNodeGen SourceSection: None
+                                                          Frame: [1,func,Illegal]
+                                                        FunctionDefinitionNode Name: func SourceSection: None
+                                                          Arguments: None
+                                                          KwArguments: None
+                                                          Documentation: StringLiteralNode: Empty
+                                                          FreeVarSlots: i, 
+                                                          ExecutionSlots:
+                                                            FreeVarsSlots: i, 
+                                                            CellVarsSlots: None
+                                                          FunctionRootNode SourceSection: [2734,2801]`def func(self):↵    ...`
+                                                            Name: func
+                                                            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                                              Param Names: self
+                                                            CelVars: None
+                                                            FreeVars: i
+                                                            NeedsCellFrame: False
+                                                            FrameDescriptor: 3 slots [self, i, <return_val>]
+                                                            ExecutionSlots:
+                                                              FreeVarsSlots: i, 
+                                                              CellVarsSlots: None
+                                                            InnerRootNode SourceSection: [2734,2801]`def func(self):↵    ...`
+                                                              ReturnTargetNode SourceSection: [2734,2801]`def func(self):↵    ...`
+                                                                Body: BlockNode SourceSection: None
+                                                                  WriteLocalVariableNodeGen SourceSection: None
+                                                                    Identifier: self
+                                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                                      Frame: [0,self,Illegal]
+                                                                    ArgumentExpressionNode SourceSection: None
+                                                                      ReadIndexedArgumentNodeGen SourceSection: None
+                                                                        Index: 0
+                                                                  FrameReturnNode SourceSection: [2770,2784]`return self[i]`
+                                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                                      Identifier: <return_val>
+                                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                                        Frame: [2,<return_val>,Illegal]
+                                                                      GetItemNodeGen SourceSection: [2777,2784]`self[i]`
+                                                                        ReadLocalVariableNode SourceSection: None
+                                                                          Frame: [0,self,Illegal]
+                                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                                        ReadLocalCellNodeGen SourceSection: [2782,2783]`i`
+                                                                          ReadLocalVariableNode SourceSection: None
+                                                                            Frame: [1,i,Illegal]
+                                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                                          ReadFromCellNodeGen SourceSection: None
+                                                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                                                  Frame: [2,<return_val>,Illegal]
+                                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                      FrameReturnNode SourceSection: [2801,2812]`return func`
+                                                        WriteLocalVariableNodeGen SourceSection: None
+                                                          Identifier: <return_val>
+                                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                                            Frame: [2,<return_val>,Illegal]
+                                                          ReadLocalVariableNode SourceSection: [2808,2812]`func`
+                                                            Frame: [1,func,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                                    Frame: [2,<return_val>,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                        ExpressionStatementNode SourceSection: [2825,2912]`setattr(named_tuple,...`
+                                          PythonCallNodeGen SourceSection: [2825,2912]`setattr(named_tuple,...`
+                                            CachedCallNodeGen SourceSection: None
+                                              CreateArgumentsNodeGen SourceSection: None
+                                              CallDispatchNodeGen SourceSection: None
+                                            ReadLocalCellNodeGen SourceSection: [2833,2844]`named_tuple`
+                                              ReadLocalVariableNode SourceSection: None
+                                                Frame: [4,named_tuple,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadFromCellNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [2846,2850]`name`
+                                              Frame: [2,name,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            PythonCallNodeGen SourceSection: [2852,2911]`descriptor(fget=make...`
+                                              CachedCallNodeGen SourceSection: None
+                                                CreateArgumentsNodeGen SourceSection: None
+                                                CallDispatchNodeGen SourceSection: None
+                                              KeywordArgumentsNodeGen SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  PythonCallNodeGen SourceSection: [2868,2880]`make_func(i)`
+                                                    CachedCallNodeGen SourceSection: None
+                                                      CreateArgumentsNodeGen SourceSection: None
+                                                      CallDispatchNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [2878,2879]`i`
+                                                      Frame: [1,i,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: None
+                                                      Frame: [0,make_func,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [2887,2891]`name`
+                                                    Frame: [2,name,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  ReadLocalCellNodeGen SourceSection: [2899,2910]`named_tuple`
+                                                    ReadLocalVariableNode SourceSection: None
+                                                      Frame: [4,named_tuple,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ReadFromCellNodeGen SourceSection: None
+                                                CompactKeywordsNodeGen SourceSection: None
+                                                ExecuteKeywordStarargsNodeGen SourceSection: None
+                                                  EmptyNode SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                Identifier: descriptor
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              Identifier: setattr
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    GetIteratorExpressionNodeGen SourceSection: [2669,2686]`enumerate(fields)`
+                                      GetIteratorNodeGen SourceSection: None
+                                      PythonCallNodeGen SourceSection: [2669,2686]`enumerate(fields)`
+                                        CachedCallNodeGen SourceSection: None
+                                          CreateArgumentsNodeGen SourceSection: None
+                                          CallDispatchNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [2679,2685]`fields`
+                                          ReadLocalVariableNode SourceSection: None
+                                            Frame: [3,fields,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          Identifier: enumerate
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  BlockNode SourceSection: None
+                              Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                Frame: [7,<return_val>,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                    ExpressionStatementNode SourceSection: [2919,2948]`_define_named_tuple_...`
+                      PythonCallNodeGen SourceSection: [2919,2948]`_define_named_tuple_...`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [3,_define_named_tuple_methods,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                    FrameReturnNode SourceSection: [2953,2971]`return named_tuple`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <return_val>
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [5,<return_val>,Illegal]
+                        ReadLocalCellNodeGen SourceSection: [2960,2971]`named_tuple`
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [2,named_tuple,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadFromCellNodeGen SourceSection: None
+                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Frame: [5,<return_val>,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+      ExpressionWithSideEffect SourceSection: None
+        Expression:
+          EmptyNode SourceSection: None
+        SideEffect:
+          WriteNameNodeGen SourceSection: [2974,3601]`class SimpleNamespac...`
+            Identifier: SimpleNamespace
+            ExpressionWithSideEffects SourceSection: None
+              WriteLocalVariableNodeGen SourceSection: None
+                Identifier: <>temp0
+                WriteLocalFrameSlotNodeGen SourceSection: None
+                  Frame: [0,<>temp0,Illegal]
+                PythonCallNodeGen SourceSection: [2974,3601]`class SimpleNamespac...`
+                  CachedCallNodeGen SourceSection: None
+                    CreateArgumentsNodeGen SourceSection: None
+                    CallDispatchNodeGen SourceSection: None
+                  FunctionDefinitionNode Name: SimpleNamespace SourceSection: None
+                    Arguments: None
+                    KwArguments: None
+                    Documentation: None
+                    FreeVarSlots: None
+                    ExecutionSlots:
+                      FreeVarsSlots: None
+                      CellVarsSlots: __class__, 
+                    ClassBodyRootNode SourceSection: [2974,3601]`class SimpleNamespac...`
+                      Name: SimpleNamespace
+                      Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                        Param Names: namespace
+                      CelVars: __class__
+                      FreeVars: None
+                      NeedsCellFrame: False
+                      FrameDescriptor: 6 slots [__init__, __delattr__, __getattr__, __setattr__, __repr__, __class__]
+                      ExecutionSlots:
+                        FreeVarsSlots: None
+                        CellVarsSlots: __class__, 
+                      InnerRootNode SourceSection: None
+                        ReturnTargetNode SourceSection: None
+                          Body: BlockNode SourceSection: None
+                            ClassDefinitionPrologueNode SourceSection: None
+                              QualName: SimpleNamespace
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: __name__
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
+                              SetItemIfNotPresentNodeGen SourceSection: None
+                                SetItemNodeGen SourceSection: None
+                            SetItemNodeGen SourceSection: [3009,3095]`def __init__(self, *...`
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                              FunctionDefinitionNode Name: __init__ SourceSection: None
+                                Arguments: None
+                                KwArguments: None
+                                Documentation: StringLiteralNode: Empty
+                                FreeVarSlots: __class__, 
+                                ExecutionSlots:
+                                  FreeVarsSlots: __class__, 
+                                  CellVarsSlots: None
+                                FunctionRootNode SourceSection: [3009,3095]`def __init__(self, *...`
+                                  Name: __init__
+                                  Signature: varArgs=False, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                    Param Names: self
+                                    Keyword Names: None
+                                  CelVars: None
+                                  FreeVars: __class__
+                                  NeedsCellFrame: False
+                                  FrameDescriptor: 4 slots [self, kwargs, __class__, <return_val>]
+                                  ExecutionSlots:
+                                    FreeVarsSlots: __class__, 
+                                    CellVarsSlots: None
+                                  InnerRootNode SourceSection: [3009,3095]`def __init__(self, *...`
+                                    ReturnTargetNode SourceSection: [3009,3095]`def __init__(self, *...`
+                                      Body: BlockNode SourceSection: None
+                                        BlockNode SourceSection: None
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: self
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [0,self,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: kwargs
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [1,kwargs,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadVarKeywordsNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
+                                        ExpressionStatementNode SourceSection: [3047,3089]`object.__setattr__(s...`
+                                          PythonCallNodeGen SourceSection: [3047,3089]`object.__setattr__(s...`
+                                            CachedCallNodeGen SourceSection: None
+                                              CreateArgumentsNodeGen SourceSection: None
+                                              CallDispatchNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [3066,3070]`self`
+                                              Frame: [0,self,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            StringLiteralNode SourceSection: [3072,3080]`"__ns__"`
+                                            ReadLocalVariableNode SourceSection: [3082,3088]`kwargs`
+                                              Frame: [1,kwargs,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            GetCallAttributeNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [3047,3053]`object`
+                                                Identifier: object
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                        Frame: [3,<return_val>,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                            SetItemNodeGen SourceSection: [3095,3195]`def __delattr__(self...`
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                              FunctionDefinitionNode Name: __delattr__ SourceSection: None
+                                Arguments: None
+                                KwArguments: None
+                                Documentation: StringLiteralNode: Empty
+                                FreeVarSlots: __class__, 
+                                ExecutionSlots:
+                                  FreeVarsSlots: __class__, 
+                                  CellVarsSlots: None
+                                FunctionRootNode SourceSection: [3095,3195]`def __delattr__(self...`
+                                  Name: __delattr__
+                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                    Param Names: self, name
+                                  CelVars: None
+                                  FreeVars: __class__
+                                  NeedsCellFrame: False
+                                  FrameDescriptor: 4 slots [self, name, __class__, <return_val>]
+                                  ExecutionSlots:
+                                    FreeVarsSlots: __class__, 
+                                    CellVarsSlots: None
+                                  InnerRootNode SourceSection: [3095,3195]`def __delattr__(self...`
+                                    ReturnTargetNode SourceSection: [3095,3195]`def __delattr__(self...`
+                                      Body: BlockNode SourceSection: None
+                                        BlockNode SourceSection: None
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: self
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [0,self,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: name
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [1,name,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
+                                        ExpressionStatementNode SourceSection: [3132,3189]`object.__getattribut...`
+                                          PythonCallNodeGen SourceSection: [3132,3189]`object.__getattribut...`
+                                            CachedCallNodeGen SourceSection: None
+                                              CreateArgumentsNodeGen SourceSection: None
+                                              CallDispatchNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [3184,3188]`name`
+                                              Frame: [1,name,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            GetCallAttributeNodeGen SourceSection: None
+                                              PythonCallNodeGen SourceSection: [3132,3171]`object.__getattribut...`
+                                                CachedCallNodeGen SourceSection: None
+                                                  CreateArgumentsNodeGen SourceSection: None
+                                                  CallDispatchNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [3156,3160]`self`
+                                                  Frame: [0,self,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                StringLiteralNode SourceSection: [3162,3170]`"__ns__"`
+                                                GetCallAttributeNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [3132,3138]`object`
+                                                    Identifier: object
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                        Frame: [3,<return_val>,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                            SetItemNodeGen SourceSection: [3195,3290]`def __getattr__(self...`
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                              FunctionDefinitionNode Name: __getattr__ SourceSection: None
+                                Arguments: None
+                                KwArguments: None
+                                Documentation: StringLiteralNode: Empty
+                                FreeVarSlots: __class__, 
+                                ExecutionSlots:
+                                  FreeVarsSlots: __class__, 
+                                  CellVarsSlots: None
+                                FunctionRootNode SourceSection: [3195,3290]`def __getattr__(self...`
+                                  Name: __getattr__
+                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                    Param Names: self, name
+                                  CelVars: None
+                                  FreeVars: __class__
+                                  NeedsCellFrame: False
+                                  FrameDescriptor: 4 slots [self, name, __class__, <return_val>]
+                                  ExecutionSlots:
+                                    FreeVarsSlots: __class__, 
+                                    CellVarsSlots: None
+                                  InnerRootNode SourceSection: [3195,3290]`def __getattr__(self...`
+                                    ReturnTargetNode SourceSection: [3195,3290]`def __getattr__(self...`
+                                      Body: BlockNode SourceSection: None
+                                        BlockNode SourceSection: None
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: self
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [0,self,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: name
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [1,name,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
+                                        FrameReturnNode SourceSection: [3232,3284]`return object.__geta...`
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: <return_val>
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [3,<return_val>,Illegal]
+                                            GetItemNodeGen SourceSection: [3239,3284]`object.__getattribut...`
+                                              PythonCallNodeGen SourceSection: [3239,3278]`object.__getattribut...`
+                                                CachedCallNodeGen SourceSection: None
+                                                  CreateArgumentsNodeGen SourceSection: None
+                                                  CallDispatchNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [3263,3267]`self`
+                                                  Frame: [0,self,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                StringLiteralNode SourceSection: [3269,3277]`"__ns__"`
+                                                GetCallAttributeNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [3239,3245]`object`
+                                                    Identifier: object
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [3279,3283]`name`
+                                                Frame: [1,name,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                        Frame: [3,<return_val>,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                            SetItemNodeGen SourceSection: [3290,3393]`def __setattr__(self...`
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                              FunctionDefinitionNode Name: __setattr__ SourceSection: None
+                                Arguments: None
+                                KwArguments: None
+                                Documentation: StringLiteralNode: Empty
+                                FreeVarSlots: __class__, 
+                                ExecutionSlots:
+                                  FreeVarsSlots: __class__, 
+                                  CellVarsSlots: None
+                                FunctionRootNode SourceSection: [3290,3393]`def __setattr__(self...`
+                                  Name: __setattr__
+                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                    Param Names: self, name, value
+                                  CelVars: None
+                                  FreeVars: __class__
+                                  NeedsCellFrame: False
+                                  FrameDescriptor: 5 slots [self, name, value, __class__, <return_val>]
+                                  ExecutionSlots:
+                                    FreeVarsSlots: __class__, 
+                                    CellVarsSlots: None
+                                  InnerRootNode SourceSection: [3290,3393]`def __setattr__(self...`
+                                    ReturnTargetNode SourceSection: [3290,3393]`def __setattr__(self...`
+                                      Body: BlockNode SourceSection: None
+                                        BlockNode SourceSection: None
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: self
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [0,self,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 0
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: name
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [1,name,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 1
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: value
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [2,value,Illegal]
+                                            ArgumentExpressionNode SourceSection: None
+                                              ReadIndexedArgumentNodeGen SourceSection: None
+                                                Index: 2
+                                        SetItemNodeGen SourceSection: [3334,3387]`object.__getattribut...`
+                                          PythonCallNodeGen SourceSection: [3334,3373]`object.__getattribut...`
+                                            CachedCallNodeGen SourceSection: None
+                                              CreateArgumentsNodeGen SourceSection: None
+                                              CallDispatchNodeGen SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [3358,3362]`self`
+                                              Frame: [0,self,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            StringLiteralNode SourceSection: [3364,3372]`"__ns__"`
+                                            GetCallAttributeNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [3334,3340]`object`
+                                                Identifier: object
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [3374,3378]`name`
+                                            Frame: [1,name,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [3382,3387]`value`
+                                            Frame: [2,value,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                        Frame: [4,<return_val>,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                            SetItemNodeGen SourceSection: [3393,3601]`def __repr__(self):↵...`
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                              FunctionDefinitionNode Name: __repr__ SourceSection: None
+                                Arguments: None
+                                KwArguments: None
+                                Documentation: StringLiteralNode: Empty
+                                FreeVarSlots: __class__, 
+                                ExecutionSlots:
+                                  FreeVarsSlots: __class__, 
+                                  CellVarsSlots: None
+                                FunctionRootNode SourceSection: [3393,3601]`def __repr__(self):↵...`
+                                  Name: __repr__
+                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                    Param Names: self
+                                  CelVars: None
+                                  FreeVars: __class__
+                                  NeedsCellFrame: False
+                                  FrameDescriptor: 9 slots [self, sb, ns, k, v, __class__, <>temp6, <>temp7, <return_val>]
+                                  ExecutionSlots:
+                                    FreeVarsSlots: __class__, 
+                                    CellVarsSlots: None
+                                  InnerRootNode SourceSection: [3393,3601]`def __repr__(self):↵...`
+                                    ReturnTargetNode SourceSection: [3393,3601]`def __repr__(self):↵...`
+                                      Body: BlockNode SourceSection: None
+                                        WriteLocalVariableNodeGen SourceSection: None
+                                          Identifier: self
+                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                            Frame: [0,self,Illegal]
+                                          ArgumentExpressionNode SourceSection: None
+                                            ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
+                                        BlockNode SourceSection: None
+                                          WriteLocalVariableNodeGen SourceSection: [3421,3428]`sb = []`
+                                            Identifier: sb
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [1,sb,Illegal]
+                                            ListLiteralNode SourceSection: [3426,3428]`[]`
+                                              PythonObjectFactoryNodeGen SourceSection: None
+                                          WriteLocalVariableNodeGen SourceSection: [3437,3481]`ns = object.__getatt...`
+                                            Identifier: ns
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [2,ns,Illegal]
+                                            PythonCallNodeGen SourceSection: [3442,3481]`object.__getattribut...`
+                                              CachedCallNodeGen SourceSection: None
+                                                CreateArgumentsNodeGen SourceSection: None
+                                                CallDispatchNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [3466,3470]`self`
+                                                Frame: [0,self,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              StringLiteralNode SourceSection: [3472,3480]`"__ns__"`
+                                              GetCallAttributeNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3442,3448]`object`
+                                                  Identifier: object
+                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ElseNode SourceSection: [3490,3562]`for k,v in ns.items(...`
+                                            ForNode SourceSection: None
+                                              ForRepeatingNode SourceSection: None
+                                                ForNextElementNodeGen SourceSection: None
+                                                  DestructuringAssignmentNodeGen SourceSection: None
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: <>temp6
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [6,<>temp6,Illegal]
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: <>temp7
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [7,<>temp7,Illegal]
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: k
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [3,k,Illegal]
+                                                      ReadLocalVariableNode SourceSection: None
+                                                        Frame: [6,<>temp6,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: v
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [4,v,Illegal]
+                                                      ReadLocalVariableNode SourceSection: None
+                                                        Frame: [7,<>temp7,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                ExpressionStatementNode SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
+                                                  PythonCallNodeGen SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
+                                                    CachedCallNodeGen SourceSection: None
+                                                      CreateArgumentsNodeGen SourceSection: None
+                                                      CallDispatchNodeGen SourceSection: None
+                                                    BinaryArithmeticExpression SourceSection: [3535,3552]`"%s='%s'" % (k,v)`
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __mod__
+                                                      StringLiteralNode SourceSection: [3535,3544]`"%s='%s'"`
+                                                      TupleLiteralNode SourceSection: [3547,3552]`(k,v)`
+                                                        PythonObjectFactoryNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [3548,3549]`k`
+                                                          Frame: [3,k,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [3550,3551]`v`
+                                                          Frame: [4,v,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                    GetCallAttributeNodeGen SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [3525,3527]`sb`
+                                                        Frame: [1,sb,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                              GetIteratorExpressionNodeGen SourceSection: [3501,3511]`ns.items()`
+                                                GetIteratorNodeGen SourceSection: None
+                                                PythonCallNodeGen SourceSection: [3501,3511]`ns.items()`
+                                                  CachedCallNodeGen SourceSection: None
+                                                    CreateArgumentsNodeGen SourceSection: None
+                                                    CallDispatchNodeGen SourceSection: None
+                                                  GetCallAttributeNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [3501,3503]`ns`
+                                                      Frame: [2,ns,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                            BlockNode SourceSection: None
+                                          FrameReturnNode SourceSection: [3562,3600]`return "namespace(%s...`
+                                            WriteLocalVariableNodeGen SourceSection: None
+                                              Identifier: <return_val>
+                                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                                Frame: [8,<return_val>,Illegal]
+                                              BinaryArithmeticExpression SourceSection: [3569,3600]`"namespace(%s)" % ",...`
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __mod__
+                                                StringLiteralNode SourceSection: [3569,3584]`"namespace(%s)"`
+                                                PythonCallNodeGen SourceSection: [3587,3600]`", ".join(sb)`
+                                                  CachedCallNodeGen SourceSection: None
+                                                    CreateArgumentsNodeGen SourceSection: None
+                                                    CallDispatchNodeGen SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [3597,3599]`sb`
+                                                    Frame: [1,sb,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  GetCallAttributeNodeGen SourceSection: None
+                                                    StringLiteralNode SourceSection: [3587,3591]`", "`
+                                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                        Frame: [8,<return_val>,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                          Return Expresssion: ObjectLiteralNode SourceSection: None
+                  StringLiteralNode SourceSection: None
+                  ReadNameNodeGen SourceSection: [2996,3002]`object`
+                    Identifier: object
+                  GetCallAttributeNodeGen SourceSection: None
+                    BuiltinsLiteralNode SourceSection: None
+              WriteCellVarNodeGen SourceSection: None
+                ReadLocalVariableNode SourceSection: None
+                  Frame: [0,<>temp0,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+              ReadLocalVariableNode SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None

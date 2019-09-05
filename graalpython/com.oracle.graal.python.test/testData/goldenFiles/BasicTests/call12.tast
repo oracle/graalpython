@@ -1,0 +1,21 @@
+ModuleRootNode Name: <module 'call12'> SourceSection: [0,25]`foo(**mydict1, **myd...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,25]`foo(**mydict1, **myd...`
+    PythonCallNodeGen SourceSection: [0,25]`foo(**mydict1, **myd...`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      KeywordArgumentsNodeGen SourceSection: None
+        CompactKeywordsNodeGen SourceSection: None
+        ExecuteKeywordStarargsNodeGen SourceSection: None
+          DictConcatNode SourceSection: None
+            ReadNameNodeGen SourceSection: [6,13]`mydict1`
+              Identifier: mydict1
+            ReadNameNodeGen SourceSection: [17,24]`mydict2`
+              Identifier: mydict2
+      ReadNameNodeGen SourceSection: None
+        Identifier: foo

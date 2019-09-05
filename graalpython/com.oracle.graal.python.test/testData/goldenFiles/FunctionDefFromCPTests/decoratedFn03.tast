@@ -1,0 +1,50 @@
+ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()↵def f()...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,26]`@funcattrs()↵def f()...`
+    ExpressionWithSideEffect SourceSection: [0,26]`@funcattrs()↵def f()...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,26]`@funcattrs()↵def f()...`
+          Identifier: f
+          PythonCallNodeGen SourceSection: [0,12]`@funcattrs()`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            FunctionDefinitionNode Name: f SourceSection: None
+              Arguments: None
+              KwArguments: None
+              Documentation: StringLiteralNode: Empty
+              FreeVarSlots: None
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              FunctionRootNode SourceSection: [13,26]`def f(): pass`
+                Name: f
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                CelVars: None
+                FreeVars: None
+                NeedsCellFrame: False
+                FrameDescriptor: 1 slots [<return_val>]
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: None
+                InnerRootNode SourceSection: [13,26]`def f(): pass`
+                  ReturnTargetNode SourceSection: [13,26]`def f(): pass`
+                    Body: BlockNode SourceSection: None
+                      BlockNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [22,26]`pass`
+                        EmptyNode SourceSection: [22,26]`pass`
+                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                      Frame: [0,<return_val>,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+            PythonCallNodeGen SourceSection: [0,12]`@funcattrs()`
+              CachedCallNodeGen SourceSection: None
+                CreateArgumentsNodeGen SourceSection: None
+                CallDispatchNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: None
+                Identifier: funcattrs

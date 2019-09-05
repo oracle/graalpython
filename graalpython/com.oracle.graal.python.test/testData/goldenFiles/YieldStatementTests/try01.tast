@@ -1,0 +1,72 @@
+ModuleRootNode Name: <module 'try01'> SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
+    ExpressionWithSideEffect SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
+          Identifier: gen
+          GeneratorFunctionDefinitionNode Name: gen SourceSection: None
+            FrameDescriptor: 2 slots [x, <return_val>]
+            Active Flags: 5
+            For Nodes: 0
+            Block Nodes: 1
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
+              Name: gen
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: x
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [x, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
+                GeneratorReturnTargetNode SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
+                  flagSlot: 4
+                  GeneratorTryFinallyNode SourceSection: [14,60]`try:↵    pass↵  exce...`
+                    GeneratorTryExceptNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [23,27]`pass`
+                        EmptyNode SourceSection: [23,27]`pass`
+                      ExceptNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [53,60]`yield 3`
+                          YieldNode SourceSection: [53,60]`yield 3`
+                            flagSlot: 0
+                            IntegerLiteralNode SourceSection: [59,60]`3`
+                              Value: 3
+                            GeneratorAccessNode SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [37,47]`ValueError`
+                          Identifier: ValueError
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      BlockNode SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
+                      GeneratorAccessNode SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
+                      RestoreExceptionStateNodeGen SourceSection: None
+                    GeneratorAccessNode SourceSection: None
+                    SaveExceptionStateNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                    Identifier: x
+                    WriteGeneraterFrameSlotNodeGen SourceSection: None
+                      Frame: [0,x,Illegal]
+                    ArgumentExpressionNode SourceSection: None
+                      ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

@@ -1,0 +1,74 @@
+ModuleRootNode Name: <module 'assignment06'> SourceSection: [0,29]`def fn():↵  a = b = ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,29]`def fn():↵  a = b = ...`
+    ExpressionWithSideEffect SourceSection: [0,29]`def fn():↵  a = b = ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,29]`def fn():↵  a = b = ...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,29]`def fn():↵  a = b = ...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 6 slots [a, b, c, d, <>temp4, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,29]`def fn():↵  a = b = ...`
+                ReturnTargetNode SourceSection: [0,29]`def fn():↵  a = b = ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    BlockNode SourceSection: [12,29]`a = b = c = d = e`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <>temp4
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [28,29]`e`
+                          Identifier: e
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,a,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: b
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,b,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: c
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,c,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: d
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [3,d,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [5,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

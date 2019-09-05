@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -44,4 +44,9 @@ public final class IntegerLiteralNode extends LiteralNode {
     public Object execute(VirtualFrame frame) {
         return value;
     }
+
+    public int getValue() {
+        return value;
+    }
+
 }

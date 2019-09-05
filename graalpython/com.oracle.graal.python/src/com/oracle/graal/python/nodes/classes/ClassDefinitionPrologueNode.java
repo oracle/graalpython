@@ -65,6 +65,10 @@ public class ClassDefinitionPrologueNode extends StatementNode {
         this.qualName = qualName;
     }
 
+    public String getQualName() {
+        return qualName;
+    }
+
     @Override
     public void executeVoid(VirtualFrame frame) {
         Object moduleName = readGlobalNameNode.execute(frame);

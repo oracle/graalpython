@@ -113,7 +113,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
 
     dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
     env["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
-
+    
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
     dists += additional_dists
@@ -151,16 +151,16 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
-def punittest(args):
-    if '--regex' not in args:
-        args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
+def punittest(ars):
+    if '--regex' not in ars:
+        args = ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
     args += ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
              "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
              "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
-
+    args += ars
     # ensure that C API was built (we may need on-demand compilation)
     do_run_python(["-m", "build_capi"], nonZeroIsFatal=True)
-
+    os.environ["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
     mx_unittest.unittest(args)
 
 
@@ -318,7 +318,7 @@ def _graalpytest_root():
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None):
     args = args or []
     args = ["--experimental-options=true", 
-            "--python.CatchAllExceptions=true", 
+            "--python.CatchAllExceptions=true",
             mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"),
             ] + args
     exclude = exclude or []
@@ -771,7 +771,7 @@ def python_checkcopyrights(args):
         content = listfile.read()
     with open(listfilename, "w") as listfile:
         for line in content.split("\n"):
-            if "lib-python/3" in line:
+            if "lib-python/3" in line or "com.oracle.graal.python.test/testData" in line:
                 pass
             elif os.path.splitext(line)[1] in [".py", ".java", ".c", ".h", ".sh"]:
                 listfile.write(line)
@@ -1134,4 +1134,5 @@ mx.update_commands(SUITE, {
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],
     'python-coverage': [python_coverage, '[gate-tag]'],
+    'punittest': [punittest, ''],
 })

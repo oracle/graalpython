@@ -85,10 +85,13 @@ def replace_suppress_warnings(line):
 def replace_rulectx(line):
         return line.replace("(RuleContext)_localctx", "_localctx")
 
+def replace_localctx(line):
+        return re.sub(r'\(\((([a-zA-Z]*?_?)*[a-zA-Z]*)\)_localctx\)', '_localctx', line)
 
 TRANSFORMS = [
         replace_suppress_warnings,
         replace_rulectx,
+        replace_localctx,
 ]
 
 

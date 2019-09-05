@@ -1,0 +1,46 @@
+ModuleRootNode Name: <module 'comparision05'> SourceSection: [0,16]`x() < y() <= z()`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,16]`x() < y() <= z()`
+    AndNode SourceSection: [0,16]`x() < y() <= z()`
+      ExpressionWithSideEffect SourceSection: None
+        Expression:
+          BinaryComparisonNodeGen SourceSection: None
+            LookupAndCallBinaryNodeGen SourceSection: None
+              Op: __lt__
+            PythonCallNodeGen SourceSection: [0,3]`x()`
+              CachedCallNodeGen SourceSection: None
+                CreateArgumentsNodeGen SourceSection: None
+                CallDispatchNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: None
+                Identifier: x
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None
+        SideEffect:
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp0
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+            PythonCallNodeGen SourceSection: [6,9]`y()`
+              CachedCallNodeGen SourceSection: None
+                CreateArgumentsNodeGen SourceSection: None
+                CallDispatchNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: None
+                Identifier: y
+      BinaryComparisonNodeGen SourceSection: None
+        LookupAndCallBinaryNodeGen SourceSection: None
+          Op: __le__
+        ReadLocalVariableNode SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+          ReadVariableFromFrameNodeGen SourceSection: None
+        PythonCallNodeGen SourceSection: [13,16]`z()`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: None
+            Identifier: z
+      YesNodeGen SourceSection: None

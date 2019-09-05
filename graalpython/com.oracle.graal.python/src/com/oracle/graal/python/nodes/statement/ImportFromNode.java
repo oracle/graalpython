@@ -67,6 +67,14 @@ public class ImportFromNode extends AbstractImportNode {
         return importee;
     }
 
+    public int getLevel() {
+        return level;
+    }
+
+    public String[] getFromlist() {
+        return fromlist;
+    }
+
     protected ImportFromNode(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
         this.importee = importee;
         this.fromlist = fromlist;

@@ -1,0 +1,13 @@
+ModuleRootNode Name: <module 'set04'> SourceSection: [0,7]`{2, 3,}`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,7]`{2, 3,}`
+    SetLiteralNode SourceSection: [0,7]`{2, 3,}`
+      PythonObjectFactoryNodeGen SourceSection: None
+      IntegerLiteralNode SourceSection: [1,2]`2`
+        Value: 2
+      IntegerLiteralNode SourceSection: [4,5]`3`
+        Value: 3

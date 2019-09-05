@@ -1,0 +1,11 @@
+ModuleRootNode Name: <module 'tuple08'> SourceSection: [0,2]`1,`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,2]`1,`
+    TupleLiteralNode SourceSection: [0,2]`1,`
+      PythonObjectFactoryNodeGen SourceSection: None
+      IntegerLiteralNode SourceSection: [0,1]`1`
+        Value: 1

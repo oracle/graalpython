@@ -69,4 +69,8 @@ public class ImportNode extends AbstractImportNode {
     public WrapperNode createWrapper(ProbeNode probe) {
         return new ImportNodeWrapper(this, this, probe);
     }
+
+    public String getModuleName() {
+        return moduleName;
+    }
 }
