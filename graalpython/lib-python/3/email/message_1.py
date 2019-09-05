@@ -1,4 +1,0 @@
-"""
-Fußballer
-"""
-print("exectud")
