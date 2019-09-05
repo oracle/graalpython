@@ -378,6 +378,7 @@ def graalpython_gate_runner(args, tasks):
                 mx.log("Running tests with CPython")
                 test_args = [_graalpytest_driver(), "-v", _graalpytest_root()]
                 mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+            mx.run(["env"])
             run_python_unittests(python_gvm())
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
