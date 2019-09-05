@@ -206,7 +206,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
                         PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
                         false, // dev_mode
-                        1, // utf8_mode
+                        0, // utf8_mode
         }));
 
         Env env = context.getEnv();
