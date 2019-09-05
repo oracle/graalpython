@@ -30,8 +30,8 @@ local builder = import 'ci_common/builder.libsonnet';
         builder.testGate(type="unittest-jython", platform="linux"),
 
         // JDK11
-        builder.testGate11(type="unittest", platform="linux"),
-        builder.testGate11(type="svm-unittest", platform="linux"),
+        // builder.testGate11(type="unittest", platform="linux"),
+        // builder.testGate11(type="svm-unittest", platform="linux"),
 
         // junit
         builder.testGate(type="junit", platform="linux"),
