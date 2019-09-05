@@ -53,8 +53,10 @@ import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,18 +79,21 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, int family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
-            return createSocketInternal(cls, family, PSocket.SOCK_STREAM, 0);
+        Object socket(LazyPythonClass cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
+                        @Cached CastToIndexNode cast) {
+            return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
         }
 
         @Specialization(guards = {"isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, int family, int type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
-            return createSocketInternal(cls, family, type, 0);
+        Object socket(LazyPythonClass cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
+                        @Cached CastToIndexNode cast) {
+            return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
         }
 
         @Specialization(guards = {"isNoValue(fileno)"})
-        Object socket(LazyPythonClass cls, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno) {
-            return createSocketInternal(cls, family, type, proto);
+        Object socket(LazyPythonClass cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
+                        @Cached CastToIndexNode cast) {
+            return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
         }
 
         private Object createSocketInternal(LazyPythonClass cls, int family, int type, int proto) {
