@@ -29,6 +29,7 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
+import mx_subst
 import mx_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
@@ -276,6 +277,9 @@ class GraalPythonVm(GuestVm):
         cmd = truffle_options + vm_args + extra_polyglot_args + args
 
         host_vm = self.host_vm()
+        if not self._env:
+            self._env = dict()
+        self._env["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
         with environ(self._env):
             if hasattr(host_vm, 'run_lang'):
                 return host_vm.run_lang('graalpython', extra_polyglot_args + args, cwd)
