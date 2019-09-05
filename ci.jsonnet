@@ -20,7 +20,7 @@ local builder = import 'ci_common/builder.libsonnet';
     //
     // ------------------------------------------------------------------------------------------------------
     local gates = [
-        // unittests
+        // unittests on JDK8
         builder.testGate(type="unittest", platform="linux"),
         builder.testGate(type="unittest", platform="darwin"),
         builder.testGateTime(type="tagged-unittest", platform="linux", timelimit=const.TIME_LIMIT["2h"]),
@@ -28,6 +28,10 @@ local builder = import 'ci_common/builder.libsonnet';
         builder.testGate(type="svm-unittest", platform="linux"),
         builder.testGate(type="svm-unittest", platform="darwin"),
         builder.testGate(type="unittest-jython", platform="linux"),
+
+        // JDK11
+        // builder.testGate11(type="unittest", platform="linux"),
+        // builder.testGate11(type="svm-unittest", platform="linux"),
 
         // junit
         builder.testGate(type="junit", platform="linux"),

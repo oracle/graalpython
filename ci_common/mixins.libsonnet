@@ -38,6 +38,9 @@ local const = import 'constants.libsonnet';
             "pip:pylint": "==1.1.0",
             "llvm": "==4.0.1",
         },
+        environment: {
+            "LC_CTYPE": "en_US.UTF-8", // make sure we have the correct locale
+        },
     },
     darwin:: darwin,
 
@@ -72,17 +75,27 @@ local const = import 'constants.libsonnet';
     },
     eclipse:: eclipse,
 
-    local labsjdk8 = {
-        downloads +: {
-            JAVA_HOME: utils.download("oraclejdk", "8u212-jvmci-19.2-b01"),
-        },
+    local labsjdk = {
         environment +: {
             CI: "true",
             GRAALVM_CHECK_EXPERIMENTAL_OPTIONS: "true",
             PATH: "$JAVA_HOME/bin:$PATH",
         },
     },
+
+    local labsjdk8 = labsjdk + {
+        downloads +: {
+            JAVA_HOME: utils.download("oraclejdk", "8u221-jvmci-19.3-b01"),
+        },
+    },
     labsjdk8:: labsjdk8,
+
+    local labsjdk11 = labsjdk + {
+        downloads +: {
+            JAVA_HOME: utils.download("labsjdk", "11-20190830-095818"),
+        },
+    },
+    labsjdk11:: labsjdk11,
 
     local graal = labsjdk8 + {
         environment +: {

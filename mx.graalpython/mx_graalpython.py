@@ -50,6 +50,12 @@ SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
 
+# compatibility between Python versions
+PY3 = sys.version_info[0] == 3
+if PY3:
+    raw_input = input
+
+
 def _get_core_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-graalpython")
 
@@ -113,7 +119,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
 
     dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
     env["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
-    
+
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
     dists += additional_dists
@@ -317,7 +323,7 @@ def _graalpytest_root():
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None):
     args = args or []
-    args = ["--experimental-options=true", 
+    args = ["--experimental-options=true",
             "--python.CatchAllExceptions=true",
             mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"),
             ] + args
@@ -372,6 +378,7 @@ def graalpython_gate_runner(args, tasks):
                 mx.log("Running tests with CPython")
                 test_args = [_graalpytest_driver(), "-v", _graalpytest_root()]
                 mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+            mx.run(["env"])
             run_python_unittests(python_gvm())
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
@@ -498,7 +505,7 @@ def run_shared_lib_test(args=None):
     fd = name = progname = None
     try:
         fd, name = tempfile.mkstemp(suffix='.c')
-        os.write(fd, """
+        os.write(fd, b"""
         #include "stdio.h"
         #include "polyglot_api.h"
 
@@ -605,7 +612,7 @@ def run_shared_lib_test(args=None):
             }
             return test_basic_python_function();
         }
-        """ % ("1" if "sandboxed" in args else "0"))
+        """ % (b"1" if "sandboxed" in args else b"0"))
         os.close(fd)
         progname = os.path.join(SUITE.dir, "graalpython-embedded-tool")
         mx.log("".join(["Running ", "'clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o", progname, "-lpolyglot"]))

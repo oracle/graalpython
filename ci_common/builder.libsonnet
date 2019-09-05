@@ -25,6 +25,10 @@ local mixins = import 'mixins.libsonnet';
     local common = base + mixins.labsjdk8 + {
         dynamicImports:: "/compiler",
 
+        environment +: {
+            MX_PYTHON_VERSION: "3",
+        },
+
         setup +: [
             ["mx", "sforceimports"],
             ["mx", "--dynamicimports", self.dynamicImports, "build"],
@@ -56,11 +60,15 @@ local mixins = import 'mixins.libsonnet';
     baseGraalGate:: baseGraalGate,
 
     // specific gates
-    testGate(type, platform)::
+    local testGate = function(type, platform)
         baseGraalGate + {tags:: "python-"+type} + mixins.getPlatform(platform) + {name: "python-"+ type +"-"+platform},
+    testGate:: testGate,
+
+    testGate11(type, platform)::
+        testGate(type, platform) + mixins.labsjdk11 + {name: "python-"+ type +"-jdk11-"+platform},
 
     testGateTime(type, platform, timelimit)::
-        baseGraalGate + {tags:: "python-"+type} + mixins.getPlatform(platform) + {name: "python-"+ type +"-"+platform} + {timelimit: timelimit},
+        testGate(type, platform) + {timelimit: timelimit},
 
     local baseStyleGate = baseGraalGate + mixins.eclipse + mixins.linux + {
         tags:: "style",

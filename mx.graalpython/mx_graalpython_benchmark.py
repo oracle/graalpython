@@ -80,9 +80,29 @@ def is_sandboxed_configuration(conf):
     return conf == CONFIGURATION_SANDBOXED or conf == CONFIGURATION_SANDBOXED_MULTI
 
 
+# from six
+def add_metaclass(metaclass):
+    """Class decorator for creating a class with a metaclass."""
+    def wrapper(cls):
+        orig_vars = cls.__dict__.copy()
+        slots = orig_vars.get('__slots__')
+        if slots is not None:
+            if isinstance(slots, str):
+                slots = [slots]
+            for slots_var in slots:
+                orig_vars.pop(slots_var)
+        orig_vars.pop('__dict__', None)
+        orig_vars.pop('__weakref__', None)
+        if hasattr(cls, '__qualname__'):
+            orig_vars['__qualname__'] = cls.__qualname__
+        return metaclass(cls.__name__, cls.__bases__, orig_vars)
+    return wrapper
+
+
 @contextmanager
 def environ(env):
-    def _handle_var((k, v)):
+    def _handle_var(key_value):
+        (k, v) = key_value
         if v is None:
             del os.environ[k]
         else:
@@ -90,7 +110,7 @@ def environ(env):
 
     if env:
         prev_env = {v: os.getenv(v) for v in env}
-        map(_handle_var, env.items())
+        list(map(_handle_var, list(env.items())))
     else:
         prev_env = None
 
@@ -98,7 +118,7 @@ def environ(env):
         yield
     finally:
         if prev_env:
-            map(_handle_var, prev_env.items())
+            list(map(_handle_var, list(prev_env.items())))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -106,9 +126,8 @@ def environ(env):
 # the vm definitions
 #
 # ----------------------------------------------------------------------------------------------------------------------
+@add_metaclass(ABCMeta)
 class AbstractPythonVm(Vm):
-    __metaclass__ = ABCMeta
-
     def __init__(self, config_name, options=None, env=None):
         super(AbstractPythonVm, self).__init__()
         self._config_name = config_name
@@ -156,9 +175,8 @@ class AbstractPythonVm(Vm):
         return ret_code, out.data
 
 
+@add_metaclass(ABCMeta)
 class AbstractPythonIterationsControlVm(AbstractPythonVm):
-    __metaclass__ = ABCMeta
-
     def __init__(self, config_name, options=None, env=None, iterations=None):
         super(AbstractPythonIterationsControlVm, self).__init__(config_name, options=options, env=env)
         try:
@@ -424,7 +442,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             for pth in self._python_path:
                 if hasattr(pth, '__call__'):
                     pth = pth()
-                assert isinstance(pth, (str, unicode))
+                assert isinstance(pth, str)
                 python_path.append(pth)
             cmd_args += ['-p', ",".join(python_path)]
 
@@ -438,7 +456,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         return vm_options + vm_args + cmd_args
 
     def benchmarkList(self, bm_suite_args):
-        return self._benchmarks.keys()
+        return list(self._benchmarks.keys())
 
     def benchmarks(self):
         raise FutureWarning('the benchmarks method has been deprecated for VmBenchmarkSuite instances, '
