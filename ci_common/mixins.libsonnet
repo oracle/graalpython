@@ -89,7 +89,7 @@ local const = import 'constants.libsonnet';
 
     local labsjdk11 = labsjdk + {
         downloads +: {
-            JAVA_HOME: utils.download("oraclejdk", "11.0.3+12"),
+            JAVA_HOME: utils.download("labsjdk", "11-20190830-095818"),
         },
     },
     labsjdk11:: labsjdk11,
