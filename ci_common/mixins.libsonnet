@@ -38,6 +38,9 @@ local const = import 'constants.libsonnet';
             "pip:pylint": "==1.1.0",
             "llvm": "==4.0.1",
         },
+        environment: {
+            "LC_CTYPE": "en_US.UTF-8", // make sure we have the correct locale
+        },
     },
     darwin:: darwin,
 
