@@ -106,6 +106,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         CHARSET_MAP.put("L1", StandardCharsets.ISO_8859_1);
 
         // utf-8
+        CHARSET_MAP.put("UTF-8", StandardCharsets.UTF_8);
         CHARSET_MAP.put("utf-8", StandardCharsets.UTF_8);
         CHARSET_MAP.put("utf_8", StandardCharsets.UTF_8);
         CHARSET_MAP.put("U8", StandardCharsets.UTF_8);
