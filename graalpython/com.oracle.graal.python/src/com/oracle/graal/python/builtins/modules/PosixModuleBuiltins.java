@@ -746,7 +746,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
         private static long strToLong(String name) throws NumberFormatException {
-            return new Long(name).longValue();
+            return Long.decode(name).longValue();
         }
 
         @TruffleBoundary(allowInlining = true)
