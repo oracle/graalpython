@@ -67,6 +67,7 @@ def system(cmd, msg=""):
     status = os.system(cmd)
     if status != 0:
         xit(msg, status=status)
+    return status
 
 
 def known_packages():
