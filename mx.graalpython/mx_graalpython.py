@@ -191,6 +191,7 @@ def nativeclean(args):
 
 def python3_unittests(args):
     """run the cPython stdlib unittests"""
+    python(["-m", "build_capi"])
     mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
