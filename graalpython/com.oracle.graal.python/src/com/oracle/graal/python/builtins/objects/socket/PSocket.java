@@ -155,18 +155,19 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         return serverSocket;
     }
 
-    public SocketChannel getSocket() { return socket; }
+    public SocketChannel getSocket() {
+        return socket;
+    }
 
     public void setServerSocket(ServerSocketChannel serverSocket) {
-        if(this.getSocket() != null) {
+        if (this.getSocket() != null) {
             throw new Error();
         }
         this.serverSocket = serverSocket;
     }
 
-    public void setSocket(SocketChannel socket)
-    {
-        if(this.getServerSocket() != null) {
+    public void setSocket(SocketChannel socket) {
+        if (this.getServerSocket() != null) {
             throw new Error();
         }
         this.socket = socket;
@@ -182,13 +183,15 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     @TruffleBoundary
     public boolean isOpen() {
-        return getSocket() != null && getSocket().isOpen();
+        return (getSocket() != null && getSocket().isOpen()) || (getServerSocket() != null && getServerSocket().isOpen());
     }
 
     @TruffleBoundary
     public void close() throws IOException {
         if (getSocket() != null) {
             getSocket().close();
+        } else if (getServerSocket() != null) {
+            getServerSocket().close();
         }
     }
 

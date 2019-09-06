@@ -260,7 +260,6 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-
     @Builtin(name = "itemsize", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ItemSizeNode extends PythonUnaryBuiltinNode {

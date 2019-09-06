@@ -90,14 +90,14 @@ public class SocketBuiltins extends PythonBuiltins {
         Object accept(PSocket socket) {
             try {
                 SocketChannel acceptSocket = socket.getServerSocket().accept();
-                if (acceptSocket == null){
+                if (acceptSocket == null) {
                     throw raise(PythonBuiltinClassType.OSError);
                 }
                 SocketAddress addr = acceptSocket.getLocalAddress();
-                if(!acceptSocket.socket().isBound() || addr == null) {
+                if (!acceptSocket.socket().isBound() || addr == null) {
                     throw raise(PythonBuiltinClassType.OSError);
                 }
-                PSocket newSocket = factory().createSocket(socket.getFamily(),socket.getType(),socket.getProto());
+                PSocket newSocket = factory().createSocket(socket.getFamily(), socket.getType(), socket.getProto());
                 int fd = getContext().getResources().openSocket(newSocket);
                 newSocket.setFileno(fd);
                 newSocket.setSocket(acceptSocket);
@@ -118,7 +118,7 @@ public class SocketBuiltins extends PythonBuiltins {
         Object bind(PSocket socket, PTuple address) {
             Object[] hostAndPort = address.getArray();
 
-            int port = (int)hostAndPort[1];
+            int port = (int) hostAndPort[1];
 
             if (port >= 65536 || port < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError);
@@ -147,8 +147,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 } catch (IOException e) {
                     throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
-            }
-            else if (socket.getServerSocket() != null) {
+            } else if (socket.getServerSocket() != null) {
                 if (!socket.getServerSocket().isOpen()) {
                     throw raise(PythonBuiltinClassType.OSError, "Bad file descriptor");
                 }
@@ -191,7 +190,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object get(PSocket socket) {
-            if (socket.getSocket() == null){
+            if (socket.getSocket() == null) {
                 throw raise(PythonBuiltinClassType.OSError, "[Errno 57] Socket is not connected");
             }
 
@@ -220,7 +219,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 }
             }
 
-            if (socket.getSocket() != null){
+            if (socket.getSocket() != null) {
                 try {
                     InetSocketAddress addr = (InetSocketAddress) socket.getSocket().getLocalAddress();
                     return factory().createTuple(new Object[]{addr.getAddress().getHostAddress(), addr.getPort()});
@@ -251,17 +250,27 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "gettimeout", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetTimeoutNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
+        private static int getSoTimeout(SocketChannel channel) throws SocketException {
+            return channel.socket().getSoTimeout();
+        }
+
+        @TruffleBoundary
+        private static int getSoTimeout(ServerSocketChannel channel) throws IOException {
+            return channel.socket().getSoTimeout();
+        }
+
         @Specialization
         Object get(PSocket socket) {
             try {
                 if (socket.getSocket() != null) {
-                    socket.getSocket().socket().getSoTimeout();
+                    return getSoTimeout(socket.getSocket());
                 }
 
                 if (socket.getServerSocket() != null) {
-                    socket.getServerSocket().socket().getSoTimeout();
+                    return getSoTimeout(socket.getServerSocket());
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
             return PNone.NONE;
@@ -281,7 +290,8 @@ public class SocketBuiltins extends PythonBuiltins {
 
                 ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
                 // calling bind with port 0 will take the first available
-                // for some reason this only works on the ServerSocket not on the ServerSocketChannel
+                // for some reason this only works on the ServerSocket not on the
+                // ServerSocketChannel
                 serverSocketChannel.socket().bind(socketAddress, backlog);
                 serverSocketChannel.configureBlocking(socket.isBlocking());
 
@@ -305,8 +315,9 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object recv(PSocket socket, int bufsize, int flags) {
-            return recv(socket,bufsize,PNone.NONE);
+            return recv(socket, bufsize, PNone.NONE);
         }
+
         @Specialization
         @TruffleBoundary
         PBytes recv(PSocket socket, int bufsize, PNone flags) {
@@ -329,6 +340,7 @@ public class SocketBuiltins extends PythonBuiltins {
         Object recvFrom(PSocket socket, int bufsize, int flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
         @Specialization
         Object recvFrom(PSocket socket, int bufsize, PNone flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -373,10 +385,12 @@ public class SocketBuiltins extends PythonBuiltins {
         Object recvFrom(PSocket socket, int bufsize, int ancbufsize, int flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
         @Specialization
         Object recvFrom(PSocket socket, int bufsize, int ancbufsize, PNone flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
         @Specialization
         Object recvFrom(PSocket socket, int bufsize, PNone ancbufsize, PNone flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -389,7 +403,7 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class SendNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object send(PSocket socket, PBytes bytes, int flags) {
-            return send(socket,bytes,PNone.NONE);
+            return send(socket, bytes, PNone.NONE);
         }
 
         @Specialization
@@ -448,6 +462,7 @@ public class SocketBuiltins extends PythonBuiltins {
         Object sendTo(PSocket socket, Object bytes, int flags, Object address) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
         @Specialization
         Object sendTo(PSocket socket, Object bytes, PNone flags, Object address) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -509,6 +524,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
             return PNone.NONE;
         }
+
         @Specialization
         Object setTimeout(PSocket socket, double value) {
             Integer intValue = (int) value;
@@ -531,12 +547,10 @@ public class SocketBuiltins extends PythonBuiltins {
                     if (how == 1 || how == 2) {
                         socket.getSocket().shutdownOutput();
                     }
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     throw raise(PythonBuiltinClassType.OSError);
                 }
-            }
-            else {
+            } else {
                 throw raise(PythonBuiltinClassType.OSError);
             }
             return PNone.NO_VALUE;

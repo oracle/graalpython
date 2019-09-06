@@ -203,13 +203,13 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class SocketNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto,
-                      @SuppressWarnings("unused") PNone fileno) {
+                        @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, PSocket.AF_INET, PSocket.SOCK_STREAM, 0);
         }
 
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "!isNoValue(fileno)"})
         Object socket(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, Object fileno,
-                      @Cached CastToIndexNode cast) {
+                        @Cached CastToIndexNode cast) {
             return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
         }
 
@@ -254,7 +254,8 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 if (oldSocket == null) {
                     throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
                 }
-                PSocket newSocket = factory().createSocket(cls, family == -1 ? oldSocket.getFamily() : family, type == -1 ? oldSocket.getType() : type, proto == -1 ? oldSocket.getProto() : proto, fileno);
+                PSocket newSocket = factory().createSocket(cls, family == -1 ? oldSocket.getFamily() : family, type == -1 ? oldSocket.getType() : type, proto == -1 ? oldSocket.getProto() : proto,
+                                fileno);
                 if (oldSocket.getSocket() != null) {
                     newSocket.setSocket(oldSocket.getSocket());
                 } else if (oldSocket.getServerSocket() != null) {
@@ -460,19 +461,19 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getAddrInfoPString(PString host, Object port, Object family, Object type, Object proto, Object flags,
-                           @Cached CastToIndexNode cast) {
+                        @Cached CastToIndexNode cast) {
             return getAddrInfoString(host.getValue(), port, family, type, proto, flags, cast);
         }
 
         @Specialization
         Object getAddrInfoNone(@SuppressWarnings("unused") PNone host, Object port, Object family, Object type, Object proto, Object flags,
-                               @Cached CastToIndexNode cast) {
+                        @Cached CastToIndexNode cast) {
             return getAddrInfoString("localhost", port, family, type, proto, flags, cast);
         }
 
         @Specialization
         Object getAddrInfoString(String host, Object port, Object family, Object type, Object proto, Object flags,
-                           @Cached CastToIndexNode cast) {
+                        @Cached CastToIndexNode cast) {
             String stringPort = null;
             if (port instanceof PString) {
                 stringPort = ((PString) port).getValue();
