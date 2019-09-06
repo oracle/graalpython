@@ -589,27 +589,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
             }
 
-            if (socket.getSocket() != null) {
-                if (!socket.getSocket().isOpen()) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
-                }
-
-                try {
-                    socket.getSocket().close();
-                } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
-                }
+            if (!socket.isOpen()) {
+                throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
             }
-            else if (socket.getServerSocket() != null) {
-                if (!socket.getServerSocket().isOpen()) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
-                }
 
-                try {
-                    socket.getServerSocket().close();
-                } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
-                }
+            try {
+                socket.close();
+            } catch (IOException e) {
+                throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
             }
             getContext().getResources().close(socket.getFileno());
             return PNone.NONE;

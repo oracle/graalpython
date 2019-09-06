@@ -180,10 +180,12 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         this.blocking = blocking;
     }
 
+    @TruffleBoundary
     public boolean isOpen() {
         return getSocket() != null && getSocket().isOpen();
     }
 
+    @TruffleBoundary
     public void close() throws IOException {
         if (getSocket() != null) {
             getSocket().close();
