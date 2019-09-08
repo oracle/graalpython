@@ -60,14 +60,15 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -402,26 +403,21 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object send(PSocket socket, PBytes bytes, int flags) {
-            return send(socket, bytes, PNone.NONE);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object send(PSocket socket, PBytes bytes, PNone flags) {
+        Object send(PSocket socket, PBytes bytes, Object flags,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
+            // TODO: do not ignore flags
             if (socket.getSocket() == null) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
 
-            if (!socket.getSocket().isOpen()) {
+            if (!socket.isOpen()) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
 
             try {
-                ByteSequenceStorage byteSequenceStorage = (ByteSequenceStorage) bytes.getSequenceStorage();
-                ByteBuffer buffer = ByteBuffer.wrap(byteSequenceStorage.getInternalByteArray());
-                socket.getSocket().write(buffer);
-
+                byte[] storageArray = toBytes.execute(bytes.getSequenceStorage());
+                ByteBuffer buffer = ByteBuffer.wrap(storageArray);
+                doWrite(socket, buffer);
                 return PNone.NONE;
             } catch (IOException e) {
                 throw raise(PythonBuiltinClassType.OSError);
@@ -429,23 +425,22 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary
+    private static void doWrite(PSocket socket, ByteBuffer buffer) throws IOException {
+        socket.getSocket().write(buffer);
+    }
+
     // sendall(bytes[, flags])
     @Builtin(name = "sendall", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SendAllNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object sendAll(PSocket socket, PIBytesLike bytes, int flags) {
-            return sendAll(socket, bytes, PNone.NONE);
-        }
-
-        @Specialization(guards = {"isNoValue(flags)"})
-        @TruffleBoundary
-        Object sendAll(PSocket socket, PIBytesLike bytes, @SuppressWarnings("unused") PNone flags) {
+        Object sendAll(PSocket socket, PIBytesLike bytes, Object flags,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
+            // TODO: do not ignore flags
             try {
-                ByteSequenceStorage byteSequenceStorage = (ByteSequenceStorage) bytes.getSequenceStorage();
-                ByteBuffer buffer = ByteBuffer.wrap(byteSequenceStorage.getInternalByteArray());
-                socket.getSocket().write(buffer);
-
+                ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(bytes.getSequenceStorage()));
+                doWrite(socket, buffer);
                 return PNone.NONE;
             } catch (IOException e) {
                 throw raise(PythonBuiltinClassType.OSError);
