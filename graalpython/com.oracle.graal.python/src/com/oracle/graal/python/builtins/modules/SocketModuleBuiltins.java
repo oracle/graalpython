@@ -455,9 +455,9 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getaddrinfo", parameterNames = {"host", "port", "family", "type", "proto", "flags"})
     @GenerateNodeFactory
     public abstract static class GetAddrInfoNode extends PythonBuiltinNode {
-        BranchProfile stringPortProfile = BranchProfile.create();
-        BranchProfile nonePortProfile = BranchProfile.create();
-        BranchProfile intPortProfile = BranchProfile.create();
+        private final BranchProfile stringPortProfile = BranchProfile.create();
+        private final BranchProfile nonePortProfile = BranchProfile.create();
+        private final BranchProfile intPortProfile = BranchProfile.create();
 
         @Specialization
         Object getAddrInfoPString(PString host, Object port, Object family, Object type, Object proto, Object flags,
