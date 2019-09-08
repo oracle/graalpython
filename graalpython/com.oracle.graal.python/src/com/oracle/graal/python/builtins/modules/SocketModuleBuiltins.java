@@ -323,7 +323,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 InetAddress[] adresses = InetAddress.getAllByName(name);
 
                 if (adresses.length == 0) {
-                    return PNone.NO_VALUE;
+                    return PNone.NONE;
                 }
 
                 return factory().createString(adresses[0].getHostAddress());
