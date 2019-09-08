@@ -394,7 +394,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(protocolName)"})
-        @TruffleBoundary
         Object getServByPort(int port, @SuppressWarnings("unused") PNone protocolName) {
             return getServByPort(port, (String) null);
         }
