@@ -400,7 +400,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         Object getServByPort(int port, String protocolName) {
             if (port < 0 || port > 65535) {
                 throw raise(PythonBuiltinClassType.OverflowError);
