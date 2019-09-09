@@ -41,8 +41,6 @@
 package com.oracle.graal.python.builtins.modules;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -72,9 +70,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -106,10 +107,10 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     protected static Map<String, Integer> protocols;
 
     @TruffleBoundary
-    private static Map<String, List<Service>> parseServices() {
-        File services_file = new File("/etc/services");
+    private static Map<String, List<Service>> parseServices(TruffleLanguage.Env env) {
+        TruffleFile services_file = env.getPublicTruffleFile("/etc/services");
         try {
-            BufferedReader br = new BufferedReader(new FileReader(services_file));
+            BufferedReader br = services_file.newBufferedReader();
             String line;
             Map<String, List<Service>> parsedServices = new HashMap<>();
             while ((line = br.readLine()) != null) {
@@ -135,10 +136,10 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static Map<String, Integer> parseProtocols() {
-        File protocols_file = new File("/etc/protocols");
+    private static Map<String, Integer> parseProtocols(TruffleLanguage.Env env) {
+        TruffleFile protocols_file = env.getPublicTruffleFile("/etc/protocols");
         try {
-            BufferedReader br = new BufferedReader(new FileReader(protocols_file));
+            BufferedReader br = protocols_file.newBufferedReader();
             String line;
             Map<String, Integer> parsedProtocols = new HashMap<>();
             while ((line = br.readLine()) != null) {
@@ -157,9 +158,9 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static String searchServicesForPort(int port, String protocol) {
+    private static String searchServicesForPort(TruffleLanguage.Env env, int port, String protocol) {
         if (services == null) {
-            services = parseServices();
+            services = parseServices(env);
         }
 
         Set<String> servicesNames = services.keySet();
@@ -192,10 +193,13 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         return words;
     }
 
-    static {
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
         if (ImageInfo.inImageBuildtimeCode()) {
-            services = parseServices();
-            protocols = parseProtocols();
+            // we do this eagerly for SVM images
+            services = parseServices(core.getContext().getEnv());
+            protocols = parseProtocols(core.getContext().getEnv());
         }
     }
 
@@ -356,7 +360,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(protocolName)"})
         Object getServByName(String serviceName, @SuppressWarnings("unused") PNone protocolName) {
             if (services == null) {
-                services = parseServices();
+                services = parseServices(getContext().getEnv());
             }
 
             List<Service> portsForService = services.get(serviceName);
@@ -371,7 +375,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object getServByName(String serviceName, String protocolName) {
             if (services == null) {
-                services = parseServices();
+                services = parseServices(getContext().getEnv());
             }
             int port = op(serviceName, protocolName);
             if (port >= 0) {
@@ -426,7 +430,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             if (port < 0 || port > 65535) {
                 throw raise(PythonBuiltinClassType.OverflowError);
             }
-            String service = searchServicesForPort(port, protocolName);
+            String service = searchServicesForPort(getContext().getEnv(), port, protocolName);
             if (service != null) {
                 return service;
             }
@@ -463,7 +467,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
             String portServ = String.valueOf(port);
             if ((flags & PSocket.NI_NUMERICSERV) != PSocket.NI_NUMERICSERV) {
-                portServ = searchServicesForPort(port, null);
+                portServ = searchServicesForPort(getContext().getEnv(), port, null);
                 if (portServ == null) {
                     throw raise(PythonBuiltinClassType.OSError, "port/proto not found");
                 }
@@ -545,7 +549,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.UnicodeEncodeError);
             }
             if (services == null) {
-                services = parseServices();
+                services = parseServices(getContext().getEnv());
             }
             List<Service> serviceList = services.get(port);
             return mergeAdressesAndServices(addresses, serviceList, family, type, proto, flags);
@@ -554,7 +558,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private Object mergeAdressesAndServices(InetAddress[] adresses, List<Service> serviceList, int family, int type, int proto, int flags) {
             if (protocols == null) {
-                protocols = parseProtocols();
+                protocols = parseProtocols(getContext().getEnv());
             }
             List<Object> addressTuples = new ArrayList<>();
             for (InetAddress addr : adresses) {
