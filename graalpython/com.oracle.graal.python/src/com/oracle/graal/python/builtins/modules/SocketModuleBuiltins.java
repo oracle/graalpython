@@ -275,14 +275,18 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetHostnameNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String doGeneric() {
             try {
-                return InetAddress.getLocalHost().getHostName();
+                return getHostName(getLocalHost());
             } catch (UnknownHostException e) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
         }
+    }
+
+    @TruffleBoundary
+    private static InetAddress getLocalHost() throws UnknownHostException {
+        return InetAddress.getLocalHost();
     }
 
     @Builtin(name = "gethostbyaddr", minNumOfPositionalArgs = 1)
@@ -296,14 +300,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         PTuple doGeneric(VirtualFrame frame, String ip_address) {
             try {
-                InetAddress[] adresses = getAllAddresses(ip_address);
+                InetAddress[] adresses = getAllByName(ip_address);
                 Object hostname = PNone.NONE;
                 Object[] strAdresses = new Object[adresses.length];
                 for (int i = 0; i < adresses.length; i++) {
                     if (hostname == null) {
-                        hostname = getCanonicalHostName(adresses, i);
+                        hostname = getCanonicalHostName(adresses[i]);
                     }
-                    strAdresses[i] = getHostAddress(adresses, i);
+                    strAdresses[i] = getHostAddress(adresses[i]);
                 }
                 PList pAdresses = factory().createList(strAdresses);
                 return factory().createTuple(new Object[]{hostname, factory().createList(), pAdresses});
@@ -311,37 +315,35 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, OSErrorEnum.EHOSTUNREACH, e);
             }
         }
+    }
 
-        @TruffleBoundary
-        private static String getHostAddress(InetAddress[] adresses, int i) {
-            return adresses[i].getHostAddress();
-        }
 
-        @TruffleBoundary
-        private static String getCanonicalHostName(InetAddress[] adresses, int i) {
-            return adresses[i].getCanonicalHostName();
-        }
+    @TruffleBoundary
+    private static String getHostAddress(InetAddress address) {
+        return address.getHostAddress();
+    }
 
-        @TruffleBoundary
-        private static InetAddress[] getAllAddresses(String ip_address) throws UnknownHostException {
-            return InetAddress.getAllByName(ip_address);
-        }
+    @TruffleBoundary
+    private static String getCanonicalHostName(InetAddress address) {
+        return address.getCanonicalHostName();
+    }
+
+    @TruffleBoundary
+    private static InetAddress[] getAllByName(String ip_address) throws UnknownHostException {
+        return InetAddress.getAllByName(ip_address);
     }
 
     @Builtin(name = "gethostbyname", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetHostByNameNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         Object getHostByName(String name) {
             try {
-                InetAddress[] adresses = InetAddress.getAllByName(name);
-
+                InetAddress[] adresses = getAllByName(name);
                 if (adresses.length == 0) {
                     return PNone.NONE;
                 }
-
-                return factory().createString(adresses[0].getHostAddress());
+                return factory().createString(getHostAddress(adresses[0]));
             } catch (UnknownHostException e) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
@@ -352,7 +354,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetServByNameNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(protocolName)"})
-        @TruffleBoundary
         Object getServByName(String serviceName, @SuppressWarnings("unused") PNone protocolName) {
             if (services == null) {
                 services = parseServices();
@@ -368,19 +369,26 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         Object getServByName(String serviceName, String protocolName) {
             if (services == null) {
                 services = parseServices();
             }
+            int port = op(serviceName, protocolName);
+            if (port >= 0) {
+                return port;
+            } else {
+                throw raise(PythonBuiltinClassType.OSError);
+            }
+        }
 
+        @TruffleBoundary
+        private static int op(String serviceName, String protocolName) {
             for (Service service : services.get(serviceName)) {
                 if (service.protocol.equals(protocolName)) {
-                    return factory().createInt(service.port);
+                    return service.port;
                 }
             }
-
-            throw raise(PythonBuiltinClassType.OSError);
+            return -1;
         }
     }
 
@@ -447,7 +455,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
             if ((flags & PSocket.NI_NUMERICHOST) != PSocket.NI_NUMERICHOST) {
                 try {
-                    address = getHostName(address);
+                    address = getHostName(getByName(address));
                 } catch (UnknownHostException e) {
                     throw raise(PythonBuiltinClassType.OSError);
                 }
@@ -463,13 +471,16 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
             return factory().createTuple(new Object[]{address, portServ});
         }
+    }
 
-        @TruffleBoundary
-        private String getHostName(String address) throws UnknownHostException {
-            InetAddress inetAddress = InetAddress.getByName(address);
-            address = inetAddress.getHostName();
-            return address;
-        }
+    @TruffleBoundary
+    private static InetAddress getByName(String address) throws UnknownHostException {
+        return InetAddress.getByName(address);
+    }
+
+    @TruffleBoundary
+    private static String getHostName(InetAddress address) {
+        return address.getHostName();
     }
 
     @Builtin(name = "getaddrinfo", parameterNames = {"host", "port", "family", "type", "proto", "flags"})
@@ -494,6 +505,13 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object getAddrInfoString(String host, Object port, Object family, Object type, Object proto, Object flags,
                         @Cached CastToJavaIntNode cast) {
+            InetAddress[] addresses;
+            try {
+                addresses = getAllByName(host);
+            } catch (UnknownHostException e) {
+                throw raise(PythonBuiltinClassType.OSError);
+            }
+
             String stringPort = null;
             if (port instanceof PString) {
                 stringPort = ((PString) port).getValue();
@@ -503,30 +521,26 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
             if (stringPort != null) {
                 stringPortProfile.enter();
-                return getAddrInfo(host, stringPort, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
-            }
-
-            if (port instanceof PNone) {
+                return getAddrInfo(addresses, stringPort, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
+            } else if (port instanceof PNone) {
                 nonePortProfile.enter();
-                InetAddress[] adresses = resolveHost(host);
-                return mergeAdressesAndServices(adresses, null, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
+                return mergeAdressesAndServices(addresses, null, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
+            } else {
+                intPortProfile.enter();
+                return getAddrInfo(addresses, cast.execute(port), cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
             }
-
-            intPortProfile.enter();
-            return getAddrInfo(host, cast.execute(port), cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
         }
 
         @TruffleBoundary
-        private Object getAddrInfo(String host, int port, int family, int type, int proto, int flags) {
-            InetAddress[] adresses = resolveHost(host);
+        private Object getAddrInfo(InetAddress[] addresses, int port, int family, int type, int proto, int flags) {
             List<Service> serviceList = new ArrayList<>();
             serviceList.add(new Service(port, "tcp"));
             serviceList.add(new Service(port, "udp"));
-            return mergeAdressesAndServices(adresses, serviceList, family, type, proto, flags);
+            return mergeAdressesAndServices(addresses, serviceList, family, type, proto, flags);
         }
 
         @TruffleBoundary
-        private Object getAddrInfo(String host, String port, int family, int type, int proto, int flags) {
+        private Object getAddrInfo(InetAddress[] addresses, String port, int family, int type, int proto, int flags) {
             if (!StandardCharsets.US_ASCII.newEncoder().canEncode(port)) {
                 throw raise(PythonBuiltinClassType.UnicodeEncodeError);
             }
@@ -534,8 +548,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 services = parseServices();
             }
             List<Service> serviceList = services.get(port);
-            InetAddress[] adresses = resolveHost(host);
-            return mergeAdressesAndServices(adresses, serviceList, family, type, proto, flags);
+            return mergeAdressesAndServices(addresses, serviceList, family, type, proto, flags);
         }
 
         @TruffleBoundary
@@ -583,15 +596,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             }
             String canonname = (flags & PSocket.AI_CANONNAME) == PSocket.AI_CANONNAME ? address.getHostName() : "";
             return factory().createTuple(new Object[]{addressFamily, addressType, proto, canonname, sockAddr});
-        }
-
-        @TruffleBoundary
-        InetAddress[] resolveHost(String host) {
-            try {
-                return InetAddress.getAllByName(host);
-            } catch (UnknownHostException e) {
-                throw raise(PythonBuiltinClassType.OSError);
-            }
         }
     }
 
