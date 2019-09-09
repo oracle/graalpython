@@ -289,29 +289,42 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetHostByAddrNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        PTuple doGeneric(PString ip_address) {
-            return doGeneric(ip_address.getValue());
+        PTuple doGeneric(VirtualFrame frame, PString ip_address) {
+            return doGeneric(frame, ip_address.getValue());
         }
 
         @Specialization
-        @TruffleBoundary
-        PTuple doGeneric(String ip_address) {
+        PTuple doGeneric(VirtualFrame frame, String ip_address) {
             try {
-                InetAddress[] adresses = InetAddress.getAllByName(ip_address);
-                String hostname = null;
+                InetAddress[] adresses = getAllAddresses(ip_address);
+                Object hostname = PNone.NONE;
                 Object[] strAdresses = new Object[adresses.length];
                 for (int i = 0; i < adresses.length; i++) {
                     if (hostname == null) {
-                        hostname = adresses[i].getCanonicalHostName();
+                        hostname = getCanonicalHostName(adresses, i);
                     }
-                    strAdresses[i] = adresses[i].getHostAddress();
+                    strAdresses[i] = getHostAddress(adresses, i);
                 }
                 PList pAdresses = factory().createList(strAdresses);
                 return factory().createTuple(new Object[]{hostname, factory().createList(), pAdresses});
             } catch (UnknownHostException e) {
-                throw raise(PythonBuiltinClassType.OSError);
+                throw raiseOSError(frame, OSErrorEnum.EHOSTUNREACH, e);
             }
+        }
+
+        @TruffleBoundary
+        private static String getHostAddress(InetAddress[] adresses, int i) {
+            return adresses[i].getHostAddress();
+        }
+
+        @TruffleBoundary
+        private static String getCanonicalHostName(InetAddress[] adresses, int i) {
+            return adresses[i].getCanonicalHostName();
+        }
+
+        @TruffleBoundary
+        private static InetAddress[] getAllAddresses(String ip_address) throws UnknownHostException {
+            return InetAddress.getAllByName(ip_address);
         }
     }
 
