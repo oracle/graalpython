@@ -321,7 +321,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-
     @TruffleBoundary
     private static String getHostAddress(InetAddress address) {
         return address.getHostAddress();
