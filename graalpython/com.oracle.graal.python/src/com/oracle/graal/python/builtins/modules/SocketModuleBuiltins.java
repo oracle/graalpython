@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -69,7 +70,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -209,31 +211,31 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "!isNoValue(fileno)"})
         Object socket(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, Object fileno,
-                        @Cached CastToIndexNode cast) {
+                        @Cached CastToJavaIntNode cast) {
             return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
         }
 
         @Specialization(guards = {"!isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToIndexNode cast) {
+                        @Cached CastToJavaIntNode cast) {
             return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToIndexNode cast) {
+                        @Cached CastToJavaIntNode cast) {
             return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(LazyPythonClass cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToIndexNode cast) {
+                        @Cached CastToJavaIntNode cast) {
             return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
         }
 
         @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "!isNoValue(fileno)"})
         Object socket(VirtualFrame frame, LazyPythonClass cls, Object family, Object type, Object proto, Object fileno,
-                        @Cached CastToIndexNode cast) {
+                        @Cached CastToJavaIntNode cast) {
             return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
         }
 
@@ -415,24 +417,24 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNameInfoNode extends PythonBuiltinNode {
         @Specialization
-        Object getNameInfo(PTuple sockaddr, PInt flags) {
-            return getNameInfo(sockaddr, flags.intValue());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object getNameInfo(PTuple sockaddr, int flags) {
+        Object getNameInfo(VirtualFrame frame, PTuple sockaddr, Object flagArg,
+                        @Cached CastToJavaIntNode castFlags,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItem,
+                        @Cached CastToStringNode castAddress,
+                        @Cached CastToJavaIntNode castPort) {
+            int flags = castFlags.execute(flagArg);
             SequenceStorage addr = sockaddr.getSequenceStorage();
-            if (addr.length() != 2 && addr.length() != 4) {
+            int addLen = lenNode.execute(addr);
+            if (addLen != 2 && addLen != 4) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
-            String address = (String) addr.getItemNormalized(0);
-            int port = (int) addr.getItemNormalized(1);
+            String address = castAddress.execute(frame, getItem.execute(addr, 0));
+            int port = castPort.execute(getItem.execute(addr, 1));
 
             if ((flags & PSocket.NI_NUMERICHOST) != PSocket.NI_NUMERICHOST) {
                 try {
-                    InetAddress inetAddress = InetAddress.getByName(address);
-                    address = inetAddress.getHostName();
+                    address = getHostName(address);
                 } catch (UnknownHostException e) {
                     throw raise(PythonBuiltinClassType.OSError);
                 }
@@ -448,6 +450,13 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
             return factory().createTuple(new Object[]{address, portServ});
         }
+
+        @TruffleBoundary
+        private String getHostName(String address) throws UnknownHostException {
+            InetAddress inetAddress = InetAddress.getByName(address);
+            address = inetAddress.getHostName();
+            return address;
+        }
     }
 
     @Builtin(name = "getaddrinfo", parameterNames = {"host", "port", "family", "type", "proto", "flags"})
@@ -459,19 +468,19 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getAddrInfoPString(PString host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToIndexNode cast) {
+                        @Cached CastToJavaIntNode cast) {
             return getAddrInfoString(host.getValue(), port, family, type, proto, flags, cast);
         }
 
         @Specialization
         Object getAddrInfoNone(@SuppressWarnings("unused") PNone host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToIndexNode cast) {
+                        @Cached CastToJavaIntNode cast) {
             return getAddrInfoString("localhost", port, family, type, proto, flags, cast);
         }
 
         @Specialization
         Object getAddrInfoString(String host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToIndexNode cast) {
+                        @Cached CastToJavaIntNode cast) {
             String stringPort = null;
             if (port instanceof PString) {
                 stringPort = ((PString) port).getValue();

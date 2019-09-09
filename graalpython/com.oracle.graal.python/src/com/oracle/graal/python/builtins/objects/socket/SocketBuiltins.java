@@ -358,11 +358,15 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "recv_into", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RecvIntoNode extends PythonTernaryBuiltinNode {
+        protected static SequenceStorageNodes.SetItemNode createSetItem() {
+            return SequenceStorageNodes.SetItemNode.create("cannot happen: non-byte store in socket.recv_into");
+        }
+
         @Specialization
         Object recvInto(VirtualFrame frame, PSocket socket, PByteArray buffer, Object flags,
-                        @Cached ConditionProfile byteStorage,
+                        @Cached("createBinaryProfile()") ConditionProfile byteStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.SetItemNode setItem) {
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItem) {
             SequenceStorage storage = buffer.getSequenceStorage();
             int bufferLen = lenNode.execute(storage);
             if (byteStorage.profile(storage instanceof ByteSequenceStorage)) {
@@ -385,12 +389,9 @@ public class SocketBuiltins extends PythonBuiltins {
                 } catch (IOException e) {
                     throw raiseOSError(frame, OSErrorEnum.EBADF, e);
                 }
-                SequenceStorage newStorage = storage;
                 for (int i = 0; i < length; i++) {
-                    newStorage = setItem.execute(newStorage, i, targetBuffer[i]);
-                }
-                if (newStorage != storage) {
-                    buffer.setSequenceStorage(newStorage);
+                    // we don't allow generalization
+                    setItem.execute(storage, i, targetBuffer[i]);
                 }
                 return length;
             }
