@@ -46,6 +46,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -61,17 +62,22 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
 @SuppressWarnings("unused")
@@ -351,30 +357,49 @@ public class SocketBuiltins extends PythonBuiltins {
     // recv_into(bufsize[, flags])
     @Builtin(name = "recv_into", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class RecvIntoNode extends PythonBuiltinNode {
+    abstract static class RecvIntoNode extends PythonTernaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object recvInto(PSocket socket, PByteArray buffer) {
-            byte[] targetBuffer = new byte[buffer.getSequenceStorage().length()];
-
-            int length = fillBuffer(socket, targetBuffer);
-            // TODO: seems dirty, is there a better way to fill a byte array?
-
-            for (int i = 0; i < length; i++) {
-                buffer.getSequenceStorage().insertItem(i, targetBuffer[i]);
+        Object recvInto(VirtualFrame frame, PSocket socket, PByteArray buffer, Object flags,
+                        @Cached ConditionProfile byteStorage,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.SetItemNode setItem) {
+            SequenceStorage storage = buffer.getSequenceStorage();
+            int bufferLen = lenNode.execute(storage);
+            if (byteStorage.profile(storage instanceof ByteSequenceStorage)) {
+                ByteBuffer byteBuffer = ((ByteSequenceStorage) storage).getBufferView();
+                try {
+                    return fillBuffer(socket, byteBuffer);
+                } catch (NotYetConnectedException e) {
+                    throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
+                } catch (IOException e) {
+                    throw raiseOSError(frame, OSErrorEnum.EBADF, e);
+                }
+            } else {
+                byte[] targetBuffer = new byte[bufferLen];
+                ByteBuffer byteBuffer = ByteBuffer.wrap(targetBuffer);
+                int length;
+                try {
+                    length = fillBuffer(socket, byteBuffer);
+                } catch (NotYetConnectedException e) {
+                    throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
+                } catch (IOException e) {
+                    throw raiseOSError(frame, OSErrorEnum.EBADF, e);
+                }
+                SequenceStorage newStorage = storage;
+                for (int i = 0; i < length; i++) {
+                    newStorage = setItem.execute(newStorage, i, targetBuffer[i]);
+                }
+                if (newStorage != storage) {
+                    buffer.setSequenceStorage(newStorage);
+                }
+                return length;
             }
-
-            return length;
         }
 
-        int fillBuffer(PSocket socket, byte[] buffer) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+        @TruffleBoundary
+        private static int fillBuffer(PSocket socket, ByteBuffer byteBuffer) throws IOException {
             SocketChannel nativeSocket = socket.getSocket();
-            try {
-                return nativeSocket.read(byteBuffer);
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError);
-            }
+            return nativeSocket.read(byteBuffer);
         }
     }
 
