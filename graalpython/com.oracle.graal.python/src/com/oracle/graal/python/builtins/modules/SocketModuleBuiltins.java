@@ -308,7 +308,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 Object hostname = PNone.NONE;
                 Object[] strAdresses = new Object[adresses.length];
                 for (int i = 0; i < adresses.length; i++) {
-                    if (hostname == null) {
+                    if (hostname == PNone.NONE) {
                         hostname = getCanonicalHostName(adresses[i]);
                     }
                     strAdresses[i] = getHostAddress(adresses[i]);
