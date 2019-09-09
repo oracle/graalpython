@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -76,7 +77,6 @@ public class PosixResources {
     /** Context-local file-descriptor mappings and PID mappings */
     private final SortedMap<Integer, ChannelWrapper> files;
     private final Map<Integer, String> filePaths;
-
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
@@ -174,7 +174,6 @@ public class PosixResources {
     public PosixResources() {
         files = Collections.synchronizedSortedMap(new TreeMap<>());
         filePaths = Collections.synchronizedMap(new HashMap<>());
-
         children = Collections.synchronizedList(new ArrayList<>());
         String osProperty = System.getProperty("os.name");
 
@@ -269,12 +268,33 @@ public class PosixResources {
         return filePaths.getOrDefault(fd, null);
     }
 
+    @TruffleBoundary
+    public PSocket getSocket(int fd) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null && channelWrapper.channel instanceof PSocket) {
+            return (PSocket) channelWrapper.channel;
+        }
+        return null;
+    }
+
     @TruffleBoundary(allowInlining = true)
     public void close(int fd) {
         try {
             removeFD(fd);
         } catch (IOException ignored) {
         }
+    }
+
+    @TruffleBoundary
+    public int openSocket(PSocket socket) {
+        int fd = nextFreeFd();
+        addFD(fd, socket);
+        return fd;
+    }
+
+    @TruffleBoundary
+    public void reopenSocket(PSocket socket, int fd) {
+        addFD(fd, socket);
     }
 
     @TruffleBoundary(allowInlining = true)

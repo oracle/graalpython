@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -97,6 +98,13 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             return Arrays.copyOf(values, length);
         }
         return values;
+    }
+
+    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+    public ByteBuffer getBufferView() {
+        ByteBuffer view = ByteBuffer.wrap(values);
+        view.limit(values.length);
+        return view;
     }
 
     @Override
