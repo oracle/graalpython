@@ -1161,7 +1161,24 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected SequenceStorage doSlice(SequenceStorage storage, PSlice slice, Object iterable,
+        protected SequenceStorage doSliceSequence(SequenceStorage storage, PSlice slice, PSequence sequence,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Cached SetItemSliceNode setItemSliceNode,
+                        @Cached LenNode lenNode) {
+            SliceInfo info = slice.computeIndices(lenNode.execute(storage));
+            try {
+                setItemSliceNode.execute(storage, info, sequence);
+                return storage;
+            } catch (SequenceStoreException e) {
+                generalizeProfile.enter();
+                SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
+                setItemSliceNode.execute(generalized, info, sequence);
+                return generalized;
+            }
+        }
+
+        @Specialization(replaces = "doSliceSequence")
+        protected SequenceStorage doSliceGeneric(SequenceStorage storage, PSlice slice, Object iterable,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
                         @Cached ListNodes.ConstructListNode constructListNode) {
@@ -2010,12 +2027,12 @@ public abstract class SequenceStorageNodes {
             return barr;
         }
 
-        @Specialization(guards = { "len(lenNode, s) == cachedLen", "cachedLen <= 32"})
+        @Specialization(guards = {"len(lenNode, s) == cachedLen", "cachedLen <= 32"})
         @ExplodeLoop
         byte[] doGenericLenCached(SequenceStorage s,
-                                  @Cached CastToByteNode castToByteNode,
-                                  @Cached @SuppressWarnings("unused") LenNode lenNode,
-                                  @Cached("len(lenNode, s)") int cachedLen) {
+                        @Cached CastToByteNode castToByteNode,
+                        @Cached @SuppressWarnings("unused") LenNode lenNode,
+                        @Cached("len(lenNode, s)") int cachedLen) {
             byte[] barr = new byte[cachedLen];
             for (int i = 0; i < cachedLen; i++) {
                 barr[i] = castToByteNode.execute(getGetItemNode().execute(s, i));
