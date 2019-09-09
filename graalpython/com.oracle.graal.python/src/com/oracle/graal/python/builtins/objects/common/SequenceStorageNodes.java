@@ -2395,8 +2395,113 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "times <= 0")
         SequenceStorage doZeroRepeat(SequenceStorage s, @SuppressWarnings("unused") int times,
-                        @Cached("create()") CreateEmptyNode createEmptyNode) {
+                        @Cached CreateEmptyNode createEmptyNode) {
             return createEmptyNode.execute(s, 0);
+        }
+
+        /* special but common case: something like '[False] * n' */
+        @Specialization(guards = {"s.length() == 1", "times > 0"})
+        BoolSequenceStorage doBoolSingleElement(BoolSequenceStorage s, int times,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached BranchProfile outOfMemProfile) {
+            try {
+                boolean[] repeated = new boolean[Math.multiplyExact(s.length(), times)];
+                Arrays.fill(repeated, s.getBoolItemNormalized(0));
+                return new BoolSequenceStorage(repeated);
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(MemoryError);
+            }
+        }
+
+        /* special but common case: something like '["\x00"] * n' */
+        @Specialization(guards = {"s.length() == 1", "times > 0"})
+        ByteSequenceStorage doByteSingleElement(ByteSequenceStorage s, int times,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached BranchProfile outOfMemProfile) {
+            try {
+                byte[] repeated = new byte[Math.multiplyExact(s.length(), times)];
+                Arrays.fill(repeated, s.getByteItemNormalized(0));
+                return new ByteSequenceStorage(repeated);
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(MemoryError);
+            }
+        }
+
+        /* special but common case: something like '["0"] * n' */
+        @Specialization(guards = {"s.length() == 1", "times > 0"})
+        CharSequenceStorage doCharSingleElement(CharSequenceStorage s, int times,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached BranchProfile outOfMemProfile) {
+            try {
+                char[] repeated = new char[Math.multiplyExact(s.length(), times)];
+                Arrays.fill(repeated, s.getCharItemNormalized(0));
+                return new CharSequenceStorage(repeated);
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(MemoryError);
+            }
+        }
+
+        /* special but common case: something like '[0] * n' */
+        @Specialization(guards = {"s.length() == 1", "times > 0"})
+        IntSequenceStorage doIntSingleElement(IntSequenceStorage s, int times,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached BranchProfile outOfMemProfile) {
+            try {
+                int[] repeated = new int[Math.multiplyExact(s.length(), times)];
+                Arrays.fill(repeated, s.getIntItemNormalized(0));
+                return new IntSequenceStorage(repeated);
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(MemoryError);
+            }
+        }
+
+        /* special but common case: something like '[0L] * n' */
+        @Specialization(guards = {"s.length() == 1", "times > 0"})
+        LongSequenceStorage doLongSingleElement(LongSequenceStorage s, int times,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached BranchProfile outOfMemProfile) {
+            try {
+                long[] repeated = new long[Math.multiplyExact(s.length(), times)];
+                Arrays.fill(repeated, s.getLongItemNormalized(0));
+                return new LongSequenceStorage(repeated);
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(MemoryError);
+            }
+        }
+
+        /* special but common case: something like '[0.0] * n' */
+        @Specialization(guards = {"s.length() == 1", "times > 0"})
+        DoubleSequenceStorage doDoubleSingleElement(DoubleSequenceStorage s, int times,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached BranchProfile outOfMemProfile) {
+            try {
+                double[] repeated = new double[Math.multiplyExact(s.length(), times)];
+                Arrays.fill(repeated, s.getDoubleItemNormalized(0));
+                return new DoubleSequenceStorage(repeated);
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(MemoryError);
+            }
+        }
+
+        /* special but common case: something like '[None] * n' */
+        @Specialization(guards = {"s.length() == 1", "times > 0"})
+        ObjectSequenceStorage doObjectSingleElement(ObjectSequenceStorage s, int times,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached BranchProfile outOfMemProfile) {
+            try {
+                Object[] repeated = new Object[Math.multiplyExact(s.length(), times)];
+                Arrays.fill(repeated, s.getItemNormalized(0));
+                return new ObjectSequenceStorage(repeated);
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(MemoryError);
+            }
         }
 
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
