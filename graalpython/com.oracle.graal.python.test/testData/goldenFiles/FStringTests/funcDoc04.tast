@@ -1,0 +1,43 @@
+ModuleRootNode Name: <module 'funcDoc04'> SourceSection: [0,34]`def fn(): '123' f'45...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,34]`def fn(): '123' f'45...`
+    ExpressionWithSideEffect SourceSection: [0,34]`def fn(): '123' f'45...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,34]`def fn(): '123' f'45...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,34]`def fn(): '123' f'45...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,34]`def fn(): '123' f'45...`
+                ReturnTargetNode SourceSection: [0,34]`def fn(): '123' f'45...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [10,28]`'123' f'456' '789'`
+                        FormatStringLiteralNode SourceSection: [10,28]`'123' f'456' '789'`
+                      ExpressionStatementNode SourceSection: [30,34]`pass`
+                        EmptyNode SourceSection: [30,34]`pass`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

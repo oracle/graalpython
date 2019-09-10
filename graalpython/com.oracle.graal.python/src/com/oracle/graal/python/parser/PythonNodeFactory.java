@@ -44,6 +44,7 @@ package com.oracle.graal.python.parser;
 import com.oracle.graal.python.PythonLanguage;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.parser.sst.CollectionSSTNode;
 import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.parser.sst.ForSSTNode;
+import com.oracle.graal.python.parser.sst.GeneratorFactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
 import com.oracle.graal.python.parser.sst.ImportSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
@@ -210,9 +212,19 @@ public final class PythonNodeFactory {
 
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Frame currentFrame) {
         Node result;
-        scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
+        boolean isGen = false;
+        if (currentFrame != null && PArguments.getGeneratorFrameSafe(currentFrame) != null) {
+            currentFrame = PArguments.getGeneratorFrame(currentFrame);
+            isGen = true;
+            scopeEnvironment.setCurrentScope(new ScopeInfo("evalgen", ScopeKind.Generator, currentFrame.getFrameDescriptor(), scopeEnvironment.getGlobalScope()));
+        } else {
+            scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
+        }
         scopeEnvironment.setFreeVarsInRootScope(currentFrame);
         FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source);
+        if (isGen) {
+            factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source, factoryVisitor);
+        }
         ExpressionNode body = mode == PythonParser.ParserMode.Eval
                         ? (ExpressionNode) parserSSTResult.accept(factoryVisitor)
                         : parserSSTResult instanceof BlockSSTNode

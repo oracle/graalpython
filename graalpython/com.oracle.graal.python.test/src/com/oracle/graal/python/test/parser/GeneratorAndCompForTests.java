@@ -295,6 +295,12 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     }
 
     @Test
+    public void fstring01() throws Exception {
+        checkScopeAndTree(
+                        "def fn(someset): return ', '.join(f'{name}' for name in someset)");
+    }
+    
+    @Test
     public void genFromPip() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);

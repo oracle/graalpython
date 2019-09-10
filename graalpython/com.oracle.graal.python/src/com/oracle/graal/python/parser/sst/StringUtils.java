@@ -104,14 +104,12 @@ public class StringUtils {
 
     public static PNode parseString(String[] strings, NodeFactory nodeFactory, PythonParser.ParserErrorCallback errors) {
         StringBuilder sb = null;
+        boolean isFormat = false;
         BytesBuilder bb = null;
-
+        
         for (String text : strings) {
             boolean isRaw = false;
             boolean isBytes = false;
-
-            @SuppressWarnings("unused")
-            boolean isFormat = false;
 
             int strStartIndex = 1;
             int strEndIndex = text.length() - 1;
@@ -169,12 +167,12 @@ public class StringUtils {
         if (bb != null) {
             return nodeFactory.createBytesLiteral(bb.build());
         } else if (sb != null) {
-            return nodeFactory.createStringLiteral(sb.toString());
+            return !isFormat ? nodeFactory.createStringLiteral(sb.toString()) : nodeFactory.createFormatStringLiteral(sb.toString());
         } else {
             return nodeFactory.createStringLiteral("");
         }
     }
-
+    
     public static String unescapeJavaString(String st) {
         if (st.indexOf("\\") == -1) {
             return st;
