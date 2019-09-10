@@ -73,6 +73,7 @@ public interface PythonParser {
         RuntimeException raise(PythonBuiltinClassType type, String message, Object... args);
 
         RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments);
+        RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments);
 
         default RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
             return raiseInvalidSyntax(source, section, "invalid syntax", new Object[0]);
