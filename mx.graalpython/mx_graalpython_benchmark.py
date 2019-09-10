@@ -277,9 +277,8 @@ class GraalPythonVm(GuestVm):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
-                extra_polyglot_args += ["--experimental-options"]
-            else:
-                extra_polyglot_args += ["--experimental-options"]
+
+        extra_polyglot_args += ["--experimental-options", "-ensure-capi"]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
