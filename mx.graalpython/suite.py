@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.225.2",
+    "mxversion": "5.234.6",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -256,6 +256,20 @@ suite = {
                 "\/idle_test\/",
             ],
             "license": ["PSF-License"],
+        },
+
+        "python-capi": {
+            "subDir": "graalpython",
+            "vpath": True,
+            "type": "GraalpythonCAPIProject",
+            "platformDependent": False,
+            "buildDependencies": [
+                "GRAALPYTHON",
+                "PYTHON_USERBASE",
+            ],
+            "buildEnv": {
+                "PYTHONUSERBASE": "<path:PYTHON_USERBASE>",
+            },
         },
     },
 

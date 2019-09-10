@@ -139,7 +139,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
 
     graalpython_args.insert(0, '--experimental-options=true')
-    graalpython_args.insert(1, '-ensure-capi')
 
     vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk)
 
@@ -170,23 +169,18 @@ def punittest(ars):
     mx_unittest.unittest(args)
 
 
-PYTHON_ARCHIVES = ["GRAALPYTHON-LAUNCHER",
-                   "GRAALPYTHON",
-                   "GRAALPYTHON_UNIT_TESTS",
-                   "GRAALPYTHON_GRAALVM_SUPPORT"]
-PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.parser.antlr",
-                          "com.oracle.graal.python.cext"]
+PYTHON_ARCHIVES = ["PYTHON_USERBASE"]
+PYTHON_NATIVE_PROJECTS = ["python-capi"]
 
 
 def nativebuild(args):
     "Build the non-Java Python projects and archives"
-    mx.build(["--only", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
-    mx.archive(["@" + a for a in PYTHON_ARCHIVES])
+    mx.build(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
 
 def nativeclean(args):
     "Clean the non-Java Python projects"
-    mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS)])
+    mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
 
 def python3_unittests(args):
@@ -1141,6 +1135,67 @@ def python_build_watch(args):
             else:
                 nativebuild([])
             mx.log("Build done.")
+
+
+class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
+    def __init__(self, args, project):
+        if hasattr(project, 'max_jobs'):
+            jobs = min(int(project.max_jobs), cpu_count())
+        else:
+            # Cap jobs to maximum of 8 by default. If a project wants more parallelism, it can explicitly set the
+            # "max_jobs" attribute. Setting jobs=cpu_count() would not allow any other tasks in parallel, now matter
+            # how much parallelism the build machine supports.
+            jobs = min(8, mx.cpu_count())
+        super(GraalpythonCAPIBuildTask, self).__init__(args, jobs, project)
+
+    def __str__(self):
+        return 'Building C API project {} with setuptools'.format(self.subject.name)
+
+    def build(self):
+        env = os.environ.copy()
+        cwd = os.path.join(self.subject.suite.dir, self.subject.getOutput())
+        mx.ensure_dir_exists(cwd)
+        rc = do_run_python(["-m", "build_capi"], env=env, cwd=cwd)
+        if mx.suite("sulong-managed", fatalIfMissing=False):
+            rc += do_run_python(["--llvm.managed", "-m", "build_capi"], env=env, cwd=cwd)
+        return min(rc, 1)
+
+
+    def needsBuild(self, newestInput):
+        # We don't know at this point; 'distutils' module has to decide
+        return (True, "rebuild needed")
+
+    def newestOutput(self):
+        return None
+
+    def clean(self, forBuild=False):
+        # just clean the output directory because we can't rely on Graalpython being available
+        try:
+            output_dir = os.path.join(self.subject.suite.dir, self.subject.getOutput())
+            shutil.rmtree(output_dir)
+        except BaseException:
+            return 1
+        return 0
+
+
+class GraalpythonCAPIProject(mx.Project):
+    def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
+        context = 'project ' + name
+        self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
+        super(GraalpythonCAPIProject, self).__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
+
+    def getOutput(self, replaceVar=mx_subst.results_substitutions):
+        return self.get_output_root()
+
+    def getBuildTask(self, args):
+        return GraalpythonCAPIBuildTask(args, self)
+
+    def getBuildEnv(self, replaceVar=mx_subst.path_substitutions):
+        ret = {}
+        if hasattr(self, 'buildEnv'):
+            for key, value in self.buildEnv.items():
+                ret[key] = replaceVar.substitute(value, dependency=self)
+        return ret
 
 
 # ----------------------------------------------------------------------------------------------------------------------
