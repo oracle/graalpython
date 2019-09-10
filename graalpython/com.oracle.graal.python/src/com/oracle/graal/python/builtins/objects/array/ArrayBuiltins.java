@@ -326,7 +326,6 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    // bytearray.append(x)
     @Builtin(name = "append", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ArrayAppendNode extends PythonBinaryBuiltinNode {

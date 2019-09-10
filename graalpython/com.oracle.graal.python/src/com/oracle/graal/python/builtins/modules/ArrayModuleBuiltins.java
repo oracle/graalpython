@@ -152,10 +152,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isCharArray(typeCode)")
-        PArray arrayCharInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+        PArray arrayCharInitializer(LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-
             byte[] byteArray = toByteArrayNode.execute(getSequenceStorageNode.execute(initializer));
             return factory().createArray(cls, byteArray);
         }
