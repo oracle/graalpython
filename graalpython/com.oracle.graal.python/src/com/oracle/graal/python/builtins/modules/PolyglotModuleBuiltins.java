@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -61,17 +62,23 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -91,7 +98,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
 @CoreFunctions(defineModule = "polyglot")
 public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @Override
-    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PolyglotModuleBuiltinsFactory.getFactories();
     }
 
@@ -551,6 +558,24 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             } else {
                 return false;
             }
+        }
+    }
+
+    @Builtin(name = "storage", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class StorageNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doSequence(PSequence seq,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            SequenceStorage storage = getSequenceStorageNode.execute(seq);
+            return context.getEnv().asGuestValue(storage.getInternalArrayObject());
+        }
+
+        @Fallback
+        Object doError(Object object) {
+            throw raise(PythonBuiltinClassType.TypeError, "unsupported operand '%p'", object);
         }
     }
 
