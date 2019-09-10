@@ -36,6 +36,7 @@ ModuleRootNode Name: <module 'funcDoc01'> SourceSection: [0,29]`def fn(): '1234'
                     BlockNode SourceSection: None
                       ExpressionStatementNode SourceSection: [10,23]`'1234' f'567'`
                         FormatStringLiteralNode SourceSection: [10,23]`'1234' f'567'`
+                          Values: <n>1234, <f>567
                       ExpressionStatementNode SourceSection: [25,29]`pass`
                         EmptyNode SourceSection: [25,29]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

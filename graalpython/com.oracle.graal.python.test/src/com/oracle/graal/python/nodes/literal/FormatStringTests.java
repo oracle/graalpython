@@ -283,7 +283,7 @@ public class FormatStringTests extends ParserTestBase {
         ArrayList<Object> parts = new ArrayList<>();
         VirtualFrame frame = Truffle.getRuntime().createVirtualFrame(new Object[8], new FrameDescriptor());
         Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstringtest>").build();
-        FormatStringLiteralNode sfl = new FormatStringLiteralNode(text);
+        FormatStringLiteralNode sfl = new FormatStringLiteralNode(new String[]{text});
         sfl.assignSourceSection(source.createSection(1));
         FormatStringLiteralNode.topParser(sfl, parts, frame);
         Assert.assertEquals(expected, translateFStringParserResult(parts));

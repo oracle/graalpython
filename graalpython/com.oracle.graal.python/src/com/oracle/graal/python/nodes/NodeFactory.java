@@ -249,8 +249,8 @@ public class NodeFactory {
         return new StringLiteralNode(value);
     }
 
-    public ExpressionNode createFormatStringLiteral(String value) {
-        return new FormatStringLiteralNode(value);
+    public ExpressionNode createFormatStringLiteral(String[] values) {
+        return new FormatStringLiteralNode(values);
     }
     
     public ExpressionNode createBytesLiteral(byte[] value) {

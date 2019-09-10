@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -55,6 +56,8 @@ import java.util.List;
 
 public class StringUtils {
 
+    private static final String CANNOT_MIX_MESSAGE = "cannot mix bytes and nonbytes literals";
+    
     public static StringLiteralNode extractDoc(StatementNode node) {
         if (node instanceof ExpressionNode.ExpressionStatementNode) {
             return extractDoc(((ExpressionNode.ExpressionStatementNode) node).getExpression());
@@ -104,13 +107,15 @@ public class StringUtils {
 
     public static PNode parseString(String[] strings, NodeFactory nodeFactory, PythonParser.ParserErrorCallback errors) {
         StringBuilder sb = null;
-        boolean isFormat = false;
         BytesBuilder bb = null;
+        boolean isFormatString = false;
+        List<String> formatStrings =  null;
         
         for (String text : strings) {
             boolean isRaw = false;
             boolean isBytes = false;
-
+            boolean isFormat = false;
+            
             int strStartIndex = 1;
             int strEndIndex = text.length() - 1;
 
@@ -139,7 +144,7 @@ public class StringUtils {
             text = text.substring(strStartIndex, strEndIndex);
             if (isBytes) {
                 if (sb != null) {
-                    throw errors.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
+                    throw errors.raise(SyntaxError, CANNOT_MIX_MESSAGE);
                 }
                 if (bb == null) {
                     bb = new BytesBuilder();
@@ -151,23 +156,41 @@ public class StringUtils {
                 }
             } else {
                 if (bb != null) {
-                    throw errors.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
+                    throw errors.raise(SyntaxError, CANNOT_MIX_MESSAGE);
                 }
-                if (sb == null) {
-                    sb = new StringBuilder();
+                if (!isRaw) {
+                    text = unescapeJavaString(text);
                 }
-                if (isRaw) {
-                    sb.append(text);
+                if (isFormat) {
+                    isFormatString = true;
+                    if (formatStrings == null) {
+                        formatStrings = new ArrayList<>();
+                    }
+                    if (sb != null && sb.length() > 0) {
+                        sb.insert(0, FormatStringLiteralNode.NORMAL_PREFIX);
+                        formatStrings.add(sb.toString());
+                        sb = null;
+                    }
+                    formatStrings.add(FormatStringLiteralNode.FORMAT_STRING_PREFIX + text);
                 } else {
-                    sb.append(unescapeJavaString(text));
+                    if (sb == null) {
+                        sb = new StringBuilder();
+                    }
+                    sb.append(text);
                 }
             }
         }
 
         if (bb != null) {
             return nodeFactory.createBytesLiteral(bb.build());
-        } else if (sb != null) {
-            return !isFormat ? nodeFactory.createStringLiteral(sb.toString()) : nodeFactory.createFormatStringLiteral(sb.toString());
+        } else if (isFormatString) {
+            if (sb != null && sb.length() > 0) {
+                sb.insert(0, FormatStringLiteralNode.NORMAL_PREFIX);
+                formatStrings.add(sb.toString());
+            }
+            return nodeFactory.createFormatStringLiteral(formatStrings.toArray(new String[formatStrings.size()]));
+        } if (sb != null) {
+            return nodeFactory.createStringLiteral(sb.toString());
         } else {
             return nodeFactory.createStringLiteral("");
         }

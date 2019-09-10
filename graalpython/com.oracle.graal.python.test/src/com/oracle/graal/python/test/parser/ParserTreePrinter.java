@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.literal.LongLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
@@ -86,6 +87,7 @@ public class ParserTreePrinter implements NodeVisitor {
     private final int MAX_TEXT_LENGTH = 20;
     private final StringBuilder sb;
     private int level;
+    protected boolean printFormatStringLiteralDetail = false;
 
     public ParserTreePrinter() {
         this.sb = new StringBuilder();
@@ -642,6 +644,12 @@ public class ParserTreePrinter implements NodeVisitor {
                 if (node instanceof ReadIndexedArgumentNode) {
                     indent(level);
                     sb.append("Index: ").append(((ReadIndexedArgumentNode) node).getIndex());
+                    newLine();
+                }
+                if (printFormatStringLiteralDetail && node instanceof FormatStringLiteralNode) {
+                    indent(level);
+                    sb.append("Values: ");
+                    add(((FormatStringLiteralNode) node).getValues());
                     newLine();
                 }
             }

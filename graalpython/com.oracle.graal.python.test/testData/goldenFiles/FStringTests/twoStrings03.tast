@@ -6,3 +6,4 @@ ModuleRootNode Name: <module 'twoStrings03'> SourceSection: [0,13]`'123'  f'456'
   Documentation: None
   InnerRootNode SourceSection: [0,13]`'123'  f'456'`
     FormatStringLiteralNode SourceSection: [0,13]`'123'  f'456'`
+      Values: <n>123, <f>456

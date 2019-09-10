@@ -36,6 +36,7 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
                   YieldNode SourceSection: [8,17]`f'{name}'`
                     flagSlot: 0
                     FormatStringLiteralNode SourceSection: [8,17]`f'{name}'`
+                      Values: <f>{name}
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: name

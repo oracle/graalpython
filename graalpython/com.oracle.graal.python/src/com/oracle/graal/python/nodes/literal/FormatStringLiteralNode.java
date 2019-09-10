@@ -38,19 +38,22 @@ import java.util.List;
 
 public class FormatStringLiteralNode extends LiteralNode {
     
+    public static final String NORMAL_PREFIX = "<n>";
+    public static final String FORMAT_STRING_PREFIX = "<f>";
+    
     private static final String EMPTY_STRING = "";
-    private final String value;
+    private final String[] values;
 
     @Children ExpressionNode[] expressions;
     @CompilerDirectives.CompilationFinal private Object[] splitValue;
     
-    public FormatStringLiteralNode(String value) {
-        this.value = value;
+    public FormatStringLiteralNode(String[] values) {
+        this.values = values;
     }
     
     @Override
     public Object execute(VirtualFrame frame) {
-        if (value.isEmpty()) {
+        if (values.length == 0) {
             return EMPTY_STRING;
         }
         if (splitValue == null) {
@@ -103,12 +106,12 @@ public class FormatStringLiteralNode extends LiteralNode {
         result.append(part);
     }
     
-    public String getValue() {
-        return value;
+    public String[] getValues() {
+        return values;
     }
 
-    public static FormatStringLiteralNode create(String string) {
-        return new FormatStringLiteralNode(string);
+    public static FormatStringLiteralNode create(String[] values) {
+        return new FormatStringLiteralNode(values);
     }
     
     // parsing the format string
@@ -128,152 +131,158 @@ public class FormatStringLiteralNode extends LiteralNode {
     
     
     static int topParser(FormatStringLiteralNode node, List<Object> resultParts, VirtualFrame frame) {
-        String value = node.value;
-        int len = value.length();
         int index = 0;
         int state = STATE_TEXT;
         int start = 0;
-        int end = 0;
+
         int numberOfExpressions = 0;
         int braceLevel = 0;
-        while (index < len) {
-            char ch = value.charAt(index);
-            switch (state){
-                case STATE_TEXT:
-                    switch(ch) {
-                        case '{':
-                            if (start < index) {
-                                addString(value, start, index, resultParts);
+        for (String value : node.values) {
+            if (value.startsWith(NORMAL_PREFIX)) {
+                resultParts.add(value.substring(NORMAL_PREFIX.length()));
+            } else {
+                value = value.substring(FORMAT_STRING_PREFIX.length());
+                int len = value.length();
+                while (index < len) {
+                    char ch = value.charAt(index);
+                    switch (state){
+                        case STATE_TEXT:
+                            switch(ch) {
+                                case '{':
+                                    if (start < index) {
+                                        addString(value, start, index, resultParts);
+                                    }
+                                    state = STATE_AFTER_OPEN_BRACE;
+                                    start = index + 1;
+                                    braceLevel++;
+                                    break;
+                                case '}':
+                                    braceLevel--;
+                                    state = STATE_AFTER_CLOSE_BRACE;
+                                    break;
                             }
-                            state = STATE_AFTER_OPEN_BRACE;
+                            break;
+                        case STATE_AFTER_OPEN_BRACE:
+                            switch(ch) {
+                                case '{': 
+                                    state = STATE_TEXT; 
+                                    braceLevel--;
+                                    break;
+                                case '}': PythonLanguage.getCore().raiseInvalidSyntax(node, EMPTY_EXPRESSION_MESSAGE); break;
+                                default: index--; state = STATE_EXPRESSION;
+
+                            }
+                            break;
+                        case STATE_AFTER_CLOSE_BRACE:
+                            if (ch == '}') {
+                                // after '}' should in this moment follow second '}'
+                                if (start < index) {
+                                    addString(value, start, index, resultParts);
+                                }
+                                braceLevel++;
+                                if (braceLevel == 0) {
+                                    state = STATE_TEXT;
+                                }
+                                start = index + 1;
+                            } else {
+                                PythonLanguage.getCore().raiseInvalidSyntax(node, SINGLE_BRACE_MESSAGE);
+                            }
+                            break;
+                        case STATE_EXPRESSION:
+                            if (ch == '}') {
+                                if (start < index) {
+                                    numberOfExpressions++;
+                                    resultParts.add(createExpression("format", value.substring(start, index), frame));
+                                }
+                                braceLevel--;
+                                state = STATE_TEXT;
+                                start = index + 1;
+                            } else if (ch == '\'' || ch == '"') {
+                                char startq = ch;
+                                boolean triple = false;
+                                boolean inString = true;
+                                index++;
+                                if (index < len && startq == value.charAt(index)) {
+                                    index++;
+                                    if(index< len && startq == value.charAt(index)) {
+                                        // we are in ''' or """ string
+                                        triple = true;
+                                        index++;
+                                    } else {
+                                        // we are in empty string "" or ''
+                                        inString = false;
+                                    } 
+                                }
+                                if (inString) {
+                                    while (index < len && value.charAt(index) != startq) {
+                                      index++;
+                                    }
+                                    // the end of the string reached
+                                    if (triple ) {
+                                        if (index + 1 < len && startq == value.charAt(index + 1)
+                                                && index + 2 < len && startq == value.charAt(index + 2)) {
+                                            index += 2;
+                                            inString = false;
+                                        }
+                                    } else if (index < len) {
+                                        inString = false;
+                                    }
+                                    if (inString) {
+                                        PythonLanguage.getCore().raiseInvalidSyntax(node, UNTERMINATED_STRING);
+                                    }
+                                }
+
+                            } else if (ch == '!') {
+                                state = STATE_AFTER_EXCLAMATION;
+                            }
+                            break;
+                        case STATE_AFTER_EXCLAMATION:
+                            switch (ch) {
+                                case 's':
+                                    if (start < index - 1) {
+                                        numberOfExpressions++;
+                                        resultParts.add(createExpression("str", value.substring(start, index - 1), frame));
+                                    }
+                                    break;
+                                case 'r':
+                                    if (start < index - 1) {
+                                        numberOfExpressions++;
+                                        resultParts.add(createExpression("repr", value.substring(start, index - 1), frame));
+                                    }
+                                    break;
+                                case 'a':
+                                    if (start < index - 1) {
+                                        numberOfExpressions++;
+                                        resultParts.add(createExpression("ascii", value.substring(start, index - 1), frame));
+                                    }
+                                    break;
+                                default:
+                                    PythonLanguage.getCore().raiseInvalidSyntax(node, INVALID_CONVERSION_MESSAGE);
+                            }
+                            state = STATE_EXPRESSION;
                             start = index + 1;
-                            braceLevel++;
                             break;
-                        case '}':
-                            braceLevel--;
-                            state = STATE_AFTER_CLOSE_BRACE;
+                        case STATE_UNKNOWN:
+                            if (ch == '}') {
+                                state = STATE_TEXT;
+                                start = index + 1;
+                            }
                             break;
                     }
-                    break;
-                case STATE_AFTER_OPEN_BRACE:
-                    switch(ch) {
-                        case '{': 
-                            state = STATE_TEXT; 
-                            braceLevel--;
-                            break;
-                        case '}': PythonLanguage.getCore().raiseInvalidSyntax(node, EMPTY_EXPRESSION_MESSAGE); break;
-                        default: index--; state = STATE_EXPRESSION;
-                        
-                    }
-                    break;
-                case STATE_AFTER_CLOSE_BRACE:
-                    if (ch == '}') {
-                        // after '}' should in this moment follow second '}'
+                    index++;
+                }
+                switch (state) {
+                    case STATE_TEXT:
                         if (start < index) {
+                            //handle the end of the string
                             addString(value, start, index, resultParts);
                         }
-                        braceLevel++;
-                        if (braceLevel == 0) {
-                            state = STATE_TEXT;
-                        }
-                        start = index + 1;
-                    } else {
+                        break;
+                    case STATE_AFTER_CLOSE_BRACE: {
                         PythonLanguage.getCore().raiseInvalidSyntax(node, SINGLE_BRACE_MESSAGE);
+                        break;
                     }
-                    break;
-                case STATE_EXPRESSION:
-                    if (ch == '}') {
-                        if (start < index) {
-                            numberOfExpressions++;
-                            resultParts.add(createExpression("format", value.substring(start, index), frame));
-                        }
-                        braceLevel--;
-                        state = STATE_TEXT;
-                        start = index + 1;
-                    } else if (ch == '\'' || ch == '"') {
-                        char startq = ch;
-                        boolean triple = false;
-                        boolean inString = true;
-                        index++;
-                        if (index < len && startq == value.charAt(index)) {
-                            index++;
-                            if(index< len && startq == value.charAt(index)) {
-                                // we are in ''' or """ string
-                                triple = true;
-                                index++;
-                            } else {
-                                // we are in empty string "" or ''
-                                inString = false;
-                            } 
-                        }
-                        if (inString) {
-                            while (index < len && value.charAt(index) != startq) {
-                              index++;
-                            }
-                            // the end of the string reached
-                            if (triple ) {
-                                if (index + 1 < len && startq == value.charAt(index + 1)
-                                        && index + 2 < len && startq == value.charAt(index + 2)) {
-                                    index += 2;
-                                    inString = false;
-                                }
-                            } else if (index < len) {
-                                inString = false;
-                            }
-                            if (inString) {
-                                PythonLanguage.getCore().raiseInvalidSyntax(node, UNTERMINATED_STRING);
-                            }
-                        }
-                                
-                    } else if (ch == '!') {
-                        state = STATE_AFTER_EXCLAMATION;
-                    }
-                    break;
-                case STATE_AFTER_EXCLAMATION:
-                    switch (ch) {
-                        case 's':
-                            if (start < index - 1) {
-                                numberOfExpressions++;
-                                resultParts.add(createExpression("str", value.substring(start, index - 1), frame));
-                            }
-                            break;
-                        case 'r':
-                            if (start < index - 1) {
-                                numberOfExpressions++;
-                                resultParts.add(createExpression("repr", value.substring(start, index - 1), frame));
-                            }
-                            break;
-                        case 'a':
-                            if (start < index - 1) {
-                                numberOfExpressions++;
-                                resultParts.add(createExpression("ascii", value.substring(start, index - 1), frame));
-                            }
-                            break;
-                        default:
-                            PythonLanguage.getCore().raiseInvalidSyntax(node, INVALID_CONVERSION_MESSAGE);
-                    }
-                    state = STATE_EXPRESSION;
-                    start = index + 1;
-                    break;
-                case STATE_UNKNOWN:
-                    if (ch == '}') {
-                        state = STATE_TEXT;
-                        start = index + 1;
-                    }
-                    break;
-            }
-            index++;
-        }
-        switch (state) {
-            case STATE_TEXT:
-                if (start < index) {
-                    //handle the end of the string
-                    addString(value, start, index, resultParts);
                 }
-                break;
-            case STATE_AFTER_CLOSE_BRACE: {
-                PythonLanguage.getCore().raiseInvalidSyntax(node, SINGLE_BRACE_MESSAGE);
-                break;
             }
         }
         return numberOfExpressions;

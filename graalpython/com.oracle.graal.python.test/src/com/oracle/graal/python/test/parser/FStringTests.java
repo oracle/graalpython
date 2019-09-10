@@ -44,6 +44,10 @@ package com.oracle.graal.python.test.parser;
 import org.junit.Test;
 
 public class FStringTests extends ParserTestBase {
+
+    public FStringTests() {
+        printFormatStringLiteralValues = true;
+    }
     
     @Test
     public void twoStrings01() throws Exception {
@@ -98,5 +102,13 @@ public class FStringTests extends ParserTestBase {
                 "''.join(f'{name}' for name in ['Pepa', 'Pavel'])");
     }
     
+    @Test
+    public void moreValues01() throws Exception {
+        checkTreeResult("'123' '456' f'789' '0'");
+    }
+    
+    @Test
+    public void moreValues02() throws Exception {
+        checkTreeResult("'1' '2' '3' f'4' f'5' '6' '7' f'8' '9' '0'");    }
     
 }

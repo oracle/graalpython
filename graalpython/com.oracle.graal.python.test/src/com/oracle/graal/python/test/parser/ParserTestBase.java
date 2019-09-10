@@ -78,6 +78,7 @@ public class ParserTestBase {
     protected boolean correctIssues = true;
     
     protected boolean printDifferenceDetails = false;
+    protected boolean printFormatStringLiteralValues = false;
 
     protected int printOnlyDiffIfLenIsBigger = 1000;
 
@@ -279,8 +280,9 @@ public class ParserTestBase {
         assertDescriptionMatches(scopes.toString(), goldenScopeFile);
     }
 
-    private static String printTreeToString(Node node) {
+    private String printTreeToString(Node node) {
         ParserTreePrinter visitor = new ParserTreePrinter();
+        visitor.printFormatStringLiteralDetail = printFormatStringLiteralValues;
         node.accept(visitor);
         return visitor.getTree();
     }
