@@ -76,6 +76,8 @@ public class ParserTestBase {
      * tree.
      */
     protected boolean correctIssues = true;
+    
+    protected boolean printDifferenceDetails = false;
 
     protected int printOnlyDiffIfLenIsBigger = 1000;
 
@@ -535,7 +537,7 @@ public class ParserTestBase {
 
     private String getContentDifferences(String expected, String actual) {
         StringBuilder sb = new StringBuilder();
-        if (expected.length() < printOnlyDiffIfLenIsBigger && actual.length() < printOnlyDiffIfLenIsBigger) {
+        if (printDifferenceDetails || (expected.length() < printOnlyDiffIfLenIsBigger && actual.length() < printOnlyDiffIfLenIsBigger)) {
             sb.append("Expected content is:").append(lineSeparator(2)).append(expected).append(lineSeparator(2)).append("but actual is:").append(lineSeparator(2)).append(actual).append(
                             lineSeparator(2)).append("It differs in the following things:").append(lineSeparator(2));
         } else {
