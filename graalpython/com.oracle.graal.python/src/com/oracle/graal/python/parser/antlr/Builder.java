@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 
 public final class Builder {
 
-    private static final DescriptiveBailErrorListener ERROR_LISTENER = new DescriptiveBailErrorListener();
+    public static final DescriptiveBailErrorListener ERROR_LISTENER = new DescriptiveBailErrorListener();
 
     // No need to instantiate this class.
     private Builder() {

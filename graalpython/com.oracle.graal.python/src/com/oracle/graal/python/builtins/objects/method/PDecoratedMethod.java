@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,9 +42,11 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 
 /**
  * Storage for both classmethods and staticmethods
@@ -71,5 +73,15 @@ public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuilti
 
     public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
         return this;
+    }
+
+    public String getName() {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException();
+    }
+
+    public Signature getSignature() {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException();
     }
 }

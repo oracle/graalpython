@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -46,6 +46,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
 public class ReversedBuiltins extends PythonBuiltins {
@@ -60,18 +61,18 @@ public class ReversedBuiltins extends PythonBuiltins {
         return ReversedBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object next(PSequenceReverseIterator self,
+        Object next(VirtualFrame frame, PSequenceReverseIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
                         @Cached("create()") IsBuiltinClassProfile profile) {
             if (self.index < 0) {
                 throw raise(StopIteration);
             }
             try {
-                return callGetItem.executeObject(self.getObject(), self.index--);
+                return callGetItem.executeObject(frame, self.getObject(), self.index--);
             } catch (PException e) {
                 e.expectIndexError(profile);
                 throw raise(StopIteration);
@@ -79,7 +80,7 @@ public class ReversedBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object next(PStringReverseIterator self) {
+        Object next(PStringReverseIterator self) {
             if (self.index >= 0) {
                 return Character.toString(self.value.charAt(self.index--));
             }
@@ -87,7 +88,7 @@ public class ReversedBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -97,7 +98,7 @@ public class ReversedBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LENGTH_HINT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization

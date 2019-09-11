@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,91 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
+@ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PyBufferProcsWrapper extends PythonNativeWrapper {
+    private static final String BF_GETBUFFER = "bf_getbuffer";
+    private static final String BF_RELEASEBUFFER = "bf_releasebuffer";
 
-    public PyBufferProcsWrapper(PythonClass delegate) {
+    public PyBufferProcsWrapper(PythonBuiltinClass delegate) {
         super(delegate);
     }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PyBufferProcsWrapper;
+    public PythonBuiltinClass getPythonClass(PythonNativeWrapperLibrary lib) {
+        return (PythonBuiltinClass) lib.getDelegate(this);
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PyBufferProcsWrapperMRForeign.ACCESS;
+    @ExportMessage
+    protected boolean hasMembers() {
+        return true;
     }
 
-    public PythonClass getPythonClass() {
-        return (PythonClass) getDelegate();
+    @ExportMessage
+    protected boolean isMemberReadable(String member) {
+        switch (member) {
+            case BF_GETBUFFER:
+            case BF_RELEASEBUFFER:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @ExportMessage
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    protected Object readMember(String member,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                    @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
+        // translate key to attribute name
+        PythonClassNativeWrapper nativeWrapper = getPythonClass(lib).getClassNativeWrapper();
+        // TODO handle case if nativeWrapper does not exist yet
+        Object result;
+        switch (member) {
+            case BF_GETBUFFER:
+                result = nativeWrapper.getGetBufferProc();
+                break;
+            case BF_RELEASEBUFFER:
+                // TODO
+                result = nativeWrapper.getReleaseBufferProc();
+                break;
+            default:
+                // TODO extend list
+                throw UnknownIdentifierException.create(member);
+        }
+        // do not wrap result if exists since this is directly a native object
+        // use NO_VALUE for NULL
+        return result == null ? toSulongNode.execute(PNone.NO_VALUE) : result;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
     }
 }

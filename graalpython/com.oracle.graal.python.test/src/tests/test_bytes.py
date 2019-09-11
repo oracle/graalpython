@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest
+import sys
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -441,6 +443,16 @@ def test_startswith():
     assert not b.startswith(b"hellow")
     assert not b.startswith(b"ha")
 
+    assert b.startswith((b"hellow", b"he"))
+    assert not b.startswith((b"hellow", b"ha"))
+
+    try:
+        assert b.startswith(("hel", "hello"))
+    except TypeError:
+        assert True
+    else:
+        assert False
+
 
 def test_endswith():
     b = b'hello'
@@ -458,6 +470,18 @@ def test_endswith():
     assert b.endswith(b"o")
     assert not b.endswith(b"whello")
     assert not b.endswith(b"no")
+
+
+def test_ord():
+    b = b"123"
+    assert ord(b[0:1]) == 49
+    assert ord(bytearray(b)[0:1]) == 49
+    try:
+        ord(b)
+    except TypeError as e:
+        assert "expected a character" in str(e), str(e)
+    else:
+        assert False
 
 
 def test_find():
@@ -529,3 +553,169 @@ def test_strip_bytearray():
     assert bytearray(b'abc').strip(b'ac') == b'b'
     assert bytearray(b'abc').lstrip(b'ac') == b'bc'
     assert bytearray(b'abc').rstrip(b'ac') == b'ab'
+
+def test_strip_bytes():
+    assert b'abc'.strip(b'ac') == b'b'
+    assert b'abc'.lstrip(b'ac') == b'bc'
+    assert b'abc'.rstrip(b'ac') == b'ab'
+
+class BaseTestSplit:
+
+    def test_string_error(self):
+        self.assertRaises(TypeError, self.type2test(b'a b').split, ' ')
+        self.assertRaises(TypeError, self.type2test(b'a b').rsplit, ' ')
+
+    def test_int_error(self):
+        self.assertRaises(TypeError, self.type2test(b'a b').split, 32)
+        self.assertRaises(TypeError, self.type2test(b'a b').rsplit, 32)
+
+    def test_split_unicodewhitespace(self):
+        for b in (b'a\x1Cb', b'a\x1Db', b'a\x1Eb', b'a\x1Fb'):
+            b = self.type2test(b)
+            self.assertEqual(b.split(), [b])
+        b = self.type2test(b"\x09\x0A\x0B\x0C\x0D\x1C\x1D\x1E\x1F")
+        self.assertEqual(b.split(), [b'\x1c\x1d\x1e\x1f'])
+
+    def test_rsplit_unicodewhitespace(self):
+        b = self.type2test(b"\x09\x0A\x0B\x0C\x0D\x1C\x1D\x1E\x1F")
+        self.assertEqual(b.rsplit(), [b'\x1c\x1d\x1e\x1f'])
+
+    def test_memoryview(self):
+        self.assertEqual(self.type2test(b'a b').split(memoryview(b' ')), [b'a', b'b'])
+        self.assertEqual(self.type2test(b'c d').rsplit(memoryview(b' ')), [b'c', b'd'])
+
+    def test_split(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(), [b'ahoj', b'jak', b'se', b'mas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(), [b'ahoj', b'jak', b'se', b'mas'])
+
+    def test_maxsplit(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=1), [b'ahoj', b'jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=1), [b'ahoj jak\tse', b'mas'])
+
+    def test_maxsplit_zero(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=0), [b'ahoj jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=0), [b'ahoj jak\tse\nmas'])
+
+    def test_maxsplit_negative(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=-10), [b'ahoj', b'jak', b'se', b'mas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=-10), [b'ahoj', b'jak', b'se', b'mas'])
+
+    def test_separator(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(b' '), [b'ahoj', b'jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(b' '), [b'ahoj', b'jak\tse\nmas'])
+
+    def test_empty(self):
+        self.assertEqual(self.type2test(b'').split(), [])
+        self.assertEqual(self.type2test(b'').rsplit(), [])
+
+    def test_empty_delim(self):
+        self.assertEqual(self.type2test(b'').split(b' '), [b''])
+        self.assertEqual(self.type2test(b'').rsplit(b' '), [b''])
+
+    def test_empty_separator(self):
+        self.assertRaises(ValueError, self.type2test(b'a b').split, b'')
+        self.assertRaises(ValueError, self.type2test(b'a b').rsplit, b'')
+
+    def test_indexable_object(self):
+
+        class MyIndexable(object):
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return self.value
+
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=MyIndexable(1)), [b'ahoj', b'jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=MyIndexable(1)), [b'ahoj jak\tse', b'mas'])
+
+class BytesSplitTest(BaseTestSplit, unittest.TestCase):
+    type2test = bytes
+
+class ByteArraySplitTest(BaseTestSplit, unittest.TestCase):
+    type2test = bytearray
+
+
+def test_eq_add_bytearray():
+    b1 = bytearray(b'')
+    b2 = b1
+    b1 += bytearray(b'Hello')
+    assert b1 is b2
+
+
+def test_add_mv_to_bytes():
+    b = b'hello '
+    mv = memoryview(b'world')
+    b += mv
+    assert b == b'hello world'
+
+def test_add_mv_to_bytearray():
+    ba = bytearray(b'hello ')
+    mv = memoryview(b'world')
+    ba += mv
+    assert ba == b'hello world'
+
+class BaseLikeBytes:
+
+    def test_maketrans(self):
+        transtable = b'\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037 !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`xyzdefghijklmnopqrstuvwxyz{|}~\177\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357\360\361\362\363\364\365\366\367\370\371\372\373\374\375\376\377'
+        self.assertEqual(self.type2test.maketrans(b'abc', b'xyz'), transtable)
+        transtable = b'\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037 !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\177\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357\360\361\362\363\364\365\366\367\370\371\372\373\374xyz'
+        self.assertEqual(self.type2test.maketrans(b'\375\376\377', b'xyz'), transtable)
+        self.assertRaises(ValueError, self.type2test.maketrans, b'abc', b'xyzq')
+        self.assertRaises(TypeError, self.type2test.maketrans, 'abc', 'def')
+
+    def test_translate(self):
+        b = self.type2test(b'hello')
+        rosetta = bytearray(range(256))
+        rosetta[ord('o')] = ord('e')
+
+        self.assertRaises(TypeError, b.translate)
+        self.assertRaises(TypeError, b.translate, None, None)
+        self.assertRaises(ValueError, b.translate, bytes(range(255)))
+
+        c = b.translate(rosetta, b'hello')
+        self.assertEqual(b, b'hello')
+        self.assertIsInstance(c, self.type2test)
+
+        c = b.translate(rosetta)
+        d = b.translate(rosetta, b'')
+        self.assertEqual(c, d)
+        self.assertEqual(c, b'helle')
+
+        c = b.translate(rosetta, b'l')
+        self.assertEqual(c, b'hee')
+
+        c = b.translate(None, b'e')
+        self.assertEqual(c, b'hllo')
+
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            # test delete as a keyword argument
+            c = b.translate(rosetta, delete=b'')
+            self.assertEqual(c, b'helle')
+            c = b.translate(rosetta, delete=b'l')
+            self.assertEqual(c, b'hee')
+            c = b.translate(None, delete=b'e')
+            self.assertEqual(c, b'hllo')
+
+class BytesTest(BaseLikeBytes, unittest.TestCase):
+    type2test = bytes
+
+    def test_translate_no_change(self):
+        b = b'ahoj'
+        self.assertIs(b, b.translate(None))
+        self.assertIs(b, b.translate(None, b''))
+        table = bytearray(range(256))
+        self.assertIs(b, b.translate(table))
+        self.assertIs(b, b.translate(table), b'')
+        self.assertIs(b, b.translate(table), b'klp')
+
+class ByteArrayTest(BaseLikeBytes, unittest.TestCase):
+    type2test = bytearray
+
+    def test_translate_no_change2(self):
+        b = bytearray(b'ahoj')
+        self.assertIsNot(b, b.translate(None))
+        self.assertIsNot(b, b.translate(None, b''))
+        table = bytearray(range(256))
+        self.assertIsNot(b, b.translate(table))
+        self.assertIsNot(b, b.translate(table), b'')
+        self.assertIsNot(b, b.translate(table), b'klp')

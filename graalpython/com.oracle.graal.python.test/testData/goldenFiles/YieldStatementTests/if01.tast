@@ -1,0 +1,62 @@
+ModuleRootNode Name: <module 'if01'> SourceSection: [0,52]`def gen():↵  if b:↵ ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,52]`def gen():↵  if b:↵ ...`
+    ExpressionWithSideEffect SourceSection: [0,52]`def gen():↵  if b:↵ ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,52]`def gen():↵  if b:↵ ...`
+          Identifier: gen
+          GeneratorFunctionDefinitionNode Name: gen SourceSection: None
+            FrameDescriptor: 1 slots [<return_val>]
+            Active Flags: 5
+            For Nodes: 0
+            Block Nodes: 0
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,52]`def gen():↵  if b:↵ ...`
+              Name: gen
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,52]`def gen():↵  if b:↵ ...`
+                GeneratorReturnTargetNode SourceSection: [0,52]`def gen():↵  if b:↵ ...`
+                  flagSlot: 4
+                  GeneratorIfNode SourceSection: [13,52]`if b:↵    yield 12↵ ...`
+                    GeneratorAccessNode SourceSection: None
+                    YesNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [16,17]`b`
+                        Identifier: b
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    ExpressionStatementNode SourceSection: [23,31]`yield 12`
+                      YieldNode SourceSection: [23,31]`yield 12`
+                        flagSlot: 0
+                        IntegerLiteralNode SourceSection: [29,31]`12`
+                          Value: 12
+                        GeneratorAccessNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [44,52]`yield 13`
+                      YieldNode SourceSection: [44,52]`yield 13`
+                        flagSlot: 1
+                        IntegerLiteralNode SourceSection: [50,52]`13`
+                          Value: 13
+                        GeneratorAccessNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  BlockNode SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

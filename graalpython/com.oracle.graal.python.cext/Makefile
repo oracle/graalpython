@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
@@ -36,54 +36,26 @@
 # SOFTWARE.
 
 QUIETLY$(MX_VERBOSE) = @
-LIBDIR=${VPATH}/../lib-graalpython
-TARGET_LIB=${LIBDIR}/capi.bc
-
-
-SOURCE_FILES=$(wildcard ${VPATH}/src/*.c)
-OBJ_FILES=${SOURCE_FILES:%.c=%.o}
-INCLUDE_FILES=$(wildcard ${VPATH}/include/*.h)
-
-MODULE_SOURCES=$(wildcard ${VPATH}/modules/*.c)
-MODULE_OBJ_FILES=$(MODULE_SOURCES:%.c=%.o)
-MODULE_TARGETS=$(MODULE_SOURCES:${VPATH}/modules/%.c=${LIBDIR}/modules/%.bc)
-
-HEADER_TARGETS=$(INCLUDE_FILES:${VPATH}/include/%.h=${VPATH}/../include/%.h)
-
 .PHONY: default clean
-default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
+INCLUDE_FILES=$(wildcard include/*.h)
+LEGACY_INCLUDES=$(wildcard $(TRUFFLE_H_INC)/*.h)
 
-CFLAGS=${LLVM_TARGET_FLAGS} -O1 -ggdb -emit-llvm
-OPT_FLAGS=-mem2reg -globalopt -simplifycfg -constprop -always-inline -instcombine -dse -loop-simplify -reassociate -licm -gvn
-WARNINGS=-Wno-int-to-pointer-cast -Wno-int-conversion -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
-INCLUDES=-I${POLYGLOT_INC} -I${VPATH}/include
+# These are just needed to allow compilation from source, because include needs
+# to be next to lib-graalpython
+HEADER_TARGETS=$(INCLUDE_FILES:include/%.h=../include/%.h) 
+LEGACY_TARGETS=$(LEGACY_INCLUDES:$(TRUFFLE_H_INC)/%.h=../include/%.h)
 
+default: ${HEADER_TARGETS} ${LEGACY_TARGETS}
 
-rebuild:
-	$(MAKE) -C ${VPATH} clean
-	$(MAKE) -C ${VPATH} ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
+$(HEADER_TARGETS): ${INCLUDE_FILES}
+	$(QUIETLY) mkdir -p ../include/
+	$(QUIETLY) cp $(@:../include/%.h=include/%.h) $@
 
-${LIBDIR}/modules/%.bc: ${VPATH}/modules/%.o
-	$(QUIETLY) mkdir -p ${LIBDIR}/modules
-	$(QUIETLY) llvm-link -o $@ $+
-
-${TARGET_LIB}: ${OBJ_FILES}
-	$(QUIETLY) llvm-link -o $@ $+
-
-${VPATH}/src/%.o: ${VPATH}/src/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
-	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
-
-${VPATH}/modules/%.o: ${VPATH}/modules/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
-	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
-
-${VPATH}/../include/%.h: ${INCLUDE_FILES}
-	$(QUIETLY) mkdir -p ${VPATH}/../include/
-	$(QUIETLY) cp $(@:${VPATH}/../include/%.h=${VPATH}/include/%.h) $@
+$(LEGACY_TARGETS): ${LEGACY_INCLUDES}
+	$(QUIETLY) mkdir -p ../include/
+	$(QUIETLY) cp $(@:../include/%.h=$(TRUFFLE_H_INC)/%.h) $@
 
 clean:
-	$(QUIETLY) rm -f ${TARGET_LIB}
-	$(QUIETLY) rm -f ${TARGET_LIB}.bc
-	$(QUIETLY) rm -f ${OBJ_FILES}
+	$(QUIETLY) rm -f ${HEADER_TARGETS}
+	$(QUIETLY) rm -f $(LEGACY_TARGETS)

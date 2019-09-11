@@ -1,0 +1,20 @@
+ModuleRootNode Name: <module 'try05'> SourceSection: [0,26]`try:↵  pass↵except:↵...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,26]`try:↵  pass↵except:↵...`
+    ExpressionWithSideEffect SourceSection: [0,26]`try:↵  pass↵except:↵...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        TryFinallyNode SourceSection: [0,26]`try:↵  pass↵except:↵...`
+          TryExceptNode SourceSection: None
+            ExpressionStatementNode SourceSection: [7,11]`pass`
+              EmptyNode SourceSection: [7,11]`pass`
+            ExceptNode SourceSection: None
+              ExpressionStatementNode SourceSection: [22,26]`pass`
+                EmptyNode SourceSection: [22,26]`pass`
+            BlockNode SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None

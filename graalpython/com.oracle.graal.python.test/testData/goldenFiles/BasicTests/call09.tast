@@ -1,0 +1,17 @@
+ModuleRootNode Name: <module 'call09'> SourceSection: [0,12]`foo(*mylist)`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,12]`foo(*mylist)`
+    PythonCallNodeGen SourceSection: [0,12]`foo(*mylist)`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      PositionalArgumentsNode SourceSection: None
+        ReadNameNodeGen SourceSection: [5,11]`mylist`
+          Identifier: mylist
+        ExecutePositionalStarargsNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: None
+        Identifier: foo

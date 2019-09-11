@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,15 +27,22 @@ package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CastToSliceComponentNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -47,7 +54,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @NodeChild(value = "third", type = ExpressionNode.class)
 @TypeSystemReference(PythonArithmeticTypes.class) // because bool -> int works here
 public abstract class SliceLiteralNode extends ExpressionNode {
-
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private CastToSliceComponentNode castStartNode;
     @Child private CastToSliceComponentNode castStopNode;
     @Child private CastToSliceComponentNode castStepNode;
@@ -56,23 +63,23 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
     @Specialization
     public PSlice doInt(int start, int stop, int step) {
-        return factory().createSlice(start, stop, step);
+        return factory.createSlice(start, stop, step);
     }
 
     @Specialization
     public PSlice doInt(int start, int stop, PNone step) {
-        return factory().createSlice(start, stop, castStep(step));
+        return factory.createSlice(start, stop, castStep(step));
     }
 
     @Fallback
     public PSlice doGeneric(Object start, Object stop, Object step) {
-        return factory().createSlice(castStart(start), castStop(stop), castStep(step));
+        return factory.createSlice(castStart(start), castStop(stop), castStep(step));
     }
 
     private int castStart(Object o) {
         if (castStartNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStartNode = insert(CastToSliceComponentNode.create(MISSING_INDEX));
+            castStartNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, MISSING_INDEX));
         }
         return castStartNode.execute(o);
     }
@@ -80,7 +87,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     private int castStop(Object o) {
         if (castStopNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStopNode = insert(CastToSliceComponentNode.create(MISSING_INDEX));
+            castStopNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, MISSING_INDEX));
         }
         return castStopNode.execute(o);
     }
@@ -88,7 +95,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     private int castStep(Object o) {
         if (castStepNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStepNode = insert(CastToSliceComponentNode.create(1));
+            castStepNode = insert(CastToSliceComponentNode.create(1, Integer.MAX_VALUE));
         }
         return castStepNode.execute(o);
     }
@@ -109,11 +116,15 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
     abstract static class CastToSliceComponentNode extends PNodeWithContext {
 
+        @Child private PRaiseNode raiseNode;
+
         private final int defaultValue;
+        private final int overflowValue;
         private final BranchProfile indexErrorProfile = BranchProfile.create();
 
-        public CastToSliceComponentNode(int defaultValue) {
+        public CastToSliceComponentNode(int defaultValue, int overflowValue) {
             this.defaultValue = defaultValue;
+            this.overflowValue = overflowValue;
         }
 
         public abstract int execute(int i);
@@ -143,7 +154,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
                 return PInt.intValueExact(i);
             } catch (ArithmeticException e) {
                 indexErrorProfile.enter();
-                throw raiseIndexError();
+                return overflowValue;
             }
         }
 
@@ -153,12 +164,38 @@ public abstract class SliceLiteralNode extends ExpressionNode {
                 return i.intValueExact();
             } catch (ArithmeticException e) {
                 indexErrorProfile.enter();
-                throw raiseIndexError();
+                return overflowValue;
             }
         }
 
-        public static CastToSliceComponentNode create(int defaultValue) {
-            return CastToSliceComponentNodeGen.create(defaultValue);
+        @Specialization
+        int doGeneric(Object i,
+                        @Cached("createCastToIndex()") CastToIndexNode castToIndexNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            try {
+                return castToIndexNode.execute(i);
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
+                return overflowValue;
+            }
+        }
+
+        protected CastToIndexNode createCastToIndex() {
+            return CastToIndexNode.create(PythonBuiltinClassType.OverflowError, val -> {
+                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
+            });
+        }
+
+        private PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
+        public static CastToSliceComponentNode create(int defaultValue, int overflowValue) {
+            return CastToSliceComponentNodeGen.create(defaultValue, overflowValue);
         }
     }
 }

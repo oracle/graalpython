@@ -1,0 +1,103 @@
+ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):↵  ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,214]`def divide(x, y):↵  ...`
+    ExpressionWithSideEffect SourceSection: [0,214]`def divide(x, y):↵  ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,214]`def divide(x, y):↵  ...`
+          Identifier: divide
+          FunctionDefinitionNode Name: divide SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,214]`def divide(x, y):↵  ...`
+              Name: divide
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: x, y
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 4 slots [x, y, result, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,214]`def divide(x, y):↵  ...`
+                ReturnTargetNode SourceSection: [0,214]`def divide(x, y):↵  ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: x
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,x,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: y
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,y,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
+                    TryFinallyNode SourceSection: [22,214]`try:↵        result ...`
+                      TryExceptNode SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: [35,49]`result = x / y`
+                          Identifier: result
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [2,result,Illegal]
+                          BinaryArithmeticExpression SourceSection: [44,49]`x / y`
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __truediv__
+                            ReadLocalVariableNode SourceSection: [44,45]`x`
+                              Frame: [0,x,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [48,49]`y`
+                              Frame: [1,y,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                        ExceptNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [88,114]`print("division by z...`
+                            PythonCallNodeGen SourceSection: [88,114]`print("division by z...`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              StringLiteralNode SourceSection: [94,113]`"division by zero!"`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: print
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [61,78]`ZeroDivisionError`
+                            Identifier: ZeroDivisionError
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ExpressionStatementNode SourceSection: [133,159]`print("result is", r...`
+                          PythonCallNodeGen SourceSection: [133,159]`print("result is", r...`
+                            CachedCallNodeGen SourceSection: None
+                              CreateArgumentsNodeGen SourceSection: None
+                              CallDispatchNodeGen SourceSection: None
+                            StringLiteralNode SourceSection: [139,150]`"result is"`
+                            ReadLocalVariableNode SourceSection: [152,158]`result`
+                              Frame: [2,result,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: print
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
+                      ExpressionStatementNode SourceSection: [181,214]`print("executing fin...`
+                        PythonCallNodeGen SourceSection: [181,214]`print("executing fin...`
+                          CachedCallNodeGen SourceSection: None
+                            CreateArgumentsNodeGen SourceSection: None
+                            CallDispatchNodeGen SourceSection: None
+                          StringLiteralNode SourceSection: [187,213]`"executing finally c...`
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: print
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [3,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

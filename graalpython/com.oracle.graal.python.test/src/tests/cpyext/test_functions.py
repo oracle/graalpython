@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,16 @@ import _io
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
+
+class CallableIter:
+    def __init__(self, start):
+        self.idx = start
+    
+    def __call__(self, *args):
+        cur = self.idx
+        self.idx += 1
+        return cur
+        
 
 class TestPyObject(CPyExtTestCase):
 
@@ -150,6 +160,17 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* rcvr", "const char* method", "const char* fmt", "PyObject* list", "int initial"],
         argspec="OssOi",
     )
+    test_PyObject_CallMethod0 = CPyExtFunction(
+        lambda args: getattr(args[0], args[1])(),
+        lambda: (
+            ([3,4,5],"__inexisting_method__", ""),
+            ([1,2,3,4],"__len__", ""),
+        ),
+        arguments=["PyObject* callable", "char* method_name", "char* fmt"],
+        resultspec="O",
+        argspec="Oss",
+        callfunction="PyObject_CallMethod"
+    )
     test_PyObject_Type = CPyExtFunction(
         type,
         lambda: (
@@ -204,11 +225,27 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* object", "PyObject* format_spec"],
         argspec="OO",
     )
+
     test_PyObject_GetIter = CPyExtFunction(
         iter,
         lambda: ([], {}, (0,)),
         cmpfunc=(lambda x, y: type(x) == type(y))
     )
+
+    test_PyCallIter_New = CPyExtFunction(
+        lambda args: iter(args[0], args[1]),
+        lambda: (
+            (lambda: 1, 1),
+            (CallableIter(0), 10),
+            (CallableIter(5), 7),
+            (CallableIter(5), 5),
+        ),
+        arguments=["PyObject* callable", "PyObject* sentinel"],
+        argspec="OO",
+        resultspec="O",
+        cmpfunc=(lambda x, y: list(x) == list(y))
+    )
+
     test_PyObject_IsInstance = CPyExtFunction(
         lambda args: 1 if isinstance(*args) else 0,
         lambda: (

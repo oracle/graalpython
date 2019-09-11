@@ -1,0 +1,2 @@
+test_dist_deprecation
+test_linux_distribution_deprecation

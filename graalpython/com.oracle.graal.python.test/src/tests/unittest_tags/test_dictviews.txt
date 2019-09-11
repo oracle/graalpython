@@ -1,0 +1,3 @@
+test_abc_registry
+test_constructors_not_callable
+test_copy

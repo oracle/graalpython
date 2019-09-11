@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -94,10 +94,16 @@ class BasicTests(unittest.TestCase):
         assert round(C(), a) == a
 
     def test_create(self):
+        class Obj:
+            def __float__(self):
+                return 1.123
+        assert [float(x) for x in [Obj(), b"0.123"]] == [1.123, 0.123]
+
         assert float(99) == 99
         assert float(999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999) == 1e+132
         assert float(b"0.001") == 0.001
         assert float("0.001") == 0.001
+
 
     def test_hex(self):
         data = [
@@ -120,6 +126,11 @@ class BasicTests(unittest.TestCase):
         for input, expected in data:
             f = float(input)
             self.assertEqual(toHex(f), expected);
+
+    def test_nan(self):
+        self.assertNotEqual(NAN, NAN)
+        self.assertNotEqual(float('nan'), float('nan'))
+        self.assertTrue(NAN is NAN)
 
 
 fromHex = float.fromhex

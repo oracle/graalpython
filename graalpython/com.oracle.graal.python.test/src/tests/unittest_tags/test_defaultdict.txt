@@ -1,0 +1,3 @@
+test_deep_copy
+test_pickling
+test_shallow_copy

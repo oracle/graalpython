@@ -1,0 +1,66 @@
+ModuleRootNode Name: <module 'classDef01'> SourceSection: [0,16]`class foo():pass`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,16]`class foo():pass`
+    ExpressionWithSideEffect SourceSection: [0,16]`class foo():pass`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,16]`class foo():pass`
+          Identifier: foo
+          ExpressionWithSideEffects SourceSection: None
+            WriteLocalVariableNodeGen SourceSection: None
+              Identifier: <>temp0
+              WriteLocalFrameSlotNodeGen SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+              PythonCallNodeGen SourceSection: [0,16]`class foo():pass`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                FunctionDefinitionNode Name: foo SourceSection: None
+                  Arguments: None
+                  KwArguments: None
+                  Documentation: None
+                  FreeVarSlots: None
+                  ExecutionSlots:
+                    FreeVarsSlots: None
+                    CellVarsSlots: __class__, 
+                  ClassBodyRootNode SourceSection: [0,16]`class foo():pass`
+                    Name: foo
+                    Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                      Param Names: namespace
+                    CelVars: __class__
+                    FreeVars: None
+                    NeedsCellFrame: False
+                    FrameDescriptor: 1 slots [__class__]
+                    ExecutionSlots:
+                      FreeVarsSlots: None
+                      CellVarsSlots: __class__, 
+                    InnerRootNode SourceSection: None
+                      ReturnTargetNode SourceSection: None
+                        Body: BlockNode SourceSection: None
+                          ClassDefinitionPrologueNode SourceSection: None
+                            QualName: foo
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: __name__
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
+                            SetItemIfNotPresentNodeGen SourceSection: None
+                              SetItemNodeGen SourceSection: None
+                          ExpressionStatementNode SourceSection: [12,16]`pass`
+                            EmptyNode SourceSection: [12,16]`pass`
+                        Return Expresssion: ObjectLiteralNode SourceSection: None
+                StringLiteralNode SourceSection: None
+                GetCallAttributeNodeGen SourceSection: None
+                  BuiltinsLiteralNode SourceSection: None
+            WriteCellVarNodeGen SourceSection: None
+              ReadLocalVariableNode SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None

@@ -1,0 +1,14 @@
+ModuleRootNode Name: <module 'raise01'> SourceSection: [0,5]`raise`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,5]`raise`
+    ExpressionWithSideEffect SourceSection: [0,5]`raise`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        RaiseNodeGen SourceSection: [0,5]`raise`
+          EmptyNode SourceSection: None
+          EmptyNode SourceSection: None

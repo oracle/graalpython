@@ -1,0 +1,104 @@
+ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  (x*x for...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,36]`def fn():↵  (x*x for...`
+    ExpressionWithSideEffect SourceSection: [0,36]`def fn():↵  (x*x for...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,36]`def fn():↵  (x*x for...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,36]`def fn():↵  (x*x for...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,36]`def fn():↵  (x*x for...`
+                ReturnTargetNode SourceSection: [0,36]`def fn():↵  (x*x for...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [17,35]`for x in range(10)`
+                      GeneratorExpressionNode SourceSection: [17,35]`for x in range(10)`
+                        Name: fn.<locals>.<genexp>:generator02:2
+                        FrameDescriptor: 2 slots [x, <return_val>]
+                        Enclosing
+                          FrameDescriptor: 1 slots [<return_val>]
+                        Active Flags: 2
+                        For Nodes: 1
+                        Block Nodes: 0
+                        Is Enclosing Frame Generator: false
+                        FunctionRootNode SourceSection: [17,35]`for x in range(10)`
+                          Name: fn.<locals>.<genexp>:generator02:2
+                          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                          CelVars: None
+                          FreeVars: None
+                          NeedsCellFrame: False
+                          FrameDescriptor: 2 slots [x, <return_val>]
+                          ExecutionSlots:
+                            FreeVarsSlots: None
+                            CellVarsSlots: None
+                          InnerRootNode SourceSection: [17,35]`for x in range(10)`
+                            GeneratorReturnTargetNode SourceSection: [17,35]`for x in range(10)`
+                              flagSlot: 1
+                              GeneratorForNode SourceSection: [17,35]`for x in range(10)`
+                                ExpressionStatementNode SourceSection: [13,16]`x*x`
+                                  YieldNode SourceSection: [13,16]`x*x`
+                                    flagSlot: 0
+                                    BinaryArithmeticExpression SourceSection: [13,16]`x*x`
+                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                        Op: __mul__
+                                      ReadGeneratorFrameVariableNode SourceSection: [13,14]`x`
+                                        Frame: [0,x,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [15,16]`x`
+                                        Frame: [0,x,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                    GeneratorAccessNode SourceSection: None
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: x
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [0,x,Illegal]
+                                ArgumentExpressionNode SourceSection: None
+                                  ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
+                                GetNextNode SourceSection: None
+                                  LookupAndCallUnaryNodeGen SourceSection: None
+                                    Op: __next__
+                                GeneratorAccessNode SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: None
+                                Frame: [1,<return_val>,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              BlockNode SourceSection: None
+                              GeneratorAccessNode SourceSection: None
+                              PRaiseNodeGen SourceSection: None
+                        GetIteratorExpressionNodeGen SourceSection: [26,35]`range(10)`
+                          GetIteratorNodeGen SourceSection: None
+                          PythonCallNodeGen SourceSection: [26,35]`range(10)`
+                            CachedCallNodeGen SourceSection: None
+                              CreateArgumentsNodeGen SourceSection: None
+                              CallDispatchNodeGen SourceSection: None
+                            IntegerLiteralNode SourceSection: [32,34]`10`
+                              Value: 10
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: range
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        PythonObjectFactoryNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

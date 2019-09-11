@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
@@ -59,11 +59,8 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
 
     DeleteClassAttributeNode(String identifier) {
         this.identifier = identifier;
-
-        NodeFactory factory = getNodeFactory();
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
-
-        this.deleteNsItem = factory.createDeleteItem(namespace.asExpression(), this.identifier);
+        this.deleteNsItem = PythonLanguage.getCurrent().getNodeFactory().createDeleteItem(namespace.asExpression(), this.identifier);
     }
 
     public static DeleteClassAttributeNode create(String name) {
@@ -71,7 +68,8 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
     }
 
     Object getLocalsDict(VirtualFrame frame) {
-        PFrame pFrame = PArguments.getPFrame(frame);
+        assert !PArguments.isGeneratorFrame(frame);
+        PFrame pFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
         if (pFrame != null) {
             return pFrame.getLocalsDict();
         }
@@ -83,7 +81,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
                     @Cached("getLocalsDict(frame)") Object localsDict,
                     @Cached("create()") DeleteItemNode delItemNode) {
         // class namespace overrides closure
-        delItemNode.executeWith(localsDict, identifier);
+        delItemNode.executeWith(frame, localsDict, identifier);
     }
 
     @Specialization

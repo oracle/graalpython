@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,43 +25,25 @@
  */
 package com.oracle.graal.python.runtime;
 
-import java.io.File;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage;
 
 /**
  * Storage for initialized Python built-in modules and types.
  */
 public interface PythonCore extends ParserErrorCallback {
-    public static final String FILE_SEPARATOR = File.separator;
-    public static final String PATH_SEPARATOR = File.pathSeparator;
-    static final String PREFIX = "/";
-    static final String LIB_PYTHON_3 = "/lib-python/3";
-    static final String LIB_GRAALPYTHON = "/lib-graalpython";
-    static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
-    static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
-    static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
-    static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
 
     /**
      * Load the core library and prepare all builtin classes and modules.
      */
     public void initialize(PythonContext pythonContext);
-
-    /**
-     * Initialize the runtime information in the sys module, capturing command line arguments,
-     * executable paths and so on.
-     */
-    public PythonModule initializeSysModule();
 
     /**
      * Run post-initialization code that needs a fully working Python environment. This will be run
@@ -100,56 +82,12 @@ public interface PythonCore extends ParserErrorCallback {
 
     public PInt getFalse();
 
-    public PythonModule getBuiltins();
+    public PFloat getNaN();
 
-    static void writeWarning(String warning) {
-        PythonLanguage.getLogger().warning(warning);
-    }
+    public PythonModule getBuiltins();
 
     static void writeInfo(String message) {
         PythonLanguage.getLogger().fine(message);
     }
 
-    @TruffleBoundary
-    public static String getCoreHomeOrFail() {
-        TruffleLanguage.Env env = PythonLanguage.getContextRef().get().getEnv();
-        String coreHome = env.getOptions().get(PythonOptions.CoreHome);
-        if (coreHome.isEmpty()) {
-            throw new RuntimeException(NO_CORE_FATAL);
-        }
-        return coreHome;
-    }
-
-    @TruffleBoundary
-    public static String getSysPrefix(TruffleLanguage.Env env) {
-        String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
-        if (sysPrefix.isEmpty()) {
-            writeWarning(NO_PREFIX_WARNING);
-            env.getOptions().set(PythonOptions.SysPrefix, PREFIX);
-            return LIB_GRAALPYTHON;
-        }
-        return sysPrefix;
-    }
-
-    @TruffleBoundary
-    public static String getCoreHome(TruffleLanguage.Env env) {
-        String coreHome = env.getOptions().get(PythonOptions.CoreHome);
-        if (coreHome.isEmpty()) {
-            writeWarning(NO_CORE_WARNING);
-            env.getOptions().set(PythonOptions.CoreHome, LIB_GRAALPYTHON);
-            return LIB_GRAALPYTHON;
-        }
-        return coreHome;
-    }
-
-    @TruffleBoundary
-    public static String getStdlibHome(TruffleLanguage.Env env) {
-        String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
-        if (stdLibHome.isEmpty()) {
-            writeWarning(NO_STDLIB);
-            env.getOptions().set(PythonOptions.StdLibHome, LIB_PYTHON_3);
-            return LIB_PYTHON_3;
-        }
-        return stdLibHome;
-    }
 }

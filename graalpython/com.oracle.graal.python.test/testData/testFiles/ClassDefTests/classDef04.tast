@@ -1,0 +1,133 @@
+ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:↵    d...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,110]`class Complex:↵    d...`
+    ExpressionWithSideEffect SourceSection: [0,110]`class Complex:↵    d...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,110]`class Complex:↵    d...`
+          Identifier: Complex
+          ExpressionWithSideEffects SourceSection: None
+            WriteLocalVariableNodeGen SourceSection: None
+              Identifier: <>temp0
+              WriteLocalFrameSlotNodeGen SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+              PythonCallNodeGen SourceSection: [0,110]`class Complex:↵    d...`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                FunctionDefinitionNode Name: Complex SourceSection: None
+                  Arguments: None
+                  KwArguments: None
+                  Documentation: None
+                  FreeVarSlots: None
+                  ExecutionSlots:
+                    FreeVarsSlots: None
+                    CellVarsSlots: __class__, 
+                  ClassBodyRootNode SourceSection: [0,110]`class Complex:↵    d...`
+                    Name: Complex
+                    Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                      Param Names: namespace
+                    CelVars: __class__
+                    FreeVars: None
+                    NeedsCellFrame: False
+                    FrameDescriptor: 2 slots [__init__, __class__]
+                    ExecutionSlots:
+                      FreeVarsSlots: None
+                      CellVarsSlots: __class__, 
+                    InnerRootNode SourceSection: None
+                      ReturnTargetNode SourceSection: None
+                        Body: BlockNode SourceSection: None
+                          ClassDefinitionPrologueNode SourceSection: None
+                            QualName: Complex
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: __name__
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
+                            SetItemIfNotPresentNodeGen SourceSection: None
+                              SetItemNodeGen SourceSection: None
+                          SetItemNodeGen SourceSection: [19,110]`def __init__(self, r...`
+                            ArgumentExpressionNode SourceSection: None
+                              ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
+                            StringLiteralNode SourceSection: None
+                            FunctionDefinitionNode Name: __init__ SourceSection: None
+                              Arguments: None
+                              KwArguments: None
+                              Documentation: StringLiteralNode: Empty
+                              FreeVarSlots: __class__, 
+                              ExecutionSlots:
+                                FreeVarsSlots: __class__, 
+                                CellVarsSlots: None
+                              FunctionRootNode SourceSection: [19,110]`def __init__(self, r...`
+                                Name: __init__
+                                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                  Param Names: self, realpart, imagpart
+                                CelVars: None
+                                FreeVars: __class__
+                                NeedsCellFrame: False
+                                FrameDescriptor: 5 slots [self, realpart, imagpart, __class__, <return_val>]
+                                ExecutionSlots:
+                                  FreeVarsSlots: __class__, 
+                                  CellVarsSlots: None
+                                InnerRootNode SourceSection: [19,110]`def __init__(self, r...`
+                                  ReturnTargetNode SourceSection: [19,110]`def __init__(self, r...`
+                                    Body: BlockNode SourceSection: None
+                                      BlockNode SourceSection: None
+                                        WriteLocalVariableNodeGen SourceSection: None
+                                          Identifier: self
+                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                            Frame: [0,self,Illegal]
+                                          ArgumentExpressionNode SourceSection: None
+                                            ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
+                                        WriteLocalVariableNodeGen SourceSection: None
+                                          Identifier: realpart
+                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                            Frame: [1,realpart,Illegal]
+                                          ArgumentExpressionNode SourceSection: None
+                                            ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 1
+                                        WriteLocalVariableNodeGen SourceSection: None
+                                          Identifier: imagpart
+                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                            Frame: [2,imagpart,Illegal]
+                                          ArgumentExpressionNode SourceSection: None
+                                            ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 2
+                                      BlockNode SourceSection: None
+                                        SetAttributeNodeGen SourceSection: [67,84]`self.r = realpart`
+                                          Attribute: r
+                                          ReadLocalVariableNode SourceSection: [67,71]`self`
+                                            Frame: [0,self,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [76,84]`realpart`
+                                            Frame: [1,realpart,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                        SetAttributeNodeGen SourceSection: [93,110]`self.i = imagpart`
+                                          Attribute: i
+                                          ReadLocalVariableNode SourceSection: [93,97]`self`
+                                            Frame: [0,self,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [102,110]`imagpart`
+                                            Frame: [2,imagpart,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                      Frame: [4,<return_val>,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                        Return Expresssion: ObjectLiteralNode SourceSection: None
+                StringLiteralNode SourceSection: None
+                GetCallAttributeNodeGen SourceSection: None
+                  BuiltinsLiteralNode SourceSection: None
+            WriteCellVarNodeGen SourceSection: None
+              ReadLocalVariableNode SourceSection: None
+                Frame: [0,<>temp0,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None

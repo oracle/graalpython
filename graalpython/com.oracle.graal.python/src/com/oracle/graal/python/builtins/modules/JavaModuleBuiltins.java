@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,25 +40,32 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 @CoreFunctions(defineModule = "java")
 public class JavaModuleBuiltins extends PythonBuiltins {
@@ -67,7 +74,13 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         return JavaModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "type", fixedNumOfPositionalArgs = 1)
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put("__path__", "java!");
+    }
+
+    @Builtin(name = "type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
         private Object get(String name) {
@@ -97,9 +110,38 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         Object type(PString name) {
             return get(name.getValue());
         }
+
+        @Fallback
+        Object doError(Object object) {
+            throw raise(PythonBuiltinClassType.TypeError, "unsupported operand '%p'", object);
+        }
     }
 
-    @Builtin(name = "is_function", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "add_to_classpath", takesVarArgs = true, doc = "Add all arguments to the classpath.")
+    @GenerateNodeFactory
+    abstract static class AddToClassPathNode extends PythonBuiltinNode {
+        @Specialization
+        PNone add(VirtualFrame frame, Object[] args,
+                        @Cached CastToStringNode castToString) {
+            Env env = getContext().getEnv();
+            if (!env.isHostLookupAllowed()) {
+                throw raise(PythonErrorType.NotImplementedError, "host access is not allowed");
+            }
+            for (Object arg : args) {
+                String entry = castToString.execute(frame, arg);
+                try {
+                    // Always allow accessing JAR files in the language home; folders are allowed
+                    // implicitly
+                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, ".jar"));
+                } catch (SecurityException e) {
+                    throw raise(TypeError, "invalid or unreadable classpath: '%s' - %m", entry, e);
+                }
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "is_function", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsFunctionNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -109,7 +151,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_object", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_object", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -119,7 +161,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_symbol", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_symbol", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsSymbolNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -129,7 +171,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "instanceof", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isForeignObject(object)", "isForeignObject(klass)"})

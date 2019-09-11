@@ -1,0 +1,45 @@
+ModuleRootNode Name: <module 'basicInFn02'> SourceSection: [0,32]`def fn():↵  import s...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,32]`def fn():↵  import s...`
+    ExpressionWithSideEffect SourceSection: [0,32]`def fn():↵  import s...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,32]`def fn():↵  import s...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,32]`def fn():↵  import s...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [system, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,32]`def fn():↵  import s...`
+                ReturnTargetNode SourceSection: [0,32]`def fn():↵  import s...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [19,32]`sys as system`
+                      Identifier: system
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,system,Illegal]
+                      ImportExpression SourceSection: None
+                        ImportNode SourceSection: None
+                          Module: sys
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

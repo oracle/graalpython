@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -20,14 +20,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -36,7 +35,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class StringFormatter {
     int index;
-    String format;
+    String formatText;
     StringBuilder buffer;
     int argIndex;
     Object args;
@@ -44,14 +43,14 @@ public class StringFormatter {
 
     final char pop() {
         try {
-            return format.charAt(index++);
+            return formatText.charAt(index++);
         } catch (StringIndexOutOfBoundsException e) {
             throw core.raise(ValueError, "incomplete format");
         }
     }
 
     final char peek() {
-        return format.charAt(index);
+        return formatText.charAt(index);
     }
 
     final void push() {
@@ -61,7 +60,7 @@ public class StringFormatter {
     public StringFormatter(PythonCore core, String format) {
         this.core = core;
         index = 0;
-        this.format = format;
+        this.formatText = format;
         buffer = new StringBuilder(format.length() + 100);
     }
 
@@ -76,7 +75,8 @@ public class StringFormatter {
                 argIndex = -2;
                 return args;
             default:
-                ret = getItemNode.executeObject(args, argIndex++);
+                // NOTE: passing 'null' frame means we already took care of the global state earlier
+                ret = getItemNode.executeObject(null, args, argIndex++);
                 break;
         }
         if (ret == null) {
@@ -97,15 +97,18 @@ public class StringFormatter {
                 return ((PInt) o).intValue();
             } else if (o instanceof Double) {
                 return ((Double) o).intValue();
+            } else if (o instanceof PFloat) {
+                return (int) ((PFloat) o).getValue();
             }
             throw core.raise(TypeError, "* wants int");
         } else {
             if (Character.isDigit(c)) {
                 int numStart = index - 1;
                 while (Character.isDigit(c = pop())) {
+                    // empty
                 }
                 index -= 1;
-                Integer i = Integer.valueOf(format.substring(numStart, index));
+                Integer i = Integer.valueOf(formatText.substring(numStart, index));
                 return i.intValue();
             }
             index -= 1;
@@ -113,21 +116,23 @@ public class StringFormatter {
         }
     }
 
-    private static Object asNumber(Object arg, CallDispatchNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
+    private static Object asNumber(Object arg, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
         if (arg instanceof Integer || arg instanceof Long || arg instanceof PInt) {
             // arg is already acceptable
             return arg;
         } else if (arg instanceof Double) {
             // A common case where it is safe to return arg.__int__()
             return ((Double) arg).intValue();
+        } else if (arg instanceof Boolean) {
+            return (Boolean) arg ? 1 : 0;
+        } else if (arg instanceof PFloat) {
+            return (int) ((PFloat) arg).getValue();
         } else if (arg instanceof PythonAbstractObject) {
             // Try again with arg.__int__()
             try {
                 // Result is the result of arg.__int__() if that works
                 Object attribute = lookupAttribute.apply(arg, __INT__);
-                if (attribute instanceof PythonCallable) {
-                    return callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
-                }
+                return callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
             } catch (PException e) {
                 // No __int__ defined (at Python level)
             }
@@ -135,16 +140,16 @@ public class StringFormatter {
         return arg;
     }
 
-    private static Object asFloat(Object arg, CallDispatchNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
+    private static Object asFloat(Object arg, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
         if (arg instanceof Double) {
             // arg is already acceptable
             return arg;
+        } else if (arg instanceof PFloat) {
+            return ((PFloat) arg).getValue();
         } else {
             try {
                 Object attribute = lookupAttribute.apply(arg, __FLOAT__);
-                if (attribute instanceof PythonCallable) {
-                    return callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
-                }
+                return callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
             } catch (PException e) {
             }
         }
@@ -154,12 +159,9 @@ public class StringFormatter {
     /**
      * Main service of this class: format one or more arguments with the format string supplied at
      * construction.
-     *
-     * @param args1 tuple or map containing objects, or a single object, to convert
-     * @return result of formatting
      */
     @TruffleBoundary
-    public Object format(Object args1, CallDispatchNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
+    public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
         PDict dict = null;
         this.args = args1;
 
@@ -180,7 +182,7 @@ public class StringFormatter {
             }
         }
 
-        while (index < format.length()) {
+        while (index < formatText.length()) {
             // Read one character from the format string
             char c = pop();
             if (c != '%') {
@@ -225,7 +227,7 @@ public class StringFormatter {
                     }
                 }
                 // Last c=pop() is the closing ')' while indexKey is just after the opening '('
-                String tmp = format.substring(keyStart, index - 1);
+                String tmp = formatText.substring(keyStart, index - 1);
                 // Look it up using this extent as the (right type of) key.
                 this.args = dict.getItem(tmp);
             } else {
@@ -346,7 +348,7 @@ public class StringFormatter {
                     } else if (arg instanceof PBytes) {
                         ft.format(((PBytes) arg).toString());
                     } else if (arg instanceof PythonAbstractObject && ((bytesAttribute = lookupAttribute.apply(arg, __BYTES__)) != PNone.NO_VALUE)) {
-                        Object result = callNode.executeCall(null, bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                        Object result = callNode.execute(null, bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                         ft.format(result.toString());
                     } else {
                         throw core.raise(TypeError, " %%b requires bytes, or an object that implements %s, not '%p'", __BYTES__, arg);
@@ -358,7 +360,7 @@ public class StringFormatter {
                     // Get hold of the actual object to display (may set needUnicode)
                     Object attribute = spec.type == 's' ? lookupAttribute.apply(arg, __STR__) : lookupAttribute.apply(arg, __REPR__);
                     if (attribute != PNone.NO_VALUE) {
-                        Object result = callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                        Object result = callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                         if (PGuards.isString(result)) {
                             // Format the str/unicode form of the argument using this Spec.
                             f = ft = new TextFormatter(core, buffer, spec);
@@ -376,7 +378,6 @@ public class StringFormatter {
                 case 'u': // Obsolete type identical to 'd'.
                 case 'i': // Compatibility with scanf().
                     // Format the argument using this Spec.
-                    f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
 
                     arg = getarg(getItemNode);
 
@@ -385,14 +386,23 @@ public class StringFormatter {
 
                     // We have to check what we got back.
                     if (argAsNumber instanceof Integer) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format((Integer) argAsNumber);
                     } else if (argAsNumber instanceof Long) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format(((Long) argAsNumber).intValue());
                     } else if (argAsNumber instanceof PInt) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format(((PInt) argAsNumber).intValue());
+                    } else if (arg instanceof String && ((String) arg).length() == 1) {
+                        f = ft = new TextFormatter(core, buffer, spec);
+                        ft.format((String) arg);
+                    } else if (arg instanceof PString && ((PString) arg).getValue().length() == 1) {
+                        f = ft = new TextFormatter(core, buffer, spec);
+                        ft.format(((PString) arg).getCharSequence());
                     } else {
                         // It couldn't be converted, raise the error here
-                        throw core.raise(TypeError, "%%%c format: a number is required, not %p", spec.type, arg);
+                        throw core.raise(TypeError, "%%%c requires int or char");
                     }
 
                     break;
@@ -414,6 +424,8 @@ public class StringFormatter {
                     // We have to check what we got back..
                     if (argAsFloat instanceof Double) {
                         ff.format((Double) argAsFloat);
+                    } else if (argAsFloat instanceof PFloat) {
+                        ff.format(((PFloat) argAsFloat).getValue());
                     } else {
                         // It couldn't be converted, raise the error here
                         throw core.raise(TypeError, "float argument required, not %p", arg);
@@ -450,9 +462,7 @@ public class StringFormatter {
     }
 
     private static Object[] createArgs(Object self) {
-        Object[] args = PArguments.create();
-        args = PArguments.insertSelf(args, self);
-        return args;
+        return new Object[]{self};
     }
 
 }

@@ -1,0 +1,13 @@
+ModuleRootNode Name: <module 'call01'> SourceSection: [0,5]`foo()`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,5]`foo()`
+    PythonCallNodeGen SourceSection: [0,5]`foo()`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: None
+        Identifier: foo

@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: OrderedDict
+        Kind: Class
+        FrameDescriptor: [setup, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: setup
+            Kind: Function
+            FrameDescriptor: [dict_setitem, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]

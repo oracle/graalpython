@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID;
+
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Native wrappers for managed objects such that they can be used as a C array by native code. The
@@ -51,53 +61,167 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public abstract class CArrayWrappers {
 
+    @ExportLibrary(InteropLibrary.class)
     public abstract static class CArrayWrapper extends PythonNativeWrapper {
 
         public CArrayWrapper(Object delegate) {
             super(delegate);
         }
 
-        static boolean isInstance(TruffleObject o) {
-            return o instanceof CArrayWrapper;
+        @ExportMessage
+        public boolean isPointer(
+                        @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+            return pIsPointerNode.execute(this);
         }
 
-        @Override
-        public ForeignAccess getForeignAccess() {
-            return CArrayWrapperMRForeign.ACCESS;
+        @ExportMessage
+        public long asPointer(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+            Object nativePointer = lib.getNativePointer(this);
+            if (nativePointer instanceof Long) {
+                return (long) nativePointer;
+            }
+            return interopLibrary.asPointer(nativePointer);
+        }
+
+        @ExportMessage
+        public void toNative(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Exclusive @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!lib.isNative(this)) {
+                setNativePointer(asCharPointerNode.execute(lib.getDelegate(this)));
+            }
         }
     }
 
     /**
      * Unlike a
-     * {@link com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper}
+     * {@link com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper}
      * object that wraps a Python unicode object, this wrapper let's a Java String look like a
      * {@code char*}.
      */
+    @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public static class CStringWrapper extends CArrayWrapper {
 
         public CStringWrapper(String delegate) {
             super(delegate);
         }
 
-        public String getString() {
-            return (String) getDelegate();
+        @ExportMessage
+        final long getArraySize(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return ((String) lib.getDelegate(this)).length();
         }
 
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        final boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        final Object readArrayElement(long index,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
+            try {
+                int idx = PInt.intValueExact(index);
+                String s = (String) lib.getDelegate(this);
+                if (idx >= 0 && idx < s.length()) {
+                    return s.charAt(idx);
+                } else if (idx == s.length()) {
+                    return '\0';
+                }
+            } catch (ArithmeticException e) {
+                // fall through
+            }
+            throw InvalidArrayIndexException.create(index);
+        }
+
+        @ExportMessage
+        final boolean isArrayElementReadable(long identifier,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return 0 <= identifier && identifier < getArraySize(lib);
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        protected boolean hasNativeType() {
+            return true;
+        }
+
+        @ExportMessage
+        protected Object getNativeType(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
+            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, ((String) lib.getDelegate(this)).length());
+        }
     }
 
     /**
      * A native wrapper for arbitrary byte arrays (i.e. the store of a Python Bytes object) to be
      * used like a {@code char*} pointer.
      */
+    @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public static class CByteArrayWrapper extends CArrayWrapper {
 
         public CByteArrayWrapper(byte[] delegate) {
             super(delegate);
         }
 
-        public byte[] getByteArray() {
-            return (byte[]) getDelegate();
+        public final byte[] getByteArray(PythonNativeWrapperLibrary lib) {
+            return ((byte[]) lib.getDelegate(this));
         }
 
+        @ExportMessage
+        final long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return getByteArray(lib).length;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        final boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        Object readArrayElement(long index,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
+            try {
+                int idx = PInt.intValueExact(index);
+                byte[] arr = getByteArray(lib);
+                if (idx >= 0 && idx < arr.length) {
+                    return arr[idx];
+                } else if (idx == arr.length) {
+                    return (byte) 0;
+                }
+            } catch (ArithmeticException e) {
+                // fall through
+            }
+            throw InvalidArrayIndexException.create(index);
+        }
+
+        @ExportMessage
+        final boolean isArrayElementReadable(long identifier,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return 0 <= identifier && identifier < getArraySize(lib);
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        protected boolean hasNativeType() {
+            // TODO implement native type
+            return false;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        protected Object getNativeType() {
+            // TODO implement native type
+            return null;
+        }
     }
 }

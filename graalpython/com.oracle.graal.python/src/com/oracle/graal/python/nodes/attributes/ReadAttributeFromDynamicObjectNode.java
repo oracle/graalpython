@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,17 +45,26 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
+@ReportPolymorphism
+@GenerateUncached
 public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromDynamicObjectNode create() {
         return ReadAttributeFromDynamicObjectNodeGen.create();
+    }
+
+    public static ReadAttributeFromDynamicObjectNode getUncached() {
+        return ReadAttributeFromDynamicObjectNodeGen.getUncached();
     }
 
     public abstract Object execute(Object object, Object key);
@@ -70,11 +79,6 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
      */
     protected static boolean checkShape(@SuppressWarnings("unused") DynamicObject dynamicObject, DynamicObject cachedObject, Shape cachedShape) {
         return cachedObject.getShape() == cachedShape;
-    }
-
-    private static boolean assertFinal(DynamicObject dynamicObject, Object key, Object cachedValue) {
-        Object other = dynamicObject.get(key) == null ? PNone.NO_VALUE : dynamicObject.get(key);
-        return cachedValue == other || cachedValue instanceof Number && other instanceof Number && ((Number) cachedValue).doubleValue() == ((Number) other).doubleValue();
     }
 
     @SuppressWarnings("unused")
@@ -101,19 +105,19 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                     @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @Cached("readFinalValue(dynamicObject, loc)") Object cachedValue) {
-        assert assertFinal(dynamicObject, attrKey, cachedValue);
         return cachedValue;
     }
 
     @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "key == cachedKey",
                     }, //
                     assumptions = {
                                     "layoutAssumption"
-                    })
+                    }, //
+                    replaces = "readDirectFinal")
     protected Object readDirect(DynamicObject dynamicObject, Object key,
                     @Cached("key") Object cachedKey,
                     @Cached("attrKey(cachedKey)") Object attrKey,
@@ -123,7 +127,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         if (loc == null) {
             return PNone.NO_VALUE;
         } else {
-            return loc.get(dynamicObject);
+            return loc.get(dynamicObject, cachedShape);
         }
     }
 
@@ -141,8 +145,9 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return nextNode.execute(dynamicObject, key);
     }
 
-    @Specialization(replaces = "readDirect")
-    protected Object readIndirect(DynamicObject dynamicObject, Object key) {
+    @TruffleBoundary
+    @Specialization(replaces = {"readDirect", "readDirectFinal", "updateShapeAndRead"})
+    protected static Object readIndirect(DynamicObject dynamicObject, Object key) {
         Object value = dynamicObject.get(attrKey(key));
         if (value == null) {
             return PNone.NO_VALUE;

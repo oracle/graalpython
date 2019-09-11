@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -114,7 +114,7 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetAllocatedBlocks(void);
 /* Macros */
 #ifdef WITH_PYMALLOC
 #ifndef Py_LIMITED_API
-PyAPI_FUNC(void) _PyObject_DebugMallocStats(FILE *out);
+PyAPI_FUNC(int) _PyObject_DebugMallocStats(FILE *out);
 #endif /* #ifndef Py_LIMITED_API */
 #endif
 
@@ -260,7 +260,11 @@ typedef union _gc_head {
         union _gc_head *gc_prev;
         Py_ssize_t gc_refs;
     } gc;
-    double dummy;  /* force worst-case alignment */
+    long double dummy;  /* force worst-case alignment */
+    // malloc returns memory block aligned for any built-in types and
+    // long double is the largest standard C type.
+    // On amd64 linux, long double requires 16 byte alignment.
+    // See bpo-27987 for more discussion.
 } PyGC_Head;
 
 extern PyGC_Head *_PyGC_generation0;

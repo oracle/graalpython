@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,10 +28,13 @@ package com.oracle.graal.python.nodes.generator;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -40,7 +43,9 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
     @Child private StatementNode body;
     @Child private ExpressionNode returnValue;
     @Child private StatementNode parameters;
+    @Child private PythonObjectFactory factory;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+    @Child private PRaiseNode raise = PRaiseNode.create();
 
     private final BranchProfile returnProfile = BranchProfile.create();
     private final BranchProfile fallthroughProfile = BranchProfile.create();
@@ -59,6 +64,10 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
         return parameters;
     }
 
+    public int getFlagSlot() {
+        return flagSlot;
+    }
+
     @Override
     public Object execute(VirtualFrame frame) {
         if (!gen.isActive(frame, flagSlot)) {
@@ -69,18 +78,22 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
         try {
             body.executeVoid(frame);
             fallthroughProfile.enter();
-            throw raise(StopIteration);
+            throw raise.raise(StopIteration);
         } catch (YieldException eye) {
             yieldProfile.enter();
-            return returnValue.execute(frame);
+            return eye.getValue();
         } catch (ReturnException ire) {
             // return statement in generators throws StopIteration with the return value
             returnProfile.enter();
             Object retVal = returnValue.execute(frame);
             if (retVal != PNone.NONE) {
-                throw raise(factory().createBaseException(StopIteration, factory().createTuple(new Object[]{retVal})));
+                if (factory == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    factory = insert(PythonObjectFactory.create());
+                }
+                throw raise.raise(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})));
             } else {
-                throw raise(StopIteration);
+                throw raise.raise(StopIteration);
             }
         }
     }

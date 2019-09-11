@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,7 +39,19 @@
 
 import _imp
 import sys
-import python_cext
+import _thread
+
+capi = capi_to_java = None
+_capi_hooks = []
+
+
+def register_capi_hook(hook):
+    assert callable(hook)
+    if capi:
+        hook()
+    else:
+        _capi_hooks.append(hook)
+    
 
 def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
@@ -99,6 +111,17 @@ def PyModule_SetDocString(module, string):
 def PyModule_NewObject(name):
     return moduletype(name)
 
+##################### ABSTRACT
+
+@may_raise(-1)
+def PySequence_DelItem(o,i):
+    del o[i]
+    return 0
+
+@may_raise
+def PyModule_GetNameObject(module_obj):
+    return module_obj.__name__
+
 
 ##################### DICT
 
@@ -116,7 +139,7 @@ def PyDict_Next(dictObj, pos):
         return native_null
     for key in dictObj:
         if curPos == pos:
-            return key, dictObj[key]
+            return key, dictObj[key], hash(key)
         curPos = curPos + 1
     return native_null
 
@@ -151,6 +174,15 @@ def PyDict_SetItem(dictObj, key, value):
 
 
 @may_raise(-1)
+def PyDict_SetItem_KnownHash(dictObj, key, value, given_hash):
+    if not isinstance(dictObj, dict):
+        raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+    assert hash(key) == given_hash, "hash mismatch: known hash is different to computed hash"
+    dictObj[key] = value
+    return 0
+
+
+@may_raise(-1)
 def PyDict_DelItem(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
@@ -165,6 +197,15 @@ def PyDict_Contains(dictObj, key):
     return key in dictObj
 
 
+@may_raise(-1)
+def PyDict_Merge(a, b, override):
+    if override:
+        a.update(b)
+    else:
+        for k in b:
+            if not k in a:
+                a[k] = b[k]
+    return 0
 
 ##################### SET, FROZENSET
 
@@ -177,12 +218,34 @@ def PySet_New(iterable):
         return set()
 
 
+@may_raise(-1)
+def PySet_Contains(anyset, item):
+    if not (isinstance(anyset, set) or isinstance(anyset, frozenset)):
+        __bad_internal_call(None, None, anyset)
+    return item in anyset
+
+
+@may_raise
+def PySet_Pop(anyset):
+    if not isinstance(anyset, set):
+        __bad_internal_call(None, None, anyset)
+    return anyset.pop()
+
+
 @may_raise
 def PyFrozenSet_New(iterable):
     if iterable:
         return frozenset(iterable)
     else:
         return frozenset()
+
+
+@may_raise(-1)
+def PySet_Discard(s, key):
+    if key in s:
+        s.discard(key)
+        return 1
+    return 0
 
 
 ##################### MAPPINGPROXY
@@ -248,6 +311,15 @@ def PyBytes_Join(sep, iterable):
     return sep.join(iterable)
 
 
+@may_raise
+def PyBytes_FromObject(obj):
+    if type(obj) == bytes:
+        return obj
+    if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
+        return bytes(obj)
+    raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
+
+
 ##################### LIST
 
 @may_raise
@@ -299,10 +371,33 @@ def PyList_GetSlice(listObj, ilow, ihigh):
 
 
 @may_raise(-1)
+def PyList_SetSlice(listObj, ilow, ihigh, s):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj[ilow:ihigh] = s
+    return 0
+
+
+@may_raise(-1)
 def PyList_Size(listObj):
     if not isinstance(listObj, list):
         __bad_internal_call(None, None, listObj)
     return len(listObj)
+
+
+@may_raise(-1)
+def PyList_Sort(listObj):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj.sort()
+    return 0
+
+@may_raise(-1)
+def PyList_Insert(listObj, i, item):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj.insert(i, item)
+    return 0
 
 
 ##################### LONG
@@ -342,6 +437,32 @@ def PyFloat_FromDouble(n):
     return float(n)
 
 
+##################### COMPLEX
+
+@may_raise
+def PyComplex_AsCComplex(n):
+    obj = complex(n)
+    return (obj.real, obj.imag)
+
+
+@may_raise(-1.0)
+def PyComplex_RealAsDouble(n):
+    if isinstance(n, complex):
+        return n.real
+    return n.__float__()
+
+
+def PyComplex_ImagAsDouble(n):
+    if isinstance(n, complex):
+        return n.imag
+    return 0.0
+
+
+@may_raise
+def PyComplex_FromDoubles(real, imag):
+    return complex(real, imag)
+
+
 ##################### NUMBER
 
 def _safe_check(v, type_check):
@@ -379,6 +500,8 @@ def PyNumber_BinOp(v, w, binop):
         return v // w
     elif binop == 10:
         return v % w
+    elif binop == 12:
+        return v @ w
     else:
         raise SystemError("unknown binary operator (code=%s)" % binop)
 
@@ -406,11 +529,12 @@ def _binop_name(binop):
         return "//"
     elif binop == 10:
         return "%"
+    elif binop == 12:
+        return "@"
 
 
 @may_raise
 def PyNumber_InPlaceBinOp(v, w, binop):
-    control = v
     if binop == 0:
         v += w
     elif binop == 1:
@@ -433,11 +557,14 @@ def PyNumber_InPlaceBinOp(v, w, binop):
         v //= w
     elif binop == 10:
         v %= w
+    elif binop == 12:
+        v @= w
     else:
         raise SystemError("unknown in-place binary operator (code=%s)" % binop)
-    if control is not v:
-        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (_binop_name(binop), type(v), type(w)))
-    return control
+
+    # nothing else required; the operator will automatically fall back if 
+    # no in-place operation is available
+    return v
 
 
 @may_raise
@@ -491,6 +618,11 @@ def PyIter_Next(itObj):
         return native_null
 
 
+@may_raise
+def PyCallIter_New(it, sentinel):
+    return iter(it, sentinel)
+
+
 ##################### SEQUENCE
 
 
@@ -523,9 +655,44 @@ def PySequence_SetItem(obj, key, value):
     return 0
 
 
+@may_raise
+def PySequence_GetSlice(obj, low, high):
+    return obj[low:high]
+
+
 @may_raise(-1)
 def PySequence_Contains(haystack, needle):
     return needle in haystack
+
+
+@may_raise
+def PySequence_Repeat(obj, n):
+    if not PyTruffle_IsSequence(obj):
+        raise TypeError("'%p' object can't be repeated", obj)
+    return obj * n
+
+
+@may_raise
+def PySequence_InPlaceRepeat(obj, n):
+    if not PyTruffle_IsSequence(obj):
+        raise TypeError("'%p' object can't be repeated", obj)
+    obj *= n
+    return obj
+
+
+@may_raise
+def PySequence_Concat(s, o):
+    if not (PyTruffle_IsSequence(s) and PyTruffle_IsSequence(o)):
+        raise TypeError("'%p' object can't be repeated", s)
+    return s + o
+
+
+@may_raise
+def PySequence_InPlaceConcat(s, o):
+    if not (PyTruffle_IsSequence(s) and PyTruffle_IsSequence(o)):
+        raise TypeError("'%p' object can't be repeated", s)
+    s += o
+    return s
 
 
 ##################### UNICODE
@@ -597,6 +764,41 @@ def PyUnicode_Join(separator, seq):
     return separator.join(seq)
 
 
+@may_raise(-1)
+def PyUnicode_Compare(left, right):
+    if left == right:
+        return 0
+    elif left < right:
+        return -1
+    else:
+        return 1
+    
+_codecs_module = None
+
+@may_raise
+def PyUnicode_AsUnicodeEscapeString(string):
+    global _codecs_module
+    if not _codecs_module:
+        import _codecs as _codecs_module 
+    return _codecs_module.unicode_escape_encode(string)[0]
+
+@may_raise(-1)
+def PyUnicode_Tailmatch(s, substr, start, end, direction):
+    if direction > 0:
+        return 1 if s[start:end].endswith(substr) else 0
+    return 1 if s[start:end].startswith(substr) else 0
+
+
+@may_raise
+def PyUnicode_AsEncodedString(s, encoding, errors):
+    return s.encode(encoding, errors)
+
+
+@may_raise
+def PyUnicode_Replace(s, substr, replstr, count):
+    return s.replace(substr, replstr, count)
+
+
 ##################### CAPSULE
 
 
@@ -620,6 +822,14 @@ def PyCapsule_GetContext(obj):
     if not isinstance(obj, PyCapsule) or obj.pointer is None:
         raise ValueError("PyCapsule_GetContext called with invalid PyCapsule object")
     return obj.context
+
+
+@may_raise(-1)
+def PyCapsule_SetContext(obj, ptr):
+    if not isinstance(obj, PyCapsule):
+        raise ValueError("PyCapsule_SetContext called with invalid PyCapsule object")
+    obj.context = ptr
+    return 0
 
 
 @may_raise
@@ -653,14 +863,38 @@ def PyCapsule_IsValid(obj, name):
             obj.name == name)
 
 
+@may_raise
+def PyCapsule_GetName(obj):
+    return obj.name
+
+
 def PyModule_AddObject(m, k, v):
     m.__dict__[k] = v
     return None
 
 
-from posix import stat_result
+@may_raise
 def PyStructSequence_New(typ):
-    return stat_result([None] * stat_result.n_sequence_fields * 2)
+    n = len(typ._fields)
+    return typ(*([None]*n))
+
+
+namedtuple_type = None
+@may_raise
+def PyStructSequence_InitType2(type_name, type_doc, field_names, field_docs):
+    assert len(field_names) == len(field_docs)
+    global namedtuple_type
+    if not namedtuple_type:
+        from collections import namedtuple as namedtuple_type
+    new_type = namedtuple_type(type_name, field_names)
+    new_type.__doc__ = type_doc
+    for i in range(len(field_names)):
+        prop = getattr(new_type, field_names[i])
+        assert isinstance(prop, property)
+        prop.__doc__ = field_docs[i]
+    # ensure '_fields' attribute; required in 'PyStructSequence_New'
+    assert hasattr(new_type, "_fields")
+    return new_type
 
 
 def METH_UNSUPPORTED():
@@ -687,8 +921,8 @@ class cstaticmethod():
         return self.__func__(None, *args, **kwargs)
 
 
-def AddFunction(primary, name, cfunc, wrapper, doc, isclass=False, isstatic=False):
-    owner = to_java(primary)
+def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, isstatic=False):
+    owner = to_java_type(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
         func = PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, doc)
@@ -701,13 +935,14 @@ def AddFunction(primary, name, cfunc, wrapper, doc, isclass=False, isstatic=Fals
             func = cstaticmethod(func)
         PyTruffle_SetAttr(func, "__name__", name)
         PyTruffle_SetAttr(func, "__doc__", doc)
+        type_dict = to_java(tpDict)
         if name == "__init__":
             def __init__(self, *args, **kwargs):
                 if func(self, *args, **kwargs) != 0:
                     raise TypeError("__init__ failed")
-            object.__setattr__(owner, name, __init__)
+            type_dict[name] = __init__
         else:
-            object.__setattr__(owner, name, func)
+            type_dict[name] = func
 
 
 def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
@@ -719,32 +954,44 @@ def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
     return method
 
 
-def AddMember(primary, name, memberType, offset, canSet, doc):
+def PyMethod_New(func, self):
+    # TODO we should use the method constructor
+    # e.g. methodtype(func, self)
+    def bound_function(*args, **kwargs):
+        return func(self, *args, **kwargs)
+    return bound_function
+
+
+def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    pclass = to_java(primary)
+    pclass = to_java_type(primary)
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
         return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8)))
     member.getter(member_getter)
-    if to_java(canSet):
+    if canSet:
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
             setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))
         member.setter(member_setter)
     member.__doc__ = doc
-    object.__setattr__(pclass, name, member)
+    type_dict = to_java(tpDict)
+    type_dict[name] = member
 
 
 getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, setter, doc, closure):
-    pclass = to_java(primary)
+    pclass = to_java_type(primary)
     fset = fget = None
     if getter:
         getter_w = CreateFunction(name, getter, pclass)
         def member_getter(self):
-            return capi_to_java(getter_w(self, closure))
+            # NOTE: The 'to_java' is intended and correct because this call will do a downcall an 
+            # all args will go through 'to_sulong' then. So, if we don't convert the pointer 
+            # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
+            return capi_to_java(getter_w(self, to_java(closure)))
 
         fget = member_getter
     if setter:
@@ -776,10 +1023,6 @@ def PyObject_Repr(o):
     return repr(o)
 
 
-def PyTuple_New(size):
-    return (None,) * size
-
-
 @may_raise(-1)
 def PyTuple_Size(t):
     if not isinstance(t, tuple):
@@ -804,20 +1047,30 @@ def dict_from_list(lst):
     return d
 
 
+@may_raise
 def PyObject_Call(callee, args, kwargs):
     return callee(*args, **kwargs)
 
 
+@may_raise
 def PyObject_CallMethod(rcvr, method, args):
     # TODO(fa) that seems to be a workaround
     if type(args) is tuple:
         return getattr(rcvr, method)(*args)
-    return getattr(rcvr, method)(args)
+    elif args is not None:
+        return getattr(rcvr, method)(args)
+    return getattr(rcvr, method)()
 
 
 @may_raise
 def PyObject_GetItem(obj, key):
     return obj[key]
+
+
+@may_raise(-1)
+def PyObject_DelItem(obj, key):
+    del obj[key]
+    return 0
 
 
 @may_raise(1)
@@ -828,6 +1081,13 @@ def PyObject_SetItem(obj, key, value):
 
 def PyObject_IsInstance(obj, typ):
     if isinstance(obj, typ):
+        return 1
+    else:
+        return 0
+
+
+def PyObject_IsSubclass(derived, cls):
+    if issubclass(derived, cls):
         return 1
     else:
         return 0
@@ -853,13 +1113,13 @@ def PyObject_AsFileDescriptor(obj):
 
 
 @may_raise
-def PyObject_GetAttr(obj, attr):
-    return getattr(obj, attr)
+def PyObject_GenericGetAttr(obj, attr):
+    return object.__getattribute__(obj, attr)
 
 
 @may_raise(-1)
-def PyObject_SetAttr(obj, attr, value):
-    setattr(obj, attr, value)
+def PyObject_GenericSetAttr(obj, attr, value):
+    object.__setattr__(obj, attr, value)
     return 0
 
 
@@ -873,6 +1133,18 @@ def PyObject_HashNotImplemented(obj):
 
 def PyObject_IsTrue(obj):
     return 1 if obj else 0
+
+
+@may_raise
+def PyObject_Bytes(obj):
+    if type(obj) == bytes:
+        return obj
+    if hasattr(obj, "__bytes__"):
+        res = obj.__bytes__()
+        if not isinstance(res, bytes):
+            raise TypeError("__bytes__ returned non-bytes (type %s)" % type(res).__name__)
+    return PyBytes_FromObject(obj)
+
 
 ## EXCEPTIONS
 
@@ -910,25 +1182,29 @@ def PyErr_NewException(name, base, dictionary):
     return type(name, bases, dictionary)
 
 
+def PyErr_NewExceptionWithDoc(name, doc, base, dictionary):
+    new_exc_obj = PyErr_NewException(name, base, dictionary)
+    new_exc_obj.__doc__ = doc
+    return new_exc_obj
+
+
 def PyErr_Format(err_type, format_str, args):
     PyErr_CreateAndSetException(err_type, format_str % args)
 
 
-def PyErr_Fetch(consume, default):
+def PyErr_GetExcInfo():
     res = sys.exc_info()
     if res != (None, None, None):
-        # fetch 'consumes' the exception
-        if consume:
-            PyErr_Restore(None, None, None)
         return res
-    return default
+    return native_null
 
 
 def PyErr_PrintEx(set_sys_last_vars):
     typ, val, tb = sys.exc_info()
     if PyErr_GivenExceptionMatches(PyErr_Occurred(), SystemExit):
         _handle_system_exit()
-    typ, val, tb = PyErr_Fetch(True, (None, None, None))
+    fetched = PyErr_Fetch()
+    typ, val, tb = fetched if fetched is not native_null else (None, None, None)
     if typ is None:
         return
     if set_sys_last_vars:
@@ -971,7 +1247,8 @@ def _handle_system_exit():
 
 
 def PyErr_WriteUnraisable(obj):
-    typ, val, tb = PyErr_Fetch(True, (None, None, None))
+    fetched = PyErr_Fetch()
+    typ, val, tb = fetched if fetched is not native_null else (None, None, None)
     try:
         if sys.stderr is None:
             return
@@ -1039,6 +1316,21 @@ def _PyErr_Warn(message, category, stack_level, source):
     return None
 
 
+@may_raise
+def PyException_SetCause(exc, cause):
+    exc.__cause__ = cause
+
+
+@may_raise
+def PyException_GetContext(exc):
+    return exc.__context__
+
+
+@may_raise
+def PyException_SetContext(exc, context):
+    exc.__context__ = context
+
+
 ## FILE
 
 @may_raise(-1)
@@ -1070,9 +1362,14 @@ tbtype = type(sys._getframe(0).f_trace)
 
 @may_raise(-1)
 def PyTraceBack_Here(frame):
-    # skip this, the may_raise wrapper, the upcall wrapper, and PyTraceBack_Here itself
-    parentframe = sys._getframe(4)
-    return PyTruffleTraceBack_Here(parentframe.f_trace, frame)
+    exc, val, tb = sys.exc_info()
+    if val:
+        # CPython does a PyErr_Fetch and then PyErr_Restore with the newly
+        # created traceback. So if val is None, the restore would just do
+        # nothing. But if it is available, we basically just set the current
+        # __traceback__ to a traceback object wrapped around the exception here.
+        exc.__traceback__ = PyTruffleTraceBack_Here(frame, tb);
+    return 0
 
 
 ##################### C EXT HELPERS
@@ -1094,7 +1391,6 @@ def import_c_func(name):
     return CreateFunction(name, capi[name])
 
 
-capi = capi_to_java = None
 def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
@@ -1104,6 +1400,14 @@ def initialize_capi(capi_library):
 
     initialize_member_accessors()
     initialize_datetime_capi()
+    
+
+# run C API initialize hooks
+def run_capi_loaded_hooks(capi_library):
+    local_hooks = _capi_hooks.copy()
+    _capi_hooks.clear()
+    for hook in local_hooks:
+        hook()
 
 
 def import_native_memoryview(capi_library):
@@ -1115,11 +1419,11 @@ def initialize_datetime_capi():
     import datetime
 
     class PyDateTime_CAPI:
-        DateType = type(datetime.date)
-        DateTimeType = type(datetime.datetime)
-        TimeType = type(datetime.time)
-        DeltaType = type(datetime.timedelta)
-        TZInfoType = type(datetime.tzinfo)
+        DateType = datetime.date
+        DateTimeType = datetime.datetime
+        TimeType = datetime.time
+        DeltaType = datetime.timedelta
+        TZInfoType = datetime.tzinfo
 
         @staticmethod
         def Date_FromDate(y, m, d, typ):
@@ -1153,8 +1457,12 @@ def initialize_datetime_capi():
         def Time_FromTimeAndFold(h, m, s, us, tz, fold, typ):
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
-    import_c_func("set_PyDateTime_CAPI_typeid")(PyDateTime_CAPI)
+    import_c_func("set_PyDateTime_typeids")(PyDateTime_CAPI, PyDateTime_CAPI.DateType, PyDateTime_CAPI.DateTimeType, PyDateTime_CAPI.TimeType, PyDateTime_CAPI.DeltaType, PyDateTime_CAPI.TZInfoType)
     datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
+    datetime.date.__basicsize__ = import_c_func("get_PyDateTime_Date_basicsize")()
+    datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize")()
+    datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize")()
+    datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize")()
 
 
 ReadMemberFunctions = []
@@ -1198,10 +1506,19 @@ def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
 
 
-# called without landing; do conversion manually
-@may_raise(to_sulong(native_null))
-def PySlice_GetIndicesEx(start, stop, step, length):
-    return to_sulong(PyTruffleSlice_GetIndicesEx(start, stop, step, length))
+@may_raise
+def PyThread_allocate_lock():
+    return _thread.allocate_lock()
+
+
+@may_raise
+def PyThread_acquire_lock(lock, waitflag):
+    return 1 if lock.acquire(waitflag) else 0
+
+
+@may_raise
+def PyThread_release_lock(lock):
+    return lock.release()
 
 
 @may_raise
@@ -1212,3 +1529,18 @@ def PySlice_New(start, stop, step):
 @may_raise
 def PyMapping_Keys(obj):
     return list(obj.keys())
+
+
+@may_raise
+def PyMapping_Values(obj):
+    return list(obj.values())
+
+
+@may_raise
+def PyState_FindModule(module_name):
+    return sys.modules[module_name]
+
+
+@may_raise
+def PyEval_GetBuiltins():
+    return __builtins__.__dir__

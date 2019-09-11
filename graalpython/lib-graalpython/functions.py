@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,11 +39,8 @@
 
 @__builtin__
 def hasattr(obj, key):
-    try:
-        type(obj).__getattribute__(obj, key)
-        return True
-    except AttributeError:
-        return False
+    default = object()
+    return getattr(obj, key, default) is not default
 
 
 @__builtin__
@@ -120,7 +117,7 @@ def vars(*obj):
     called with no argument, return the variables bound in local scope."""
     if len(obj) == 0:
         # TODO inlining _caller_locals().items() in the dict comprehension does not work for now, investigate!
-        return __getframe__(1).f_locals
+        return __getframe__(0).f_locals
     elif len(obj) != 1:
         raise TypeError("vars() takes at most 1 argument.")
     try:
@@ -136,7 +133,7 @@ def format(value, format_spec=''):
     format_spec defaults to the empty string.
     See the Format Specification Mini-Language section of help('FORMATTING') for
     details."""
-    return value.__format__(format_spec)
+    return type(value).__format__(value, format_spec)
 
 
 @__builtin__

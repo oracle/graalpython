@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.YesNodeGen;
@@ -41,12 +42,10 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 @GenerateWrapper
@@ -79,11 +78,6 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
     @Override
     public abstract boolean executeBoolean(VirtualFrame frame);
 
-    public final boolean executeWith(Object value) {
-        return executeBoolean(null, value);
-    }
-
-    @ImportStatic(Message.class)
     public abstract static class YesNode extends CastToBooleanNode {
         @Child private HashingStorageNodes.LenNode lenNode;
 
@@ -128,15 +122,16 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         }
 
         @Specialization
-        boolean doObject(Object object,
+        boolean doObject(VirtualFrame frame, Object object,
+                        @Cached PRaiseNode raise,
                         @Cached("create(__BOOL__)") LookupAndCallUnaryNode callBoolNode) {
-            Object value = callBoolNode.executeObject(object);
+            Object value = callBoolNode.executeObject(frame, object);
             if (value instanceof Boolean) {
                 return (boolean) value;
             } else if (value instanceof PInt && isBuiltinClassProfile.profileObject((PInt) value, PythonBuiltinClassType.Boolean)) {
                 return ((PInt) value).isOne();
             } else {
-                throw raise(TypeError, "__bool__ should return bool, returned %p", value);
+                throw raise.raise(TypeError, "__bool__ should return bool, returned %p", value);
             }
         }
 
@@ -200,21 +195,22 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         }
 
         @Specialization(guards = "isForeignObject(operand)")
-        boolean doForeignObject(TruffleObject operand,
+        boolean doForeignObject(VirtualFrame frame, TruffleObject operand,
                         @Cached("createIfTrueNode()") CastToBooleanNode yesNode) {
-            return !yesNode.executeWith(operand);
+            return !yesNode.executeBoolean(frame, operand);
         }
 
         @Specialization(guards = "!isForeignObject(object)")
-        boolean doObject(Object object,
+        boolean doObject(VirtualFrame frame, Object object,
+                        @Cached PRaiseNode raise,
                         @Cached("create(__BOOL__)") LookupAndCallUnaryNode callBoolNode) {
-            Object value = callBoolNode.executeObject(object);
+            Object value = callBoolNode.executeObject(frame, object);
             if (value instanceof Boolean) {
                 return !((boolean) value);
             } else if (value instanceof PInt && isBuiltinClassProfile.profileObject((PInt) value, PythonBuiltinClassType.Boolean)) {
                 return ((PInt) value).isZero();
             } else {
-                throw raise(TypeError, "__bool__ should return bool, returned %p", value);
+                throw raise.raise(TypeError, "__bool__ should return bool, returned %p", value);
             }
         }
 

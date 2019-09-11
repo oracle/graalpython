@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,9 +45,6 @@ __codec_error_registry__ = {}
 
 @__builtin__
 def register(search_function):
-    if not __codec_search_path__:
-        __codec_registry_init__()
-
     if not hasattr(search_function, "__call__"):
         raise TypeError("argument must be callable")
     __codec_search_path__.append(search_function)
@@ -59,9 +56,6 @@ def __normalizestring(string):
 
 @__builtin__
 def lookup(encoding):
-    if not __codec_search_path__:
-        __codec_registry_init__()
-
     normalized_encoding = __normalizestring(encoding)
     # First, try to lookup the name in the registry dictionary
     result = __codec_search_cache__.get(normalized_encoding)
@@ -134,14 +128,6 @@ def lookup_error(errors='strict'):
     if handler is None:
         raise LookupError('unknown error handler name %s'.format(errors))
     return handler
-
-
-def __codec_registry_init__():
-    # TODO: error method handlers setup
-    try:
-        import encodings
-    except Exception:
-        raise RuntimeError("can't initialize codec registry")
 
 
 # TODO implement the encode / decode methods
@@ -296,11 +282,6 @@ def charmap_decode(string, errors=None, mapping=None):
 
 
 @__builtin__
-def charmap_build(mapping):
-    raise NotImplementedError("charmap_build")
-
-
-@__builtin__
 def readbuffer_encode(data, errors=None):
     raise NotImplementedError("readbuffer_encode")
 
@@ -333,3 +314,18 @@ def code_page_encode(code_page, string, errors=None):
 @__builtin__
 def code_page_decode(code_page, string, errors=None, final=False):
     raise NotImplementedError("code_page_decode")
+
+
+# at this point during context startup, sys.path isn't initialized, so we need
+# to set it up
+import sys
+sys.path.append(sys.graal_python_stdlib_home)
+try:
+    import encodings
+    # we import the below two encodings, because they are often used so it's
+    # useful to have them available preloaded
+    import encodings.ascii
+    import encodings.utf_8
+finally:
+    assert len(sys.path) == 1
+    sys.path.pop()

@@ -1,0 +1,60 @@
+ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield fr...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,26]`def f(): f((yield fr...`
+    ExpressionWithSideEffect SourceSection: [0,26]`def f(): f((yield fr...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,26]`def f(): f((yield fr...`
+          Identifier: f
+          GeneratorFunctionDefinitionNode Name: f SourceSection: None
+            FrameDescriptor: 1 slots [<return_val>]
+            Active Flags: 2
+            For Nodes: 1
+            Block Nodes: 0
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,26]`def f(): f((yield fr...`
+              Name: f
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,26]`def f(): f((yield fr...`
+                GeneratorReturnTargetNode SourceSection: [0,26]`def f(): f((yield fr...`
+                  flagSlot: 1
+                  ExpressionStatementNode SourceSection: [9,26]`f((yield from 1))`
+                    PythonCallNodeGen SourceSection: [9,26]`f((yield from 1))`
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      YieldFromNode SourceSection: [12,24]`yield from 1`
+                        GetIteratorNodeGen SourceSection: None
+                        GetNextNode SourceSection: None
+                          LookupAndCallUnaryNodeGen SourceSection: None
+                            Op: __next__
+                        GeneratorAccessNode SourceSection: None
+                        IntegerLiteralNode SourceSection: [23,24]`1`
+                          Value: 1
+                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        Identifier: f
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  BlockNode SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

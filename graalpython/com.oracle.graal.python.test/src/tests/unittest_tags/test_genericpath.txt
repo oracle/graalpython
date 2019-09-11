@@ -1,0 +1,2 @@
+*GenericTest.test_commonprefix
+*GenericTest.test_exists

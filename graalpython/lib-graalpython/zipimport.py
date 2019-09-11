@@ -39,3 +39,7 @@
 
 import sys
 sys.path_hooks.append(zipimporter)
+
+
+zipimporter.create_module = lambda self, spec: None
+zipimporter.exec_module = lambda self, module: exec(self.get_code(module.__name__), module.__dict__)

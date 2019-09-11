@@ -1,0 +1,14 @@
+ModuleRootNode Name: <module 'simpleExpression03'> SourceSection: [0,14]`'ahoj'; 2; 1.0`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: `ahoj`
+  InnerRootNode SourceSection: [0,14]`'ahoj'; 2; 1.0`
+    ExpressionWithSideEffects SourceSection: [0,14]`'ahoj'; 2; 1.0`
+      ExpressionStatementNode SourceSection: [0,6]`'ahoj'`
+        StringLiteralNode SourceSection: [0,6]`'ahoj'`
+      ExpressionStatementNode SourceSection: [8,9]`2`
+        IntegerLiteralNode SourceSection: [8,9]`2`
+          Value: 2
+      DoubleLiteralNode SourceSection: [11,14]`1.0`

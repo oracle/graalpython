@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,11 +49,12 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,13 +62,14 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateNodeFactory
 public abstract class TupleNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructTupleNode extends PNodeWithContext {
-
+        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
         @Child private GetLazyClassNode getClassNode;
 
         protected LazyPythonClass getClass(Object value) {
@@ -78,45 +80,45 @@ public abstract class TupleNodes {
             return getClassNode.execute(value);
         }
 
-        public final PTuple execute(Object value) {
-            return execute(PythonBuiltinClassType.PTuple, value);
+        public final PTuple execute(VirtualFrame frame, Object value) {
+            return execute(frame, PythonBuiltinClassType.PTuple, value);
         }
 
-        public abstract PTuple execute(LazyPythonClass cls, Object value);
+        public abstract PTuple execute(VirtualFrame frame, LazyPythonClass cls, Object value);
 
         @Specialization(guards = "isNoValue(none)")
-        public PTuple tuple(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
-            return factory().createEmptyTuple(cls);
+        PTuple tuple(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
+            return factory.createEmptyTuple(cls);
         }
 
         @Specialization
-        public PTuple tuple(LazyPythonClass cls, String arg) {
+        PTuple tuple(LazyPythonClass cls, String arg) {
             Object[] values = new Object[arg.length()];
             for (int i = 0; i < arg.length(); i++) {
                 values[i] = String.valueOf(arg.charAt(i));
             }
-            return factory().createTuple(cls, values);
+            return factory.createTuple(cls, values);
         }
 
         @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(getClass(iterable))"})
-        public PTuple tuple(@SuppressWarnings("unused") LazyPythonClass cls, PTuple iterable) {
+        PTuple tuple(@SuppressWarnings("unused") LazyPythonClass cls, PTuple iterable) {
             return iterable;
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable)"})
-        public PTuple tuple(LazyPythonClass cls, Object iterable,
+        PTuple tuple(VirtualFrame frame, LazyPythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
-            Object iterator = getIterator.executeWith(iterable);
+            Object iterator = getIterator.executeWith(frame, iterable);
             ArrayList<Object> internalStorage = makeList();
             while (true) {
                 try {
-                    addToList(internalStorage, next.execute(iterator));
+                    addToList(internalStorage, next.execute(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
-                    return factory().createTuple(cls, listToArray(internalStorage));
+                    return factory.createTuple(cls, listToArray(internalStorage));
                 }
             }
         }

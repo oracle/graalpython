@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,11 +30,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class DictLiteralNode extends LiteralNode {
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children private final ExpressionNode[] keys;
     @Children private final ExpressionNode[] values;
     @Child private HashingStorageNodes.SetItemNode setItemNode;
@@ -49,20 +51,50 @@ public final class DictLiteralNode extends LiteralNode {
         assert keys.length == values.length;
     }
 
-    @Override
+    static final class Keys {
+        public final Object[] keys;
+        public final boolean allStrings;
+
+        Keys(Object[] keys, boolean allStrings) {
+            this.keys = keys;
+            this.allStrings = allStrings;
+        }
+    }
+
     @ExplodeLoop
-    public PDict execute(VirtualFrame frame) {
-        HashingStorage dictStorage = PDict.createNewStorage(true, values.length);
+    private Keys evalKeys(VirtualFrame frame) {
+        boolean allStrings = true;
+        Object[] evalKeys = new Object[this.keys.length];
         for (int i = 0; i < values.length; i++) {
-            final Object key = keys[i].execute(frame);
+            evalKeys[i] = keys[i].execute(frame);
+            if (!(evalKeys[i] instanceof String)) {
+                allStrings = false;
+            }
+        }
+        return new Keys(evalKeys, allStrings);
+    }
+
+    @ExplodeLoop
+    private HashingStorage evalAndSetValues(VirtualFrame frame, HashingStorage dictStorage, Keys evalKeys) {
+        HashingStorage storage = dictStorage;
+        for (int i = 0; i < values.length; i++) {
             final Object val = values[i].execute(frame);
 
             if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 setItemNode = insert(SetItemNode.create());
             }
-            dictStorage = setItemNode.execute(dictStorage, key, val);
+
+            storage = setItemNode.execute(frame, storage, evalKeys.keys[i], val);
         }
-        return factory().createDict(dictStorage);
+        return storage;
+    }
+
+    @Override
+    public PDict execute(VirtualFrame frame) {
+        Keys evalKeys = evalKeys(frame);
+        HashingStorage dictStorage = PDict.createNewStorage(evalKeys.allStrings, evalKeys.keys.length);
+        dictStorage = evalAndSetValues(frame, dictStorage, evalKeys);
+        return factory.createDict(dictStorage);
     }
 }

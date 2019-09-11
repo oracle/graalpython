@@ -1,0 +1,53 @@
+ModuleRootNode Name: <module 'functionDef03'> SourceSection: [0,35]`↵def foo():↵    a = ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,35]`↵def foo():↵    a = ...`
+    ExpressionWithSideEffect SourceSection: [0,35]`↵def foo():↵    a = ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [1,35]`def foo():↵    a = 1...`
+          Identifier: foo
+          FunctionDefinitionNode Name: foo SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [1,35]`def foo():↵    a = 1...`
+              Name: foo
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [a, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [1,35]`def foo():↵    a = 1...`
+                ReturnTargetNode SourceSection: [1,35]`def foo():↵    a = 1...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: [16,22]`a = 10`
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,a,Illegal]
+                        IntegerLiteralNode SourceSection: [20,22]`10`
+                          Value: 10
+                      FrameReturnNode SourceSection: [27,35]`return a`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [1,<return_val>,Illegal]
+                          ReadLocalVariableNode SourceSection: [34,35]`a`
+                            Frame: [0,a,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

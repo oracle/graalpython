@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.ArrayList;
 
-import com.oracle.truffle.api.Assumption;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Layout;
@@ -143,7 +143,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         return store;
     }
 
-    public static class FastDictStorage extends DynamicObjectStorage {
+    public static final class FastDictStorage extends DynamicObjectStorage {
         public FastDictStorage() {
         }
 
@@ -154,36 +154,53 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         @Override
         @TruffleBoundary
         public HashingStorage copy(Equivalence eq) {
-            assert eq == HashingStorage.DEFAULT_EQIVALENCE;
             return new FastDictStorage(getStore().copy(getStore().getShape()));
         }
     }
 
-    public static class PythonObjectDictStorage extends DynamicObjectStorage {
-        private final Assumption dictUnsetOrSameAsStorage;
-
+    public static final class PythonObjectDictStorage extends DynamicObjectStorage {
         public PythonObjectDictStorage(DynamicObject store) {
-            this(store, null);
-        }
-
-        public PythonObjectDictStorage(DynamicObject store, Assumption dictUnsetOrSameAsStorage) {
             super(store);
-            this.dictUnsetOrSameAsStorage = dictUnsetOrSameAsStorage;
-        }
-
-        public Assumption getDictUnsetOrSameAsStorage() {
-            return dictUnsetOrSameAsStorage;
         }
 
         @Override
         @TruffleBoundary
         public HashingStorage copy(Equivalence eq) {
             assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-            return new PythonObjectDictStorage(getStore().copy(getStore().getShape()));
+            return new FastDictStorage(getStore().copy(getStore().getShape()));
         }
     }
 
-    public static class PythonObjectHybridDictStorage extends DynamicObjectStorage {
+    /**
+     * Special storage that is used in the type dict (i.e. {@code tp_dict}) of native types. Writing
+     * to this storage will cause the appropriate <it>attribute final</it> assumptions to be
+     * invalidated. Therefore, this storage links to the {@link MroSequenceStorage} of the type.
+     */
+    public static final class PythonNativeObjectDictStorage extends DynamicObjectStorage {
+        private final MroSequenceStorage mro;
+
+        public PythonNativeObjectDictStorage(DynamicObject store, MroSequenceStorage mro) {
+            super(store);
+            this.mro = mro;
+        }
+
+        public MroSequenceStorage getMro() {
+            return mro;
+        }
+
+        public void invalidateAttributeInMROFinalAssumptions(String name) {
+            mro.invalidateAttributeInMROFinalAssumptions(name);
+        }
+
+        @Override
+        @TruffleBoundary
+        public HashingStorage copy(Equivalence eq) {
+            assert eq == HashingStorage.DEFAULT_EQIVALENCE;
+            return new FastDictStorage(getStore().copy(getStore().getShape()));
+        }
+    }
+
+    public static final class PythonObjectHybridDictStorage extends DynamicObjectStorage {
         private final EconomicMapStorage nonAttributesStorage;
 
         public PythonObjectHybridDictStorage(PythonObjectDictStorage storage) {

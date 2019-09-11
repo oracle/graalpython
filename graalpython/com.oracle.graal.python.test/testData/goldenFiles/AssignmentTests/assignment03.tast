@@ -1,0 +1,34 @@
+ModuleRootNode Name: <module 'assignment03'> SourceSection: [0,25]`a = 0↵b = a↵c = a + ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,25]`a = 0↵b = a↵c = a + ...`
+    ExpressionWithSideEffects SourceSection: [0,25]`a = 0↵b = a↵c = a + ...`
+      WriteNameNodeGen SourceSection: [0,5]`a = 0`
+        Identifier: a
+        IntegerLiteralNode SourceSection: [4,5]`0`
+          Value: 0
+      WriteNameNodeGen SourceSection: [6,11]`b = a`
+        Identifier: b
+        ReadNameNodeGen SourceSection: [10,11]`a`
+          Identifier: a
+      ExpressionWithSideEffect SourceSection: None
+        Expression:
+          EmptyNode SourceSection: None
+        SideEffect:
+          WriteNameNodeGen SourceSection: [12,25]`c = a + a + b`
+            Identifier: c
+            BinaryArithmeticExpression SourceSection: [16,25]`a + a + b`
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __add__
+              BinaryArithmeticExpression SourceSection: [16,21]`a + a`
+                LookupAndCallBinaryNodeGen SourceSection: None
+                  Op: __add__
+                ReadNameNodeGen SourceSection: [16,17]`a`
+                  Identifier: a
+                ReadNameNodeGen SourceSection: [20,21]`a`
+                  Identifier: a
+              ReadNameNodeGen SourceSection: [24,25]`b`
+                Identifier: b

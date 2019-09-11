@@ -1,0 +1,23 @@
+ModuleRootNode Name: <module 'call06'> SourceSection: [0,23]`foo(arg1 = 1, arg2 =...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,23]`foo(arg1 = 1, arg2 =...`
+    PythonCallNodeGen SourceSection: [0,23]`foo(arg1 = 1, arg2 =...`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      KeywordArgumentsNodeGen SourceSection: None
+        KeywordLiteralNode SourceSection: None
+          IntegerLiteralNode SourceSection: [11,12]`1`
+            Value: 1
+        KeywordLiteralNode SourceSection: None
+          IntegerLiteralNode SourceSection: [21,22]`2`
+            Value: 2
+        CompactKeywordsNodeGen SourceSection: None
+        ExecuteKeywordStarargsNodeGen SourceSection: None
+          EmptyNode SourceSection: None
+      ReadNameNodeGen SourceSection: None
+        Identifier: foo

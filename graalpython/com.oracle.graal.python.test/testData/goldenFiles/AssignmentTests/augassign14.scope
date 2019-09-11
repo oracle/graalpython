@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: _method
+        Kind: Function
+        FrameDescriptor: [args, rest, keywords, cls_or_self, <>temp4, <>temp5, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty

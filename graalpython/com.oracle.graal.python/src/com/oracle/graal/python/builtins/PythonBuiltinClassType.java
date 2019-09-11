@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,25 +29,37 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
+@ExportLibrary(InteropLibrary.class)
 public enum PythonBuiltinClassType implements LazyPythonClass {
 
-    TruffleObject("truffle_object"),
-    Boolean("bool", "builtins"),
+    ForeignObject(BuiltinNames.FOREIGN),
+    Boolean("bool", BuiltinNames.BUILTINS),
     GetSetDescriptor("get_set_desc"),
     PArray("array", "array"),
     PArrayIterator("arrayiterator"),
     PIterator("iterator"),
     PBuiltinFunction("method_descriptor"),
     PBuiltinMethod("builtin_function_or_method"),
-    PByteArray("bytearray", "builtins"),
-    PBytes("bytes", "builtins"),
+    PByteArray("bytearray", BuiltinNames.BUILTINS),
+    PBytes("bytes", BuiltinNames.BUILTINS),
     PCell("cell"),
-    PComplex("complex", "builtins"),
-    PDict("dict", "builtins"),
+    PComplex("complex", BuiltinNames.BUILTINS),
+    PDict("dict", BuiltinNames.BUILTINS),
     PDictKeysView("dict_keys"),
     PDictItemsIterator("dict_itemsiterator"),
     PDictItemsView("dict_items"),
@@ -55,121 +67,124 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PDictValuesIterator("dict_valuesiterator"),
     PDictValuesView("dict_values"),
     PEllipsis("ellipsis"),
-    PEnumerate("enumerate", "builtins"),
-    PFloat("float", "builtins"),
+    PEnumerate("enumerate", BuiltinNames.BUILTINS),
+    PFloat("float", BuiltinNames.BUILTINS),
     PFrame("frame"),
-    PFrozenSet("frozenset", "builtins"),
+    PFrozenSet("frozenset", BuiltinNames.BUILTINS),
     PFunction("function"),
     PGenerator("generator"),
-    PInt("int", "builtins"),
-    PList("list", "builtins"),
+    PInt("int", BuiltinNames.BUILTINS),
+    PList("list", BuiltinNames.BUILTINS),
     PMappingproxy("mappingproxy"),
-    PMemoryView("memoryview", "builtins"),
+    PMemoryView("memoryview", BuiltinNames.BUILTINS),
     PMethod("method"),
+    PMMap("mmap", "mmap"),
     PNone("NoneType"),
     PNotImplemented("NotImplementedType"),
     PRandom("Random", "_random"),
-    PRange("range", "builtins"),
+    PRange("range", BuiltinNames.BUILTINS),
     PReferenceType("ReferenceType", "_weakref"),
     PSentinelIterator("callable_iterator"),
     PForeignArrayIterator("foreign_iterator"),
-    PReverseIterator("reversed", "builtins"),
-    PSet("set", "builtins"),
-    PSlice("slice", "builtins"),
-    PString("str", "builtins"),
+    PReverseIterator("reversed", BuiltinNames.BUILTINS),
+    PSet("set", BuiltinNames.BUILTINS),
+    PSlice("slice", BuiltinNames.BUILTINS),
+    PString("str", BuiltinNames.BUILTINS),
     PTraceback("traceback"),
-    PTuple("tuple", "builtins"),
-    PythonClass("type", "builtins"),
+    PTuple("tuple", BuiltinNames.BUILTINS),
+    PythonClass("type", BuiltinNames.BUILTINS),
     PythonModule("module"),
-    PythonObject("object", "builtins"),
-    Super("super", "builtins"),
+    PythonObject("object", BuiltinNames.BUILTINS),
+    Super("super", BuiltinNames.BUILTINS),
     PCode("code"),
-    PZip("zip", "builtins"),
+    PZip("zip", BuiltinNames.BUILTINS),
     PZipImporter("zipimporter", "zipimport"),
-    PBuffer("buffer", "builtins"),
+    PBuffer("buffer", BuiltinNames.BUILTINS),
     PThread("start_new_thread", "_thread"),
     PLock("LockType", "_thread"),
     PRLock("RLock", "_thread"),
     PSocket("socket", "_socket"),
-    PStaticmethod("staticmethod", "builtins"),
-    PClassmethod("classmethod", "builtins"),
+    PStaticmethod("staticmethod", BuiltinNames.BUILTINS),
+    PClassmethod("classmethod", BuiltinNames.BUILTINS),
     PScandirIterator("ScandirIterator", "posix"),
     PDirEntry("DirEntry", "posix"),
+    PLZMACompressor("LZMACompressor", "_lzma"),
+    PLZMADecompressor("LZMADecompressor", "_lzma"),
 
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception
-    PBaseException("BaseException", "builtins"),
-    SystemExit("SystemExit", "builtins"),
-    KeyboardInterrupt("KeyboardInterrupt", "builtins"),
-    GeneratorExit("GeneratorExit", "builtins"),
-    Exception("Exception", "builtins"),
-    StopIteration("StopIteration", "builtins"),
-    ArithmeticError("ArithmeticError", "builtins"),
-    FloatingPointError("FloatingPointError", "builtins"),
-    OverflowError("OverflowError", "builtins"),
-    ZeroDivisionError("ZeroDivisionError", "builtins"),
-    AssertionError("AssertionError", "builtins"),
-    AttributeError("AttributeError", "builtins"),
-    BufferError("BufferError", "builtins"),
-    EOFError("EOFError", "builtins"),
-    ImportError("ImportError", "builtins"),
-    ModuleNotFoundError("ModuleNotFoundError", "builtins"),
-    LookupError("LookupError", "builtins"),
-    IndexError("IndexError", "builtins"),
-    KeyError("KeyError", "builtins"),
-    MemoryError("MemoryError", "builtins"),
-    NameError("NameError", "builtins"),
-    UnboundLocalError("UnboundLocalError", "builtins"),
-    OSError("OSError", "builtins"),
-    IOError("IOError", "builtins"),
-    BlockingIOError("BlockingIOError", "builtins"),
-    ChildProcessError("ChildProcessError", "builtins"),
-    ConnectionError("ConnectionError", "builtins"),
-    BrokenPipeError("BrokenPipeError", "builtins"),
-    ConnectionAbortedError("ConnectionAbortedError", "builtins"),
-    ConnectionRefusedError("ConnectionRefusedError", "builtins"),
-    ConnectionResetError("ConnectionResetError", "builtins"),
-    FileExistsError("FileExistsError", "builtins"),
-    FileNotFoundError("FileNotFoundError", "builtins"),
-    InterruptedError("InterruptedError", "builtins"),
-    IsADirectoryError("IsADirectoryError", "builtins"),
-    NotADirectoryError("NotADirectoryError", "builtins"),
-    PermissionError("PermissionError", "builtins"),
-    ProcessLookupError("ProcessLookupError", "builtins"),
-    TimeoutError("TimeoutError", "builtins"),
+    PBaseException("BaseException", BuiltinNames.BUILTINS),
+    SystemExit("SystemExit", BuiltinNames.BUILTINS),
+    KeyboardInterrupt("KeyboardInterrupt", BuiltinNames.BUILTINS),
+    GeneratorExit("GeneratorExit", BuiltinNames.BUILTINS),
+    Exception("Exception", BuiltinNames.BUILTINS),
+    StopIteration("StopIteration", BuiltinNames.BUILTINS),
+    ArithmeticError("ArithmeticError", BuiltinNames.BUILTINS),
+    FloatingPointError("FloatingPointError", BuiltinNames.BUILTINS),
+    OverflowError("OverflowError", BuiltinNames.BUILTINS),
+    ZeroDivisionError("ZeroDivisionError", BuiltinNames.BUILTINS),
+    AssertionError("AssertionError", BuiltinNames.BUILTINS),
+    AttributeError("AttributeError", BuiltinNames.BUILTINS),
+    BufferError("BufferError", BuiltinNames.BUILTINS),
+    EOFError("EOFError", BuiltinNames.BUILTINS),
+    ImportError("ImportError", BuiltinNames.BUILTINS),
+    ModuleNotFoundError("ModuleNotFoundError", BuiltinNames.BUILTINS),
+    LookupError("LookupError", BuiltinNames.BUILTINS),
+    IndexError("IndexError", BuiltinNames.BUILTINS),
+    KeyError("KeyError", BuiltinNames.BUILTINS),
+    MemoryError("MemoryError", BuiltinNames.BUILTINS),
+    NameError("NameError", BuiltinNames.BUILTINS),
+    UnboundLocalError("UnboundLocalError", BuiltinNames.BUILTINS),
+    OSError("OSError", BuiltinNames.BUILTINS),
+    BlockingIOError("BlockingIOError", BuiltinNames.BUILTINS),
+    ChildProcessError("ChildProcessError", BuiltinNames.BUILTINS),
+    ConnectionError("ConnectionError", BuiltinNames.BUILTINS),
+    BrokenPipeError("BrokenPipeError", BuiltinNames.BUILTINS),
+    ConnectionAbortedError("ConnectionAbortedError", BuiltinNames.BUILTINS),
+    ConnectionRefusedError("ConnectionRefusedError", BuiltinNames.BUILTINS),
+    ConnectionResetError("ConnectionResetError", BuiltinNames.BUILTINS),
+    FileExistsError("FileExistsError", BuiltinNames.BUILTINS),
+    FileNotFoundError("FileNotFoundError", BuiltinNames.BUILTINS),
+    InterruptedError("InterruptedError", BuiltinNames.BUILTINS),
+    IsADirectoryError("IsADirectoryError", BuiltinNames.BUILTINS),
+    NotADirectoryError("NotADirectoryError", BuiltinNames.BUILTINS),
+    PermissionError("PermissionError", BuiltinNames.BUILTINS),
+    ProcessLookupError("ProcessLookupError", BuiltinNames.BUILTINS),
+    TimeoutError("TimeoutError", BuiltinNames.BUILTINS),
     ZipImportError("ZipImportError", "zipimport"),
     ZLibError("error", "zlib"),
+    LZMAError("LZMAError", "_lzma"),
 
     // todo: all OS errors
 
-    ReferenceError("ReferenceError", "builtins"),
-    RuntimeError("RuntimeError", "builtins"),
-    NotImplementedError("NotImplementedError", "builtins"),
-    SyntaxError("SyntaxError", "builtins"),
-    IndentationError("IndentationError", "builtins"),
-    TabError("TabError", "builtins"),
-    SystemError("SystemError", "builtins"),
-    TypeError("TypeError", "builtins"),
-    ValueError("ValueError", "builtins"),
-    UnicodeError("UnicodeError", "builtins"),
-    UnicodeDecodeError("UnicodeDecodeError", "builtins"),
-    UnicodeEncodeError("UnicodeEncodeError", "builtins"),
-    UnicodeTranslateError("UnicodeTranslateError", "builtins"),
-    RecursionError("RecursionError", "builtins"),
+    ReferenceError("ReferenceError", BuiltinNames.BUILTINS),
+    RuntimeError("RuntimeError", BuiltinNames.BUILTINS),
+    NotImplementedError("NotImplementedError", BuiltinNames.BUILTINS),
+    SyntaxError("SyntaxError", BuiltinNames.BUILTINS),
+    IndentationError("IndentationError", BuiltinNames.BUILTINS),
+    TabError("TabError", BuiltinNames.BUILTINS),
+    SystemError("SystemError", BuiltinNames.BUILTINS),
+    TypeError("TypeError", BuiltinNames.BUILTINS),
+    ValueError("ValueError", BuiltinNames.BUILTINS),
+    UnicodeError("UnicodeError", BuiltinNames.BUILTINS),
+    UnicodeDecodeError("UnicodeDecodeError", BuiltinNames.BUILTINS),
+    UnicodeEncodeError("UnicodeEncodeError", BuiltinNames.BUILTINS),
+    UnicodeTranslateError("UnicodeTranslateError", BuiltinNames.BUILTINS),
+    RecursionError("RecursionError", BuiltinNames.BUILTINS),
 
     // warnings
-    Warning("Warning", "builtins"),
-    BytesWarning("BytesWarning", "builtins"),
-    DeprecationWarning("DeprecationWarning", "builtins"),
-    FutureWarning("FutureWarning", "builtins"),
-    ImportWarning("ImportWarning", "builtins"),
-    PendingDeprecationWarning("PendingDeprecationWarning", "builtins"),
-    ResourceWarning("ResourceWarning", "builtins"),
-    RuntimeWarning("RuntimeWarning", "builtins"),
-    SyntaxWarning("SyntaxWarning", "builtins"),
-    UnicodeWarning("UnicodeWarning", "builtins"),
-    UserWarning("UserWarning", "builtins");
+    Warning("Warning", BuiltinNames.BUILTINS),
+    BytesWarning("BytesWarning", BuiltinNames.BUILTINS),
+    DeprecationWarning("DeprecationWarning", BuiltinNames.BUILTINS),
+    FutureWarning("FutureWarning", BuiltinNames.BUILTINS),
+    ImportWarning("ImportWarning", BuiltinNames.BUILTINS),
+    PendingDeprecationWarning("PendingDeprecationWarning", BuiltinNames.BUILTINS),
+    ResourceWarning("ResourceWarning", BuiltinNames.BUILTINS),
+    RuntimeWarning("RuntimeWarning", BuiltinNames.BUILTINS),
+    SyntaxWarning("SyntaxWarning", BuiltinNames.BUILTINS),
+    UnicodeWarning("UnicodeWarning", BuiltinNames.BUILTINS),
+    UserWarning("UserWarning", BuiltinNames.BUILTINS);
 
     private final String name;
     private final Shape instanceShape;
@@ -181,13 +196,14 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PythonBuiltinClassType(String name, String publicInModule) {
         this.name = name;
         this.publicInModule = publicInModule;
-        this.instanceShape = PythonLanguage.freshShape();
+        this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
     }
 
     PythonBuiltinClassType(String name) {
         this(name, null);
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -253,7 +269,6 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         NameError.base = Exception;
         UnboundLocalError.base = NameError;
         OSError.base = Exception;
-        IOError.base = Exception;
         BlockingIOError.base = OSError;
         ChildProcessError.base = OSError;
         ConnectionError.base = OSError;
@@ -271,6 +286,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         TimeoutError.base = OSError;
         ZipImportError.base = ImportError;
         ZLibError.base = Exception;
+        LZMAError.base = Exception;
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;
@@ -299,5 +315,129 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         SyntaxWarning.base = Warning;
         UnicodeWarning.base = Warning;
         UserWarning.base = Warning;
+    }
+
+    /* InteropLibrary messages */
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean isExecutable() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object execute(Object[] arguments,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+        return lib.execute(context.getCore().lookupType(this), arguments);
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean isInstantiable() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object instantiate(Object[] arguments,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+        return lib.instantiate(context.getCore().lookupType(this), arguments);
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean hasMembers() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object getMembers(boolean includeInternal,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
+        return lib.getMembers(context.getCore().lookupType(this), includeInternal);
+    }
+
+    @ExportMessage
+    public boolean isMemberReadable(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        return lib.isMemberReadable(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public Object readMember(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException {
+        return lib.readMember(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public boolean isMemberModifiable(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        return lib.isMemberModifiable(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public boolean isMemberInsertable(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        return lib.isMemberInsertable(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public void writeMember(String key, Object value,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
+        lib.writeMember(context.getCore().lookupType(this), key, value);
+    }
+
+    @ExportMessage
+    public boolean isMemberRemovable(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        return lib.isMemberRemovable(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public void removeMember(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException {
+        lib.removeMember(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public boolean isMemberInvocable(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        return lib.isMemberInvocable(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public Object invokeMember(String key, Object[] arguments,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, ArityException, UnknownIdentifierException, UnsupportedTypeException {
+        return lib.invokeMember(context.getCore().lookupType(this), key, arguments);
+    }
+
+    @ExportMessage
+    public boolean isMemberInternal(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        return lib.isMemberInternal(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public boolean hasMemberReadSideEffects(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        return lib.hasMemberReadSideEffects(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    public boolean hasMemberWriteSideEffects(String key,
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        return lib.hasMemberWriteSideEffects(context.getCore().lookupType(this), key);
     }
 }

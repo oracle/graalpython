@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,37 +68,32 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "readline")
 public class ReadlineModuleBuiltins extends PythonBuiltins {
-    private static final String DATA = "__data__";
+    private static final HiddenKey DATA = new HiddenKey("__data__");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ReadlineModuleBuiltinsFactory.getFactories();
     }
 
-    private static final class LocalData implements TruffleObject {
+    private static final class LocalData {
         private final HashMap<String, String> bindings = new HashMap<>();
         private final List<String> history = new ArrayList<>();
         protected Object completer = null;
-        public boolean autoHistory = true;
-
-        public ForeignAccess getForeignAccess() {
-            return null;
-        }
+        protected boolean autoHistory = true;
+        protected String completerDelims = null;
     }
 
     @Override
-    public void initialize(PythonCore core) {
-        super.initialize(core);
-        LocalData readlineData = new LocalData();
-        builtinConstants.put(DATA, readlineData);
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        core.lookupBuiltinModule("readline").setAttribute(DATA, new LocalData());
     }
 
-    @Builtin(name = "get_completer", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "get_completer", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GetCompleterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -113,7 +108,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "set_completer", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "set_completer", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SetCompleterNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -125,7 +120,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "parse_and_bind", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "parse_and_bind", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ParseAndBindNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -142,7 +137,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "read_init_file", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "read_init_file", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ReadInitNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -151,7 +146,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_current_history_length", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "get_current_history_length", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GetHistoryLengthNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -163,7 +158,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_history_item", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "get_history_item", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SetHistoryLengthNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -179,7 +174,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "replace_history_item", fixedNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "replace_history_item", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ReplaceItemNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -201,7 +196,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "remove_history_item", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "remove_history_item", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class DeleteItemNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -217,7 +212,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "add_history", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "add_history", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class AddHistoryNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -236,7 +231,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "read_history_file", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "read_history_file", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ReadHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -251,7 +246,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
-                BufferedReader reader = getContext().getEnv().getTruffleFile(path).newBufferedReader();
+                BufferedReader reader = getContext().getEnv().getPublicTruffleFile(path).newBufferedReader();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     data.history.add(line);
@@ -264,7 +259,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "write_history_file", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "write_history_file", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class WriteHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -279,7 +274,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
-                BufferedWriter writer = getContext().getEnv().getTruffleFile(path).newBufferedWriter(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                BufferedWriter writer = getContext().getEnv().getPublicTruffleFile(path).newBufferedWriter(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                 for (String l : data.history) {
                     writer.write(l);
                     writer.newLine();
@@ -292,7 +287,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "clear_history", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "clear_history", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ClearNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -305,7 +300,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "insert_text", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "insert_text", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InsertTextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -314,7 +309,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "redisplay", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "redisplay", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class RedisplayNode extends PythonBuiltinNode {
         @Specialization
@@ -323,7 +318,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_auto_history", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "get_auto_history", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GetAutoHistoryNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -334,7 +329,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "set_auto_history", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "set_auto_history", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SetAutoHistoryNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -343,6 +338,29 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             data.autoHistory = enabled;
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "set_completer_delims", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class SetCompleterDelimsNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PNone setCompleterDelims(PythonModule self, String completerDelims,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            data.completerDelims = completerDelims;
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "get_completer_delims", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetCompleterDelimsNode extends PythonBuiltinNode {
+        @Specialization
+        Object getCompleterDelims(PythonModule self,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            return (data.completerDelims != null) ? data.completerDelims : PNone.NONE;
         }
     }
 }

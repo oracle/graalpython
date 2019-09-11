@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -71,7 +71,7 @@ class TestPyTuple(CPyExtTestCase):
             ((1, 2, 3),),
             (("a", "b"),),
         ),
-        resultspec="i",
+        resultspec="n",
         argspec='O',
         arguments=["PyObject* tuple"],
     )
@@ -87,7 +87,7 @@ class TestPyTuple(CPyExtTestCase):
             ([1, 2, 3, 4],),
             ({"a": 1, "b":2},),
         ),
-        resultspec="i",
+        resultspec="n",
         argspec='O',
         arguments=["PyObject* tuple"],
     )

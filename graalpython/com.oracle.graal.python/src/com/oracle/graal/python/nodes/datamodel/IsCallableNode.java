@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,46 +44,51 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
+@GenerateUncached
+@ImportStatic(PGuards.class)
 public abstract class IsCallableNode extends PDataModelEmulationNode {
-    @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create(__CALL__);
 
-    protected static boolean isNoCallable(Object callee) {
-        return !(callee instanceof PythonCallable);
-    }
-
-    @Specialization(guards = {"isNoCallable(callable) || isClass(callable)"})
-    protected boolean isSpecialCallable(Object callable) {
-        Object call = callAttrGetterNode.execute(callable);
-        return !isNoCallable(call);
+    @Specialization(guards = {"!isCallable(callable) || isClass(callable)"})
+    protected static boolean isSpecialCallable(Object callable,
+                    @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
+        Object call = callAttrGetterNode.execute(callable, __CALL__);
+        return PGuards.isCallable(call);
     }
 
     @Specialization
-    protected boolean isMethod(@SuppressWarnings("unused") PMethod callable) {
+    protected static boolean isMethod(@SuppressWarnings("unused") PMethod callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isBuiltinMethod(@SuppressWarnings("unused") PBuiltinMethod callable) {
+    protected static boolean isBuiltinMethod(@SuppressWarnings("unused") PBuiltinMethod callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isFunctionCall(@SuppressWarnings("unused") PFunction callable) {
+    protected static boolean isFunctionCall(@SuppressWarnings("unused") PFunction callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isBuiltinFunctionCall(@SuppressWarnings("unused") PBuiltinFunction callable) {
+    protected static boolean isBuiltinFunctionCall(@SuppressWarnings("unused") PBuiltinFunction callable) {
         return true;
     }
 
     public static IsCallableNode create() {
         return IsCallableNodeGen.create();
+    }
+
+    public static IsCallableNode getUncached() {
+        return IsCallableNodeGen.getUncached();
     }
 }

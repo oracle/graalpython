@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,18 +25,22 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
-final class WhileRepeatingNode extends Node implements RepeatingNode {
+final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
     private final LoopConditionProfile conditionProfile = LoopConditionProfile.createCountingProfile();
+    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
 
     @Child CastToBooleanNode condition;
     @Child StatementNode body;
@@ -50,6 +54,7 @@ final class WhileRepeatingNode extends Node implements RepeatingNode {
     public boolean executeRepeating(VirtualFrame frame) {
         if (conditionProfile.profile(condition.executeBoolean(frame))) {
             body.executeVoid(frame);
+            contextRef.get().triggerAsyncActions(frame, this);
             return true;
         }
         return false;
@@ -76,6 +81,6 @@ public final class WhileNode extends LoopNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        loopNode.executeLoop(frame);
+        loopNode.execute(frame);
     }
 }

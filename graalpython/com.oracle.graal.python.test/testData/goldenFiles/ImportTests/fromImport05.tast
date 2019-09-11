@@ -1,0 +1,22 @@
+ModuleRootNode Name: <module 'fromImport05'> SourceSection: [0,42]`from sys.path import...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,42]`from sys.path import...`
+    ExpressionWithSideEffect SourceSection: [0,42]`from sys.path import...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        ImportFromNode SourceSection: [0,42]`from sys.path import...`
+          Importee: sys.path
+          Level: 0
+          FromList: dirname
+          WriteNameNodeGen SourceSection: None
+            Identifier: my_dirname
+            EmptyNode SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattr__

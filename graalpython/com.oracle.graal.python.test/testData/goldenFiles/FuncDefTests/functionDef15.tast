@@ -1,0 +1,88 @@
+ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING = NONE↵def...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [SOMETHING]
+  Documentation: None
+  InnerRootNode SourceSection: [0,114]`SOMETHING = NONE↵def...`
+    ExpressionWithSideEffects SourceSection: [0,114]`SOMETHING = NONE↵def...`
+      WriteNameNodeGen SourceSection: [0,16]`SOMETHING = NONE`
+        Identifier: SOMETHING
+        ReadNameNodeGen SourceSection: [12,16]`NONE`
+          Identifier: NONE
+      WriteNameNodeGen SourceSection: [17,78]`def setup():↵  globa...`
+        Identifier: setup
+        FunctionDefinitionNode Name: setup SourceSection: None
+          Arguments: None
+          KwArguments: None
+          Documentation: StringLiteralNode: Empty
+          FreeVarSlots: None
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          FunctionRootNode SourceSection: [17,78]`def setup():↵  globa...`
+            Name: setup
+            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+            CelVars: None
+            FreeVars: None
+            NeedsCellFrame: False
+            FrameDescriptor: 1 slots [<return_val>]
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            InnerRootNode SourceSection: [17,78]`def setup():↵  globa...`
+              ReturnTargetNode SourceSection: [17,78]`def setup():↵  globa...`
+                Body: BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [32,48]`global SOMETHING`
+                      EmptyNode SourceSection: [32,48]`global SOMETHING`
+                    IfNode SourceSection: [51,77]`if True : SOMETHING ...`
+                      YesNodeGen SourceSection: None
+                        BooleanLiteralNode SourceSection: [54,58]`True`
+                      WriteGlobalNodeGen SourceSection: [61,77]`SOMETHING = True`
+                        Identifier: SOMETHING
+                        BooleanLiteralNode SourceSection: [73,77]`True`
+                      BlockNode SourceSection: None
+                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Frame: [0,<return_val>,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+      ExpressionWithSideEffect SourceSection: None
+        Expression:
+          EmptyNode SourceSection: None
+        SideEffect:
+          WriteNameNodeGen SourceSection: [78,114]`def install():↵  if ...`
+            Identifier: install
+            FunctionDefinitionNode Name: install SourceSection: None
+              Arguments: None
+              KwArguments: None
+              Documentation: StringLiteralNode: Empty
+              FreeVarSlots: None
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              FunctionRootNode SourceSection: [78,114]`def install():↵  if ...`
+                Name: install
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                CelVars: None
+                FreeVars: None
+                NeedsCellFrame: False
+                FrameDescriptor: 1 slots [<return_val>]
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: None
+                InnerRootNode SourceSection: [78,114]`def install():↵  if ...`
+                  ReturnTargetNode SourceSection: [78,114]`def install():↵  if ...`
+                    Body: BlockNode SourceSection: None
+                      BlockNode SourceSection: None
+                      IfNode SourceSection: [95,114]`if SOMETHING : pass`
+                        YesNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [98,107]`SOMETHING`
+                            Identifier: SOMETHING
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ExpressionStatementNode SourceSection: [110,114]`pass`
+                          EmptyNode SourceSection: [110,114]`pass`
+                        BlockNode SourceSection: None
+                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                      Frame: [0,<return_val>,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None

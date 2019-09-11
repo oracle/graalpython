@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -68,6 +68,11 @@ def _reference_findchar(args):
         return string.find(char, start, end)
     elif direction == -1:
         return string.rfind(char, start, end)
+
+
+def _reference_unicode_escape(args):
+    import _codecs
+    return _codecs.unicode_escape_encode(args[0])[0]
 
 
 class CustomString(str):
@@ -464,3 +469,57 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* str", "PyObject* seq"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyUnicode_FromOrdinal = CPyExtFunction(
+        lambda args: chr(args[0]),
+        lambda: (
+            (97,),
+            (65,),
+            (332,),
+        ),
+        resultspec="O",
+        argspec='i',
+        arguments=["int ordinal"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    # NOTE: this test assumes that Python uses UTF-8 encoding for source files
+    test_PyUnicode_FromKindAndData = CPyExtFunction(
+        lambda args: args[3],
+        lambda: (
+            (4, bytearray([0xA2, 0x0E, 0x02, 0x00]), 1, "𠺢"),
+            (4, bytearray([0xA2, 0x0E, 0x02, 0x00, 0x4C, 0x0F, 0x02, 0x00]), 2, "𠺢𠽌"),
+            (2, bytearray([0x30, 0x20]), 1, "‰"),
+            (2, bytearray([0x30, 0x20, 0x3C, 0x20]), 2, "‰‼"),
+        ),
+        code='''PyObject* wrap_PyUnicode_FromKindAndData(int kind, Py_buffer buffer, Py_ssize_t size, PyObject* dummy) {
+            PyObject* res;
+            res = PyUnicode_FromKindAndData(kind, (const char *)buffer.buf, size);
+            Py_XINCREF(res);
+            return res;
+        }
+        ''',
+        resultspec="O",
+        argspec='iy*nO',
+        arguments=["int kind", "Py_buffer buffer", "Py_ssize_t size", "PyObject* dummy"],
+        callfunction="wrap_PyUnicode_FromKindAndData",
+        cmpfunc=unhandled_error_compare
+    )
+
+
+    test_PyUnicode_AsEncodedString = CPyExtFunction(
+        lambda args: args[0].encode(args[1], args[2]),
+        lambda: (
+            ("abcd", "ascii", "report"),
+            ("abcd", "utf8", "report"),
+            ("öüä", "ascii", "report"),
+            ("öüä", "utf8", "report"),
+            ("öüä", "ascii", "ignore"),
+            ("öüä", "ascii", "replace"),
+        ),
+        resultspec="O",
+        argspec='Oss',
+        arguments=["PyObject* str", "const char* encoding", "const char* errors"],
+        cmpfunc=unhandled_error_compare
+    )
+

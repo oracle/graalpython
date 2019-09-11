@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,69 +37,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def skip_test_alarm():
-    # (tfel): this test is very brittle, because it is supposed to work with our
-    # first, very primitive implementation of signal handlers, which does not
-    # allow Python code to run in the handler. So we rely on a side-effect on an
-    # open file descriptor instead.
+import sys
+
+def test_alarm2():
     try:
         import _signal
     except ImportError:
         import signal as _signal
-    import posix
     import time
-    import sys
 
-    # first, we start opening files until the fd is the same as SIGALRM
-    fds = []
-    dupd_fd = None
-    fd = None
+    triggered = None
 
-    try:
-        fd = posix.open(__file__, posix.O_RDONLY)
-        while fd < _signal.SIGALRM:
-            fds.append(fd)
-            fd = posix.open(__file__, posix.O_RDONLY)
+    def handler(signal, frame):
+        nonlocal triggered
+        caller_code = sys._getframe(1).f_code
+        assert caller_code == test_alarm2.__code__, "expected: '%s' but was '%s'" % (test_alarm2.__code__, caller_code)
+        triggered = (signal, frame)
 
-        if fd > _signal.SIGALRM:
-            dupd_fd = posix.dup(_signal.SIGALRM)
-            posix.close(_signal.SIGALRM)
-            fd = posix.open(__file__, posix.O_RDONLY)
+    oldhandler = _signal.signal(_signal.SIGALRM, handler)
+    assert oldhandler == _signal.SIG_DFL, "oldhandler != SIG_DFL"
+    assert _signal.getsignal(_signal.SIGALRM) is handler, "getsignal handler != handler"
 
-        # close the unneeded fds
-        for oldfd in fds:
-            posix.close(oldfd)
+    _signal.alarm(1)
 
-        assert fd == _signal.SIGALRM, "fd not equal to SIGALRM"
+    while not triggered:
+        time.sleep(0.5)
 
-        # temporary: graalpython doesn't check the argcount for the handler atm
-        if sys.implementation.name == "graalpython":
-            handler = posix.close
-        else:
-            handler = lambda s,f: posix.close(s)
-
-        oldhandler = _signal.signal(_signal.SIGALRM, handler)
-        assert oldhandler == _signal.SIG_DFL, "oldhandler != SIG_DFL"
-        assert _signal.getsignal(_signal.SIGALRM) is handler, "getsignal handler != handler"
-
-        # schedule the alarm signal, that will trigger the handler, which
-        # will in turn close our file
-        _signal.alarm(1)
-
-        # wait for the signal to come in and be handled
-        time.sleep(1.5)
-
-        # check for the side-effect
-        try:
-            posix.read(fd, 1)
-        except OSError:
-            assert True
-        else:
-            assert False, "file is still open"
-    finally:
-        if dupd_fd is not None:
-            try:
-                posix.close(fd)
-            except OSError:
-                pass
-            posix.dup(dupd_fd) # duplicates back into just free'd fd
+    assert triggered[0] == _signal.SIGALRM
+    assert triggered[1].f_code.co_name == "test_alarm2", triggered[1].f_code

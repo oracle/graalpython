@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,8 +28,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
@@ -37,12 +36,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -50,6 +52,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -57,17 +60,21 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -77,6 +84,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -90,9 +98,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -108,50 +119,97 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __CLASS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class ClassNode extends PythonBinaryBuiltinNode {
+        @Child private LookupAttributeInMRONode lookupSlotsInSelf;
+        @Child private LookupAttributeInMRONode lookupSlotsInOther;
+        @Child private BinaryComparisonNode slotsAreEqual;
+        @Child private TypeNodes.GetNameNode getTypeNameNode;
+
         private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
 
         @Specialization(guards = "isNoValue(value)")
-        PythonClass getClass(Object self, @SuppressWarnings("unused") PNone value,
+        PythonAbstractClass getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(self);
         }
 
         @Specialization
-        PythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
+        LazyPythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Specialization
-        PythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
+        LazyPythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Specialization
-        PNone setClass(PythonObject self, PythonClass value,
+        PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
+                        @Cached("create()") BranchProfile errorSlotsBranch,
                         @Cached("create()") GetLazyClassNode getLazyClass) {
-            if (value instanceof PythonBuiltinClass || value instanceof PythonNativeClass) {
+            if (value instanceof PythonBuiltinClass || PGuards.isNativeClass(value)) {
                 errorValueBranch.enter();
                 throw raise(TypeError, ERROR_MESSAGE);
             }
             LazyPythonClass lazyClass = getLazyClass.execute(self);
-            if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || lazyClass instanceof PythonNativeClass) {
+            if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || PGuards.isNativeClass(lazyClass)) {
                 errorSelfBranch.enter();
                 throw raise(TypeError, ERROR_MESSAGE);
             }
-            self.setLazyPythonClass(value);
+            Object selfSlots = getLookupSlotsInSelf().execute(lazyClass);
+            if (selfSlots != PNone.NO_VALUE) {
+                Object otherSlots = getLookupSlotsInOther().execute(value);
+                if (otherSlots == PNone.NO_VALUE || !getSlotsAreEqual().executeBool(frame, selfSlots, otherSlots)) {
+                    errorSlotsBranch.enter();
+                    throw raise(TypeError, "__class__ assignment: '%s' object layout differs from '%s'", getTypeName(value), getTypeName(lazyClass));
+                }
+            }
+            lib.setLazyPythonClass(self, value);
             return PNone.NONE;
         }
 
+        private BinaryComparisonNode getSlotsAreEqual() {
+            if (slotsAreEqual == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                slotsAreEqual = insert(BinaryComparisonNode.create(__EQ__, null, "=="));
+            }
+            return slotsAreEqual;
+        }
+
+        private LookupAttributeInMRONode getLookupSlotsInSelf() {
+            if (lookupSlotsInSelf == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupSlotsInSelf = insert(LookupAttributeInMRONode.create(__SLOTS__));
+            }
+            return lookupSlotsInSelf;
+        }
+
+        private LookupAttributeInMRONode getLookupSlotsInOther() {
+            if (lookupSlotsInOther == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupSlotsInOther = insert(LookupAttributeInMRONode.create(__SLOTS__));
+            }
+            return lookupSlotsInOther;
+        }
+
         @Specialization(guards = "!isPythonObject(self)")
-        PythonClass getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonClass value) {
+        LazyPythonClass getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonAbstractClass value) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Fallback
-        PythonClass getClass(@SuppressWarnings("unused") Object self, Object value) {
+        LazyPythonClass getClass(@SuppressWarnings("unused") Object self, Object value) {
             throw raise(TypeError, "__class__ must be set to a class, not '%p' object", value);
+        }
+
+        private String getTypeName(LazyPythonClass clazz) {
+            if (getTypeNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTypeNameNode = insert(TypeNodes.GetNameNode.create());
+            }
+            return getTypeNameNode.execute(clazz);
         }
     }
 
@@ -172,7 +230,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
@@ -182,22 +240,17 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public boolean eq(PythonNativeObject self, PythonNativeObject other,
-                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
-            return nativeIsNode.execute(self, other);
-        }
-
-        @Fallback
-        public Object eq(Object self, Object other) {
-            return self == other;
+        Object eq(Object self, Object other,
+                        @Cached IsNode isNode) {
+            return isNode.execute(self, other);
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
 
@@ -205,18 +258,18 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private CastToBooleanNode ifFalseNode;
 
         @Specialization
-        public boolean ne(PythonNativeObject self, PythonNativeObject other,
-                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
-            return !nativeIsNode.execute(self, other);
+        boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
+                        @Cached CExtNodes.PointerCompareNode nativeNeNode) {
+            return nativeNeNode.execute(__NE__, self, other);
         }
 
         @Fallback
-        public Object ne(Object self, Object other) {
+        Object ne(VirtualFrame frame, Object self, Object other) {
             if (eqNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 eqNode = insert(LookupAndCallBinaryNode.create(__EQ__));
             }
-            Object result = eqNode.executeObject(self, other);
+            Object result = eqNode.executeObject(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
@@ -224,58 +277,63 @@ public class ObjectBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 ifFalseNode = insert(CastToBooleanNode.createIfFalseNode());
             }
-            return ifFalseNode.executeWith(result);
+            return ifFalseNode.executeBoolean(frame, result);
         }
     }
 
-    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object str(Object self,
+        public Object str(VirtualFrame frame, Object self,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode) {
-            return reprNode.executeObject(self);
+            return reprNode.executeObject(frame, self);
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        String repr(Object self,
+        String repr(VirtualFrame frame, Object self,
                         @Cached("create()") GetClassNode getClass,
-                        @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readQualNameNode) {
+                        @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
+                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
             if (self == PNone.NONE) {
                 return "None";
             }
-            PythonClass type = getClass.execute(self);
-            Object moduleName = readModuleNode.execute(type, __MODULE__);
-            Object qualName = readQualNameNode.execute(type, __QUALNAME__);
-            if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
-                return String.format("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
+            PythonAbstractClass type = getClass.execute(self);
+            Object moduleName = readModuleNode.executeObject(frame, type);
+            Object qualName = readQualNameNode.executeObject(frame, type);
+            if (moduleName != PNone.NO_VALUE && !moduleName.equals(BuiltinNames.BUILTINS)) {
+                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
             }
-            return String.format("<%s object at 0x%x>", qualName, self.hashCode());
+            return strFormat("<%s object at 0x%x>", qualName, self.hashCode());
+        }
+
+        @TruffleBoundary
+        private static String strFormat(String fmt, Object... objects) {
+            return String.format(fmt, objects);
         }
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Child private LookupAndCallUnaryNode callLenNode;
         @Child private LookupAndCallBinaryNode callEqNode;
 
         @Specialization
-        public boolean doGeneric(Object self) {
+        public boolean doGeneric(VirtualFrame frame, Object self) {
             assert self != PNone.NO_VALUE;
             if (self == PNone.NONE) {
                 return false;
             }
-            Object len = getCallLenNode().executeObject(self);
+            Object len = getCallLenNode().executeObject(frame, self);
             if (len != PNone.NO_VALUE) {
                 try {
-                    return getCallEqNode().executeBool(0, len);
+                    return getCallEqNode().executeBool(frame, 0, len);
                 } catch (UnexpectedResultException e) {
                     throw raise(TypeError, "'%p' object cannot be interpreted as an integer", len);
                 }
@@ -300,7 +358,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
         private final BranchProfile hasDescProfile = BranchProfile.create();
@@ -318,10 +376,9 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private LookupAttributeInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode dispatchGet;
         @Child private ReadAttributeFromObjectNode attrRead;
-        @Child private LookupAndCallBinaryNode getattrNode;
 
         @Specialization
-        protected Object doIt(Object object, Object key) {
+        protected Object doIt(VirtualFrame frame, Object object, Object key) {
             LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             LazyPythonClass dataDescClass = null;
@@ -336,9 +393,9 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (set != PNone.NO_VALUE || delete != PNone.NO_VALUE) {
                     isDescProfile.enter();
                     Object get = lookupGet(dataDescClass);
-                    if (get instanceof PythonCallable) {
+                    if (PGuards.isCallable(get)) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
-                        return dispatch(object, getPythonClass(type, getClassProfile), descr, get);
+                        return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                     }
                 }
             }
@@ -360,20 +417,12 @@ public class ObjectBuiltins extends PythonBuiltins {
                 Object get = lookupGet(dataDescClass);
                 if (get == PNone.NO_VALUE) {
                     return descr;
-                } else if (get instanceof PythonCallable) {
-                    return dispatch(object, getPythonClass(type, getClassProfile), descr, get);
+                } else if (PGuards.isCallable(get)) {
+                    return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                 }
             }
             errorProfile.enter();
-            return fallbackGetattr(object, key);
-        }
-
-        private Object fallbackGetattr(Object object, Object key) {
-            if (getattrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getattrNode = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTR__));
-            }
-            return getattrNode.executeObject(object, key);
+            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
         }
 
         private Object readAttribute(Object object, Object key) {
@@ -384,12 +433,12 @@ public class ObjectBuiltins extends PythonBuiltins {
             return attrRead.execute(object, key);
         }
 
-        private Object dispatch(Object object, Object type, Object descr, Object get) {
+        private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, Object get) {
             if (dispatchGet == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 dispatchGet = insert(CallTernaryMethodNode.create());
             }
-            return dispatchGet.execute(get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
+            return dispatchGet.execute(frame, get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
         }
 
         private Object lookupGet(LazyPythonClass dataDescClass) {
@@ -423,9 +472,13 @@ public class ObjectBuiltins extends PythonBuiltins {
             }
             return getDataClassNode.execute(descr);
         }
+
+        public static GetAttributeNode create() {
+            return GetAttributeNodeFactory.create();
+        }
     }
 
-    @Builtin(name = SpecialMethodNames.__GETATTR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -434,11 +487,11 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__SETATTR__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, Object key, Object value,
+        protected PNone doIt(VirtualFrame frame, Object object, Object key, Object value,
                         @Cached("create()") GetLazyClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
@@ -448,10 +501,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                PythonClass dataDescClass = getDataClassNode.execute(descr);
+                PythonAbstractClass dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupSetNode.execute(dataDescClass);
-                if (set instanceof PythonCallable) {
-                    callSetNode.execute(set, descr, object, value);
+                if (PGuards.isCallable(set)) {
+                    callSetNode.execute(frame, set, descr, object, value);
                     return PNone.NONE;
                 }
             }
@@ -466,11 +519,11 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELATTR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __DELATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, Object key,
+        protected PNone doIt(VirtualFrame frame, Object object, Object key,
                         @Cached("create()") GetLazyClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
@@ -481,10 +534,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                PythonClass dataDescClass = getDataClassNode.execute(descr);
+                PythonAbstractClass dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupDeleteNode.execute(dataDescClass);
-                if (set instanceof PythonCallable) {
-                    callSetNode.executeObject(set, descr, object);
+                if (PGuards.isCallable(set)) {
+                    callSetNode.executeObject(frame, set, descr, object);
                     return PNone.NONE;
                 }
             }
@@ -504,7 +557,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public static abstract class DictNode extends PythonBinaryBuiltinNode {
+    public abstract static class DictNode extends PythonBinaryBuiltinNode {
         private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
         private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
@@ -517,28 +570,39 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
-        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
-            PHashingCollection dict = self.getDict();
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"}, limit = "1")
+        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
-                self.setDict(dict);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException(e);
+                }
             }
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
-        Object dict(PythonObject self, PDict dict) {
-            self.getDictUnsetOrSameAsStorageAssumption().invalidate();
-            self.setDict(dict);
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"}, limit = "1")
+        Object dict(PythonObject self, PDict dict,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            try {
+                lib.setDict(self, dict);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isNoValue(none)")
-        Object dict(PythonNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") CExtNodes.GetObjectDictNode getDictNode) {
-            Object dict = getDictNode.execute(self);
-            if (dict == PNone.NO_VALUE) {
+        @Specialization(guards = "isNoValue(none)", limit = "1")
+        Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
+            if (dict == null) {
                 raise(self, none);
             }
             return dict;
@@ -551,13 +615,13 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __FORMAT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    static abstract class FormatNode extends PythonBinaryBuiltinNode {
+    abstract static class FormatNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isString(formatString)")
-        Object format(Object self, @SuppressWarnings("unused") Object formatString,
+        Object format(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object formatString,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(self);
+            return strCall.executeObject(frame, self);
         }
 
         @Fallback
@@ -566,20 +630,29 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = RICHCMP, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = RICHCMP, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    static abstract class RichCompareNode extends PythonTernaryBuiltinNode {
+    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
 
         protected BinaryComparisonNode createOp(String op) {
-            return (BinaryComparisonNode) getContext().getLanguage().getNodeFactory().createComparisonOperation(op, null, null);
+            return (BinaryComparisonNode) PythonLanguage.getCurrent().getNodeFactory().createComparisonOperation(op, null, null);
         }
 
         @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")
-        boolean richcmp(Object left, Object right, @SuppressWarnings("unused") String op,
+        boolean richcmp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") String op,
                         @SuppressWarnings("unused") @Cached("op") String cachedOp,
                         @Cached("createOp(op)") BinaryComparisonNode node) {
-            return node.executeBool(left, right);
+            return node.executeBool(frame, left, right);
+        }
+    }
+
+    @Builtin(name = __INIT_SUBCLASS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InitSubclass extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone initSubclass(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
         }
     }
 }

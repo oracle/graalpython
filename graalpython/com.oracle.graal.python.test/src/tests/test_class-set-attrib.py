@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -102,3 +102,24 @@ def test_assignments():
   assert object.baz == 119, "custom set"
 
 
+def test_setattr_via_decorator():
+  def setdec(func):
+    setattr(func, 'SPECIAL_ATTR', {'a': 1, 'b': 2})
+    return func
+
+  @setdec
+  def f():
+    return 1
+
+  assert hasattr(f, 'SPECIAL_ATTR')
+  assert getattr(f, 'SPECIAL_ATTR') == {'a': 1, 'b': 2}
+
+
+  class MyClass(object):
+    @setdec
+    def f(self):
+      return 1
+
+  m = MyClass()
+  assert hasattr(m.f, 'SPECIAL_ATTR')
+  assert getattr(m.f, 'SPECIAL_ATTR') == {'a': 1, 'b': 2}

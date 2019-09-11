@@ -1,0 +1,40 @@
+ModuleRootNode Name: <module 'functionDefCPT01'> SourceSection: [0,13]`def f(): pass`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,13]`def f(): pass`
+    ExpressionWithSideEffect SourceSection: [0,13]`def f(): pass`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,13]`def f(): pass`
+          Identifier: f
+          FunctionDefinitionNode Name: f SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,13]`def f(): pass`
+              Name: f
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,13]`def f(): pass`
+                ReturnTargetNode SourceSection: [0,13]`def f(): pass`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [9,13]`pass`
+                      EmptyNode SourceSection: [9,13]`pass`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

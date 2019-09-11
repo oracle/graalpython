@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,4 +47,9 @@ PyObject* PySeqIter_New(PyObject *seq) {
         return NULL;
     }
     return UPCALL_CEXT_O(_jls_PyTruffle_SeqIter_New, native_to_java(seq));
+}
+
+UPCALL_ID(PyCallIter_New);
+PyObject * PyCallIter_New(PyObject *callable, PyObject *sentinel) {
+	return UPCALL_CEXT_O(_jls_PyCallIter_New, native_to_java(callable), native_to_java(sentinel));
 }

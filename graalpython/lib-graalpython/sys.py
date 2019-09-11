@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,34 +45,43 @@ def make_implementation_info():
     return SimpleNamespace(
         name="graalpython",
         cache_tag="graalpython",
-        version_info=version_info_type(version_info),
+        version=version_info_type(version_info),
         _multiarch=__gmultiarch
     )
 implementation = make_implementation_info()
 del make_implementation_info
 del __gmultiarch
-version_info = implementation.version_info
+version_info = implementation.version
+hexversion = ((version_info.major << 24) |
+              (version_info.minor << 16) |
+              (version_info.micro << 8) |
+              (0xa << 4) | # 0xA is alpha, 0xB is beta, 0xC is rc, 0xF is final
+              (version_info.serial << 0))
 
 
 def make_flags_class():
     from _descriptor import make_named_tuple_class
-    return make_named_tuple_class(
-        "flags",
-        ["bytes_warning",
-         "debug",
-         "dont_write_bytecode",
-         "hash_randomization",
-         "ignore_environment",
-         "inspect",
-         "interactive",
-         "isolated",
-         "no_site",
-         "no_user_site",
-         "optimize",
-         "quiet",
-         "verbose"]
-    )
-flags = make_flags_class()(flags)
+    get_set_descriptor = type(type(make_flags_class).__code__)
+
+    names = ["bytes_warning", "debug", "dont_write_bytecode",
+             "hash_randomization", "ignore_environment", "inspect",
+             "interactive", "isolated", "no_site", "no_user_site", "optimize",
+             "quiet", "verbose", "dev_mode", "utf8_mode"]
+
+    flags_class = make_named_tuple_class("sys.flags", names)
+
+    def make_func(i):
+        def func(self):
+            return __flags__[i]
+        return func
+
+    for i, f in enumerate(names):
+        setattr(flags_class, f, get_set_descriptor(fget=make_func(i), name=f, owner=flags_class))
+
+    return flags_class
+
+
+flags = make_flags_class()()
 del make_flags_class
 
 
@@ -172,5 +181,55 @@ del make_excepthook
 
 
 @__builtin__
+def breakpointhook(*args, **kws):
+    import importlib, os, warnings
+    hookname = os.getenv('PYTHONBREAKPOINT')
+    if hookname is None or len(hookname) == 0:
+        warnings.warn('Graal Python cannot run pdb, yet, consider using `--inspect` on the commandline', RuntimeWarning)
+        hookname = 'pdb.set_trace'
+    elif hookname == '0':
+        return None
+    modname, dot, funcname = hookname.rpartition('.')
+    if dot == '':
+        modname = 'builtins'
+    try:
+        module = importlib.import_module(modname)
+        hook = getattr(module, funcname)
+    except:
+        warnings.warn(
+            'Ignoring unimportable $PYTHONBREAKPOINT: {}'.format(
+                hookname),
+            RuntimeWarning)
+    return hook(*args, **kws)
+
+
+__breakpointhook__ = breakpointhook
+
+
+@__builtin__
 def getrecursionlimit():
     return 1000
+
+
+@__builtin__
+def displayhook(value):
+    if value is None:
+        return
+    builtins = modules['builtins']
+    # Set '_' to None to avoid recursion
+    builtins._ = None
+    text = repr(value)
+    try:
+        stdout.write(text)
+    except UnicodeEncodeError:
+        bytes = text.encode(stdout.encoding, 'backslashreplace')
+        if hasattr(stdout, 'buffer'):
+            stdout.buffer.write(bytes)
+        else:
+            text = bytes.decode(stdout.encoding, 'strict')
+            stdout.write(text)
+    stdout.write("\n")
+    builtins._ = value
+
+
+__displayhook__ = displayhook

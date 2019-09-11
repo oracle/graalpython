@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -56,16 +57,18 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins.BytesLikeNoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -73,13 +76,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -87,6 +91,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -111,7 +116,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
@@ -129,19 +134,19 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Child SequenceStorageNodes.CmpNode eqNode;
+        @Child private SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
-        public boolean eq(PByteArray self, PByteArray other) {
-            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
+        boolean eq(VirtualFrame frame, PByteArray self, PByteArray other) {
+            return getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Specialization
-        public boolean eq(PByteArray self, PBytes other) {
-            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
+        boolean eq(VirtualFrame frame, PByteArray self, PBytes other) {
+            return getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @SuppressWarnings("unused")
@@ -175,7 +180,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends CmpNode {
         @Specialization
@@ -190,7 +195,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends CmpNode {
         @Specialization
@@ -205,7 +210,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends CmpNode {
         @Specialization
@@ -220,7 +225,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends CmpNode {
         @Specialization
@@ -235,7 +240,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -245,6 +250,20 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return factory().createByteArray(res);
         }
 
+        @Specialization
+        public Object add(VirtualFrame frame, PByteArray self, PMemoryView other,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+
+            Object bytesObj = toBytesNode.executeObject(frame, other);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
+                return factory().createByteArray(res);
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         public Object add(Object self, Object other) {
@@ -252,7 +271,46 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __IADD__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IAddNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public PByteArray add(PByteArray self, PIBytesLike other,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
+            updateSequenceStorage(self, res);
+            return self;
+        }
+
+        @Specialization
+        public PByteArray add(VirtualFrame frame, PByteArray self, PMemoryView other,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+
+            Object bytesObj = toBytesNode.executeObject(frame, other);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
+                updateSequenceStorage(self, res);
+                return self;
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object add(Object self, Object other) {
+            throw raise(TypeError, "can't concat bytearray to %p", other);
+        }
+
+        private static void updateSequenceStorage(PByteArray array, SequenceStorage s) {
+            if (array.getSequenceStorage() != s) {
+                array.setSequenceStorage(s);
+            }
+        }
+    }
+
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBuiltinNode {
 
@@ -270,12 +328,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -284,7 +342,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -294,36 +352,32 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     // bytearray.append(x)
-    @Builtin(name = "append", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "append", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ByteArrayAppendNode extends PythonBinaryBuiltinNode {
         @Specialization
         public PByteArray append(PByteArray byteArray, Object arg,
-                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode) {
-            appendNode.execute(byteArray.getSequenceStorage(), arg);
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
+            appendNode.execute(byteArray.getSequenceStorage(), arg, BytesLikeNoGeneralizationNode.SUPPLIER);
             return byteArray;
-        }
-
-        protected static SequenceStorageNodes.AppendNode createAppend() {
-            return SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create("byte must be in range(0, 256)"));
         }
     }
 
     // bytearray.extend(L)
-    @Builtin(name = "extend", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "extend", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ByteArrayExtendNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PNone doGeneric(PByteArray byteArray, Object source,
+        PNone doGeneric(VirtualFrame frame, PByteArray byteArray, Object source,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
-            SequenceStorage execute = extendNode.execute(byteArray.getSequenceStorage(), source);
+            SequenceStorage execute = extendNode.execute(frame, byteArray.getSequenceStorage(), source);
             assert byteArray.getSequenceStorage() == execute;
             return PNone.NONE;
         }
 
         protected static SequenceStorageNodes.ExtendNode createExtend() {
-            return SequenceStorageNodes.ExtendNode.create(() -> NoGeneralizationNode.create("byte must be in range(0, 256)"));
+            return SequenceStorageNodes.ExtendNode.create(BytesLikeNoGeneralizationNode.SUPPLIER);
         }
 
         protected boolean isPSequenceWithStorage(Object source) {
@@ -333,7 +387,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     // bytearray.copy()
-    @Builtin(name = "copy", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ByteArrayCopyNode extends PythonBuiltinNode {
         @Specialization
@@ -345,7 +399,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     // bytearray.index(x)
-    @Builtin(name = "index", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ByteArrayIndexNode extends PythonBuiltinNode {
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -366,13 +420,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     // bytearray.count(x)
-    @Builtin(name = "count", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "count", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class ByteArrayCountNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public int count(PByteArray byteArray, Object arg,
+        int count(VirtualFrame frame, PByteArray byteArray, Object arg,
                         @Cached("createClassProfile()") ValueProfile storeProfile,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
@@ -380,7 +434,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             SequenceStorage profiled = storeProfile.profile(byteArray.getSequenceStorage());
             int cnt = 0;
             for (int i = 0; i < profiled.length(); i++) {
-                if (eqNode.executeBool(arg, getItemNode.execute(profiled, i))) {
+                if (eqNode.executeBool(frame, arg, getItemNode.execute(profiled, i))) {
                     cnt++;
                 }
             }
@@ -389,7 +443,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     // bytearray.reverse()
-    @Builtin(name = "reverse", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "reverse", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ByteArrayReverseNode extends PythonBuiltinNode {
 
@@ -401,7 +455,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     // bytearray.clear()
-    @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "clear", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ByteArrayClearNode extends PythonUnaryBuiltinNode {
 
@@ -413,7 +467,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ByteArrayIterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -426,6 +480,31 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartsWithNode extends PythonBuiltinNode {
         @Child private SequenceStorageNodes.LenNode lenNode;
+
+        @Specialization
+        boolean startswith(VirtualFrame frame, PByteArray self, PTuple prefixes, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached GetNextNode getNextNode,
+                        @Cached BytesNodes.FindNode findNode) {
+            Object iterator = getIteratorNode.executeWith(frame, prefixes);
+            while (true) {
+                try {
+                    Object arrayObj = getNextNode.execute(frame, iterator);
+                    if (arrayObj instanceof PIBytesLike) {
+                        PIBytesLike array = (PIBytesLike) arrayObj;
+                        if (startswith(self, array, start, end, findNode)) {
+                            return true;
+                        }
+                    } else {
+                        throw raise(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'", arrayObj);
+                    }
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    return false;
+                }
+            }
+        }
 
         @Specialization
         boolean startswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
@@ -475,14 +554,14 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     // bytearray.join(iterable)
-    @Builtin(name = "join", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "join", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PByteArray join(PByteArray bytes, Object iterable,
+        PByteArray join(VirtualFrame frame, PByteArray bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createByteArray(bytesJoinNode.execute(toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
+            return factory().createByteArray(bytesJoinNode.execute(frame, toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
@@ -492,7 +571,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -502,7 +581,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -528,11 +607,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBytes(other)"})
-        boolean contains(PByteArray self, Object other,
+        boolean contains(VirtualFrame frame, PByteArray self, Object other,
                         @Cached("create()") BranchProfile errorProfile,
                         @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
 
-            if (!containsNode.execute(self.getSequenceStorage(), other)) {
+            if (!containsNode.execute(frame, self.getSequenceStorage(), other)) {
                 errorProfile.enter();
                 throw raise(ValueError, "%s is not in bytes literal", other);
             }
@@ -584,56 +663,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "translate", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class TranslateNode extends PythonBuiltinNode {
-
-        @Child private SequenceStorageNodes.GetItemNode getSelfItemNode;
-        @Child private SequenceStorageNodes.GetItemNode getTableItemNode;
-
-        @Specialization
-        PByteArray translate(PByteArray self, PBytes table, @SuppressWarnings("unused") PNone delete) {
-            return translate(self.getSequenceStorage(), table.getSequenceStorage());
-        }
-
-        @Specialization
-        PByteArray translate(PByteArray self, PByteArray table, @SuppressWarnings("unused") PNone delete) {
-            return translate(self.getSequenceStorage(), table.getSequenceStorage());
-        }
-
-        private PByteArray translate(SequenceStorage selfStorage, SequenceStorage tableStorage) {
-            if (tableStorage.length() != 256) {
-                throw raise(ValueError, "translation table must be 256 characters long");
-            }
-            byte[] result = new byte[selfStorage.length()];
-            for (int i = 0; i < selfStorage.length(); i++) {
-                int b = getGetSelfItemNode().executeInt(selfStorage, i);
-                int t = getGetTableItemNode().executeInt(tableStorage, b);
-                assert t >= 0 && t < 256;
-                result[i] = (byte) t;
-            }
-            return factory().createByteArray(result);
-        }
-
-        private SequenceStorageNodes.GetItemNode getGetSelfItemNode() {
-            if (getSelfItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSelfItemNode = insert(SequenceStorageNodes.GetItemNode.create());
-            }
-            return getSelfItemNode;
-        }
-
-        private SequenceStorageNodes.GetItemNode getGetTableItemNode() {
-            if (getTableItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTableItemNode = insert(SequenceStorageNodes.GetItemNode.create());
-            }
-            return getTableItemNode;
-        }
-
-    }
-
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -647,7 +677,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
@@ -659,11 +689,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doSliceMemoryview(PByteArray self, PSlice slice, PMemoryView value,
+        PNone doSliceMemoryview(VirtualFrame frame, PByteArray self, PSlice slice, PMemoryView value,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
                         @Cached("createSetSlice()") SequenceStorageNodes.SetItemNode setItemNode) {
-            Object bytesObj = callToBytesNode.executeObject(value);
+            Object bytesObj = callToBytesNode.executeObject(frame, value);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 doSlice(self, slice, bytesObj, setItemNode);
                 return PNone.NONE;
@@ -698,7 +728,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization(guards = "isEmptyStorage(byteArray)")
@@ -730,124 +760,4 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class AStripNode extends PythonBinaryBuiltinNode {
-        int mod() {
-            throw new RuntimeException();
-        }
-
-        int stop(@SuppressWarnings("unused") byte[] bs) {
-            throw new RuntimeException();
-        }
-
-        int start(@SuppressWarnings("unused") byte[] bs) {
-            throw new RuntimeException();
-        }
-
-        PByteArray newBytesFrom(@SuppressWarnings("unused") byte[] bs, @SuppressWarnings("unused") int i) {
-            throw new RuntimeException();
-        }
-
-        @Specialization
-        PByteArray strip(PByteArray self, @SuppressWarnings("unused") PNone bytes,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bs = toBytesNode.execute(self);
-            int i = start(bs);
-            int stop = stop(bs);
-            for (; i != stop; i += mod()) {
-                if (!isWhitespace(bs[i])) {
-                    break;
-                }
-            }
-            return newBytesFrom(bs, i);
-        }
-
-        @TruffleBoundary
-        private static boolean isWhitespace(byte b) {
-            return Character.isWhitespace(b);
-        }
-
-        @Specialization
-        PByteArray strip(PByteArray self, PBytes bytes,
-                        @Cached("create()") BytesNodes.ToBytesNode selfToBytesNode,
-                        @Cached("create()") BytesNodes.ToBytesNode otherToBytesNode) {
-            byte[] stripBs = selfToBytesNode.execute(bytes);
-            byte[] bs = otherToBytesNode.execute(self);
-            int i = start(bs);
-            int stop = stop(bs);
-            outer: for (; i != stop; i += mod()) {
-                for (byte b : stripBs) {
-                    if (b == bs[i]) {
-                        continue outer;
-                    }
-                }
-                break;
-            }
-            return newBytesFrom(bs, i);
-        }
-
-    }
-
-    @Builtin(name = "lstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
-    @GenerateNodeFactory
-    abstract static class LStripNode extends AStripNode {
-        @Override
-        PByteArray newBytesFrom(byte[] bs, int i) {
-            byte[] out;
-            if (i != 0) {
-                int len = bs.length - i;
-                out = new byte[len];
-                System.arraycopy(bs, i, out, 0, len);
-            } else {
-                out = bs;
-            }
-            return factory().createByteArray(out);
-        }
-
-        @Override
-        int mod() {
-            return 1;
-        }
-
-        @Override
-        int stop(byte[] bs) {
-            return bs.length;
-        }
-
-        @Override
-        int start(byte[] bs) {
-            return 0;
-        }
-    }
-
-    @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
-    @GenerateNodeFactory
-    abstract static class RStripNode extends AStripNode {
-        @Override
-        PByteArray newBytesFrom(byte[] bs, int i) {
-            byte[] out;
-            int len = i + 1;
-            if (len != bs.length) {
-                out = new byte[len];
-                System.arraycopy(bs, 0, out, 0, len);
-            } else {
-                out = bs;
-            }
-            return factory().createByteArray(out);
-        }
-
-        @Override
-        int mod() {
-            return -1;
-        }
-
-        @Override
-        int stop(byte[] bs) {
-            return -1;
-        }
-
-        @Override
-        int start(byte[] bs) {
-            return bs.length - 1;
-        }
-    }
 }

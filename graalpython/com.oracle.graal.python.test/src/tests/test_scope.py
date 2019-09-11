@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -589,20 +589,18 @@ def test_locals_class():
 
     assert f(1).x == 12
 
-# TODO: see GR-8488
-# def test_locals_class2():
-#     def f(x):
-#         class C:
-#             y = x
-#
-#             def m(self):
-#                 return x
-#             z = list(locals())
-#         return C
-#
-#     varnames = f(1).z
-#     assert "x" not in varnames
-#     assert "y" in varnames
+    def f(x):
+        class C:
+            y = x
+
+            def m(self):
+                return x
+            z = list(locals())
+        return C
+
+    varnames = f(1).z
+    assert "x" not in varnames
+    assert "y" in varnames
 
 
 def test_bound_and_free():
@@ -906,3 +904,29 @@ def test_func_scope():
 
     assert set(my_obj.__code__.co_cellvars) == set()
     assert set(my_obj.__code__.co_freevars) == {'my_obj', 'y'}
+
+
+def test_classbody_scope():
+    class A():
+        ranges = [(1, 10)]
+
+        class B():
+            ranges = [(2, 12)]
+
+        class C():
+            ranges = [ ]
+
+            class CA():
+                ranges = [(3, 13)]
+
+        locs = locals()
+
+        class D(B, C):
+            pass
+
+
+    A.C.ranges = (A.C.CA.ranges)
+    assert A.C.ranges == A.C.CA.ranges == [(3, 13)]
+    locs = list(A.locs.keys())
+    for k in ["__module__", "__qualname__", "ranges", "B", "C", "locs", "D"]:
+        assert k in locs, locs

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,10 +27,12 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -39,6 +41,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -50,8 +53,11 @@ public class ImportFromNode extends AbstractImportNode {
     @Child private GetAttributeNode getName;
     @Child private GetItemNode getItem;
     @Child private ReadAttributeFromObjectNode readModules;
-    @Child private LookupAndCallBinaryNode readNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-    private final IsBuiltinClassProfile attrErrorProfile = IsBuiltinClassProfile.create();
+    @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+    @Child private LookupAndCallBinaryNode getAttrNode = LookupAndCallBinaryNode.create(__GETATTR__);
+    @Child private PRaiseNode raiseNode;
+    @CompilationFinal private final IsBuiltinClassProfile getAttributeErrorProfile = IsBuiltinClassProfile.create();
+    @CompilationFinal private final IsBuiltinClassProfile getAttrErrorProfile = IsBuiltinClassProfile.create();
 
     public static ImportFromNode create(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
         return new ImportFromNode(importee, fromlist, readNodes, level);
@@ -61,6 +67,14 @@ public class ImportFromNode extends AbstractImportNode {
         return importee;
     }
 
+    public int getLevel() {
+        return level;
+    }
+
+    public String[] getFromlist() {
+        return fromlist;
+    }
+
     protected ImportFromNode(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
         this.importee = importee;
         this.fromlist = fromlist;
@@ -68,31 +82,40 @@ public class ImportFromNode extends AbstractImportNode {
         this.level = level;
     }
 
+    private Object readAttributeFromModule(VirtualFrame frame, Object module, String attr) {
+        try {
+            return getAttributeNode.executeObject(frame, module, attr);
+        } catch (PException pe) {
+            pe.expectAttributeError(getAttributeErrorProfile);
+            return getAttrNode.executeObject(frame, module, attr);
+        }
+    }
+
     @Override
     @ExplodeLoop
     public void executeVoid(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
-        Object importedModule = importModule(importee, globals, fromlist, level);
+        Object importedModule = importModule(frame, importee, globals, fromlist, level);
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
             try {
-                writeNode.doWrite(frame, readNode.executeObject(importedModule, attr));
-            } catch (PException e) {
-                e.expectAttributeError(attrErrorProfile);
+                writeNode.doWrite(frame, readAttributeFromModule(frame, importedModule, attr));
+            } catch (PException pe) {
+                pe.expectAttributeError(getAttrErrorProfile);
                 if (getName == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getName = insert(GetAttributeNode.create(__NAME__, null));
                 }
                 try {
                     String pkgname;
-                    Object pkgname_o = getName.executeObject(importedModule);
+                    Object pkgname_o = getName.executeObject(frame, importedModule);
                     if (pkgname_o instanceof PString) {
                         pkgname = ((PString) pkgname_o).getValue();
                     } else if (pkgname_o instanceof String) {
                         pkgname = (String) pkgname_o;
                     } else {
-                        throw e;
+                        throw pe;
                     }
                     String fullname = pkgname + "." + attr;
                     if (getItem == null) {
@@ -100,10 +123,14 @@ public class ImportFromNode extends AbstractImportNode {
                         getItem = insert(GetItemNode.create());
                         readModules = insert(ReadAttributeFromObjectNode.create());
                     }
-                    Object sysModules = readModules.execute(getCore().lookupBuiltinModule("sys"), "modules");
-                    writeNode.doWrite(frame, getItem.execute(sysModules, fullname));
+                    Object sysModules = readModules.execute(getContext().getCore().lookupBuiltinModule("sys"), "modules");
+                    writeNode.doWrite(frame, getItem.execute(frame, sysModules, fullname));
                 } catch (PException e2) {
-                    throw raise(ImportError, "cannot import name '%s'", attr);
+                    if (raiseNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        raiseNode = insert(PRaiseNode.create());
+                    }
+                    throw raiseNode.raise(ImportError, "cannot import name '%s'", attr);
                 }
             }
         }

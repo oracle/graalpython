@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -21,6 +21,7 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import os
 
 import mx
@@ -36,21 +37,7 @@ PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
 PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
 
-# TODO: add/enable interop benchmarks
-# PATH_INTEROP = os.path.join(_BASE_PATH, 'interop')
-#
-#
-# def _compile_interop():
-#     cc = os.path.join(_graalpython_suite.dir, 'graalpython', 'bin', 'sulongcc')
-#     fp = os.path.join(_graalpython_suite.dir, PATH_INTEROP)
-#     src = "%s/cextmodule.c" % fp
-#     bc = "%s/cextmodule.bc" % fp
-#     if os.path.exists(cc):
-#         if not os.path.exists(bc) or os.stat(src).st_atime > os.stat(bc).st_atime:
-#             os.system("%s %s 2>/dev/null >/dev/null" % (cc, src))
-#
-#
-# _compile_interop()
+PATH_INTEROP = os.path.join(_BASE_PATH, 'host_interop')
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -85,6 +72,7 @@ MICRO_BENCHMARKS = {
     'list-iterating-explicit': ITER_25 + ['1000000'],
     'list-iterating': ITER_25 + ['1000000'],
     'list-iterating-obj': ITER_15 + ['50000000'],
+    'list-constructions': ITER_25 + ['500000'],
     'math-sqrt': ITER_15 + ['500000000'],
     'object-allocate': ITER_10 + ['5000'],
     'object-layout-change': ITER_15 + ['1000000'],
@@ -96,6 +84,11 @@ MICRO_BENCHMARKS = {
     'magic-iter': ITER_10 + ['50000000'],
     'instantiation': ITER_10 + ['50000000'],
     'call-classmethod': ITER_15 + ['50000000'],
+    'mmap-anonymous': ITER_15 + ['1000'],
+    'mmap-file': ITER_15 + ['1000'],
+    'generate-functions': ITER_15 + ['10000000'],
+    'try-except': ITER_15 + ['1000000'],
+    'try-except-store': ITER_15 + ['1000000'],
 }
 
 
@@ -107,7 +100,10 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-instantiation': ITER_10 + ['50000000'],
     'c_arith-binop': ITER_25 + ['5'],
     'c_arith_binop_2': ITER_25 + ['50'],
-    'c-call-classmethod': ITER_15 + ['50000000']
+    'c-call-classmethod': ITER_15 + ['50000000'],
+    'c-issubtype-polymorphic-forced-to-native': ITER_15 + ['50000000'],
+    'c-issubtype-polymorphic': ITER_15 + ['50000000'],
+    'c-issubtype-monorphic': ITER_15 + ['50000000'],
 }
 
 
@@ -121,7 +117,7 @@ MESO_BENCHMARKS = {
     'pads-eratosthenes': ITER_10 + ['100000'],
     'pads-integerpartitions': ITER_10 + ['700'],
     'pads-bipartite': ITER_10 + ['10000'],
-    'pads-lyndon': ITER_10 + ['10000000'],
+    'pads-lyndon': ITER_25 + ['10000000'],
     # -------------------------------------------------------
     # object benchmarks
     # -------------------------------------------------------
@@ -151,10 +147,11 @@ MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
 }
 
-# INTEROP_BENCHMARKS = {
-#     'cext-modulo': [],
-#     'for-range-cext': [],
-# }
+INTEROP_BENCHMARKS = {
+    'euler_java': ITER_10 + ['200'],
+    'image-magix': ITER_10 + ['10000'],
+    'image-magix-java': ITER_10 + ['10000'],
+}
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -166,5 +163,5 @@ BENCHMARKS = {
     "micro-native": [PATH_MICRO, MICRO_NATIVE_BENCHMARKS],
     "meso": [PATH_MESO, MESO_BENCHMARKS],
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
-    # "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
+    "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
 }

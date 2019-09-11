@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -30,7 +30,7 @@ PyAPI_FUNC(PyObject *) PyModule_GetDict(PyObject *);
 PyAPI_FUNC(PyObject *) PyModule_GetNameObject(PyObject *);
 #endif
 PyAPI_FUNC(const char *) PyModule_GetName(PyObject *);
-PyAPI_FUNC(const char *) PyModule_GetFilename(PyObject *);
+PyAPI_FUNC(const char *) PyModule_GetFilename(PyObject *) Py_DEPRECATED(3.2);
 PyAPI_FUNC(PyObject *) PyModule_GetFilenameObject(PyObject *);
 #ifndef Py_LIMITED_API
 PyAPI_FUNC(void) _PyModule_Clear(PyObject *);

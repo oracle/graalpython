@@ -1,0 +1,58 @@
+ModuleRootNode Name: <module 'assert03'> SourceSection: [0,47]`def avg():↵    asser...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,47]`def avg():↵    asser...`
+    ExpressionWithSideEffect SourceSection: [0,47]`def avg():↵    asser...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,47]`def avg():↵    asser...`
+          Identifier: avg
+          FunctionDefinitionNode Name: avg SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,47]`def avg():↵    asser...`
+              Name: avg
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,47]`def avg():↵    asser...`
+                ReturnTargetNode SourceSection: [0,47]`def avg():↵    asser...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    AssertNode SourceSection: [15,47]`assert len != 0, get...`
+                      YesNodeGen SourceSection: None
+                        BinaryComparisonNodeGen SourceSection: [22,30]`len != 0`
+                          LookupAndCallBinaryNodeGen SourceSection: None
+                            Op: __ne__
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [22,25]`len`
+                            Identifier: len
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          IntegerLiteralNode SourceSection: [29,30]`0`
+                            Value: 0
+                      PythonCallNodeGen SourceSection: [32,47]`getMessage(len)`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [43,46]`len`
+                          Identifier: len
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: getMessage
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

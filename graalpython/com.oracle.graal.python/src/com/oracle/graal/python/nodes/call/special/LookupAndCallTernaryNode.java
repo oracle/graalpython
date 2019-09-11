@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,8 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -55,6 +56,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -73,9 +75,9 @@ public abstract class LookupAndCallTernaryNode extends Node {
     @Child private NotImplementedHandler handler;
     protected final Supplier<NotImplementedHandler> handlerFactory;
 
-    public abstract Object execute(Object arg1, Object arg2, Object arg3);
+    public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
 
-    public abstract Object execute(Object arg1, int arg2, Object arg3);
+    public abstract Object execute(VirtualFrame frame, Object arg1, int arg2, Object arg3);
 
     public static LookupAndCallTernaryNode create(String name) {
         return LookupAndCallTernaryNodeGen.create(name, false, null);
@@ -99,22 +101,24 @@ public abstract class LookupAndCallTernaryNode extends Node {
 
     @Specialization(guards = "!isReversible()")
     Object callObject(
+                    VirtualFrame frame,
                     Object arg1,
                     int arg2,
                     Object arg3,
                     @Cached("create()") GetClassNode getclass,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
+        return dispatchNode.execute(frame, getattr.executeObject(frame, getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
     @Specialization(guards = "!isReversible()")
     Object callObject(
+                    VirtualFrame frame,
                     Object arg1,
                     Object arg2,
                     Object arg3,
                     @Cached("create()") GetClassNode getclass,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
+        return dispatchNode.execute(frame, getattr.executeObject(frame, getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
     private CallTernaryMethodNode ensureReverseDispatch() {
@@ -146,6 +150,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
 
     @Specialization(guards = "isReversible()")
     Object callObject(
+                    VirtualFrame frame,
                     Object v,
                     Object w,
                     Object z,
@@ -154,35 +159,36 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     @Cached("create()") GetClassNode getClass,
                     @Cached("create()") GetClassNode getClassR,
                     @Cached("create()") IsSubtypeNode isSubtype,
+                    @Cached("create()") IsSameTypeNode isSameTypeNode,
                     @Cached("create()") BranchProfile notImplementedBranch) {
-        PythonClass leftClass = getClass.execute(v);
-        PythonClass rightClass = getClassR.execute(w);
+        PythonAbstractClass leftClass = getClass.execute(v);
+        PythonAbstractClass rightClass = getClassR.execute(w);
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftCallable = getattr.execute(leftClass);
         Object rightCallable = PNone.NO_VALUE;
 
-        if (leftClass != rightClass) {
+        if (!isSameTypeNode.execute(leftClass, rightClass)) {
             rightCallable = getattrR.execute(rightClass);
             if (rightCallable == leftCallable) {
                 rightCallable = PNone.NO_VALUE;
             }
         }
         if (leftCallable != PNone.NO_VALUE) {
-            if (rightCallable != PNone.NO_VALUE && isSubtype.execute(rightClass, leftClass)) {
-                result = ensureReverseDispatch().execute(rightCallable, v, w, z);
+            if (rightCallable != PNone.NO_VALUE && isSubtype.execute(frame, rightClass, leftClass)) {
+                result = ensureReverseDispatch().execute(frame, rightCallable, v, w, z);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
                 }
                 rightCallable = PNone.NO_VALUE;
             }
-            result = dispatchNode.execute(leftCallable, v, w, z);
+            result = dispatchNode.execute(frame, leftCallable, v, w, z);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
         }
         if (rightCallable != PNone.NO_VALUE) {
-            result = ensureReverseDispatch().execute(rightCallable, v, w, z);
+            result = ensureReverseDispatch().execute(frame, rightCallable, v, w, z);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
@@ -190,7 +196,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
 
         Object zCallable = ensureGetAttrZ().execute(z);
         if (zCallable != PNone.NO_VALUE && zCallable != leftCallable && zCallable != rightCallable) {
-            ensureThirdDispatch().execute(zCallable, v, w, z);
+            ensureThirdDispatch().execute(frame, zCallable, v, w, z);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }

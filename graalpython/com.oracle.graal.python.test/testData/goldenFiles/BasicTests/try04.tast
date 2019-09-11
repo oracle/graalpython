@@ -1,0 +1,28 @@
+ModuleRootNode Name: <module 'try04'> SourceSection: [0,63]`try:↵  pass↵except (...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,63]`try:↵  pass↵except (...`
+    ExpressionWithSideEffect SourceSection: [0,63]`try:↵  pass↵except (...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        TryFinallyNode SourceSection: [0,63]`try:↵  pass↵except (...`
+          TryExceptNode SourceSection: None
+            ExpressionStatementNode SourceSection: [7,11]`pass`
+              EmptyNode SourceSection: [7,11]`pass`
+            ExceptNode SourceSection: None
+              ExpressionStatementNode SourceSection: [59,63]`pass`
+                EmptyNode SourceSection: [59,63]`pass`
+              TupleLiteralNode SourceSection: [19,55]`(RuntimeError, TypeE...`
+                PythonObjectFactoryNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [20,32]`RuntimeError`
+                  Identifier: RuntimeError
+                ReadNameNodeGen SourceSection: [34,43]`TypeError`
+                  Identifier: TypeError
+                ReadNameNodeGen SourceSection: [45,54]`NameError`
+                  Identifier: NameError
+            BlockNode SourceSection: None
+            SaveExceptionStateNodeGen SourceSection: None

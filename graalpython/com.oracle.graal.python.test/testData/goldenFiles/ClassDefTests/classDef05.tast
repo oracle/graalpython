@@ -1,0 +1,103 @@
+ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  class De...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,63]`def fn():↵  class De...`
+    ExpressionWithSideEffect SourceSection: [0,63]`def fn():↵  class De...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,63]`def fn():↵  class De...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,63]`def fn():↵  class De...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 3 slots [DerivedClassName, <>temp1, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,63]`def fn():↵  class De...`
+                ReturnTargetNode SourceSection: [0,63]`def fn():↵  class De...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [12,63]`class DerivedClassNa...`
+                      Identifier: DerivedClassName
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,DerivedClassName,Illegal]
+                      ExpressionWithSideEffects SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <>temp1
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [1,<>temp1,Illegal]
+                          PythonCallNodeGen SourceSection: [12,63]`class DerivedClassNa...`
+                            CachedCallNodeGen SourceSection: None
+                              CreateArgumentsNodeGen SourceSection: None
+                              CallDispatchNodeGen SourceSection: None
+                            FunctionDefinitionNode Name: DerivedClassName SourceSection: None
+                              Arguments: None
+                              KwArguments: None
+                              Documentation: None
+                              FreeVarSlots: None
+                              ExecutionSlots:
+                                FreeVarsSlots: None
+                                CellVarsSlots: __class__, 
+                              ClassBodyRootNode SourceSection: [12,63]`class DerivedClassNa...`
+                                Name: DerivedClassName
+                                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                  Param Names: namespace
+                                CelVars: __class__
+                                FreeVars: None
+                                NeedsCellFrame: False
+                                FrameDescriptor: 1 slots [__class__]
+                                ExecutionSlots:
+                                  FreeVarsSlots: None
+                                  CellVarsSlots: __class__, 
+                                InnerRootNode SourceSection: None
+                                  ReturnTargetNode SourceSection: None
+                                    Body: BlockNode SourceSection: None
+                                      ClassDefinitionPrologueNode SourceSection: None
+                                        QualName: fn.<locals>.DerivedClassName
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          Identifier: __name__
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
+                                        SetItemIfNotPresentNodeGen SourceSection: None
+                                          SetItemNodeGen SourceSection: None
+                                      ExpressionStatementNode SourceSection: [59,63]`pass`
+                                        EmptyNode SourceSection: [59,63]`pass`
+                                    Return Expresssion: ObjectLiteralNode SourceSection: None
+                            StringLiteralNode SourceSection: None
+                            GetAttributeNodeGen SourceSection: [35,56]`modname.BaseClassNam...`
+                              GetFixedAttributeNodeGen SourceSection: None
+                                Key: BaseClassName
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __getattribute__
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [35,42]`modname`
+                                Identifier: modname
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            GetCallAttributeNodeGen SourceSection: None
+                              BuiltinsLiteralNode SourceSection: None
+                        WriteCellVarNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [1,<>temp1,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [1,<>temp1,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [2,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundLocalError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
@@ -36,12 +37,10 @@ import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class ReadVariableNode extends FrameSlotNode implements ReadLocalNode {
-    private final BranchProfile unboundLocal = BranchProfile.create();
     @CompilationFinal private NodeCost nodeCost = NodeCost.NONE;
-
+    @Child private PRaiseNode raise;
     @Child private ReadVariableFromFrameNode readLocalNode;
 
     protected ReadVariableNode(FrameSlot slot) {
@@ -68,8 +67,11 @@ public abstract class ReadVariableNode extends FrameSlotNode implements ReadLoca
             if (frameSlot.getIdentifier().equals(RETURN_SLOT_ID)) {
                 value = PNone.NONE;
             } else {
-                unboundLocal.enter();
-                throw raise(UnboundLocalError, "local variable '%s' referenced before assignment", frameSlot.getIdentifier());
+                if (raise == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raise = insert(PRaiseNode.create());
+                }
+                throw raise.raise(UnboundLocalError, "local variable '%s' referenced before assignment", frameSlot.getIdentifier());
             }
         }
         return value;

@@ -1,0 +1,47 @@
+ModuleRootNode Name: <module 'functionDefCPT16'> SourceSection: [0,17]`def f(*, a): pass`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,17]`def f(*, a): pass`
+    ExpressionWithSideEffect SourceSection: [0,17]`def f(*, a): pass`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,17]`def f(*, a): pass`
+          Identifier: f
+          FunctionDefinitionNode Name: f SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,17]`def f(*, a): pass`
+              Name: f
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=True
+                Keyword Names: a
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 3 slots [*, a, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,17]`def f(*, a): pass`
+                ReturnTargetNode SourceSection: [0,17]`def f(*, a): pass`
+                  Body: BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: a
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [1,a,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
+                    ExpressionStatementNode SourceSection: [13,17]`pass`
+                      EmptyNode SourceSection: [13,17]`pass`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [2,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,8 +45,15 @@ import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -58,51 +65,69 @@ public final class GetNextNode extends PNodeWithContext {
         return new GetNextNode();
     }
 
-    @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__);
+    @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__, () -> new NoAttributeHandler() {
+        @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
-    private final ConditionProfile notAnIterator = ConditionProfile.createBinaryProfile();
-
-    private Object checkResult(Object result, Object iterator) {
-        if (notAnIterator.profile(result == PNone.NO_VALUE)) {
-            // TODO: maybe this could be handled in LookupAndCallUnaryNode directly?
-            throw raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
+        @Override
+        public Object execute(Object receiver) {
+            throw raiseNode.raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", receiver);
         }
-        return result;
+    });
+
+    public Object execute(VirtualFrame frame, Object iterator) {
+        return nextCall.executeObject(frame, iterator);
     }
 
-    public Object execute(Object iterator) {
-        return checkResult(nextCall.executeObject(iterator), iterator);
-    }
-
-    public boolean executeBoolean(Object iterator) throws UnexpectedResultException {
+    public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
         try {
-            return nextCall.executeBoolean(iterator);
+            return nextCall.executeBoolean(frame, iterator);
         } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+            throw new UnexpectedResultException(e.getResult());
         }
     }
 
-    public int executeInt(Object iterator) throws UnexpectedResultException {
+    public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
         try {
-            return nextCall.executeInt(iterator);
+            return nextCall.executeInt(frame, iterator);
         } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+            throw new UnexpectedResultException(e.getResult());
         }
     }
 
-    public long executeLong(Object iterator) throws UnexpectedResultException {
+    public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
         try {
-            return nextCall.executeLong(iterator);
+            return nextCall.executeLong(frame, iterator);
         } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+            throw new UnexpectedResultException(e.getResult());
         }
     }
 
-    public double executeDouble(Object iterator) throws UnexpectedResultException {
+    public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
         try {
-            return nextCall.executeDouble(iterator);
+            return nextCall.executeDouble(frame, iterator);
         } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+            throw new UnexpectedResultException(e.getResult());
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class GetNextWithoutFrameNode extends PNodeWithContext {
+
+        public abstract Object executeWithGlobalState(Object iterator);
+
+        private static Object checkResult(PRaiseNode raiseNode, ConditionProfile notAnIterator, Object result, Object iterator) {
+            if (notAnIterator.profile(result == PNone.NO_VALUE)) {
+                throw raiseNode.raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
+            }
+            return result;
+        }
+
+        @Specialization
+        Object doObject(Object iterator,
+                        @Cached LookupAndCallUnaryDynamicNode nextCall,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached("createBinaryProfile()") ConditionProfile notAnIterator) {
+            return checkResult(raiseNode, notAnIterator, nextCall.executeObject(iterator, __NEXT__), iterator);
         }
     }
 }

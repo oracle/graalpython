@@ -62,18 +62,32 @@ _config_vars = None
 
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
-    so_ext = _imp.extension_suffixes()[0]
+    darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
+
+    # note: this must be kept in sync with _imp.extension_suffixes
+    so_abi = sys.implementation.cache_tag + "-" + sys.graal_python_platform_id + "-" + sys.implementation._multiarch
+    so_ext = ".so" if not darwin_native else ".dylib"
+    assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
+
 
     g = {}
-    g['CC'] = "%s -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
-    g['CXX'] = "%s -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
+    g['CC'] = sys.__graal_get_toolchain_path('CC')
+    g['CXX'] = sys.__graal_get_toolchain_path('CXX')
     g['OPT'] = "-DNDEBUG -O1"
+    g['CONFINCLUDEPY'] = get_python_inc()
+    g['CPPFLAGS'] = '-I. -I%s' % get_python_inc()
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
-    g['LDSHARED'] = "%s -LD %s" % (sys.executable, "-v" if sys.flags.verbose else "")
-    g['EXT_SUFFIX'] = so_ext
+    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
+    if darwin_native:
+        from build_capi import capi_home
+        g['LDSHARED'] = g['LDSHARED_LINUX'] + " -L" + capi_home + " -lpython." + so_abi + " -Wl,-rpath," + capi_home
+    else:
+        g['LDSHARED'] = g['LDSHARED_LINUX']
+    g['SOABI'] = so_abi
+    g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
-    g['SO'] = so_ext  # deprecated in Python 3, for backward compatibility
+    g['SO'] = "." + so_abi + so_ext # deprecated in Python 3, for backward compatibility
     g['AR'] = "ar"
     g['ARFLAGS'] = "rc"
     g['EXE'] = ""
@@ -87,6 +101,7 @@ def _init_posix():
 def _init_nt():
     """Initialize the module as appropriate for NT"""
     g = {}
+    g['EXT_SUFFIX'] = _imp.extension_suffixes()[0]
     g['EXE'] = ".exe"
     g['SO'] = ".pyd"
     g['SOABI'] = g['SO'].rsplit('.')[0]   # xxx?

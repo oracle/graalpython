@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,14 +32,17 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "gc")
 public final class GcModuleBuiltins extends PythonBuiltins {
@@ -49,18 +52,50 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         return GcModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "collect", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "collect", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        int collect() {
-            System.gc();
+        int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level) {
+            doGc();
+            // collect some weak references now
+            getContext().triggerAsyncActions(frame, this);
             return 0;
+        }
+
+        @TruffleBoundary
+        private static void doGc() {
+            System.gc();
         }
     }
 
-    @Builtin(name = "get_count", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "isenabled", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GcIsEnabledNode extends PythonBuiltinNode {
+        @Specialization
+        boolean isenabled() {
+            return true;
+        }
+    }
+
+    abstract static class StubNode extends PythonBuiltinNode {
+        @Specialization
+        PNone disable() {
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "disable", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class DisableNode extends StubNode {
+    }
+
+    @Builtin(name = "enable", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class EnableNode extends StubNode {
+    }
+
+    @Builtin(name = "get_count", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GcCountNode extends PythonBuiltinNode {
         @Specialization
@@ -78,7 +113,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_tracked", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_tracked", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GcIsTrackedNode extends PythonBuiltinNode {
         @Specialization
@@ -95,6 +130,17 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         @Fallback
         public boolean isTracked(@SuppressWarnings("unused") Object object) {
             return true;
+        }
+    }
+
+    @Builtin(name = "get_referents", takesVarArgs = true)
+    @GenerateNodeFactory
+    abstract static class GcGetReferentsNode extends PythonBuiltinNode {
+        @Specialization
+        PList getReferents(@SuppressWarnings("unused") Object objects) {
+            // TODO: this is just a dummy implementation; for native objects, this should actually
+            // use 'tp_traverse'
+            return factory().createList();
         }
     }
 }

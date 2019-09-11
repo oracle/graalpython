@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,10 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -52,107 +54,84 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeNodeGen;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeUncachedNodeGen;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectTpDictNodeGen;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ImportStatic(PythonOptions.class)
+@ImportStatic({PythonOptions.class, NativeMemberNames.class})
 public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
-
-    private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
-    private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
     public abstract boolean execute(Object primary, Object key, Object value);
 
-    public abstract boolean execute(Object primary, String key, Object value);
-
     public static WriteAttributeToObjectNode create() {
-        return WriteAttributeToObjectNodeGen.create();
+        return WriteAttributeToObjectNotTypeNodeGen.create();
     }
 
-    protected boolean isAttrWritable(PythonObject self) {
-        if (self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
+    public static WriteAttributeToObjectNode createForceType() {
+        return WriteAttributeToObjectTpDictNodeGen.create();
+    }
+
+    public static WriteAttributeToObjectNode getUncached() {
+        return WriteAttributeToObjectNotTypeUncachedNodeGen.getUncached();
+    }
+
+    protected static boolean isAttrWritable(IsBuiltinClassProfile exactBuiltinInstanceProfile, PythonObject self, Object key) {
+        if (isHiddenKey(key) || self instanceof PythonManagedClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
             return true;
         }
         return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
     }
 
-    private void handlePythonClass(PythonObject object, Object key) {
-        if (isClassProfile.profile(object instanceof PythonClass)) {
-            if (key instanceof String) {
-                ((PythonClass) object).invalidateAttributeInMROFinalAssumptions((String) key);
-            }
+    private static void handlePythonClass(ConditionProfile isClassProfile, PythonObject object, Object key) {
+        if (isClassProfile.profile(object instanceof PythonManagedClass)) {
+            ((PythonManagedClass) object).invalidateFinalAttribute(key);
         }
     }
 
     // write to the DynamicObject
     @Specialization(guards = {
-                    "object == cachedObject",
-                    "isAttrWritable(object) || isHiddenKey(key)"
-    }, assumptions = {
-                    "singleContextAssumption",
-                    "dictUnsetOrSameAsStorageAssumption"
-    })
-    protected boolean writeToDynamicStorageCached(PythonObject object, Object key, Object value,
-                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
-                    @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
-        handlePythonClass(object, key);
-        return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
-    }
-
-    @Specialization(guards = {
-                    "isAttrWritable(object) || isHiddenKey(key)",
-                    "isDictUnsetOrSameAsStorage(object)"
-    }, replaces = "writeToDynamicStorageCached")
+                    "isAttrWritable(exactBuiltinInstanceProfile, object, key)",
+                    "isHiddenKey(key) || !lib.hasDict(object)"
+    }, limit = "1")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
-                    @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
-        handlePythonClass(object, key);
+                    @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile,
+                    @Exclusive @Cached @SuppressWarnings("unused") IsBuiltinClassProfile exactBuiltinInstanceProfile) {
+        handlePythonClass(isClassProfile, object, key);
         return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
     }
 
     // write to the dict
     @Specialization(guards = {
-                    "object == cachedObject",
-                    "!dictUnsetOrSameAsStorageAssumption.isValid()"
-    }, assumptions = {
-                    "singleContextAssumption"
-    })
-    protected boolean writeToDictCached(PythonObject object, Object key, Object value,
-                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
-                    @Cached("create()") BranchProfile updateStorage,
-                    @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-        handlePythonClass(object, key);
-        PHashingCollection dict = object.getDict();
-        HashingStorage dictStorage = getDictStorage(dict);
-        HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
-        if (dictStorage != hashingStorage) {
-            updateStorage.enter();
-            dict.setDictStorage(hashingStorage);
-        }
-        return true;
-    }
-
-    @Specialization(guards = {
-                    "!isDictUnsetOrSameAsStorage(object)"
-    }, replaces = "writeToDictCached")
+                    "!isHiddenKey(key)",
+                    "lib.hasDict(object)"
+    }, limit = "1")
     protected boolean writeToDict(PythonObject object, Object key, Object value,
-                    @Cached("create()") BranchProfile updateStorage,
-                    @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-        handlePythonClass(object, key);
-        PHashingCollection dict = object.getDict();
-        HashingStorage dictStorage = getDictStorage(dict);
-        HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
+                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @Cached BranchProfile updateStorage,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
+                    @Cached HashingStorageNodes.SetItemNode setItemNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
+        handlePythonClass(isClassProfile, object, key);
+        PHashingCollection dict = lib.getDict(object);
+        HashingStorage dictStorage = getDictStorage.execute(dict);
+        HashingStorage hashingStorage = setItemNode.execute(null, dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
             dict.setDictStorage(hashingStorage);
@@ -160,21 +139,96 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
-    @Specialization(guards = "!isPythonObject(object)")
-    protected boolean readNative(PythonNativeObject object, Object key, Object value,
-                    @Cached("create()") GetObjectDictNode getNativeDict,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-        Object d = getNativeDict.execute(object);
+    private static boolean writeNativeGeneric(PythonAbstractNativeObject object, Object key, Object value, Object d, HashingCollectionNodes.SetItemNode setItemNode, PRaiseNode raiseNode) {
         if (d instanceof PHashingCollection) {
-            setItemNode.execute(((PHashingCollection) d), key, value);
+            setItemNode.execute(null, ((PHashingCollection) d), key, value);
             return true;
         } else {
-            return raise(object, key, value);
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);
         }
     }
 
-    @Fallback
-    protected boolean raise(Object object, Object key, @SuppressWarnings("unused") Object value) {
-        throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);
+    @Specialization(guards = "isErrorCase(exactBuiltinInstanceProfile, lib, object, key)")
+    protected static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
+                    @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @Exclusive @Cached @SuppressWarnings("unused") IsBuiltinClassProfile exactBuiltinInstanceProfile,
+                    @Exclusive @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);
     }
+
+    protected static boolean isErrorCase(IsBuiltinClassProfile exactBuiltinInstanceProfile, PythonObjectLibrary lib, Object object, Object key) {
+        if (object instanceof PythonObject) {
+            PythonObject self = (PythonObject) object;
+            if (isAttrWritable(exactBuiltinInstanceProfile, self, key) && (isHiddenKey(key) || !lib.hasDict(self))) {
+                return false;
+            }
+            if (!isHiddenKey(key) && lib.hasDict(self)) {
+                return false;
+            }
+        }
+        if (object instanceof PythonAbstractNativeObject && !isHiddenKey(key)) {
+            return false;
+        }
+        return true;
+    }
+
+    protected abstract static class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
+        @Specialization(guards = {"!isHiddenKey(key)"}, limit = "1")
+        static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached PRaiseNode raiseNode) {
+            return writeNativeGeneric(object, key, value, lib.getDict(object), setItemNode, raiseNode);
+        }
+    }
+
+    @GenerateUncached
+    protected abstract static class WriteAttributeToObjectNotTypeUncachedNode extends WriteAttributeToObjectNode {
+        @Specialization(guards = {
+                        "!isHiddenKey(key)",
+                        "lib.hasDict(object)"
+        }, replaces = {"writeToDict"}, limit = "1")
+        protected boolean writeToDictUncached(PythonObject object, Object key, Object value,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
+                        @Cached CallNode callSetItem,
+                        @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
+            handlePythonClass(isClassProfile, object, key);
+            PHashingCollection dict = lib.getDict(object);
+            return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, dict);
+        }
+
+        @Specialization(guards = {"!isHiddenKey(key)"}, limit = "1")
+        static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
+                        @Cached CallNode callSetItem,
+                        @Cached PRaiseNode raiseNode) {
+            PHashingCollection nativeDict = lib.getDict(object);
+            return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, nativeDict);
+        }
+
+        private static boolean writeToDictUncached(Object object, Object key, Object value, LookupInheritedAttributeNode.Dynamic getSetItem, CallNode callSetItem, PRaiseNode raiseNode,
+                        Object dict) {
+            Object setItemCallable = getSetItem.execute(dict, SpecialMethodNames.__SETITEM__);
+            if (setItemCallable == PNone.NO_VALUE) {
+                throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' dict of '%p' object has no attribute '__setitem__'", dict, object);
+            } else {
+                callSetItem.execute(null, setItemCallable, object, key, value);
+                return true;
+            }
+        }
+    }
+
+    protected abstract static class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
+        @Specialization(guards = "!isHiddenKey(key)")
+        static boolean writeNativeClass(PythonAbstractNativeObject object, Object key, Object value,
+                        @Cached GetTypeMemberNode getNativeDict,
+                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached PRaiseNode raiseNode) {
+            return writeNativeGeneric(object, key, value, getNativeDict.execute(object, NativeMemberNames.TP_DICT), setItemNode, raiseNode);
+        }
+    }
+
 }

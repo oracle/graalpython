@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -199,13 +199,18 @@ public final class BytesUtils {
                     }
                     throw errors.raise(ValueError, "invalid \\x escape at position %d", i);
                 default:
-                    if (regexMode && (chr == '\\' || chr == 'g' || (chr >= '0' && chr <= '9'))) {
-                        // only allow backslashes, named group references and numbered group
-                        // references in regex mode
+                    if (regexMode) {
+                        if (chr == 'g' || (chr >= '0' && chr <= '9')) {
+                            // only allow backslashes, named group references and numbered group
+                            // references in regex mode
+                            charList.append('\\');
+                            charList.append(chr);
+                        } else {
+                            throw errors.raise(ValueError, "invalid escape sequence '\\%s' at position %d", chr, i);
+                        }
+                    } else {
                         charList.append('\\');
                         charList.append(chr);
-                    } else {
-                        throw errors.raise(ValueError, "invalid escape sequence '\\%s' at position %d", chr, i);
                     }
             }
         }

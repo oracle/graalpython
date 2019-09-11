@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,30 +40,109 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
  */
+@ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
-    public PySequenceMethodsWrapper(PythonClass delegate) {
+    public PySequenceMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
     }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PySequenceMethodsWrapper;
+    public PythonManagedClass getPythonClass(PythonNativeWrapperLibrary lib) {
+        return (PythonManagedClass) lib.getDelegate(this);
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PySequenceMethodsWrapperMRForeign.ACCESS;
+    @ExportMessage
+    protected boolean hasMembers() {
+        return true;
     }
 
-    public PythonClass getPythonClass() {
-        return (PythonClass) getDelegate();
+    @ExportMessage
+    protected boolean isMemberReadable(String member) {
+        switch (member) {
+            case NativeMemberNames.SQ_REPEAT:
+            case NativeMemberNames.SQ_ITEM:
+                return true;
+            default:
+                return false;
+        }
     }
+
+    @ExportMessage
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    protected Object readMember(String member,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                    @Cached LookupAttributeInMRONode.Dynamic getSqItemNode,
+                    @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
+                    @Cached CExtNodes.ToSulongNode toSulongNode,
+                    @Cached BranchProfile errorProfile,
+                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                    @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
+        Object result;
+        try {
+            switch (member) {
+                case NativeMemberNames.SQ_REPEAT:
+                    result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
+                    break;
+                case NativeMemberNames.SQ_ITEM:
+                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__));
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.create(member);
+            }
+        } catch (PException e) {
+            errorProfile.enter();
+            PythonContext context = contextRef.get();
+            context.setCurrentException(e);
+            e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+            result = getNativeNullNode.execute(null);
+        }
+        return result;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
+    }
+
 }

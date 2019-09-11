@@ -1,0 +1,4 @@
+testBadTypeReturned
+testGetSetAndDel
+testInit
+testMisc

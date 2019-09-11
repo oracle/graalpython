@@ -1,0 +1,9 @@
+test_closeall
+test_closeall_default
+test_readwriteexc
+test_basic
+test_log
+test_log_info
+test_repr
+test_strerror
+test_unhandled

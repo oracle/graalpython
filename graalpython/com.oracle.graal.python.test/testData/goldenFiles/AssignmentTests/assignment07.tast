@@ -1,0 +1,80 @@
+ModuleRootNode Name: <module 'assignment07'> SourceSection: [0,29]`def fn():↵  a, b, c ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,29]`def fn():↵  a, b, c ...`
+    ExpressionWithSideEffect SourceSection: [0,29]`def fn():↵  a, b, c ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,29]`def fn():↵  a, b, c ...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,29]`def fn():↵  a, b, c ...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 7 slots [a, b, c, <>temp3, <>temp4, <>temp5, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,29]`def fn():↵  a, b, c ...`
+                ReturnTargetNode SourceSection: [0,29]`def fn():↵  a, b, c ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    DestructuringAssignmentNodeGen SourceSection: [12,29]`a, b, c = 1, 2, 3`
+                      TupleLiteralNode SourceSection: [22,29]`1, 2, 3`
+                        PythonObjectFactoryNodeGen SourceSection: None
+                        IntegerLiteralNode SourceSection: [22,23]`1`
+                          Value: 1
+                        IntegerLiteralNode SourceSection: [25,26]`2`
+                          Value: 2
+                        IntegerLiteralNode SourceSection: [28,29]`3`
+                          Value: 3
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <>temp3
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [3,<>temp3,Illegal]
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <>temp4
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <>temp5
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [5,<>temp5,Illegal]
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,a,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [3,<>temp3,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: b
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,b,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [4,<>temp4,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: c
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,c,Illegal]
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [5,<>temp5,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [6,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

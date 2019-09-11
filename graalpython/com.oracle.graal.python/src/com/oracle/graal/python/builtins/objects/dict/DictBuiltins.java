@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.ContainsKeyNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -74,6 +75,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDict)
@@ -99,52 +101,52 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 1")
-        public Object doVarargs(PDict self, Object[] args, PKeyword[] kwargs) {
-            self.setDictStorage(getInitNode().execute(args[0], kwargs));
+        Object doVarargs(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs) {
+            self.setDictStorage(getInitNode().execute(frame, args[0], kwargs));
             return PNone.NONE;
         }
 
         @Specialization(guards = "args.length == 0")
-        public Object doKeywords(PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs) {
-            self.setDictStorage(getInitNode().execute(NO_VALUE, kwargs));
+        Object doKeywords(VirtualFrame frame, PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs) {
+            self.setDictStorage(getInitNode().execute(frame, NO_VALUE, kwargs));
             return PNone.NONE;
         }
 
         @Specialization(guards = "args.length > 1")
-        public Object doGeneric(@SuppressWarnings("unused") PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+        Object doGeneric(@SuppressWarnings("unused") PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             throw raise(TypeError, "dict expected at most 1 arguments, got %d", args.length);
         }
     }
 
     // setdefault(key[, default])
-    @Builtin(name = "setdefault", minNumOfPositionalArgs = 2, keywordArguments = {"default"})
+    @Builtin(name = "setdefault", minNumOfPositionalArgs = 2, parameterNames = {"self", "key", "default"})
     @GenerateNodeFactory
     public abstract static class SetDefaultNode extends PythonBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
 
-        protected boolean containsKey(HashingStorage storage, Object key) {
+        protected boolean containsKey(VirtualFrame frame, HashingStorage storage, Object key) {
             if (containsKeyNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 containsKeyNode = insert(ContainsKeyNode.create());
             }
-            return containsKeyNode.execute(storage, key);
+            return containsKeyNode.execute(frame, storage, key);
         }
 
-        @Specialization(guards = "containsKey(dict.getDictStorage(), key)")
-        public Object setDefault(PDict dict, Object key, @SuppressWarnings("unused") Object defaultValue,
+        @Specialization(guards = "containsKey(frame, dict.getDictStorage(), key)")
+        public Object setDefault(VirtualFrame frame, PDict dict, Object key, @SuppressWarnings("unused") Object defaultValue,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(dict.getDictStorage(), key);
+            return getItemNode.execute(frame, dict.getDictStorage(), key);
         }
 
-        @Specialization(guards = "!containsKey(dict.getDictStorage(), key)")
-        public Object setDefault(PDict dict, Object key, Object defaultValue,
+        @Specialization(guards = "!containsKey(frame, dict.getDictStorage(), key)")
+        public Object setDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile defaultValProfile) {
             Object value = defaultValue;
             if (defaultValProfile.profile(defaultValue == PNone.NO_VALUE)) {
                 value = PNone.NONE;
             }
-            setItemNode.execute(dict, key, value);
+            setItemNode.execute(frame, dict, key, value);
             return value;
         }
     }
@@ -152,7 +154,7 @@ public final class DictBuiltins extends PythonBuiltins {
     // pop(key[, default])
     @Builtin(name = "pop", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class PopNode extends PythonBuiltinNode {
+    public abstract static class PopNode extends PythonTernaryBuiltinNode {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
         @Child private HashingStorageNodes.DelItemNode delItemNode;
 
@@ -174,15 +176,15 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(arg1)")
-        public Object pop(PDict dict, Object arg0, PNone arg1) {
-            return popDefault(dict, arg0, PNone.NONE);
+        public Object pop(VirtualFrame frame, PDict dict, Object arg0, PNone arg1) {
+            return popDefault(frame, dict, arg0, PNone.NONE);
         }
 
         @Specialization
-        public Object popDefault(PDict dict, Object key, Object defaultValue) {
-            Object retVal = getGetItemNode().execute(dict.getDictStorage(), key);
+        public Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue) {
+            Object retVal = getGetItemNode().execute(frame, dict.getDictStorage(), key);
             if (retVal != null) {
-                getDelItemNode().execute(dict, dict.getDictStorage(), key);
+                getDelItemNode().execute(frame, dict, dict.getDictStorage(), key);
                 return retVal;
             } else {
                 return defaultValue;
@@ -191,9 +193,9 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // popitem()
-    @Builtin(name = "popitem", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "popitem", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PopItemNode extends PythonBuiltinNode {
+    public abstract static class PopItemNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -209,7 +211,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // keys()
-    @Builtin(name = KEYS, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = KEYS, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
 
@@ -220,7 +222,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // items()
-    @Builtin(name = ITEMS, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = ITEMS, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
 
@@ -233,18 +235,18 @@ public final class DictBuiltins extends PythonBuiltins {
     // get(key[, default])
     @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class GetNode extends PythonBuiltinNode {
+    public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
 
         @Specialization(guards = "!isNoValue(defaultValue)")
-        public Object doWithDefault(PDict self, Object key, Object defaultValue) {
-            final Object value = getGetItemNode().execute(self.getDictStorage(), key);
+        public Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue) {
+            final Object value = getGetItemNode().execute(frame, self.getDictStorage(), key);
             return value != null ? value : defaultValue;
         }
 
         @Specialization
-        public Object doNoDefault(PDict self, Object key, @SuppressWarnings("unused") PNone defaultValue) {
-            final Object value = getGetItemNode().execute(self.getDictStorage(), key);
+        public Object doNoDefault(VirtualFrame frame, PDict self, Object key, @SuppressWarnings("unused") PNone defaultValue) {
+            final Object value = getGetItemNode().execute(frame, self.getDictStorage(), key);
             return value != null ? value : PNone.NONE;
         }
 
@@ -257,24 +259,24 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getItem(PDict self, Object key,
+        Object getItem(VirtualFrame frame, PDict self, Object key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__MISSING__)") LookupAndCallBinaryNode specialNode) {
-            final Object result = getItemNode.execute(self.getDictStorage(), key);
+            final Object result = getItemNode.execute(frame, self.getDictStorage(), key);
             if (result == null) {
-                return specialNode.executeObject(self, key);
+                return specialNode.executeObject(frame, self, key);
             }
             return result;
         }
     }
 
-    @Builtin(name = __MISSING__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __MISSING__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class MissingNode extends PythonBuiltinNode {
+    public abstract static class MissingNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         Object run(Object self, PString key) {
@@ -289,9 +291,9 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(key)")
-        Object run(Object self, Object key,
+        Object run(VirtualFrame frame, Object self, Object key,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode specialNode) {
-            Object name = specialNode.executeObject(key);
+            Object name = specialNode.executeObject(frame, key);
             if (!PGuards.isString(name)) {
                 throw raise(TypeError, "__repr__ returned non-string (type %p)", name);
             }
@@ -299,31 +301,31 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object run(PDict self, Object key, Object value,
+        Object run(VirtualFrame frame, PDict self, Object key, Object value,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-            setItemNode.execute(self, key, value);
+            setItemNode.execute(frame, self, key, value);
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __DELITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonBuiltinNode {
+    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object run(PDict self, Object key,
+        Object run(VirtualFrame frame, PDict self, Object key,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
-            if (delItemNode.execute(self, self.getDictStorage(), key)) {
+            if (delItemNode.execute(frame, self, self.getDictStorage(), key)) {
                 return PNone.NONE;
             }
             throw raise(KeyError, "%s", key);
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -332,13 +334,19 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doDictDict(PDict self, PDict other,
+        Object doDictDict(VirtualFrame frame, PDict self, PDict other,
                         @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
-            return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
+            return equalsNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        Object doDictProxy(VirtualFrame frame, PDict self, PMappingproxy other,
+                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+            return equalsNode.execute(frame, self.getDictStorage(), other.getDictStorage());
         }
 
         @Fallback
@@ -348,9 +356,9 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ContainsNode extends PythonBuiltinNode {
+    public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
 
         @SuppressWarnings("unused")
@@ -360,16 +368,16 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean run(PDict self, Object key) {
+        boolean run(VirtualFrame frame, PDict self, Object key) {
             if (containsKeyNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 containsKeyNode = insert(ContainsKeyNode.create());
             }
-            return containsKeyNode.execute(self.getDictStorage(), key);
+            return containsKeyNode.execute(frame, self.getDictStorage(), key);
         }
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -378,7 +386,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -389,21 +397,21 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // copy()
-    @Builtin(name = "copy", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class CopyNode extends PythonBuiltinNode {
+    public abstract static class CopyNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PDict copy(PDict dict,
+        public PDict copy(VirtualFrame frame, PDict dict,
                         @Cached("create()") HashingStorageNodes.CopyNode copyNode) {
-            return factory().createDict(copyNode.execute(dict.getDictStorage()));
+            return factory().createDict(copyNode.execute(frame, dict.getDictStorage()));
         }
     }
 
     // clear()
-    @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "clear", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ClearNode extends PythonBuiltinNode {
+    public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         public PDict copy(PDict dict) {
@@ -413,7 +421,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // values()
-    @Builtin(name = "values", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "values", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
 
@@ -423,32 +431,32 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doGeneric(Object self) {
             throw raise(TypeError, "unhashable type: '%p'", self);
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        public Object repr(PDict self,
+        public Object repr(VirtualFrame frame, PDict self,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprKeyNode,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprValueNode,
                         @Cached("create()") HashingStorageNodes.GetItemNode next) {
 
-            StringBuilder result = new StringBuilder("{");
+            StringBuilder result = new StringBuilder();
+            sbAppend(result, "{");
             boolean initial = true;
             for (Object key : self.keys()) {
-                Object value = next.execute(self.getDictStorage(), key);
-                Object keyReprString = unwrap(reprKeyNode.executeObject(key));
-                Object valueReprString = value != self ? unwrap(reprValueNode.executeObject(value)) : "{...}";
+                Object value = next.execute(frame, self.getDictStorage(), key);
+                Object keyReprString = unwrap(reprKeyNode.executeObject(frame, key));
+                Object valueReprString = value != self ? unwrap(reprValueNode.executeObject(frame, value)) : "{...}";
 
                 checkString(keyReprString);
                 checkString(valueReprString);
@@ -456,17 +464,22 @@ public final class DictBuiltins extends PythonBuiltins {
                 if (initial) {
                     initial = false;
                 } else {
-                    result.append(", ");
+                    sbAppend(result, ", ");
                 }
                 result.append((String) keyReprString).append(": ").append((String) valueReprString);
             }
-            return result.append('}').toString();
+            return sbAppend(result, "}").toString();
         }
 
         private void checkString(Object strObj) {
             if (!(strObj instanceof String)) {
                 throw raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", strObj);
             }
+        }
+
+        @TruffleBoundary
+        private static StringBuilder sbAppend(StringBuilder sb, String s) {
+            return sb.append(s);
         }
 
         private static Object unwrap(Object valueReprString) {

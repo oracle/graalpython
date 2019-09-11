@@ -1,0 +1,18 @@
+ModuleRootNode Name: <module 'augassign01'> SourceSection: [0,6]`a += b`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,6]`a += b`
+    ExpressionWithSideEffect SourceSection: [0,6]`a += b`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,6]`a += b`
+          Identifier: a
+          LookupAndCallInplaceNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [0,1]`a`
+              Identifier: a
+            ReadNameNodeGen SourceSection: [5,6]`b`
+              Identifier: b

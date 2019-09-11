@@ -1,0 +1,37 @@
+ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,31]`for i in range(210):...`
+    ExpressionWithSideEffect SourceSection: [0,31]`for i in range(210):...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        ElseNode SourceSection: [0,31]`for i in range(210):...`
+          ForNode SourceSection: None
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: i
+              ExpressionStatementNode SourceSection: [23,31]`print(i)`
+                PythonCallNodeGen SourceSection: [23,31]`print(i)`
+                  CachedCallNodeGen SourceSection: None
+                    CreateArgumentsNodeGen SourceSection: None
+                    CallDispatchNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [29,30]`i`
+                    Identifier: i
+                  ReadNameNodeGen SourceSection: None
+                    Identifier: print
+            GetIteratorExpressionNodeGen SourceSection: [9,19]`range(210)`
+              GetIteratorNodeGen SourceSection: None
+              PythonCallNodeGen SourceSection: [9,19]`range(210)`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                IntegerLiteralNode SourceSection: [15,18]`210`
+                  Value: 210
+                ReadNameNodeGen SourceSection: None
+                  Identifier: range
+          BlockNode SourceSection: None

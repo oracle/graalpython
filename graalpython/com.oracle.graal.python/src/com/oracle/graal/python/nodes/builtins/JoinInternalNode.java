@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,26 +42,27 @@ package com.oracle.graal.python.nodes.builtins;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PGuards.class)
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class JoinInternalNode extends PNodeWithContext {
 
-    public abstract String execute(Object self, Object iterable);
+    public abstract String execute(VirtualFrame frame, Object self, Object iterable);
 
     @Specialization
     @TruffleBoundary
@@ -82,47 +83,60 @@ public abstract class JoinInternalNode extends PNodeWithContext {
         return sb.toString();
     }
 
-    private String checkItem(Object item, int pos) {
-        if (PGuards.isString(item)) {
+    private static String checkItem(Object item, int pos, ConditionProfile profile, PRaiseNode raise) {
+        if (profile.profile(PGuards.isString(item))) {
             return item.toString();
         }
-        throw raise(TypeError, "sequence item %d: expected str instance, %p found", pos, item);
+        throw raise.raise(TypeError, "sequence item %d: expected str instance, %p found", pos, item);
     }
 
     @Specialization
-    @TruffleBoundary
-    protected String join(String string, PythonObject iterable,
+    protected String join(VirtualFrame frame, String string, Object iterable,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile1,
-                    @Cached("create()") IsBuiltinClassProfile errorProfile2) {
+                    @Cached("create()") IsBuiltinClassProfile errorProfile2,
+                    @Cached("createBinaryProfile()") ConditionProfile errorProfile3) {
 
-        Object iterator = getIterator.executeWith(iterable);
+        Object iterator = getIterator.executeWith(frame, iterable);
         StringBuilder str = new StringBuilder();
         try {
-            str.append(checkItem(next.execute(iterator), 0));
+            append(str, checkItem(next.execute(frame, iterator), 0, errorProfile3, raise));
         } catch (PException e) {
             e.expectStopIteration(errorProfile1);
             return "";
+
         }
         int i = 1;
         while (true) {
             Object value;
             try {
-                value = next.execute(iterator);
+                value = next.execute(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile2);
-                return str.toString();
+                return toString(str);
             }
-            str.append(string);
-            str.append(checkItem(value, i++));
+            append(str, string);
+            append(str, checkItem(value, i++, errorProfile3, raise));
         }
     }
 
-    @Fallback
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, String o) {
+        return sb.append(o);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toString(StringBuilder sb) {
+        return sb.toString();
+    }
+
+    @Specialization(guards = "!isString(self)")
     @SuppressWarnings("unused")
-    protected String join(Object self, Object arg) {
-        throw raise(TypeError, "can only join an iterable");
+    protected String join(Object self, Object arg,
+                    @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, "can only join an iterable");
     }
 
     public static JoinInternalNode create() {

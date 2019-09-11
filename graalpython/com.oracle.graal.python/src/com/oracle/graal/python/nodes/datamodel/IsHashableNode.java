@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,29 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class IsHashableNode extends PDataModelEmulationNode {
-    protected PythonClass getBuiltinIntType() {
-        return getCore().lookupType(PythonBuiltinClassType.PInt);
+
+    @Override
+    public final boolean execute(Object obj) {
+        return execute(null, obj);
     }
 
-    protected boolean isDouble(Object object) {
+    public abstract boolean execute(VirtualFrame frame, Object obj);
+
+    protected static boolean isDouble(Object object) {
         return object instanceof Double || PGuards.isPFloat(object);
     }
 
@@ -74,14 +82,16 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
     }
 
     @Specialization
-    protected boolean isHashableGeneric(Object object,
+    protected boolean isHashableGeneric(VirtualFrame frame, Object object,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached PRaiseNode raiseNode,
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
                     @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode) {
-        Object hashValue = lookupHashAttributeNode.executeObject(object);
-        if (isInstanceNode.executeWith(hashValue, getBuiltinIntType())) {
+        Object hashValue = lookupHashAttributeNode.executeObject(frame, object);
+        if (isInstanceNode.executeWith(frame, hashValue, context.getCore().lookupType(PythonBuiltinClassType.PInt))) {
             return true;
         }
-        throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+        throw raiseNode.raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
     }
 
     public static IsHashableNode create() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -31,15 +31,25 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -52,7 +62,12 @@ public class WithNode extends StatementNode {
     @Child private CallNode enterDispatch = CallNode.create();
     @Child private CallNode exitDispatch = CallNode.create();
     @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
-    @Child GetClassNode getClassNode = GetClassNode.create();
+    @Child private GetClassNode getClassNode = GetClassNode.create();
+    @Child private PRaiseNode raiseNode;
+    @Child private PythonObjectFactory factory;
+    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
+    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
+    @Child private MaterializeFrameNode materializeFrameNode;
 
     private final BranchProfile noEnter = BranchProfile.create();
     private final BranchProfile noExit = BranchProfile.create();
@@ -84,6 +99,14 @@ public class WithNode extends StatementNode {
         return targetNode;
     }
 
+    private PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
+    }
+
     @Override
     public void executeVoid(VirtualFrame frame) {
         boolean gotException = false;
@@ -91,14 +114,14 @@ public class WithNode extends StatementNode {
         Object enterCallable = enterGetter.execute(withObject);
         if (enterCallable == PNone.NO_VALUE) {
             noEnter.enter();
-            throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __ENTER__);
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __ENTER__);
         }
         Object exitCallable = exitGetter.execute(withObject);
         if (exitCallable == PNone.NO_VALUE) {
             noExit.enter();
-            throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __EXIT__);
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __EXIT__);
         }
-        PException exceptionState = doEnter(frame, withObject, enterCallable);
+        ExceptionState exceptionState = doEnter(frame, withObject, enterCallable);
         try {
             doBody(frame);
         } catch (PException exception) {
@@ -127,34 +150,43 @@ public class WithNode extends StatementNode {
      * Leave the with-body. Call __exit__ if it hasn't already happened because of an exception, and
      * reset the exception state.
      */
-    protected void doLeave(VirtualFrame frame, Object withObject, PException exceptionState, boolean gotException, Object exitCallable) {
+    protected void doLeave(VirtualFrame frame, Object withObject, ExceptionState exceptionState, boolean gotException, Object exitCallable) {
         if (!gotException) {
             exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
         }
-        getContext().setCurrentException(exceptionState);
+        restoreExceptionState(frame, exceptionState);
     }
 
     /**
      * Call the __enter__ method and return the exception state as it was before starting the with
      * statement
      */
-    protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
-        PException currentException = getContext().getCurrentException();
+    protected ExceptionState doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
+        ExceptionState caughtException = saveExceptionStateNode.execute(frame);
         applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
-        return currentException;
+        return caughtException;
     }
 
     /**
      * Call __exit__ to handle the exception
      */
     protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e) {
-        e.getExceptionObject().reifyException();
+        if (materializeFrameNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            materializeFrameNode = insert(MaterializeFrameNodeGen.create());
+        }
+        PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false);
         PBaseException value = e.getExceptionObject();
-        PythonClass type = getClassNode.execute(value);
-        Object trace = e.getExceptionObject().getTraceback(factory());
-        Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, trace}, PKeyword.EMPTY_KEYWORDS);
+        PythonAbstractClass type = getClassNode.execute(value);
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
+        PTraceback tb = factory.createTraceback(escapedFrame, e);
+        value.setTraceback(tb);
+        Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, tb}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress
-        if (toBooleanNode.executeWith(returnValue)) {
+        if (toBooleanNode.executeBoolean(frame, returnValue)) {
             return;
         } else {
             // else re-raise exception
@@ -164,5 +196,15 @@ public class WithNode extends StatementNode {
 
     public ExpressionNode getWithContext() {
         return withContext;
+    }
+
+    private void restoreExceptionState(VirtualFrame frame, ExceptionState exceptionState) {
+        if (exceptionState != null) {
+            if (restoreExceptionStateNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+            }
+            restoreExceptionStateNode.execute(frame, exceptionState);
+        }
     }
 }

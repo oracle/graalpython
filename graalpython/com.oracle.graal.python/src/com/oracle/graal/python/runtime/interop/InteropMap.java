@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,17 +47,16 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.KeyInfo;
-import com.oracle.truffle.api.interop.MessageResolution;
-import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * A container class used to store per-node attributes used by the instrumentation framework.
  *
  */
+@ExportLibrary(InteropLibrary.class)
 public final class InteropMap implements TruffleObject {
     private final Map<String, Object> data;
 
@@ -65,29 +64,28 @@ public final class InteropMap implements TruffleObject {
         this.data = data;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return InteropMapMRForeign.ACCESS;
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
     }
 
+    @ExportMessage(name = "readMember")
     @TruffleBoundary
-    private int size() {
-        return data.size();
-    }
-
-    @TruffleBoundary
-    private Object getKey(String name) {
+    Object getKey(String name) {
         assert hasKey(name);
         return data.get(name);
     }
 
+    @ExportMessage(name = "isMemberReadable")
     @TruffleBoundary
-    private boolean hasKey(String name) {
+    boolean hasKey(String name) {
         return data.containsKey(name);
     }
 
+    @ExportMessage(name = "getMembers")
     @TruffleBoundary
-    private TruffleObject getKeys() {
+    TruffleObject getKeys(@SuppressWarnings("unused") boolean includeInternal) {
         return new InteropArray(data.keySet().toArray());
     }
 
@@ -108,45 +106,4 @@ public final class InteropMap implements TruffleObject {
         }
         return new InteropMap(map);
     }
-
-    static boolean isInstance(TruffleObject object) {
-        return object instanceof InteropMap;
-    }
-
-    @MessageResolution(receiverType = InteropMap.class)
-    static class InteropMapMR {
-
-        @Resolve(message = "READ")
-        abstract static class Read extends Node {
-            Object access(InteropMap target, String key) {
-                return target.getKey(key);
-            }
-        }
-
-        @Resolve(message = "HAS_KEYS")
-        abstract static class HasKeys extends Node {
-            boolean access(@SuppressWarnings("unused") Object target) {
-                return true;
-            }
-        }
-
-        @Resolve(message = "KEYS")
-        abstract static class Keys extends Node {
-            Object access(InteropMap target) {
-                return target.getKeys();
-            }
-        }
-
-        @Resolve(message = "KEY_INFO")
-        abstract static class KeyInfoMR extends Node {
-            int access(InteropMap target, Object key) {
-                if (key instanceof String && target.hasKey((String) key)) {
-                    return KeyInfo.READABLE;
-                } else {
-                    return 0;
-                }
-            }
-        }
-    }
-
 }

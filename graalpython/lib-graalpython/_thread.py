@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,16 +38,27 @@
 # SOFTWARE.
 
 import _sysconfig
-if _sysconfig.get_config_var('WITH_THREAD'):
-    error = RuntimeError
-    TIMEOUT_MAX = __truffle_get_timeout_max__()
 
 
-    @__builtin__
-    def allocate_lock():
-        return LockType()
+error = RuntimeError
+TIMEOUT_MAX = __truffle_get_timeout_max__()
 
 
-    def _set_sentinel():
-        """Dummy implementation of _thread._set_sentinel()."""
-        return LockType()
+@__builtin__
+def allocate_lock():
+    return LockType()
+
+
+def _set_sentinel():
+    """Dummy implementation of _thread._set_sentinel()."""
+    return LockType()
+
+
+def load():
+    if not _sysconfig.get_config_vars().get('WITH_THREAD'):
+        import sys
+        filename = sys.graal_python_stdlib_home + ("/_dummy_thread.py")
+        _dummy_thread = __import__(filename, "_thread")
+        sys.modules["_thread"] = _dummy_thread
+load()
+del load

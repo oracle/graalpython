@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -32,8 +32,8 @@
 typedef struct {
     PyObject_VAR_HEAD
     Py_ssize_t groups; /* must be first! */
-    PyObject* groupindex;
-    PyObject* indexgroup;
+    PyObject* groupindex; /* dict */
+    PyObject* indexgroup; /* tuple */
     /* compatibility */
     PyObject* pattern; /* pattern source (or None) */
     int flags; /* flags used when compiling pattern source */
@@ -57,8 +57,6 @@ typedef struct {
     Py_ssize_t mark[1];
 } MatchObject;
 
-typedef unsigned int (*SRE_TOLOWER_HOOK)(unsigned int ch);
-
 typedef struct SRE_REPEAT_T {
     Py_ssize_t count;
     SRE_CODE* pattern; /* points to REPEAT operator arguments */
@@ -74,6 +72,7 @@ typedef struct {
     void* end; /* end of original string */
     /* attributes for the match object */
     PyObject* string;
+    Py_buffer buffer;
     Py_ssize_t pos, endpos;
     int isbytes;
     int charsize; /* character size */
@@ -81,15 +80,14 @@ typedef struct {
     Py_ssize_t lastindex;
     Py_ssize_t lastmark;
     void** mark;
+    int match_all;
+    int must_advance;
     /* dynamically allocated stuff */
     char* data_stack;
     size_t data_stack_size;
     size_t data_stack_base;
-    Py_buffer buffer;
     /* current repeat context */
     SRE_REPEAT *repeat;
-    /* hooks */
-    SRE_TOLOWER_HOOK lower, upper;
 } SRE_STATE;
 
 typedef struct {

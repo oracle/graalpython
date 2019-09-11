@@ -1,0 +1,16 @@
+testAcos
+testAsin
+testAtan
+testAtan2
+testAtanh
+testCeil
+testConstants
+testCopysign
+testDegrees
+testExp
+testFabs
+testFactorial
+testFactorialHugeInputs
+testFloor
+testFmod
+testFrexp

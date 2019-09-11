@@ -109,3 +109,9 @@ def rfind(self, sub, start=None, end=None):
 
 
 bytes.rfind = rfind
+
+def strip(self, what=None):
+    return self.lstrip(what).rstrip(what)
+
+
+bytes.strip = strip

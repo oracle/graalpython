@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,14 +72,21 @@ void PyMem_RawFree(void *ptr) {
     free(ptr);
 }
 
-int _PyTraceMalloc_Track(_PyTraceMalloc_domain_t domain, uintptr_t ptr, size_t size) {
-    return -2; // we do not track
-}
-
 void * PyMem_Realloc(void *ptr, size_t new_size) {
     return PyMem_RawRealloc(ptr, new_size);
 }
 
 void PyMem_Free(void *ptr) {
     free(ptr);
+}
+
+int PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr, size_t size) {
+	// '-2' means disabled
+    return -2;
+}
+
+
+int PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr) {
+	// '-2' means disabled
+    return -2;
 }

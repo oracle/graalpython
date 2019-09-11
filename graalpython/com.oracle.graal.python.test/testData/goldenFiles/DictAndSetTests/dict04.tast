@@ -1,0 +1,17 @@
+ModuleRootNode Name: <module 'dict04'> SourceSection: [0,10]`{a:b, c:d}`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,10]`{a:b, c:d}`
+    DictLiteralNode SourceSection: [0,10]`{a:b, c:d}`
+      PythonObjectFactoryNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [1,2]`a`
+        Identifier: a
+      ReadNameNodeGen SourceSection: [6,7]`c`
+        Identifier: c
+      ReadNameNodeGen SourceSection: [3,4]`b`
+        Identifier: b
+      ReadNameNodeGen SourceSection: [8,9]`d`
+        Identifier: d

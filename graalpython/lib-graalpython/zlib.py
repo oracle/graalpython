@@ -104,3 +104,44 @@ class compressobj():
             return result
         else:
             raise error("compressor object already flushed")
+
+
+class decompressobj():
+    """decompressobj([wbits]) -- Return a decompressor object.
+
+    Optional arg wbits is the window buffer size.
+    """
+    def __new__(cls, wbits=MAX_WBITS, zdict=b""):
+        self = object.__new__(cls)
+        self.unused_data = b""
+        self.unconsumed_tail = b""
+        self.eof = False
+        self.stream = zlib_inflateInit(wbits, zdict)
+        return self
+
+    def decompress(self, data, max_length=0):
+        """
+        decompress(data[, max_length]) -- Return a string containing the
+        decompressed version of the data.
+
+        If the max_length parameter is specified then the return value will be
+        no longer than max_length.  Unconsumed input data will be stored in the
+        unconsumed_tail attribute.
+        """
+        if max_length < 0:
+            raise ValueError("max_length must be greater than zero")
+        result, self.eof, unused_len = zlib_inflateDecompress(self.stream, data, max_length)
+        tail = data[len(data) - unused_len:]
+        if self.eof:
+            self.unconsumed_tail = b""
+            self.unused_data += tail
+        else:
+            self.unconsumed_tail = tail
+
+        return result
+
+    def flush(self, length=None):
+        try:
+            return decompress(self.unconsumed_tail)
+        except error:
+            return b""

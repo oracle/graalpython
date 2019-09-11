@@ -1,6 +1,5 @@
 import os
 import sys
-import builtins
 import contextlib
 import importlib.util
 import inspect
@@ -12,6 +11,7 @@ import pkgutil
 import re
 import stat
 import string
+import tempfile
 import test.support
 import time
 import types
@@ -21,6 +21,7 @@ import urllib.parse
 import xml.etree
 import xml.etree.ElementTree
 import textwrap
+import threading
 from io import StringIO
 from collections import namedtuple
 from test.support.script_helper import assert_python_ok
@@ -31,10 +32,6 @@ from test.support import (
 )
 from test import pydoc_mod
 
-try:
-    import threading
-except ImportError:
-    threading = None
 
 class nonascii:
     'Це не латиниця'
@@ -360,8 +357,9 @@ def get_pydoc_html(module):
 
 def get_pydoc_link(module):
     "Returns a documentation web link of a module"
+    abspath = os.path.abspath
     dirname = os.path.dirname
-    basedir = dirname(dirname(os.path.realpath(__file__)))
+    basedir = dirname(dirname(abspath(__file__)))
     doc = pydoc.TextDoc()
     loc = doc.getdocloc(module, basedir=basedir)
     return loc
@@ -419,6 +417,7 @@ class PydocBaseTest(unittest.TestCase):
 
 
 class PydocDocTest(unittest.TestCase):
+    maxDiff = None
 
     @unittest.skipIf(sys.flags.optimize >= 2,
                      "Docstrings are omitted with -O2 and above")
@@ -650,6 +649,104 @@ class PydocDocTest(unittest.TestCase):
         methods = pydoc.allmethods(TestClass)
         self.assertDictEqual(methods, expected)
 
+    def test_method_aliases(self):
+        class A:
+            def tkraise(self, aboveThis=None):
+                """Raise this widget in the stacking order."""
+            lift = tkraise
+            def a_size(self):
+                """Return size"""
+        class B(A):
+            def itemconfigure(self, tagOrId, cnf=None, **kw):
+                """Configure resources of an item TAGORID."""
+            itemconfig = itemconfigure
+            b_size = A.a_size
+
+        doc = pydoc.render_doc(B)
+        # clean up the extra text formatting that pydoc performs
+        doc = re.sub('\b.', '', doc)
+        self.assertEqual(doc, '''\
+Python Library Documentation: class B in module %s
+
+class B(A)
+ |  Method resolution order:
+ |      B
+ |      A
+ |      builtins.object
+ |\x20\x20
+ |  Methods defined here:
+ |\x20\x20
+ |  b_size = a_size(self)
+ |\x20\x20
+ |  itemconfig = itemconfigure(self, tagOrId, cnf=None, **kw)
+ |\x20\x20
+ |  itemconfigure(self, tagOrId, cnf=None, **kw)
+ |      Configure resources of an item TAGORID.
+ |\x20\x20
+ |  ----------------------------------------------------------------------
+ |  Methods inherited from A:
+ |\x20\x20
+ |  a_size(self)
+ |      Return size
+ |\x20\x20
+ |  lift = tkraise(self, aboveThis=None)
+ |\x20\x20
+ |  tkraise(self, aboveThis=None)
+ |      Raise this widget in the stacking order.
+ |\x20\x20
+ |  ----------------------------------------------------------------------
+ |  Data descriptors inherited from A:
+ |\x20\x20
+ |  __dict__
+ |      dictionary for instance variables (if defined)
+ |\x20\x20
+ |  __weakref__
+ |      list of weak references to the object (if defined)
+''' % __name__)
+
+        doc = pydoc.render_doc(B, renderer=pydoc.HTMLDoc())
+        self.assertEqual(doc, '''\
+Python Library Documentation: class B in module %s
+
+<p>
+<table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="B">class <strong>B</strong></a>(A)</font></td></tr>
+\x20\x20\x20\x20
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%%"><dl><dt>Method resolution order:</dt>
+<dd>B</dd>
+<dd>A</dd>
+<dd><a href="builtins.html#object">builtins.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="B-b_size"><strong>b_size</strong></a> = <a href="#B-a_size">a_size</a>(self)</dt></dl>
+
+<dl><dt><a name="B-itemconfig"><strong>itemconfig</strong></a> = <a href="#B-itemconfigure">itemconfigure</a>(self, tagOrId, cnf=None, **kw)</dt></dl>
+
+<dl><dt><a name="B-itemconfigure"><strong>itemconfigure</strong></a>(self, tagOrId, cnf=None, **kw)</dt><dd><tt>Configure&nbsp;resources&nbsp;of&nbsp;an&nbsp;item&nbsp;TAGORID.</tt></dd></dl>
+
+<hr>
+Methods inherited from A:<br>
+<dl><dt><a name="B-a_size"><strong>a_size</strong></a>(self)</dt><dd><tt>Return&nbsp;size</tt></dd></dl>
+
+<dl><dt><a name="B-lift"><strong>lift</strong></a> = <a href="#B-tkraise">tkraise</a>(self, aboveThis=None)</dt></dl>
+
+<dl><dt><a name="B-tkraise"><strong>tkraise</strong></a>(self, aboveThis=None)</dt><dd><tt>Raise&nbsp;this&nbsp;widget&nbsp;in&nbsp;the&nbsp;stacking&nbsp;order.</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from A:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table>\
+''' % __name__)
+
 
 class PydocImportTest(PydocBaseTest):
 
@@ -828,10 +925,10 @@ class TestDescriptions(unittest.TestCase):
         T = typing.TypeVar('T')
         class C(typing.Generic[T], typing.Mapping[int, str]): ...
         self.assertEqual(pydoc.render_doc(foo).splitlines()[-1],
-                         'f\x08fo\x08oo\x08o(data:List[Any], x:int)'
+                         'f\x08fo\x08oo\x08o(data: List[Any], x: int)'
                          ' -> Iterator[Tuple[int, Any]]')
         self.assertEqual(pydoc.render_doc(C).splitlines()[2],
-                         'class C\x08C(typing.Mapping)')
+                         'class C\x08C(collections.abc.Mapping, typing.Generic)')
 
     def test_builtin(self):
         for name in ('str', 'str.translate', 'builtins.str',
@@ -903,7 +1000,6 @@ class TestDescriptions(unittest.TestCase):
             "stat(path, *, dir_fd=None, follow_symlinks=True)")
 
 
-@unittest.skipUnless(threading, 'Threading required for this test.')
 class PydocServerTest(unittest.TestCase):
     """Tests for pydoc._start_server"""
 
@@ -914,15 +1010,15 @@ class PydocServerTest(unittest.TestCase):
             text = 'the URL sent was: (%s, %s)' % (url, content_type)
             return text
 
-        serverthread = pydoc._start_server(my_url_handler, port=0)
-        self.assertIn('localhost', serverthread.docserver.address)
+        serverthread = pydoc._start_server(my_url_handler, hostname='0.0.0.0', port=0)
+        self.assertIn('0.0.0.0', serverthread.docserver.address)
 
-        starttime = time.time()
+        starttime = time.monotonic()
         timeout = 1  #seconds
 
         while serverthread.serving:
             time.sleep(.01)
-            if serverthread.serving and time.time() - starttime > timeout:
+            if serverthread.serving and time.monotonic() - starttime > timeout:
                 serverthread.stop()
                 break
 
@@ -1089,6 +1185,71 @@ class PydocWithMetaClasses(unittest.TestCase):
         self.assertIn('class Enum', helptext)
 
 
+class TestInternalUtilities(unittest.TestCase):
+
+    def setUp(self):
+        tmpdir = tempfile.TemporaryDirectory()
+        self.argv0dir = tmpdir.name
+        self.argv0 = os.path.join(tmpdir.name, "nonexistent")
+        self.addCleanup(tmpdir.cleanup)
+        self.abs_curdir = abs_curdir = os.getcwd()
+        self.curdir_spellings = ["", os.curdir, abs_curdir]
+
+    def _get_revised_path(self, given_path, argv0=None):
+        # Checking that pydoc.cli() actually calls pydoc._get_revised_path()
+        # is handled via code review (at least for now).
+        if argv0 is None:
+            argv0 = self.argv0
+        return pydoc._get_revised_path(given_path, argv0)
+
+    def _get_starting_path(self):
+        # Get a copy of sys.path without the current directory.
+        clean_path = sys.path.copy()
+        for spelling in self.curdir_spellings:
+            for __ in range(clean_path.count(spelling)):
+                clean_path.remove(spelling)
+        return clean_path
+
+    def test_sys_path_adjustment_adds_missing_curdir(self):
+        clean_path = self._get_starting_path()
+        expected_path = [self.abs_curdir] + clean_path
+        self.assertEqual(self._get_revised_path(clean_path), expected_path)
+
+    def test_sys_path_adjustment_removes_argv0_dir(self):
+        clean_path = self._get_starting_path()
+        expected_path = [self.abs_curdir] + clean_path
+        leading_argv0dir = [self.argv0dir] + clean_path
+        self.assertEqual(self._get_revised_path(leading_argv0dir), expected_path)
+        trailing_argv0dir = clean_path + [self.argv0dir]
+        self.assertEqual(self._get_revised_path(trailing_argv0dir), expected_path)
+
+
+    def test_sys_path_adjustment_protects_pydoc_dir(self):
+        def _get_revised_path(given_path):
+            return self._get_revised_path(given_path, argv0=pydoc.__file__)
+        clean_path = self._get_starting_path()
+        leading_argv0dir = [self.argv0dir] + clean_path
+        expected_path = [self.abs_curdir] + leading_argv0dir
+        self.assertEqual(_get_revised_path(leading_argv0dir), expected_path)
+        trailing_argv0dir = clean_path + [self.argv0dir]
+        expected_path = [self.abs_curdir] + trailing_argv0dir
+        self.assertEqual(_get_revised_path(trailing_argv0dir), expected_path)
+
+    def test_sys_path_adjustment_when_curdir_already_included(self):
+        clean_path = self._get_starting_path()
+        for spelling in self.curdir_spellings:
+            with self.subTest(curdir_spelling=spelling):
+                # If curdir is already present, no alterations are made at all
+                leading_curdir = [spelling] + clean_path
+                self.assertIsNone(self._get_revised_path(leading_curdir))
+                trailing_curdir = clean_path + [spelling]
+                self.assertIsNone(self._get_revised_path(trailing_curdir))
+                leading_argv0dir = [self.argv0dir] + leading_curdir
+                self.assertIsNone(self._get_revised_path(leading_argv0dir))
+                trailing_argv0dir = trailing_curdir + [self.argv0dir]
+                self.assertIsNone(self._get_revised_path(trailing_argv0dir))
+
+
 @reap_threads
 def test_main():
     try:
@@ -1099,6 +1260,7 @@ def test_main():
                                   PydocUrlHandlerTest,
                                   TestHelper,
                                   PydocWithMetaClasses,
+                                  TestInternalUtilities,
                                   )
     finally:
         reap_children()

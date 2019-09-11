@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -44,7 +45,7 @@ import com.oracle.graal.python.nodes.control.BreakTargetNode;
 import com.oracle.graal.python.nodes.control.ContinueNode;
 import com.oracle.graal.python.nodes.control.ContinueTargetNode;
 import com.oracle.graal.python.nodes.control.ElseNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnNode;
@@ -59,9 +60,10 @@ import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.IsNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryIfNode;
@@ -100,6 +102,7 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
+import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
@@ -131,19 +134,16 @@ public class NodeFactory {
         return (T) NodeUtil.cloneNode(orig);
     }
 
-    public ModuleRootNode createModuleRoot(String name, ExpressionNode file, FrameDescriptor fd) {
-        file.markAsRoot();
-        return new ModuleRootNode(language, name, file, fd, null);
+    public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd) {
+        return new ModuleRootNode(language, name, doc, file, fd, null);
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots cellSlots) {
-        body.markAsRoot();
-        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots);
+                    ExecutionCellSlots cellSlots, Signature signature) {
+        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, false, frameDescriptor, body, cellSlots, signature);
     }
 
     public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {
-        body.markAsRoot();
         return new ClassBodyRootNode(language, sourceSection, functionName, frameDescriptor, body, cellSlots);
     }
 
@@ -180,8 +180,8 @@ public class NodeFactory {
         return new TernaryIfNode(condition, thenPart, elsePart);
     }
 
-    public GetIteratorNode createGetIterator(ExpressionNode collection) {
-        return GetIteratorNode.create(collection);
+    public GetIteratorExpressionNode createGetIterator(ExpressionNode collection) {
+        return GetIteratorExpressionNode.create(collection);
     }
 
     public StatementNode createElse(StatementNode forNode, StatementNode orelse) {
@@ -209,15 +209,19 @@ public class NodeFactory {
     }
 
     public StatementNode createBreakTarget(StatementNode forNode) {
-        return new BreakTargetNode(forNode);
+        return new BreakTargetNode(forNode, null);
     }
 
-    public YieldNode createYield(ExpressionNode right, FrameSlot returnSlot) {
-        return new YieldNode(createWriteLocal(right, returnSlot));
+    public StatementNode createBreakTarget(StatementNode forNode, StatementNode orelse) {
+        return new BreakTargetNode(forNode, orelse);
     }
 
-    public YieldFromNode createYieldFrom(ExpressionNode right, FrameSlot returnSlot) {
-        return new YieldFromNode(right, (WriteNode) createWriteLocal(null, returnSlot));
+    public YieldNode createYield(ExpressionNode right) {
+        return new YieldNode(right);
+    }
+
+    public YieldFromNode createYieldFrom(ExpressionNode right) {
+        return new YieldFromNode(right);
     }
 
     public ExpressionNode createIntegerLiteral(int value) {
@@ -389,13 +393,13 @@ public class NodeFactory {
             case "!=":
                 return BinaryComparisonNode.create(SpecialMethodNames.__NE__, SpecialMethodNames.__NE__, operator, left, right);
             case "in":
-                return BinaryComparisonNode.create(SpecialMethodNames.__CONTAINS__, null, operator, right, left);
+                return ContainsNode.create(right, left);
             case "notin":
-                return CastToBooleanNode.createIfFalseNode(BinaryComparisonNode.create(SpecialMethodNames.__CONTAINS__, null, operator, right, left));
+                return CastToBooleanNode.createIfFalseNode(ContainsNode.create(right, left));
             case "is":
-                return IsNode.create(left, right);
+                return IsExpressionNode.create(left, right);
             case "isnot":
-                return CastToBooleanNode.createIfFalseNode(IsNode.create(left, right));
+                return CastToBooleanNode.createIfFalseNode(IsExpressionNode.create(left, right));
             default:
                 throw new RuntimeException("unexpected operation: " + operator);
         }
@@ -461,7 +465,7 @@ public class NodeFactory {
 
     public StatementNode createWriteLocalCell(ExpressionNode right, FrameSlot slot) {
         assert slot != null;
-        return WriteLocalCellNode.create(slot, right);
+        return WriteLocalCellNode.create(slot, ReadLocalVariableNode.create(slot), right);
     }
 
     public StatementNode createWriteLocal(ExpressionNode right, FrameSlot slot) {
@@ -513,10 +517,6 @@ public class NodeFactory {
         return CastToBooleanNode.createIfTrueNode(operand);
     }
 
-    public StatementNode createTryFinallyNode(StatementNode body, StatementNode finalbody) {
-        return new TryFinallyNode(body, finalbody);
-    }
-
     public StatementNode createTryExceptElseFinallyNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode elseNode, StatementNode finalbody) {
         return new TryFinallyNode(new TryExceptNode(body, exceptNodes, elseNode), finalbody);
     }
@@ -563,5 +563,9 @@ public class NodeFactory {
 
     public PDataModelEmulationNode createIsIterable() {
         return IsIterableNode.create();
+    }
+
+    public PrintExpressionNode createPrintExpression(ExpressionNode body) {
+        return PrintExpressionNode.create(body);
     }
 }

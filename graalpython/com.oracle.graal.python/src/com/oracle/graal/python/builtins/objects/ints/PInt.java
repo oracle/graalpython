@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,10 +27,21 @@ package com.oracle.graal.python.builtins.objects.ints;
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public final class PInt extends PythonBuiltinObject {
 
     private final BigInteger value;
@@ -51,6 +62,128 @@ public final class PInt extends PythonBuiltinObject {
 
     public boolean isZero() {
         return value.equals(BigInteger.ZERO);
+    }
+
+    @ExportMessage
+    public boolean isBoolean(
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        return this == context.getCore().getTrue() || this == context.getCore().getFalse();
+    }
+
+    @ExportMessage
+    public boolean asBoolean(
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
+        if (this == context.getCore().getTrue()) {
+            return true;
+        } else if (this == context.getCore().getFalse()) {
+            return false;
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isNumber() {
+        return true;
+    }
+
+    @ExportMessage
+    public boolean fitsInByte() {
+        try {
+            byteValueExact();
+            return true;
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    public byte asByte() {
+        return byteValueExact();
+    }
+
+    @ExportMessage(limit = "1")
+    boolean fitsInShort(@CachedLibrary("this.intValue()") InteropLibrary interop) {
+        try {
+            return interop.fitsInShort(intValueExact());
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+
+    @ExportMessage(limit = "1")
+    short asShort(@CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        try {
+            return interop.asShort(intValueExact());
+        } catch (ArithmeticException e) {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    public boolean fitsInInt() {
+        try {
+            intValueExact();
+            return true;
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    public int asInt() {
+        return this.intValueExact();
+    }
+
+    @ExportMessage
+    public boolean fitsInLong() {
+        try {
+            this.longValueExact();
+            return true;
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    public long asLong() {
+        return this.longValueExact();
+    }
+
+    @ExportMessage(limit = "1")
+    boolean fitsInFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) {
+        try {
+            return interop.fitsInFloat(longValueExact());
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+
+    @ExportMessage(limit = "1")
+    float asFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        try {
+            return interop.asFloat(longValueExact());
+        } catch (ArithmeticException e) {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage(limit = "1")
+    boolean fitsInDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) {
+        try {
+            return interop.fitsInDouble(longValueExact());
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+
+    @ExportMessage(limit = "1")
+    double asDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        try {
+            return interop.asDouble(longValueExact());
+        } catch (ArithmeticException e) {
+            throw UnsupportedMessageException.create();
+        }
     }
 
     @Override
@@ -181,7 +314,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     public boolean isNative() {
-        return getNativeWrapper() != null && getNativeWrapper().isNative();
+        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
 }

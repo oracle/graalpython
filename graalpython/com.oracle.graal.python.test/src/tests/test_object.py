@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -128,3 +128,26 @@ def test_set_dict_attr_with_getattr_defined():
     assert m1.my_attr == 10
     assert "my_attr" not in m1.__dict__
     assert m1.d == 10
+
+
+def test_class_attr():
+    class AAA:
+        def foo(self):
+            assert __class__ == AAA
+            assert self.__class__ == AAA
+
+    class BBB:
+        pass
+
+    class CCC(AAA):
+        def getclass(self):
+            return BBB
+
+        __class__ = property(getclass)
+
+        def bar(self):
+            assert __class__ == CCC
+            assert self.__class__ == BBB
+
+    AAA().foo()
+    CCC().bar()

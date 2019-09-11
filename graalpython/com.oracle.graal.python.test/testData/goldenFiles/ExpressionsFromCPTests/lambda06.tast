@@ -1,0 +1,54 @@
+ModuleRootNode Name: <module 'lambda06'> SourceSection: [0,14]`lambda x, y: 0`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,14]`lambda x, y: 0`
+    FunctionDefinitionNode Name: anonymous SourceSection: [0,14]`lambda x, y: 0`
+      Arguments: None
+      KwArguments: None
+      Documentation: None
+      FreeVarSlots: None
+      ExecutionSlots:
+        FreeVarsSlots: None
+        CellVarsSlots: None
+      FunctionRootNode SourceSection: [0,14]`lambda x, y: 0`
+        Name: anonymous
+        Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+          Param Names: x, y
+        CelVars: None
+        FreeVars: None
+        NeedsCellFrame: False
+        FrameDescriptor: 3 slots [x, y, <return_val>]
+        ExecutionSlots:
+          FreeVarsSlots: None
+          CellVarsSlots: None
+        InnerRootNode SourceSection: [0,14]`lambda x, y: 0`
+          ReturnTargetNode SourceSection: [0,14]`lambda x, y: 0`
+            Body: BlockNode SourceSection: None
+              BlockNode SourceSection: None
+                WriteLocalVariableNodeGen SourceSection: None
+                  Identifier: x
+                  WriteLocalFrameSlotNodeGen SourceSection: None
+                    Frame: [0,x,Illegal]
+                  ArgumentExpressionNode SourceSection: None
+                    ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 0
+                WriteLocalVariableNodeGen SourceSection: None
+                  Identifier: y
+                  WriteLocalFrameSlotNodeGen SourceSection: None
+                    Frame: [1,y,Illegal]
+                  ArgumentExpressionNode SourceSection: None
+                    ReadIndexedArgumentNodeGen SourceSection: None
+                      Index: 1
+              FrameReturnNode SourceSection: None
+                WriteLocalVariableNodeGen SourceSection: None
+                  Identifier: <return_val>
+                  WriteLocalFrameSlotNodeGen SourceSection: None
+                    Frame: [2,<return_val>,Illegal]
+                  IntegerLiteralNode SourceSection: [13,14]`0`
+                    Value: 0
+            Return Expresssion: ReadLocalVariableNode SourceSection: None
+              Frame: [2,<return_val>,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None

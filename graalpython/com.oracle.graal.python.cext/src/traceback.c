@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,5 +45,5 @@ PyTypeObject PyTraceBack_Type = PY_TRUFFLE_TYPE("traceback", &PyType_Type, Py_TP
 
 UPCALL_ID(PyTraceBack_Here);
 int PyTraceBack_Here(PyFrameObject *frame) {
-    return UPCALL_CEXT_I(_jls_PyTraceBack_Here, native_to_java(frame));
+    return UPCALL_CEXT_I(_jls_PyTraceBack_Here, native_to_java((PyObject*)frame));
 }

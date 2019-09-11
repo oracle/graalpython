@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -24,9 +24,14 @@ def get_file():
 """
 
 ZIP_FILE_NAME = 'testzipfile.zip'
+EGG_FILE_NAME = 'testeggfile.egg'
+GR15813_FILE_NAME = 'testGR15813.zip'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ZIP_PATH = os.path.join(DIR_PATH, ZIP_FILE_NAME)
 ZIP_ABS_PATH = os.path.abspath(ZIP_PATH);
+EGG_PATH = os.path.join(DIR_PATH, EGG_FILE_NAME)
+EGG_ABS_PATH = os.path.abspath(EGG_PATH);
+GR15813_PATH = os.path.join(DIR_PATH, GR15813_FILE_NAME)
 
 class ZipImportBaseTestCase(unittest.TestCase):
 
@@ -176,3 +181,38 @@ class ImportTests(ZipImportBaseTestCase):
         self.assertTrue (m.get_file() == ZIP_ABS_PATH + "/MyTestModule.py")
         p = importlib.import_module("packageA.moduleC")
         self.assertTrue (p.get_file() == ZIP_ABS_PATH + "/packageA/moduleC.py")
+
+class BasicEggImportTests(ZipImportBaseTestCase):
+
+    def setUp(self):
+        ZipImportBaseTestCase.setUp(self)
+        self.z = zipimport.zipimporter(EGG_PATH)
+
+    def test_zipimporter_egg(self):
+        self.assertTrue(self.z.prefix == "")
+        self.assertTrue(self.z.archive == EGG_ABS_PATH)
+        self.assertTrue(type(self.z._files) is dict)
+        self.assertTrue(self.z._files["data.bin"] is not None)
+        self.assertTrue(self.z._files["read.me"] is not None)
+        
+    def test_egg_get_data(self):
+        data = self.z.get_data("data.bin")
+        self.assertTrue(type(data) is bytes)
+        self.assertEqual(bytes(b'ahojPK\003\004ahoj'), data)
+    
+    def test_egg_get_readme(self):
+        data = self.z.get_data("read.me")
+        self.assertTrue(type(data) is bytes)
+        self.assertEqual(bytes(b'Pokus\n'), data)
+
+class GR15813ImportTests(ZipImportBaseTestCase):
+
+    # don't edit the zip file !!!
+    def setUp(self):
+        ZipImportBaseTestCase.setUp(self)
+        self.z = zipimport.zipimporter(GR15813_PATH)
+
+    def test_zipimporter_gr_18813(self):
+        self.assertTrue(self.z.prefix == "")
+        self.assertTrue(type(self.z._files) is dict)
+        self.assertTrue(6, len(self.z._files))

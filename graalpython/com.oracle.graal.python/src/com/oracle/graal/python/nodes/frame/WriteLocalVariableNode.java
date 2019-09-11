@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteLocalVariableNodeGen.WriteLocalFrameSlotNodeGen;
@@ -35,9 +32,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
@@ -46,7 +41,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public abstract class WriteLocalVariableNode extends StatementNode implements WriteIdentifierNode {
     @Child private WriteLocalFrameSlotNode writeNode;
 
-    protected abstract static class WriteLocalFrameSlotNode extends FrameSlotNode {
+    public abstract static class WriteLocalFrameSlotNode extends FrameSlotNode {
         public WriteLocalFrameSlotNode(FrameSlot slot) {
             super(slot);
         }
@@ -87,15 +82,9 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
         public abstract Object executeWith(VirtualFrame frame, Object value);
 
         @Specialization(guards = "isBooleanKind(frame)")
-        public PNone write(VirtualFrame frame, PNone right) {
-            frame.setObject(frameSlot, PNone.NONE);
-            return right;
-        }
-
-        @Specialization(guards = "isBooleanKind(frame)")
-        public boolean write(VirtualFrame frame, boolean right) {
-            frame.setBoolean(frameSlot, right);
-            return right;
+        public boolean write(VirtualFrame frame, boolean value) {
+            frame.setBoolean(frameSlot, value);
+            return value;
         }
 
         @Specialization(guards = "isIntegerKind(frame)")
@@ -104,42 +93,36 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
             return value;
         }
 
-        @Specialization(guards = {"isLongOrObjectKind(frame)", "isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
-        public PInt writePIntAsLong(VirtualFrame frame, PInt value) {
-            frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Long);
-            frame.setLong(frameSlot, value.longValueExact());
-            return value;
+        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()", "isLongKind(frame)"}, rewriteOn = ArithmeticException.class)
+        public long writeSmallPIntAsLong(VirtualFrame frame, PInt value) {
+            long longValue = value.longValueExact();
+            frame.setLong(frameSlot, longValue);
+            return longValue;
         }
 
-        @Specialization(guards = "isLongOrObjectKind(frame)")
-        public PInt writePIntAsObject(VirtualFrame frame, PInt value) {
-            frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
-            frame.setObject(frameSlot, value);
-            return value;
+        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
+        public long writeSmallPIntAsObject(VirtualFrame frame, PInt value) {
+            ensureObjectKind(frame);
+            long longValue = value.longValueExact();
+            frame.setObject(frameSlot, longValue);
+            return longValue;
         }
 
         @Specialization(guards = "isDoubleKind(frame)")
-        public double write(VirtualFrame frame, double right) {
-            frame.setDouble(frameSlot, right);
-            return right;
+        public double write(VirtualFrame frame, double value) {
+            frame.setDouble(frameSlot, value);
+            return value;
         }
 
-        @Specialization(guards = "isObjectKind(frame)")
-        @ExplodeLoop
-        public Object write(VirtualFrame frame, PKeyword[] right) {
-            frame.setObject(frameSlot, factory().createDict(KeywordsStorage.create(right)));
-            return right;
-        }
-
-        @Specialization(guards = "isObjectKind(frame)")
-        public Object write(VirtualFrame frame, Object right) {
-            frame.setObject(frameSlot, right);
-            return right;
+        @Specialization
+        public Object write(VirtualFrame frame, Object value) {
+            ensureObjectKind(frame);
+            frame.setObject(frameSlot, value);
+            return value;
         }
     }
 
     public WriteLocalVariableNode(FrameSlot slot) {
-        super();
         this.writeNode = WriteLocalFrameSlotNodeGen.create(slot);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,9 +26,9 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
@@ -45,10 +45,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -60,6 +59,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PMethod, PythonBuiltinClassType.PBuiltinMethod})
 public class AbstractMethodBuiltins extends PythonBuiltins {
@@ -72,21 +72,37 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
-        @Child private CallDispatchNode dispatch = CallDispatchNode.create();
-        @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
+        @Child private com.oracle.graal.python.nodes.call.CallNode callNode = com.oracle.graal.python.nodes.call.CallNode.create();
 
-        @Specialization
-        protected Object doIt(PMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(null, self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
+        @Specialization(guards = "isFunction(self.getFunction())")
+        protected Object doIt(VirtualFrame frame, PMethod self, Object[] arguments, PKeyword[] keywords) {
+            return callNode.execute(frame, self, arguments, keywords);
         }
 
-        @Specialization
-        protected Object doIt(PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(null, self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
+        @Specialization(guards = "isFunction(self.getFunction())")
+        protected Object doIt(VirtualFrame frame, PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
+            return callNode.execute(frame, self, arguments, keywords);
+        }
+
+        @Specialization(guards = "!isFunction(self.getFunction())")
+        protected Object doItNonFunction(VirtualFrame frame, PMethod self, Object[] arguments, PKeyword[] keywords) {
+            return callNode.execute(frame, self.getFunction(), PositionalArgumentsNode.prependArgument(self.getSelf(), arguments), keywords);
+        }
+
+        @Specialization(guards = "!isFunction(self.getFunction())")
+        protected Object doItNonFunction(VirtualFrame frame, PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
+            return callNode.execute(frame, self.getFunction(), PositionalArgumentsNode.prependArgument(self.getSelf(), arguments), keywords);
+        }
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            Object[] argsWithoutSelf = new Object[arguments.length - 1];
+            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
     }
 
-    @Builtin(name = __SELF__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __SELF__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfNode extends PythonBuiltinNode {
         @Specialization
@@ -100,7 +116,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FUNC__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __FUNC__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FuncNode extends PythonBuiltinNode {
         @Specialization
@@ -114,22 +130,23 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NAME__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PMethod self,
+        protected Object doIt(VirtualFrame frame, PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getName) {
-            return getName.executeObject(self.getFunction(), __NAME__);
+            return getName.executeObject(frame, self.getFunction(), __NAME__);
         }
 
         @Specialization
-        protected Object doIt(PBuiltinMethod self) {
-            return self.getName();
+        protected Object doIt(VirtualFrame frame, PBuiltinMethod self,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getName) {
+            return getName.executeObject(frame, self.getFunction(), __NAME__);
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -152,7 +169,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        Object getModule(PythonObject self, @SuppressWarnings("unused") PNone none,
+        Object getModule(VirtualFrame frame, PythonObject self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") ReadAttributeFromObjectNode readObject,
                         @Cached("create()") GetAttrNode getAttr,
                         @Cached("create()") WriteAttributeToObjectNode writeObject) {
@@ -163,7 +180,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                 if (globals instanceof PythonModule) {
                     module = ((PythonModule) globals).getAttribute(__NAME__);
                 } else {
-                    module = getAttr.execute(globals, __MODULE__, PNone.NONE);
+                    module = getAttr.execute(frame, globals, __MODULE__, PNone.NONE);
                 }
                 writeObject.execute(self, __MODULE__, module);
             }

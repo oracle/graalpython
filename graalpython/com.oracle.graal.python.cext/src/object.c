@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -139,8 +139,11 @@ PyObject _Py_NotImplementedStruct = {
 };
 
 PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
-    PyObject* newObj = (PyObject*)PyObject_Malloc(cls->tp_basicsize + cls->tp_itemsize * nitems);
-    newObj->ob_refcnt = 0;
+	Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems;
+    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
+    if(cls->tp_dictoffset) {
+    	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
+    }
     Py_TYPE(newObj) = cls;
     if (nitems > 0) {
         ((PyVarObject*)newObj)->ob_size = nitems;
@@ -156,6 +159,10 @@ void* PyObject_Malloc(size_t size) {
     return calloc(size, 1);
 }
 
+void* PyObject_Realloc(void *ptr, size_t new_size) {
+	return realloc(ptr, new_size);
+}
+
 void PyObject_Free(void* ptr) {
     free(ptr);
 }
@@ -168,6 +175,10 @@ Py_ssize_t PyObject_Size(PyObject *o) {
 UPCALL_ID(PyObject_Str);
 PyObject* PyObject_Str(PyObject* o) {
     return UPCALL_CEXT_O(_jls_PyObject_Str, native_to_java(o));
+}
+
+PyObject* PyObject_ASCII(PyObject* o) {
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("ascii", SRC_CS), native_to_java(o));
 }
 
 UPCALL_ID(PyObject_Repr);
@@ -214,8 +225,14 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
         fprintf(stderr, "Too many arguments passed through varargs: %d", polyglot_get_arg_count() - skipN); \
     }
 
+NO_INLINE
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
+
+    if (fmt == NULL || fmt[0] == '\0') {
+        return _PyObject_CallNoArg(callable);
+    }
+
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
@@ -227,6 +244,26 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     return PyObject_CallObject(callable, args);
 }
 
+NO_INLINE
+PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
+    PyObject* args;
+
+    if (fmt == NULL || fmt[0] == '\0') {
+        return _PyObject_CallNoArg(callable);
+    }
+
+    CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
+    if (strlen(fmt) < 2) {
+        PyObject* singleArg = args;
+        args = PyTuple_New(strlen(fmt));
+        if (strlen(fmt) == 1) {
+            PyTuple_SetItem(args, 0, singleArg);
+        }
+    }
+    return PyObject_CallObject(callable, args);
+}
+
+NO_INLINE
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     // the arguments are given as a variable list followed by NULL
     PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
@@ -237,16 +274,45 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 }
 
 UPCALL_ID(PyObject_CallMethod);
+NO_INLINE
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
-    CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    if (fmt == NULL || fmt[0] == '\0') {
+        args = Py_None;
+    } else {
+    	CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    }
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
+NO_INLINE
+PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
+    PyObject* args;
+	CallWithPolyglotArgs(args, name, 2, PyTruffle_Tuple_Pack, 0);
+    return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(callable), native_to_java(name), native_to_java(args));
+}
+
+NO_INLINE
 PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
-    CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    if (fmt == NULL || fmt[0] == '\0') {
+        args = Py_None;
+    } else {
+    	CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    }
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
+}
+
+PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs) {
+	PyObject* targs = PyTuple_New(nargs);
+	Py_ssize_t i;
+	for(i=0; i < nargs; i++) {
+		PyTuple_SetItem(targs, i, args[i]);
+	}
+    if (kwargs == NULL) {
+        kwargs = PyDict_New();
+    }
+    return UPCALL_CEXT_O(_jls_PyObject_Call, native_to_java(func), native_to_java(targs), native_to_java(kwargs));
 }
 
 PyObject* PyObject_Type(PyObject* obj) {
@@ -262,6 +328,11 @@ int PyObject_SetItem(PyObject* obj, PyObject* key, PyObject* value) {
     return UPCALL_CEXT_I(_jls_PyObject_SetItem, native_to_java(obj), native_to_java(key), native_to_java(value));
 }
 
+UPCALL_ID(PyObject_DelItem);
+int PyObject_DelItem(PyObject *o, PyObject *key) {
+	return UPCALL_CEXT_I(_jls_PyObject_DelItem, native_to_java(o), native_to_java(key));
+}
+
 PyObject* PyObject_Format(PyObject* obj, PyObject* spec) {
     return UPCALL_O(native_to_java(obj), polyglot_from_string("__format__", SRC_CS), native_to_java(spec));
 }
@@ -273,6 +344,11 @@ PyObject* PyObject_GetIter(PyObject* obj) {
 UPCALL_ID(PyObject_IsInstance);
 int PyObject_IsInstance(PyObject* obj, PyObject* typ) {
     return UPCALL_CEXT_I(_jls_PyObject_IsInstance, native_to_java(obj), native_to_java(typ));
+}
+
+UPCALL_ID(PyObject_IsSubclass);
+int PyObject_IsSubclass(PyObject *derived, PyObject *cls) {
+    return UPCALL_CEXT_I(_jls_PyObject_IsSubclass, native_to_java(derived), native_to_java(cls));
 }
 
 UPCALL_ID(PyObject_AsFileDescriptor);
@@ -305,14 +381,39 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
     return 0;
 }
 
-UPCALL_ID(PyObject_GetAttr);
-PyObject* PyObject_GetAttrString(PyObject* obj, const char* attr) {
-    return UPCALL_CEXT_O(_jls_PyObject_GetAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS));
+// taken from CPython "Objects/object.c"
+PyObject * PyObject_GetAttrString(PyObject *v, const char *name) {
+    PyObject *w, *res;
+
+    if (Py_TYPE(v)->tp_getattr != NULL) {
+        return (*Py_TYPE(v)->tp_getattr)(v, (char*)name);
+    }
+    w = PyUnicode_FromString(name);
+    if (w == NULL) {
+        return NULL;
+    }
+    res = PyObject_GetAttr(v, w);
+    return res;
 }
 
-UPCALL_ID(PyObject_SetAttr);
-int PyObject_SetAttrString(PyObject* obj, const char* attr, PyObject* value) {
-    return UPCALL_CEXT_I(_jls_PyObject_SetAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS), native_to_java(value));
+
+// taken from CPython "Objects/object.c"
+int PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w) {
+    PyObject *s;
+    int res;
+    PyTypeObject *type = Py_TYPE(v);
+
+    if (type->tp_setattr != NULL) {
+        return (*type->tp_setattr)(v, (char*)name, w);
+    }
+    // TODO(fa): CPython interns strings; verify if that makes sense for us as well
+    // s = PyUnicode_InternFromString(name);
+    s = PyUnicode_FromString(name);
+    if (s == NULL) {
+        return -1;
+    }
+    res = PyObject_SetAttr(v, s, w);
+    return res;
 }
 
 UPCALL_ID(PyObject_HasAttr);
@@ -324,20 +425,94 @@ int PyObject_HasAttrString(PyObject* obj, const char* attr) {
     return UPCALL_CEXT_I(_jls_PyObject_HasAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS));
 }
 
-PyObject* PyObject_GetAttr(PyObject* obj, PyObject* attr) {
-    return UPCALL_CEXT_O(_jls_PyObject_GetAttr, native_to_java(obj), native_to_java(attr));
+/* Note: We must implement this in native because it might happen that this function is used on an
+   uninitialized type which means that a managed attribute lookup won't work. */
+// taken from CPython "Objects/object.c"
+PyObject * PyObject_GetAttr(PyObject *v, PyObject *name) {
+    PyTypeObject *tp = Py_TYPE(v);
+
+    if (!PyUnicode_Check(name)) {
+        PyErr_Format(PyExc_TypeError,
+                     "attribute name must be string, not '%.200s'",
+                     name->ob_type->tp_name);
+        return NULL;
+    }
+    if (tp->tp_getattro != NULL) {
+        return (*tp->tp_getattro)(v, name);
+    }
+    if (tp->tp_getattr != NULL) {
+        const char *name_str = PyUnicode_AsUTF8(name);
+        if (name_str == NULL) {
+            return NULL;
+        }
+        return (*tp->tp_getattr)(v, (char *)name_str);
+    }
+    PyErr_Format(PyExc_AttributeError,
+                 "'%.50s' object has no attribute '%U'",
+                 tp->tp_name, name);
+    return NULL;
 }
 
+UPCALL_ID(PyObject_GenericGetAttr);
 PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
-    return PyObject_GetAttr(obj, attr);
+    PyTypeObject *tp = Py_TYPE(obj);
+    if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
+    	return NULL;
+    }
+	return UPCALL_CEXT_O(_jls_PyObject_GenericGetAttr, native_to_java(obj), native_to_java(attr));
 }
 
-int PyObject_SetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
-    return PyObject_SetAttrString(obj, as_char_pointer(attr), value);
+/* Note: We must implement this in native because it might happen that this function is used on an
+   unitialized type which means that a managed attribute lookup won't work. */
+// taken from CPython "Objects/object.c"
+int PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value) {
+    PyTypeObject *tp = Py_TYPE(v);
+    int err;
+
+    if (!PyUnicode_Check(name)) {
+        PyErr_Format(PyExc_TypeError,
+                     "attribute name must be string, not '%.200s'",
+                     name->ob_type->tp_name);
+        return -1;
+    }
+
+    // TODO(fa): CPython interns strings; verify if that makes sense for us as well
+    // PyUnicode_InternInPlace(&name);
+    if (tp->tp_setattro != NULL) {
+        err = (*tp->tp_setattro)(v, name, value);
+        return err;
+    }
+    if (tp->tp_setattr != NULL) {
+        const char *name_str = PyUnicode_AsUTF8(name);
+        if (name_str == NULL)
+            return -1;
+        err = (*tp->tp_setattr)(v, (char *)name_str, value);
+        return err;
+    }
+    if (tp->tp_getattr == NULL && tp->tp_getattro == NULL)
+        PyErr_Format(PyExc_TypeError,
+                     "'%.100s' object has no attributes "
+                     "(%s .%U)",
+                     tp->tp_name,
+                     value==NULL ? "del" : "assign to",
+                     name);
+    else
+        PyErr_Format(PyExc_TypeError,
+                     "'%.100s' object has only read-only attributes "
+                     "(%s .%U)",
+                     tp->tp_name,
+                     value==NULL ? "del" : "assign to",
+                     name);
+    return -1;
 }
 
+UPCALL_ID(PyObject_GenericSetAttr);
 int PyObject_GenericSetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
-    return PyObject_SetAttr(obj, attr, value);
+    PyTypeObject *tp = Py_TYPE(obj);
+    if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
+        return -1;
+    }
+	return (int) UPCALL_CEXT_L(_jls_PyObject_GenericSetAttr, native_to_java(obj), native_to_java(attr), native_to_java(value));
 }
 
 Py_hash_t PyObject_Hash(PyObject* obj) {
@@ -384,6 +559,13 @@ PyObject* _PyObject_New(PyTypeObject *tp) {
 void PyObject_GC_Track(void *tp) {
 }
 
+void PyObject_GC_Del(void *tp) {
+}
+
+
+void PyObject_GC_UnTrack(void *tp) {
+}
+
 PyObject* _PyObject_GC_New(PyTypeObject *tp) {
     return _PyObject_New(tp);
 }
@@ -412,7 +594,7 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     return op;
 }
 
-// taken from CPython 3.6.4 "Objects/object.c"
+// taken from CPython "Objects/object.c"
 PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size) {
     if (op == NULL) {
         return (PyVarObject *) PyErr_NoMemory();
@@ -425,5 +607,36 @@ PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t siz
 }
 
 int PyCallable_Check(PyObject *x) {
-    return polyglot_as_i32(polyglot_invoke(PY_BUILTIN, "callable", to_java(x)));
+	return UPCALL_I(PY_BUILTIN, polyglot_from_string("callable", SRC_CS), native_to_java(x));
 }
+
+PyObject * PyObject_Dir(PyObject *obj) {
+	return UPCALL_O(PY_BUILTIN, polyglot_from_string("dir", SRC_CS), native_to_java(obj));
+}
+
+// taken from CPython "Objects/object.c"
+PyObject * _PyObject_GetAttrId(PyObject *v, _Py_Identifier *name) {
+    PyObject *result;
+    PyObject *oname = _PyUnicode_FromId(name);
+    if (!oname)
+        return NULL;
+    result = PyObject_GetAttr(v, oname);
+    return result;
+}
+
+UPCALL_ID(PyObject_Bytes);
+PyObject * PyObject_Bytes(PyObject *v) {
+    if (v == NULL) {
+        return PyBytes_FromString("<NULL>");
+    }
+    return UPCALL_CEXT_O(_jls_PyObject_Bytes, native_to_java(v));
+}
+
+// taken from CPython 'Objects/object.c'
+PyObject * _PyObject_NextNotImplemented(PyObject *self) {
+    PyErr_Format(PyExc_TypeError,
+                 "'%.200s' object is not iterable",
+                 Py_TYPE(self)->tp_name);
+    return NULL;
+}
+

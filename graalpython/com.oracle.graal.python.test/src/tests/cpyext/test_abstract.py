@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -240,6 +240,15 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyLong_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], int),
+        _default_unarop_args,
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyNumber_Add = CPyExtFunction(
         lambda args: args[0] + args[1],
         lambda: (
@@ -357,7 +366,29 @@ class TestAbstract(CPyExtTestCase):
 
     test_PyNumber_Lshift = CPyExtFunction(
         lambda args: args[0] << args[1],
-        _default_bin_arith_args,
+        lambda: (
+            (0, 0),
+            (0, -1),
+            (3, 2),
+            (10, 5),
+            (29.3, 4.7),
+            (0.3, -1.5),
+            (False, 1),
+            (False, 1.3),
+            (True, 1),
+            (True, 1.3),
+            ("hello, ", "world"),
+            ("hello, ", 3),
+            ((1, 2, 3), (4, 5, 6)),
+            ((1, 2, 3), 2),
+            (0xffffffffffffffffffffffffffffffff, -1),
+            (DummyIntable(), 0xBABE),
+            (0xBABE, DummyIntable()),
+            (DummyIntSubclass(), 0xCAFE),
+            (0xCAFE, DummyIntSubclass()),
+            (NoNumber(), 1),
+            (4, NoNumber()),
+            ),
         resultspec="O",
         argspec='OO',
         arguments=["PyObject* v", "PyObject* w"],
@@ -668,6 +699,22 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PySequence_ITEM = CPyExtFunction(
+        _reference_getitem,
+        lambda: (
+            (tuple(), 10),
+            ((1, 2, 3), 2),
+            ((None,), 0),
+            ([], 10),
+            (['a', 'b', 'c'], 2),
+            ([None], 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* sequence", "Py_ssize_t idx"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PySequence_SetItem = CPyExtFunction(
         _reference_setitem,
         lambda: (
@@ -762,5 +809,89 @@ class TestAbstract(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Repeat = CPyExtFunction(
+        lambda args: args[0] * args[1],
+        lambda: (
+            ((1,), 0),
+            ((1,), 1),
+            ((1,), 3),
+            ([1], 0),
+            ([1], 1),
+            ([1], 3),
+            ("hello", 0),
+            ("hello", 1),
+            ("hello", 3),
+            ({}, 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* obj", "Py_ssize_t n"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_InPlaceRepeat = CPyExtFunction(
+        lambda args: args[0] * args[1],
+        lambda: (
+            ((1,), 0),
+            ((1,), 1),
+            ((1,), 3),
+            ([1], 0),
+            ([1], 1),
+            ([1], 3),
+            ("hello", 0),
+            ("hello", 1),
+            ("hello", 3),
+            ({}, 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* obj", "Py_ssize_t n"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Concat = CPyExtFunction(
+        lambda args: args[0] + args[1],
+        lambda: (
+            ((1,), tuple()),
+            ((1,), list()),
+            ((1,), (2,)),
+            ((1,), [2,]),
+            ([1], tuple()),
+            ([1], list()),
+            ([1], (2,)),
+            ([1], [2,]),
+            ("hello", "world"),
+            ("hello", ""),
+            ({}, []),
+            ([], {}),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* s", "PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_InPlaceConcat = CPyExtFunction(
+        lambda args: args[0] + list(args[1]) if isinstance(args[0], list) else args[0] + args[1],
+        lambda: (
+            ((1,), tuple()),
+            ((1,), list()),
+            ((1,), (2,)),
+            ((1,), [2,]),
+            ([1], tuple()),
+            ([1], list()),
+            ([1], (2,)),
+            ([1], [2,]),
+            ("hello", "world"),
+            ("hello", ""),
+            ({}, []),
+            ([], {}),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* s", "PyObject* o"],
         cmpfunc=unhandled_error_compare
     )

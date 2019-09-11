@@ -1,43 +1,9 @@
-/*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
  *
- * The Universal Permissive License (UPL), Version 1.0
- *
- * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or
- * data (collectively the "Software"), free of charge and under any and all
- * copyright rights in the Software, and any and all patent rights owned or
- * freely licensable by each licensor hereunder covering either (i) the
- * unmodified Software as contributed to or provided by such licensor, or (ii)
- * the Larger Works (as defined below), to deal in both
- *
- * (a) the Software, and
- *
- * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- * one is included with the Software each a "Larger Work" to which the Software
- * is contributed by such licensors),
- *
- * without restriction, including without limitation the rights to copy, create
- * derivative works of, display, perform, and distribute the Software and make,
- * use, sell, offer for sale, import, export, have made, and have sold the
- * Software and the Larger Work(s), and to sublicense the foregoing rights on
- * either these or other terms.
- *
- * This license is subject to the following condition:
- *
- * The above copyright notice and either this complete permission notice or at a
- * minimum a reference to the UPL must be included in all copies or substantial
- * portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
+
 #include "capi.h"
 
 PyTypeObject PyEllipsis_Type = PY_TRUFFLE_TYPE("ellipsis", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
@@ -48,41 +14,110 @@ PyObject _Py_EllipsisObject = {
     1, &PyEllipsis_Type
 };
 
-int PySlice_GetIndicesEx(PyObject *_r, Py_ssize_t length,
-                         Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step,
-                         Py_ssize_t *slicelength) {
-    PySliceObject *r = (PySliceObject*)_r;
-    void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", r->start, r->stop, r->step, length));
-    if (result == NULL) {
-        return -1;
+// Taken from CPython ceval.c
+/* Extract a slice index from a PyLong or an object with the
+   nb_index slot defined, and store in *pi.
+   Silently reduce values larger than PY_SSIZE_T_MAX to PY_SSIZE_T_MAX,
+   and silently boost values less than PY_SSIZE_T_MIN to PY_SSIZE_T_MIN.
+   Return 0 on error, 1 on success. */
+int _PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi) {
+    if (v != Py_None) {
+        Py_ssize_t x;
+        if (PyIndex_Check(v)) {
+            x = PyNumber_AsSsize_t(v, NULL);
+            if (x == -1 && PyErr_Occurred())
+                return 0;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "slice indices must be integers or "
+                            "None or have an __index__ method");
+            return 0;
+        }
+        *pi = x;
     }
-    *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
-    *stop = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
-    *step =  PyLong_AsSsize_t(PyTuple_GetItem(result, 2));
-    *slicelength =  PyLong_AsSsize_t(PyTuple_GetItem(result, 3));
-    return 0;
+    return 1;
 }
 
+// Taken from CPython
 int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
     PySliceObject *r = (PySliceObject*)_r;
-    void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", r->start, r->stop, r->step, PY_SSIZE_T_MAX));
-    if (result == NULL) {
-        return -1;
+    /* this is harder to get right than you might think */
+
+    if (r->step == Py_None) {
+        *step = 1;
     }
-    *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
-    *stop = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
-    *step = PyLong_AsSsize_t(PyTuple_GetItem(result, 2));
+    else {
+        if (!_PyEval_SliceIndex(r->step, step)) return -1;
+        if (*step == 0) {
+            PyErr_SetString(PyExc_ValueError,
+                            "slice step cannot be zero");
+            return -1;
+        }
+        /* Here *step might be -PY_SSIZE_T_MAX-1; in this case we replace it
+         * with -PY_SSIZE_T_MAX.  This doesn't affect the semantics, and it
+         * guards against later undefined behaviour resulting from code that
+         * does "step = -step" as part of a slice reversal.
+         */
+        if (*step < -PY_SSIZE_T_MAX)
+            *step = -PY_SSIZE_T_MAX;
+    }
+
+    if (r->start == Py_None) {
+        *start = *step < 0 ? PY_SSIZE_T_MAX : 0;
+    }
+    else {
+        if (!_PyEval_SliceIndex(r->start, start)) return -1;
+    }
+
+    if (r->stop == Py_None) {
+        *stop = *step < 0 ? PY_SSIZE_T_MIN : PY_SSIZE_T_MAX;
+    }
+    else {
+        if (!_PyEval_SliceIndex(r->stop, stop)) return -1;
+    }
+
     return 0;
 }
 
+// taken from CPython
 Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t step) {
-    PyObject *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", *start, *stop, step, length));
-    if (result == NULL) {
-        return -1;
+    /* this is harder to get right than you might think */
+
+    assert(step != 0);
+    assert(step >= -PY_SSIZE_T_MAX);
+
+    if (*start < 0) {
+        *start += length;
+        if (*start < 0) {
+            *start = (step < 0) ? -1 : 0;
+        }
     }
-    *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
-    *stop = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
-    return PyLong_AsSsize_t(PyTuple_GetItem(result, 3)); // adjusted length
+    else if (*start >= length) {
+        *start = (step < 0) ? length - 1 : length;
+    }
+
+    if (*stop < 0) {
+        *stop += length;
+        if (*stop < 0) {
+            *stop = (step < 0) ? -1 : 0;
+        }
+    }
+    else if (*stop >= length) {
+        *stop = (step < 0) ? length - 1 : length;
+    }
+
+    if (step < 0) {
+        if (*stop < *start) {
+            return (*start - *stop - 1) / (-step) + 1;
+        }
+    }
+    else {
+        if (*start < *stop) {
+            return (*stop - *start - 1) / step + 1;
+        }
+    }
+    return 0;
 }
 
 UPCALL_ID(PySlice_New);

@@ -1,0 +1,21 @@
+ModuleRootNode Name: <module 'tuple13'> SourceSection: [0,29]`b = (↵  (0x69, 0x131...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,29]`b = (↵  (0x69, 0x131...`
+    ExpressionWithSideEffect SourceSection: [0,29]`b = (↵  (0x69, 0x131...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,29]`b = (↵  (0x69, 0x131...`
+          Identifier: b
+          TupleLiteralNode SourceSection: [4,29]`(↵  (0x69, 0x131), #...`
+            PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [8,21]`(0x69, 0x131)`
+              PythonObjectFactoryNodeGen SourceSection: None
+              IntegerLiteralNode SourceSection: [9,13]`0x69`
+                Value: 105
+              IntegerLiteralNode SourceSection: [15,20]`0x131`
+                Value: 305

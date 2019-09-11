@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -187,6 +187,15 @@ def test_sub_and_super():
         assert not set('cbs').issuperset('a')
 
 
+def test_superset_list():
+    set = {1, 2, 3, 4}
+    list = [1, 2, 3, 4]
+    visited= False
+    if set.issuperset(list):
+        visited = True
+    assert visited
+
+
 def test_intersection():
     word = 'simsalabim'
     otherword = 'madagascar'
@@ -258,3 +267,29 @@ def test_rich_compare():
     myobj = TestRichSetCompare()
     myset >= myobj
     assert myobj.le_called
+
+
+def test_pop():
+    s = {1, 2, 3}
+    l = []
+    l.append(s.pop())
+    l.append(s.pop())
+    l.append(s.pop())
+    assert set(l) == {1, 2, 3}
+    try:
+        s.pop()
+    except BaseException as e:
+        assert type(e) == KeyError, "expected KeyError, got %s" % type(e)
+
+
+def test_set_delete():
+    s = {1, 2, 3}
+    assert s == {1, 2, 3}
+    s.discard(3)
+    assert s == {1, 2}
+
+    # string keys
+    s = {'a', 'b', 'c'}
+    assert s == {'a', 'b', 'c'}
+    s.discard('c')
+    assert s == {'a', 'b'}

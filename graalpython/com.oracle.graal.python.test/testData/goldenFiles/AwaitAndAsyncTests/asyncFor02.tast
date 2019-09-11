@@ -1,0 +1,72 @@
+ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():↵ asyn...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,42]`async def f():↵ asyn...`
+    ExpressionWithSideEffect SourceSection: [0,42]`async def f():↵ asyn...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [6,42]`def f():↵ async for ...`
+          Identifier: f
+          FunctionDefinitionNode Name: f SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [6,42]`def f():↵ async for ...`
+              Name: f
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 5 slots [i, b, <>temp2, <>temp3, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [6,42]`def f():↵ async for ...`
+                ReturnTargetNode SourceSection: [6,42]`def f():↵ async for ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    ElseNode SourceSection: [22,42]`for i, b in (): pass...`
+                      ForNode SourceSection: None
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            DestructuringAssignmentNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp2
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [2,<>temp2,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp3
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [3,<>temp3,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: i
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [0,i,Illegal]
+                                ReadLocalVariableNode SourceSection: None
+                                  Frame: [2,<>temp2,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: b
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [1,b,Illegal]
+                                ReadLocalVariableNode SourceSection: None
+                                  Frame: [3,<>temp3,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                          ExpressionStatementNode SourceSection: [38,42]`pass`
+                            EmptyNode SourceSection: [38,42]`pass`
+                        GetIteratorExpressionNodeGen SourceSection: [34,36]`()`
+                          GetIteratorNodeGen SourceSection: None
+                          TupleLiteralNode SourceSection: [34,36]`()`
+                            PythonObjectFactoryNodeGen SourceSection: None
+                      BlockNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [4,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

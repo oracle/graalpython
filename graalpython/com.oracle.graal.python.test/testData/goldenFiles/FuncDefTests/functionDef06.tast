@@ -1,0 +1,69 @@
+ModuleRootNode Name: <module 'functionDef06'> SourceSection: [0,47]`def foo(par1, par2 =...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,47]`def foo(par1, par2 =...`
+    ExpressionWithSideEffect SourceSection: [0,47]`def foo(par1, par2 =...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,47]`def foo(par1, par2 =...`
+          Identifier: foo
+          FunctionDefinitionNode Name: foo SourceSection: None
+            Arguments:
+              IntegerLiteralNode SourceSection: [21,23]`22`
+                Value: 22
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,47]`def foo(par1, par2 =...`
+              Name: foo
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: par1, par2
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 3 slots [par1, par2, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,47]`def foo(par1, par2 =...`
+                ReturnTargetNode SourceSection: [0,47]`def foo(par1, par2 =...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: par1
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,par1,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: par2
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,par2,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
+                    FrameReturnNode SourceSection: [29,47]`return par1 * par2`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <return_val>
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,<return_val>,Illegal]
+                        BinaryArithmeticExpression SourceSection: [36,47]`par1 * par2`
+                          LookupAndCallBinaryNodeGen SourceSection: None
+                            Op: __mul__
+                          ReadLocalVariableNode SourceSection: [36,40]`par1`
+                            Frame: [0,par1,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [43,47]`par2`
+                            Frame: [1,par2,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [2,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

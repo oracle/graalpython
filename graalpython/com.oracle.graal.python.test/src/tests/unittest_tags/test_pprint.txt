@@ -1,0 +1,8 @@
+test_compact
+test_compact_width
+test_counter
+test_depth
+test_init
+test_knotted
+test_sorted_dict
+test_unreadable

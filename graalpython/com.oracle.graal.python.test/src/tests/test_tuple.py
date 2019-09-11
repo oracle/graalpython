@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -219,6 +219,10 @@ class TupleTest(seq_tests.CommonTest):
                 return 1.0;
 
         raiseTypeError(t, IndexF())
+        
+        t = (NotImplemented,)
+        self.assertEqual(t[0], NotImplemented)
+
 
 # Tests for Truffle specializations
     def test_lying_tuple(self):

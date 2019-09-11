@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLOSURE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__GLOBALS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
@@ -36,7 +35,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.util.List;
 
@@ -46,13 +44,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.function.Arity.KeywordName;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -71,7 +68,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PBuiltinFunction})
 public class AbstractFunctionBuiltins extends PythonBuiltins {
@@ -82,7 +80,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     }
 
     @SuppressWarnings("unused")
-    @Builtin(name = __GET__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __GET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = {"self.isStatic()"})
@@ -124,16 +122,16 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(frame, self, createArgs.execute(arguments), keywords);
+            return dispatch.executeCall(frame, self, createArgs.execute(self, arguments, keywords));
         }
 
         @Specialization
         protected Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(frame, self, createArgs.execute(arguments), keywords);
+            return dispatch.executeCall(frame, self, createArgs.execute(self, arguments, keywords));
         }
     }
 
-    @Builtin(name = __CLOSURE__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __CLOSURE__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetClosureNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
@@ -152,7 +150,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GLOBALS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __GLOBALS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
@@ -172,7 +170,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getModule(PFunction self, @SuppressWarnings("unused") PNone none,
+        Object getModule(VirtualFrame frame, PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") ReadAttributeFromObjectNode readObject,
                         @Cached("create()") GetItemNode getItem,
                         @Cached("create()") WriteAttributeToObjectNode writeObject) {
@@ -183,7 +181,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                 if (globals instanceof PythonModule) {
                     module = globals.getAttribute(__NAME__);
                 } else {
-                    module = getItem.execute(globals, __NAME__);
+                    module = getItem.execute(frame, globals, __NAME__);
                 }
                 writeObject.execute(self, __MODULE__, module);
             }
@@ -233,117 +231,92 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getCode(PFunction self, @SuppressWarnings("unused") PNone none,
-                        @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
-            PCode code = self.getCode();
-            if (hasCodeProfile.profile(code == null)) {
-                code = factory().createCode(self.getFunctionRootNode());
-                self.setCode(code);
+    abstract static class DictNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "1")
+        PNone dict(PFunction self, PHashingCollection mapping,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            try {
+                lib.setDict(self, mapping);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
             }
-            return code;
+            return PNone.NONE;
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isBuiltinFunction(self)")
-        Object setCode(PFunction self, PCode code) {
-            throw raise(NotImplementedError, "setting __code__");
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object builtinCode(PBuiltinFunction self, Object none) {
-            throw raise(AttributeError, "'builtin_function_or_method' object has no attribute '__code__'");
-        }
-    }
-
-    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    static abstract class DictNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object dict(PFunction self) {
-            PHashingCollection dict = self.getDict();
+        @Specialization(guards = "isNoValue(mapping)", limit = "1")
+        Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
-                self.setDict(dict);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException(e);
+                }
             }
             return dict;
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        Object builtinCode(PBuiltinFunction self) {
+        @SuppressWarnings("unused")
+        Object builtinCode(PBuiltinFunction self, Object mapping) {
             throw raise(AttributeError, "'builtin_function_or_method' object has no attribute '__dict__'");
         }
     }
 
-    @Builtin(name = "__text_signature__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__text_signature__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doStatic(@SuppressWarnings("unused") PBuiltinFunction self) {
-            boolean enclosingType = self.getEnclosingType() != null;
-            Arity arity = self.getArity();
-            return getSignature(enclosingType, arity);
+            return getSignature(self.getSignature());
         }
 
         @Specialization
         protected Object doStatic(@SuppressWarnings("unused") PFunction self) {
-            boolean enclosingType = self.getEnclosingClassName() != null;
-            Arity arity = self.getArity();
-            return getSignature(enclosingType, arity);
+            return getSignature(self.getSignature());
         }
 
         @TruffleBoundary
-        private static Object getSignature(boolean enclosingType, Arity arity) {
-            int minArgs = arity.getMinNumOfPositionalArgs();
-            KeywordName[] keywordNames = arity.getKeywordNames();
-            int requiredKeywords = arity.getNumOfRequiredKeywords();
-            boolean takesVarArgs = arity.takesVarArgs();
-            boolean takesVarKeywordArgs = arity.takesVarKeywordArgs();
+        private static Object getSignature(Signature signature) {
+            String[] keywordNames = signature.getKeywordNames();
+            boolean takesVarArgs = signature.takesVarArgs();
+            boolean takesVarKeywordArgs = signature.takesVarKeywordArgs();
 
-            String[] parameterIds = arity.getParameterIds();
+            String[] parameterNames = signature.getParameterIds();
             int paramIdx = 0;
 
             StringBuilder sb = new StringBuilder();
             char argName = 'a';
             sb.append('(');
-            if (minArgs > 0) {
-                if (!enclosingType) {
-                    sb.append("$module");
+            for (int i = 0; i < parameterNames.length; i++) {
+                if (paramIdx >= parameterNames.length) {
+                    sb.append(", ").append(argName++);
                 } else {
-                    sb.append("self");
-                }
-                for (int i = 1; i < minArgs; i++) {
-                    if (paramIdx >= parameterIds.length) {
-                        sb.append(", ").append(argName++);
-                    } else {
-                        sb.append(", ").append(parameterIds[paramIdx++]);
-                    }
+                    sb.append(", ").append(parameterNames[paramIdx++]);
                 }
             }
-            if (minArgs > 0) {
+            if (parameterNames.length > 0) {
                 sb.append(", /");
             }
+            if (takesVarArgs) {
+                sb.append(", *args");
+            }
             if (keywordNames.length > 0) {
-                int i = 0;
-                while (i < requiredKeywords) {
-                    sb.append(", ").append(keywordNames[i++].name).append('=');
-                }
-                if (takesVarArgs) {
-                    sb.append(", *args");
-                } else {
+                if (!takesVarArgs) {
                     sb.append(", *");
                 }
-                while (i < keywordNames.length) {
-                    sb.append(", ").append(keywordNames[i++].name).append("=?");
+                for (int i = 0; i < keywordNames.length; i++) {
+                    sb.append(", ").append(keywordNames[i]).append("=?");
                 }
-                if (takesVarKeywordArgs) {
-                    sb.append(", **kwargs");
-                }
+            }
+            if (takesVarKeywordArgs) {
+                sb.append(", **kwargs");
             }
             sb.append(')');
             return sb.toString();

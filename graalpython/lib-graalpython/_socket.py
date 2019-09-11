@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,14 +37,101 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Address families
 AF_UNSPEC = 0
 AF_INET = 2
-AF_INET6 = 23
+AF_INET6 = 30
 
-SOCK_DGRAM = 1
-SOCK_STREAM = 2
+# Flag values for getaddrinfo()
+AI_PASSIVE = 1  # get address to use bind()
+AI_CANONNAME = 2  # fill ai_canonname
+AI_NUMERICHOST = 4  # prevent name resolution
+AI_MASK = (AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST)
+AI_ALL = 256  # IPv6 and IPv4-mapped (with AI_V4MAPPED)
+AI_V4MAPPED_CFG = 512  # accept IPv4-mapped if kernel supports
+AI_ADDRCONFIG = 1024  # only if any address is assigned
+AI_V4MAPPED = 2048  # accept IPv4-mapped IPv6 address
+AI_DEFAULT = (AI_V4MAPPED_CFG | AI_ADDRCONFIG)
+
+SOL_SOCKET = 0
+SOL_TCP = 6
+SO_REUSEADDR = 0
+
+# Socket types
+SOCK_DGRAM = 2
+SOCK_STREAM = 1
 SOCK_RAW = 3
 SOCK_RDM = 4
 SOCK_SEQPACKET = 5
 
+# Flag values for getnameinfo()
+NI_NOFQDN = 1
+NI_NUMERICHOST = 2
+NI_NAMEREQD = 4
+NI_NUMERICSERV = 8
+NI_DGRAM = 10
+
+# Protocol types
+IPPROTO_IP = 0
+IPPROTO_HOPOPTS = 0
+IPPROTO_ICMP = 1
+IPPROTO_IGMP = 2
+IPPROTO_GGP = 3
+IPPROTO_IPV4 = 4
+IPPROTO_IPIP = IPPROTO_IPV4
+IPPROTO_TCP = 6
+IPPROTO_EGP = 8
+IPPROTO_PUP = 12
+IPPROTO_UDP = 17
+IPPROTO_IDP = 22
+IPPROTO_TP = 29
+IPPROTO_XTP = 36
+IPPROTO_ROUTING = 43
+IPPROTO_FRAGMENT = 44
+IPPROTO_RSVP = 46
+IPPROTO_GRE = 47
+IPPROTO_ESP = 50
+IPPROTO_AH = 51
+IPPROTO_NONE = 59
+IPPROTO_DSTOPTS = 60
+IPPROTO_HELLO = 63
+IPPROTO_ND = 77
+IPPROTO_EON = 80
+IPPROTO_PIM = 103
+IPPROTO_IPCOMP = 108
+IPPROTO_SCTP = 132
+IPPROTO_RAW = 255
+IPPROTO_MAX = 256
+
+TCP_NODELAY = 1
+
+SHUT_RD = 0
+SHUT_WR = 1
+SHUT_RDWR = 2
+
 has_ipv6 = False  #: TODO implement me
+error = OSError
+
+
+class timeout(OSError):
+    pass
+
+
+__default_timeout = None
+
+
+def getdefaulttimeout():
+    return __default_timeout
+
+
+def setdefaulttimeout(timeout):
+    global __default_timeout
+    __default_timeout = timeout
+
+
+try:
+    _sock = socket()
+    SocketType = type(_sock)
+    del _sock
+except:
+    pass

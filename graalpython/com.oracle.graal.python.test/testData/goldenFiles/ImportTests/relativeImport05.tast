@@ -1,0 +1,22 @@
+ModuleRootNode Name: <module 'relativeImport05'> SourceSection: [0,21]`from .pkg import nam...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,21]`from .pkg import nam...`
+    ExpressionWithSideEffect SourceSection: [0,21]`from .pkg import nam...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        ImportFromNode SourceSection: [0,21]`from .pkg import nam...`
+          Importee: pkg
+          Level: 1
+          FromList: name
+          WriteNameNodeGen SourceSection: None
+            Identifier: name
+            EmptyNode SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattr__

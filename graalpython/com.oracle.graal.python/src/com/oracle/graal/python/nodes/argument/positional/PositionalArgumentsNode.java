@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -53,7 +53,7 @@ public final class PositionalArgumentsNode extends Node {
 
     @ExplodeLoop
     public Object[] execute(VirtualFrame frame) {
-        Object[] starArgsArray = starArgs.executeWith(starArgsExpression.execute(frame));
+        Object[] starArgsArray = starArgs.executeWith(frame, starArgsExpression.execute(frame));
         int starArgsLength = starArgsLengthProfile.profile(starArgsArray.length);
         Object[] values = new Object[arguments.length + starArgsLength];
         for (int i = 0; i < arguments.length; i++) {
@@ -63,10 +63,10 @@ public final class PositionalArgumentsNode extends Node {
         return values;
     }
 
-    public static Object[] prependArgument(Object primary, Object[] arguments, int argumentsLength) {
-        Object[] result = new Object[argumentsLength + 1];
+    public static Object[] prependArgument(Object primary, Object[] arguments) {
+        Object[] result = new Object[arguments.length + 1];
         result[0] = primary;
-        System.arraycopy(arguments, 0, result, 1, argumentsLength);
+        System.arraycopy(arguments, 0, result, 1, arguments.length);
         return result;
     }
 

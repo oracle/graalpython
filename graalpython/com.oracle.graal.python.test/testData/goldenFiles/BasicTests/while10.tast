@@ -1,0 +1,22 @@
+ModuleRootNode Name: <module 'while10'> SourceSection: [0,26]`while tb is not None...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,26]`while tb is not None...`
+    ExpressionWithSideEffect SourceSection: [0,26]`while tb is not None...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        ElseNode SourceSection: [0,26]`while tb is not None...`
+          WhileNode SourceSection: None
+            WhileRepeatingNode SourceSection: None
+              NotNodeGen SourceSection: [6,20]`tb is not None`
+                IsExpressionNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [6,8]`tb`
+                    Identifier: tb
+                  ObjectLiteralNode SourceSection: [16,20]`None`
+              ExpressionStatementNode SourceSection: [22,26]`pass`
+                EmptyNode SourceSection: [22,26]`pass`
+          BlockNode SourceSection: None

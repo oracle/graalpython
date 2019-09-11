@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,10 +45,30 @@ PyTypeObject PyFrozenSet_Type = PY_TRUFFLE_TYPE("frozenset", &PyType_Type, Py_TP
 
 UPCALL_ID(PySet_New);
 PyObject * PySet_New(PyObject *iterable) {
-    return UPCALL_CEXT_O(_jls_PySet_New, native_to_java(iterable));
+    return UPCALL_CEXT_O(_jls_PySet_New, native_to_java(iterable != NULL ? iterable : Py_None));
 }
 
 UPCALL_ID(PyFrozenSet_New);
 PyObject * PyFrozenSet_New(PyObject *iterable) {
     return UPCALL_CEXT_O(_jls_PyFrozenSet_New, native_to_java(iterable));
+}
+
+UPCALL_ID(PySet_Add);
+int PySet_Add(PyObject *set, PyObject *key) {
+    return UPCALL_CEXT_I(_jls_PySet_Add, native_to_java(set), native_to_java(key));
+}
+
+UPCALL_ID(PySet_Contains);
+int PySet_Contains(PyObject *anyset, PyObject *key) {
+    return UPCALL_CEXT_I(_jls_PySet_Contains, native_to_java(anyset), native_to_java(key));
+}
+
+UPCALL_ID(PySet_Pop);
+PyObject * PySet_Pop(PyObject *set) {
+    return UPCALL_CEXT_O(_jls_PySet_Pop, native_to_java(set));
+}
+
+UPCALL_ID(PySet_Discard);
+int PySet_Discard(PyObject *set, PyObject *key) {
+    return UPCALL_CEXT_I(_jls_PySet_Discard, native_to_java(set), native_to_java(key));
 }

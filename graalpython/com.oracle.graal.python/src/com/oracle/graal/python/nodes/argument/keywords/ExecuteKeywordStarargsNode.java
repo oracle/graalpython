@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -47,67 +49,112 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNodeGen.ExpandKeywordStarargsNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
-@ImportStatic(PythonOptions.class)
 @NodeChild(value = "starargs", type = ExpressionNode.class)
-public abstract class ExecuteKeywordStarargsNode extends Node {
+public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
+
     public abstract PKeyword[] execute(VirtualFrame frame);
 
-    public abstract PKeyword[] executeWith(Object starargs);
-
     @Specialization
-    PKeyword[] doit(PKeyword[] starargs) {
-        return starargs;
+    PKeyword[] doIt(Object starargs,
+                    @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode) {
+        return expandKeywordStarargsNode.executeWith(starargs);
     }
 
-    @Specialization(guards = "isKeywordsStorage(starargs.getDictStorage())")
-    PKeyword[] doKeywordsStorage(PDict starargs) {
-        return ((KeywordsStorage) starargs.getDictStorage()).getStore();
-    }
+    @GenerateUncached
+    @ImportStatic(PythonOptions.class)
+    public abstract static class ExpandKeywordStarargsNode extends Node {
 
-    @Specialization(guards = "starargs.size() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
-    PKeyword[] cached(PDict starargs,
-                    @Cached("starargs.size()") int cachedLen) {
-        PKeyword[] keywords = new PKeyword[starargs.size()];
-        copyKeywords(starargs, cachedLen, keywords);
-        return keywords;
-    }
+        public abstract PKeyword[] executeWith(Object starargs);
 
-    @TruffleBoundary(allowInlining = true)
-    private static void copyKeywords(PDict starargs, int cachedLen, PKeyword[] keywords) {
-        Iterator<DictEntry> iterator = starargs.entries().iterator();
-        for (int i = 0; i < cachedLen; i++) {
-            DictEntry entry = iterator.next();
-            keywords[i] = new PKeyword((String) entry.getKey(), entry.getValue());
+        @Specialization
+        PKeyword[] doit(PKeyword[] starargs) {
+            return starargs;
+        }
+
+        @Specialization(guards = "isKeywordsStorage(starargs.getDictStorage())")
+        PKeyword[] doKeywordsStorage(PDict starargs) {
+            return ((KeywordsStorage) starargs.getDictStorage()).getStore();
+        }
+
+        @Specialization(guards = "starargs.size() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
+        PKeyword[] cached(PDict starargs,
+                        @Cached("starargs.size()") int cachedLen,
+                        @Cached PRaiseNode raise,
+                        @Cached("create()") BranchProfile errorProfile) {
+            try {
+                PKeyword[] keywords = new PKeyword[starargs.size()];
+                copyKeywords(starargs, cachedLen, keywords);
+                return keywords;
+            } catch (KeywordNotStringException e) {
+                errorProfile.enter();
+                throw raise.raise(TypeError, "keywords must be strings");
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static void copyKeywords(PDict starargs, int cachedLen, PKeyword[] keywords) throws KeywordNotStringException {
+            Iterator<DictEntry> iterator = starargs.entries().iterator();
+            for (int i = 0; i < cachedLen; i++) {
+                DictEntry entry = iterator.next();
+                keywords[i] = new PKeyword(castToString(entry.getKey()), entry.getValue());
+            }
+        }
+
+        @Specialization(replaces = "cached")
+        @TruffleBoundary
+        PKeyword[] uncached(PDict starargs,
+                        @Cached PRaiseNode raise,
+                        @Cached("create()") BranchProfile errorProfile) {
+            return cached(starargs, starargs.size(), raise, errorProfile);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        PKeyword[] generic(Object starargs) {
+            return PKeyword.EMPTY_KEYWORDS;
+        }
+
+        private static String castToString(Object key) throws KeywordNotStringException {
+            if (key instanceof String) {
+                return (String) key;
+            } else if (key instanceof PString) {
+                return ((PString) key).getValue();
+            }
+            throw new KeywordNotStringException();
+        }
+
+        protected static boolean isKeywordsStorage(HashingStorage storage) {
+            return storage instanceof KeywordsStorage;
+        }
+
+        private static final class KeywordNotStringException extends ControlFlowException {
+            private static final long serialVersionUID = 1L;
+        }
+
+        public static ExpandKeywordStarargsNode create() {
+            return ExpandKeywordStarargsNodeGen.create();
+        }
+
+        public static ExpandKeywordStarargsNode getUncached() {
+            return ExpandKeywordStarargsNodeGen.getUncached();
         }
     }
 
-    protected boolean isKeywordsStorage(HashingStorage storage) {
-        return storage instanceof KeywordsStorage;
-    }
-
-    @Specialization(replaces = "cached")
-    @TruffleBoundary
-    PKeyword[] uncached(PDict starargs) {
-        return cached(starargs, starargs.size());
-    }
-
-    @SuppressWarnings("unused")
-    @Specialization
-    PKeyword[] generic(Object starargs) {
-        return PKeyword.EMPTY_KEYWORDS;
-    }
-
-    public static ExecuteKeywordStarargsNode create() {
-        return ExecuteKeywordStarargsNodeGen.create(null);
-    }
 }

@@ -1,0 +1,87 @@
+ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  with a...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,47]`def gen(a):↵  with a...`
+    ExpressionWithSideEffect SourceSection: [0,47]`def gen(a):↵  with a...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,47]`def gen(a):↵  with a...`
+          Identifier: gen
+          GeneratorFunctionDefinitionNode Name: gen SourceSection: None
+            FrameDescriptor: 2 slots [a, <return_val>]
+            Active Flags: 5
+            For Nodes: 1
+            Block Nodes: 1
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,47]`def gen(a):↵  with a...`
+              Name: gen
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: a
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [a, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,47]`def gen(a):↵  with a...`
+                GeneratorReturnTargetNode SourceSection: [0,47]`def gen(a):↵  with a...`
+                  flagSlot: 4
+                  GeneratorWithNode SourceSection: [14,47]`with a:↵    yield 12...`
+                    GeneratorBlockNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [26,34]`yield 12`
+                        YieldNode SourceSection: [26,34]`yield 12`
+                          flagSlot: 0
+                          IntegerLiteralNode SourceSection: [32,34]`12`
+                            Value: 12
+                          GeneratorAccessNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [39,47]`yield 13`
+                        YieldNode SourceSection: [39,47]`yield 13`
+                          flagSlot: 1
+                          IntegerLiteralNode SourceSection: [45,47]`13`
+                            Value: 13
+                          GeneratorAccessNode SourceSection: None
+                      GeneratorAccessNode SourceSection: None
+                    ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
+                      Frame: [0,a,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+                    LookupInheritedAttributeNode SourceSection: None
+                      LookupAttributeInMRONodeGen SourceSection: None
+                        IsSameTypeSlowNodeGen SourceSection: None
+                      GetLazyClassNodeGen SourceSection: None
+                    LookupInheritedAttributeNode SourceSection: None
+                      LookupAttributeInMRONodeGen SourceSection: None
+                        IsSameTypeSlowNodeGen SourceSection: None
+                      GetLazyClassNodeGen SourceSection: None
+                    CachedCallNodeGen SourceSection: None
+                      CreateArgumentsNodeGen SourceSection: None
+                      CallDispatchNodeGen SourceSection: None
+                    CachedCallNodeGen SourceSection: None
+                      CreateArgumentsNodeGen SourceSection: None
+                      CallDispatchNodeGen SourceSection: None
+                    YesNodeGen SourceSection: None
+                    GetClassNodeGen SourceSection: None
+                    SaveExceptionStateNodeGen SourceSection: None
+                    GeneratorAccessNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                    Identifier: a
+                    WriteGeneraterFrameSlotNodeGen SourceSection: None
+                      Frame: [0,a,Illegal]
+                    ArgumentExpressionNode SourceSection: None
+                      ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

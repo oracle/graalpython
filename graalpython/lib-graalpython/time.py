@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ def make_struct_time():
     struct_time_type = make_named_tuple_class("struct_time", fields)
 
     class struct_time(struct_time_type):
-        
+
         def __new__(cls, iterable):
             def create_struct(iter, zone, gmtoff):
                 result = tuple.__new__(cls, iter)
@@ -63,7 +63,7 @@ def make_struct_time():
                 return create_struct(iterable[0:9], iterable[9], None)
             if count == 9:
                 return create_struct(iterable, None, None)
-                
+
 
         def __repr__(self):
             text = "{}(".format(self.__class__.__name__)
@@ -91,3 +91,17 @@ def gmtime(seconds=None):
 @__builtin__
 def localtime(seconds=None):
     return struct_time(__truffle_localtime_tuple__(seconds))
+
+
+@__builtin__
+def asctime(t=None):
+    """
+    asctime([tuple]) -> string
+
+    Convert a time tuple to a string, e.g. 'Sat Jun 06 16:26:11 1998'.
+    When the time tuple is not present, current time as returned by localtime()
+    is used.
+    """
+    if not t:
+        t = localtime()
+    return strftime("%a %b %d %H:%M:%S %Y", t)

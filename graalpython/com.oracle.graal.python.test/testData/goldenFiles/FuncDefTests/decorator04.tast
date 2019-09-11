@@ -1,0 +1,76 @@
+ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():↵  @deco...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,46]`def outer():↵  @deco...`
+    ExpressionWithSideEffect SourceSection: [0,46]`def outer():↵  @deco...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,46]`def outer():↵  @deco...`
+          Identifier: outer
+          FunctionDefinitionNode Name: outer SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,46]`def outer():↵  @deco...`
+              Name: outer
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [inner, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,46]`def outer():↵  @deco...`
+                ReturnTargetNode SourceSection: [0,46]`def outer():↵  @deco...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [15,46]`@decorator1↵  def in...`
+                      Identifier: inner
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,inner,Illegal]
+                      PythonCallNodeGen SourceSection: [15,26]`@decorator1`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        FunctionDefinitionNode Name: inner SourceSection: None
+                          Arguments: None
+                          KwArguments: None
+                          Documentation: StringLiteralNode: Empty
+                          FreeVarSlots: None
+                          ExecutionSlots:
+                            FreeVarsSlots: None
+                            CellVarsSlots: None
+                          FunctionRootNode SourceSection: [29,46]`def inner(): pass`
+                            Name: inner
+                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                            CelVars: None
+                            FreeVars: None
+                            NeedsCellFrame: False
+                            FrameDescriptor: 1 slots [<return_val>]
+                            ExecutionSlots:
+                              FreeVarsSlots: None
+                              CellVarsSlots: None
+                            InnerRootNode SourceSection: [29,46]`def inner(): pass`
+                              ReturnTargetNode SourceSection: [29,46]`def inner(): pass`
+                                Body: BlockNode SourceSection: None
+                                  BlockNode SourceSection: None
+                                  ExpressionStatementNode SourceSection: [42,46]`pass`
+                                    EmptyNode SourceSection: [42,46]`pass`
+                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Frame: [0,<return_val>,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [15,26]`@decorator1`
+                          Identifier: decorator1
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

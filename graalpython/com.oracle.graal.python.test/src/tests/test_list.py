@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -138,6 +138,16 @@ class ListTest(list_tests.CommonTest):
     def test_getitem(self):
         l = [1, 2, 3]
         self.assertEqual(1, l[False])
+        
+        class IdxObj:
+            __cnt = 0
+            def __index__(self):
+                cur = self.__cnt
+                self.__cnt += 1
+                return cur
+        idxObj = IdxObj()
+        cpy = [l[idxObj], l[idxObj], l[idxObj]]
+        self.assertEqual(cpy, l)
 
     def pop_all_list(self, list):
         size = len(list)
@@ -350,6 +360,23 @@ class ListTest(list_tests.CommonTest):
         a = ["1", "2", "3", "4", "5", "6"]
         a[5:8:1] = ["42", "42", "42"]
         self.assertEqual(["1", "2", "3", "4", "5", '42', '42', '42'], a)
+        
+        a = [1, 2, 3, 4]
+        a[-9223372036854775809:9223372036854775808] = [9, 10, 11, 12]
+        self.assertEqual([9, 10, 11, 12], a)
+        
+        try:
+            a = [1, 2, 3, 4]
+            a[-1000:1000:999999999999999999999999999999999999999999999999999999999999999999999999999] = [5,6,7,8]
+        except ValueError: 
+            self.assertEqual([1, 2, 3, 4], a)
+        else:
+            assert False, "expected ValueError"
+            
+        a = [1, 2, 3, 4]
+        a[:] = map(next, [iter([None,]), iter([None,])])
+        self.assertEqual([None, None], a)
+
 
     def test_set_slice_class_iter(self):
 

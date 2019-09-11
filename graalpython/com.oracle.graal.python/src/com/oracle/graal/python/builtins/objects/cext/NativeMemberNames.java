@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,9 +56,12 @@ public final class NativeMemberNames {
     public static final String TP_FLAGS = "tp_flags";
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
+    public static final String TP_BASES = "tp_bases";
+    public static final String TP_MRO = "tp_mro";
     public static final String TP_BASICSIZE = "tp_basicsize";
     public static final String TP_ITEMSIZE = "tp_itemsize";
     public static final String TP_DICTOFFSET = "tp_dictoffset";
+    public static final String TP_WEAKLISTOFFSET = "tp_weaklistoffset";
     public static final String TP_DOC = "tp_doc";
     public static final String TP_ALLOC = "tp_alloc";
     public static final String TP_AS_NUMBER = "tp_as_number";
@@ -67,6 +70,7 @@ public final class NativeMemberNames {
     public static final String TP_SUBCLASSES = "tp_subclasses";
     public static final String TP_AS_BUFFER = "tp_as_buffer";
     public static final String TP_AS_SEQUENCE = "tp_as_sequence";
+    public static final String TP_AS_MAPPING = "tp_as_mapping";
     public static final String TP_GETATTR = "tp_getattr";
     public static final String TP_SETATTR = "tp_setattr";
     public static final String TP_GETATTRO = "tp_getattro";
@@ -74,7 +78,9 @@ public final class NativeMemberNames {
     public static final String TP_ITERNEXT = "tp_iternext";
     public static final String TP_NEW = "tp_new";
     public static final String TP_DICT = "tp_dict";
-    public static final String TP_MRO = "tp_mro";
+    public static final String TP_REPR = "tp_repr";
+    public static final String TP_TRAVERSE = "tp_traverse";
+    public static final String TP_CLEAR = "tp_clear";
     public static final String _BASE = "_base";
     public static final String OB_ITEM = "ob_item";
     public static final String SQ_ITEM = "sq_item";
@@ -93,18 +99,26 @@ public final class NativeMemberNames {
     public static final String UNICODE_STATE_COMPACT = "compact";
     public static final String UNICODE_STATE_ASCII = "ascii";
     public static final String UNICODE_STATE_READY = "ready";
+    public static final String UNICODE_HASH = "hash";
     public static final String MD_STATE = "md_state";
     public static final String MD_DEF = "md_def";
     public static final String MD_DICT = "md_dict";
     public static final String BUF_DELEGATE = "buf_delegate";
     public static final String BUF_READONLY = "readonly";
     public static final String NB_ADD = "nb_add";
+    public static final String NB_SUBTRACT = "nb_subtract";
+    public static final String NB_REMAINDER = "nb_remainder";
     public static final String NB_AND = "nb_and";
     public static final String NB_INDEX = "nb_index";
     public static final String NB_POW = "nb_power";
     public static final String NB_TRUE_DIVIDE = "nb_true_divide";
+    public static final String NB_FLOOR_DIVIDE = "nb_floor_divide";
     public static final String NB_MULTIPLY = "nb_multiply";
+    public static final String NB_INPLACE_ADD = "nb_inplace_add";
     public static final String NB_INPLACE_MULTIPLY = "nb_inplace_multiply";
+    public static final String MP_LENGTH = "mp_length";
+    public static final String MP_SUBSCRIPT = "mp_subscript";
+    public static final String MP_ASS_SUBSCRIPT = "mp_ass_subscript";
     public static final String OB_FVAL = "ob_fval";
     public static final String START = "start";
     public static final String STOP = "stop";
@@ -122,8 +136,11 @@ public final class NativeMemberNames {
     public static final String D_NAME = "d_name";
     public static final String D_TYPE = "d_type";
     public static final String M_ML = "m_ml";
+    public static final String DATETIME_DATA = "data";
+    public static final String SET_USED = "used";
+    public static final String MMAP_DATA = "data";
 
-    @CompilationFinal(dimensions = 1) public static final String[] values;
+    @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
         Field[] declaredFields = NativeMemberNames.class.getDeclaredFields();
         values = new String[declaredFields.length - 1]; // omit the values field
@@ -141,7 +158,7 @@ public final class NativeMemberNames {
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
     public static boolean isValid(String name) {
         for (int i = 0; i < values.length; i++) {
-            if (values[i].equals(name)) {
+            if (name.equals(values[i])) {
                 return true;
             }
         }

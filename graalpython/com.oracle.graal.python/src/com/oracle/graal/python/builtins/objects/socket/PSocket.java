@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,36 +40,83 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectableChannel;
+import java.nio.channels.Channel;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.HashMap;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public class PSocket extends PythonBuiltinObject {
-    public final static int AF_UNSPEC = 0;
-    public final static int AF_INET = 2;
-    public final static int AF_INET6 = 23;
+public class PSocket extends PythonBuiltinObject implements Channel {
+    public static final int AF_UNSPEC = 0;
+    public static final int AF_INET = 2;
+    public static final int AF_INET6 = 23;
 
-    public final static int SOCK_DGRAM = 1;
-    public final static int SOCK_STREAM = 2;
+    public static final int SOCK_DGRAM = 1;
+    public static final int SOCK_STREAM = 2;
 
-    private final static InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
+    public static final int AI_PASSIVE = 1;
+    public static final int AI_CANONNAME = 2;
+    public static final int AI_NUMERICHOST = 4;
+
+    public static final int AI_ALL = 256;
+    public static final int AI_V4MAPPED_CFG = 512;
+    public static final int AI_ADDRCONFIG = 1024;
+    public static final int AI_V4MAPPED = 2048;
+
+    public static final int AI_MASK = (AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST);
+
+    public static final int AI_DEFAULT = (AI_V4MAPPED_CFG | AI_ADDRCONFIG);
+
+    public static final int NI_NOFQDN = 1;
+    public static final int NI_NUMERICHOST = 2;
+    public static final int NI_NAMEREQD = 4;
+    public static final int NI_NUMERICSERV = 8;
+    public static final int NI_DGRAM = 10;
+
+    public static final int IPPROTO_TCP = 6;
+
+    private static final InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
 
     private final int family;
     private final int type;
     private final int proto;
 
+    private int fileno;
+
+    public int serverPort;
+    public String serverHost;
+
     private double timeout;
 
-    @SuppressWarnings("unused") private SelectableChannel channel;
     private InetSocketAddress address = EPHEMERAL_ADDRESS;
+
+    private SocketChannel socket;
+
+    private ServerSocketChannel serverSocket;
+    private boolean blocking;
+
+    private HashMap<Object, Object> options;
 
     public PSocket(LazyPythonClass cls, int family, int type, int proto) {
         super(cls);
         this.family = family;
-        this.type = type;
         this.proto = proto;
+        this.type = type;
+        this.fileno = -1;
+    }
+
+    public PSocket(LazyPythonClass cls, int family, int type, int proto, int fileno) {
+        super(cls);
+        this.fileno = fileno;
+        this.family = family;
+        this.proto = proto;
+        this.type = type;
     }
 
     public int getFamily() {
@@ -84,6 +131,14 @@ public class PSocket extends PythonBuiltinObject {
         return proto;
     }
 
+    public int getFileno() {
+        return fileno;
+    }
+
+    public void setFileno(int fileno) {
+        this.fileno = fileno;
+    }
+
     public double getTimeout() {
         return timeout;
     }
@@ -96,11 +151,63 @@ public class PSocket extends PythonBuiltinObject {
         return address;
     }
 
-    public void setBlocking(boolean blocking) {
-        if (blocking) {
-            this.setTimeout(-1.0);
-        } else {
-            this.setTimeout(0.0);
+    public ServerSocketChannel getServerSocket() {
+        return serverSocket;
+    }
+
+    public SocketChannel getSocket() {
+        return socket;
+    }
+
+    public void setServerSocket(ServerSocketChannel serverSocket) {
+        if (this.getSocket() != null) {
+            throw new Error();
         }
+        this.serverSocket = serverSocket;
+    }
+
+    public void setSocket(SocketChannel socket) {
+        if (this.getServerSocket() != null) {
+            throw new Error();
+        }
+        this.socket = socket;
+    }
+
+    public boolean isBlocking() {
+        return blocking;
+    }
+
+    public void setBlocking(boolean blocking) {
+        this.blocking = blocking;
+    }
+
+    @TruffleBoundary
+    public boolean isOpen() {
+        return (getSocket() != null && getSocket().isOpen()) || (getServerSocket() != null && getServerSocket().isOpen());
+    }
+
+    @TruffleBoundary
+    public void close() throws IOException {
+        if (getSocket() != null) {
+            getSocket().close();
+        } else if (getServerSocket() != null) {
+            getServerSocket().close();
+        }
+    }
+
+    @TruffleBoundary
+    public void setSockOpt(Object option, Object value) {
+        if (options == null) {
+            options = new HashMap<>();
+        }
+        options.put(option, value);
+    }
+
+    @TruffleBoundary
+    public Object getSockOpt(Object option) {
+        if (options != null) {
+            return options.getOrDefault(option, PNone.NONE);
+        }
+        return PNone.NONE;
     }
 }

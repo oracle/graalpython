@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,15 +25,22 @@
  */
 package com.oracle.graal.python.parser;
 
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameSlot;
 
 public final class ExecutionCellSlots implements CellSlots {
     private final FrameSlot[] cellVarSlots;
     private final FrameSlot[] freeVarSlots;
+    private final Assumption[] cellVarAssumptions;
 
     ExecutionCellSlots(CellFrameSlotSupplier supplier) {
         this.cellVarSlots = supplier.getCellVarSlots();
         this.freeVarSlots = supplier.getFreeVarSlots();
+        this.cellVarAssumptions = new Assumption[cellVarSlots.length];
+        for (int i = 0; i < cellVarAssumptions.length; i++) {
+            cellVarAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
+        }
     }
 
     @Override
@@ -44,5 +51,9 @@ public final class ExecutionCellSlots implements CellSlots {
     @Override
     public FrameSlot[] getFreeVarSlots() {
         return freeVarSlots;
+    }
+
+    public Assumption[] getCellVarAssumptions() {
+        return cellVarAssumptions;
     }
 }

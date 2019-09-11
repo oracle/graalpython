@@ -1,0 +1,11 @@
+test_builtin_function
+test_descriptors
+test_frozenset
+test_instance
+test_nesting
+test_numbers
+test_range
+test_set_literal
+test_string
+test_tuple
+test_instance

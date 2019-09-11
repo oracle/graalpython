@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,9 +43,17 @@ if sys.implementation.name == "graalpython":
     import polyglot
 
     def test_import():
-        imported_cext = polyglot.import_value("python_cext")
-        import python_cext
-        assert imported_cext is python_cext
+        def some_function():
+            return "hello, polyglot world!"
+        polyglot.export_value(some_function)
+        imported_fun0 = polyglot.import_value("some_function")
+        assert imported_fun0 is some_function
+        assert imported_fun0() == "hello, polyglot world!"
+
+        polyglot.export_value(some_function, "same_function")
+        imported_fun1 = polyglot.import_value("same_function")
+        assert imported_fun1 is some_function
+        assert imported_fun1() == "hello, polyglot world!"
 
     class GetterOnly():
         def __get__(self, instance, owner):
@@ -91,6 +99,9 @@ if sys.implementation.name == "graalpython":
         def __delitem__(self, key):
             del self._items[key]
 
+    class PyString(str):
+        pass
+
     def test_read():
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field
@@ -124,12 +135,13 @@ if sys.implementation.name == "graalpython":
         polyglot.__write__(o2, "grrrr", 42)
         assert o2.grrrr == 42
 
-        non_string = bytearray(b"a fine non-string object we have here")
-        polyglot.__write__(o, non_string, 12)
-        assert not hasattr(o, non_string)
-        assert o[non_string] == 12
-        polyglot.__write__(o2, non_string, 12)
-        assert getattr(o2, non_string) == 12
+        try:
+            non_string = bytearray(b"a fine non-string object we have here")
+            polyglot.__write__(o, non_string, 12)
+        except AttributeError:
+            assert True
+        else:
+            assert False
 
     def test_remove():
         o = CustomMutable()
@@ -174,11 +186,10 @@ if sys.implementation.name == "graalpython":
         assert polyglot.__has_size__(array.array('b'))
         assert polyglot.__has_size__(bytearray(b""))
         assert polyglot.__has_size__(b"")
-        assert polyglot.__has_size__("")
+        assert polyglot.__has_size__(PyString(""))
         assert polyglot.__has_size__(range(10))
         assert polyglot.__has_size__(CustomObject())
 
-        assert not polyglot.__has_size__({})
         assert not polyglot.__has_size__(object())
 
     def test_get_size():
@@ -218,21 +229,37 @@ if sys.implementation.name == "graalpython":
         o = CustomObject()
         o.my_field = 1
         o.test_exec = lambda: False
-        readable_invokable_insertable = polyglot.__key_info__(o, "__init__")
 
-        readable_invokable_modifiable_insertable = polyglot.__key_info__(o, "__len__")
-        assert readable_invokable_modifiable_insertable == polyglot.__key_info__(o, "test_exec")
+        assert polyglot.__key_info__(o, "__len__", "readable")
+        assert polyglot.__key_info__(o, "__len__", "invokable")
+        assert polyglot.__key_info__(o, "__len__", "modifiable")
+        assert polyglot.__key_info__(o, "__len__", "removable")
+        assert not polyglot.__key_info__(o, "__len__", "insertable")
 
-        readable_modifiable_insertable = polyglot.__key_info__(o, "field")
-        assert readable_modifiable_insertable == polyglot.__key_info__(o, "my_field")
+        assert polyglot.__key_info__(o, "test_exec", "readable")
+        assert polyglot.__key_info__(o, "test_exec", "invokable")
+        assert polyglot.__key_info__(o, "test_exec", "modifiable")
+        assert polyglot.__key_info__(o, "test_exec", "removable")
+        assert not polyglot.__key_info__(o, "test_exec", "insertable")
 
-        assert readable_invokable_insertable != readable_modifiable_insertable
-        assert readable_invokable_insertable != readable_invokable_modifiable_insertable
-        assert readable_modifiable_insertable != readable_invokable_modifiable_insertable
+        assert polyglot.__key_info__(o, "my_field", "readable")
+        assert not polyglot.__key_info__(o, "my_field", "invokable")
+        assert polyglot.__key_info__(o, "my_field", "modifiable")
+        assert polyglot.__key_info__(o, "my_field", "removable")
+        assert not polyglot.__key_info__(o, "my_field", "insertable")
 
-        sideeffects_get = polyglot.__key_info__(o, "getter")
-        sideeffects_get_set = polyglot.__key_info__(o, "setter")
-        assert sideeffects_get != sideeffects_get_set
+        assert polyglot.__key_info__(o, "__getattribute__", "readable")
+        assert polyglot.__key_info__(o, "__getattribute__", "invokable")
+        assert not polyglot.__key_info__(o, "__getattribute__", "modifiable")
+        assert not polyglot.__key_info__(o, "__getattribute__", "removable")
+        assert not polyglot.__key_info__(o, "__getattribute__", "insertable")
+
+        builtinObj = (1,2,3)
+        assert polyglot.__key_info__(builtinObj, "__len__", "readable")
+        assert polyglot.__key_info__(builtinObj, "__len__", "invokable")
+        assert not polyglot.__key_info__(builtinObj, "__len__", "modifiable")
+        assert not polyglot.__key_info__(builtinObj, "__len__", "removable")
+        assert not polyglot.__key_info__(builtinObj, "__len__", "insertable")
 
     def test_host_lookup():
         import java
@@ -255,7 +282,7 @@ if sys.implementation.name == "graalpython":
         try:
             polyglot.eval(language="nfi", string="default")
         except NotImplementedError as e:
-            assert "internal language" in str(e)
+            assert "No language for id nfi found" in str(e)
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 
@@ -268,3 +295,95 @@ if sys.implementation.name == "graalpython":
             assert False, "using __getitem__ to access keys of an array-like foreign object should work"
         except NotImplementedError as e:
             assert "host lookup is not allowed" in str(e)
+
+    def test_direct_call_of_truffle_object_methods():
+        import java
+        try:
+            al = java.type("java.util.ArrayList")()
+            assert al.__len__() == al.size() == len(al)
+        except IndexError:
+            assert False, "calling the python equivalents for well-known functions directly should work"
+        except NotImplementedError as e:
+            assert "host lookup is not allowed" in str(e)
+
+    def test_array_element_info():
+        immutableObj = (1,2,3,4)
+        assert polyglot.__element_info__(immutableObj, 0, "exists")
+        assert polyglot.__element_info__(immutableObj, 0, "readable")
+        assert not polyglot.__element_info__(immutableObj, 0, "removable")
+        assert not polyglot.__element_info__(immutableObj, 0, "writable")
+        assert not polyglot.__element_info__(immutableObj, 0, "insertable")
+        assert not polyglot.__element_info__(immutableObj, 0, "modifiable")
+        assert not polyglot.__element_info__(immutableObj, 4, "insertable")
+
+        mutableObj = [1,2,3,4]
+        assert polyglot.__element_info__(mutableObj, 0, "exists")
+        assert polyglot.__element_info__(mutableObj, 0, "readable")
+        assert polyglot.__element_info__(mutableObj, 0, "removable")
+        assert polyglot.__element_info__(mutableObj, 0, "writable")
+        assert not polyglot.__element_info__(mutableObj, 0, "insertable")
+        assert polyglot.__element_info__(mutableObj, 0, "modifiable")
+        assert polyglot.__element_info__(mutableObj, 4, "insertable")
+
+    def test_java_imports():
+        import java
+        try:
+            al = java.type("java.util.ArrayList")()
+        except NotImplementedError as e:
+            assert "host lookup is not allowed" in str(e)
+        else:
+            import java.util.ArrayList
+            assert repr(java.util.ArrayList()) == "[]"
+
+            from java.util import ArrayList
+            assert repr(ArrayList()) == "[]"
+
+            if sys.graal_python_jython_emulation_enabled:
+                assert java.util.ArrayList == ArrayList
+
+                import sun
+                assert type(sun.misc) is type(java)
+
+                import sun.misc.Signal
+                assert sun.misc.Signal is not None
+
+    def test_java_exceptions():
+        if sys.graal_python_jython_emulation_enabled:
+            from java.lang import Integer, NumberFormatException
+            try:
+                Integer.parseInt("99", 8)
+            except NumberFormatException as e:
+                assert True
+            else:
+                assert False
+
+    def test_foreign_object_does_not_leak_Javas_toString():
+        try:
+            from java.util import ArrayList
+        except NotImplementedError as e:
+            assert "host lookup is not allowed" in str(e)
+        else:
+            try:
+                ArrayList(12, "12")
+            except TypeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString
+
+            try:
+                ArrayList(12, foo="12") # keywords are not supported
+            except TypeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString
+
+            try:
+                ArrayList.bar
+            except AttributeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString
+
+            try:
+                del ArrayList.bar
+            except AttributeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString
+
+            try:
+                del ArrayList.bar
+            except AttributeError as e:
+                assert "@" not in str(e) # the @ from Java's default toString

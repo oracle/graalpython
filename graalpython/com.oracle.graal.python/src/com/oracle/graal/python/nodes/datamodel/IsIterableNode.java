@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
@@ -49,9 +53,11 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@GenerateUncached
 public abstract class IsIterableNode extends PDataModelEmulationNode {
 
     @Specialization
@@ -81,24 +87,24 @@ public abstract class IsIterableNode extends PDataModelEmulationNode {
 
     @Specialization
     public boolean isIterable(Object object,
-                    @Cached("create()") GetLazyClassNode getClassNode,
-                    @Cached("create(__ITER__)") LookupAttributeInMRONode getIterNode,
-                    @Cached("create(__GETITEM__)") LookupAttributeInMRONode getGetItemNode,
-                    @Cached("create(__NEXT__)") LookupAttributeInMRONode hasNextNode,
-                    @Cached("create()") IsCallableNode isCallableNode,
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached LookupAttributeInMRONode.Dynamic getIterNode,
+                    @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
+                    @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
+                    @Cached IsCallableNode isCallableNode,
                     @Cached("createBinaryProfile()") ConditionProfile profileIter,
                     @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
                     @Cached("createBinaryProfile()") ConditionProfile profileNext) {
         LazyPythonClass klass = getClassNode.execute(object);
-        Object iterMethod = getIterNode.execute(klass);
+        Object iterMethod = getIterNode.execute(klass, __ITER__);
         if (profileIter.profile(iterMethod != PNone.NO_VALUE && iterMethod != PNone.NONE)) {
             return true;
         } else {
-            Object getItemMethod = getGetItemNode.execute(klass);
+            Object getItemMethod = getGetItemNode.execute(klass, __GETITEM__);
             if (profileGetItem.profile(getItemMethod != PNone.NO_VALUE)) {
                 return true;
             } else if (isCallableNode.execute(object)) {
-                return profileNext.profile(hasNextNode.execute(klass) != PNone.NO_VALUE);
+                return profileNext.profile(hasNextNode.execute(klass, __NEXT__) != PNone.NO_VALUE);
             }
         }
         return false;
@@ -106,5 +112,9 @@ public abstract class IsIterableNode extends PDataModelEmulationNode {
 
     public static IsIterableNode create() {
         return IsIterableNodeGen.create();
+    }
+
+    public static IsIterableNode getUncached() {
+        return IsIterableNodeGen.getUncached();
     }
 }

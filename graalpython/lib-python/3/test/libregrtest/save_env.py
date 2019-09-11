@@ -5,12 +5,10 @@ import os
 import shutil
 import sys
 import sysconfig
+import threading
 import warnings
 from test import support
-try:
-    import threading
-except ImportError:
-    threading = None
+from test.libregrtest.utils import print_warning
 try:
     import _multiprocessing, multiprocessing.process
 except ImportError:
@@ -181,13 +179,9 @@ class saved_test_environment:
     # Controlling dangling references to Thread objects can make it easier
     # to track reference leaks.
     def get_threading__dangling(self):
-        if not threading:
-            return None
         # This copies the weakrefs without making any strong reference
         return threading._dangling.copy()
     def restore_threading__dangling(self, saved):
-        if not threading:
-            return
         threading._dangling.clear()
         threading._dangling.update(saved)
 
@@ -268,7 +262,13 @@ class saved_test_environment:
     def __exit__(self, exc_type, exc_val, exc_tb):
         saved_values = self.saved_values
         del self.saved_values
-        support.gc_collect()  # Some resources use weak references
+
+        # Some resources use weak references
+        support.gc_collect()
+
+        # Read support.environment_altered, set by support helper functions
+        self.changed |= support.environment_altered
+
         for name, get, restore in self.resource_info():
             current = get()
             original = saved_values.pop(name)
@@ -277,8 +277,7 @@ class saved_test_environment:
                 self.changed = True
                 restore(original)
                 if not self.quiet and not self.pgo:
-                    print(f"Warning -- {name} was modified by {self.testname}",
-                          file=sys.stderr, flush=True)
+                    print_warning(f"{name} was modified by {self.testname}")
                     print(f"  Before: {original}\n  After:  {current} ",
                           file=sys.stderr, flush=True)
         return False

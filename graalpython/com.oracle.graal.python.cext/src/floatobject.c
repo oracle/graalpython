@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -37,6 +37,19 @@ PyObject* float_subtype_new(PyTypeObject *type, double x) {
     ((PyFloatObject *)newobj)->ob_fval = x;
     return newobj;
 }
+
+// Below taken from CPython
+
+/*----------------------------------------------------------------------------
+ * _PyFloat_{Pack,Unpack}{2,4,8}.  See floatobject.h.
+ * To match the NPY_HALF_ROUND_TIES_TO_EVEN behavior in:
+ * https://github.com/numpy/numpy/blob/master/numpy/core/src/npymath/halffloat.c
+ * We use:
+ *       bits = (unsigned short)f;    Note the truncation
+ *       if ((f - bits > 0.5) || (f - bits == 0.5 && bits % 2)) {
+ *           bits++;
+ *       }
+ */
 
 int
 _PyFloat_Pack2(double x, unsigned char *p, int le)

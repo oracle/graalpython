@@ -138,7 +138,7 @@ class A:
 def test_nested_class():
     assert A.__name__ == "A"
     assert A.__qualname__ == "A"
-    assert A.__module__ == __name__
+    assert A.__module__ == __name__, "should be '%s' but was '%s'" % (__name__, A.__module__)
     assert A.B.__name__ == "B"
     assert A.B.__qualname__ == "A.B"
     assert A.B.__module__ == __name__

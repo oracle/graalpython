@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,91 +25,93 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.BaseException;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@SuppressWarnings("unused")
 @NodeChild(value = "type", type = ExpressionNode.class)
 @NodeChild(value = "cause", type = ExpressionNode.class)
 public abstract class RaiseNode extends StatementNode {
-
-    private final IsBuiltinClassProfile simpleBaseCheckProfile = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile iterativeBaseCheckProfile = IsBuiltinClassProfile.create();
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
     @Specialization
-    public void reraise(PNone type, Object cause,
+    public void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause,
+                    @Cached PRaiseNode raise,
+                    @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
-        PythonContext context = getContext();
-        PException currentException = context.getCurrentException();
+        PException currentException = getCaughtExceptionNode.execute(frame);
         if (hasCurrentException.profile(currentException == null)) {
-            throw raise(RuntimeError, "No active exception to reraise");
+            throw raise.raise(RuntimeError, "No active exception to reraise");
         }
         throw currentException;
     }
 
     @Specialization
-    public void doRaise(PBaseException exception, PNone cause) {
-        throw raise(exception);
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause,
+                    @Cached PRaiseNode raise) {
+        throw raise.raise(exception);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public void doRaise(PBaseException exception, Object cause,
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
-        throw raise(exception);
+        throw raise.raise(exception);
     }
 
-    private void checkBaseClass(PythonClass pythonClass) {
-        if (simpleBaseCheckProfile.profileClass(pythonClass, BaseException)) {
-            return;
+    private void checkBaseClass(VirtualFrame frame, PythonAbstractClass pythonClass, ValidExceptionNode validException, PRaiseNode raise) {
+        if (!validException.execute(frame, pythonClass)) {
+            baseCheckFailedProfile.enter();
+            throw raiseNoException(raise);
         }
-        for (PythonClass klass : pythonClass.getMethodResolutionOrder()) {
-            if (iterativeBaseCheckProfile.profileClass(klass, BaseException)) {
-                return;
-            }
-        }
-        baseCheckFailedProfile.enter();
-        throw raise(PythonErrorType.TypeError, "exceptions must derive from BaseException");
     }
 
     @Specialization
-    public void doRaise(PythonClass pythonClass, PNone cause) {
-        checkBaseClass(pythonClass);
-        throw raise(pythonClass);
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractClass pythonClass, @SuppressWarnings("unused") PNone cause,
+                    @Cached ValidExceptionNode validException,
+                    @Cached PRaiseNode raise) {
+        checkBaseClass(frame, pythonClass, validException, raise);
+        throw raise.raise(pythonClass);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public void doRaise(PythonClass pythonClass, Object cause,
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractClass pythonClass, Object cause,
+                    @Cached PythonObjectFactory factory,
+                    @Cached ValidExceptionNode validException,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
-        checkBaseClass(pythonClass);
-        PBaseException pythonException = factory().createBaseException(pythonClass);
+        checkBaseClass(frame, pythonClass, validException, raise);
+        PBaseException pythonException = factory.createBaseException(pythonClass);
         writeCause.execute(pythonException, SpecialAttributeNames.__CAUSE__, cause);
-        throw raise(pythonException);
+        throw raise.raise(pythonException);
     }
 
-    @Fallback
-    public void doRaise(Object exception, Object cause) {
-        throw raise(TypeError, "exceptions must derive from BaseException");
+    @Specialization(guards = "!isAnyPythonObject(exception)")
+    @SuppressWarnings("unused")
+    void doRaise(VirtualFrame frame, Object exception, Object cause,
+                    @Cached PRaiseNode raise) {
+        throw raiseNoException(raise);
+    }
+
+    private static PException raiseNoException(PRaiseNode raise) {
+        throw raise.raise(TypeError, "exceptions must derive from BaseException");
     }
 
     public static RaiseNode create(ExpressionNode type, ExpressionNode cause) {

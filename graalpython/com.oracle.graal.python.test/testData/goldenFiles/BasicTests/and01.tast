@@ -1,0 +1,13 @@
+ModuleRootNode Name: <module 'and01'> SourceSection: [0,7]`a and b`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,7]`a and b`
+    AndNode SourceSection: [0,7]`a and b`
+      ReadNameNodeGen SourceSection: [0,1]`a`
+        Identifier: a
+      ReadNameNodeGen SourceSection: [6,7]`b`
+        Identifier: b
+      YesNodeGen SourceSection: None

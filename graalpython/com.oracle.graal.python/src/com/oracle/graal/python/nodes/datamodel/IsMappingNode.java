@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,33 +40,26 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
-
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@GenerateUncached
 public abstract class IsMappingNode extends PDataModelEmulationNode {
-    @Child private HasInheritedAttributeNode hasKeysNode = HasInheritedAttributeNode.create(KEYS);
-    @Child private HasInheritedAttributeNode hasItemsNode = HasInheritedAttributeNode.create(ITEMS);
-    @Child private HasInheritedAttributeNode hasValuesNode = HasInheritedAttributeNode.create(VALUES);
-    @Child private IsSequenceNode isSequence = IsSequenceNode.create();
-
-    private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
     @Specialization
-    public boolean isMapping(Object object) {
-        if (isSequence.execute(object)) {
-            return profile.profile((hasKeysNode.execute(object)) &&
-                            (hasItemsNode.execute(object)) &&
-                            (hasValuesNode.execute(object)));
-        }
-        return false;
+    public boolean isMapping(Object object,
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsMappingTypeNode isMappingTypeNode) {
+        return isMappingTypeNode.execute(getClassNode.execute(object));
     }
 
     public static IsMappingNode create() {
         return IsMappingNodeGen.create();
+    }
+
+    public static IsMappingNode getUncached() {
+        return IsMappingNodeGen.getUncached();
     }
 }

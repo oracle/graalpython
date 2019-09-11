@@ -1,9 +1,9 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import unittest
-
+import string
 import sys
 
 
@@ -12,6 +12,7 @@ class MyIndexable(object):
         self.value = value
     def __index__(self):
         return self.value
+
 
 def test_find():
     assert "teststring".find("test") == 0
@@ -79,6 +80,7 @@ def test_rfind():
     assert s.rfind('ahoj', 16) == 16
     assert s.rfind('ahoj', 16, 20) == 16
     assert s.rfind('ahoj', 16, 19) == -1
+
 
 def test_format():
     assert "{}.{}".format("part1", "part2") == "part1.part2"
@@ -539,6 +541,8 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal(True, 'abc', 'islower')
         self.checkequal(False, 'aBc', 'islower')
         self.checkequal(True, 'abc\n', 'islower')
+        self.checkequal(True, 'a_b!c\n', 'islower')
+        self.checkequal(False, 'A_b!c\n', 'islower')
         self.checkraises(TypeError, 'abc', 'islower', 42)
         self.checkequalnofix(False, '\u1FFc', 'islower')
         self.assertFalse('\u2167'.islower())
@@ -561,6 +565,8 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal(True, 'ABC', 'isupper')
         self.checkequal(False, 'AbC', 'isupper')
         self.checkequal(True, 'ABC\n', 'isupper')
+        self.checkequal(True, 'A_B!C\n', 'isupper')
+        self.checkequal(False, 'a_B!C\n', 'isupper')
         self.checkraises(TypeError, 'abc', 'isupper', 42)
         if not sys.platform.startswith('java'):
             self.checkequalnofix(False, '\u1FFc', 'isupper')
@@ -881,6 +887,127 @@ class UnicodeTest(unittest.TestCase):
                     self.assertEqual(rem, 0, '%s != 0 for %s' % (rem, i))
                     self.assertEqual(r1, r2, '%s != %s for %s' % (r1, r2, i))
 
+    def test_startswith(self):
+        self.checkequal(True, 'hello', 'startswith', 'he')
+        self.checkequal(True, 'hello', 'startswith', 'hello')
+        self.checkequal(False, 'hello', 'startswith', 'hello world')
+        self.checkequal(True, 'hello', 'startswith', '')
+        self.checkequal(False, 'hello', 'startswith', 'ello')
+        self.checkequal(True, 'hello', 'startswith', 'ello', 1)
+        self.checkequal(True, 'hello', 'startswith', 'o', 4)
+        self.checkequal(False, 'hello', 'startswith', 'o', 5)
+        self.checkequal(True, 'hello', 'startswith', '', 5)
+        self.checkequal(False, 'hello', 'startswith', 'lo', 6)
+        self.checkequal(True, 'helloworld', 'startswith', 'lowo', 3)
+        self.checkequal(True, 'helloworld', 'startswith', 'lowo', 3, 7)
+        self.checkequal(False, 'helloworld', 'startswith', 'lowo', 3, 6)
+        self.checkequal(True, '', 'startswith', '', 0, 1)
+        self.checkequal(True, '', 'startswith', '', 0, 0)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            self.checkequal(False, '', 'startswith', '', 1, 0)
+
+        # test negative indices
+        self.checkequal(True, 'hello', 'startswith', 'he', 0, -1)
+        self.checkequal(True, 'hello', 'startswith', 'he', -53, -1)
+        self.checkequal(False, 'hello', 'startswith', 'hello', 0, -1)
+        self.checkequal(False, 'hello', 'startswith', 'hello world', -1, -10)
+        self.checkequal(False, 'hello', 'startswith', 'ello', -5)
+        self.checkequal(True, 'hello', 'startswith', 'ello', -4)
+        self.checkequal(False, 'hello', 'startswith', 'o', -2)
+        self.checkequal(True, 'hello', 'startswith', 'o', -1)
+        self.checkequal(True, 'hello', 'startswith', '', -3, -3)
+        self.checkequal(False, 'hello', 'startswith', 'lo', -9)
+
+        self.checkraises(TypeError, 'hello', 'startswith')
+        #self.checkraises(TypeError, 'hello', 'startswith', 42)
+
+        # test tuple arguments
+        self.checkequal(True, 'hello', 'startswith', ('he', 'ha'))
+        self.checkequal(False, 'hello', 'startswith', ('lo', 'llo'))
+        self.checkequal(True, 'hello', 'startswith', ('hellox', 'hello'))
+        self.checkequal(False, 'hello', 'startswith', ())
+        self.checkequal(True, 'helloworld', 'startswith', ('hellowo',
+                                                           'rld', 'lowo'), 3)
+        self.checkequal(False, 'helloworld', 'startswith', ('hellowo', 'ello',
+                                                            'rld'), 3)
+        self.checkequal(True, 'hello', 'startswith', ('lo', 'he'), 0, -1)
+        self.checkequal(False, 'hello', 'startswith', ('he', 'hel'), 0, 1)
+        self.checkequal(True, 'hello', 'startswith', ('he', 'hel'), 0, 2)
+
+        self.checkraises(TypeError, 'hello', 'startswith', (42,))
+        self.checkequal(True, 'hello', 'startswith', ('he', 42))
+        self.checkraises(TypeError, 'hello', 'startswith', ('ne', 42,))
+
+    def test_rsplit(self):
+        # by a char
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|')
+        self.checkequal(['a|b|c', 'd'], 'a|b|c|d', 'rsplit', '|', 1)
+        self.checkequal(['a|b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 2)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 3)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 4)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|',
+                        sys.maxsize-100)
+        self.checkequal(['a|b|c|d'], 'a|b|c|d', 'rsplit', '|', 0)
+        self.checkequal(['a||b||c', '', 'd'], 'a||b||c||d', 'rsplit', '|', 2)
+        self.checkequal(['abcd'], 'abcd', 'rsplit', '|')
+        self.checkequal([''], '', 'rsplit', '|')
+        self.checkequal(['', ' begincase'], '| begincase', 'rsplit', '|')
+        self.checkequal(['endcase ', ''], 'endcase |', 'rsplit', '|')
+        self.checkequal(['', 'bothcase', ''], '|bothcase|', 'rsplit', '|')
+
+        self.checkequal(['a\x00\x00b', 'c', 'd'], 'a\x00\x00b\x00c\x00d', 'rsplit', '\x00', 2)
+
+        self.checkequal(['a']*20, ('a|'*20)[:-1], 'rsplit', '|')
+        self.checkequal(['a|a|a|a|a']+['a']*15,
+                        ('a|'*20)[:-1], 'rsplit', '|', 15)
+
+        # by string
+        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//')
+        self.checkequal(['a//b//c', 'd'], 'a//b//c//d', 'rsplit', '//', 1)
+        self.checkequal(['a//b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 2)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 3)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 4)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//',
+                        sys.maxsize-5)
+        self.checkequal(['a//b//c//d'], 'a//b//c//d', 'rsplit', '//', 0)
+        self.checkequal(['a////b////c', '', 'd'], 'a////b////c////d', 'rsplit', '//', 2)
+        self.checkequal(['', ' begincase'], 'test begincase', 'rsplit', 'test')
+        self.checkequal(['endcase ', ''], 'endcase test', 'rsplit', 'test')
+        self.checkequal(['', ' bothcase ', ''], 'test bothcase test',
+                        'rsplit', 'test')
+        self.checkequal(['ab', 'c'], 'abbbc', 'rsplit', 'bb')
+        self.checkequal(['', ''], 'aaa', 'rsplit', 'aaa')
+        self.checkequal(['aaa'], 'aaa', 'rsplit', 'aaa', 0)
+        self.checkequal(['ab', 'ab'], 'abbaab', 'rsplit', 'ba')
+        self.checkequal(['aaaa'], 'aaaa', 'rsplit', 'aab')
+        self.checkequal([''], '', 'rsplit', 'aaa')
+        self.checkequal(['aa'], 'aa', 'rsplit', 'aaa')
+        self.checkequal(['bbob', 'A'], 'bbobbbobbA', 'rsplit', 'bbobb')
+        self.checkequal(['', 'B', 'A'], 'bbobbBbbobbA', 'rsplit', 'bbobb')
+
+        self.checkequal(['a']*20, ('aBLAH'*20)[:-4], 'rsplit', 'BLAH')
+        self.checkequal(['a']*20, ('aBLAH'*20)[:-4], 'rsplit', 'BLAH', 19)
+        self.checkequal(['aBLAHa'] + ['a']*18, ('aBLAH'*20)[:-4],
+                        'rsplit', 'BLAH', 18)
+
+        # with keyword args
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', sep='|')
+        self.checkequal(['a|b|c', 'd'],
+                        'a|b|c|d', 'rsplit', '|', maxsplit=1)
+        self.checkequal(['a|b|c', 'd'],
+                        'a|b|c|d', 'rsplit', sep='|', maxsplit=1)
+        self.checkequal(['a|b|c', 'd'],
+                        'a|b|c|d', 'rsplit', maxsplit=1, sep='|')
+        self.checkequal(['a b c', 'd'],
+                        'a b c d', 'rsplit', maxsplit=1)
+
+        # argument type
+        self.checkraises(TypeError, 'hello', 'rsplit', 42, 42, 42)
+
+        # null case
+        self.checkraises(ValueError, 'hello', 'rsplit', '')
+        self.checkraises(ValueError, 'hello', 'rsplit', '', 0)
+
 
 def test_same_id():
     empty_ids = set([id(str()) for i in range(100)])
@@ -903,7 +1030,104 @@ def test_translate():
         assert False, "should raise"
 
 
+def test_translate_from_byte_table():
+    table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
+    assert "ahoj".translate(table) == "AHOJ"
+    assert "ahoj".translate(bytearray(table)) == "AHOJ"
+    assert "ahoj".translate(memoryview(table)) == "AHOJ"
+
+
+def test_tranlslate_from_short_table():
+    table = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`ABCDEFGH'
+    assert "ahoj".translate(table) == "AHoj"
+
+
+def test_translate_nonascii_from_byte_table():
+    table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
+    assert "ačhřožj".translate(table) == "AčHřOžJ"
+
+
+def test_translate_from_long_byte_table():
+    table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
+    table *= 30
+    assert 'ahoj453875287ščřžýáí'.translate(table) == 'AHOJ453875287A\rY~ýáí'
+
+
 def test_splitlines():
     assert len(str.splitlines("\n\n")) == 2
     assert len(str.splitlines("\n")) == 1
     assert len(str.splitlines("a\nb")) == 2
+
+
+def test_literals():
+    s = "hello\[world\]"
+    assert len(s) == 14
+    assert "hello\[world\]"[5] == "\\"
+    assert "hello\[world\]"[6] == "["
+    assert "hello\[world\]"[12] == "\\"
+    assert "hello\[world\]"[13] == "]"
+
+
+def test_strip_whitespace():
+    assert 'hello' == '   hello   '.strip()
+    assert 'hello   ' == '   hello   '.lstrip()
+    assert '   hello' == '   hello   '.rstrip()
+    assert 'hello' == 'hello'.strip()
+
+    b = ' \t\n\r\f\vabc \t\n\r\f\v'
+    assert 'abc' == b.strip()
+    assert 'abc \t\n\r\f\v' == b.lstrip()
+    assert ' \t\n\r\f\vabc' == b.rstrip()
+
+    # strip/lstrip/rstrip with None arg
+    assert 'hello' == '   hello   '.strip(None)
+    assert 'hello   ' == '   hello   '.lstrip(None)
+    assert '   hello' == '   hello   '.rstrip(None)
+    assert 'hello' == 'hello'.strip(None)
+
+
+def test_strip_with_sep():
+    # strip/lstrip/rstrip with str arg
+    assert 'hello' == 'xyzzyhelloxyzzy'.strip('xyz')
+    assert 'helloxyzzy' == 'xyzzyhelloxyzzy'.lstrip('xyz')
+    assert 'xyzzyhello' == 'xyzzyhelloxyzzy'.rstrip('xyz')
+    assert 'hello' == 'hello'.strip('xyz')
+    assert '' == 'mississippi'.strip('mississippi')
+
+    # only trim the start and end; does not strip internal characters
+    assert 'mississipp' == 'mississippi'.strip('i')
+
+    assertRaises(TypeError, 'hello', 'strip', 42, 42)
+    assertRaises(TypeError, 'hello', 'lstrip', 42, 42)
+    assertRaises(TypeError, 'hello', 'rstrip', 42, 42)
+
+class EncodedString(str):
+    # unicode string subclass to keep track of the original encoding.
+    # 'encoding' is None for unicode strings and the source encoding
+    # otherwise
+    encoding = None
+
+    def __deepcopy__(self, memo):
+        return self
+
+    def byteencode(self):
+        assert self.encoding is not None
+        return self.encode(self.encoding)
+
+    def utf8encode(self):
+        assert self.encoding is None
+        return self.encode("UTF-8")
+
+    @property
+    def is_unicode(self):
+        return self.encoding is None
+
+    def contains_surrogates(self):
+        return string_contains_surrogates(self)
+
+    def as_utf8_string(self):
+        return bytes_literal(self.utf8encode(), 'utf8')
+
+def test_radd():
+    val = EncodedString('abc')
+    assert 'cde' + val == 'cdeabc'

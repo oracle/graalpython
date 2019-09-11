@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
@@ -63,9 +64,11 @@ public enum UnaryArithmetic {
         this.methodName = methodName;
         this.operator = operator;
         this.noAttributeHandler = () -> new NoAttributeHandler() {
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
             @Override
             public Object execute(Object receiver) {
-                throw raise(TypeError, "bad operand type for unary %s: '%p'", operator, receiver);
+                throw raiseNode.raise(TypeError, "bad operand type for unary %s: '%p'", operator, receiver);
             }
         };
     }
@@ -89,7 +92,7 @@ public enum UnaryArithmetic {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callNode.executeObject(operand.execute(frame));
+            return callNode.executeObject(frame, operand.execute(frame));
         }
 
         @Override

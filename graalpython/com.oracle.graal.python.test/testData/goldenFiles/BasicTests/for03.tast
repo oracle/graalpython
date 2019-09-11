@@ -1,0 +1,39 @@
+ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):↵...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,43]`for x in xrange(3):↵...`
+    ExpressionWithSideEffect SourceSection: [0,43]`for x in xrange(3):↵...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        BreakTargetNode SourceSection: [0,43]`for x in xrange(3):↵...`
+          ForNode SourceSection: None
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                WriteNameNodeGen SourceSection: None
+                  Identifier: x
+              IfNode SourceSection: [22,43]`if x == 1:↵    break...`
+                YesNodeGen SourceSection: None
+                  BinaryComparisonNodeGen SourceSection: [25,31]`x == 1`
+                    LookupAndCallBinaryNodeGen SourceSection: None
+                      Op: __eq__
+                    ReadNameNodeGen SourceSection: [25,26]`x`
+                      Identifier: x
+                    IntegerLiteralNode SourceSection: [30,31]`1`
+                      Value: 1
+                BreakNode SourceSection: [37,42]`break`
+                BlockNode SourceSection: None
+            GetIteratorExpressionNodeGen SourceSection: [9,18]`xrange(3)`
+              GetIteratorNodeGen SourceSection: None
+              PythonCallNodeGen SourceSection: [9,18]`xrange(3)`
+                CachedCallNodeGen SourceSection: None
+                  CreateArgumentsNodeGen SourceSection: None
+                  CallDispatchNodeGen SourceSection: None
+                IntegerLiteralNode SourceSection: [16,17]`3`
+                  Value: 3
+                ReadNameNodeGen SourceSection: None
+                  Identifier: xrange
+          BlockNode SourceSection: None

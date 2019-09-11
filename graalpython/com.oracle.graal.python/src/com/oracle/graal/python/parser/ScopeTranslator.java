@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
+import com.oracle.graal.python.parser.antlr.Python3Parser.Except_clauseContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Single_inputContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.frame.Frame;
@@ -55,8 +56,6 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     private final ArrayList<String> possibleCellIdentifiers = new ArrayList<>();
     private final ArrayList<ScopeInfo> possibleCellScopes = new ArrayList<>();
 
-    private ScopeInfo currentGeneratorScope = null;
-
     public ScopeTranslator(ParserErrorCallback errors, TranslationEnvironment environment, boolean interactive, FrameDescriptor curInlineLocals) {
         this.errors = errors;
         this.environment = environment;
@@ -68,51 +67,52 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     @Override
     public T visitFile_input(Python3Parser.File_inputContext ctx) {
-        ctx.scope = environment.createScope(ctx, ScopeInfo.ScopeKind.Module);
+        ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Module);
         try {
             return super.visitFile_input(ctx);
         } finally {
-            environment.leaveScope();
+            environment.popScope();
         }
     }
 
     @Override
     public T visitSingle_input(Single_inputContext ctx) {
-        if (interactive) {
-            ctx.scope = environment.createScope(ctx, ScopeInfo.ScopeKind.Module);
-        } else if (curInlineLocals != null) {
-            ctx.scope = environment.createScope(ctx, ScopeInfo.ScopeKind.Function, curInlineLocals);
+        if (!interactive && curInlineLocals != null) {
+            ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Function, curInlineLocals);
+        } else {
+            ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Module);
         }
         try {
             return super.visitSingle_input(ctx);
         } finally {
-            if (interactive || curInlineLocals != null) {
-                environment.leaveScope();
-            }
+            environment.popScope();
         }
     }
 
     @Override
     public T visitEval_input(Python3Parser.Eval_inputContext ctx) {
-        ctx.scope = environment.createScope(ctx, ScopeInfo.ScopeKind.Module);
+        ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Module);
         try {
             return super.visitEval_input(ctx);
         } finally {
-            environment.leaveScope();
+            environment.popScope();
         }
     }
 
     @Override
+    public T visitDecorator(Python3Parser.DecoratorContext ctx) {
+        registerPossibleCell(ctx.dotted_name().NAME(0).getText());
+        return super.visitDecorator(ctx);
+    }
+
+    @Override
     public T visitFuncdef(Python3Parser.FuncdefContext ctx) {
-        if (ctx.parent instanceof Python3Parser.DecoratedContext) {
-            // TODO: get the decorators
-        }
         environment.createLocal(ctx.NAME().getText());
         ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(errors);
         argListCompilers.add(argListCompiler);
         ctx.parameters().accept(argListCompiler);
         ctx.parameters().accept(this);
-        ctx.scope = environment.createScope(ctx, ScopeKind.Function);
+        ctx.scope = environment.pushScope(ctx, ScopeKind.Function);
         try {
             ArgListCompiler<T> argListCompiler2 = argListCompilers.remove(argListCompilers.size() - 1);
             assert argListCompiler2 == argListCompiler;
@@ -121,7 +121,7 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             }
             return ctx.suite().accept(this);
         } finally {
-            environment.leaveScope();
+            environment.popScope();
         }
     }
 
@@ -130,11 +130,11 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
         ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(errors);
         argListCompilers.add(argListCompiler);
         ctx.accept(argListCompiler);
-        ctx.scope = environment.createScope(ctx, ScopeKind.Function);
+        ctx.scope = environment.pushScope(ctx, ScopeKind.Function);
         try {
             return super.visitLambdef_nocond(ctx);
         } finally {
-            environment.leaveScope();
+            environment.popScope();
         }
     }
 
@@ -155,11 +155,11 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
         if (ctx.varargslist() != null) {
             ctx.accept(argListCompiler);
         }
-        ctx.scope = environment.createScope(ctx, ScopeKind.Function);
+        ctx.scope = environment.pushScope(ctx, ScopeKind.Function);
         try {
             return super.visitLambdef(ctx);
         } finally {
-            environment.leaveScope();
+            environment.popScope();
         }
     }
 
@@ -226,11 +226,11 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitClassdef(Python3Parser.ClassdefContext ctx) {
         environment.createLocal(ctx.NAME().getText());
-        ctx.scope = environment.createScope(ctx, ScopeKind.Class);
+        ctx.scope = environment.pushScope(ctx, ScopeKind.Class);
         try {
             return super.visitClassdef(ctx);
         } finally {
-            environment.leaveScope();
+            environment.popScope();
         }
     }
 
@@ -346,41 +346,30 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitComp_for(Python3Parser.Comp_forContext ctx) {
         declareNames(ctx.exprlist());
-        environment.incCurrentScopeLoopCount();
-        return super.visitComp_for(ctx);
-    }
+        visitExprlist(ctx.exprlist());
 
-    @Override
-    public T visitOr_test(Python3Parser.Or_testContext ctx) {
-        boolean pushedCurrentGeneratorScope = false;
-        if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
-            if (currentGeneratorScope == null && environment.getCurrentScopeLoopCount() == 1) {
-                // the generator iterator needs to be early evaluated in the parent scope
-                currentGeneratorScope = environment.pushCurentScope();
-                pushedCurrentGeneratorScope = true;
-            }
+        if (!(ctx.getParent() instanceof Python3Parser.Comp_iterContext)) {
+            // the first iterator is eagerly evaluated in the outside scope, but any iterator under
+            // the comp_iter is not
+            ScopeInfo currentGeneratorScope = environment.popScope();
+            visitOr_test(ctx.or_test());
+            environment.pushScope(currentGeneratorScope);
+        } else {
+            visitOr_test(ctx.or_test());
         }
-        try {
-            return super.visitOr_test(ctx);
-        } finally {
-            if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
-                if (pushedCurrentGeneratorScope && currentGeneratorScope.getLoopCount() == 1) {
-                    // restore the current scope
-                    environment.popCurrentScope(currentGeneratorScope);
-                    currentGeneratorScope = null;
-                }
-            }
+
+        if (ctx.comp_iter() != null) {
+            visitComp_iter(ctx.comp_iter());
         }
+        return null;
     }
 
     private T visitGenerator(ParserRuleContext ctx, Python3Parser.Comp_forContext compctx, Function<ParserRuleContext, T> block) {
-        compctx.scope = environment.createScope(ctx, ScopeKind.Generator);
+        compctx.scope = environment.pushScope(ctx, ScopeKind.Generator);
         try {
             return block.apply(ctx);
         } finally {
-            if (currentGeneratorScope == null) {
-                environment.leaveScope();
-            }
+            environment.popScope();
         }
     }
 
@@ -452,5 +441,15 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             registerPossibleCell(identifier);
         }
         return super.visitAtom(ctx);
+    }
+
+    @Override
+    public T visitExcept_clause(Except_clauseContext ctx) {
+        TerminalNode name = ctx.NAME();
+        if (name != null) {
+            String identifier = name.getText();
+            environment.createLocal(identifier);
+        }
+        return super.visitExcept_clause(ctx);
     }
 }

@@ -1,0 +1,13 @@
+ModuleRootNode Name: <module 'del01'> SourceSection: [0,5]`del x`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,5]`del x`
+    ExpressionWithSideEffect SourceSection: [0,5]`del x`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        DeleteNameNodeGen SourceSection: [0,5]`del x`
+          Identifier: x

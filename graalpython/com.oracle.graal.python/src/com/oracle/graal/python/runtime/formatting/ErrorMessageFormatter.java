@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,9 @@ import java.util.Formatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * Custom formatter adding Python-specific conversions often required in error messages.
@@ -93,6 +95,14 @@ public class ErrorMessageFormatter {
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
+            } else if ("%m".equals(group) && args[matchIdx] instanceof Throwable) {
+                // If the format arg is not a Throwable, 'String.format' will do the error handling
+                // and throw an IllegalFormatException for us.
+                String exceptionMessage = getMessage((Throwable) args[matchIdx]);
+                sb.replace(m.start() + offset, m.end() + offset, exceptionMessage);
+                offset += exceptionMessage.length() - (m.end() - m.start());
+                args[matchIdx] = REMOVED_MARKER;
+                removedCnt++;
             }
 
             idx = m.end();
@@ -104,11 +114,31 @@ public class ErrorMessageFormatter {
         return String.format(sb.toString(), compact(args, removedCnt));
     }
 
+    @TruffleBoundary
+    private static String getMessage(Throwable exception) {
+        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
+    }
+
     private static String getClassName(GetLazyClassNode getClassNode, Object obj) {
         if (getClassNode != null) {
-            return getClassNode.execute(obj).getName();
+            return GetNameNode.doSlowPath(getClassNode.execute(obj));
         }
-        return GetLazyClassNode.getNameSlowPath(obj);
+        return GetNameNode.doSlowPath(GetLazyClassNode.getUncached().execute(obj));
+    }
+
+    /**
+     * Use this method to check if a given format string contains any of the custom format
+     * specifiers handled by this formatter.
+     */
+    public static boolean containsCustomSpecifier(String format) {
+        int pidx = -1;
+        while ((pidx = format.indexOf('%', pidx + 1)) != -1 && pidx + 1 < format.length()) {
+            char c = format.charAt(pidx + 1);
+            if (c == 'p' || c == 'P' || c == 'm') {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Object[] compact(Object[] args, int removedCnt) {

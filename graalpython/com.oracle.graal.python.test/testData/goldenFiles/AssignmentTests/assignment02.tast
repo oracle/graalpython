@@ -1,0 +1,25 @@
+ModuleRootNode Name: <module 'assignment02'> SourceSection: [0,9]`a = b = 1`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,9]`a = b = 1`
+    ExpressionWithSideEffects SourceSection: [0,9]`a = b = 1`
+      WriteLocalVariableNodeGen SourceSection: None
+        Identifier: <>temp0
+        WriteLocalFrameSlotNodeGen SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+        IntegerLiteralNode SourceSection: [8,9]`1`
+          Value: 1
+      WriteNameNodeGen SourceSection: None
+        Identifier: a
+        ReadLocalVariableNode SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+          ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: None
+        Identifier: b
+        ReadLocalVariableNode SourceSection: None
+          Frame: [0,<>temp0,Illegal]
+          ReadVariableFromFrameNodeGen SourceSection: None
+      EmptyNode SourceSection: None

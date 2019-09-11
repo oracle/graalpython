@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,10 +46,14 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,24 +65,26 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         return CtypesModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "c_char_p_", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "c_char_p_", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CCharP extends PythonUnaryBuiltinNode {
-        @Child CExtNodes.AsCharPointer asCharPointer = CExtNodes.AsCharPointer.create();
-        @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
 
         @Specialization
-        Object defaultValue(@SuppressWarnings("unused") PNone noValue) {
-            return toSulongNode.execute(PNone.NO_VALUE); // NULL
+        Object defaultValue(@SuppressWarnings("unused") PNone noValue,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(getNativeNullNode.execute()); // NULL
         }
 
         @Specialization
-        Object withValue(String value) {
+        Object withValue(String value,
+                        @Shared("asCharPointer") @Cached AsCharPointerNode asCharPointer) {
             return asCharPointer.execute(value);
         }
 
         @Specialization
-        Object withValue(PString value) {
+        Object withValue(PString value,
+                        @Shared("asCharPointer") @Cached AsCharPointerNode asCharPointer) {
             return asCharPointer.execute(value.getValue());
         }
     }

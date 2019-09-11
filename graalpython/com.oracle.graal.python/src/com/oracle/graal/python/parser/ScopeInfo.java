@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,12 +28,12 @@ package com.oracle.graal.python.parser;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -47,11 +47,14 @@ public final class ScopeInfo {
         // generator expression or generator function
         Generator,
         // list comprehension
-        ListComp
+        ListComp,
+
+        // new
+        Transparent
     }
 
     private final String scopeId;
-    private final FrameDescriptor frameDescriptor;
+    private FrameDescriptor frameDescriptor;
     private final ArrayList<String> identifierToIndex;
     private ScopeKind scopeKind;
     private final ScopeInfo parent;
@@ -69,9 +72,9 @@ public final class ScopeInfo {
      * Symbols which are local variables but are closed over in nested scopes
      */
     // variables that are referenced in enclosed contexts
-    private LinkedHashSet<String> cellVars;
+    private TreeSet<String> cellVars;
     // variables that are referenced from enclosing contexts
-    private LinkedHashSet<String> freeVars;
+    private TreeSet<String> freeVars;
 
     /**
      * An optional field that stores translated nodes of default argument values.
@@ -79,9 +82,16 @@ public final class ScopeInfo {
      * function has default arguments.
      */
     private List<ExpressionNode> defaultArgumentNodes;
-    private ReadDefaultArgumentNode[] defaultArgumentReads;
 
-    private int loopCount = 0;
+    /**
+     * An optional field that stores translated nodes of default keyword-only argument values.
+     * Keyword-only arguments are all arguments after a varargs marker (named or unnamed).
+     * {@link #defaultArgumentNodes} is not null only when {@link #scopeKind} is Function, and the
+     * function has default arguments.
+     */
+    private List<KwDefaultExpressionNode> kwDefaultArgumentNodes;
+
+    private TreeSet<String> seenVars;
 
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
@@ -94,18 +104,6 @@ public final class ScopeInfo {
             this.nextChildScope = this.parent.firstChildScope;
             this.parent.firstChildScope = this;
         }
-    }
-
-    public void incLoopCount() {
-        loopCount++;
-    }
-
-    public int getLoopCount() {
-        return loopCount;
-    }
-
-    public void resetLoopCount() {
-        this.loopCount = 0;
     }
 
     public ScopeInfo getFirstChildScope() {
@@ -133,6 +131,10 @@ public final class ScopeInfo {
         return frameDescriptor;
     }
 
+    public void setFrameDescriptor(FrameDescriptor frameDescriptor) {
+        this.frameDescriptor = frameDescriptor;
+    }
+
     public ScopeInfo getParent() {
         return parent;
     }
@@ -142,7 +144,7 @@ public final class ScopeInfo {
         return this.getFrameDescriptor().findFrameSlot(identifier);
     }
 
-    FrameSlot createSlotIfNotPresent(String identifier) {
+    public FrameSlot createSlotIfNotPresent(String identifier) {
         assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
@@ -151,6 +153,17 @@ public final class ScopeInfo {
         } else {
             return frameSlot;
         }
+    }
+
+    public void addSeenVar(String name) {
+        if (seenVars == null) {
+            seenVars = new TreeSet<>();
+        }
+        seenVars.add(name);
+    }
+
+    public Set<String> getSeenVars() {
+        return seenVars;
     }
 
     public void addExplicitGlobalVariable(String identifier) {
@@ -181,7 +194,7 @@ public final class ScopeInfo {
 
     public void addCellVar(String identifier, boolean createFrameSlot) {
         if (cellVars == null) {
-            cellVars = new LinkedHashSet<>();
+            cellVars = new TreeSet<>();
         }
         cellVars.add(identifier);
         if (createFrameSlot) {
@@ -193,9 +206,9 @@ public final class ScopeInfo {
         addFreeVar(identifier, false);
     }
 
-    protected void addFreeVar(String identifier, boolean createFrameSlot) {
+    public void addFreeVar(String identifier, boolean createFrameSlot) {
         if (freeVars == null) {
-            freeVars = new LinkedHashSet<>();
+            freeVars = new TreeSet<>();
         }
         freeVars.add(identifier);
         if (createFrameSlot) {
@@ -243,28 +256,33 @@ public final class ScopeInfo {
         this.defaultArgumentNodes = defaultArgumentNodes;
     }
 
+    public void setDefaultKwArgumentNodes(List<KwDefaultExpressionNode> defaultArgs) {
+        this.kwDefaultArgumentNodes = defaultArgs;
+
+    }
+
+    public boolean isInClassScope() {
+        return getScopeKind() == ScopeKind.Class;
+    }
+
     public List<ExpressionNode> getDefaultArgumentNodes() {
         return defaultArgumentNodes;
     }
 
-    public void setDefaultArgumentReads(ReadDefaultArgumentNode[] defaultArgumentReads) {
-        this.defaultArgumentReads = defaultArgumentReads;
-    }
-
-    public ReadDefaultArgumentNode[] getDefaultArgumentReads() {
-        return this.defaultArgumentReads;
+    public List<KwDefaultExpressionNode> getDefaultKwArgumentNodes() {
+        return kwDefaultArgumentNodes;
     }
 
     public void createFrameSlotsForCellAndFreeVars() {
         if (cellVars != null) {
-            for (String identifier : cellVars) {
+            cellVars.forEach((identifier) -> {
                 createSlotIfNotPresent(identifier);
-            }
+            });
         }
         if (freeVars != null) {
-            for (String identifier : freeVars) {
+            freeVars.forEach((identifier) -> {
                 createSlotIfNotPresent(identifier);
-            }
+            });
         }
     }
 
@@ -282,4 +300,57 @@ public final class ScopeInfo {
         }
         throw new IllegalStateException("Cannot find argument for name " + name + " in scope " + getScopeId());
     }
+
+    public void debugPrint(StringBuilder sb, int indent) {
+        indent(sb, indent);
+        sb.append("Scope: ").append(scopeId).append("\n");
+        indent(sb, indent + 1);
+        sb.append("Kind: ").append(scopeKind).append("\n");
+        Set<String> names = new HashSet<>();
+        frameDescriptor.getIdentifiers().forEach((id) -> {
+            names.add((String) id);
+        });
+        indent(sb, indent + 1);
+        sb.append("FrameDescriptor: ");
+        printSet(sb, names);
+        sb.append("\n");
+        indent(sb, indent + 1);
+        sb.append("CellVars: ");
+        printSet(sb, cellVars);
+        sb.append("\n");
+        indent(sb, indent + 1);
+        sb.append("FreeVars: ");
+        printSet(sb, freeVars);
+        sb.append("\n");
+        ScopeInfo child = firstChildScope;
+        while (child != null) {
+            child.debugPrint(sb, indent + 1);
+            child = child.nextChildScope;
+        }
+    }
+
+    private static void indent(StringBuilder sb, int indent) {
+        for (int i = 0; i < indent; i++) {
+            sb.append("    ");
+        }
+    }
+
+    private static void printSet(StringBuilder sb, Set<String> set) {
+        if (set == null || set.isEmpty()) {
+            sb.append("Empty");
+        } else {
+            sb.append("[");
+            boolean first = true;
+            for (String name : set) {
+                if (first) {
+                    sb.append(name);
+                    first = false;
+                } else {
+                    sb.append(", ").append(name);
+                }
+            }
+            sb.append("]");
+        }
+    }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,29 +40,26 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class LazyString implements CharSequence {
+public class LazyString implements PCharSequence {
 
     protected static final int MinLazyStringLength;
     protected static final boolean UseLazyStrings;
     static {
-        boolean useLazyStrings = PythonOptions.LazyStrings.getDefaultValue();
-        int minLazyStringLength = PythonOptions.MinLazyStringLength.getDefaultValue();
-        try {
-            useLazyStrings = PythonOptions.useLazyString();
-            minLazyStringLength = PythonOptions.getMinLazyStringLength();
-        } catch (AssertionError e) {
-            // This can happen e.g. when we build a native image without
-            // a pre-initialized Python context
-            assert e.getMessage().equals("No current context available");
+        if (ImageInfo.inImageBuildtimeCode()) {
+            MinLazyStringLength = PythonOptions.MinLazyStringLength.getDefaultValue();
+            UseLazyStrings = PythonOptions.LazyStrings.getDefaultValue();
+        } else {
+            MinLazyStringLength = PythonOptions.getMinLazyStringLength();
+            UseLazyStrings = PythonOptions.useLazyString();
         }
-        MinLazyStringLength = minLazyStringLength;
-        UseLazyStrings = useLazyStrings;
     }
 
     public static int length(CharSequence cs, ConditionProfile profile1, ConditionProfile profile2) {
@@ -144,42 +141,42 @@ public class LazyString implements CharSequence {
 
     private CharSequence left;
     private CharSequence right;
-    private final int length;
+    private final int len;
 
     private LazyString(CharSequence left, CharSequence right, int length) {
         assert left.length() > 0 && right.length() > 0 && length == left.length() + right.length();
         this.left = left;
         this.right = right;
-        this.length = length;
-    }
-
-    private LazyString(CharSequence left, CharSequence right) {
-        this(left, right, left.length() + right.length());
+        this.len = length;
     }
 
     @Override
     public int length() {
-        return length;
+        return len;
     }
 
     @Override
     public String toString() {
-        if (!isFlat()) {
-            flatten();
+        if (!isMaterialized()) {
+            return materialize();
         }
         return (String) left;
     }
 
-    private boolean isFlat() {
+    @Override
+    public boolean isMaterialized() {
         return right == null;
     }
 
+    @Override
     @TruffleBoundary
-    private void flatten() {
-        char[] dst = new char[length];
-        flatten(this, 0, length, dst, 0);
-        left = new String(dst);
+    public String materialize() {
+        char[] dst = new char[len];
+        LazyString.flatten(this, 0, len, dst, 0);
+        String flattened = new String(dst);
+        left = flattened;
         right = null;
+        return flattened;
     }
 
     private static void flatten(CharSequence src, int srcBegin, int srcEnd, char[] dst, int dstBegin) {
@@ -241,7 +238,7 @@ public class LazyString implements CharSequence {
     }
 
     public boolean isEmpty() {
-        return length == 0;
+        return len == 0;
     }
 
     // accessed via Java Interop, JDK-8062624.js

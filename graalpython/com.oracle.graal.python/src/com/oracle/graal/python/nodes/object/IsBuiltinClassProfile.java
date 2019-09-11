@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,8 +43,8 @@ package com.oracle.graal.python.nodes.object;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -57,16 +57,18 @@ public final class IsBuiltinClassProfile {
     @CompilationFinal private boolean match;
     @CompilationFinal private boolean noMatch;
 
+    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile();
+
+    /* private constructor */
     private IsBuiltinClassProfile() {
-        // private constructor
     }
 
     public static IsBuiltinClassProfile create() {
         return new IsBuiltinClassProfile();
     }
 
-    public boolean profileIsAnyBuiltinException(PException object) {
-        return profileIsAnyBuiltinClass(object.getExceptionObject().getLazyPythonClass());
+    public static IsBuiltinClassProfile getUncached() {
+        return UNCACHED;
     }
 
     public boolean profileIsAnyBuiltinObject(PythonObject object) {
@@ -203,7 +205,7 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileClass(PythonClass clazz, PythonBuiltinClassType type) {
+    public boolean profileClass(PythonAbstractClass clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClass) {
             if (!isBuiltinClass) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

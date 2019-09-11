@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @ImportStatic(PythonOptions.class)
@@ -60,7 +61,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return AbstractObjectIsSubclassNodeGen.create();
     }
 
-    public abstract boolean execute(Object derived, Object cls);
+    public abstract boolean execute(VirtualFrame frame, Object derived, Object cls);
 
     @Specialization(guards = "derived == cls")
     boolean isSameClass(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls) {
@@ -68,18 +69,18 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"derived != cls", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    boolean isSubclass(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
+    boolean isSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
                     @Cached("create()") AbstractObjectIsSubclassNode isSubclassNode) {
         // TODO: Investigate adding @ExplodeLoop when the bases is constant in length (guard)
-        PTuple bases = getBasesNode.execute(cachedDerived);
+        PTuple bases = getBasesNode.execute(frame, cachedDerived);
         if (bases == null || isEmpty(bases)) {
             return false;
         }
 
         for (Object baseCls : bases.getArray()) {
-            if (isSubclassNode.execute(baseCls, cachedCls)) {
+            if (isSubclassNode.execute(frame, baseCls, cachedCls)) {
                 return true;
             }
         }
@@ -87,19 +88,19 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"isSubclass", "isSameClass"})
-    boolean isSubclassGeneric(Object derived, Object cls,
+    boolean isSubclassGeneric(VirtualFrame frame, Object derived, Object cls,
                     @Cached("create()") AbstractObjectIsSubclassNode isSubclassNode) {
         if (derived == cls) {
             return true;
         }
 
-        PTuple bases = getBasesNode.execute(derived);
+        PTuple bases = getBasesNode.execute(frame, derived);
         if (bases == null || isEmpty(bases)) {
             return false;
         }
 
         for (Object baseCls : bases.getArray()) {
-            if (isSubclassNode.execute(baseCls, cls)) {
+            if (isSubclassNode.execute(frame, baseCls, cls)) {
                 return true;
             }
         }

@@ -1,0 +1,26 @@
+ModuleRootNode Name: <module 'fnCall11'> SourceSection: [0,25]`foo(a, *args, keywor...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,25]`foo(a, *args, keywor...`
+    PythonCallNodeGen SourceSection: [0,25]`foo(a, *args, keywor...`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      PositionalArgumentsNode SourceSection: None
+        ReadNameNodeGen SourceSection: [4,5]`a`
+          Identifier: a
+        ReadNameNodeGen SourceSection: [8,12]`args`
+          Identifier: args
+        ExecutePositionalStarargsNodeGen SourceSection: None
+      KeywordArgumentsNodeGen SourceSection: None
+        KeywordLiteralNode SourceSection: None
+          IntegerLiteralNode SourceSection: [22,24]`23`
+            Value: 23
+        CompactKeywordsNodeGen SourceSection: None
+        ExecuteKeywordStarargsNodeGen SourceSection: None
+          EmptyNode SourceSection: None
+      ReadNameNodeGen SourceSection: None
+        Identifier: foo

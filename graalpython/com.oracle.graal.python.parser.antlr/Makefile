@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
@@ -36,28 +36,44 @@
 # SOFTWARE.
 
 QUIETLY$(MX_VERBOSE) = @
-TARGETS=${OUTPUT_PATH}/Python3BaseVisitor.java \
-	${OUTPUT_PATH}/Python3Listener.java \
-	${OUTPUT_PATH}/Python3BaseListener.java \
-	${OUTPUT_PATH}/Python3Visitor.java \
-	${OUTPUT_PATH}/Python3Parser.java \
-	${OUTPUT_PATH}/Python3Lexer.java
+
+# during clean, this isn't set
+PARSER_PATH ?= ../com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr
+
+TARGETS=${PARSER_PATH}/Python3BaseVisitor.java \
+	${PARSER_PATH}/Python3Listener.java \
+	${PARSER_PATH}/Python3BaseListener.java \
+	${PARSER_PATH}/Python3Visitor.java \
+	${PARSER_PATH}/Python3Parser.java \
+	${PARSER_PATH}/Python3Lexer.java
+
+TARGETSNEW=${PARSER_PATH}/Python3NewParser.java \
+	${PARSER_PATH}/Python3NewLexer.java
 
 SOURCE=${PARSER_PATH}/Python3.g4
-STAMP=${PARSER_PATH}/Python3.g4.stamp
+STAMP=${SOURCE}.stamp
+
+SOURCENEW=${PARSER_PATH}/Python3New.g4
+STAMPNEW=${SOURCENEW}.stamp
 
 .PHONY: default clean
-default: ${STAMP}
+default: ${TARGETS} ${TARGETSNEW}
+	
+
+${STAMP}: ${SOURCE} ${SOURCENEW} ${POSTPROCESSOR}
+	$(QUIETLY) touch $@
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCENEW}
 
 # postprocessing to make source compile without warnings
-define postprocess_file
-	python ${POSTPROCESSOR} $(1)
-endef
-
-${STAMP}: ${SOURCE}
-	$(QUIETLY) touch $@
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${OUTPUT_PATH} ${SOURCE}
-	$(foreach var,$(TARGETS),$(call postprocess_file,$(var));)
+${PARSER_PATH}/%.java: ${STAMP}
+	python ${POSTPROCESSOR} $@
 
 clean:
-	rm -f ${TARGETS}
+ifeq ($(wildcard ${SOURCE}),)
+	$(error ${SOURCE} is not in the location I expected it to be, not cleaning antlr parser)
+endif
+	$(QUIETLY) rm -f ${TARGETS}
+	$(QUIETLY) rm -f ${STAMP}
+	$(QUIETLY) rm -f ${TARGETSNEW}
+	$(QUIETLY) rm -f ${STAMPNEW}

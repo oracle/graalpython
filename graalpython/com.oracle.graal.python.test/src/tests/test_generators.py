@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -104,16 +104,110 @@ class ExceptionTest(unittest.TestCase):
     #         yield
     #         self.assertIsNone(sys.exc_info()[0])
     #         yield "done"
-
+ 
     #     g = gen()
     #     next(g)
     #     try:
     #         raise ValueError
     #     except Exception as exc:
     #         g.throw(exc)
-
+ 
     #     self.assertEqual(next(g), "done")
     #     self.assertEqual(sys.exc_info(), (None, None, None))
+
+    def test_throw_single_arg(self):
+        def gen(log):
+            log.append(1)
+            try:
+                yield
+                log.append(2)
+            except ValueError as e:
+                self.assertEqual(e.args[0], "hello")
+            yield
+            log.append(3)
+            return
+        
+        log = []
+        g = gen(log)
+        next(g)
+        g.throw(ValueError, "hello")
+        try:
+            next(g)
+        except StopIteration:
+            pass
+        self.assertEqual([1, 3], log)
+
+
+    def test_throw_multiple_args(self):
+        def gen(log):
+            log.append(1)
+            try:
+                yield
+                log.append(2)
+            except ValueError as e:
+                self.assertEqual(e.args, ("hello", "world", 42))
+            yield
+            log.append(3)
+            return
+        
+        log = []
+        g = gen(log)
+        next(g)
+        g.throw(ValueError, ("hello", "world", 42))
+        try:
+            next(g)
+        except StopIteration:
+            pass
+        self.assertEqual([1, 3], log)
+
+
+    def test_throw_exception_type(self):
+        def gen(log):
+            log.append(1)
+            try:
+                yield
+                log.append(2)
+            except ValueError as e:
+                self.assertEqual(len(e.args), 0)
+            yield
+            log.append(3)
+            return
+        
+        log = []
+        g = gen(log)
+        next(g)
+        g.throw(ValueError)
+        try:
+            next(g)
+        except StopIteration:
+            pass
+        self.assertEqual([1, 3], log)
+
+
+    def test_gen_from_except(self):
+        def gen():
+            self.assertEqual(sys.exc_info()[0], None)
+            yield
+            
+            try:
+                raise TypeError
+            except TypeError:
+                # we are called from "except ValueError:"
+                self.assertEqual(sys.exc_info()[0], TypeError)
+            self.assertIsNone(sys.exc_info()[0])
+            yield
+            self.assertIsNone(sys.exc_info()[0])
+            yield "done"
+            
+        try:
+            raise ValueError
+        except ValueError:
+            self.assertEqual(sys.exc_info()[0], ValueError)
+            g = gen()
+        next(g)
+        next(g)
+        self.assertEqual(next(g), "done")
+        
 
     def test_stopiteration_warning(self):
         # See also PEP 479.
@@ -178,3 +272,46 @@ def test_generator_starargs():
     gen = (x for x in range(10))
     assert func(*lst) == set(lst)
     assert func(*gen) == set(lst)
+
+
+def test_generator_cell_confusion():
+    # tfel: this demonstrates various errors we can get when we get confused
+    # about the generator scopes and their parents for eager iterator
+    # evaluation. In fact, all of these should work
+    def unbound_local_l2():
+        l1 = []
+        l2 = []
+        return [
+            link for link in (
+                (url for url in l1),
+                (url for url in l2)
+            )
+        ]
+
+    assert len(unbound_local_l2()) == 2
+
+    def assertion_error_getting_closure_from_locals():
+        l1 = []
+        l2 = []
+        l3 = []
+        return [
+            link for link in (
+                (url for url in l1),
+                (url for url in l2),
+                (url for url in l3),
+            )
+        ]
+
+    assert len(assertion_error_getting_closure_from_locals()) == 3
+
+    def illegal_state_expected_cell_got_list():
+        l11, l1 = [], []
+        l22, l2 = [], []
+        return [
+            link for link in (
+                (url for url in l1),
+                (url for url in l2),
+            )
+        ]
+
+    assert len(illegal_state_expected_cell_got_list()) == 2

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,80 +40,117 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.util.function.Function;
+
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNodeFactory.DynamicNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import java.util.function.Function;
+import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
-@ImportStatic(MathGuards.class)
-public abstract class CastToIntegerFromIntNode extends PNodeWithContext {
+public class CastToIntegerFromIntNode extends Node {
 
-    @Child private LookupAndCallUnaryNode callIndexNode;
+    @Child private Dynamic dynamicNode;
 
     private final Function<Object, Byte> typeErrorHandler;
-
-    public abstract Object execute(Object x);
 
     public CastToIntegerFromIntNode(Function<Object, Byte> typeErrorHandler) {
         super();
         this.typeErrorHandler = typeErrorHandler;
     }
 
+    public Object execute(Object x) {
+        if (dynamicNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            dynamicNode = insert(Dynamic.create());
+        }
+        return dynamicNode.execute(x, typeErrorHandler);
+    }
+
     public static CastToIntegerFromIntNode create() {
-        return CastToIntegerFromIntNodeGen.create(null);
+        return new CastToIntegerFromIntNode(null);
     }
 
     public static CastToIntegerFromIntNode create(Function<Object, Byte> typeErrorHandler) {
-        return CastToIntegerFromIntNodeGen.create(typeErrorHandler);
+        return new CastToIntegerFromIntNode(typeErrorHandler);
     }
 
-    @Specialization
-    public long toInt(long x) {
-        return x;
-    }
+    @GenerateUncached
+    @ImportStatic(MathGuards.class)
+    public abstract static class Dynamic extends PNodeWithContext {
 
-    @Specialization
-    public PInt toInt(PInt x) {
-        return x;
-    }
+        public abstract Object execute(Object x, Function<Object, Byte> typeErrorHandler);
 
-    @Specialization
-    public long toInt(double x) {
-        if (typeErrorHandler != null) {
-            return typeErrorHandler.apply(x);
-        } else {
-            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        public final Object execute(Object x) {
+            return execute(x, null);
         }
-    }
 
-    @Specialization(guards = "!isNumber(x)")
-    public Object toInt(Object x) {
-        if (callIndexNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INT__));
+        @Specialization
+        int fromInt(int x, @SuppressWarnings("unused") Function<Object, Byte> typeErrorHandler) {
+            return x;
         }
-        Object result = callIndexNode.executeObject(x);
-        if (result == PNone.NO_VALUE) {
+
+        @Specialization
+        long fromLong(long x, @SuppressWarnings("unused") Function<Object, Byte> typeErrorHandler) {
+            return x;
+        }
+
+        @Specialization
+        PInt fromPInt(PInt x, @SuppressWarnings("unused") Function<Object, Byte> typeErrorHandler) {
+            return x;
+        }
+
+        @Specialization
+        long fromDouble(double x, Function<Object, Byte> typeErrorHandler,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (typeErrorHandler != null) {
                 return typeErrorHandler.apply(x);
             } else {
-                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+                throw raiseNode.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
             }
         }
-        if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-            throw raise(TypeError, " __int__ returned non-int (type %p)", result);
+
+        @Specialization(guards = "!isNumber(x)")
+        Object fromObject(Object x, Function<Object, Byte> typeErrorHandler,
+                        @Cached LookupAndCallUnaryDynamicNode callIndexNode,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            Object result = callIndexNode.executeObject(x, SpecialMethodNames.__INT__);
+            if (result == PNone.NO_VALUE) {
+                if (typeErrorHandler != null) {
+                    return typeErrorHandler.apply(x);
+                } else {
+                    throw raiseNode.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+                }
+            }
+            if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
+                throw raiseNode.raise(TypeError, " __int__ returned non-int (type %p)", result);
+            }
+            return result;
         }
-        return result;
+
+        public static Dynamic create() {
+            return DynamicNodeGen.create();
+        }
+
+        public static Dynamic getUncached() {
+            return DynamicNodeGen.getUncached();
+        }
     }
+
 }

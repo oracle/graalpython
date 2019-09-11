@@ -1,0 +1,218 @@
+ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorator(delt...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,216]`def mydecorator(delt...`
+    ExpressionWithSideEffects SourceSection: [0,216]`def mydecorator(delt...`
+      WriteNameNodeGen SourceSection: [0,151]`def mydecorator(delt...`
+        Identifier: mydecorator
+        FunctionDefinitionNode Name: mydecorator SourceSection: None
+          Arguments: None
+          KwArguments: None
+          Documentation: StringLiteralNode: Empty
+          FreeVarSlots: None
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: delta, 
+          FunctionRootNode SourceSection: [0,151]`def mydecorator(delt...`
+            Name: mydecorator
+            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+              Param Names: delta
+            CelVars: delta
+            FreeVars: None
+            NeedsCellFrame: False
+            FrameDescriptor: 3 slots [delta, wrap, <return_val>]
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: delta, 
+            InnerRootNode SourceSection: [0,151]`def mydecorator(delt...`
+              ReturnTargetNode SourceSection: [0,151]`def mydecorator(delt...`
+                Body: BlockNode SourceSection: None
+                  WriteLocalCellNodeGen SourceSection: None
+                    Identifier: delta
+                    ReadLocalVariableNode SourceSection: None
+                      Frame: [0,delta,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+                    ArgumentExpressionNode SourceSection: None
+                      ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
+                  BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [28,138]`def wrap(fn):↵      ...`
+                      Identifier: wrap
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [1,wrap,Illegal]
+                      FunctionDefinitionNode Name: wrap SourceSection: None
+                        Arguments: None
+                        KwArguments: None
+                        Documentation: StringLiteralNode: Empty
+                        FreeVarSlots: delta, 
+                        ExecutionSlots:
+                          FreeVarsSlots: delta, 
+                          CellVarsSlots: fn, 
+                        FunctionRootNode SourceSection: [28,138]`def wrap(fn):↵      ...`
+                          Name: wrap
+                          Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                            Param Names: fn
+                          CelVars: fn
+                          FreeVars: delta
+                          NeedsCellFrame: False
+                          FrameDescriptor: 4 slots [fn, wrapped_f, delta, <return_val>]
+                          ExecutionSlots:
+                            FreeVarsSlots: delta, 
+                            CellVarsSlots: fn, 
+                          InnerRootNode SourceSection: [28,138]`def wrap(fn):↵      ...`
+                            ReturnTargetNode SourceSection: [28,138]`def wrap(fn):↵      ...`
+                              Body: BlockNode SourceSection: None
+                                WriteLocalCellNodeGen SourceSection: None
+                                  Identifier: fn
+                                  ReadLocalVariableNode SourceSection: None
+                                    Frame: [0,fn,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ArgumentExpressionNode SourceSection: None
+                                    ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
+                                BlockNode SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: [50,117]`def wrapped_f(*args)...`
+                                    Identifier: wrapped_f
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [1,wrapped_f,Illegal]
+                                    FunctionDefinitionNode Name: wrapped_f SourceSection: None
+                                      Arguments: None
+                                      KwArguments: None
+                                      Documentation: StringLiteralNode: Empty
+                                      FreeVarSlots: delta, , fn, 
+                                      ExecutionSlots:
+                                        FreeVarsSlots: delta, , fn, 
+                                        CellVarsSlots: None
+                                      FunctionRootNode SourceSection: [50,117]`def wrapped_f(*args)...`
+                                        Name: wrapped_f
+                                        Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                                        CelVars: None
+                                        FreeVars: delta, fn
+                                        NeedsCellFrame: False
+                                        FrameDescriptor: 4 slots [args, fn, delta, <return_val>]
+                                        ExecutionSlots:
+                                          FreeVarsSlots: delta, , fn, 
+                                          CellVarsSlots: None
+                                        InnerRootNode SourceSection: [50,117]`def wrapped_f(*args)...`
+                                          ReturnTargetNode SourceSection: [50,117]`def wrapped_f(*args)...`
+                                            Body: BlockNode SourceSection: None
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: args
+                                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                                  Frame: [0,args,Illegal]
+                                                ArgumentExpressionNode SourceSection: None
+                                                  ReadVarArgsNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
+                                              FrameReturnNode SourceSection: [84,108]`return fn(*args) + d...`
+                                                WriteLocalVariableNodeGen SourceSection: None
+                                                  Identifier: <return_val>
+                                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                                    Frame: [3,<return_val>,Illegal]
+                                                  BinaryArithmeticExpression SourceSection: [91,108]`fn(*args) + delta`
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __add__
+                                                    PythonCallNodeGen SourceSection: [91,100]`fn(*args)`
+                                                      CachedCallNodeGen SourceSection: None
+                                                        CreateArgumentsNodeGen SourceSection: None
+                                                        CallDispatchNodeGen SourceSection: None
+                                                      PositionalArgumentsNode SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [95,99]`args`
+                                                          Frame: [0,args,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ExecutePositionalStarargsNodeGen SourceSection: None
+                                                      ReadLocalCellNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: None
+                                                          Frame: [1,fn,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadFromCellNodeGen SourceSection: None
+                                                    ReadLocalCellNodeGen SourceSection: [103,108]`delta`
+                                                      ReadLocalVariableNode SourceSection: None
+                                                        Frame: [2,delta,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                      ReadFromCellNodeGen SourceSection: None
+                                            Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                              Frame: [3,<return_val>,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                  FrameReturnNode SourceSection: [117,133]`return wrapped_f`
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: <return_val>
+                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                        Frame: [3,<return_val>,Illegal]
+                                      ReadLocalVariableNode SourceSection: [124,133]`wrapped_f`
+                                        Frame: [1,wrapped_f,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                              Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                Frame: [3,<return_val>,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                    FrameReturnNode SourceSection: [138,149]`return wrap`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <return_val>
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,<return_val>,Illegal]
+                        ReadLocalVariableNode SourceSection: [145,149]`wrap`
+                          Frame: [1,wrap,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Frame: [2,<return_val>,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: [151,198]`@mydecorator(3)↵def ...`
+        Identifier: getNumber
+        PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          FunctionDefinitionNode Name: getNumber SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [167,198]`def getNumber():↵   ...`
+              Name: getNumber
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [167,198]`def getNumber():↵   ...`
+                ReturnTargetNode SourceSection: [167,198]`def getNumber():↵   ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    FrameReturnNode SourceSection: [188,196]`return 1`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: <return_val>
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,<return_val>,Illegal]
+                        IntegerLiteralNode SourceSection: [195,196]`1`
+                          Value: 1
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+          PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            IntegerLiteralNode SourceSection: [164,165]`3`
+              Value: 3
+            ReadNameNodeGen SourceSection: None
+              Identifier: mydecorator
+      PythonCallNodeGen SourceSection: [198,216]`print(getNumber())`
+        CachedCallNodeGen SourceSection: None
+          CreateArgumentsNodeGen SourceSection: None
+          CallDispatchNodeGen SourceSection: None
+        PythonCallNodeGen SourceSection: [204,215]`getNumber()`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: None
+            Identifier: getNumber
+        ReadNameNodeGen SourceSection: None
+          Identifier: print

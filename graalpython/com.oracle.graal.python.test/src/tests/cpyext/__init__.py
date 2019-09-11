@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,11 +38,9 @@
 # SOFTWARE.
 
 import sys
+import os
 from importlib import invalidate_caches
 from string import Formatter
-os = sys.modules.get("posix", sys.modules.get("nt", None))
-if os is None:
-    raise ImportError("posix or nt module is required in builtin modules")
 __dir__ = __file__.rpartition("/")[0]
 
 GRAALPYTHON = sys.implementation.name == "graalpython"
@@ -71,34 +69,62 @@ class CPyExtTestCase():
 
 
 def ccompile(self, name):
-    if getattr(sys, "graal_python_opaque_filesystem", False):
-        # distutils won't fully work with an opaque filesystem,
-        # because we cannot read bytes from files and manipulate
-        # them. We hope the code was already compiled.
-        return
-
     from distutils.core import setup, Extension
+    from distutils.sysconfig import get_config_var
+    from hashlib import sha256
+    EXT_SUFFIX = get_config_var("EXT_SUFFIX")
+
     source_file = '%s/%s.c' % (__dir__, name)
     file_not_empty(source_file)
-    module = Extension(name, sources=[source_file])
-    args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
-    setup(
-        script_name='setup',
-        script_args=args,
-        name=name,
-        version='1.0',
-        description='',
-        ext_modules=[module]
-    )
+
+    # compute checksum of source file
+    m = sha256()
+    with open(source_file,"rb") as f:
+        # read 4K blocks
+        for block in iter(lambda: f.read(4096),b""):
+            m.update(block)
+    cur_checksum = m.hexdigest()
+    
+    # see if there is already a checksum file
+    checksum_file = '%s/%s%s.sha256' % (__dir__, name, EXT_SUFFIX)
+    available_checksum = ""
+    if os.path.exists(checksum_file):
+        # read checksum file
+        with open(checksum_file, "r") as f:
+            available_checksum = f.readline()
+            
+    # note, the suffix is already a string like '.so'
+    binary_file_llvm = '%s/%s%s' % (__dir__, name, EXT_SUFFIX)
+    
+    # Compare checksums and only re-compile if different.
+    # Note: It could be that the C source file's checksum didn't change but someone 
+    # manually deleted the shared library file.
+    if available_checksum != cur_checksum or not os.path.exists(binary_file_llvm):
+        module = Extension(name, sources=[source_file])
+        verbosity = '--verbose' if sys.flags.verbose else '--quiet'
+        args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__, 'clean']
+        setup(
+            script_name='setup',
+            script_args=args,
+            name=name,
+            version='1.0',
+            description='',
+            ext_modules=[module]
+        )
+        
+        # write new checksum
+        with open(checksum_file, "w") as f:
+            f.write(cur_checksum)
+
+        # IMPORTANT:
+        # Invalidate caches after creating the native module.
+        # FileFinder caches directory contents, and the check for directory
+        # changes has whole-second precision, so it can miss quick updates.
+        invalidate_caches()
+
     # ensure file was really written
-    binary_file_llvm = '%s/%s.bc' % (__dir__, name)
     if GRAALPYTHON:
         file_not_empty(binary_file_llvm)
-    # IMPORTANT:
-    # Invalidate caches after creating the native module.
-    # FileFinder caches directory contents, and the check for directory
-    # changes has whole-second precision, so it can miss quick updates.
-    invalidate_caches()
 
 
 def file_not_empty(path):
@@ -423,6 +449,13 @@ def CPyExtType(name, code, **kwargs):
     template = """
     #include "Python.h"
 
+    {includes}
+
+    typedef struct {{
+        PyObject_HEAD;
+        {cmembers}
+    }} {name}Object;
+
     {code}
 
     static PyNumberMethods {name}_number_methods = {{
@@ -471,10 +504,6 @@ def CPyExtType(name, code, **kwargs):
         {{NULL, NULL, 0, NULL}}
     }};
 
-    typedef struct {{
-        PyObject_HEAD
-    }} {name}Object;
-
     static PyTypeObject {name}Type = {{
         PyVarObject_HEAD_INIT(NULL, 0)
         "{name}.{name}",
@@ -495,7 +524,7 @@ def CPyExtType(name, code, **kwargs):
         {tp_getattro},
         {tp_setattro},
         {tp_as_buffer},
-        Py_TPFLAGS_DEFAULT,
+        Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
         "",
         {tp_traverse},              /* tp_traverse */
         {tp_clear},                 /* tp_clear */
@@ -506,14 +535,14 @@ def CPyExtType(name, code, **kwargs):
         {name}_methods,             /* tp_methods */
         NULL,                       /* tp_members */
         0,                          /* tp_getset */
-        0,                          /* tp_base */
+        {tp_base},                  /* tp_base */
         {tp_dict},                  /* tp_dict */
-        0,                          /* tp_descr_get */
-        0,                          /* tp_descr_set */
-        0,                          /* tp_dictoffset */
+        {tp_descr_get},             /* tp_descr_get */
+        {tp_descr_set},             /* tp_descr_set */
+        {tp_dictoffset},            /* tp_dictoffset */
         {tp_init},                  /* tp_init */
         PyType_GenericAlloc,        /* tp_alloc */
-        PyType_GenericNew,          /* tp_new */
+        {tp_new},                   /* tp_new */
         PyObject_Del,               /* tp_free */
     }};
 
@@ -550,6 +579,9 @@ def CPyExtType(name, code, **kwargs):
     kwargs.setdefault("ready_code", "")
     kwargs.setdefault("post_ready_code", "")
     kwargs.setdefault("tp_methods", "{NULL, NULL, 0, NULL}")
+    kwargs.setdefault("tp_new", "PyType_GenericNew")
+    kwargs.setdefault("cmembers", "")
+    kwargs.setdefault("includes", "")
     c_source = UnseenFormatter().format(template, **kwargs)
 
     source_file = "%s/%s.c" % (__dir__, name)

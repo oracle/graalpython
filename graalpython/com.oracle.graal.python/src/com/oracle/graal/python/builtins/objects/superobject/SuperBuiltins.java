@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,9 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -59,7 +62,10 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.SuperInitNodeFactory;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -80,15 +86,12 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -117,17 +120,17 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetObjectTypeNode extends Node {
-        abstract PythonClass execute(SuperObject self);
+        abstract PythonAbstractClass execute(SuperObject self);
 
         @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
-        PythonClass cached(@SuppressWarnings("unused") SuperObject self,
+        PythonAbstractClass cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached("self.getObjectType()") PythonClass type) {
+                        @Cached("self.getObjectType()") PythonAbstractClass type) {
             return type;
         }
 
         @Specialization(replaces = "cached")
-        PythonClass uncached(SuperObject self) {
+        PythonAbstractClass uncached(SuperObject self) {
             return self.getObjectType();
         }
     }
@@ -156,6 +159,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private GetClassNode getClassNode;
         @Child private LookupAndCallBinaryNode getAttrNode;
         @Child private CellBuiltins.GetRefNode getRefNode;
+        @Child private TypeNodes.IsTypeNode isTypeNode;
+        @Child private HashingStorageNodes.GetItemNode getItemNode;
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -192,9 +197,9 @@ public final class SuperBuiltins extends PythonBuiltins {
         protected abstract Object execute(VirtualFrame frame, Object self, Object cls, Object obj);
 
         @Specialization(guards = {"!isNoValue(cls)", "!isNoValue(obj)"})
-        PNone init(SuperObject self, Object cls, Object obj) {
+        PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj) {
             if (obj != PNone.NONE) {
-                PythonClass type = supercheck(cls, obj);
+                PythonAbstractClass type = supercheck(frame, cls, obj);
                 self.init(cls, type, obj);
             } else {
                 self.init(cls, null, null);
@@ -228,12 +233,12 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             Object cls = readClass.execute(frame);
             if (isCellProfile.profile(cls instanceof PCell)) {
-                cls = getRefNode().execute((PCell) cls);
+                cls = getGetRefNode().execute((PCell) cls);
             }
             if (cls == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
             }
-            return init(self, cls, obj);
+            return init(frame, self, cls, obj);
         }
 
         /**
@@ -241,47 +246,40 @@ public final class SuperBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Cached("create(0)") ReadCallerFrameNode readCaller) {
-            Frame target = readCaller.executeWith(frame);
+                        @Cached ReadCallerFrameNode readCaller) {
+            PFrame target = readCaller.executeWith(frame, 0);
             if (target == null) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no current frame");
             }
             Object[] arguments = target.getArguments();
-            if (arguments.length <= PArguments.USER_ARGUMENTS_OFFSET) {
+            if (PArguments.getUserArgumentLength(arguments) == 0) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }
-            Object obj = arguments[PArguments.USER_ARGUMENTS_OFFSET];
+            Object obj = PArguments.getArgument(arguments, 0);
             if (obj == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }
 
-            return initFromFrame(self, target, obj);
+            Object cls = getClassFromTarget(frame, target);
+            return init(frame, self, cls, obj);
         }
 
-        @TruffleBoundary
-        private PNone initFromFrame(SuperObject self, Frame target, Object obj) {
+        private Object getClassFromTarget(VirtualFrame frame, PFrame target) {
             // TODO: remove me
             // TODO: do it properly via the python API in super.__init__ :
             // sys._getframe(1).f_code.co_closure?
-            FrameSlot classSlot = target.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
-            Object cls = PNone.NONE;
-            if (classSlot != null) {
-                try {
-                    cls = target.getObject(classSlot);
-                    if (cls instanceof PCell) {
-                        cls = getRefNode().execute((PCell) cls);
-                    }
-                } catch (FrameSlotTypeException e) {
-                    // fallthrough
+            PDict locals = (PDict) target.getLocalsDict();
+            Object cls = ensureGetItemNode().execute(frame, locals.getDictStorage(), SpecialAttributeNames.__CLASS__);
+            if (cls instanceof PCell) {
+                cls = getGetRefNode().execute((PCell) cls);
+                if (cls == null) {
+                    throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
                 }
             }
-            if (cls == null) {
-                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
-            }
-            return init(self, cls, obj);
+            return cls != null ? cls : PNone.NONE;
         }
 
-        private CellBuiltins.GetRefNode getRefNode() {
+        private CellBuiltins.GetRefNode getGetRefNode() {
             if (getRefNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getRefNode = CellBuiltins.GetRefNode.create();
@@ -319,6 +317,14 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getClassNode;
         }
 
+        private TypeNodes.IsTypeNode ensureIsTypeNode() {
+            if (isTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTypeNode = insert(TypeNodes.IsTypeNode.create());
+            }
+            return isTypeNode;
+        }
+
         private LookupAndCallBinaryNode getGetAttr() {
             if (getAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -327,7 +333,15 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getAttrNode;
         }
 
-        private PythonClass supercheck(Object cls, Object object) {
+        private HashingStorageNodes.GetItemNode ensureGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
+            }
+            return getItemNode;
+        }
+
+        private PythonAbstractClass supercheck(VirtualFrame frame, Object cls, Object object) {
             /*
              * Check that a super() call makes sense. Return a type object.
              *
@@ -343,20 +357,20 @@ public final class SuperBuiltins extends PythonBuiltins {
              * not a subclass of type, but obj.__class__ is! This will allow using super() with a
              * proxy for obj.
              */
-            if (object instanceof PythonClass) {
-                if (getIsSubtype().execute(object, cls)) {
-                    return (PythonClass) object;
+            if (ensureIsTypeNode().execute(object)) {
+                if (getIsSubtype().execute(frame, object, cls)) {
+                    return (PythonAbstractClass) object;
                 }
             }
 
-            if (getIsInstance().executeWith(object, cls)) {
+            if (getIsInstance().executeWith(frame, object, cls)) {
                 return getGetClass().execute(object);
             } else {
                 try {
-                    Object classObject = getGetAttr().executeObject(object, SpecialAttributeNames.__CLASS__);
-                    if (classObject instanceof PythonClass) {
-                        if (getIsSubtype().execute(classObject, cls)) {
-                            return (PythonClass) classObject;
+                    Object classObject = getGetAttr().executeObject(frame, object, SpecialAttributeNames.__CLASS__);
+                    if (ensureIsTypeNode().execute(classObject)) {
+                        if (getIsSubtype().execute(frame, classObject, cls)) {
+                            return (PythonAbstractClass) classObject;
                         }
                     }
                 } catch (PException e) {
@@ -368,7 +382,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GET__, fixedNumOfPositionalArgs = 2, keywordArguments = {"type"})
+    @Builtin(name = SpecialMethodNames.__GET__, minNumOfPositionalArgs = 2, parameterNames = {"self", "obj", "type"})
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Child GetObjectNode getObject = GetObjectNodeGen.create();
@@ -394,30 +408,32 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
-        @Child ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
-        @Child LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
-        @Child GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
-        @Child GetTypeNode getType;
-        @Child GetObjectNode getObject;
-        @Child CallTernaryMethodNode callGet;
-        @Child ObjectBuiltins.GetAttributeNode objectGetattributeNode;
+        @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.createForceType();
+        @Child private LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
+        @Child private GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
+        @Child private GetTypeNode getType;
+        @Child private GetObjectNode getObject;
+        @Child private CallTernaryMethodNode callGet;
+        @Child private ObjectBuiltins.GetAttributeNode objectGetattributeNode;
+        @Child private GetMroNode getMroNode;
+        @Child private IsSameTypeNode isSameTypeNode;
 
-        private Object genericGetAttr(Object object, Object attr) {
+        private Object genericGetAttr(VirtualFrame frame, Object object, Object attr) {
             if (objectGetattributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 objectGetattributeNode = insert(ObjectBuiltinsFactory.GetAttributeNodeFactory.create());
             }
-            return objectGetattributeNode.execute(object, attr);
+            return objectGetattributeNode.execute(frame, object, attr);
         }
 
         @Specialization
-        public Object get(SuperObject self, Object attr) {
-            PythonClass startType = getObjectType.execute(self);
+        public Object get(VirtualFrame frame, SuperObject self, Object attr) {
+            PythonAbstractClass startType = getObjectType.execute(self);
             if (startType == null) {
-                return genericGetAttr(self, attr);
+                return genericGetAttr(frame, self, attr);
             }
 
             /*
@@ -432,7 +448,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             if (stringAttr != null) {
                 if (stringAttr.equals(SpecialAttributeNames.__CLASS__)) {
-                    return genericGetAttr(self, SpecialAttributeNames.__CLASS__);
+                    return genericGetAttr(frame, self, SpecialAttributeNames.__CLASS__);
                 }
             }
 
@@ -442,22 +458,22 @@ public final class SuperBuiltins extends PythonBuiltins {
                 getType = insert(GetTypeNodeGen.create());
             }
 
-            PythonClass[] mro = startType.getMethodResolutionOrder();
+            PythonAbstractClass[] mro = getMro(startType);
             /* No need to check the last one: it's gonna be skipped anyway. */
             int i = 0;
             int n = mro.length;
             for (i = 0; i + 1 < n; i++) {
-                if (getType.execute(self) == mro[i]) {
+                if (isSameType(getType.execute(self), mro[i])) {
                     break;
                 }
             }
             i++; /* skip su->type (if any) */
             if (i >= n) {
-                return genericGetAttr(self, attr);
+                return genericGetAttr(frame, self, attr);
             }
 
             for (; i < n; i++) {
-                PythonClass tmp = mro[i];
+                PythonAbstractClass tmp = mro[i];
                 Object res = readFromDict.execute(tmp, attr);
                 if (res != PNone.NO_VALUE) {
                     Object get = readGet.execute(res);
@@ -471,17 +487,33 @@ public final class SuperBuiltins extends PythonBuiltins {
                             getObject = insert(GetObjectNodeGen.create());
                             callGet = insert(CallTernaryMethodNode.create());
                         }
-                        res = callGet.execute(get, res, getObject.execute(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
+                        res = callGet.execute(frame, get, res, getObject.execute(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
                     }
                     return res;
                 }
             }
 
-            return genericGetAttr(self, attr);
+            return genericGetAttr(frame, self, attr);
+        }
+
+        private boolean isSameType(Object execute, PythonAbstractClass abstractPythonClass) {
+            if (isSameTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSameTypeNode = insert(IsSameTypeNode.create());
+            }
+            return isSameTypeNode.execute(execute, abstractPythonClass);
+        }
+
+        private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(clazz);
         }
     }
 
-    @Builtin(name = "__thisclass__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__thisclass__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ThisClassNode extends PythonUnaryBuiltinNode {
         @Child GetTypeNode getType = GetTypeNodeGen.create();
@@ -496,7 +528,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__self__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__self__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfNode extends PythonUnaryBuiltinNode {
         @Child GetObjectNode getObject = GetObjectNodeGen.create();
@@ -511,14 +543,14 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__self_class__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__self_class__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfClassNode extends PythonUnaryBuiltinNode {
         @Child GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
 
         @Specialization
         Object getClass(SuperObject self) {
-            PythonClass objectType = getObjectType.execute(self);
+            PythonAbstractClass objectType = getObjectType.execute(self);
             if (objectType == null) {
                 return PNone.NONE;
             }

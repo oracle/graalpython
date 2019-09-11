@@ -1,0 +1,4 @@
+test_descriptor_errors_propagate
+test_dont_clear_dict
+test_module_getattr_errors
+test_module_getattr_tricky

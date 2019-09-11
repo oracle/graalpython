@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,12 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public class HasInheritedAttributeNode extends Node {
     @Child private LookupInheritedAttributeNode lookupInheritedAttributeNode;
@@ -54,7 +59,38 @@ public class HasInheritedAttributeNode extends Node {
         return lookupInheritedAttributeNode.execute(object) != PNone.NO_VALUE;
     }
 
+    @Override
+    public NodeCost getCost() {
+        // super-simple wrapper node
+        return NodeCost.NONE;
+    }
+
     public static HasInheritedAttributeNode create(String key) {
         return new HasInheritedAttributeNode(key);
+    }
+
+    @GenerateUncached
+    public abstract static class Dynamic extends Node {
+        public abstract boolean execute(Object object, String key);
+
+        @Specialization
+        boolean doCached(Object object, String key,
+                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupInheritedAttributeNode) {
+            return lookupInheritedAttributeNode.execute(object, key) != PNone.NO_VALUE;
+        }
+
+        @Override
+        public NodeCost getCost() {
+            // super-simple wrapper node
+            return NodeCost.NONE;
+        }
+
+        public static Dynamic create() {
+            return HasInheritedAttributeNodeFactory.DynamicNodeGen.create();
+        }
+
+        public static Dynamic getUncached() {
+            return HasInheritedAttributeNodeFactory.DynamicNodeGen.getUncached();
+        }
     }
 }

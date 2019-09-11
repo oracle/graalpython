@@ -1,0 +1,9 @@
+test_basic
+test_values
+test_exception_message
+test_misbehavin
+test_not
+test_dicts
+test_badentry
+test_coverage
+test_goodentry

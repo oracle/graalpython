@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: __new__
+        Kind: Function
+        FrameDescriptor: [hits, currsize, _cls, misses, maxsize, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty

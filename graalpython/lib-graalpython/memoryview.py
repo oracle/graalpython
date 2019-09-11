@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,9 @@ c_memoryview_module = None
 
 
 def __memoryview_init(self, *args, **kwargs):
-    import _memoryview
+    from build_capi import hint
+    with hint("_memoryview"):
+        import _memoryview
     global c_memoryview_module
     c_memoryview_module = _memoryview
     PyTruffle_SetAttr(memoryview, "__init__", __memoryview_init2)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,18 +32,13 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
-import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.source.SourceSection;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
 public abstract class PNode extends PNodeWithContext implements InstrumentableNode {
-
     public static final PNode[] EMPTY_ARRAY = new PNode[0];
-
     @CompilationFinal private SourceSection sourceSection;
-    @CompilationFinal private boolean isRoot = false;
 
     @Override
     public String toString() {
@@ -68,19 +63,7 @@ public abstract class PNode extends PNodeWithContext implements InstrumentableNo
         this.sourceSection = source;
     }
 
-    public boolean hasTag(Class<? extends Tag> tag) {
-        return isRoot && tag == StandardTags.RootTag.class;
-    }
-
     public boolean isInstrumentable() {
         return getSourceSection() != null;
-    }
-
-    public void markAsRoot() {
-        isRoot = true;
-    }
-
-    public boolean isRoot() {
-        return isRoot;
     }
 }

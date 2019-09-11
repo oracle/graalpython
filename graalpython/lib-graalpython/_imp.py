@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,8 @@ _py_package_context = None
 
 
 @__builtin__
-def extension_suffixes():
-    return [".bc", ".so", ".dylib", ".su"]
-
-
-@__builtin__
 def get_magic():
-    return '\x0c\xaf\xaf\xe1'
+    return b'\x0c\xaf\xaf\xe1'
 
 
 @__builtin__
@@ -83,3 +78,82 @@ def get_frozen_object(name):
 
 
 is_frozen_package = get_frozen_object
+
+
+@__builtin__
+def cache_all_file_modules():
+    """
+    Caches all modules loaded during initialization through the normal import
+    mechanism on the language, so that any additional contexts created in the
+    same engine can re-use the cached CallTargets. See the _imp module for
+    details on the module caching.
+    """
+    import sys
+    for k,v in sys.modules.items():
+        if hasattr(v, "__file__"):
+            if not graal_python_has_cached_code(k):
+                freeze_module(v, k)
+
+
+@__builtin__
+def _patch_package_paths(paths):
+    import sys
+    return _sub_package_paths(paths, sys.graal_python_stdlib_home, "!stdlib!")
+
+
+@__builtin__
+def _unpatch_package_paths(paths):
+    import sys
+    return _sub_package_paths(paths, "!stdlib!", sys.graal_python_stdlib_home)
+
+
+@__builtin__
+def _sub_package_paths(paths, fro, to):
+    if paths is not None:
+        return [p.replace(fro, to) for p in paths]
+
+
+@__builtin__
+def freeze_module(mod, key=None):
+    """
+    Freeze a module under the optional key in the language cache so that it can
+    be shared across multiple contexts. If the module is a package in the
+    standard library path, it's __path__ is substituted to not leak the standard
+    library path to other contexts.
+    """
+    import sys
+    path = _patch_package_paths(getattr(mod, "__path__", None))
+    name = key or mod.__name__
+    graal_python_cache_module_code(key, mod.__file__, path)
+
+
+class CachedImportFinder:
+    @staticmethod
+    def find_spec(fullname, path, target=None):
+        path = _unpatch_package_paths(graal_python_get_cached_code_path(fullname))
+        if path is not None:
+            if len(path) > 0:
+                submodule_search_locations = path
+                is_package = True
+            else:
+                submodule_search_locations = None
+                is_package = False
+            spec = CachedImportFinder.ModuleSpec(fullname, CachedLoader, is_package=is_package)
+            # we're not setting origin, so the module won't have a __file__
+            # attribute and will show up as built-in
+            spec.submodule_search_locations = submodule_search_locations
+            return spec
+
+
+class CachedLoader:
+    import sys
+
+    @staticmethod
+    def create_module(spec):
+        pass
+
+    @staticmethod
+    def exec_module(module):
+        modulename = module.__name__
+        exec(graal_python_get_cached_code(modulename), module.__dict__)
+        CachedLoader.sys.modules[modulename] = module

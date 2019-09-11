@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,9 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.FinalLocationException;
@@ -55,6 +57,8 @@ import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic(PythonOptions.class)
+@ReportPolymorphism
+@GenerateUncached
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, Object key, Object value);
@@ -63,6 +67,10 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
 
     public static WriteAttributeToDynamicObjectNode create() {
         return WriteAttributeToDynamicObjectNodeGen.create();
+    }
+
+    public static WriteAttributeToDynamicObjectNode getUncached() {
+        return WriteAttributeToDynamicObjectNodeGen.getUncached();
     }
 
     protected static boolean compareKey(Object cachedKey, Object key) {
@@ -83,7 +91,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "compareKey(cachedKey, key)",
@@ -111,7 +119,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "compareKey(cachedKey, key)",
@@ -144,8 +152,8 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     @TruffleBoundary
     @Specialization(guards = {
                     "dynamicObject.getShape().isValid()"
-    }, replaces = {"doDirect", "defineDirect"})
-    protected boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {
+    }, replaces = {"doDirect", "defineDirect", "updateShapeAndWrite"})
+    protected static boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {
         Object attrKey = attrKey(key);
         CompilerAsserts.neverPartOfCompilation();
         dynamicObject.define(attrKey, value);
@@ -153,7 +161,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @Specialization(guards = "!dynamicObject.getShape().isValid()")
-    protected boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
+    protected static boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
         CompilerDirectives.transferToInterpreter();
         dynamicObject.updateShape();
         return doIndirect(dynamicObject, key, value);

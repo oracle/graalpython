@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,16 +52,18 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -71,8 +73,9 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode.NotNode;
+import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.expression.IsNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -85,6 +88,7 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
+import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.nodes.generator.DictConcatNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
@@ -102,13 +106,23 @@ import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
+import org.junit.Assume;
+
+import org.junit.Test;
 
 public class TestParserTranslator {
     PythonContext context;
@@ -116,6 +130,50 @@ public class TestParserTranslator {
     public TestParserTranslator() {
         PythonTests.enterContext();
         context = PythonLanguage.getContextRef().get();
+    }
+
+    private static class JUnitRootNode extends PRootNode {
+        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
+        @Child private ExpressionNode body;
+        @Child private CalleeContext calleeContext = CalleeContext.create();
+
+        public JUnitRootNode(PythonLanguage language, ExpressionNode body) {
+            super(language);
+            this.body = body;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            CalleeContext.enter(frame, profile);
+            try {
+                return body.execute(frame);
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+        }
+
+        @Override
+        public Signature getSignature() {
+            return Signature.EMPTY;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return false;
+        }
+
+    }
+
+    private Object runInRoot(ExpressionNode expr) {
+        JUnitRootNode jUnitRootNode = new JUnitRootNode(context.getLanguage(), expr);
+        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(jUnitRootNode);
+        Object[] arguments = PArguments.create();
+        PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, callTarget);
+        try {
+            return callTarget.call(arguments);
+        } finally {
+            IndirectCalleeContext.exit(context, frameInfo);
+        }
     }
 
     RootNode parse(String src) {
@@ -154,6 +212,8 @@ public class TestParserTranslator {
             if (((WriteLocalVariableNode) n).getIdentifier().equals(FrameSlotIDs.RETURN_SLOT_ID)) {
                 actual = ((WriteLocalVariableNode) n).getRhs();
             }
+        } else if (n instanceof InnerRootNode) {
+            actual = n.getChildren().iterator().next();
         }
         if (actual == n) {
             return n;
@@ -171,8 +231,7 @@ public class TestParserTranslator {
     }
 
     Object literalAs(String src, Class<? extends PNode> klass) {
-        ExpressionNode firstChild = (ExpressionNode) parseAs(src, klass);
-        return firstChild.execute(null);
+        return runInRoot((ExpressionNode) parseAs(src, klass));
     }
 
     <T> T literalAs(String src, Class<? extends PNode> klass, Class<? extends T> rklass) {
@@ -358,12 +417,12 @@ public class TestParserTranslator {
         parseAs("x <= y", BinaryComparisonNode.class);
         parseAs("x <> y", BinaryComparisonNode.class);
         parseAs("x != y", BinaryComparisonNode.class);
-        parseAs("x in y", BinaryComparisonNode.class);
+        parseAs("x in y", ContainsNode.class);
         CastToBooleanNode notNode = parseAs("x not in y", CastToBooleanNode.NotNode.class);
-        getChild(notNode, 0, BinaryComparisonNode.class);
-        parseAs("x is y", IsNode.class);
+        getChild(notNode, 0, ContainsNode.class);
+        parseAs("x is y", IsExpressionNode.class);
         notNode = parseAs("x is not y", CastToBooleanNode.NotNode.class);
-        getChild(notNode, 0, IsNode.class);
+        getChild(notNode, 0, IsExpressionNode.class);
 
         AndNode parseAs = parseAs("x < y() <= z", AndNode.class);
         PNode leftNode = parseAs.getLeftNode();
@@ -377,6 +436,7 @@ public class TestParserTranslator {
 
     @Test
     public void parseUnaryOps() {
+        Assume.assumeFalse(PythonOptions.getOption(context.getEnv(), PythonOptions.UseExperimentalParser));
         parseAs("-1", UnaryArithmetic.UnaryArithmeticExpression.class);
         parseAs("+1", UnaryArithmetic.UnaryArithmeticExpression.class);
         parseAs("~1", UnaryArithmetic.UnaryArithmeticExpression.class);

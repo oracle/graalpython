@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,19 +42,23 @@
 #include "capi.h"
 
 PyObject * PyThreadState_GetDict() {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ThreadState_GetDict"));
+	return PyThreadState_Get()->dict;
 }
 
 PyThreadState * PyThreadState_Get() {
-    // TODO: (tfel) how much ThreadState will we actually support?
-    return (PyThreadState*)PyThreadState_GetDict();
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
 }
 
 PyGILState_STATE PyGILState_Ensure() {
     // ignore for the time being
-    return NULL;
+    return PyGILState_UNLOCKED;
 }
 
 void PyGILState_Release(PyGILState_STATE state) {
     // ignore for the time being
+}
+
+UPCALL_ID(PyState_FindModule)
+PyObject* PyState_FindModule(struct PyModuleDef* module) {
+    return UPCALL_CEXT_O(_jls_PyState_FindModule, polyglot_from_string(module->m_name, SRC_CS));
 }

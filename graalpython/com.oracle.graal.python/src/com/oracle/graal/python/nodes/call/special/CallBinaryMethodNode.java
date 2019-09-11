@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
@@ -56,176 +57,178 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
         return CallBinaryMethodNodeGen.create();
     }
 
-    public abstract boolean executeBool(Object callable, boolean arg, boolean arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException;
 
-    public abstract int executeInt(Object callable, boolean arg, boolean arg2) throws UnexpectedResultException;
+    public abstract int executeInt(VirtualFrame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException;
 
-    public abstract int executeInt(Object callable, int arg, int arg2) throws UnexpectedResultException;
+    public abstract int executeInt(VirtualFrame frame, Object callable, int arg, int arg2) throws UnexpectedResultException;
 
-    public abstract long executeLong(Object callable, long arg, long arg2) throws UnexpectedResultException;
+    public abstract long executeLong(VirtualFrame frame, Object callable, long arg, long arg2) throws UnexpectedResultException;
 
-    public abstract double executeDouble(Object callable, double arg, double arg2) throws UnexpectedResultException;
+    public abstract double executeDouble(VirtualFrame frame, Object callable, double arg, double arg2) throws UnexpectedResultException;
 
-    public abstract boolean executeBool(Object callable, int arg, int arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, Object callable, int arg, int arg2) throws UnexpectedResultException;
 
-    public abstract boolean executeBool(Object callable, long arg, long arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, Object callable, long arg, long arg2) throws UnexpectedResultException;
 
-    public abstract boolean executeBool(Object callable, double arg, double arg2) throws UnexpectedResultException;
+    public abstract boolean executeBool(VirtualFrame frame, Object callable, double arg, double arg2) throws UnexpectedResultException;
 
-    public abstract Object executeObject(Object callable, Object arg1, Object arg2);
-
-    @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, boolean arg1, boolean arg2,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeBool(arg1, arg2);
-    }
-
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, boolean arg1, boolean arg2,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeBool(arg1, arg2);
-    }
+    public abstract Object executeObject(VirtualFrame frame, Object callable, Object arg1, Object arg2);
 
     @Specialization(guards = {"func == cachedFunc",
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    int callInt(@SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
+    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, boolean arg1, boolean arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeInt(arg1, arg2);
+        return builtinNode.executeBool(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    int callInt(@SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
+    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, boolean arg1, boolean arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeInt(arg1, arg2);
+        return builtinNode.executeBool(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc",
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
+    int callInt(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeBool(arg1, arg2);
+        return builtinNode.executeInt(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
+    int callInt(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeBool(arg1, arg2);
+        return builtinNode.executeInt(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc",
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    long callLong(@SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
+    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeLong(arg1, arg2);
+        return builtinNode.executeBool(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    long callLong(@SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
+    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int arg1, int arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeLong(arg1, arg2);
+        return builtinNode.executeBool(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc",
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
+    long callLong(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeBool(arg1, arg2);
+        return builtinNode.executeLong(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
+    long callLong(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeBool(arg1, arg2);
+        return builtinNode.executeLong(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc",
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    double callDouble(@SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeDouble(arg1, arg2);
+        return builtinNode.executeBool(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    double callDouble(@SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long arg1, long arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeDouble(arg1, arg2);
+        return builtinNode.executeBool(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc",
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+    double callDouble(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeBool(arg1, arg2);
+        return builtinNode.executeDouble(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+    double callDouble(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
-        return builtinNode.executeBool(arg1, arg2);
+        return builtinNode.executeDouble(frame, arg1, arg2);
+    }
+
+    @Specialization(guards = {"func == cachedFunc",
+                    "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
+    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                    @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg1, arg2);
+    }
+
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double arg1, double arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws UnexpectedResultException {
+        return builtinNode.executeBool(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object callObjectSingleContext(@SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
+    Object callObjectSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) {
-        return builtinNode.execute(arg1, arg2);
+        return builtinNode.execute(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callObject(@SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
+    Object callObject(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) {
-        return builtinNode.execute(arg1, arg2);
+        return builtinNode.execute(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object callMethodSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    Object callMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(func.getFunction())") PythonBinaryBuiltinNode builtinNode) {
-        return builtinNode.execute(arg1, arg2);
+        return builtinNode.execute(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object callSelfMethodSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("func.getArity().takesFixedNumOfPositionalArgs()") boolean isFixed,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(func.getSelf(), arg1, arg2);
+        return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callMethod(@SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(func.getFunction())") PythonBinaryBuiltinNode builtinNode) {
-        return builtinNode.execute(arg1, arg2);
+        return builtinNode.execute(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callSelfMethod(@SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("func.getArity().takesFixedNumOfPositionalArgs()") boolean isFixed,
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(func.getSelf(), arg1, arg2);
+        return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
     }
 
     @Specialization
-    Object call(Object func, Object arg1, Object arg2,
+    Object call(VirtualFrame frame, Object func, Object arg1, Object arg2,
                     @Cached("create()") CallNode callNode) {
-        return callNode.execute(null, func, new Object[]{arg1, arg2}, PKeyword.EMPTY_KEYWORDS);
+        return callNode.execute(frame, func, new Object[]{arg1, arg2}, PKeyword.EMPTY_KEYWORDS);
     }
 }

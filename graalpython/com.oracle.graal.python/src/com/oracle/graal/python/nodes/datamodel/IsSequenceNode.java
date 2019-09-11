@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,29 +40,26 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@GenerateUncached
 public abstract class IsSequenceNode extends PDataModelEmulationNode {
-    @Child private HasInheritedAttributeNode hasGetItemNode = HasInheritedAttributeNode.create(__GETITEM__);
-    @Child private HasInheritedAttributeNode hasLenNode = HasInheritedAttributeNode.create(__LEN__);
-
-    private final ConditionProfile lenProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile getItemProfile = ConditionProfile.createBinaryProfile();
 
     @Specialization
-    public boolean isSequence(Object object) {
-        if (lenProfile.profile(hasLenNode.execute(object))) {
-            return getItemProfile.profile(hasGetItemNode.execute(object));
-        }
-        return false;
+    public boolean isSequence(Object object,
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsSequenceTypeNode isSequenceTypeNode) {
+        return isSequenceTypeNode.execute(getClassNode.execute(object));
     }
 
     public static IsSequenceNode create() {
         return IsSequenceNodeGen.create();
+    }
+
+    public static IsSequenceNode getUncached() {
+        return IsSequenceNodeGen.getUncached();
     }
 }

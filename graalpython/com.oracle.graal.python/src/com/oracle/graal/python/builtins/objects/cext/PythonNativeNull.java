@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.MessageResolution;
-import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * A simple wrapper around native {@code NULL}.
  */
+@ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 public class PythonNativeNull implements TruffleObject {
     private Object ptr;
 
@@ -63,50 +64,32 @@ public class PythonNativeNull implements TruffleObject {
         return ptr;
     }
 
-    public ForeignAccess getForeignAccess() {
-        return PythonNativeNullMRForeign.ACCESS;
+    @ExportMessage
+    boolean isPointer() {
+        return true;
     }
 
-    public static boolean isInstance(TruffleObject obj) {
-        return obj instanceof PythonNativeNull;
+    @ExportMessage
+    long asPointer(
+                    @CachedLibrary(limit = "1") InteropLibrary ptrInteropLib) throws UnsupportedMessageException {
+        return ptrInteropLib.asPointer(getPtr());
     }
 
-    @MessageResolution(receiverType = PythonNativeNull.class)
-    public static class PythonNativeNullMR {
-
-        @Resolve(message = "IS_POINTER")
-        public abstract static class IsPointer extends Node {
-            boolean access(@SuppressWarnings("unused") PythonNativeNull obj) {
-                return true;
-            }
-        }
-
-        @Resolve(message = "AS_POINTER")
-        public abstract static class AsPointer extends Node {
-
-            @Child private Node asPointerNode;
-
-            long access(PythonNativeNull obj) {
-                if (asPointerNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asPointerNode = insert(Message.AS_POINTER.createNode());
-                }
-                try {
-                    return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) obj.ptr);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw e.raise();
-                }
-            }
-
-        }
-
-        @Resolve(message = "IS_NULL")
-        public abstract static class IsNull extends Node {
-            boolean access(@SuppressWarnings("unused") PythonNativeNull obj) {
-                return true;
-            }
-        }
+    @ExportMessage
+    boolean isNull() {
+        return true;
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // this is '((void*)0x0)', so no type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        return null;
+    }
 }

@@ -1,0 +1,62 @@
+ModuleRootNode Name: <module 'functionDefCPT10'> SourceSection: [0,24]`def f(a, b, *args): ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,24]`def f(a, b, *args): ...`
+    ExpressionWithSideEffect SourceSection: [0,24]`def f(a, b, *args): ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,24]`def f(a, b, *args): ...`
+          Identifier: f
+          FunctionDefinitionNode Name: f SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,24]`def f(a, b, *args): ...`
+              Name: f
+              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                Param Names: a, b
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 4 slots [a, b, args, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,24]`def f(a, b, *args): ...`
+                ReturnTargetNode SourceSection: [0,24]`def f(a, b, *args): ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,a,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: b
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,b,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: args
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,args,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadVarArgsNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
+                    ExpressionStatementNode SourceSection: [20,24]`pass`
+                      EmptyNode SourceSection: [20,24]`pass`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [3,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

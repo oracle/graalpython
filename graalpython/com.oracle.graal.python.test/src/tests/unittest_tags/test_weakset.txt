@@ -1,0 +1,15 @@
+*TestWeakSet.test_and
+*TestWeakSet.test_clear
+*TestWeakSet.test_constructor_identity
+*TestWeakSet.test_copy
+*TestWeakSet.test_eq
+*TestWeakSet.test_gc
+*TestWeakSet.test_init
+*TestWeakSet.test_ior
+*TestWeakSet.test_isdisjoint
+*TestWeakSet.test_isub
+*TestWeakSet.test_methods
+*TestWeakSet.test_new_or_init
+*TestWeakSet.test_or
+*TestWeakSet.test_pop
+*TestWeakSet.test_sub

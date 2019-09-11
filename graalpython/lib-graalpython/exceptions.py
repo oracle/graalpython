@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -103,3 +103,88 @@ def StopIteration__repr__(self):
 StopIteration.value = property(StopIteration__value__get)
 StopIteration.value.setter(StopIteration__value__set)
 StopIteration.__repr__ = StopIteration__repr__
+
+# These errors are just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
+EnvironmentError = OSError
+IOError = OSError
+
+import errno
+
+_errnomap = {
+    errno.EISDIR: IsADirectoryError,
+    errno.EAGAIN: BlockingIOError,
+    errno.EALREADY: BlockingIOError,
+    errno.EINPROGRESS: BlockingIOError,
+    errno.EWOULDBLOCK: BlockingIOError,
+    errno.EPIPE: BrokenPipeError,
+    errno.ESHUTDOWN: BrokenPipeError,
+    errno.ECHILD: ChildProcessError,
+    errno.ECONNABORTED: ConnectionAbortedError,
+    errno.ECONNREFUSED: ConnectionRefusedError,
+    errno.ECONNRESET: ConnectionResetError,
+    errno.EEXIST: FileExistsError,
+    errno.ENOENT: FileNotFoundError,
+    errno.ENOTDIR: NotADirectoryError,
+    errno.EINTR: InterruptedError,
+    errno.EACCES: PermissionError,
+    errno.EPERM: PermissionError,
+    errno.ESRCH: ProcessLookupError,
+    errno.ETIMEDOUT: TimeoutError
+}
+
+def _oserror_use_init(subtype):
+    return subtype.__init__ is not OSError.__init__ and subtype.__new__ is OSError.__new__
+
+def _oserror_init(self, *arg):
+    narg = len(arg)
+    self.errno = None
+    self.strerror = None
+    self.filename = None
+    self.filename2 = None
+    if (2 <= narg and narg <= 5):
+        self.errno = arg[0]
+        self.strerror = arg[1]
+        if(narg >= 5):
+            self.filename2 = arg[4]
+        if(narg >= 3):
+            self.filename = arg[2]
+
+def OSError__new__(subtype, *args, **kwds):
+    newtype = subtype
+    if (not _oserror_use_init(newtype) and len(args) > 1):
+        myerrno = args[0]
+        if (type(myerrno) is int and subtype is OSError and myerrno in _errnomap):
+            newtype = _errnomap[myerrno]
+    
+    self = BaseException.__new__(newtype, *args, **kwds)
+    self.errno = self.strerror = self.filename = self.filename2 = None
+    if (not _oserror_use_init(newtype)):
+        _oserror_init(self, *args)
+    return self
+
+def OSError__init__(self, *args, **kwds):
+    if (not _oserror_use_init(type(self))):
+        return None
+    _oserror_init(self, *args)
+
+def OSError__str__(self):
+    if (self.filename):
+        if(self.filename2):
+            return "[Errno %i] %s: %s -> %s" % (self.errno, self.strerror, self.filename, self.filename2)
+        else:
+            return "[Errno %i] %s: %s" % (self.errno, self.strerror, self.filename)
+    if(self.errno and self.strerror):
+        return "[Errno %i] %s" % (self.errno, self.strerror)
+    return BaseException.__str__(self)
+
+OSError.__new__ = OSError__new__
+OSError.__init__ = OSError__init__
+OSError.__str__ = OSError__str__
+OSError.errno = -1
+OSError.strerror = None
+OSError.filename = None
+OSError.filename2 = None
+del OSError__init__
+del OSError__new__
+del OSError__str__
+

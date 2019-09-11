@@ -1,0 +1,22 @@
+ModuleRootNode Name: <module 'fromImport18'> SourceSection: [0,20]`from .bogus import x...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,20]`from .bogus import x...`
+    ExpressionWithSideEffect SourceSection: [0,20]`from .bogus import x...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        ImportFromNode SourceSection: [0,20]`from .bogus import x...`
+          Importee: bogus
+          Level: 1
+          FromList: x
+          WriteNameNodeGen SourceSection: None
+            Identifier: x
+            EmptyNode SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattr__

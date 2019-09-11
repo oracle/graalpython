@@ -1,0 +1,88 @@
+ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for x in r...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,38]`list(x**3 for x in r...`
+    PythonCallNodeGen SourceSection: [0,38]`list(x**3 for x in r...`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      GeneratorExpressionNode SourceSection: [10,37]`for x in range(20) i...`
+        Name: [].<locals>.<genexp>:generator05:1
+        FrameDescriptor: 2 slots [x, <return_val>]
+        Enclosing
+          FrameDescriptor:  Empty
+        Active Flags: 4
+        For Nodes: 1
+        Block Nodes: 0
+        Is Enclosing Frame Generator: false
+        FunctionRootNode SourceSection: [10,37]`for x in range(20) i...`
+          Name: [].<locals>.<genexp>:generator05:1
+          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+          CelVars: None
+          FreeVars: None
+          NeedsCellFrame: False
+          FrameDescriptor: 2 slots [x, <return_val>]
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          InnerRootNode SourceSection: [10,37]`for x in range(20) i...`
+            GeneratorReturnTargetNode SourceSection: [10,37]`for x in range(20) i...`
+              flagSlot: 3
+              GeneratorForNode SourceSection: [10,37]`for x in range(20) i...`
+                GeneratorIfNode SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  YesNodeGen SourceSection: None
+                    BinaryArithmeticExpression SourceSection: [32,37]`x % 3`
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __mod__
+                      ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
+                        Frame: [0,x,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      IntegerLiteralNode SourceSection: [36,37]`3`
+                        Value: 3
+                  ExpressionStatementNode SourceSection: [5,9]`x**3`
+                    YieldNode SourceSection: [5,9]`x**3`
+                      flagSlot: 0
+                      TernaryArithmeticExpression SourceSection: [5,9]`x**3`
+                        LookupAndCallTernaryNodeGen SourceSection: None
+                          CallTernaryMethodNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [5,6]`x`
+                          Frame: [0,x,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        IntegerLiteralNode SourceSection: [8,9]`3`
+                          Value: 3
+                      GeneratorAccessNode SourceSection: None
+                  BlockNode SourceSection: None
+                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                  Identifier: x
+                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                    Frame: [0,x,Illegal]
+                ArgumentExpressionNode SourceSection: None
+                  ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
+                GetNextNode SourceSection: None
+                  LookupAndCallUnaryNodeGen SourceSection: None
+                    Op: __next__
+                GeneratorAccessNode SourceSection: None
+              ReadGeneratorFrameVariableNode SourceSection: None
+                Frame: [1,<return_val>,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+              BlockNode SourceSection: None
+              GeneratorAccessNode SourceSection: None
+              PRaiseNodeGen SourceSection: None
+        GetIteratorExpressionNodeGen SourceSection: [19,28]`range(20)`
+          GetIteratorNodeGen SourceSection: None
+          PythonCallNodeGen SourceSection: [19,28]`range(20)`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            IntegerLiteralNode SourceSection: [25,27]`20`
+              Value: 20
+            ReadNameNodeGen SourceSection: None
+              Identifier: range
+        PythonObjectFactoryNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: None
+        Identifier: list

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,11 +44,17 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @ImportStatic(PGuards.class)
 public abstract class GetDictNode extends PNodeWithContext {
@@ -60,12 +66,19 @@ public abstract class GetDictNode extends PNodeWithContext {
         return self;
     }
 
-    @Specialization
-    Object dict(PythonModule self) {
-        PHashingCollection dict = self.getDict();
+    @Specialization(limit = "1")
+    Object dict(PythonModule self,
+                    @CachedLibrary("self") PythonObjectLibrary lib,
+                    @Cached PythonObjectFactory factory) {
+        PHashingCollection dict = lib.getDict(self);
         if (dict == null) {
-            dict = factory().createDictFixedStorage(self);
-            self.setDict(dict);
+            dict = factory.createDictFixedStorage(self);
+            try {
+                lib.setDict(self, dict);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
         }
         return dict;
     }

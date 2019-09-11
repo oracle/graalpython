@@ -34,6 +34,13 @@ language
 /*.py
 *.o
 *.so
+*.dylib
+*.rej
+.checkstyle
+/graalpython/com.oracle.graal.python.cext/compile_flags.txt
+/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/*.interp
+/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/*.tokens
+/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3*.java
 /graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4.stamp
 /mx.imports
 .pydevproject
@@ -51,6 +58,7 @@ Python3.g4.stamp
 *.orig
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/Py*.c
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/Test*.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/*.sha256
 /*.diff
 ## generated from: pyhocon -i ci.hocon -f json -o ci.json
 /ci.json

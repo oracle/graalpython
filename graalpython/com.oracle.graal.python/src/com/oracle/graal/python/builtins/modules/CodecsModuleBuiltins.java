@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -72,69 +73,77 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_codecs")
 public class CodecsModuleBuiltins extends PythonBuiltins {
-    public static String DEFAULT_ENCODING = "utf-8";
+    private static final Charset UTF32 = Charset.forName("utf-32");
 
     // python to java codecs mapping
-    private static Map<String, String> PY_CODECS_ALIASES = new HashMap<>();
+    private static final Map<String, Charset> CHARSET_MAP = new HashMap<>();
     static {
         // ascii
-        PY_CODECS_ALIASES.put("us-ascii", "us-ascii");
-        PY_CODECS_ALIASES.put("ascii", "us-ascii");
-        PY_CODECS_ALIASES.put("646", "us-ascii");
+        CHARSET_MAP.put("us-ascii", StandardCharsets.US_ASCII);
+        CHARSET_MAP.put("ascii", StandardCharsets.US_ASCII);
+        CHARSET_MAP.put("646", StandardCharsets.US_ASCII);
 
         // latin 1
-        PY_CODECS_ALIASES.put("iso-8859-1", "iso-8859-1");
-        PY_CODECS_ALIASES.put("latin-1", "iso-8859-1");
-        PY_CODECS_ALIASES.put("latin_1", "iso-8859-1");
-        PY_CODECS_ALIASES.put("iso-8859-1", "iso-8859-1");
-        PY_CODECS_ALIASES.put("iso8859-1", "iso-8859-1");
-        PY_CODECS_ALIASES.put("8859", "iso-8859-1");
-        PY_CODECS_ALIASES.put("cp819", "iso-8859-1");
-        PY_CODECS_ALIASES.put("latin", "iso-8859-1");
-        PY_CODECS_ALIASES.put("latin1", "iso-8859-1");
-        PY_CODECS_ALIASES.put("L1", "iso-8859-1");
+        CHARSET_MAP.put("iso-8859-1", StandardCharsets.ISO_8859_1);
+        CHARSET_MAP.put("latin-1", StandardCharsets.ISO_8859_1);
+        CHARSET_MAP.put("latin_1", StandardCharsets.ISO_8859_1);
+        CHARSET_MAP.put("iso8859-1", StandardCharsets.ISO_8859_1);
+        CHARSET_MAP.put("8859", StandardCharsets.ISO_8859_1);
+        CHARSET_MAP.put("cp819", StandardCharsets.ISO_8859_1);
+        CHARSET_MAP.put("latin", StandardCharsets.ISO_8859_1);
+        CHARSET_MAP.put("latin1", StandardCharsets.ISO_8859_1);
+        CHARSET_MAP.put("L1", StandardCharsets.ISO_8859_1);
 
         // utf-8
-        PY_CODECS_ALIASES.put("utf-8", "utf-8");
-        PY_CODECS_ALIASES.put("utf_8", "utf-8");
-        PY_CODECS_ALIASES.put("U8", "utf-8");
-        PY_CODECS_ALIASES.put("UTF", "utf-8");
-        PY_CODECS_ALIASES.put("utf8", "utf-8");
+        CHARSET_MAP.put("UTF-8", StandardCharsets.UTF_8);
+        CHARSET_MAP.put("utf-8", StandardCharsets.UTF_8);
+        CHARSET_MAP.put("utf_8", StandardCharsets.UTF_8);
+        CHARSET_MAP.put("U8", StandardCharsets.UTF_8);
+        CHARSET_MAP.put("UTF", StandardCharsets.UTF_8);
+        CHARSET_MAP.put("utf8", StandardCharsets.UTF_8);
 
         // utf-16
-        PY_CODECS_ALIASES.put("utf-16", "utf-16");
-        PY_CODECS_ALIASES.put("utf_16", "utf-16");
-        PY_CODECS_ALIASES.put("U16", "utf-16");
-        PY_CODECS_ALIASES.put("utf16", "utf-16");
+        CHARSET_MAP.put("utf-16", StandardCharsets.UTF_16);
+        CHARSET_MAP.put("utf_16", StandardCharsets.UTF_16);
+        CHARSET_MAP.put("U16", StandardCharsets.UTF_16);
+        CHARSET_MAP.put("utf16", StandardCharsets.UTF_16);
         // TODO BMP only
-        PY_CODECS_ALIASES.put("utf_16_be", "utf-16be");
-        PY_CODECS_ALIASES.put("utf_16_le", "utf-16le");
+        CHARSET_MAP.put("utf_16_be", StandardCharsets.UTF_16BE);
+        CHARSET_MAP.put("utf_16_le", StandardCharsets.UTF_16LE);
 
         // utf-32
-        PY_CODECS_ALIASES.put("utf-32", "utf-32");
-        PY_CODECS_ALIASES.put("utf_32", "utf-32");
-        PY_CODECS_ALIASES.put("U32", "utf-32");
-        PY_CODECS_ALIASES.put("utf_32_be", "utf-32be");
-        PY_CODECS_ALIASES.put("utf_32_le", "utf-32le");
-        PY_CODECS_ALIASES.put("utf32", "utf-32");
+        final Charset utf32be = Charset.forName("utf-32be");
+        final Charset utf32le = Charset.forName("utf-32le");
+        final Charset ibm437 = Charset.forName("IBM437");
+
+        CHARSET_MAP.put("utf-32", UTF32);
+        CHARSET_MAP.put("utf_32", UTF32);
+        CHARSET_MAP.put("U32", UTF32);
+        CHARSET_MAP.put("utf-32be", utf32be);
+        CHARSET_MAP.put("utf_32_be", utf32be);
+        CHARSET_MAP.put("utf-32le", utf32le);
+        CHARSET_MAP.put("utf_32_le", utf32le);
+        CHARSET_MAP.put("utf32", UTF32);
         // big5 big5-tw, csbig5 Traditional Chinese
         // big5hkscs big5-hkscs, hkscs Traditional Chinese
         // cp037 IBM037, IBM039 English
         // cp424 EBCDIC-CP-HE, IBM424 Hebrew
         // cp437 437, IBM437 English
-        PY_CODECS_ALIASES.put("IBM437", "IBM437");
-        PY_CODECS_ALIASES.put("IBM437 English", "IBM437");
-        PY_CODECS_ALIASES.put("437", "IBM437");
-        PY_CODECS_ALIASES.put("cp437", "IBM437");
+        CHARSET_MAP.put("IBM437", ibm437);
+        CHARSET_MAP.put("IBM437 English", ibm437);
+        CHARSET_MAP.put("437", ibm437);
+        CHARSET_MAP.put("cp437", ibm437);
         // cp500 EBCDIC-CP-BE, EBCDIC-CP-CH, IBM500 Western Europe
         // cp720 Arabic
         // cp737 Greek
@@ -220,15 +229,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     static Charset getCharset(String encoding) {
-        if (encoding == null) {
-            return Charset.forName(DEFAULT_ENCODING);
-        } else {
-            String val = PY_CODECS_ALIASES.get(encoding);
-            if (val != null) {
-                return Charset.forName(val);
-            }
-            return Charset.forName(encoding);
-        }
+        return CHARSET_MAP.get(encoding);
     }
 
     @Override
@@ -261,9 +262,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unicode_escape_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @Builtin(name = "unicode_escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
-    @ImportStatic(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UnicodeEscapeEncode extends PythonBinaryBuiltinNode {
         static final byte[] hexdigits = "0123456789abcdef".getBytes();
 
@@ -337,15 +338,21 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unicode_escape_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @Builtin(name = "unicode_escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
     abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isBytes(bytes)")
-        Object encode(Object bytes, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+        Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") PNone errors,
+                        @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+            return encode(frame, bytes, "", toBytes);
+        }
+
+        @Specialization(guards = "isBytes(bytes)")
+        Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") String errors,
+                        @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
             // for now we'll just parse this as a String, ignoring any error strategies
             PythonCore core = getCore();
-            byte[] byteArray = toBytes.execute(bytes);
+            byte[] byteArray = toBytes.execute(frame, bytes);
             String string = strFromBytes(byteArray);
             String unescapedString = core.getParser().unescapeJavaString(string);
             return factory().createTuple(new Object[]{unescapedString, byteArray.length});
@@ -358,7 +365,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends EncodeBaseNode {
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -411,15 +418,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private PBytes encodeString(String self, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
+            Charset charset = getCharset(encoding);
+            if (charset == null) {
+                throw raise(LookupError, "unknown encoding: %s", encoding);
+            }
             try {
-                Charset charset = getCharset(encoding);
                 ByteBuffer encoded = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
                 int n = encoded.remaining();
                 byte[] data = new byte[n];
                 encoded.get(data);
                 return factory().createBytes(data);
-            } catch (IllegalArgumentException e) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeEncodeError, e);
             }
@@ -434,7 +442,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__truffle_raw_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @Builtin(name = "__truffle_raw_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
     public abstract static class RawEncodeNode extends EncodeBaseNode {
 
@@ -453,8 +461,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
 
             try {
-                Charset charset = getCharset("utf-32");
-                ByteBuffer encoded = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
+                ByteBuffer encoded = UTF32.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
                 int n = encoded.remaining();
                 ByteBuffer buf = ByteBuffer.allocate(n);
                 assert n % Integer.BYTES == 0;
@@ -488,7 +495,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends EncodeBaseNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
@@ -542,19 +549,20 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         String decodeBytes(ByteBuffer bytes, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
+            Charset charset = getCharset(encoding);
+            if (charset == null) {
+                throw raise(LookupError, "unknown encoding: %s", encoding);
+            }
             try {
-                Charset charset = getCharset(encoding);
                 CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(bytes);
                 return String.valueOf(decoded);
-            } catch (IllegalArgumentException e) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeDecodeError, e);
             }
         }
     }
 
-    @Builtin(name = "__truffle_raw_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @Builtin(name = "__truffle_raw_decode", minNumOfPositionalArgs = 1, parameterNames = {"bytes", "errors"})
     @GenerateNodeFactory
     abstract static class RawDecodeNode extends EncodeBaseNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
@@ -606,8 +614,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     buf.putInt(val);
                 }
                 buf.flip();
-                Charset charset = getCharset("utf-32");
-                CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(buf);
+                CharBuffer decoded = UTF32.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(buf);
                 return String.valueOf(decoded);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeDecodeError, e);
@@ -616,18 +623,44 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.lookup(name)
-    @Builtin(name = "__truffle_lookup", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "__truffle_lookup", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
         Object lookup(String encoding) {
-            try {
-                getCharset(encoding);
+            if (getCharset(encoding) != null) {
                 return true;
-            } catch (IllegalArgumentException e) {
+            } else {
                 return PNone.NONE;
             }
+        }
+    }
+
+    // _codecs.lookup(name)
+    @Builtin(name = "charmap_build", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CharmapBuildNode extends PythonBuiltinNode {
+        // This is replaced in the core _codecs.py with the full functionality
+        @Specialization
+        Object lookup(String chars) {
+            Map<Integer, Integer> charmap = createMap(chars);
+            return factory().createDict(charmap);
+        }
+
+        @TruffleBoundary
+        private static Map<Integer, Integer> createMap(String chars) {
+            Map<Integer, Integer> charmap = new HashMap<>();
+            int pos = 0;
+            int num = 0;
+
+            while (pos < chars.length()) {
+                int charid = Character.codePointAt(chars, pos);
+                charmap.put(charid, num);
+                pos += Character.charCount(charid);
+                num++;
+            }
+            return charmap;
         }
     }
 }

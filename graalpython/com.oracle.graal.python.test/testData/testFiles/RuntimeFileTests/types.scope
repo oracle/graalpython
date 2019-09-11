@@ -1,0 +1,170 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp2, <>temp0, <>temp1]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: generator9880
+        Kind: Generator
+        FrameDescriptor: [<return_val>, n]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: coroutine
+        Kind: Function
+        FrameDescriptor: [co_flags, func, functools, co, wrapped, <return_val>, _collections_abc]
+        CellVars: [_collections_abc, func]
+        FreeVars: Empty
+        Scope: wrapped
+            Kind: Function
+            FrameDescriptor: [args, func, coro, kwargs, <return_val>, _collections_abc]
+            CellVars: Empty
+            FreeVars: [_collections_abc, func]
+    Scope: _GeneratorWrapper
+        Kind: Class
+        FrameDescriptor: [cr_await, gi_frame, __iter__, cr_code, __class__, __next__, cr_running, gi_code, cr_frame, throw, gi_yieldfrom, __init__, __await__, send, close, gi_running]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: __iter__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __next__
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: gi_yieldfrom
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: gi_running
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: gi_frame
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: gi_code
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: close
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: throw
+            Kind: Function
+            FrameDescriptor: [rest, self, tp, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: send
+            Kind: Function
+            FrameDescriptor: [val, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [gen, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: DynamicClassAttribute
+        Kind: Class
+        FrameDescriptor: [__get__, __set__, getter, __doc__, __delete__, __init__, setter, deleter, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: deleter
+            Kind: Function
+            FrameDescriptor: [result, self, fdel, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: setter
+            Kind: Function
+            FrameDescriptor: [result, self, fset, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: getter
+            Kind: Function
+            FrameDescriptor: [result, self, fdoc, <return_val>, __class__, fget]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __delete__
+            Kind: Function
+            FrameDescriptor: [instance, self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __set__
+            Kind: Function
+            FrameDescriptor: [instance, self, value, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __get__
+            Kind: Function
+            FrameDescriptor: [instance, self, ownerclass, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: __init__
+            Kind: Function
+            FrameDescriptor: [self, doc, fdel, fset, <return_val>, __class__, fget]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: _calculate_meta
+        Kind: Function
+        FrameDescriptor: [bases, winner, meta, base_meta, <return_val>, base]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: prepare_class
+        Kind: Function
+        FrameDescriptor: [bases, ns, meta, name, kwds, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: resolve_bases
+        Kind: Function
+        FrameDescriptor: [bases, new_bases, new_base, <>temp7, <>temp8, shift, i, updated, <return_val>, base]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: new_class
+        Kind: Function
+        FrameDescriptor: [bases, resolved_bases, ns, <>temp7, meta, <>temp8, <>temp9, name, kwds, exec_body, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _C
+        Kind: Class
+        FrameDescriptor: [_m, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: _m
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+    Scope: _ag
+        Kind: Generator
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _c
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _g
+        Kind: Generator
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: lambda
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _f
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty

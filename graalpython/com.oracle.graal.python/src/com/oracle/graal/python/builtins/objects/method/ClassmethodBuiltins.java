@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 
 import java.util.List;
@@ -50,16 +51,23 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltinsFactory.MakeMethodNodeGen;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod})
@@ -72,7 +80,7 @@ public class ClassmethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    abstract static class CallNode extends PythonBuiltinNode {
+    abstract static class GetNode extends PythonBuiltinNode {
         @Child MakeMethodNode makeMethod = MakeMethodNode.create();
 
         @Specialization(guards = {"isNoValue(type)"})
@@ -98,26 +106,49 @@ public class ClassmethodBuiltins extends PythonBuiltins {
         }
     }
 
+    @ImportStatic(PGuards.class)
+    @ReportPolymorphism
     abstract static class MakeMethodNode extends PNodeWithContext {
         abstract Object execute(Object self, Object func);
 
         @Specialization
-        Object method(Object self, PFunction func) {
-            return factory().createMethod(self, func);
+        Object method(Object self, PFunction func,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createMethod(self, func);
         }
 
         @Specialization
-        Object methodBuiltin(Object self, PBuiltinFunction func) {
-            return factory().createBuiltinMethod(self, func);
+        Object methodBuiltin(Object self, PBuiltinFunction func,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createBuiltinMethod(self, func);
         }
 
-        @Fallback
-        Object generic(@SuppressWarnings("unused") Object self, Object func) {
-            throw raise(PythonBuiltinClassType.NotImplementedError, "classmethods with non-function callables '%p'", func);
+        @Specialization(guards = "!isFunction(func)")
+        Object generic(Object self, Object func,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createMethod(self, func);
         }
 
         static MakeMethodNode create() {
             return MakeMethodNodeGen.create();
+        }
+    }
+
+    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class CallNode extends PythonVarargsBuiltinNode {
+        @Child private com.oracle.graal.python.nodes.call.CallNode callNode = com.oracle.graal.python.nodes.call.CallNode.create();
+
+        @Specialization
+        protected Object doIt(VirtualFrame frame, PDecoratedMethod self, Object[] arguments, PKeyword[] keywords) {
+            return callNode.execute(frame, self.getCallable(), arguments, keywords);
+        }
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            Object[] argsWithoutSelf = new Object[arguments.length - 1];
+            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
     }
 }

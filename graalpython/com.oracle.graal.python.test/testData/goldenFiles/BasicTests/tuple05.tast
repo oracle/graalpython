@@ -1,0 +1,17 @@
+ModuleRootNode Name: <module 'tuple05'> SourceSection: [0,8]`t = (2,)`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,8]`t = (2,)`
+    ExpressionWithSideEffect SourceSection: [0,8]`t = (2,)`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,8]`t = (2,)`
+          Identifier: t
+          TupleLiteralNode SourceSection: [4,8]`(2,)`
+            PythonObjectFactoryNodeGen SourceSection: None
+            IntegerLiteralNode SourceSection: [5,6]`2`
+              Value: 2

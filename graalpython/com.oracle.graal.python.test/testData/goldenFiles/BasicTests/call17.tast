@@ -1,0 +1,53 @@
+ModuleRootNode Name: <module 'call17'> SourceSection: [0,22]`def fn(): foo(arg = ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,22]`def fn(): foo(arg = ...`
+    ExpressionWithSideEffect SourceSection: [0,22]`def fn(): foo(arg = ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,22]`def fn(): foo(arg = ...`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,22]`def fn(): foo(arg = ...`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,22]`def fn(): foo(arg = ...`
+                ReturnTargetNode SourceSection: [0,22]`def fn(): foo(arg = ...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [10,22]`foo(arg = 1)`
+                      PythonCallNodeGen SourceSection: [10,22]`foo(arg = 1)`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        KeywordArgumentsNodeGen SourceSection: None
+                          KeywordLiteralNode SourceSection: None
+                            IntegerLiteralNode SourceSection: [20,21]`1`
+                              Value: 1
+                          CompactKeywordsNodeGen SourceSection: None
+                          ExecuteKeywordStarargsNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: foo
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

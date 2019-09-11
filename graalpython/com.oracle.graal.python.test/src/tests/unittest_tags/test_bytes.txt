@@ -1,0 +1,15 @@
+*BaseBytesTest.test_basics
+*BaseBytesTest.test_compare_to_str
+*BaseBytesTest.test_concat
+*BaseBytesTest.test_constructor_value_errors
+*BaseBytesTest.test_copy
+*BaseBytesTest.test_empty_sequence
+*BaseBytesTest.test_extended_getslice
+*BaseBytesTest.test_from_int
+*BaseBytesTest.test_from_list
+*BaseBytesTest.test_from_ssize
+*BaseBytesTest.test_getslice
+*BaseBytesTest.test_join
+*BaseBytesTest.test_maketrans
+*ByteArrayTest.test_copy
+*SubclassTest.test_join

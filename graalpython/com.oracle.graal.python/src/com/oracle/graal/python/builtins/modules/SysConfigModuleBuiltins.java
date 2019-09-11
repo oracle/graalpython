@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,12 +62,12 @@ import com.oracle.truffle.api.dsl.Specialization;
  */
 @CoreFunctions(defineModule = "_sysconfig")
 public class SysConfigModuleBuiltins extends PythonBuiltins {
-    private final static Map<Object, Object> STATIC_CONFIG_OPTIONS = new HashMap<>();
+    private static final Map<Object, Object> STATIC_CONFIG_OPTIONS = new HashMap<>();
 
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PythonOptions.isWithThread() ? 1 : 0);
+        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PythonOptions.isWithThread(core.getContext().getEnv()) ? 1 : 0);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "get_config_vars", takesVarArgs = true)
     @GenerateNodeFactory
-    static abstract class GetConfigVarsNode extends PythonBuiltinNode {
+    abstract static class GetConfigVarsNode extends PythonBuiltinNode {
         @Specialization
         PDict select(@SuppressWarnings("unused") Object[] arguments) {
             return factory().createDict(STATIC_CONFIG_OPTIONS);

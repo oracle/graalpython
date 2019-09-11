@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -44,7 +44,7 @@ public class ImportNode extends AbstractImportNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        importModule(moduleName);
+        importModule(frame, moduleName);
     }
 
     public static final class ImportExpression extends ExpressionNode {
@@ -56,7 +56,7 @@ public class ImportNode extends AbstractImportNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return importNode.importModule(importNode.moduleName);
+            return importNode.importModule(frame, importNode.moduleName);
         }
 
     }
@@ -68,5 +68,9 @@ public class ImportNode extends AbstractImportNode {
     @Override
     public WrapperNode createWrapper(ProbeNode probe) {
         return new ImportNodeWrapper(this, this, probe);
+    }
+
+    public String getModuleName() {
+        return moduleName;
     }
 }

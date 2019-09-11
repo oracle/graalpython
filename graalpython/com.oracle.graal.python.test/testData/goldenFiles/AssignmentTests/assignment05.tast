@@ -1,0 +1,47 @@
+ModuleRootNode Name: <module 'assignment05'> SourceSection: [0,17]`a, b, c = 1, 2, 3`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 3 slots [<>temp0, <>temp1, <>temp2]
+  Documentation: None
+  InnerRootNode SourceSection: [0,17]`a, b, c = 1, 2, 3`
+    ExpressionWithSideEffect SourceSection: [0,17]`a, b, c = 1, 2, 3`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        DestructuringAssignmentNodeGen SourceSection: [0,17]`a, b, c = 1, 2, 3`
+          TupleLiteralNode SourceSection: [10,17]`1, 2, 3`
+            PythonObjectFactoryNodeGen SourceSection: None
+            IntegerLiteralNode SourceSection: [10,11]`1`
+              Value: 1
+            IntegerLiteralNode SourceSection: [13,14]`2`
+              Value: 2
+            IntegerLiteralNode SourceSection: [16,17]`3`
+              Value: 3
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp0
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp1
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [1,<>temp1,Illegal]
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp2
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [2,<>temp2,Illegal]
+          WriteNameNodeGen SourceSection: None
+            Identifier: a
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None
+          WriteNameNodeGen SourceSection: None
+            Identifier: b
+            ReadLocalVariableNode SourceSection: None
+              Frame: [1,<>temp1,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None
+          WriteNameNodeGen SourceSection: None
+            Identifier: c
+            ReadLocalVariableNode SourceSection: None
+              Frame: [2,<>temp2,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None

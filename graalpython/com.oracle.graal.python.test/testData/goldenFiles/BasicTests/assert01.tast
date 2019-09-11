@@ -1,0 +1,14 @@
+ModuleRootNode Name: <module 'assert01'> SourceSection: [0,11]`assert True`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,11]`assert True`
+    ExpressionWithSideEffect SourceSection: [0,11]`assert True`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        AssertNode SourceSection: [0,11]`assert True`
+          YesNodeGen SourceSection: None
+            BooleanLiteralNode SourceSection: [7,11]`True`

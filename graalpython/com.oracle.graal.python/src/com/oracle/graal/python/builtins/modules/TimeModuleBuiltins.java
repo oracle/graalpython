@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.TimeZone;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -70,6 +72,23 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         return TimeModuleBuiltinsFactory.getFactories();
     }
 
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        TimeZone defaultTimeZone = TimeZone.getDefault();
+        String noDaylightSavingZone = defaultTimeZone.getDisplayName(false, TimeZone.SHORT);
+        String daylightSavingZone = defaultTimeZone.getDisplayName(true, TimeZone.SHORT);
+
+        boolean hasDaylightSaving = !noDaylightSavingZone.equals(daylightSavingZone);
+        if (hasDaylightSaving) {
+            builtinConstants.put("tzname", core.factory().createTuple(new Object[]{noDaylightSavingZone, daylightSavingZone}));
+        } else {
+            builtinConstants.put("tzname", core.factory().createTuple(new Object[]{noDaylightSavingZone}));
+        }
+
+        builtinConstants.put("daylight", PInt.intValue(hasDaylightSaving));
+    }
+
     @TruffleBoundary
     public static double timeSeconds() {
         return System.currentTimeMillis() / 1000.0;
@@ -87,7 +106,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[3] = zonedDateTime.getHour();
         timeStruct[4] = zonedDateTime.getMinute();
         timeStruct[5] = zonedDateTime.getSecond();
-        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue();
+        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue() - 1;
         timeStruct[7] = zonedDateTime.getDayOfYear();
         timeStruct[8] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
         timeStruct[9] = zone.getId();
@@ -97,7 +116,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.gmtime([seconds])
-    @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "__truffle_gmtime_tuple__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
@@ -119,7 +138,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.localtime([seconds])
-    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "__truffle_localtime_tuple__", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
@@ -141,7 +160,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.time()
-    @Builtin(name = "time", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "time", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonTimeNode extends PythonBuiltinNode {
 
@@ -159,7 +178,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.monotonic()
-    @Builtin(name = "monotonic", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "monotonic", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonMonotonicNode extends PythonBuiltinNode {
 
@@ -170,8 +189,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "perf_counter", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PythonPerfCounterNode extends PythonClockNode {
+    }
+
     // time.clock()
-    @Builtin(name = "clock", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "clock", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonClockNode extends PythonBuiltinNode {
         /**
@@ -197,7 +221,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sleep", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "sleep", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SleepNode extends PythonBuiltinNode {
@@ -213,6 +237,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 try {
                     Thread.sleep(seconds * 1000);
                 } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
 
                 secs = deadline - (long) timeSeconds();
@@ -238,6 +263,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 try {
                     Thread.sleep(millis, nanos);
                 } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
                 secs = deadline - timeSeconds();
                 if (secs < 0) {
@@ -280,8 +306,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         private int getIntValue(Object oValue, int min, int max, String errorMessage) {
             Object iValue = getCastIntNode().execute(oValue);
             long value = IMPOSSIBLE;
-            if (iValue instanceof Integer || iValue instanceof Long) {
+            if (iValue instanceof Long) {
                 value = (long) iValue;
+            } else if (iValue instanceof Integer) {
+                value = (int) iValue;
             } else if (iValue instanceof PInt) {
                 value = ((PInt) iValue).longValueExact();
             }
@@ -450,8 +478,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     case 'I':
                         // hour (01-12)
                         j = items[3] % 12;
-                        if (j == 0)
+                        if (j == 0) {
                             j = 12;                  // midnight or noon
+                        }
                         s = s + twoDigit(j);
                         break;
                     case 'j':
@@ -470,10 +499,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // AM/PM
                         j = items[3];
                         syms = datesyms.getAmPmStrings();
-                        if (0 <= j && j < 12)
+                        if (0 <= j && j < 12) {
                             s = s + syms[0];
-                        else if (12 <= j && j < 24)
+                        } else if (12 <= j && j < 24) {
                             s = s + syms[1];
+                        }
                         break;
                     case 'S':
                         // seconds (00-61)
@@ -486,14 +516,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
                         // TODO this is not correct, CPython counts the week of year
                         // from day of year item [8]
-                        if (cal == null)
+                        if (cal == null) {
                             cal = getCalendar(items);
+                        }
 
                         cal.setFirstDayOfWeek(Calendar.SUNDAY);
                         cal.setMinimalDaysInFirstWeek(7);
                         j = cal.get(Calendar.WEEK_OF_YEAR);
-                        if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52)
+                        if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52) {
                             j = 0;
+                        }
                         s = s + twoDigit(j);
                         break;
                     case 'w':
@@ -509,14 +541,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // TODO this is not correct, CPython counts the week of year
                         // from day of year item [8]
 
-                        if (cal == null)
+                        if (cal == null) {
                             cal = getCalendar(items);
+                        }
                         cal.setFirstDayOfWeek(Calendar.MONDAY);
                         cal.setMinimalDaysInFirstWeek(7);
                         j = cal.get(Calendar.WEEK_OF_YEAR);
 
-                        if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52)
+                        if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52) {
                             j = 0;
+                        }
                         s = s + twoDigit(j);
                         break;
                     case 'x':
@@ -556,8 +590,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         break;
                     case 'Z':
                         // timezone name
-                        if (cal == null)
+                        if (cal == null) {
                             cal = getCalendar(items);
+                        }
                         // If items[8] == 1, we're in daylight savings time.
                         // -1 means the information was not available; treat this as if not in dst.
                         s = s + cal.getTimeZone().getDisplayName(items[8] > 0, 0);
@@ -573,7 +608,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         break;
                 }
                 lastc = i + 1;
-                i++;
             }
             return s;
         }
@@ -599,13 +633,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mktime", fixedNumOfPositionalArgs = 1, doc = "mktime(tuple) -> floating point number\n\n" +
+    @Builtin(name = "mktime", minNumOfPositionalArgs = 1, doc = "mktime(tuple) -> floating point number\n\n" +
                     "Convert a time tuple in local time to seconds since the Epoch.\n" +
                     "Note that mktime(gmtime(0)) will not generally return zero for most\n" +
                     "time zones; instead the returned value will either be equal to that\n" +
                     "of the timezone or altzone attributes on the time module.")
     @GenerateNodeFactory
-    static abstract class MkTimeNode extends PythonUnaryBuiltinNode {
+    abstract static class MkTimeNode extends PythonUnaryBuiltinNode {
         private static final int ELEMENT_COUNT = 9;
         @Child CastToIndexNode castInt = CastToIndexNode.create();
 

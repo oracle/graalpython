@@ -42,9 +42,33 @@
 
 POLYGLOT_DECLARE_TYPE(PyDateTime_CAPI);
 
+PyTypeObject PyDateTime_DateType = PY_TRUFFLE_TYPE("datetime.date", NULL, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyDateTime_Date));
+PyTypeObject PyDateTime_DateTimeType = PY_TRUFFLE_TYPE("datetime.datetime", NULL, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyDateTime_DateTime));
+PyTypeObject PyDateTime_DeltaType = PY_TRUFFLE_TYPE("datetime.timedelta", NULL, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyDateTime_Delta));
+PyTypeObject PyDateTime_TimeType = PY_TRUFFLE_TYPE("datetime.time", NULL, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyDateTime_Time));
+PyTypeObject PyDateTime_TZInfoType = PY_TRUFFLE_TYPE("datetime.tzinfo", NULL, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyDateTime_TZInfo));
+
+/* special builtin module 'datetime' */
+POLYGLOT_DECLARE_TYPE(PyDateTime_Date);
+POLYGLOT_DECLARE_TYPE(PyDateTime_Time);
+POLYGLOT_DECLARE_TYPE(PyDateTime_DateTime);
+POLYGLOT_DECLARE_TYPE(PyDateTime_Delta);
+POLYGLOT_DECLARE_TYPE(PyDateTime_TZInfo);
+
+
 /** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
-extern PyObject* set_PyDateTime_CAPI_typeid(PyTypeObject* type) {
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", type, polyglot_PyDateTime_CAPI_typeid());
+extern PyObject* set_PyDateTime_typeids(PyTypeObject* dtcapiType, PyTypeObject* dateType, PyTypeObject* dateTimeType, PyTypeObject* timeType, PyTypeObject* deltaType, PyTypeObject* tzinfoType) {
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", dtcapiType, polyglot_PyDateTime_CAPI_typeid());
+
+    initialize_type_structure(&PyDateTime_DateType, dateType, polyglot_PyDateTime_Date_typeid());
+    initialize_type_structure(&PyDateTime_DateTimeType, dateTimeType, polyglot_PyDateTime_DateTime_typeid());
+    initialize_type_structure(&PyDateTime_TimeType, timeType, polyglot_PyDateTime_Time_typeid());
+    initialize_type_structure(&PyDateTime_DeltaType, deltaType, polyglot_PyDateTime_Delta_typeid());
+    initialize_type_structure(&PyDateTime_TZInfoType, tzinfoType, polyglot_PyDateTime_TZInfo_typeid());
     return Py_True;
 }
 
+BASICSIZE_GETTER(PyDateTime_Date);
+BASICSIZE_GETTER(PyDateTime_Time);
+BASICSIZE_GETTER(PyDateTime_DateTime);
+BASICSIZE_GETTER(PyDateTime_Delta);

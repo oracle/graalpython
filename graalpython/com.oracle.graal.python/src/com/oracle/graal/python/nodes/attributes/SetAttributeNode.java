@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,8 +59,12 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
     public static final class Dynamic extends PNodeWithContext {
         @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(__SETATTR__);
 
-        public void execute(Object object, Object key, Object value) {
-            call.execute(object, key, value);
+        public void execute(VirtualFrame frame, Object object, Object key, Object value) {
+            call.execute(frame, object, key, value);
+        }
+
+        public static Dynamic create() {
+            return new Dynamic();
         }
     }
 
@@ -84,10 +88,10 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
 
     @Override
     public final void doWrite(VirtualFrame frame, Object value) {
-        executeVoid(getObject().execute(frame), value);
+        executeVoid(frame, getObject().execute(frame), value);
     }
 
-    public abstract void executeVoid(Object object, Object value);
+    public abstract void executeVoid(VirtualFrame frame, Object object, Object value);
 
     public String getAttributeId() {
         return key;
@@ -98,8 +102,8 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
     }
 
     @Specialization
-    protected void doIt(Object object, Object value,
+    protected void doIt(VirtualFrame frame, Object object, Object value,
                     @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
-        call.execute(object, key, value);
+        call.execute(frame, object, key, value);
     }
 }

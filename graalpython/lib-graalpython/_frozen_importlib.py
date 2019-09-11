@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -51,4 +51,9 @@ def load(suffix=""):
 load("_external")
 importlib = load()
 importlib._install(sys, _imp)
+importlib._install_external_importers()
 sys.modules["builtins"].__import__ = __builtin__(importlib.__import__)
+
+# Insert our meta finder for caching
+_imp.CachedImportFinder.ModuleSpec = importlib.ModuleSpec
+sys.meta_path.insert(0, _imp.CachedImportFinder)

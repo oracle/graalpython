@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -54,7 +54,7 @@ public class SliceBuiltins extends PythonBuiltins {
         return SliceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
@@ -64,7 +64,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
@@ -73,7 +73,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "start", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "start", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     @ImportStatic(PSlice.class)
     abstract static class StartNode extends PythonUnaryBuiltinNode {
@@ -89,7 +89,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stop", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "stop", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     @ImportStatic(PSlice.class)
     abstract static class StopNode extends PythonUnaryBuiltinNode {
@@ -105,7 +105,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "step", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "step", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     @ImportStatic(PSlice.class)
     abstract static class StepNode extends PythonUnaryBuiltinNode {
@@ -121,7 +121,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "indices", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "indices", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PSlice.class)
     abstract static class IndicesNode extends PythonBinaryBuiltinNode {

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,7 +39,6 @@
 
 from _descriptor import make_named_tuple_class
 from sys import graal_python_is_native
-from sys import executable as graal_python_executable
 
 stat_result = make_named_tuple_class("stat_result", [
     "st_mode", "st_ino", "st_dev", "st_nlink",
@@ -53,14 +52,16 @@ old_stat = stat
 
 
 @__builtin__
-def stat(filename, follow_symlinks=False):
+def stat(filename, follow_symlinks=True):
     return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
 
 
 @__builtin__
 def lstat(filename):
-    if not graal_python_is_native and filename == graal_python_executable:
-        return stat_result((0,0,0,0,0,0,0,0,0,0))
+    if not graal_python_is_native:
+        from sys import executable as graal_python_executable
+        if filename == graal_python_executable:
+            return stat_result((0,0,0,0,0,0,0,0,0,0))
     return stat_result(old_stat(filename, False))
 
 
@@ -133,5 +134,18 @@ old_uname = uname
 def uname():
     return uname_result(old_uname())
 
-
 error = OSError
+
+terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])
+
+old_get_terminal_size = get_terminal_size
+
+@__builtin__
+def get_terminal_size(fd = None):
+    return terminal_size(old_get_terminal_size(fd))
+
+def execl(file, *args):
+    """execl(file, *args)
+    Execute the executable file with argument list args, replacing the
+    current process. """
+    execv(file, args)

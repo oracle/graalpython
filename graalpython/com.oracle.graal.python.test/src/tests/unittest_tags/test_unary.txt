@@ -1,0 +1,5 @@
+test_bad_types
+test_invert
+test_negation_of_exponentiation
+test_no_overflow
+test_positive

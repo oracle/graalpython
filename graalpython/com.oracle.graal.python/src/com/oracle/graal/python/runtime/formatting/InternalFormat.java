@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,7 +12,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.truffle.PythonTypesUtil;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -33,7 +32,7 @@ public class InternalFormat {
         try {
             return parser.parse();
         } catch (IllegalArgumentException e) {
-            throw core.raise(ValueError, e.getMessage());
+            throw core.raise(ValueError, "%m", e);
         }
     }
 
@@ -52,7 +51,7 @@ public class InternalFormat {
         } else if (text instanceof String) {
             return fromText(core, (String) text);
         } else {
-            throw core.raise(TypeError, "%s argument 1 must be str, not %s", method, PythonTypesUtil.getPythonTypeName(text));
+            throw core.raise(TypeError, "%s argument 1 must be str, not %p", method, text);
         }
     }
 

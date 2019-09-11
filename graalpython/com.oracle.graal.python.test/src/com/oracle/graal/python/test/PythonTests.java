@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,6 +38,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.net.JarURLConnection;
 import java.net.URLConnection;
@@ -48,6 +49,7 @@ import java.nio.file.Paths;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -73,19 +75,32 @@ public class PythonTests {
         }
     }
 
-    final static ByteArrayOutputStream errArray = new ByteArrayOutputStream();
-    final static ByteArrayOutputStream outArray = new ByteArrayOutputStream();
-    final static PrintStream errStream = new PrintStream(errArray);
-    final static PrintStream outStream = new PrintStream(outArray);
+    static final ByteArrayOutputStream errArray = new ByteArrayOutputStream();
+    static final ByteArrayOutputStream outArray = new ByteArrayOutputStream();
+    static final PrintStream errStream = new PrintStream(errArray);
+    static final PrintStream outStream = new PrintStream(outArray);
 
     private static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
     private static Context context = null;
+
+    private static final String executable;
+    static {
+        StringBuilder sb = new StringBuilder();
+        sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
+        for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+            sb.append(' ').append(arg);
+        }
+        sb.append(" -classpath ");
+        sb.append(System.getProperty("java.class.path"));
+        sb.append(" com.oracle.graal.python.shell.GraalPythonMain");
+        executable = sb.toString();
+    }
 
     public static void enterContext(String... newArgs) {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
-        context = Context.newBuilder().engine(engine).allowAllAccess(true).arguments("python", newArgs).build();
+        context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).arguments("python", newArgs).option("python.Executable", executable).build();
         context.initialize("python");
         if (prevContext != null) {
             closeContext(prevContext);
@@ -114,9 +129,9 @@ public class PythonTests {
         final PrintStream printErrStream = new PrintStream(byteArrayErr);
         final PrintStream printOutStream = new PrintStream(byteArrayOut);
         File source = getBenchFile(scriptName);
-        if (args == null)
+        if (args == null) {
             PythonTests.runScript(new String[]{source.toString()}, source, printOutStream, printErrStream);
-        else {
+        } else {
             args[0] = source.toString();
             PythonTests.runScript(args, source, printOutStream, printErrStream);
         }
@@ -205,6 +220,12 @@ public class PythonTests {
         assertEquals(expected.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"), result.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"));
     }
 
+    public static Value eval(String code) {
+        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
+        final PrintStream printStream = new PrintStream(byteArray);
+        return PythonTests.runScript(new String[0], code, printStream, System.err);
+    }
+
     public static VirtualFrame createVirtualFrame() {
         return Truffle.getRuntime().createVirtualFrame(null, new FrameDescriptor());
     }
@@ -222,8 +243,9 @@ public class PythonTests {
 
     public static File getBenchFile(Path filename) {
         Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "benchmarks", "src");
-        if (!Files.isDirectory(path))
+        if (!Files.isDirectory(path)) {
             throw new RuntimeException("Unable to locate benchmarks/src/");
+        }
 
         Path fullPath = Paths.get(path.toString(), filename.toString());
         if (!Files.isReadable(fullPath)) {
@@ -247,8 +269,9 @@ public class PythonTests {
                 int n = 0;
                 while (n != -1) {
                     n = bufferedReader.read(buffer);
-                    if (n != -1)
+                    if (n != -1) {
                         content.append(buffer, 0, n);
+                    }
                 }
             } finally {
                 bufferedReader.close();
@@ -293,14 +316,15 @@ public class PythonTests {
         Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "com.oracle.graal.python.test", "src", "tests", filename.toString());
         if (Files.isReadable(path)) {
             return new File(path.toString());
-        } else
+        } else {
             throw new RuntimeException("Unable to locate " + path);
+        }
     }
 
-    public static void runScript(String[] args, File path, OutputStream out, OutputStream err) {
+    public static Value runScript(String[] args, File path, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            context.eval(org.graalvm.polyglot.Source.newBuilder("python", path).build());
+            return context.eval(org.graalvm.polyglot.Source.newBuilder("python", path).build());
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -309,28 +333,28 @@ public class PythonTests {
         }
     }
 
-    public static void runScript(String[] args, String source, OutputStream out, OutputStream err) {
+    public static Value runScript(String[] args, String source, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            context.eval(org.graalvm.polyglot.Source.create("python", source));
+            return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             flush(out, err);
         }
     }
 
-    public static void runScript(String[] args, org.graalvm.polyglot.Source source, OutputStream out, OutputStream err) {
+    public static Value runScript(String[] args, org.graalvm.polyglot.Source source, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            context.eval(source);
+            return context.eval(source);
         } finally {
             flush(out, err);
         }
     }
 
-    public static void runScript(String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
+    public static Value runScript(String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
         try {
             enterContext(args);
-            context.eval(org.graalvm.polyglot.Source.create("python", source));
+            return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             cb.run();
             flush(out, err);

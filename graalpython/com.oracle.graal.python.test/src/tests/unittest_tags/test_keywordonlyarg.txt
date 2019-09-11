@@ -1,0 +1,9 @@
+testFunctionCall
+testKwDefaults
+testRaiseErrorFuncallWithUnexpectedKeywordArgument
+testSyntaxForManyArguments
+testTooManyPositionalErrorMessage
+test_default_evaluation_order
+test_issue13343
+test_kwonly_methods
+test_mangling

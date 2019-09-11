@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,14 +25,21 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public class PFloat extends PythonBuiltinObject {
 
-    private final double value;
+    protected final double value;
 
     public PFloat(LazyPythonClass clazz, double value) {
         super(clazz);
@@ -60,7 +67,7 @@ public class PFloat extends PythonBuiltinObject {
     }
 
     public boolean isNative() {
-        return getNativeWrapper() != null && getNativeWrapper().isNative();
+        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
     public static PFloat create(double value) {
@@ -79,19 +86,87 @@ public class PFloat extends PythonBuiltinObject {
             int l = d.length() - 1;
             if (exp == (l - 2)) {
                 if (d.charAt(exp + 1) == '-') {
-                    if (Integer.valueOf(d.charAt(l) + "") == 4)
+                    if (Integer.valueOf(d.charAt(l) + "") == 4) {
                         /*- Java convert double when 0.000###... while Python does it when 0.0000####... */
                         d = Double.toString((item * 10)).replace(".", ".0");
-                    else
+                    } else {
                         d = d.substring(0, l) + "0" + d.substring(l);
+                    }
 
                     exp = d.indexOf("E");
                 }
             }
-            if (exp != -1 && d.charAt(exp + 1) != '-')
+            if (exp != -1 && d.charAt(exp + 1) != '-') {
                 d = d.substring(0, exp + 1) + "+" + d.substring(exp + 1, l + 1);
+            }
             d = d.toLowerCase();
         }
         return d;
+    }
+
+    @ExportMessage
+    public boolean isNumber() {
+        return true;
+    }
+
+    @ExportMessage
+    boolean fitsInFloat(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInFloat(value);
+    }
+
+    @ExportMessage
+    float asFloat(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asFloat(value);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean fitsInDouble() {
+        return true;
+    }
+
+    @ExportMessage
+    public double asDouble() {
+        return this.getValue();
+    }
+
+    @ExportMessage
+    boolean fitsInByte(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInByte(value);
+    }
+
+    @ExportMessage
+    byte asByte(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asByte(value);
+    }
+
+    @ExportMessage
+    boolean fitsInShort(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInShort(value);
+    }
+
+    @ExportMessage
+    short asShort(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asShort(value);
+    }
+
+    @ExportMessage
+    boolean fitsInInt(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInInt(value);
+    }
+
+    @ExportMessage
+    int asInt(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asInt(value);
+    }
+
+    @ExportMessage
+    boolean fitsInLong(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInLong(value);
+    }
+
+    @ExportMessage
+    long asLong(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asLong(value);
     }
 }

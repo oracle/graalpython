@@ -1,0 +1,128 @@
+ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):↵    fo...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,104]`def merge(h):↵    fo...`
+    ExpressionWithSideEffect SourceSection: [0,104]`def merge(h):↵    fo...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,104]`def merge(h):↵    fo...`
+          Identifier: merge
+          GeneratorFunctionDefinitionNode Name: merge SourceSection: None
+            FrameDescriptor: 7 slots [h, value, order, it, <>temp4, <>temp5, <return_val>]
+            Active Flags: 3
+            For Nodes: 0
+            Block Nodes: 1
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,104]`def merge(h):↵    fo...`
+              Name: merge
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: h
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 7 slots [h, value, order, it, <>temp4, <>temp5, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,104]`def merge(h):↵    fo...`
+                GeneratorReturnTargetNode SourceSection: [0,104]`def merge(h):↵    fo...`
+                  flagSlot: 2
+                  GeneratorBlockNode SourceSection: None
+                    ElseNode SourceSection: [18,67]`for order, it in b()...`
+                      ForNode SourceSection: None
+                        ForRepeatingNode SourceSection: None
+                          ForNextElementNodeGen SourceSection: None
+                            DestructuringAssignmentNodeGen SourceSection: None
+                              WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                Identifier: <>temp4
+                                WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                  Frame: [4,<>temp4,Illegal]
+                              WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                Identifier: <>temp5
+                                WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                  Frame: [5,<>temp5,Illegal]
+                              WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                Identifier: order
+                                WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                  Frame: [2,order,Illegal]
+                                ReadGeneratorFrameVariableNode SourceSection: None
+                                  Frame: [4,<>temp4,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                Identifier: it
+                                WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                  Frame: [3,it,Illegal]
+                                ReadGeneratorFrameVariableNode SourceSection: None
+                                  Frame: [5,<>temp5,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                          WriteGeneratorFrameVariableNodeGen SourceSection: [48,62]`value = next()`
+                            Identifier: value
+                            WriteGeneraterFrameSlotNodeGen SourceSection: None
+                              Frame: [1,value,Illegal]
+                            PythonCallNodeGen SourceSection: [56,62]`next()`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: next
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        GetIteratorExpressionNodeGen SourceSection: [35,38]`b()`
+                          GetIteratorNodeGen SourceSection: None
+                          PythonCallNodeGen SourceSection: [35,38]`b()`
+                            CachedCallNodeGen SourceSection: None
+                              CreateArgumentsNodeGen SourceSection: None
+                              CallDispatchNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: b
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      BlockNode SourceSection: None
+                    ElseNode SourceSection: [67,104]`while len(h) > 1:↵  ...`
+                      GeneratorWhileNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [93,104]`yield value`
+                          YieldNode SourceSection: [93,104]`yield value`
+                            flagSlot: 0
+                            ReadGeneratorFrameVariableNode SourceSection: [99,104]`value`
+                              Frame: [1,value,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            GeneratorAccessNode SourceSection: None
+                        YesNodeGen SourceSection: None
+                          BinaryComparisonNodeGen SourceSection: [73,83]`len(h) > 1`
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __gt__
+                            PythonCallNodeGen SourceSection: [73,79]`len(h)`
+                              CachedCallNodeGen SourceSection: None
+                                CreateArgumentsNodeGen SourceSection: None
+                                CallDispatchNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [77,78]`h`
+                                Frame: [0,h,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: len
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            IntegerLiteralNode SourceSection: [82,83]`1`
+                              Value: 1
+                        GeneratorAccessNode SourceSection: None
+                      BlockNode SourceSection: None
+                    GeneratorAccessNode SourceSection: None
+                  ReadGeneratorFrameVariableNode SourceSection: None
+                    Frame: [6,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
+                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                    Identifier: h
+                    WriteGeneraterFrameSlotNodeGen SourceSection: None
+                      Frame: [0,h,Illegal]
+                    ArgumentExpressionNode SourceSection: None
+                      ReadIndexedArgumentNodeGen SourceSection: None
+                        Index: 0
+                  GeneratorAccessNode SourceSection: None
+                  PRaiseNodeGen SourceSection: None

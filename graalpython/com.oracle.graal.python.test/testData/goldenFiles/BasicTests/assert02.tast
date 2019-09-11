@@ -1,0 +1,63 @@
+ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):↵    ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,59]`def avg(marks):↵    ...`
+    ExpressionWithSideEffect SourceSection: [0,59]`def avg(marks):↵    ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,59]`def avg(marks):↵    ...`
+          Identifier: avg
+          FunctionDefinitionNode Name: avg SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,59]`def avg(marks):↵    ...`
+              Name: avg
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: marks
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [marks, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,59]`def avg(marks):↵    ...`
+                ReturnTargetNode SourceSection: [0,59]`def avg(marks):↵    ...`
+                  Body: BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: None
+                      Identifier: marks
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,marks,Illegal]
+                      ArgumentExpressionNode SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
+                    AssertNode SourceSection: [20,59]`assert len(marks) !=...`
+                      YesNodeGen SourceSection: None
+                        BinaryComparisonNodeGen SourceSection: [27,42]`len(marks) != 0`
+                          LookupAndCallBinaryNodeGen SourceSection: None
+                            Op: __ne__
+                          PythonCallNodeGen SourceSection: [27,37]`len(marks)`
+                            CachedCallNodeGen SourceSection: None
+                              CreateArgumentsNodeGen SourceSection: None
+                              CallDispatchNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [31,36]`marks`
+                              Frame: [0,marks,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: len
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          IntegerLiteralNode SourceSection: [41,42]`0`
+                            Value: 0
+                      StringLiteralNode SourceSection: [43,59]`"List is empty."`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

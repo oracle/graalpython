@@ -1,0 +1,3 @@
+test_for_improper_attributes
+test_using_errorcode
+test_attributes_in_errorcode

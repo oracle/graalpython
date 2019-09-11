@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -60,29 +60,44 @@ def test_int_subclassing():
     MAXREPEAT = _NamedIntConstant(1, 'MAXREPEAT')
     assert MAXREPEAT == 1
     assert str(MAXREPEAT) == "MAXREPEAT"
-    
+
+
+def test_bigint():
+    i = int(BIG_NUMBER)
+    assert isinstance(i, int)
+    assert i == BIG_NUMBER
+    # from string
+    i = int(str(BIG_NUMBER))
+    assert isinstance(i, int)
+    assert i == BIG_NUMBER
+
 
 def test_boolean2int():
     assert int(True) == 1
     assert int(False) == 0
-    
-    
+
+
+def test_bigint_mul():
+    assert 99999937497465632974931 * 1223432423545234234123123 == 122343165886896325043539375228725106116626429513
+    assert 99999937497465632974931 * (2**100) == 126764980791447734004805377032945185921379990352429056
+
+
 def test_int_from_custom():
     class CustomInt4():
         def __int__(self):
             return 1
-    
+
     class CustomInt8():
         def __int__(self):
             return 0xCAFEBABECAFED00D
-        
+
     class SubInt(int):
         def __int__(self):
             return 0xBADF00D
-        
+
     class NoInt():
         pass
-        
+
     assert int(CustomInt4()) == 1
     assert int(CustomInt8()) == 0xCAFEBABECAFED00D
     assert CustomInt8() != 0xCAFEBABECAFED00D
@@ -124,7 +139,7 @@ def test_int():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.__int__() == 1
     assert False.__int__() == 0
 
@@ -161,13 +176,13 @@ def test_real_imag():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.real == 1
     assert False.real == 0
     assert True.imag == 0
     assert False.imag == 0
 
-def test_real_imag_subclass():    
+def test_real_imag_subclass():
     def subclassTest(number):
         a = MyInt(number)
         b = a.real
@@ -202,7 +217,7 @@ def test_numerator_denominator():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.numerator == 1
     assert False.numerator == 0
     assert True.denominator == 1
@@ -240,7 +255,7 @@ def test_conjugate():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.conjugate() == 1
     assert False.conjugate() == 0
 
@@ -282,7 +297,7 @@ def test_trunc():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.__trunc__() == 1
     assert False.__trunc__() == 0
 
@@ -321,11 +336,42 @@ def test_create_int_from_bool():
     assert int(SpecInt0()) == 0
 
 def test_create_int_from_string():
-  assert int("5c7920a80f5261a2e5322163c79b71a25a41f414", 16) == 527928385865769069253929759180846776123316630548
+    assert int("5c7920a80f5261a2e5322163c79b71a25a41f414", 16) == 527928385865769069253929759180846776123316630548
+    class IndexLike:
+        def __index__(self):
+            return 16
+    assert int("123ff", IndexLike()) == 0x123ff
+    try:
+        int("123ff", None)
+    except TypeError:
+        assert True
+    else:
+        assert False, "expected TypeError"
+
+
+def test_create_int_from_float():
+    assert int(123.0) == 123
+    assert int(123.4) == 123
+    try:
+        int(float('nan'))
+    except ValueError:
+        assert True
+    else:
+        assert False, "expected ValueError"
+        
+    class FloatSub(float):
+        pass
+    
+    try:
+        int(FloatSub(float('nan')))
+    except ValueError:
+        assert True
+    else:
+        assert False, "expected ValueError"
 
 
 class FromBytesTests(unittest.TestCase):
-    
+
     def check(self, tests, byteorder, signed=False):
         for test, expected in tests.items():
             try:
@@ -447,10 +493,10 @@ class FromBytesTests(unittest.TestCase):
         class LyingList(list):
             def __iter__(self):
                 return iter([10, 20, 30, 40])
-        
+
         self.assertEqual(
             int.from_bytes(LyingList([255, 1, 1]), 'big'), 169090600)
-         
+
     def test_from_tuple(self):
         self.assertEqual(
             int.from_bytes((255, 0, 0), 'big', signed=True), -65536)
@@ -464,7 +510,7 @@ class FromBytesTests(unittest.TestCase):
                 return iter((15, 25, 35, 45))
         self.assertEqual(
             int.from_bytes(LyingTuple((255, 1, 1)), 'big'), 253305645)
-        
+
     def test_from_bytearray(self):
         self.assertEqual(int.from_bytes(
             bytearray(b'\xff\x00\x00'), 'big', signed=True), -65536)
@@ -487,11 +533,10 @@ class FromBytesTests(unittest.TestCase):
         self.assertRaises(TypeError, int.from_bytes, 0, 'big')
         self.assertRaises(TypeError, int.from_bytes, 0, 'big', True)
 
-        #TODO uncoment these tests, when GR-12453 is fixed
-        #self.assertRaises(TypeError, int.from_bytes, "", 'big')
-        #self.assertRaises(TypeError, int.from_bytes, "\x00", 'big')
-        #self.assertRaises(TypeError, MyInt.from_bytes, "", 'big')
-        #self.assertRaises(TypeError, MyInt.from_bytes, "\x00", 'big')
+        self.assertRaises(TypeError, int.from_bytes, "", 'big')
+        self.assertRaises(TypeError, int.from_bytes, "\x00", 'big')
+        self.assertRaises(TypeError, MyInt.from_bytes, "", 'big')
+        self.assertRaises(TypeError, MyInt.from_bytes, "\x00", 'big')
         self.assertRaises(TypeError, MyInt.from_bytes, 0, 'big')
         self.assertRaises(TypeError, int.from_bytes, 0, 'big', True)
 
@@ -550,7 +595,7 @@ class FromBytesTests(unittest.TestCase):
             def __bytes__(self):
                 return array.array('b', [2, 2, 3])
 
-        self.assertRaises(TypeError, int.from_bytes, mybyteslike2(), 'big') 
+        self.assertRaises(TypeError, int.from_bytes, mybyteslike2(), 'big')
 
     def test_from_list_with_byteslike(self):
         class StrangeList(list):
@@ -564,7 +609,7 @@ class FromBytesTests(unittest.TestCase):
 class ToBytesTests(unittest.TestCase):
 
     class MyInt(int):
-        pass 
+        pass
 
     def check(self, tests, byteorder, signed=False):
         for test, expected in tests.items():
@@ -634,7 +679,7 @@ class ToBytesTests(unittest.TestCase):
         }
         self.check(tests2, 'little', signed=True)
         self.checkPIntSpec(tests2, 'little', signed=True)
- 
+
     def test_UnsignedBigEndian(self):
         # Convert integers to unsigned big-endian byte arrays.
         tests3 = {
@@ -706,7 +751,5 @@ class ToBytesTests(unittest.TestCase):
                 return 3
             def __index__(self):
                 return 4
-        
+
         self.assertEqual(MyTest(1).to_bytes(MyTest(10), 'big'), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01')
-
-

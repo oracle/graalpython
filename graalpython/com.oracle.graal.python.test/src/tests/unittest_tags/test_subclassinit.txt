@@ -1,0 +1,11 @@
+test_errors
+test_errors_changed_pep487
+test_init_subclass
+test_init_subclass_diamond
+test_init_subclass_dict
+test_init_subclass_error
+test_init_subclass_kwargs
+test_init_subclass_skipped
+test_init_subclass_wrong
+test_set_name_lookup
+test_type

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,48 +25,125 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public class FunctionDefinitionNode extends ExpressionDefinitionNode {
-
+    protected final ContextReference<PythonContext> contextRef;
     protected final String functionName;
     protected final String enclosingClassName;
     protected final RootCallTarget callTarget;
-    protected final Arity arity;
 
-    @Child protected StatementNode defaults;
+    @Children protected ExpressionNode[] defaults;
+    @Children protected KwDefaultExpressionNode[] kwDefaults;
     @Child private ExpressionNode doc;
     @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
+    @Child private WriteAttributeToDynamicObjectNode writeNameNode = WriteAttributeToDynamicObjectNode.create();
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, Arity arity, StatementNode defaults, RootCallTarget callTarget,
+    private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
+    private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
+
+    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget,
                     DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
         super(definitionCellSlots, executionCellSlots);
+        this.contextRef = PythonLanguage.getContextRef();
         this.functionName = functionName;
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
         this.callTarget = callTarget;
-        this.arity = arity;
+        assert defaults == null || noNullElements(defaults);
         this.defaults = defaults;
+        assert kwDefaults == null || noNullElements(kwDefaults);
+        this.kwDefaults = kwDefaults;
+    }
+
+    protected PythonContext getContext() {
+        return contextRef.get();
+    }
+
+    protected PythonObjectFactory factory() {
+        return factory;
+    }
+
+    private static boolean noNullElements(Object[] array) {
+        for (Object element : array) {
+            if (element == null) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        defaults.executeVoid(frame);
-
+        Object[] defaultValues = computeDefaultValues(frame);
+        PKeyword[] kwDefaultValues = computeKwDefaultValues(frame);
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, arity, callTarget, PArguments.getGlobals(frame), closure));
+        Assumption codeStableAssumption;
+        Assumption defaultsStableAssumption;
+        if (CompilerDirectives.inCompiledCode()) {
+            codeStableAssumption = getSharedCodeStableAssumption();
+            defaultsStableAssumption = getSharedDefaultsStableAssumption();
+        } else {
+            codeStableAssumption = Truffle.getRuntime().createAssumption();
+            defaultsStableAssumption = Truffle.getRuntime().createAssumption();
+        }
+        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure, writeNameNode,
+                        codeStableAssumption, defaultsStableAssumption));
+
+    }
+
+    private Assumption getSharedDefaultsStableAssumption() {
+        return sharedDefaultsStableAssumption;
+    }
+
+    private Assumption getSharedCodeStableAssumption() {
+        return sharedCodeStableAssumption;
+    }
+
+    @ExplodeLoop
+    private PKeyword[] computeKwDefaultValues(VirtualFrame frame) {
+        PKeyword[] kwDefaultValues = null;
+        if (kwDefaults != null) {
+            kwDefaultValues = new PKeyword[kwDefaults.length];
+            for (int i = 0; i < kwDefaults.length; i++) {
+                kwDefaultValues[i] = new PKeyword(kwDefaults[i].name, kwDefaults[i].execute(frame));
+            }
+        }
+        return kwDefaultValues;
+    }
+
+    @ExplodeLoop
+    private Object[] computeDefaultValues(VirtualFrame frame) {
+        Object[] defaultValues = null;
+        if (defaults != null) {
+            defaultValues = new Object[defaults.length];
+            for (int i = 0; i < defaults.length; i++) {
+                defaultValues[i] = defaults[i].execute(frame);
+            }
+        }
+        return defaultValues;
     }
 
     protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
@@ -83,4 +160,37 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     public RootNode getFunctionRoot() {
         return callTarget.getRootNode();
     }
+
+    public ExpressionNode[] getDefaults() {
+        return defaults;
+    }
+
+    public KwDefaultExpressionNode[] getKwDefaults() {
+        return kwDefaults;
+    }
+
+    public static final class KwDefaultExpressionNode extends ExpressionNode {
+        @Child public ExpressionNode exprNode;
+
+        public final String name;
+
+        public KwDefaultExpressionNode(String name, ExpressionNode exprNode) {
+            this.name = name;
+            this.exprNode = exprNode;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return exprNode.execute(frame);
+        }
+
+        public static KwDefaultExpressionNode create(String name, ExpressionNode exprNode) {
+            return new KwDefaultExpressionNode(name, exprNode);
+        }
+    }
+
+    public ExpressionNode getDoc() {
+        return doc;
+    }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,26 +40,148 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyMemberDef}.
  */
+@ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PyMemberDefWrapper extends PythonNativeWrapper {
+    public static final String NAME = "name";
+    public static final String DOC = "doc";
 
     public PyMemberDefWrapper(PythonObject delegate) {
         super(delegate);
     }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PyMemberDefWrapper;
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PyMemberDefWrapperMRForeign.ACCESS;
+    @ExportMessage
+    protected boolean isMemberReadable(String member) {
+        switch (member) {
+            case NAME:
+            case DOC:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @ExportMessage
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    protected Object readMember(String member,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                    @Exclusive @Cached ReadFieldNode readFieldNode) {
+        return readFieldNode.execute(lib.getDelegate(this), member);
+    }
+
+    @ImportStatic({SpecialMethodNames.class, PyMemberDefWrapper.class})
+    @GenerateUncached
+    abstract static class ReadFieldNode extends Node {
+
+        public abstract Object execute(Object delegate, String key);
+
+        protected static boolean eq(String expected, String actual) {
+            return expected.equals(actual);
+        }
+
+        @Specialization(guards = {"eq(NAME, key)"})
+        Object getName(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
+                        @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
+            Object doc = getAttrNode.execute(object, NAME);
+            if (doc == PNone.NONE) {
+                return toSulongNode.execute(PNone.NO_VALUE);
+            } else {
+                return asCharPointerNode.execute(doc);
+            }
+        }
+
+        @Specialization(guards = {"eq(DOC, key)"})
+        Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
+                        @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
+            Object doc = getAttrNode.execute(object, DOC);
+            if (doc == PNone.NONE) {
+                return toSulongNode.execute(PNone.NO_VALUE);
+            } else {
+                return asCharPointerNode.execute(doc);
+            }
+        }
+    }
+
+    @ExportMessage
+    protected boolean isMemberModifiable(String member) {
+        return member.equals(DOC);
+    }
+
+    @ExportMessage
+    protected boolean isMemberInsertable(String member) {
+        return member.equals(DOC);
+    }
+
+    @ExportMessage
+    protected void writeMember(String member, Object value,
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                    @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
+                    @Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
+        if (!DOC.equals(member)) {
+            CompilerDirectives.transferToInterpreter();
+            throw UnsupportedMessageException.create();
+        }
+        setAttrNode.execute(lib.getDelegate(this), member, fromCharPointerNode.execute(value));
+    }
+
+    @ExportMessage
+    protected boolean isMemberRemovable(@SuppressWarnings("unused") String member) {
+        return false;
+    }
+
+    @ExportMessage
+    protected void removeMember(@SuppressWarnings("unused") String member) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
     }
 }

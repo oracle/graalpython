@@ -1,0 +1,48 @@
+ModuleRootNode Name: <module 'augassign13'> SourceSection: [0,17]`def fn (): x += 3`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,17]`def fn (): x += 3`
+    ExpressionWithSideEffect SourceSection: [0,17]`def fn (): x += 3`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,17]`def fn (): x += 3`
+          Identifier: fn
+          FunctionDefinitionNode Name: fn SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,17]`def fn (): x += 3`
+              Name: fn
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 2 slots [x, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,17]`def fn (): x += 3`
+                ReturnTargetNode SourceSection: [0,17]`def fn (): x += 3`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    WriteLocalVariableNodeGen SourceSection: [11,17]`x += 3`
+                      Identifier: x
+                      WriteLocalFrameSlotNodeGen SourceSection: None
+                        Frame: [0,x,Illegal]
+                      LookupAndCallInplaceNodeGen SourceSection: None
+                        ReadLocalVariableNode SourceSection: [11,12]`x`
+                          Frame: [0,x,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        IntegerLiteralNode SourceSection: [16,17]`3`
+                          Value: 3
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [1,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

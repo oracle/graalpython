@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
         polyglot_invoke(PY_TRUFFLE_CEXT,
                        "AddFunction",
                        native_to_java(mod),
+					   NULL,
                        polyglot_from_string((const char*)(def.ml_name), SRC_CS),
                        truffle_decorate_function(def.ml_meth, native_to_java_exported),
                        get_method_flags_wrapper(def.ml_flags),
@@ -131,4 +132,26 @@ PyObject* PyModule_GetDict(PyObject* o) {
 UPCALL_ID(PyModule_NewObject);
 PyObject* PyModule_NewObject(PyObject* name) {
     return UPCALL_CEXT_O(_jls_PyModule_NewObject, native_to_java(name));
+}
+
+void* PyModule_GetState(PyObject *m) {
+    if (!PyModule_Check(m)) {
+        PyErr_BadArgument();
+        return NULL;
+    }
+    return ((PyModuleObject *)m)->md_state;
+}
+
+UPCALL_ID(PyModule_GetNameObject);
+PyObject* PyModule_GetNameObject(PyObject *m) {
+	return UPCALL_CEXT_O(_jls_PyModule_GetNameObject, native_to_java(m));
+}
+
+// partially taken from CPython "Objects/moduleobject.c"
+const char * PyModule_GetName(PyObject *m) {
+    PyObject *name = PyModule_GetNameObject(m);
+    if (name == NULL) {
+        return NULL;
+    }
+    return PyUnicode_AsUTF8(name);
 }

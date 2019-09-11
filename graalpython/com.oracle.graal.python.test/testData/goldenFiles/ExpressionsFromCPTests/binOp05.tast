@@ -1,0 +1,14 @@
+ModuleRootNode Name: <module 'binOp05'> SourceSection: [0,10]`foo // bar`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,10]`foo // bar`
+    BinaryArithmeticExpression SourceSection: [0,10]`foo // bar`
+      LookupAndCallBinaryNodeGen SourceSection: None
+        Op: __floordiv__
+      ReadNameNodeGen SourceSection: [0,3]`foo`
+        Identifier: foo
+      ReadNameNodeGen SourceSection: [7,10]`bar`
+        Identifier: bar

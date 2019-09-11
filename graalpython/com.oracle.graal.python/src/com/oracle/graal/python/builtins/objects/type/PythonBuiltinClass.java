@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,13 +35,12 @@ import com.oracle.truffle.api.object.HiddenKey;
 /**
  * A Python built-in class that is immutable.
  */
-public final class PythonBuiltinClass extends PythonClass {
+public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
-    public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonClass base) {
-        super(PythonBuiltinClassType.PythonClass, builtinClass.getName(), builtinClass.getInstanceShape(), base);
+    public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
+        super(PythonBuiltinClassType.PythonClass, builtinClass.getName(), base);
         this.type = builtinClass;
-
     }
 
     @Override

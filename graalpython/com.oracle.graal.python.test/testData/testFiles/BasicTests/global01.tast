@@ -1,0 +1,80 @@
+ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global varia...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [c]
+  Documentation: None
+  InnerRootNode SourceSection: [0,137]`c = 0 # global varia...`
+    ExpressionWithSideEffects SourceSection: [0,137]`c = 0 # global varia...`
+      WriteNameNodeGen SourceSection: [0,5]`c = 0`
+        Identifier: c
+        IntegerLiteralNode SourceSection: [4,5]`0`
+          Value: 0
+      WriteNameNodeGen SourceSection: [25,111]`def add():↵    globa...`
+        Identifier: add
+        FunctionDefinitionNode Name: add SourceSection: None
+          Arguments: None
+          KwArguments: None
+          Documentation: StringLiteralNode: Empty
+          FreeVarSlots: None
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          FunctionRootNode SourceSection: [25,111]`def add():↵    globa...`
+            Name: add
+            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+            CelVars: None
+            FreeVars: None
+            NeedsCellFrame: False
+            FrameDescriptor: 1 slots [<return_val>]
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            InnerRootNode SourceSection: [25,111]`def add():↵    globa...`
+              ReturnTargetNode SourceSection: [25,111]`def add():↵    globa...`
+                Body: BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                  BlockNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [40,48]`global c`
+                      EmptyNode SourceSection: [40,48]`global c`
+                    WriteGlobalNodeGen SourceSection: [53,62]`c = c + 2`
+                      Identifier: c
+                      BinaryArithmeticExpression SourceSection: [57,62]`c + 2`
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __add__
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [57,58]`c`
+                          Identifier: c
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        IntegerLiteralNode SourceSection: [61,62]`2`
+                          Value: 2
+                    ExpressionStatementNode SourceSection: [84,109]`print("Inside add():...`
+                      PythonCallNodeGen SourceSection: [84,109]`print("Inside add():...`
+                        CachedCallNodeGen SourceSection: None
+                          CreateArgumentsNodeGen SourceSection: None
+                          CallDispatchNodeGen SourceSection: None
+                        StringLiteralNode SourceSection: [90,105]`"Inside add():"`
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [107,108]`c`
+                          Identifier: c
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: print
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Frame: [0,<return_val>,Illegal]
+                  ReadVariableFromFrameNodeGen SourceSection: None
+      ExpressionStatementNode SourceSection: [111,116]`add()`
+        PythonCallNodeGen SourceSection: [111,116]`add()`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: None
+            Identifier: add
+      PythonCallNodeGen SourceSection: [117,137]`print("In main:", c)...`
+        CachedCallNodeGen SourceSection: None
+          CreateArgumentsNodeGen SourceSection: None
+          CallDispatchNodeGen SourceSection: None
+        StringLiteralNode SourceSection: [123,133]`"In main:"`
+        ReadNameNodeGen SourceSection: [135,136]`c`
+          Identifier: c
+        ReadNameNodeGen SourceSection: None
+          Identifier: print

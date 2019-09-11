@@ -1,0 +1,120 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: nlargest
+        Kind: Function
+        FrameDescriptor: [elem, <>temp18, sentinel, <>temp17, _order, <>temp19, _elem, <>temp16, <>temp15, iterable, it, k, n, result, size, top, _heapreplace, <return_val>, key, order]
+        CellVars: [key]
+        FreeVars: Empty
+        Scope: generator22590
+            Kind: Generator
+            FrameDescriptor: [elem, <>temp3, <>temp4, k, <>temp5, <return_val>, order]
+            CellVars: Empty
+            FreeVars: Empty
+        Scope: generator22176
+            Kind: Generator
+            FrameDescriptor: [elem, i, <>temp3, <>temp4, <return_val>, key]
+            CellVars: Empty
+            FreeVars: [key]
+        Scope: generator22068
+            Kind: Generator
+            FrameDescriptor: [elem, <>temp2, <>temp3, <return_val>, order]
+            CellVars: Empty
+            FreeVars: Empty
+        Scope: generator21642
+            Kind: Generator
+            FrameDescriptor: [elem, <>temp2, i, <>temp3, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: nsmallest
+        Kind: Function
+        FrameDescriptor: [elem, <>temp18, sentinel, <>temp17, _order, <>temp19, _elem, <>temp16, <>temp15, iterable, it, k, n, result, size, top, _heapreplace, <return_val>, key, order]
+        CellVars: [key]
+        FreeVars: Empty
+        Scope: generator20788
+            Kind: Generator
+            FrameDescriptor: [elem, <>temp3, <>temp4, k, <>temp5, <return_val>, order]
+            CellVars: Empty
+            FreeVars: Empty
+        Scope: generator20385
+            Kind: Generator
+            FrameDescriptor: [elem, i, <>temp3, <>temp4, <return_val>, key]
+            CellVars: Empty
+            FreeVars: [key]
+        Scope: generator20277
+            Kind: Generator
+            FrameDescriptor: [elem, <>temp2, <>temp3, <return_val>, order]
+            CellVars: Empty
+            FreeVars: Empty
+        Scope: generator19862
+            Kind: Generator
+            FrameDescriptor: [elem, <>temp2, i, <>temp3, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+    Scope: merge
+        Kind: Generator
+        FrameDescriptor: [next, <>temp18, <>temp17, <>temp19, <>temp16, <>temp15, <>temp32, <>temp31, <>temp34, <>temp33, <>temp30, _heappop, value, key_value, key, h_append, direction, order, <>temp29, <>temp28, <>temp25, <>temp24, <>temp27, <>temp26, h, <>temp21, <>temp20, <>temp23, it, <>temp22, reverse, _heapify, s, _heapreplace, iterables, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _siftup_max
+        Kind: Function
+        FrameDescriptor: [childpos, pos, newitem, heap, <return_val>, startpos, endpos, rightpos]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _siftdown_max
+        Kind: Function
+        FrameDescriptor: [parent, pos, newitem, heap, parentpos, <return_val>, startpos]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _siftup
+        Kind: Function
+        FrameDescriptor: [childpos, pos, newitem, heap, <return_val>, startpos, endpos, rightpos]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _siftdown
+        Kind: Function
+        FrameDescriptor: [parent, pos, newitem, heap, parentpos, <return_val>, startpos]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _heapify_max
+        Kind: Function
+        FrameDescriptor: [x, i, <return_val>, n]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _heapreplace_max
+        Kind: Function
+        FrameDescriptor: [item, heap, <return_val>, returnitem]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: _heappop_max
+        Kind: Function
+        FrameDescriptor: [lastelt, heap, <return_val>, returnitem]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: heapify
+        Kind: Function
+        FrameDescriptor: [x, i, <return_val>, n]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: heappushpop
+        Kind: Function
+        FrameDescriptor: [item, <>temp2, <>temp3, heap, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: heapreplace
+        Kind: Function
+        FrameDescriptor: [item, heap, <return_val>, returnitem]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: heappop
+        Kind: Function
+        FrameDescriptor: [lastelt, heap, <return_val>, returnitem]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: heappush
+        Kind: Function
+        FrameDescriptor: [item, heap, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty

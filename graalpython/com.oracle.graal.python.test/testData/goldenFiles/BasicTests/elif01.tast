@@ -1,0 +1,72 @@
+ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var == ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,96]`var = 100↵if var == ...`
+    ExpressionWithSideEffect SourceSection: [0,96]`var = 100↵if var == ...`
+      Expression:
+        ExpressionWithSideEffect SourceSection: None
+          Expression:
+            EmptyNode SourceSection: None
+          SideEffect:
+            IfNode SourceSection: [10,96]`if var == 200:↵  pri...`
+              YesNodeGen SourceSection: None
+                BinaryComparisonNodeGen SourceSection: [13,23]`var == 200`
+                  LookupAndCallBinaryNodeGen SourceSection: None
+                    Op: __eq__
+                  ReadNameNodeGen SourceSection: [13,16]`var`
+                    Identifier: var
+                  IntegerLiteralNode SourceSection: [20,23]`200`
+                    Value: 200
+              ExpressionStatementNode SourceSection: [27,36]`print (2)`
+                PythonCallNodeGen SourceSection: [27,36]`print (2)`
+                  CachedCallNodeGen SourceSection: None
+                    CreateArgumentsNodeGen SourceSection: None
+                    CallDispatchNodeGen SourceSection: None
+                  IntegerLiteralNode SourceSection: [34,35]`2`
+                    Value: 2
+                  ReadNameNodeGen SourceSection: None
+                    Identifier: print
+              IfNode SourceSection: None
+                YesNodeGen SourceSection: None
+                  BinaryComparisonNodeGen SourceSection: [42,52]`var == 150`
+                    LookupAndCallBinaryNodeGen SourceSection: None
+                      Op: __eq__
+                    ReadNameNodeGen SourceSection: [42,45]`var`
+                      Identifier: var
+                    IntegerLiteralNode SourceSection: [49,52]`150`
+                      Value: 150
+                ExpressionStatementNode SourceSection: [56,67]`print (1.5)`
+                  PythonCallNodeGen SourceSection: [56,67]`print (1.5)`
+                    CachedCallNodeGen SourceSection: None
+                      CreateArgumentsNodeGen SourceSection: None
+                      CallDispatchNodeGen SourceSection: None
+                    DoubleLiteralNode SourceSection: [63,66]`1.5`
+                    ReadNameNodeGen SourceSection: None
+                      Identifier: print
+                IfNode SourceSection: None
+                  YesNodeGen SourceSection: None
+                    BinaryComparisonNodeGen SourceSection: [73,83]`var == 100`
+                      LookupAndCallBinaryNodeGen SourceSection: None
+                        Op: __eq__
+                      ReadNameNodeGen SourceSection: [73,76]`var`
+                        Identifier: var
+                      IntegerLiteralNode SourceSection: [80,83]`100`
+                        Value: 100
+                  ExpressionStatementNode SourceSection: [87,96]`print (1)`
+                    PythonCallNodeGen SourceSection: [87,96]`print (1)`
+                      CachedCallNodeGen SourceSection: None
+                        CreateArgumentsNodeGen SourceSection: None
+                        CallDispatchNodeGen SourceSection: None
+                      IntegerLiteralNode SourceSection: [94,95]`1`
+                        Value: 1
+                      ReadNameNodeGen SourceSection: None
+                        Identifier: print
+                  BlockNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,9]`var = 100`
+          Identifier: var
+          IntegerLiteralNode SourceSection: [6,9]`100`
+            Value: 100

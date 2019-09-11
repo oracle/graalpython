@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -37,6 +37,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
@@ -48,10 +49,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsFactory.ArrayNoGeneralizationNodeGen;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -68,8 +71,10 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PArray)
 public class ArrayBuiltins extends PythonBuiltins {
@@ -79,7 +84,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         return ArrayBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -89,7 +94,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
         @Specialization
@@ -99,85 +104,85 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean contains(PArray self, Object other,
+        boolean contains(VirtualFrame frame, PArray self, Object other,
                         @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
-            return containsNode.execute(self.getSequenceStorage(), other);
+            return containsNode.execute(frame, self.getSequenceStorage(), other);
         }
     }
 
-    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createLt()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createLe()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createGt()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createGe()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
-            return !eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return !eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        protected abstract boolean executeWith(Object left, Object right);
+        protected abstract boolean executeWith(VirtualFrame frame, Object left, Object right);
 
         @Specialization
-        boolean eq(PArray left, PArray right,
+        boolean eq(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
-    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -202,12 +207,12 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
@@ -227,7 +232,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__SETITEM__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = SpecialMethodNames.__SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
@@ -249,7 +254,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -259,7 +264,20 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "itemsize", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ItemSizeNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object getItemSize(PArray self) {
+            if (self.getSequenceStorage().getElementType() == SequenceStorage.ListStorageType.Int) {
+                return factory().createInt(4);
+            }
+            return factory().createInt(2);
+        }
+    }
+
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
@@ -297,4 +315,39 @@ public class ArrayBuiltins extends PythonBuiltins {
             return self.len();
         }
     }
+
+    /**
+     * Does not allow any generalization but compatible types.
+     */
+    @GenerateUncached
+    public abstract static class ArrayNoGeneralizationNode extends SequenceStorageNodes.NoGeneralizationNode {
+
+        public static final GenNodeSupplier SUPPLIER = new GenNodeSupplier() {
+
+            public GeneralizationNode create() {
+                return ArrayNoGeneralizationNodeGen.create();
+            }
+
+            public GeneralizationNode getUncached() {
+                return ArrayNoGeneralizationNodeGen.getUncached();
+            }
+        };
+
+        @Override
+        protected String getErrorMessage() {
+            return "signed short integer is greater than maximum";
+        }
+    }
+
+    @Builtin(name = "append", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ArrayAppendNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PArray append(PArray array, Object arg,
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
+            appendNode.execute(array.getSequenceStorage(), arg, ArrayNoGeneralizationNode.SUPPLIER);
+            return array;
+        }
+    }
+
 }

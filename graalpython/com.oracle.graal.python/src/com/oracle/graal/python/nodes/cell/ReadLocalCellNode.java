@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -31,12 +31,12 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundL
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNodeGen.ReadFromCellNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -59,16 +59,26 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
         this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
     }
 
+    ReadLocalCellNode(FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
+        this.frameSlot = frameSlot;
+        this.readLocal = readLocal;
+        this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
+    }
+
     public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar);
     }
 
-    @Override
-    public StatementNode makeWriteNode(ExpressionNode rhs) {
-        return WriteLocalCellNode.create(frameSlot, rhs);
+    public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
+        return ReadLocalCellNodeGen.create(frameSlot, isFreeVar, readLocal);
     }
 
-    static abstract class ReadFromCellNode extends PNodeWithContext {
+    @Override
+    public StatementNode makeWriteNode(ExpressionNode rhs) {
+        return WriteLocalCellNode.create(frameSlot, readLocal, rhs);
+    }
+
+    abstract static class ReadFromCellNode extends PNodeWithContext {
         private final boolean isFreeVar;
         private final Object identifier;
 
@@ -81,13 +91,17 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
 
         @Specialization
         Object read(PCell cell,
+                        @Cached PRaiseNode raise,
                         @Cached("create()") CellBuiltins.GetRefNode getRef,
                         @Cached("createClassProfile()") ValueProfile refTypeProfile) {
             Object ref = refTypeProfile.profile(getRef.execute(cell));
             if (ref != null) {
                 return ref;
             } else {
-                throw raiseUnbound();
+                if (isFreeVar) {
+                    throw raise.raise(NameError, "free variable '%s' referenced before assignment in enclosing scope", identifier);
+                }
+                throw raise.raise(UnboundLocalError, "local variable '%s' referenced before assignment", identifier);
             }
         }
 
@@ -95,13 +109,6 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
         Object read(Object cell) {
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("Expected a cell, got: " + cell.toString() + " instead.");
-        }
-
-        private PException raiseUnbound() {
-            if (isFreeVar) {
-                return raise(NameError, "free variable '%s' referenced before assignment in enclosing scope", identifier);
-            }
-            return raise(UnboundLocalError, "local variable '%s' referenced before assignment", identifier);
         }
     }
 

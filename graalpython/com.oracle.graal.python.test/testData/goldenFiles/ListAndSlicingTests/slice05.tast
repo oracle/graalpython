@@ -1,0 +1,34 @@
+ModuleRootNode Name: <module 'slice05'> SourceSection: [0,16]`a()[b():c():d()]`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,16]`a()[b():c():d()]`
+    GetItemNodeGen SourceSection: [0,16]`a()[b():c():d()]`
+      PythonCallNodeGen SourceSection: [0,3]`a()`
+        CachedCallNodeGen SourceSection: None
+          CreateArgumentsNodeGen SourceSection: None
+          CallDispatchNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: None
+          Identifier: a
+      SliceLiteralNodeGen SourceSection: [4,15]`b():c():d()`
+        PythonObjectFactoryNodeGen SourceSection: None
+        PythonCallNodeGen SourceSection: [4,7]`b()`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: None
+            Identifier: b
+        PythonCallNodeGen SourceSection: [8,11]`c()`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: None
+            Identifier: c
+        PythonCallNodeGen SourceSection: [12,15]`d()`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: None
+            Identifier: d

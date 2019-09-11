@@ -1,0 +1,14 @@
+testCrossDefaults
+testDefaults
+testFileWrapper
+testGuessScheme
+testHopByHop
+testNormalizedShifts
+testSimpleShifts
+testExtras
+testMappingInterface
+testRequireList
+testAbstractMethods
+testCGIEnviron
+testEnviron
+testScheme

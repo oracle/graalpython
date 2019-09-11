@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuffer)
 public class BufferBuiltins extends PythonBuiltins {
@@ -78,46 +79,49 @@ public class BufferBuiltins extends PythonBuiltins {
         return BufferBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        public Object repr(PBuffer self,
+        Object repr(VirtualFrame frame, PBuffer self,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
-            return "buffer(" + repr.executeObject(self.getDelegate()) + ")";
+            return createReprString(repr.executeObject(frame, self.getDelegate()));
         }
 
+        @TruffleBoundary
+        private static String createReprString(Object reprObj) {
+            return "buffer(" + reprObj + ")";
+        }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object iter(PBuffer self, boolean key,
+        public Object iter(VirtualFrame frame, PBuffer self, boolean key,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
-            return callGetItemNode.executeObject(self.getDelegate(), key);
+            return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(PBuffer self, int key,
+        public Object iter(VirtualFrame frame, PBuffer self, int key,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
-            return callGetItemNode.executeObject(self.getDelegate(), key);
+            return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(PBuffer self, long key,
+        public Object iter(VirtualFrame frame, PBuffer self, long key,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
-            return callGetItemNode.executeObject(self.getDelegate(), key);
+            return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(PBuffer self, PInt key,
+        public Object iter(VirtualFrame frame, PBuffer self, PInt key,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
-            return callGetItemNode.executeObject(self.getDelegate(), key);
+            return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Fallback
@@ -129,25 +133,25 @@ public class BufferBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object len(PBuffer self,
+        public Object len(VirtualFrame frame, PBuffer self,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
-            return callLenNode.executeObject(self.getDelegate());
+            return callLenNode.executeObject(frame, self.getDelegate());
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object iter(PBuffer self,
+        public Object iter(VirtualFrame frame, PBuffer self,
                         @Cached("create(__ITER__)") LookupAndCallUnaryNode callIterNode) {
-            return callIterNode.executeObject(self.getDelegate());
+            return callIterNode.executeObject(frame, self.getDelegate());
         }
 
         @Fallback
@@ -156,7 +160,7 @@ public class BufferBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization

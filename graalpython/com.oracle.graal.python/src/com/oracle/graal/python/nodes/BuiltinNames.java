@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,11 +44,8 @@ public abstract class BuiltinNames {
     // special arg names
     public static final String SELF = "self";
 
-    // graalpython internals
-    public static final String __BREAKPOINT__ = "__breakpoint__";
-    public static final String __BUILTINS_PATCHES__ = "__builtins_patches__";
-
     // cpython internals
+    public static final String BREAKPOINT = "breakpoint";
     public static final String MODULE = "module";
     public static final String __BUILD_CLASS__ = "__build_class__";
     public static final String __MAIN__ = "__main__";
@@ -56,6 +53,8 @@ public abstract class BuiltinNames {
     public static final String __DEBUG__ = "__debug__";
 
     // sys
+    public static final String DISPLAYHOOK = "displayhook";
+    public static final String BREAKPOINTHOOK = "breakpointhook";
     public static final String EXCEPTHOOK = "excepthook";
     public static final String LAST_TYPE = "last_type";
     public static final String LAST_VALUE = "last_value";
@@ -132,6 +131,7 @@ public abstract class BuiltinNames {
     public static final String HASH = "hash";
     public static final String MEMORYVIEW = "memoryview";
     public static final String SET = "set";
+    public static final String BUILTINS = "builtins";
     // truffle specific builtins
     public static final String __BUILTIN__ = "__builtin__";
     public static final String __DUMP_TRUFFLE_AST__ = "__dump_truffle_ast__";

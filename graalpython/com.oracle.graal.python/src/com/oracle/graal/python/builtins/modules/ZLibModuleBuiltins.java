@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -77,7 +77,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -159,7 +159,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public abstract long execute(PIBytesLike data, Object value);
 
         // we can't use jdk Crc32 class, if there is done init value of crc
-        private final static int[] CRC32_TABLE = {
+        private static final int[] CRC32_TABLE = {
                         0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419,
                         0x706af48f, 0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4,
                         0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07,
@@ -293,7 +293,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         public abstract long execute(PIBytesLike data, Object value);
 
-        private final static int DEFER = 3850;
+        private static final int DEFER = 3850;
         private static final int BASE = 65521;
 
         private static int computeAdler32(byte[] bytes, int value) {
@@ -373,7 +373,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zlib_deflateInit", fixedNumOfPositionalArgs = 6)
+    @Builtin(name = "zlib_deflateInit", minNumOfPositionalArgs = 6)
     @GenerateNodeFactory
     abstract static class DeflateInitNode extends PythonBuiltinNode {
         /**
@@ -414,24 +414,26 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public DeflaterWrapper(Deflater deflater) {
             this.deflater = deflater;
         }
-
-        public ForeignAccess getForeignAccess() {
-            return null;
-        }
     }
 
-    @Builtin(name = "zlib_deflateCompress", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "zlib_deflateCompress", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class DeflateCompress extends PythonTernaryBuiltinNode {
-        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+        @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        @TruffleBoundary
-        Object deflateCompress(DeflaterWrapper stream, PIBytesLike pb, int mode) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] data = toBytes.execute(pb);
+        Object deflateCompress(VirtualFrame frame, DeflaterWrapper stream, PIBytesLike pb, int mode) {
+            byte[] data = toBytes.execute(frame, pb);
             byte[] result = new byte[DEF_BUF_SIZE];
 
+            ByteArrayOutputStream baos = deflate(stream, mode, data, result);
+
+            return factory().createBytes(baos.toByteArray());
+        }
+
+        @TruffleBoundary
+        private static ByteArrayOutputStream deflate(DeflaterWrapper stream, int mode, byte[] data, byte[] result) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             stream.deflater.setInput(data);
             int deflateMode = mode;
             if (mode == Z_FINISH) {
@@ -448,13 +450,98 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             if (mode == Z_FINISH) {
                 stream.deflater.end();
             }
+            return baos;
+        }
+    }
 
-            return factory().createBytes(baos.toByteArray());
+    @Builtin(name = "zlib_inflateInit", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class InflateInitNode extends PythonBinaryBuiltinNode {
+        @Child private ToBytesNode toBytes = ToBytesNode.create();
+
+        @Specialization
+        Object init(VirtualFrame frame, int wbits, PBytes zdict) {
+            byte[] bytes = toBytes.execute(frame, zdict);
+            return new InflaterWrapper(inflate(wbits, bytes));
+        }
+
+        @TruffleBoundary
+        private Inflater inflate(int wbits, byte[] bytes) {
+            Inflater inflater;
+            if (wbits < 0) {
+                // generate a RAW stream, i.e., no wrapping
+                inflater = new Inflater(true);
+            } else if (wbits >= 25) {
+                // include gzip container
+                throw raise(PythonBuiltinClassType.NotImplementedError, "gzip containers");
+            } else {
+                // wrap stream with zlib header and trailer
+                inflater = new Inflater(false);
+            }
+
+            inflater.setDictionary(bytes);
+            return inflater;
+        }
+    }
+
+    static class InflaterWrapper implements TruffleObject {
+        private final Inflater inflater;
+
+        public InflaterWrapper(Inflater inflater) {
+            this.inflater = inflater;
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private boolean needsInput() {
+            return inflater.needsInput();
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private int getRemaining() {
+            return inflater.getRemaining();
+        }
+    }
+
+    @Builtin(name = "zlib_inflateDecompress", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class InflaterDecompress extends PythonTernaryBuiltinNode {
+        @Child private ToBytesNode toBytes = ToBytesNode.create();
+
+        @Specialization
+        Object decompress(VirtualFrame frame, InflaterWrapper stream, PIBytesLike pb, int maxLen) {
+            int maxLength = maxLen == 0 ? Integer.MAX_VALUE : maxLen;
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] data = toBytes.execute(frame, pb);
+            byte[] result = new byte[DEF_BUF_SIZE];
+            byte[] decompressed = decompress(stream, maxLength, baos, data, result);
+
+            return factory().createTuple(new Object[]{
+                            factory().createBytes(decompressed),
+                            stream.needsInput(),
+                            stream.getRemaining()
+            });
+        }
+
+        @TruffleBoundary
+        private byte[] decompress(InflaterWrapper stream, int maxLength, ByteArrayOutputStream baos, byte[] data, byte[] result) {
+            stream.inflater.setInput(data);
+            int bytesWritten = result.length;
+            while (baos.size() < maxLength && bytesWritten == result.length) {
+                try {
+                    bytesWritten = stream.inflater.inflate(result, 0, result.length);
+                } catch (DataFormatException e) {
+                    throw raise(ZLibError, e);
+                }
+                baos.write(result, 0, bytesWritten);
+            }
+            byte[] decompressed = baos.toByteArray();
+            return decompressed;
         }
     }
 
     // zlib.compress(data, level=-1)
-    @Builtin(name = "compress", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"level"})
+    @Builtin(name = "compress", minNumOfPositionalArgs = 1, parameterNames = {"", "level"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class CompressNode extends PythonBinaryBuiltinNode {
@@ -503,7 +590,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.decompress(data, wbits=MAX_WBITS, bufsize=DEF_BUF_SIZE)
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"wbits", "bufsize"})
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, parameterNames = {"data", "wbits", "bufsize"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DecompressNode extends PythonTernaryBuiltinNode {
@@ -577,10 +664,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes decompress(PIBytesLike data, long wbits, Object bufsize,
+        public PBytes decompress(VirtualFrame frame, PIBytesLike data, long wbits, Object bufsize,
                         @Cached("create()") DecompressNode recursiveNode) {
             Object bufferLen = getCastToIntNode().execute(bufsize);
-            return (PBytes) recursiveNode.execute(data, wbits, bufferLen);
+            return (PBytes) recursiveNode.execute(frame, data, wbits, bufferLen);
         }
 
         protected static DecompressNode create() {

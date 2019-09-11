@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -176,6 +176,12 @@ def test_init5():
     assert set(d.keys()) == key_set, "unexpected keys: %s" % str(d.keys())
     assert set(d.values()) == { 97, 98, 99, 100 }, "unexpected values: %s" % str(d.values())
 
+def test_init_kwargs():
+    kwargs = {'ONE':'one', 'TWO' : 'two'}
+    d = dict([(1,11),(2,22)], **kwargs)
+    assert len(d) == 4, "invalid length, expected 4 but was %d" % len(d)
+    assert set(d.keys()) == {1,2,'ONE','TWO'}, "unexpected keys: %s" % str(d.keys())
+    assert set(d.values()) == { 11, 22, 'one', 'two' }, "unexpected values: %s" % str(d.values())
 
 def test_custom_key_object0():
     class CollisionKey:
@@ -443,3 +449,60 @@ def test_object_set_item_single_instance_non_str_key():
     bar.a = 'a'
     assert 1 in bar.__dict__
     assert 'a' in bar.__dict__
+
+
+def test_unhashable_key():
+    d = {}
+    key_list = [10, 11]
+    assert_raises(TypeError, lambda: d[key_list])
+    key_tuple_list = (key_list, 2)
+    assert_raises(TypeError, lambda: d[key_tuple_list])
+
+class EncodedString(str):
+    # unicode string subclass to keep track of the original encoding.
+    # 'encoding' is None for unicode strings and the source encoding
+    # otherwise
+    encoding = None
+
+    def __deepcopy__(self, memo):
+        return self
+
+    def byteencode(self):
+        assert self.encoding is not None
+        return self.encode(self.encoding)
+
+    def utf8encode(self):
+        assert self.encoding is None
+        return self.encode("UTF-8")
+
+    @property
+    def is_unicode(self):
+        return self.encoding is None
+
+    def contains_surrogates(self):
+        return string_contains_surrogates(self)
+
+    def as_utf8_string(self):
+        return bytes_literal(self.utf8encode(), 'utf8')
+
+
+def test_wrapped_string_contains1():
+    test_string = EncodedString('something')
+    dict = {'something': (1, 0), 'nothing': (2, 0)}
+    reached = False
+    if test_string in dict:
+        reached = True
+    assert reached
+
+def test_wrapped_string_contains2():
+    test_string = EncodedString('something')
+    dict = {'something', 'nothing'}
+    reached = False
+    if test_string in dict:
+        reached = True
+    assert reached
+
+def test_wrapped_string_get():
+    a = 'test'
+    dict = locals()
+    assert dict['a']
