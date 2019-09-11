@@ -396,7 +396,7 @@ non-important content
         
         # Inside of strings, don't interpret doubled brackets.
         self.assertEqual(f'{"{{}}"}', '{{}}')
-
+        print('part3')
         self.assertAllRaise(TypeError, 'unhashable type',
                             ["f'{ {{}} }'", # dict in a set
                              ])

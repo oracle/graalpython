@@ -137,6 +137,7 @@ public class FormatStringLiteralNode extends LiteralNode {
 
         int numberOfExpressions = 0;
         int braceLevel = 0;
+        int braceLevelInExpression = 0;
         for (String value : node.values) {
             if (value.startsWith(NORMAL_PREFIX)) {
                 resultParts.add(value.substring(NORMAL_PREFIX.length()));
@@ -169,8 +170,10 @@ public class FormatStringLiteralNode extends LiteralNode {
                                     braceLevel--;
                                     break;
                                 case '}': PythonLanguage.getCore().raiseInvalidSyntax(node, EMPTY_EXPRESSION_MESSAGE); break;
-                                default: index--; state = STATE_EXPRESSION;
-
+                                default: 
+                                    index--; 
+                                    state = STATE_EXPRESSION;
+                                    braceLevelInExpression = 0;
                             }
                             break;
                         case STATE_AFTER_CLOSE_BRACE:
@@ -189,14 +192,20 @@ public class FormatStringLiteralNode extends LiteralNode {
                             }
                             break;
                         case STATE_EXPRESSION:
-                            if (ch == '}') {
-                                if (start < index) {
-                                    numberOfExpressions++;
-                                    resultParts.add(createExpression("format", value.substring(start, index), frame));
+                            if (ch == '{') {
+                                braceLevelInExpression++;
+                            } else if (ch == '}') {
+                                if (braceLevelInExpression == 0){
+                                    if (start < index) {
+                                        numberOfExpressions++;
+                                        resultParts.add(createExpression("format", value.substring(start, index), frame));
+                                    }
+                                    braceLevel--;
+                                    state = STATE_TEXT;
+                                    start = index + 1;
+                                } else {
+                                    braceLevelInExpression--;
                                 }
-                                braceLevel--;
-                                state = STATE_TEXT;
-                                start = index + 1;
                             } else if (ch == '\'' || ch == '"') {
                                 char startq = ch;
                                 boolean triple = false;

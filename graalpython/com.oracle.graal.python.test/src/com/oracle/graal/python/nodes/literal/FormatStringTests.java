@@ -271,6 +271,16 @@ public class FormatStringTests extends ParserTestBase {
         checkSyntaxError("start{{}end", FormatStringLiteralNode.SINGLE_BRACE_MESSAGE);
     }
     
+    @Test
+    public void spaces01() throws Exception {
+        testFormatString("{     {}}", "format({})");
+    }
+    
+    @Test
+    public void spaces02() throws Exception {
+        testFormatString("{     {}                 }", "format({})");
+    }
+    
     private void checkSyntaxError(String text, String expectedMessage) throws Exception {
         try {
             testFormatString(text, "Expected Error: " + expectedMessage);
@@ -283,7 +293,7 @@ public class FormatStringTests extends ParserTestBase {
         ArrayList<Object> parts = new ArrayList<>();
         VirtualFrame frame = Truffle.getRuntime().createVirtualFrame(new Object[8], new FrameDescriptor());
         Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstringtest>").build();
-        FormatStringLiteralNode sfl = new FormatStringLiteralNode(new String[]{text});
+        FormatStringLiteralNode sfl = new FormatStringLiteralNode(new String[]{FormatStringLiteralNode.FORMAT_STRING_PREFIX + text});
         sfl.assignSourceSection(source.createSection(1));
         FormatStringLiteralNode.topParser(sfl, parts, frame);
         Assert.assertEquals(expected, translateFStringParserResult(parts));
@@ -318,6 +328,8 @@ public class FormatStringTests extends ParserTestBase {
                         result.append(((IntegerLiteralNode)arg).getValue());
                     } else if (arg instanceof StringLiteralNode) {
                         result.append('"').append(((StringLiteralNode)arg).getValue()).append('"');
+                    } else if (arg instanceof DictLiteralNode) {
+                        result.append("{}");
                     } else {
                         result.append("UNKNOWN ARGUMENT");
                     }
