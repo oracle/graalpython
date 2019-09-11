@@ -171,6 +171,8 @@ POLYGLOT_DECLARE_TYPE(PyThreadState);
 typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
+POLYGLOT_DECLARE_TYPE(newfunc);
+
 static void initialize_globals() {
     // register native NULL
     wrapped_null = polyglot_invoke(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Register_NULL", SRC_CS), NULL);
@@ -333,6 +335,11 @@ polyglot_typeid get_ptr_array_typeid(uint64_t len) {
 /** to be used from Java code only; returns the type ID PyThreadState */
 polyglot_typeid get_thread_state_typeid() {
     return polyglot_PyThreadState_typeid();
+}
+
+/** to be used from Java code only; returns the type ID newfunc */
+polyglot_typeid get_newfunc_typeid() {
+    return polyglot_newfunc_typeid();
 }
 
 typedef struct PyObjectHandle {

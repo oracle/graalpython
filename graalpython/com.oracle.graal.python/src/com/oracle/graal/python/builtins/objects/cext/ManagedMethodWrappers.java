@@ -67,8 +67,11 @@ public abstract class ManagedMethodWrappers {
     @ExportLibrary(NativeTypeLibrary.class)
     public abstract static class MethodWrapper extends PythonNativeWrapper {
 
-        public MethodWrapper(Object method) {
+        private final Object typeid;
+
+        public MethodWrapper(Object method, Object typeid) {
             super(method);
+            this.typeid = typeid;
         }
 
         @ExportMessage
@@ -94,15 +97,12 @@ public abstract class ManagedMethodWrappers {
         @ExportMessage
         @SuppressWarnings("static-method")
         public boolean hasNativeType() {
-            // TODO implement native type
-            return false;
+            return typeid != null;
         }
 
         @ExportMessage
-        @SuppressWarnings("static-method")
         public Object getNativeType() {
-            // TODO implement native type
-            return null;
+            return typeid;
         }
     }
 
@@ -110,8 +110,8 @@ public abstract class ManagedMethodWrappers {
     @ExportLibrary(NativeTypeLibrary.class)
     static class MethKeywords extends MethodWrapper {
 
-        public MethKeywords(Object method) {
-            super(method);
+        public MethKeywords(Object method, Object typeid) {
+            super(method, typeid);
         }
 
         @ExportMessage
@@ -150,7 +150,7 @@ public abstract class ManagedMethodWrappers {
     static class MethVarargs extends MethodWrapper {
 
         public MethVarargs(Object method) {
-            super(method);
+            super(method, null);
         }
 
         @ExportMessage
@@ -177,8 +177,8 @@ public abstract class ManagedMethodWrappers {
     /**
      * Creates a wrapper for signature {@code meth(*args, **kwargs)}.
      */
-    public static MethodWrapper createKeywords(Object method) {
-        return new MethKeywords(method);
+    public static MethodWrapper createKeywords(Object method, Object typeid) {
+        return new MethKeywords(method, typeid);
     }
 
     /**

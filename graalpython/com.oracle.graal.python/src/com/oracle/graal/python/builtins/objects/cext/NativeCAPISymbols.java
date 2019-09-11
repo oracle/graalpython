@@ -87,6 +87,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_TUPLE_GET_ITEM = "PyTruffle_Tuple_GetItem";
     public static final String FUN_PY_TRUFFLE_OBJECT_SIZE = "PyTruffle_Object_Size";
     public static final String FUN_PY_TYPE_READY = "PyType_Ready";
+    public static final String FUN_GET_NEWFUNC_TYPE_ID = "get_newfunc_typeid";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {

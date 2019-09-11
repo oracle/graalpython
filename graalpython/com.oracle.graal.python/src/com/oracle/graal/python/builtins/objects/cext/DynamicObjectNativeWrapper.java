@@ -414,8 +414,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_NEW, key)")
         Object doTpNew(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic getAttrNode) {
-            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object, __NEW__));
+                        @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
+                        @Cached PCallCapiFunction callGetNewfuncTypeidNode) {
+            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object, __NEW__), callGetNewfuncTypeidNode.call(NativeCAPISymbols.FUN_GET_NEWFUNC_TYPE_ID));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
@@ -440,9 +441,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             Object val = getAttrNode.execute(object, __ITEMSIZE__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
             // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            if (val == PNone.NO_VALUE) {
-                return 0L;
-            }
             return val != PNone.NO_VALUE ? castToIntNode.execute(val) : 0L;
         }
 
