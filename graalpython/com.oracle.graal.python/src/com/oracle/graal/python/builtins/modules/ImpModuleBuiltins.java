@@ -261,14 +261,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
 
-                // load base functionality we might already need just to initialize the main C API
-                // library
-                String libPythonBaseName = "libpythonbase" + ExtensionSuffixesNode.getSoAbi(context);
-                String libPythonBasePath = getCapiHome(context, env, libPythonBaseName);
-                TruffleFile capiBaseFile = env.getInternalTruffleFile(libPythonBasePath);
-                Object capiBase = loadSharedLibrary(context, capiBaseFile);
-                context.setCapiBaseLibrary(capiBase);
-
                 String libPythonName = "libpython" + ExtensionSuffixesNode.getSoAbi(context);
                 String libPythonPath = getCapiHome(context, env, libPythonName);
                 TruffleFile capiFile = env.getInternalTruffleFile(libPythonPath);

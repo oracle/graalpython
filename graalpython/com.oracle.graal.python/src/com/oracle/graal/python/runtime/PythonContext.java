@@ -123,7 +123,6 @@ public final class PythonContext {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
-    @CompilationFinal private Object capiBaseLibrary = null;
     private final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
@@ -547,16 +546,8 @@ public final class PythonContext {
         return this.capiLibrary;
     }
 
-    public Object getCapiBaseLibrary() {
-        return this.capiBaseLibrary;
-    }
-
     public void setCapiWasLoaded(Object capiLibrary) {
         this.capiLibrary = capiLibrary;
-    }
-
-    public void setCapiBaseLibrary(Object capiLibrary) {
-        this.capiBaseLibrary = capiLibrary;
     }
 
     public HashingStorage.Equivalence getSlowPathEquivalence() {
