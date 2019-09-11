@@ -1625,7 +1625,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "METH_FASTCALL_WITH_KEYWORDS", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethFastcallWithKeywordsNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethFastcallWithKeywordsNode extends PythonBuiltinNode {
         @Specialization
         PExternalFunctionWrapper call() {
             return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallArgsToSulongNode::create) {
