@@ -54,11 +54,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsSameNativeObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsSameNativeObjectFastNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsSameNativeObjectSlowNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -79,8 +76,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclas
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeFastNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeSlowNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -102,10 +97,12 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public abstract class TypeNodes {
 
@@ -611,6 +608,7 @@ public abstract class TypeNodes {
         }
     }
 
+    @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class IsSameTypeNode extends PNodeWithContext {
 
@@ -636,80 +634,16 @@ public abstract class TypeNodes {
             return left.getType() == right;
         }
 
-        @Specialization
+        @Specialization(limit = "3")
         boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @Cached(value = "createNativeEquals()", uncached = "getUncachedNativeEquals()") IsSameNativeObjectNode isSameNativeObjectNode) {
-            return isSameNativeObjectNode.execute(left, right);
+                        @CachedLibrary("left") ReferenceLibrary referenceLibrary) {
+            return referenceLibrary.isSame(left, right);
         }
 
         @Fallback
         boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
         }
-
-        protected IsSameNativeObjectNode createNativeEquals() {
-            throw new IllegalStateException();
-        }
-
-        protected IsSameNativeObjectNode getUncachedNativeEquals() {
-            throw new IllegalStateException();
-        }
-
-        @TruffleBoundary
-        public static boolean doSlowPath(Object left, Object right) {
-            if (left instanceof PythonManagedClass && right instanceof PythonManagedClass) {
-                return left == right;
-            } else if (left instanceof PythonAbstractNativeObject && right instanceof PythonAbstractNativeObject) {
-                return IsSameNativeObjectFastNodeGen.getUncached().execute((PythonAbstractNativeObject) left, (PythonAbstractNativeObject) right);
-            }
-            return false;
-        }
-
-        public static IsSameTypeNode create() {
-            return IsSameTypeFastNodeGen.create();
-        }
-
-        public static IsSameTypeNode getUncached() {
-            return IsSameTypeSlowNodeGen.create();
-        }
-
-        public static IsSameTypeNode createFast() {
-            return IsSameTypeSlowNodeGen.create();
-        }
-
-        public static IsSameTypeNode getUncachedFast() {
-            return IsSameTypeFastNodeGen.create();
-        }
-    }
-
-    @GenerateUncached
-    abstract static class IsSameTypeFastNode extends IsSameTypeNode {
-
-        @Override
-        protected IsSameNativeObjectNode createNativeEquals() {
-            return IsSameNativeObjectFastNodeGen.create();
-        }
-
-        @Override
-        protected IsSameNativeObjectNode getUncachedNativeEquals() {
-            return IsSameNativeObjectFastNodeGen.getUncached();
-        }
-
-    }
-
-    @GenerateUncached
-    abstract static class IsSameTypeSlowNode extends IsSameTypeNode {
-
-        @Override
-        protected IsSameNativeObjectNode createNativeEquals() {
-            return IsSameNativeObjectSlowNodeGen.create();
-        }
-
-        @Override
-        protected IsSameNativeObjectNode getUncachedNativeEquals() {
-            return IsSameNativeObjectSlowNodeGen.getUncached();
-        }
-
     }
 
     /** accesses the Sulong type of a class; does no recursive resolving */

@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -342,7 +343,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private boolean isSameType(LazyPythonClass left, LazyPythonClass right) {
             if (isSameTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSameTypeNode = insert(TypeNodes.IsSameTypeNode.create());
+                isSameTypeNode = insert(IsSameTypeNodeGen.create());
             }
             return isSameTypeNode.execute(left, right);
         }
@@ -611,7 +612,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
-        @Child private TypeNodes.IsSameTypeNode isSameTypeNode = TypeNodes.IsSameTypeNode.create();
+        @Child private TypeNodes.IsSameTypeNode isSameTypeNode = IsSameTypeNodeGen.create();
         @Child private GetFixedAttributeNode getBasesAttrNode;
         @Child private GetLazyClassNode getClassNode;
 

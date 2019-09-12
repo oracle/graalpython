@@ -145,6 +145,7 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public abstract class CExtNodes {
 
@@ -1748,14 +1749,14 @@ public abstract class CExtNodes {
          * native context, so we can be sure that the "nativeClassStableAssumption" (which is
          * per-context) is from the context in which this native object was created.
          */
-        @Specialization(guards = {"isSameNativeObjectNode.execute(cachedObj, obj)", "memberName == cachedMemberName"}, //
+        @Specialization(guards = {"referenceLibrary.isSame(cachedObj, obj)", "memberName == cachedMemberName"}, //
                         limit = "1", //
                         assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
         public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") String memberName,
-                        @SuppressWarnings("unused") @Cached IsSameNativeObjectFastNode isSameNativeObjectNode,
-                        @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
-                        @SuppressWarnings("unused") @Cached("getterFuncName(memberName)") String getterFuncName,
                         @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
+                        @CachedLibrary("cachedObj") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary,
+                        @Cached("memberName") @SuppressWarnings("unused") String cachedMemberName,
+                        @Cached("getterFuncName(memberName)") @SuppressWarnings("unused") String getterFuncName,
                         @Cached("doSlowPath(obj, getterFuncName)") Object result) {
             return result;
         }
@@ -1834,44 +1835,6 @@ public abstract class CExtNodes {
             return wrapper;
         }
 
-    }
-
-    public abstract static class IsSameNativeObjectNode extends CExtBaseNode {
-
-        public abstract boolean execute(PythonAbstractNativeObject left, PythonAbstractNativeObject right);
-
-        protected static boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right, ValueProfile profile) {
-            // This check is a bit dangerous since we cannot be sure about the code that is running.
-            // Currently, we assume that the pointer object is a Sulong pointer and for this it's
-            // fine.
-            return left.equalsProfiled(right, profile);
-        }
-
-    }
-
-    @GenerateUncached
-    public abstract static class IsSameNativeObjectFastNode extends IsSameNativeObjectNode {
-
-        @Specialization
-        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @Cached("createClassProfile()") ValueProfile foreignTypeProfile) {
-            return IsSameNativeObjectNode.doNativeFast(left, right, foreignTypeProfile);
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class IsSameNativeObjectSlowNode extends IsSameNativeObjectNode {
-
-        @Specialization
-        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @Cached("createBinaryProfile()") ConditionProfile isEqualProfile,
-                        @Cached("createClassProfile()") ValueProfile foreignTypeProfile,
-                        @Cached PointerCompareNode pointerCompareNode) {
-            if (isEqualProfile.profile(IsSameNativeObjectNode.doNativeFast(left, right, foreignTypeProfile))) {
-                return true;
-            }
-            return pointerCompareNode.execute(SpecialMethodNames.__EQ__, left, right);
-        }
     }
 
     /**
