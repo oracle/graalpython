@@ -701,7 +701,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, false, context, raise, factory);
+            checkFunctionResult(name, false, false, context, raise, factory);
             return result;
         }
 
@@ -710,7 +710,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, true, context, raise, factory);
+            checkFunctionResult(name, true, false, context, raise, factory);
             return PNone.NO_VALUE;
         }
 
@@ -719,7 +719,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, false, context, raise, factory);
+            checkFunctionResult(name, false, false, context, raise, factory);
             return result;
         }
 
@@ -728,7 +728,29 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, true, context, raise, factory);
+            checkFunctionResult(name, true, false, context, raise, factory);
+            return result;
+        }
+
+        @Specialization
+        int doInteger(String name, int result,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raise") @Cached PRaiseNode raise) {
+            // If the native functions returns a primitive int, only a value '-1' indicates an
+            // error.
+            checkFunctionResult(name, result == -1, true, context, raise, factory);
+            return result;
+        }
+
+        @Specialization
+        long doLong(String name, long result,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raise") @Cached PRaiseNode raise) {
+            // If the native functions returns a primitive int, only a value '-1' indicates an
+            // error.
+            checkFunctionResult(name, result == -1, true, context, raise, factory);
             return result;
         }
 
@@ -745,17 +767,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), context, raise, factory);
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, context, raise, factory);
             return result;
         }
 
-        private void checkFunctionResult(String name, boolean isNull, PythonContext context, PRaiseNode raise, PythonObjectFactory factory) {
+        private void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonContext context, PRaiseNode raise, PythonObjectFactory factory) {
             PException currentException = context.getCurrentException();
             boolean errOccurred = currentException != null;
-            if (isNull) {
+            if (indicatesError) {
                 // consume exception
                 context.setCurrentException(null);
-                if (!errOccurred) {
+                if (!errOccurred && !isPrimitiveResult) {
                     throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
                     throw currentException;
