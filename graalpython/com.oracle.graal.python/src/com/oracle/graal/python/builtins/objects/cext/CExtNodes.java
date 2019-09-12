@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.BinaryFirs
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallArgsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
@@ -1148,17 +1149,44 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Converts the 1st (self) and the 4th (kwargs) argument to native values as required for
-     * {@code METH_FASTCALL}.
+     * Converts the 1st (PyObject* self) and the 2nd (PyObject* const* args) argument to native
+     * values as required for {@code METH_FASTCALL}.<br/>
+     * Signature:
+     * {@code PyObject* meth_fastcall(PyObject* self, PyObject* const* args, Py_ssize_t nargs)}
      */
     public abstract static class FastCallArgsToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 2] = args[argsOffset + 2];
+        }
+
+        @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, "invalid arguments for fastcall method (expected 3 but got %s)", args.length - argsOffset);
+        }
+
+        public static FastCallArgsToSulongNode create() {
+            return FastCallArgsToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts for native signature:
+     * {@code PyObject* meth_fastcallWithKeywords(PyObject* self, PyObject* const* args, Py_ssize_t nargs, PyObject* kwnames)}
+     */
+    public abstract static class FastCallWithKeywordsArgsToSulongNode extends ConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 4)"})
         void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached("create()") ToSulongNode toSulongNode1,
                         @Cached("create()") ToSulongNode toSulongNode4) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
-            dest[destOffset + 1] = args[argsOffset + 1];
+            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
             dest[destOffset + 2] = args[argsOffset + 2];
             dest[destOffset + 3] = toSulongNode4.execute(args[argsOffset + 3]);
         }
@@ -1166,11 +1194,11 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 4)"})
         void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, "invalid arguments for fastcall method (expected 4 but got %s)", args.length - argsOffset);
+            throw raiseNode.raise(TypeError, "invalid arguments for fastcall_with_keywords method (expected 4 but got %s)", args.length - argsOffset);
         }
 
-        public static FastCallArgsToSulongNode create() {
-            return FastCallArgsToSulongNodeGen.create();
+        public static FastCallWithKeywordsArgsToSulongNode create() {
+            return FastCallWithKeywordsArgsToSulongNodeGen.create();
         }
     }
 
