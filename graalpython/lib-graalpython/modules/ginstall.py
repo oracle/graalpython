@@ -156,6 +156,10 @@ index 66d8530..8bb2ab6 100644
         install_from_pypi("pytest==5.0.1", patch=patch, **kwargs)
 
     @pip_package()
+    def pytest_parallel(**kwargs):
+        install_from_pypi("pytest-parallel==0.0.9", **kwargs)
+
+    @pip_package()
     def py(**kwargs):
         install_from_pypi("py==1.8.0", **kwargs)
 
