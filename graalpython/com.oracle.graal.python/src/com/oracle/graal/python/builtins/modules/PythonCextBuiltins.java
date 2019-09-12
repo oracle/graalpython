@@ -85,7 +85,6 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVararg
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
@@ -401,35 +400,49 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
         private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
 
-        @Specialization
+        @Specialization(limit = "3")
+        Object doPythonCallable(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, @SuppressWarnings("unused") Object wrapper,
+                        @SuppressWarnings("unused") LazyPythonClass type,
+                        @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary) {
+            // This can happen if a native type inherits slots from a managed type. Therefore,
+            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
+            // case, we assume that the object is already callable.
+            return nativeWrapperLibrary.getDelegate(callable);
+        }
+
+        @Specialization(guards = "!isNativeWrapper(callable)")
         @TruffleBoundary
-        PBuiltinFunction runWrapper(String name, Object callable, PExternalFunctionWrapper wrapper, LazyPythonClass type,
+        PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, LazyPythonClass type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(lang, name, callable, wrapper.createConvertArgsToSulongNode()));
             RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, callTarget);
             return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
         }
 
-        @Specialization(guards = {"isNoValue(type)"})
+        @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction runWrapperWithoutType(String name, Object callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") PNone type,
+        PBuiltinFunction doNativeCallableWithoutType(String name, Object callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return runWrapper(name, callable, wrapper, null, lang);
+            return doNativeCallableWithType(name, callable, wrapper, null, lang);
         }
 
-        @Specialization(guards = {"isNoValue(wrapper)"})
+        @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction run(String name, Object callable, LazyPythonClass type, @SuppressWarnings("unused") PNone wrapper,
+        PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, LazyPythonClass type, @SuppressWarnings("unused") PNone wrapper,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(lang, name, callable, AllToSulongNode.create()));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
 
-        @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)"})
+        @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction runWithoutType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
+        PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return run(name, callable, null, wrapper, lang);
+            return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang);
+        }
+
+        static boolean isNativeWrapper(Object obj) {
+            return obj instanceof PythonNativeWrapper;
         }
 
         private static ExternalFunctionNode createExternalFunctionRootNode(PythonLanguage lang, String name, Object callable, ConvertArgsToSulongNode convertArgsNode) {
