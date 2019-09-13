@@ -6408,11 +6408,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadFromCellNodeGen SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeSlowNodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                           GetLazyClassNodeGen SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeSlowNodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                           GetLazyClassNodeGen SourceSection: None
                                         CachedCallNodeGen SourceSection: None
                                           CreateArgumentsNodeGen SourceSection: None
@@ -6729,11 +6729,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadFromCellNodeGen SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeSlowNodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                           GetLazyClassNodeGen SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeSlowNodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                           GetLazyClassNodeGen SourceSection: None
                                         CachedCallNodeGen SourceSection: None
                                           CreateArgumentsNodeGen SourceSection: None
@@ -6827,11 +6827,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     ReadFromCellNodeGen SourceSection: None
                                   LookupInheritedAttributeNode SourceSection: None
                                     LookupAttributeInMRONodeGen SourceSection: None
-                                      IsSameTypeSlowNodeGen SourceSection: None
+                                      IsSameTypeNodeGen SourceSection: None
                                     GetLazyClassNodeGen SourceSection: None
                                   LookupInheritedAttributeNode SourceSection: None
                                     LookupAttributeInMRONodeGen SourceSection: None
-                                      IsSameTypeSlowNodeGen SourceSection: None
+                                      IsSameTypeNodeGen SourceSection: None
                                     GetLazyClassNodeGen SourceSection: None
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
@@ -6948,11 +6948,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       ReadFromCellNodeGen SourceSection: None
                                     LookupInheritedAttributeNode SourceSection: None
                                       LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeSlowNodeGen SourceSection: None
+                                        IsSameTypeNodeGen SourceSection: None
                                       GetLazyClassNodeGen SourceSection: None
                                     LookupInheritedAttributeNode SourceSection: None
                                       LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeSlowNodeGen SourceSection: None
+                                        IsSameTypeNodeGen SourceSection: None
                                       GetLazyClassNodeGen SourceSection: None
                                     CachedCallNodeGen SourceSection: None
                                       CreateArgumentsNodeGen SourceSection: None

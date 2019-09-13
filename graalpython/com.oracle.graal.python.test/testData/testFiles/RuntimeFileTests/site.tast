@@ -1126,11 +1126,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ReadVariableFromFrameNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeSlowNodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeSlowNodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
@@ -3759,11 +3759,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           LookupInheritedAttributeNode SourceSection: None
                             LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeSlowNodeGen SourceSection: None
+                              IsSameTypeNodeGen SourceSection: None
                             GetLazyClassNodeGen SourceSection: None
                           LookupInheritedAttributeNode SourceSection: None
                             LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeSlowNodeGen SourceSection: None
+                              IsSameTypeNodeGen SourceSection: None
                             GetLazyClassNodeGen SourceSection: None
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None

@@ -46,11 +46,11 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeSlowNodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
                           GetLazyClassNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeSlowNodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
                           GetLazyClassNodeGen SourceSection: None
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
@@ -70,11 +70,11 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeSlowNodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeSlowNodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
