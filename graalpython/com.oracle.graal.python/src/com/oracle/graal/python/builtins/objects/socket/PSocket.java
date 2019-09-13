@@ -84,6 +84,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
     public static final int IPPROTO_TCP = 6;
 
     @CompilationFinal private static InetSocketAddress EPHEMERAL_ADDRESS;
+
     private static InetSocketAddress getEphemeralAddress() {
         if (EPHEMERAL_ADDRESS == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
