@@ -241,8 +241,10 @@ index 66d8530..8bb2ab6 100644
         install_from_pypi("six==1.12.0", **kwargs)
 
     @pip_package()
-    def Cython(**kwargs):
-        install_from_pypi("Cython==0.29.2", **kwargs)
+    def Cython(extra_opts=None, **kwargs):
+        if extra_opts is None:
+            extra_opts = []
+        install_from_pypi("Cython==0.29.2", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
 
     @pip_package()
     def setuptools(**kwargs):
