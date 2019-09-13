@@ -266,6 +266,7 @@ suite = {
             "buildDependencies": [
                 "GRAALPYTHON",
                 "PYTHON_USERBASE",
+                "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
             ],
             "buildEnv": {
                 "PYTHONUSERBASE": "<path:PYTHON_USERBASE>",
@@ -396,7 +397,7 @@ suite = {
         "PYTHON_USERBASE": {
             "native": True,
             "platformDependent": False,
-            "description": "Blub",
+            "description": "User base directory for development purpose.",
             "layout": {
                 "./README.md": "string:User base directory for development purpose.",
             },
