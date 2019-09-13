@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -93,6 +92,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         return 0;
     }
 
+    @SuppressWarnings("static-method")
     public Shape getInstanceShape() {
         CompilerDirectives.transferToInterpreter();
         throw new UnsupportedOperationException("native class does not have a shape");
