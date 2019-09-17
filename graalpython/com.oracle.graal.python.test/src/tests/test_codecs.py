@@ -180,8 +180,11 @@ def test_charmap_build():
                                                52: 3, 53: 4, 54: 5}
 
 
-def test_decode_utf_8():
+def test_decode_report_consumed():
     data = bytes('memory of “unsigned bytes” of the given length.', 'utf-8')
     dec = data.decode('utf-8')
     assert dec == "memory of “unsigned bytes” of the given length."
     assert len(data) == 51 and len(dec) == 47
+    dec, consumed = codecs.utf_8_decode(data)
+    assert dec == "memory of “unsigned bytes” of the given length."
+    assert consumed == len(data)
