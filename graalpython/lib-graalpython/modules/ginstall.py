@@ -291,6 +291,142 @@ index 66d8530..8bb2ab6 100644
     def Werkzeug(**kwargs):
         install_from_pypi("Werkzeug==0.15.4", **kwargs)
 
+    @pip_package()
+    def h5py(**kwargs):
+        patch='''
+--- a/setup_configure.py
++++ b/setup_configure.py
+@@ -189,59 +189,71 @@ def autodetect_version(hdf5_dir=None):
+ 
+     hdf5_dir: optional HDF5 install directory to look in (containing "lib")
+     """
++    # import re
++    # import ctypes
++    # from ctypes import byref
++
++    # import pkgconfig
++
++    # if sys.platform.startswith('darwin'):
++    #     default_path = 'libhdf5.dylib'
++    #     regexp = re.compile(r'^libhdf5.dylib')
++    # elif sys.platform.startswith('win') or \
++    #     sys.platform.startswith('cygwin'):
++    #     default_path = 'hdf5.dll'
++    #     regexp = re.compile(r'^hdf5.dll')
++    # else:
++    #     default_path = 'libhdf5.so'
++    #     regexp = re.compile(r'^libhdf5.so')
++
++    # libdirs = ['/usr/local/lib', '/opt/local/lib']
++    # try:
++    #     if pkgconfig.exists("hdf5"):
++    #         libdirs.extend(pkgconfig.parse("hdf5")['library_dirs'])
++    # except EnvironmentError:
++    #     pass
++    # if hdf5_dir is not None:
++    #     if sys.platform.startswith('win'):
++    #         lib = 'bin'
++    #     else:
++    #         lib = 'lib'
++    #     libdirs.insert(0, op.join(hdf5_dir, lib))
++
++    # path = None
++    # for d in libdirs:
++    #     try:
++    #         candidates = [x for x in os.listdir(d) if regexp.match(x)]
++    #     except Exception:
++    #         continue   # Skip invalid entries
++
++    #     if len(candidates) != 0:
++    #         candidates.sort(key=lambda x: len(x))   # Prefer libfoo.so to libfoo.so.X.Y.Z
++    #         path = op.abspath(op.join(d, candidates[0]))
++    #         break
++
++    # if path is None:
++    #     path = default_path
++
++    # print("Loading library to get version:", path)
++
++    # lib = ctypes.cdll.LoadLibrary(path)
++
++    # major = ctypes.c_uint()
++    # minor = ctypes.c_uint()
++    # release = ctypes.c_uint()
++
++    # lib.H5get_libversion(byref(major), byref(minor), byref(release))
++
++    # return "{0}.{1}.{2}".format(int(major.value), int(minor.value), int(release.value))
+     import re
+-    import ctypes
+-    from ctypes import byref
+-
+-    import pkgconfig
+-
+-    if sys.platform.startswith('darwin'):
+-        default_path = 'libhdf5.dylib'
+-        regexp = re.compile(r'^libhdf5.dylib')
+-    elif sys.platform.startswith('win') or \
+-        sys.platform.startswith('cygwin'):
+-        default_path = 'hdf5.dll'
+-        regexp = re.compile(r'^hdf5.dll')
+-    else:
+-        default_path = 'libhdf5.so'
+-        regexp = re.compile(r'^libhdf5.so')
+-
+-    libdirs = ['/usr/local/lib', '/opt/local/lib']
+-    try:
+-        if pkgconfig.exists("hdf5"):
+-            libdirs.extend(pkgconfig.parse("hdf5")['library_dirs'])
+-    except EnvironmentError:
+-        pass
+-    if hdf5_dir is not None:
+-        if sys.platform.startswith('win'):
+-            lib = 'bin'
+-        else:
+-            lib = 'lib'
+-        libdirs.insert(0, op.join(hdf5_dir, lib))
+-
+-    path = None
+-    for d in libdirs:
+-        try:
+-            candidates = [x for x in os.listdir(d) if regexp.match(x)]
+-        except Exception:
+-            continue   # Skip invalid entries
+-
+-        if len(candidates) != 0:
+-            candidates.sort(key=lambda x: len(x))   # Prefer libfoo.so to libfoo.so.X.Y.Z
+-            path = op.abspath(op.join(d, candidates[0]))
+-            break
+-
+-    if path is None:
+-        path = default_path
+-
+-    print("Loading library to get version:", path)
+-
+-    lib = ctypes.cdll.LoadLibrary(path)
+-
+-    major = ctypes.c_uint()
+-    minor = ctypes.c_uint()
+-    release = ctypes.c_uint()
+-
+-    lib.H5get_libversion(byref(major), byref(minor), byref(release))
+-
+-    return "{0}.{1}.{2}".format(int(major.value), int(minor.value), int(release.value))
++    from subprocess import check_output, STDOUT
++
++    PATTERN_VERSION = re.compile(r'^\s*HDF5 Version:\s*(?P<version>[0-9.]+).*', re.DOTALL)
++
++    hdf5_config = check_output('h5cc -showconfig', stderr=STDOUT, shell=True).decode('utf-8')
++    # detect version string 
++    for line in hdf5_config.splitlines():
++        match = re.match(PATTERN_VERSION, line)
++        if match:
++            return match.group('version')
++    raise RuntimeError("HDF5 Version couuld not be found, h5cc not in PATH")
+
+        '''
+        install_from_pypi("h5py==2.10.0", patch=patch, **kwargs)
+
     # Does not yet work
     # def h5py(**kwargs):
     #     try:
