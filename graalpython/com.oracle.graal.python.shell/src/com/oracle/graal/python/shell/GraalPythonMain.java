@@ -666,16 +666,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         break;
                     }
                 } catch (EOFException e) {
-                    try {
-                        evalInternal(context, "import site; exit()\n");
-                    } catch (PolyglotException e2) {
-                        if (e2.isExit()) {
-                            // don't use the exit code from the PolyglotException
-                            return lastStatus;
-                        } else if (e2.isCancelled()) {
-                            continue;
+                    if (!noSite) {
+                        try {
+                            evalInternal(context, "import site; exit()\n");
+                        } catch (PolyglotException e2) {
+                            if (e2.isExit()) {
+                                // don't use the exit code from the PolyglotException
+                                return lastStatus;
+                            } else if (e2.isCancelled()) {
+                                continue;
+                            }
+                            throw new RuntimeException("error while calling exit", e);
                         }
-                        throw new RuntimeException("error while calling exit", e);
                     }
                     System.out.println();
                     return lastStatus;
