@@ -250,16 +250,17 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             }
         }
         StatementNode body = yield;
-        if (condition != null) {
-            // TODO: Do we have to create empty block in the else branch?
-            body = GeneratorIfNode.create(nodeFactory.createYesNode(condition), body, nodeFactory.createBlock(), numOfActiveFlags++, numOfActiveFlags++);
-        } else if (node.iterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) node.iterator).resultType == PythonBuiltinClassType.PGenerator) {
+        if (node.iterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) node.iterator).resultType == PythonBuiltinClassType.PGenerator) {
             ForComprehensionSSTNode forComp = (ForComprehensionSSTNode) node.iterator;
             SSTNode sstIterator = forComp.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode) forComp.iterator).target : forComp.iterator;
             ExpressionNode exprIterator = (ExpressionNode) sstIterator.accept(this);
             GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(exprIterator);
             getIterator.assignSourceSection(exprIterator.getSourceSection());
             body = createGeneratorExpressionBody(forComp, getIterator, yield);
+        }
+        if (condition != null) {
+            // TODO: Do we have to create empty block in the else branch?
+            body = GeneratorIfNode.create(nodeFactory.createYesNode(condition), body, nodeFactory.createBlock(), numOfActiveFlags++, numOfActiveFlags++);
         }
 
         StatementNode variable;

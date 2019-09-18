@@ -305,4 +305,9 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     public void issueGR18174() throws Exception {
         checkScopeAndTree("[b for b in [a for a in (1,2)]]");
     }
+
+    @Test
+    public void issueGR18309() throws Exception {
+        checkScopeAndTree("[ b for a in d1 if d1 for b in d2]");
+    }
 }

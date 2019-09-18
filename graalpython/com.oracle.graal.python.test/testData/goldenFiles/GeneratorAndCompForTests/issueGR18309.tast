@@ -1,0 +1,87 @@
+ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in d1 if d...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,34]`[ b for a in d1 if d...`
+    PythonCallNodeGen SourceSection: [0,34]`[ b for a in d1 if d...`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      GeneratorExpressionNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+        Name: [].<locals>.<genexp>:issueGR18309:1
+        FrameDescriptor: 3 slots [b, a, <return_val>]
+        Enclosing
+          FrameDescriptor:  Empty
+        Active Flags: 4
+        For Nodes: 2
+        Block Nodes: 0
+        Is Enclosing Frame Generator: false
+        FunctionRootNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+          Name: [].<locals>.<genexp>:issueGR18309:1
+          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+          CelVars: None
+          FreeVars: None
+          NeedsCellFrame: False
+          FrameDescriptor: 3 slots [b, a, <return_val>]
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          InnerRootNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+            GeneratorReturnTargetNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+              flagSlot: 3
+              GeneratorForNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+                GeneratorIfNode SourceSection: None
+                  GeneratorAccessNode SourceSection: None
+                  YesNodeGen SourceSection: None
+                    ReadGlobalOrBuiltinNodeGen SourceSection: [19,21]`d1`
+                      Identifier: d1
+                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  GeneratorForNode SourceSection: [22,33]`for b in d2`
+                    ExpressionStatementNode SourceSection: [2,3]`b`
+                      YieldNode SourceSection: [2,3]`b`
+                        flagSlot: 0
+                        ReadGeneratorFrameVariableNode SourceSection: [2,3]`b`
+                          Frame: [0,b,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        GeneratorAccessNode SourceSection: None
+                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                      Identifier: b
+                      WriteGeneraterFrameSlotNodeGen SourceSection: None
+                        Frame: [0,b,Illegal]
+                    GetIteratorExpressionNodeGen SourceSection: [31,33]`d2`
+                      GetIteratorNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [31,33]`d2`
+                        Identifier: d2
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    GetNextNode SourceSection: None
+                      LookupAndCallUnaryNodeGen SourceSection: None
+                        Op: __next__
+                    GeneratorAccessNode SourceSection: None
+                  BlockNode SourceSection: None
+                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                  Identifier: a
+                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                    Frame: [1,a,Illegal]
+                ArgumentExpressionNode SourceSection: None
+                  ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
+                GetNextNode SourceSection: None
+                  LookupAndCallUnaryNodeGen SourceSection: None
+                    Op: __next__
+                GeneratorAccessNode SourceSection: None
+              ReadGeneratorFrameVariableNode SourceSection: None
+                Frame: [2,<return_val>,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+              BlockNode SourceSection: None
+              GeneratorAccessNode SourceSection: None
+              PRaiseNodeGen SourceSection: None
+        GetIteratorExpressionNodeGen SourceSection: [13,15]`d1`
+          GetIteratorNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [13,15]`d1`
+            Identifier: d1
+        PythonObjectFactoryNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: list
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
