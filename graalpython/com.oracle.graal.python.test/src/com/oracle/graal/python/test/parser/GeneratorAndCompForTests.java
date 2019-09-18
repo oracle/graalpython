@@ -306,4 +306,9 @@ public class GeneratorAndCompForTests extends ParserTestBase {
         checkScopeFromFile(testFile, true);
         checkTreeFromFile(testFile, true);
     }
+
+    @Test
+    public void issueGR18174() throws Exception {
+        checkScopeAndTree("[b for b in [a for a in (1,2)]]");
+    }
 }

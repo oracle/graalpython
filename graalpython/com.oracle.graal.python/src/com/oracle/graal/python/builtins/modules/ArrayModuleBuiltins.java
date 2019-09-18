@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -117,6 +118,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return typeCode.charAt(0) == 'b';
         }
 
+        protected boolean isCharArray(String typeCode) {
+            return typeCode.charAt(0) == 'B';
+        }
+
         protected boolean isDoubleArray(String typeCode) {
             return typeCode.charAt(0) == 'd';
         }
@@ -143,6 +148,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 byteArray[i++] = castToByteNode.execute(nextValue);
             }
 
+            return factory().createArray(cls, byteArray);
+        }
+
+        @Specialization(guards = "isCharArray(typeCode)")
+        PArray arrayCharInitializer(LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] byteArray = toByteArrayNode.execute(getSequenceStorageNode.execute(initializer));
             return factory().createArray(cls, byteArray);
         }
 
@@ -238,9 +251,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PArray arrayWithObjectInitializer(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
-            if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode))) {
+            if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode) || isCharArray(typeCode))) {
                 // TODO implement support for typecodes: b, B, u, h, H, i, I, l, L, q, Q, f or d
-                throw raise(ValueError, "bad typecode (must be i, d, b, or l)");
+                throw raise(ValueError, "bad typecode (must be i, d, b, B, or l)");
             }
             throw new RuntimeException("Unsupported initializer " + initializer);
         }
@@ -259,8 +272,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             switch (type) {
                 case 'c':
                 case 'b':
+                    return factory().createArray(cls, new byte[0]);
                 case 'B':
-                    return factory().createArray(cls, new char[0]);
+                    return factory().createArray(cls, new byte[0]);
                 case 'i':
                     return factory().createArray(cls, new int[0]);
                 case 'd':

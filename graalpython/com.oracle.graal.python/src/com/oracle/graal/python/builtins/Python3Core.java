@@ -202,6 +202,7 @@ public final class Python3Core implements PythonCore {
                         "str",
                         "type",
                         "_imp",
+                        "array",
                         "_thread",
                         "function",
                         "_functools",

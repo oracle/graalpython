@@ -76,19 +76,21 @@ public class IteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object next(PArrayIterator self,
+        Object next(PArrayIterator self,
                         @Cached("createClassProfile()") ValueProfile itemTypeProfile,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
-            if (self.index < self.array.len()) {
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            SequenceStorage sequenceStorage = self.array.getSequenceStorage();
+            if (self.index < lenNode.execute(sequenceStorage)) {
                 // TODO avoid boxing by getting the array's typecode and using primitive return
                 // types
-                return itemTypeProfile.profile(getItemNode.execute(self.array.getSequenceStorage(), self.index++));
+                return itemTypeProfile.profile(getItemNode.execute(sequenceStorage, self.index++));
             }
             throw raise(StopIteration);
         }
 
         @Specialization
-        public int next(PIntegerSequenceIterator self) {
+        int next(PIntegerSequenceIterator self) {
             if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
@@ -97,7 +99,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int next(PRangeIterator self) {
+        int next(PRangeIterator self) {
             if (self.index < self.stop) {
                 int value = self.index;
                 self.index += self.step;
@@ -107,7 +109,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int next(PRangeReverseIterator self) {
+        int next(PRangeReverseIterator self) {
             if (self.index > self.stop) {
                 int value = self.index;
                 self.index -= self.step;
@@ -117,7 +119,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double next(PDoubleSequenceIterator self) {
+        double next(PDoubleSequenceIterator self) {
             if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
@@ -126,7 +128,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public long next(PLongSequenceIterator self) {
+        long next(PLongSequenceIterator self) {
             if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getLongItemNormalized(self.index++);
             }

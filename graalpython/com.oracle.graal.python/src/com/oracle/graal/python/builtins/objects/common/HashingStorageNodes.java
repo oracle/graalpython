@@ -109,6 +109,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -1167,30 +1168,34 @@ public abstract class HashingStorageNodes {
         // this is just a minor performance optimization
         @Specialization
         static Object doPythonObjectString(PythonObjectDictStorage storage, String key,
-                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
-            return doDynamicObjectString(storage, key, readKey);
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+            return doDynamicObjectString(storage, key, readKey, profile);
         }
 
         // this is just a minor performance optimization
         @Specialization
         static Object doPythonObjectPString(PythonObjectDictStorage storage, PString key,
-                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
-            return doDynamicObjectPString(storage, key, readKey);
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+            return doDynamicObjectPString(storage, key, readKey, profile);
         }
 
         // this will read from the dynamic object
         @Specialization
         static Object doDynamicObjectString(DynamicObjectStorage storage, String key,
-                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
             Object result = readKey.execute(storage.getStore(), key);
-            return result == PNone.NO_VALUE ? null : result;
+            return profile.profile(result == PNone.NO_VALUE) ? null : result;
         }
 
         @Specialization
         static Object doDynamicObjectPString(DynamicObjectStorage storage, PString key,
-                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
             Object result = readKey.execute(storage.getStore(), key);
-            return result == PNone.NO_VALUE ? null : result;
+            return profile.profile(result == PNone.NO_VALUE) ? null : result;
         }
 
         // this must read from the non-dynamic object storage
