@@ -249,7 +249,7 @@ public class NodeFactory {
         return new StringLiteralNode(value);
     }
 
-    public ExpressionNode createFormatStringLiteral(String[] values) {
+    public ExpressionNode createFormatStringLiteral(FormatStringLiteralNode.StringPart[] values) {
         return new FormatStringLiteralNode(values);
     }
     

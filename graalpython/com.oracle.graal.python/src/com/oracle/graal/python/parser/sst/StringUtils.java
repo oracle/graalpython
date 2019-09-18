@@ -109,8 +109,7 @@ public class StringUtils {
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
-        List<String> formatStrings =  null;
-        
+        List<FormatStringLiteralNode.StringPart> formatStrings =  null;
         for (String text : strings) {
             boolean isRaw = false;
             boolean isBytes = false;
@@ -167,11 +166,10 @@ public class StringUtils {
                         formatStrings = new ArrayList<>();
                     }
                     if (sb != null && sb.length() > 0) {
-                        sb.insert(0, FormatStringLiteralNode.NORMAL_PREFIX);
-                        formatStrings.add(sb.toString());
+                        formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
                         sb = null;
                     }
-                    formatStrings.add(FormatStringLiteralNode.FORMAT_STRING_PREFIX + text);
+                    formatStrings.add(new FormatStringLiteralNode.StringPart(text, true));
                 } else {
                     if (sb == null) {
                         sb = new StringBuilder();
@@ -185,10 +183,9 @@ public class StringUtils {
             return nodeFactory.createBytesLiteral(bb.build());
         } else if (isFormatString) {
             if (sb != null && sb.length() > 0) {
-                sb.insert(0, FormatStringLiteralNode.NORMAL_PREFIX);
-                formatStrings.add(sb.toString());
+                formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
             }
-            return nodeFactory.createFormatStringLiteral(formatStrings.toArray(new String[formatStrings.size()]));
+            return nodeFactory.createFormatStringLiteral(formatStrings.toArray(new FormatStringLiteralNode.StringPart[formatStrings.size()]));
         } if (sb != null) {
             return nodeFactory.createStringLiteral(sb.toString());
         } else {

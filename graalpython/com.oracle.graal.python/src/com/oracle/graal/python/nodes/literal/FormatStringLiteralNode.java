@@ -37,24 +37,52 @@ import java.util.List;
 
 public class FormatStringLiteralNode extends LiteralNode {
     
-    
-    public static final String NORMAL_PREFIX = "<n>";
-    public static final String FORMAT_STRING_PREFIX = "<f>";
-    
-    private static final String EMPTY_STRING = "";
-    private final String[] values;
-    
+    // error messages from parsing
     static final String ERROR_MESSAGE_EMPTY_EXPRESSION = "f-string: empty expression not allowed";
     static final String ERROR_MESSAGE_SINGLE_BRACE = "f-string: single '}' is not allowed";
     static final String ERROR_MESSAGE_INVALID_CONVERSION = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
     static final String ERROR_MESSAGE_UNTERMINATED_STRING = "f-string: unterminated string";
     static final String ERROR_MESSAGE_INVALID_SYNTAX = "f-string: invalid syntax";
+    
+    private static final String EMPTY_STRING = "";
+    
+    // token types, they are int, because there are part of int[]
+    protected static final int TOKEN_TYPE_STRING = 1;
+    protected static final int TOKEN_TYPE_EXPRESSION = 2;
+    protected static final int TOKEN_TYPE_EXPRESSION_STR = 3;
+    protected static final int TOKEN_TYPE_EXPRESSION_REPR = 4;
+    protected static final int TOKEN_TYPE_EXPRESSION_ASCII = 5;
+    
+    public static class StringPart {
+        /**
+         * Marks, whether the value is formatted string
+         */
+        private final boolean isFormatString;
+        private final String text;
+        
+        public StringPart(String text, boolean isFormatString) {
+            this.text = text;
+            this.isFormatString = isFormatString;
+        }
 
+        public boolean isFormatString() {
+            return isFormatString;
+        }
+
+        public String getText() {
+            return text;
+        }
+    }
+    
+    private final StringPart[] values;
+    
     @Children ExpressionNode[] expressions;
-    @CompilerDirectives.CompilationFinal private Object[] splitValue;
+    
+    @CompilerDirectives.CompilationFinal private List<int[]> tokens;
+    //@CompilerDirectives.CompilationFinal private Object[] splitValue;
     private boolean parsedCorrectly;
     
-    public FormatStringLiteralNode(String[] values) {
+    public FormatStringLiteralNode(StringPart[] values) {
         this.values = values;
         this.parsedCorrectly = true;
     }
@@ -64,88 +92,45 @@ public class FormatStringLiteralNode extends LiteralNode {
         if (values.length == 0) {
             return EMPTY_STRING;
         }
-        if (parsedCorrectly && splitValue == null) {
+        if (parsedCorrectly && tokens == null) {
             // was not parsed yet
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            List<int[]> parts = new ArrayList<>();
-            topParser(this, this.values, parts, frame, true);
-            List<String> results = new ArrayList<>();
-            int exprCount = processValuesParts(parts, results, 0, parts.size());
-            int partsCount = results.size();
-            if (partsCount == 0) {
-                splitValue = new Object[0];
-            } else {
-                splitValue = new Object[partsCount];
-                if (exprCount > 0) {
-                    ExpressionNode[] exprs = new ExpressionNode[exprCount];
-                    int exprIndex = 0;
-                    for (int i = 0; i < results.size(); i++) {
-                        String part = results.get(i);
-                        if (part.startsWith(NORMAL_PREFIX)) {
-                            splitValue[i] = part.substring(NORMAL_PREFIX.length());
-                        } else {
-                            try {
-                                exprs[exprIndex] = createExpression(part.substring(FORMAT_STRING_PREFIX.length()), frame);
-                                splitValue[i] = exprs[exprIndex];
-                                exprIndex++;
-                            } catch (Exception e) {
-                                parsedCorrectly = false;
-                                raiseInvalidSyntax(this, ERROR_MESSAGE_INVALID_SYNTAX);
-                            }
-                            
-                        }
-                    }
-                    expressions = insert(exprs);
-                } else {
-                    for (int i = 0; i < results.size(); i++) {
-                        String part = results.get(i);
-                        splitValue[i] = part.substring(NORMAL_PREFIX.length());
-                    }
-                }
+            // create tokens 
+            tokens = createTokens(this, this.values, true);
+            // create sources from tokens, that marks expressions
+            String[] expressionSources = createExpressionSources(values, tokens);
+            for (String expressionSource : expressionSources) {
+                System.out.println(expressionSource);
             }
-            /*int exprCount = topParser(this, this.values, parts, frame, true);
-            int partsCount = parts.size();
-            if (partsCount == 0) {
-                splitValue = new Object[0];
-            } else {
-                splitValue = parts.toArray();
-                if (exprCount > 0) {
-                    ExpressionNode[] exprs = new ExpressionNode[exprCount];
-                    int exprIndex = 0;
-                    for (Object part : splitValue) {
-                        if (part instanceof ExpressionNode) {
-                            exprs[exprIndex++] = (ExpressionNode) part;
-                        }
-                    }
-                    expressions = insert(exprs);
+            // and create the expressions
+            ExpressionNode[] exprs = new ExpressionNode[expressionSources.length];
+            try {
+                for (int i = 0; i < expressionSources.length; i++) {
+                    exprs[i] = createExpression(expressionSources[i], frame);
                 }
-            }*/
+                expressions = insert(exprs);
+            } catch (Exception e) {
+                // we don't need to keep the expressions, because they will not be executed
+                parsedCorrectly = false;
+                raiseInvalidSyntax(this, ERROR_MESSAGE_INVALID_SYNTAX);
+            }
         }
         if (!parsedCorrectly) {
+            // there was error during obtaining expressions -> don't execute and raise the same error
             raiseInvalidSyntax(this, ERROR_MESSAGE_INVALID_SYNTAX);
         }
-        if (splitValue.length == 1) {
-            // there is only one string or expression
-            if (expressions != null) {
-                // there is only one expression
-                // expressions[0] == splitValue[0] -> no casting needed
-                return expressions[0].execute(frame);
+        StringBuilder result = new StringBuilder();
+        int exprIndex = 0;
+        for (int i = 0; i < tokens.size();  i++) {
+            int[] token = tokens.get(i);
+            if (token[0] == TOKEN_TYPE_STRING) {
+                addToResult(result, values[token[1]].text.substring(token[2], token[3]));
+            } else {
+                addToResult(result, expressions[exprIndex++].execute(frame));
+                i += token[4];
             }
-            // there is only one string
-            return splitValue[0];
-        } else {
-            StringBuilder result = new StringBuilder();
-            int exprIndex = 0;
-            for (int i = 0; i < splitValue.length;  i++) {
-                Object part = splitValue[i];
-                if (part instanceof String) {
-                    addToResult(result, part);
-                } else {
-                    addToResult(result, expressions[exprIndex++].execute(frame));
-                }
-            }
-            return result.toString();
         }
+        return result.toString();
     }
 
     @CompilerDirectives.TruffleBoundary
@@ -153,12 +138,72 @@ public class FormatStringLiteralNode extends LiteralNode {
         result.append(part);
     }
     
-    public String[] getValues() {
+    public StringPart[] getValues() {
         return values;
     }
 
-    public static FormatStringLiteralNode create(String[] values) {
+    public static FormatStringLiteralNode create(StringPart[] values) {
         return new FormatStringLiteralNode(values);
+    }
+    
+    //protected for testing
+    protected static String[] createExpressionSources(StringPart[] values, List<int[]> tokens) {
+        List<String> result = new ArrayList<>();
+        for (int index = 0 ; index < tokens.size(); index++) {
+            int[] token = tokens.get(index);
+            if (token[0] != TOKEN_TYPE_STRING) {
+                // processing only expressions
+                StringBuilder expression = new StringBuilder("format(");
+                switch(token[0]) {
+                    case TOKEN_TYPE_EXPRESSION_ASCII:
+                        expression.append("ascii("); break;
+                    case TOKEN_TYPE_EXPRESSION_REPR:
+                        expression.append("repr("); break;
+                    case TOKEN_TYPE_EXPRESSION_STR:
+                        expression.append("str("); break;
+                }
+                expression.append("(").append(values[token[1]].text.substring(token[2], token[3])).append(")");
+                if (token[0] != TOKEN_TYPE_EXPRESSION) {
+                    expression.append(")");
+                }
+                if (token[4] == 0) {
+                    // there is no format specifier
+                    expression.append(")");
+                } else {
+                    // the expression has token[4] specifiers parts
+                    // obtains expressions in the format specifier
+                    int indexPlusOne = index + 1;
+                    String[] specifierExpressions = createExpressionSources(values, tokens.subList(indexPlusOne, indexPlusOne + token[4]));
+                    expression.append(",(");
+                    boolean first = true;
+                    int expressionIndex = 0;
+                    // move the index after the format specifier
+                    index = indexPlusOne + token[4];
+                    for (int sindex = indexPlusOne; sindex < index;  sindex++) {
+                        int[] stoken = tokens.get(sindex);
+                        if (first) {
+                            first = false;
+                        } else {
+                            // we have to concat the string in the sources here
+                            // for example f'{10.123}:{3}.{4}' has simplified source: format(10.123, 3+"."+4)
+                            expression.append("+");
+                        }
+                        if (stoken[0] == TOKEN_TYPE_STRING) {
+                            // add the string
+                            expression.append("\"").append(values[stoken[1]].text.substring(stoken[2], stoken[3])).append("\"");
+                        } else {
+                            // add the expression sorce
+                            expression.append(specifierExpressions[expressionIndex]);
+                            expressionIndex++;
+                        }
+                    }
+                    
+                    expression.append("))");
+                }
+                result.add(expression.toString());
+            }
+        }
+        return result.toArray(new String[result.size()]);
     }
     
     // parsing the format string
@@ -168,49 +213,48 @@ public class FormatStringLiteralNode extends LiteralNode {
     private static final int STATE_AFTER_EXCLAMATION = 4; // just after !
     private static final int STATE_EXPRESSION = 5; // in {}
     private static final int STATE_UNKNOWN = 6;
-    private static final int STATE_EXPRESSION_STEING_A = 7;
-    private static final int STATE_ESPRESSION_STRING_Q = 8;
-    private static final int STATE_FORMAT_SPECIFIER = 9;
     
-    private static final int TYPE_STRING = 1;
-    private static final int TYPE_EXPRESSION = 2;
-    private static final int TYPE_EXPRESSION_STR = 3;
-    private static final int TYPE_EXPRESSION_REPR = 4;
-    private static final int TYPE_EXPRESSION_ASCII = 5;
-    
-    
-    
-    
-    static int topParser(FormatStringLiteralNode node, String[] values, List<int[]> resultParts, VirtualFrame frame, boolean topLevel) {
-        int index = 0;
+    //protected for testing
+    /**
+     * This is the parser of the fstring. As result is a list of tokens, when a token
+     * is int array of leng 4 (if the token is string) or 5 (if the token is an expression.
+     * Meaning of the token items:
+     *      token[0] - this is token type. Can be string or expression (expression can (but doesn't have to be) wrapped with str or repr or ascii function.
+     *      token[1] - it's the index to the node.values, from which was the token created
+     *      token[2] - start of the text in the node.value[token[1]]
+     *      token[3] - end of the text in the node.value[token[1]]
+     *      token[4] - only for expressions. It's count how many tokens follow as tokens of format specifier. 
+     *                 So the next expression or string is not the next token, but the next token + token[4]
+     * @param node it's needed for raising syntax errors
+     * @param values this part of text will be parsed
+     * @param topLevel if there is called recursion on topLevel = false, then the syntax error is raised
+     * @return a list of tokens
+     */
+    protected static List<int[]> createTokens(FormatStringLiteralNode node, StringPart[] values, boolean topLevel) {
+        int index;
         int state = STATE_TEXT;
         int start = 0;
 
-        int expressionType = TYPE_EXPRESSION;
-        int numberOfExpressions = 0;
+        int expressionType = TOKEN_TYPE_EXPRESSION;
         int braceLevel = 0;
         int braceLevelInExpression = 0;
-        int braceLevelInFormatSpecifier = 0;
-        String formatValue = null;
-        String formatSpecifier = null;
+        List<int[]> resultParts = new ArrayList<>(values.length);
         for (int valueIndex = 0; valueIndex < values.length; valueIndex++) {
-            String value = values[valueIndex];
-            if (value.startsWith(NORMAL_PREFIX)) {
-//                resultParts.add(value.substring(NORMAL_PREFIX.length()));
-                resultParts.add(new int[]{TYPE_STRING, valueIndex, 3, value.length()});
+            StringPart value = values[valueIndex];
+            if (!value.isFormatString) {
+                resultParts.add(new int[]{TOKEN_TYPE_STRING, valueIndex, 0, value.text.length()});
             } else {
-                value = value.substring(FORMAT_STRING_PREFIX.length());
-                int len = value.length();
+                String text = value.text;
+                int len = text.length();
                 index = 0;
                 while (index < len) {
-                    char ch = value.charAt(index);
+                    char ch = text.charAt(index);
                     switch (state){
                         case STATE_TEXT:
                             switch(ch) {
                                 case '{':
                                     if (start < index) {
-//                                        addString(value, start, index, resultParts);
-                                         resultParts.add(new int[]{TYPE_STRING, valueIndex, start + 3, index + 3});
+                                         resultParts.add(new int[]{TOKEN_TYPE_STRING, valueIndex, start, index});
                                     }
                                     state = STATE_AFTER_OPEN_BRACE;
                                     start = index + 1;
@@ -232,7 +276,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                                 default: 
                                     index--; 
                                     state = STATE_EXPRESSION;
-                                    expressionType = TYPE_EXPRESSION;
+                                    expressionType = TOKEN_TYPE_EXPRESSION;
                                     braceLevelInExpression = 0;
                             }
                             break;
@@ -240,8 +284,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                             if (ch == '}') {
                                 // after '}' should in this moment follow second '}'
                                 if (start < index) {
-//                                    addString(value, start, index, resultParts);
-                                    resultParts.add(new int[]{TYPE_STRING, valueIndex, start + 3, index + 3});
+                                    resultParts.add(new int[]{TOKEN_TYPE_STRING, valueIndex, start, index});
                                 }
                                 braceLevel++;
                                 if (braceLevel == 0) {
@@ -253,104 +296,112 @@ public class FormatStringLiteralNode extends LiteralNode {
                             }
                             break;
                         case STATE_EXPRESSION:
-                            if (ch == '{') {
-                                braceLevelInExpression++;
-                            } else if (ch == '}') {
-                                if (braceLevelInExpression == 0){
-                                    if (start < index) {
-                                        numberOfExpressions++;
-//                                        resultParts.add(createExpression("format(" + value.substring(start, index) + ")", frame));
-                                        resultParts.add(new int[]{expressionType, valueIndex, start + FORMAT_STRING_PREFIX.length(), index  + FORMAT_STRING_PREFIX.length(), 0});
-                                    }
-                                    braceLevel--;
-                                    state = STATE_TEXT;
-                                    start = index + 1;
-                                } else {
-                                    braceLevelInExpression--;
-                                }
-                            } else if (ch == '\'' || ch == '"') {
-                                char startq = ch;
-                                boolean triple = false;
-                                boolean inString = true;
-                                index++;
-                                if (index < len && startq == value.charAt(index)) {
-                                    index++;
-                                    if(index< len && startq == value.charAt(index)) {
-                                        // we are in ''' or """ string
-                                        triple = true;
-                                        index++;
-                                    } else {
-                                        // we are in empty string "" or ''
-                                        inString = false;
-                                    } 
-                                }
-                                if (inString) {
-                                    while (index < len && value.charAt(index) != startq) {
-                                      index++;
-                                    }
-                                    // the end of the string reached
-                                    if (triple ) {
-                                        if (index + 1 < len && startq == value.charAt(index + 1)
-                                                && index + 2 < len && startq == value.charAt(index + 2)) {
-                                            index += 2;
-                                            inString = false;
+                            switch (ch) {
+                                case '{':
+                                    braceLevelInExpression++;
+                                    break;
+                                case '}':
+                                    if (braceLevelInExpression == 0){
+                                        if (start < index) {
+                                            resultParts.add(new int[]{expressionType, valueIndex, start, index, 0});
                                         }
-                                    } else if (index < len) {
-                                        inString = false;
+                                        braceLevel--;
+                                        state = STATE_TEXT;
+                                        start = index + 1;
+                                    } else {
+                                        braceLevelInExpression--;
+                                    }
+                                    break;
+                                case '\'':
+                                case '"':
+                                    char startq = ch;
+                                    boolean triple = false;
+                                    boolean inString = true;
+                                    index++;
+                                    if (index < len && startq == text.charAt(index)) {
+                                        index++;
+                                        if(index< len && startq == text.charAt(index)) {
+                                            // we are in ''' or """ string
+                                            triple = true;
+                                            index++;
+                                        } else {
+                                            // we are in empty string "" or ''
+                                            inString = false; 
+                                        }
                                     }
                                     if (inString) {
-                                        raiseInvalidSyntax(node, ERROR_MESSAGE_UNTERMINATED_STRING);
-                                    }
-                                }
-
-                            } else if (ch == '!') {
-                                state = STATE_AFTER_EXCLAMATION;
-                            } else if (ch == ':') {
-                                int[] specifierValue;
-                                specifierValue = new int[] {expressionType, valueIndex, start + 3, index + 3, 0};
-                                index++;
-                                start = index;
-                                int braceLevelInSpecifier = 0;
-                                while (index < len) {
-                                    ch = value.charAt(index);
-                                    if (ch == '{') {
-                                        braceLevelInSpecifier++;
-                                    } else if (ch == '}') {
-                                        braceLevelInSpecifier--;
-                                        if (braceLevelInSpecifier == -1) {
-//                                            resultParts.add(createExpression("format(" + formatValue + ")", frame));
-                                            List<int[]> specifierParts = new ArrayList<>();
-                                            topParser(node, new String[]{FORMAT_STRING_PREFIX+value.substring(start, index)}, specifierParts, frame, false);
-                                            specifierValue[4] = specifierParts.size();
-                                            resultParts.add(specifierValue);
-                                            for (int[]part : specifierParts) {
-                                                part[1] = valueIndex;
-                                                part[2] += start;
-                                                part[3] += start;
+                                        while (index < len && text.charAt(index) != startq) {
+                                            index++;
+                                        }
+                                        // the end of the string reached
+                                        if (triple ) {
+                                            if (index + 1 < len && startq == text.charAt(index + 1)
+                                                    && index + 2 < len && startq == text.charAt(index + 2)) {
+                                                index += 2;
+                                                inString = false;
                                             }
-                                            resultParts.addAll(specifierParts);
-                                            start = index + 1;
-                                            break;
+                                        } else if (index < len) {
+                                            inString = false;
+                                        }
+                                        if (inString) {
+                                            raiseInvalidSyntax(node, ERROR_MESSAGE_UNTERMINATED_STRING);
                                         }
                                     }
+                                    break;
+                                case '!':
+                                    state = STATE_AFTER_EXCLAMATION;
+                                    break;
+                                case ':':
+                                    int[] specifierValue;
+                                    specifierValue = new int[] {expressionType, valueIndex, start, index, 0};
                                     index++;
-                                }
+                                    start = index;
+                                    int braceLevelInSpecifier = 0;
+                                    while (index < len) {
+                                        ch = text.charAt(index);
+                                        if (ch == '{') {
+                                            braceLevelInSpecifier++;
+                                        } else if (ch == '}') {
+                                            braceLevelInSpecifier--;
+                                            if (braceLevelInSpecifier == -1) {
+                                                List<int[]> specifierParts = createTokens(node, new StringPart[]{ new StringPart(text.substring(start, index), true)}, false);
+                                                specifierValue[4] = specifierParts.size();
+                                                resultParts.add(specifierValue);
+                                                for (int[]part : specifierParts) {
+                                                    part[1] = valueIndex;
+                                                    part[2] += start;
+                                                    part[3] += start;
+                                                }
+                                                resultParts.addAll(specifierParts);
+                                                start = index + 1;
+                                                break;
+                                            }
+                                        }
+                                        index++;
+                                    }
+                                    break;
+                                default:
+                                    break;
                             }
                             break;
                         case STATE_AFTER_EXCLAMATION:
                             switch (ch) {
                                 case 's':
-                                    expressionType = TYPE_EXPRESSION_STR;
+                                    expressionType = TOKEN_TYPE_EXPRESSION_STR;
                                     break;
                                 case 'r':
-                                    expressionType = TYPE_EXPRESSION_REPR;
+                                    expressionType = TOKEN_TYPE_EXPRESSION_REPR;
                                     break;
                                 case 'a':
-                                    expressionType = TYPE_EXPRESSION_ASCII;
+                                    expressionType = TOKEN_TYPE_EXPRESSION_ASCII;
                                     break;
                                 default:
                                     raiseInvalidSyntax(node, ERROR_MESSAGE_INVALID_CONVERSION);
                             }
+                            if (start < index) {
+                                resultParts.add(new int[]{expressionType, valueIndex, start, index - 1, 0});
+                            }
+                            expressionType = TOKEN_TYPE_EXPRESSION;
                             state = STATE_EXPRESSION;
                             start = index + 1;
                             break;
@@ -367,8 +418,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                     case STATE_TEXT:
                         if (start < index) {
                             //handle the end of the string
-                            resultParts.add(new int[]{TYPE_STRING, valueIndex, start+3, index+3});
-//                            addString(value, start, index, resultParts);
+                            resultParts.add(new int[]{TOKEN_TYPE_STRING, valueIndex, start, index});
                         }
                         break;
                     case STATE_AFTER_CLOSE_BRACE: {
@@ -378,78 +428,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                 }
             }
         }
-        return numberOfExpressions;
-    }
-    
-    private int processValuesParts(List<int[]> parts, List<String> result, int from, int to) {
-        int numberOfExpressions = 0;
-        String text = "";
-        String expression = "";
-        for (int index = from; index < to; index++ ) {
-            int[]part = parts.get(index);
-            if (part[0] == TYPE_STRING) {
-                text = text + values[part[1]].substring(part[2], part[3]);
-            } else {
-                if (!text.isEmpty()) {
-                    result.add(NORMAL_PREFIX + text);
-                    text = "";
-                }
-                expression = "format(";
-                switch(part[0]) {
-                    case TYPE_EXPRESSION_ASCII:
-                        expression += "asci("; break;
-                    case TYPE_EXPRESSION_REPR:
-                        expression += "repr("; break;
-                    case TYPE_EXPRESSION_STR:
-                        expression += "str("; break;
-                }
-                expression += "(" + values[part[1]].substring(part[2], part[3]) + ")";
-                if (part[0] != TYPE_EXPRESSION) {
-                    expression += ")";
-                }
-                if (part[4] == 0) {
-                    expression += ")";
-                } else {
-                    expression += ",(";
-                    List<String> specifierParts = new ArrayList<> ();
-                    processValuesParts(parts, specifierParts, index + 1, index + 1 + part[4]);
-                    boolean first = true;
-                    for (String specifierPart : specifierParts) {
-                        if (first) {
-                            first = false;
-                        } else {
-                            expression += "+";
-                        }
-                        if (specifierPart.startsWith(NORMAL_PREFIX)) {
-                            expression += "\"" + specifierPart.substring(NORMAL_PREFIX.length()) + "\"";
-                        } else {
-                            expression += specifierPart.substring(FORMAT_STRING_PREFIX.length());
-                        }
-                    }
-                    index = index + 1 + part[4];
-                    expression += "))";
-                }
-                result.add(FORMAT_STRING_PREFIX + expression);
-                numberOfExpressions++;
-            }
-
-        }
-        if (!text.isEmpty()) {
-            result.add(NORMAL_PREFIX + text);
-        }
-        return numberOfExpressions;
-    }
-    
-//    private static int topParser(StringFormatLiteralNode node, List<Object> resultParts, VirtualFrame frame) {
-    private static void addString(String value, int start, int end, List<Object> parts) {
-        String text = value.substring(start, end);
-        int currentLen = parts.size();
-        int lastIndex = currentLen - 1;
-        if (currentLen > 0 && parts.get(lastIndex) instanceof String) {
-            parts.set(lastIndex, parts.get(lastIndex) + text);
-        } else {
-            parts.add(text);
-        }
+        return resultParts;
     }
     
     private static void raiseInvalidSyntax(FormatStringLiteralNode node, String message) {

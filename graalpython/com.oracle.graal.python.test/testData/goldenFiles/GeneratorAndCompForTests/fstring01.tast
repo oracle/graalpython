@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                     ExpressionStatementNode SourceSection: [34,43]`f'{name}'`
                                       YieldNode SourceSection: [34,43]`f'{name}'`
                                         flagSlot: 0
-                                        StringFormatLiteralNode SourceSection: [34,43]`f'{name}'`
+                                        FormatStringLiteralNode SourceSection: [34,43]`f'{name}'`
                                         GeneratorAccessNode SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: name

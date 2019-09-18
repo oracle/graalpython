@@ -3658,7 +3658,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           CachedCallNodeGen SourceSection: None
                                                             CreateArgumentsNodeGen SourceSection: None
                                                             CallDispatchNodeGen SourceSection: None
-                                                          StringLiteralNode SourceSection: [14962,15014]`f'  [Previous line r...`
+                                                          FormatStringLiteralNode SourceSection: [14962,15014]`f'  [Previous line r...`
                                                           GetCallAttributeNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [14948,14954]`result`
                                                               Frame: [1,result,Illegal]
@@ -3929,7 +3929,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             CachedCallNodeGen SourceSection: None
                                               CreateArgumentsNodeGen SourceSection: None
                                               CallDispatchNodeGen SourceSection: None
-                                            StringLiteralNode SourceSection: [15723,15775]`f'  [Previous line r...`
+                                            FormatStringLiteralNode SourceSection: [15723,15775]`f'  [Previous line r...`
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [15709,15715]`result`
                                                 Frame: [1,result,Illegal]

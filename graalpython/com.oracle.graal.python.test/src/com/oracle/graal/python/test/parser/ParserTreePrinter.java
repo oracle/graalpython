@@ -649,7 +649,13 @@ public class ParserTreePrinter implements NodeVisitor {
                 if (printFormatStringLiteralDetail && node instanceof FormatStringLiteralNode) {
                     indent(level);
                     sb.append("Values: ");
-                    add(((FormatStringLiteralNode) node).getValues());
+                    
+                    String[] values = new String[((FormatStringLiteralNode) node).getValues().length];
+                    int index = 0;
+                    for (FormatStringLiteralNode.StringPart part : ((FormatStringLiteralNode) node).getValues()) {
+                        values[index++] = part.isFormatString() ? "<f>" + part.getText() : "<n>" + part.getText();
+                    }
+                    add(values);
                     newLine();
                 }
             }
