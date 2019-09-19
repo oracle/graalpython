@@ -411,7 +411,8 @@ public class FormatStringLiteralNode extends LiteralNode {
                                 case '\t':
                                 case '\u000b':
                                 case '\\':
-                                    // this is not very nice. These chars comes from StringUtils.unescapeJavaString().
+                                    // this is not very nice. These chars comes from
+                                    // StringUtils.unescapeJavaString().
                                     // Probably we shouldn't escape characters in expresion?
                                     raiseInvalidSyntax(node, ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION);
                                     break;
