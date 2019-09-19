@@ -23,21 +23,15 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.test.parser.ParserTestBase;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import java.util.ArrayList;
-import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.nodes.NodeVisitor;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
