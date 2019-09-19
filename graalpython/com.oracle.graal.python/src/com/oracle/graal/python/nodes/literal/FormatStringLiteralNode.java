@@ -59,6 +59,7 @@ public class FormatStringLiteralNode extends LiteralNode {
     static final String ERROR_MESSAGE_INVALID_CONVERSION = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
     static final String ERROR_MESSAGE_UNTERMINATED_STRING = "f-string: unterminated string";
     static final String ERROR_MESSAGE_INVALID_SYNTAX = "f-string: invalid syntax";
+    static final String ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION = "f-string expression part cannot include a backslash";
 
     private static final String EMPTY_STRING = "";
 
@@ -401,6 +402,18 @@ public class FormatStringLiteralNode extends LiteralNode {
                                         }
                                         index++;
                                     }
+                                    break;
+                                case '\n':
+                                case '\b':
+                                case '\u0007':
+                                case '\r':
+                                case '\f':
+                                case '\t':
+                                case '\u000b':
+                                case '\\':
+                                    // this is not very nice. These chars comes from StringUtils.unescapeJavaString().
+                                    // Probably we shouldn't escape characters in expresion?
+                                    raiseInvalidSyntax(node, ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION);
                                     break;
                                 default:
                                     break;
