@@ -148,7 +148,7 @@ public class FormatStringLiteralNode extends LiteralNode {
     }
 
     @CompilerDirectives.TruffleBoundary
-    private void addToResult(StringBuilder result, Object part) {
+    private static void addToResult(StringBuilder result, Object part) {
         result.append(part);
     }
 

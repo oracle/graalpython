@@ -213,14 +213,15 @@ public final class PythonNodeFactory {
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Frame currentFrame) {
         Node result;
         boolean isGen = false;
-        if (currentFrame != null && PArguments.getGeneratorFrameSafe(currentFrame) != null) {
-            currentFrame = PArguments.getGeneratorFrame(currentFrame);
+        Frame useFrame = currentFrame;
+        if (useFrame != null && PArguments.getGeneratorFrameSafe(useFrame) != null) {
+            useFrame = PArguments.getGeneratorFrame(useFrame);
             isGen = true;
-            scopeEnvironment.setCurrentScope(new ScopeInfo("evalgen", ScopeKind.Generator, currentFrame.getFrameDescriptor(), scopeEnvironment.getGlobalScope()));
+            scopeEnvironment.setCurrentScope(new ScopeInfo("evalgen", ScopeKind.Generator, useFrame.getFrameDescriptor(), scopeEnvironment.getGlobalScope()));
         } else {
             scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         }
-        scopeEnvironment.setFreeVarsInRootScope(currentFrame);
+        scopeEnvironment.setFreeVarsInRootScope(useFrame);
         FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source);
         if (isGen) {
             factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source, factoryVisitor);
@@ -230,7 +231,7 @@ public final class PythonNodeFactory {
                         : parserSSTResult instanceof BlockSSTNode
                                         ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
                                         : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
-        FrameDescriptor fd = currentFrame == null ? null : currentFrame.getFrameDescriptor();
+        FrameDescriptor fd = useFrame == null ? null : useFrame.getFrameDescriptor();
         switch (mode) {
             case Eval:
                 scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
@@ -311,35 +312,4 @@ public final class PythonNodeFactory {
         }
     }
 
-    // public static class DocExtractor {
-    //
-    //
-    // public StringLiteralNode extract(StatementNode node) {
-    // if (node instanceof ExpressionNode.ExpressionStatementNode) {
-    // return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
-    // } else if (node instanceof BaseBlockNode) {
-    // StatementNode[] statements = ((BaseBlockNode)node).getStatements();
-    // if (statements != null && statements.length > 0) {
-    // return extract(statements[0]);
-    // }
-    // return null;
-    // }
-    // return null;
-    // }
-    //
-    // public StringLiteralNode extract(ExpressionNode node) {
-    // if (node instanceof StringLiteralNode) {
-    // return (StringLiteralNode) node;
-    // } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
-    // return extract(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
-    // } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
-    // StatementNode[] sideEffects =
-    // ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
-    // if (sideEffects != null && sideEffects.length > 0) {
-    // return extract(sideEffects[0]);
-    // }
-    // }
-    // return null;
-    // }
-    // }
 }

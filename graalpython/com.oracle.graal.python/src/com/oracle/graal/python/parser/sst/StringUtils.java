@@ -142,7 +142,7 @@ public class StringUtils {
 
             text = text.substring(strStartIndex, strEndIndex);
             if (isBytes) {
-                if (sb != null) {
+                if (sb != null || isFormatString) {
                     throw errors.raise(SyntaxError, CANNOT_MIX_MESSAGE);
                 }
                 if (bb == null) {
