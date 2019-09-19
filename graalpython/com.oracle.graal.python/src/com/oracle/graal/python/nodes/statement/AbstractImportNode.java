@@ -54,18 +54,23 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class AbstractImportNode extends StatementNode {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child PythonObjectFactory objectFactory;
 
+    private final BranchProfile emulatesJython = BranchProfile.create();
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
     @Child private PassCaughtExceptionNode passExceptionNode;
@@ -122,7 +127,38 @@ public abstract class AbstractImportNode extends StatementNode {
                 return builtinModule;
             }
         }
+        Env env = getContext().getEnv();
+        if (env.isHostLookupAllowed() && PythonOptions.getOption(env, PythonOptions.EmulateJython)) {
+            emulatesJython.enter();
+            forceClassloadingOnImport(name, fromList);
+        }
         return __import__(frame, name, globals, fromList, level);
+    }
+
+    /**
+     * Because of how Jython allows you to import classes that have not been
+     * loaded, yet, we need attempt to load types here, while we have the full
+     * string available. this will ensure that if there is such a Java class,
+     * its package will have been initialized and the importer code in java.py
+     * can find it.
+     */
+    @TruffleBoundary
+    private void forceClassloadingOnImport(String name, String[] fromList) {
+        Env env = getContext().getEnv();
+        try {
+            env.lookupHostSymbol(name);
+        } catch (RuntimeException e) {
+            // ignore this, that's fine
+        }
+        for (String potentialClass : fromList) {
+            try {
+                env.lookupHostSymbol(name + "." + potentialClass);
+            } catch (RuntimeException e) {
+                continue;
+            }
+            // if we got here, we can stop. the package was loaded
+            break;
+        }
     }
 
     Object __import__(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
