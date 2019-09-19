@@ -111,10 +111,6 @@ public class FormatStringLiteralNode extends LiteralNode {
         if (parsedCorrectly && tokens == null) {
             // was not parsed yet
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            for (StringPart part : values) {
-                System.out.print(part.isFormatString ? "'" + part.text + "' " : "f'" + part.text + "' ");
-            }
-            System.out.println("");
             // create tokens
             tokens = createTokens(this, this.values, true);
             // create sources from tokens, that marks expressions
