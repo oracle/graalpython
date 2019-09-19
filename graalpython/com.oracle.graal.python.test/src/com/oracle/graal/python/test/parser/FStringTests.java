@@ -48,67 +48,68 @@ public class FStringTests extends ParserTestBase {
     public FStringTests() {
         printFormatStringLiteralValues = true;
     }
-    
+
     @Test
     public void twoStrings01() throws Exception {
         checkTreeResult("'123'  '456'");
     }
-    
+
     @Test
     public void twoStrings02() throws Exception {
         checkTreeResult("f'123'  '456'");
     }
-    
+
     @Test
     public void twoStrings03() throws Exception {
         checkTreeResult("'123'  f'456'");
     }
-    
+
     @Test
     public void twoStrings04() throws Exception {
         checkTreeResult("f'123'  f'456'");
     }
-    
+
     @Test
     public void funcDoc01() throws Exception {
         checkTreeResult("def fn(): '1234' f'567'; pass");
     }
-    
+
     @Test
     public void funcDoc02() throws Exception {
         checkTreeResult("def fn(): '1234' '567'; pass");
     }
-    
+
     @Test
     public void funcDoc03() throws Exception {
         checkTreeResult("def fn(): f'1234'; pass");
     }
-    
+
     @Test
     public void funcDoc04() throws Exception {
         checkTreeResult("def fn(): '123' f'456' '789'; pass");
     }
-    
+
     @Test
     public void topLevelParser01() throws Exception {
         checkTreeResult(
-                "name = 'Pepa'\n" +
-                "print(f\"hello {name}\")");
+                        "name = 'Pepa'\n" +
+                                        "print(f\"hello {name}\")");
     }
-    
+
     @Test
     public void topLevelParser02() throws Exception {
         checkTreeResult(
-                "''.join(f'{name}' for name in ['Pepa', 'Pavel'])");
+                        "''.join(f'{name}' for name in ['Pepa', 'Pavel'])");
     }
-    
+
     @Test
     public void moreValues01() throws Exception {
         checkTreeResult("'123' '456' f'789' '0'");
     }
-    
+
     @Test
     public void moreValues02() throws Exception {
-        checkTreeResult("'1' '2' '3' f'4' f'5' '6' '7' f'8' '9' '0'");    }
-    
+        checkTreeResult("'1' '2' '3' f'4' f'5' '6' '7' f'8' '9' '0'");
+    }
+
 }

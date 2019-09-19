@@ -666,7 +666,7 @@ public final class Python3Core implements PythonCore {
         };
         throw raiseInvalidSyntax(location, message, arguments);
     }
-    
+
     @Override
     public RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
         PBaseException instance;

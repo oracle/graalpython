@@ -43,43 +43,42 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class FormatStringTests extends ParserTestBase {
-    
-    
+
     @Test
     public void empty() throws Exception {
         testFormatString("f''", "");
     }
-    
+
     @Test
     public void justBraces() throws Exception {
         testFormatString("f'{{}}'", "{}");
     }
-    
+
     @Test
     public void doubleBrace01() throws Exception {
         testFormatString("f'{{name}}'", "{name}");
     }
-    
+
     @Test
     public void doubleBrace02() throws Exception {
         testFormatString("f'Hi {{name}}'", "Hi {name}");
     }
-    
+
     @Test
     public void doubleBrace03() throws Exception {
         testFormatString("f'{{name}} first'", "{name} first");
     }
-    
+
     @Test
     public void doubleBrace04() throws Exception {
         testFormatString("f'Hi {{name}} first'", "Hi {name} first");
     }
-    
+
     @Test
     public void doubleBrace05() throws Exception {
         testFormatString("f'{{'", "{");
     }
-    
+
     @Test
     public void doubleBrace06() throws Exception {
         testFormatString("f'a{{'", "a{");
@@ -169,12 +168,12 @@ public class FormatStringTests extends ParserTestBase {
     public void doubleBrace23() throws Exception {
         testFormatString("f'}}{{{10}'", "}{+format((10))");
     }
-    
+
     @Test
     public void doubleBrace24() throws Exception {
         testFormatString("f'}}a{{{10}'", "}a{+format((10))");
     }
-     
+
     @Test
     public void doubleBrace25() throws Exception {
         testFormatString("f'{10}{{'", "format((10))+{");
@@ -194,7 +193,7 @@ public class FormatStringTests extends ParserTestBase {
     public void doubleBrace28() throws Exception {
         testFormatString("f'{10}}}a{{'", "format((10))+}a{");
     }
-    
+
     @Test
     public void quotes01() throws Exception {
         testFormatString("f'{\"{{}}\"}'", "format((\"{{}}\"))");
@@ -204,93 +203,92 @@ public class FormatStringTests extends ParserTestBase {
     public void parser01() throws Exception {
         testFormatString("f'{name}'", "format((name))");
     }
-    
+
     @Test
     public void parser02() throws Exception {
         testFormatString("f'name'", "name");
     }
-    
+
     @Test
     public void parser03() throws Exception {
         testFormatString("f'First: {name}'", "First: +format((name))");
     }
-    
+
     @Test
     public void parser04() throws Exception {
         testFormatString("f'{name} was here'", "format((name))+ was here");
     }
-    
+
     @Test
     public void parser05() throws Exception {
         testFormatString("f'It {name} was'", "It +format((name))+ was");
     }
-    
+
     @Test
     public void str01() throws Exception {
         testFormatString("f'{name!s}'", "format(str((name)))");
     }
-    
+
     @Test
     public void repr01() throws Exception {
         testFormatString("f'{name!r}'", "format(repr((name)))");
     }
-    
+
     @Test
     public void ascii01() throws Exception {
         testFormatString("f'{name!a}'", "format(ascii((name)))");
     }
-    
+
     @Test
     public void emptyExpression01() throws Exception {
         checkSyntaxError("f'{}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
-    
+
     @Test
     public void emptyExpression02() throws Exception {
         checkSyntaxError("f'start{}end'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
-    
+
     @Test
     public void emptyExpression03() throws Exception {
         checkSyntaxError("f'start{}}end'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
-    
+
     @Test
     public void emptyExpression04() throws Exception {
         checkSyntaxError("f'start{{{}}}end'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
-    
+
     @Test
     public void singleBracket01() throws Exception {
         checkSyntaxError("f'}'", FormatStringLiteralNode.ERROR_MESSAGE_SINGLE_BRACE);
     }
-    
+
     @Test
     public void singleBracket02() throws Exception {
         checkSyntaxError("f'start}end'", FormatStringLiteralNode.ERROR_MESSAGE_SINGLE_BRACE);
     }
-    
+
     @Test
     public void singleBracket03() throws Exception {
         checkSyntaxError("f'start{{}end'", FormatStringLiteralNode.ERROR_MESSAGE_SINGLE_BRACE);
     }
-    
+
     @Test
     public void spaces01() throws Exception {
         testFormatString("f'{     {}}'", "format((     {}))");
     }
-    
+
     @Test
     public void spaces02() throws Exception {
         testFormatString("f'{     {}                 }'", "format((     {}                 ))");
     }
-    
+
     @Test
     public void innerExp01() throws Exception {
         testFormatString("f'result: {value:{width}.{precision}}'", "result: +format((value),(format((width))+\".\"+format((precision))))");
     }
-    
-    
+
     private void checkSyntaxError(String text, String expectedMessage) throws Exception {
         try {
             testFormatString(text, "Expected Error: " + expectedMessage);
@@ -298,14 +296,14 @@ public class FormatStringTests extends ParserTestBase {
             Assert.assertEquals("SyntaxError: " + expectedMessage, e.getMessage());
         }
     }
-    
+
     private void testFormatString(String text, String expected) throws Exception {
         VirtualFrame frame = Truffle.getRuntime().createVirtualFrame(new Object[8], new FrameDescriptor());
-        
+
         Node parserResult = parseNew(text, "<fstringtest>", PythonParser.ParserMode.InlineEvaluation, frame);
-        
+
         Assert.assertTrue("The source has to be just fstring", parserResult instanceof FormatStringLiteralNode);
-        FormatStringLiteralNode fsl = (FormatStringLiteralNode)parserResult;
+        FormatStringLiteralNode fsl = (FormatStringLiteralNode) parserResult;
         List<int[]> tokens = FormatStringLiteralNode.createTokens(fsl, fsl.getValues(), true);
         FormatStringLiteralNode.StringPart[] fslParts = fsl.getValues();
         String[] expressions = FormatStringLiteralNode.createExpressionSources(fslParts, tokens);
@@ -314,22 +312,22 @@ public class FormatStringTests extends ParserTestBase {
         boolean first = true;
         boolean wasLastString = true;
         for (int index = 0; index < tokens.size(); index++) {
-           int[] token = tokens.get(index);
-           if (first) {
-               first = false;
-           } else if (!(wasLastString && token[0]== FormatStringLiteralNode.TOKEN_TYPE_STRING)){
-               actual.append("+");
-           }
-           if (token[0] == FormatStringLiteralNode.TOKEN_TYPE_STRING) {
-               actual.append(fslParts[token[1]].getText().substring(token[2], token[3]));
-               wasLastString = true;
-           } else {
-               actual.append(expressions[expressionsIndex]);
-               index += token[4];
-               wasLastString = false;
-           }
+            int[] token = tokens.get(index);
+            if (first) {
+                first = false;
+            } else if (!(wasLastString && token[0] == FormatStringLiteralNode.TOKEN_TYPE_STRING)) {
+                actual.append("+");
+            }
+            if (token[0] == FormatStringLiteralNode.TOKEN_TYPE_STRING) {
+                actual.append(fslParts[token[1]].getText().substring(token[2], token[3]));
+                wasLastString = true;
+            } else {
+                actual.append(expressions[expressionsIndex]);
+                index += token[4];
+                wasLastString = false;
+            }
         }
         Assert.assertEquals(expected, actual.toString());
     }
-     
+
 }

@@ -57,7 +57,7 @@ import java.util.List;
 public class StringUtils {
 
     private static final String CANNOT_MIX_MESSAGE = "cannot mix bytes and nonbytes literals";
-    
+
     public static StringLiteralNode extractDoc(StatementNode node) {
         if (node instanceof ExpressionNode.ExpressionStatementNode) {
             return extractDoc(((ExpressionNode.ExpressionStatementNode) node).getExpression());
@@ -109,12 +109,12 @@ public class StringUtils {
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
-        List<FormatStringLiteralNode.StringPart> formatStrings =  null;
+        List<FormatStringLiteralNode.StringPart> formatStrings = null;
         for (String text : strings) {
             boolean isRaw = false;
             boolean isBytes = false;
             boolean isFormat = false;
-            
+
             int strStartIndex = 1;
             int strEndIndex = text.length() - 1;
 
@@ -186,13 +186,14 @@ public class StringUtils {
                 formatStrings.add(new FormatStringLiteralNode.StringPart(sb.toString(), false));
             }
             return nodeFactory.createFormatStringLiteral(formatStrings.toArray(new FormatStringLiteralNode.StringPart[formatStrings.size()]));
-        } if (sb != null) {
+        }
+        if (sb != null) {
             return nodeFactory.createStringLiteral(sb.toString());
         } else {
             return nodeFactory.createStringLiteral("");
         }
     }
-    
+
     public static String unescapeJavaString(String st) {
         if (st.indexOf("\\") == -1) {
             return st;

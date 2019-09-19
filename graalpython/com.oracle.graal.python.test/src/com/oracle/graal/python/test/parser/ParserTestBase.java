@@ -76,7 +76,7 @@ public class ParserTestBase {
      * tree.
      */
     protected boolean correctIssues = true;
-    
+
     protected boolean printDifferenceDetails = false;
     protected boolean printFormatStringLiteralValues = false;
 
@@ -424,7 +424,7 @@ public class ParserTestBase {
         }
         return oldLine;
     }
-    
+
     private static String correctStringLiteral(String oldLine, String newLine) {
         int oldStart = oldLine.indexOf("StringLiteralNode");
         int newStart = newLine.indexOf("FormatStringLiteralNode");
