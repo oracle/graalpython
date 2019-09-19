@@ -65,8 +65,7 @@ class JavaPackageLoader:
                         try:
                             return type(modname + key)
                         except KeyError:
-                            # allow walking through not-yet-classloaded packages
-                            return JavaPackageLoader._create_module(loadname)
+                            pass
                 raise AttributeError(key)
             return __getattr__
     else:
@@ -133,20 +132,12 @@ class JavaImportFinder:
         def find_spec(fullname, path, target=None):
             if JavaPackageLoader.is_java_package(fullname):
                 return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
-            elif path == __path__:
-                try:
-                    # do not rely on name conventions. check if it's a type,
-                    # otherwise treat it as a not-yet-classloaded package
-                    type(fullname)
-                    return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
-                except KeyError:
-                    return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
             else:
                 try:
                     type(fullname)
                     return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
                 except KeyError:
-                    pass # when importing from the implicit top-level java module, we only allow types
+                    pass
     else:
         @staticmethod
         def find_spec(fullname, path, target=None):
