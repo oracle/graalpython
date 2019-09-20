@@ -298,6 +298,16 @@ public class FormatStringTests extends ParserTestBase {
         testFormatString("f'result: {value:{width}.{precision}}'", "result: +format((value),(format((width))+\".\"+format((precision))))");
     }
 
+    @Test
+    public void missingSpecifier01() throws Exception {
+        testFormatString("f'{x:}'", "format((x))");
+    }
+    
+    @Test
+    public void missingSpecifier02() throws Exception {
+        testFormatString("f'{x!s:}'", "format(str((x)))");
+    }
+    
     private void checkSyntaxError(String text, String expectedMessage) throws Exception {
         try {
             testFormatString(text, "Expected Error: " + expectedMessage);

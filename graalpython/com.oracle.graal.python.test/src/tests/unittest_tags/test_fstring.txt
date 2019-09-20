@@ -12,10 +12,10 @@
 *TestCase.test_literal
 *TestCase.test_locals
 *TestCase.test_loop
+*TestCase.test_missing_format_spec
 *TestCase.test_missing_variable
 *TestCase.test_multiple_vars
 *TestCase.test_nested_fstrings
-*TestCase.test_newlines_in_expressions
 *TestCase.test_shadowed_global
 *TestCase.test_side_effect_order
 *TestCase.test_str_format_differences

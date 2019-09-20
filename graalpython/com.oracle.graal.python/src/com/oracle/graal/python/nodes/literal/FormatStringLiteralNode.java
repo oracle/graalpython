@@ -383,7 +383,14 @@ public class FormatStringLiteralNode extends LiteralNode {
                                     break;
                                 case ':':
                                     int[] specifierValue;
-                                    specifierValue = new int[]{expressionType, valueIndex, start, index, 0};
+                                    if (start < index) {
+                                        // cases like {3:spec}
+                                        specifierValue = new int[]{expressionType, valueIndex, start, index, 0}; 
+                                        resultParts.add(specifierValue);
+                                    } else {
+                                        // cases like {3!s:spec}
+                                        specifierValue = resultParts.get(resultParts.size() - 1);
+                                    }
                                     index++;
                                     start = index;
                                     int braceLevelInSpecifier = 0;
@@ -394,14 +401,15 @@ public class FormatStringLiteralNode extends LiteralNode {
                                         } else if (ch == '}') {
                                             braceLevelInSpecifier--;
                                             if (braceLevelInSpecifier == -1) {
-                                                int[][] specifierParts = createTokens(node, new StringPart[]{new StringPart(text.substring(start, index), true)}, false);
-                                                specifierValue[4] = specifierParts.length;
-                                                resultParts.add(specifierValue);
-                                                for (int[] part : specifierParts) {
-                                                    part[1] = valueIndex;
-                                                    part[2] += start;
-                                                    part[3] += start;
-                                                    resultParts.add(part);
+                                                if (start < index) {
+                                                    int[][] specifierParts = createTokens(node, new StringPart[]{new StringPart(text.substring(start, index), true)}, false);
+                                                    specifierValue[4] = specifierParts.length;
+                                                    for (int[] part : specifierParts) {
+                                                        part[1] = valueIndex;
+                                                        part[2] += start;
+                                                        part[3] += start;
+                                                        resultParts.add(part);
+                                                    }
                                                 }
                                                 start = index + 1;
                                                 state = STATE_TEXT;
