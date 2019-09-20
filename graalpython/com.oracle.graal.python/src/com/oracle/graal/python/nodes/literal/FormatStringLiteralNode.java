@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import java.util.ArrayList;
@@ -92,11 +93,8 @@ public class FormatStringLiteralNode extends LiteralNode {
     }
 
     private final StringPart[] values;
-
     @Children ExpressionNode[] expressions;
-
-    @CompilerDirectives.CompilationFinal private List<int[]> tokens;
-    // @CompilerDirectives.CompilationFinal private Object[] splitValue;
+    @CompilerDirectives.CompilationFinal(dimensions = 2) private int[][] tokens;
     private boolean parsedCorrectly;
 
     public FormatStringLiteralNode(StringPart[] values) {
@@ -112,22 +110,7 @@ public class FormatStringLiteralNode extends LiteralNode {
         if (parsedCorrectly && tokens == null) {
             // was not parsed yet
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            // create tokens
-            tokens = createTokens(this, this.values, true);
-            // create sources from tokens, that marks expressions
-            String[] expressionSources = createExpressionSources(values, tokens);
-            // and create the expressions
-            ExpressionNode[] exprs = new ExpressionNode[expressionSources.length];
-            try {
-                for (int i = 0; i < expressionSources.length; i++) {
-                    exprs[i] = createExpression(expressionSources[i], frame);
-                }
-                expressions = insert(exprs);
-            } catch (Exception e) {
-                // we don't need to keep the expressions, because they will not be executed
-                parsedCorrectly = false;
-                raiseInvalidSyntax(this, ERROR_MESSAGE_INVALID_SYNTAX);
-            }
+            parse(frame);
         }
         if (!parsedCorrectly) {
             // there was error during obtaining expressions -> don't execute and raise the same
@@ -136,8 +119,8 @@ public class FormatStringLiteralNode extends LiteralNode {
         }
         StringBuilder result = new StringBuilder();
         int exprIndex = 0;
-        for (int i = 0; i < tokens.size(); i++) {
-            int[] token = tokens.get(i);
+        for (int i = 0; i < tokens.length; i++) {
+            int[] token = tokens[i];
             if (token[0] == TOKEN_TYPE_STRING) {
                 addToResult(result, values[token[1]].text.substring(token[2], token[3]));
             } else {
@@ -145,12 +128,37 @@ public class FormatStringLiteralNode extends LiteralNode {
                 i += token[4];
             }
         }
-        return result.toString();
+        return getText(result);
     }
 
     @CompilerDirectives.TruffleBoundary
     private static void addToResult(StringBuilder result, Object part) {
         result.append(part);
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    private static String getText(StringBuilder result) {
+        return result.toString();
+    }
+
+    @ExplodeLoop
+    private void parse(VirtualFrame frame) {
+        // create tokens
+        tokens = createTokens(this, this.values, true);
+        // create sources from tokens, that marks expressions
+        String[] expressionSources = createExpressionSources(values, tokens, 0, tokens.length);
+        // and create the expressions
+        ExpressionNode[] exprs = new ExpressionNode[expressionSources.length];
+        try {
+            for (int i = 0; i < expressionSources.length; i++) {
+                exprs[i] = createExpression(expressionSources[i], frame);
+            }
+            expressions = insert(exprs);
+        } catch (Exception e) {
+            // we don't need to keep the expressions, because they will not be executed
+            parsedCorrectly = false;
+            raiseInvalidSyntax(this, ERROR_MESSAGE_INVALID_SYNTAX);
+        }
     }
 
     public StringPart[] getValues() {
@@ -162,10 +170,10 @@ public class FormatStringLiteralNode extends LiteralNode {
     }
 
     // protected for testing
-    protected static String[] createExpressionSources(StringPart[] values, List<int[]> tokens) {
+    protected static String[] createExpressionSources(StringPart[] values, int[][] tokens, int startIndex, int stopIndex) {
         List<String> result = new ArrayList<>();
-        for (int index = 0; index < tokens.size(); index++) {
-            int[] token = tokens.get(index);
+        for (int index = startIndex; index < stopIndex; index++) {
+            int[] token = tokens[index];
             if (token[0] != TOKEN_TYPE_STRING) {
                 // processing only expressions
                 StringBuilder expression = new StringBuilder("format(");
@@ -191,14 +199,14 @@ public class FormatStringLiteralNode extends LiteralNode {
                     // the expression has token[4] specifiers parts
                     // obtains expressions in the format specifier
                     int indexPlusOne = index + 1;
-                    String[] specifierExpressions = createExpressionSources(values, tokens.subList(indexPlusOne, indexPlusOne + token[4]));
+                    String[] specifierExpressions = createExpressionSources(values, tokens, indexPlusOne, indexPlusOne + token[4]);
                     expression.append(",(");
                     boolean first = true;
                     int expressionIndex = 0;
                     // move the index after the format specifier
                     index = indexPlusOne + token[4];
                     for (int sindex = indexPlusOne; sindex < index; sindex++) {
-                        int[] stoken = tokens.get(sindex);
+                        int[] stoken = tokens[sindex];
                         if (first) {
                             first = false;
                         } else {
@@ -250,7 +258,7 @@ public class FormatStringLiteralNode extends LiteralNode {
      *            raised
      * @return a list of tokens
      */
-    protected static List<int[]> createTokens(FormatStringLiteralNode node, StringPart[] values, boolean topLevel) {
+    protected static int[][] createTokens(FormatStringLiteralNode node, StringPart[] values, boolean topLevel) {
         int index;
         int state = STATE_TEXT;
         int start = 0;
@@ -386,15 +394,15 @@ public class FormatStringLiteralNode extends LiteralNode {
                                         } else if (ch == '}') {
                                             braceLevelInSpecifier--;
                                             if (braceLevelInSpecifier == -1) {
-                                                List<int[]> specifierParts = createTokens(node, new StringPart[]{new StringPart(text.substring(start, index), true)}, false);
-                                                specifierValue[4] = specifierParts.size();
+                                                int[][] specifierParts = createTokens(node, new StringPart[]{new StringPart(text.substring(start, index), true)}, false);
+                                                specifierValue[4] = specifierParts.length;
                                                 resultParts.add(specifierValue);
                                                 for (int[] part : specifierParts) {
                                                     part[1] = valueIndex;
                                                     part[2] += start;
                                                     part[3] += start;
+                                                    resultParts.add(part);
                                                 }
-                                                resultParts.addAll(specifierParts);
                                                 start = index + 1;
                                                 state = STATE_TEXT;
                                                 break;
@@ -464,7 +472,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                 }
             }
         }
-        return resultParts;
+        return resultParts.toArray(new int[resultParts.size()][]);
     }
 
     private static void raiseInvalidSyntax(FormatStringLiteralNode node, String message) {

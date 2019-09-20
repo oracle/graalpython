@@ -313,15 +313,15 @@ public class FormatStringTests extends ParserTestBase {
 
         Assert.assertTrue("The source has to be just fstring", parserResult instanceof FormatStringLiteralNode);
         FormatStringLiteralNode fsl = (FormatStringLiteralNode) parserResult;
-        List<int[]> tokens = FormatStringLiteralNode.createTokens(fsl, fsl.getValues(), true);
+        int[][] tokens = FormatStringLiteralNode.createTokens(fsl, fsl.getValues(), true);
         FormatStringLiteralNode.StringPart[] fslParts = fsl.getValues();
-        String[] expressions = FormatStringLiteralNode.createExpressionSources(fslParts, tokens);
+        String[] expressions = FormatStringLiteralNode.createExpressionSources(fslParts, tokens, 0, tokens.length);
         int expressionsIndex = 0;
         StringBuilder actual = new StringBuilder();
         boolean first = true;
         boolean wasLastString = true;
-        for (int index = 0; index < tokens.size(); index++) {
-            int[] token = tokens.get(index);
+        for (int index = 0; index < tokens.length; index++) {
+            int[] token = tokens[index];
             if (first) {
                 first = false;
             } else if (!(wasLastString && token[0] == FormatStringLiteralNode.TOKEN_TYPE_STRING)) {
