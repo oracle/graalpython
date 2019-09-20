@@ -48,13 +48,25 @@ import importlib
 import sys
 
 
+def get_module_name(package_name):
+    non_standard_packages = {
+        'pyyaml':'pyaml',
+        'protobuf':'google.protobuf',
+        'python-dateutil':'dateutil',
+        'websocket-client':'websocket',
+    }
+    module_name = non_standard_packages.get(package_name, package_name)
+    return  module_name.replace('-', '_')
+
+
 def pip_package(name=None):
     def decorator(func):
         def wrapper(*args, **kwargs):
             _name = name if name else func.__name__
             try:
-                importlib.import_module(_name)
-                del sys.modules[_name]
+                module_name = get_module_name(_name)
+                importlib.import_module(module_name)
+                del sys.modules[module_name]
             except ImportError:
                 print("Installing required dependency: {}".format(_name))
                 func(*args, **kwargs)
