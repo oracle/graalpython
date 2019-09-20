@@ -285,12 +285,12 @@ public class FormatStringTests extends ParserTestBase {
 
     @Test
     public void spaces01() throws Exception {
-        testFormatString("f'{     {}}'", "format((     {}))");
+        testFormatString("f'{     {}}'", "format(({}))");
     }
 
     @Test
     public void spaces02() throws Exception {
-        testFormatString("f'{     {}                 }'", "format((     {}                 ))");
+        testFormatString("f'{     {}                 }'", "format(({}))");
     }
 
     @Test
@@ -302,12 +302,42 @@ public class FormatStringTests extends ParserTestBase {
     public void missingSpecifier01() throws Exception {
         testFormatString("f'{x:}'", "format((x))");
     }
-    
+
     @Test
     public void missingSpecifier02() throws Exception {
         testFormatString("f'{x!s:}'", "format(str((x)))");
     }
-    
+
+    @Test
+    public void missingExpression01() throws Exception {
+        checkSyntaxError("f'{!x}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+    }
+
+    @Test
+    public void missingExpression02() throws Exception {
+        checkSyntaxError("f'{     !x}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+    }
+
+    @Test
+    public void missingExpression03() throws Exception {
+        checkSyntaxError("f'{ !xr:a}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+    }
+
+    @Test
+    public void missingExpression04() throws Exception {
+        checkSyntaxError("f'{:x'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+    }
+
+    @Test
+    public void missingExpression05() throws Exception {
+        checkSyntaxError("f'{!'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+    }
+
+    @Test
+    public void missingExpression06() throws Exception {
+        checkSyntaxError("f'{10:{ }}'", FormatStringLiteralNode.ERROR_MESSAGE_EMPTY_EXPRESSION);
+    }
+
     private void checkSyntaxError(String text, String expectedMessage) throws Exception {
         try {
             testFormatString(text, "Expected Error: " + expectedMessage);

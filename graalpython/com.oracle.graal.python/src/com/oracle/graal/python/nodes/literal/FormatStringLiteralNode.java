@@ -144,7 +144,7 @@ public class FormatStringLiteralNode extends LiteralNode {
     @ExplodeLoop
     private void parse(VirtualFrame frame) {
         // create tokens
-        tokens = createTokens(this, this.values, true);
+        tokens = createTokens(this, values, true);
         // create sources from tokens, that marks expressions
         String[] expressionSources = createExpressionSources(values, tokens, 0, tokens.length);
         // and create the expressions
@@ -188,7 +188,8 @@ public class FormatStringLiteralNode extends LiteralNode {
                         expression.append("str(");
                         break;
                 }
-                expression.append("(").append(values[token[1]].text.substring(token[2], token[3])).append(")");
+                String exprSrc = values[token[1]].text.substring(token[2], token[3]).trim();
+                expression.append("(").append(exprSrc).append(")");
                 if (token[0] != TOKEN_TYPE_EXPRESSION) {
                     expression.append(")");
                 }
@@ -263,7 +264,6 @@ public class FormatStringLiteralNode extends LiteralNode {
         int state = STATE_TEXT;
         int start = 0;
 
-        int expressionType = TOKEN_TYPE_EXPRESSION;
         int braceLevel = 0;
         int braceLevelInExpression = 0;
         List<int[]> resultParts = new ArrayList<>(values.length);
@@ -306,7 +306,6 @@ public class FormatStringLiteralNode extends LiteralNode {
                                 default:
                                     index--;
                                     state = STATE_EXPRESSION;
-                                    expressionType = TOKEN_TYPE_EXPRESSION;
                                     braceLevelInExpression = 0;
                             }
                             break;
@@ -334,7 +333,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                                 case '}':
                                     if (braceLevelInExpression == 0) {
                                         if (start < index) {
-                                            resultParts.add(new int[]{expressionType, valueIndex, start, index, 0});
+                                            resultParts.add(createExpressionToken(node, values, valueIndex, start, index));
                                         }
                                         braceLevel--;
                                         state = STATE_TEXT;
@@ -385,10 +384,13 @@ public class FormatStringLiteralNode extends LiteralNode {
                                     int[] specifierValue;
                                     if (start < index) {
                                         // cases like {3:spec}
-                                        specifierValue = new int[]{expressionType, valueIndex, start, index, 0}; 
+                                        specifierValue = createExpressionToken(node, values, valueIndex, start, index);
                                         resultParts.add(specifierValue);
                                     } else {
                                         // cases like {3!s:spec}
+                                        if (resultParts.isEmpty()) {
+                                            raiseInvalidSyntax(node, ERROR_MESSAGE_EMPTY_EXPRESSION);
+                                        }
                                         specifierValue = resultParts.get(resultParts.size() - 1);
                                     }
                                     index++;
@@ -437,23 +439,21 @@ public class FormatStringLiteralNode extends LiteralNode {
                             }
                             break;
                         case STATE_AFTER_EXCLAMATION:
+                            int[] expressionToken = createExpressionToken(node, values, valueIndex, start, index - 1);
                             switch (ch) {
                                 case 's':
-                                    expressionType = TOKEN_TYPE_EXPRESSION_STR;
+                                    expressionToken[0] = TOKEN_TYPE_EXPRESSION_STR;
                                     break;
                                 case 'r':
-                                    expressionType = TOKEN_TYPE_EXPRESSION_REPR;
+                                    expressionToken[0] = TOKEN_TYPE_EXPRESSION_REPR;
                                     break;
                                 case 'a':
-                                    expressionType = TOKEN_TYPE_EXPRESSION_ASCII;
+                                    expressionToken[0] = TOKEN_TYPE_EXPRESSION_ASCII;
                                     break;
                                 default:
                                     raiseInvalidSyntax(node, ERROR_MESSAGE_INVALID_CONVERSION);
                             }
-                            if (start < index) {
-                                resultParts.add(new int[]{expressionType, valueIndex, start, index - 1, 0});
-                            }
-                            expressionType = TOKEN_TYPE_EXPRESSION;
+                            resultParts.add(expressionToken);
                             state = STATE_EXPRESSION;
                             start = index + 1;
                             break;
@@ -473,14 +473,35 @@ public class FormatStringLiteralNode extends LiteralNode {
                             resultParts.add(new int[]{TOKEN_TYPE_STRING, valueIndex, start, index});
                         }
                         break;
-                    case STATE_AFTER_CLOSE_BRACE: {
+                    case STATE_AFTER_CLOSE_BRACE:
                         raiseInvalidSyntax(node, ERROR_MESSAGE_SINGLE_BRACE);
                         break;
-                    }
+                    case STATE_AFTER_EXCLAMATION:
+                        createExpressionToken(node, values, valueIndex, start, index - 1);
+                        raiseInvalidSyntax(node, ERROR_MESSAGE_SINGLE_BRACE);
+                        break;
                 }
             }
         }
         return resultParts.toArray(new int[resultParts.size()][]);
+    }
+
+    private static int[] createExpressionToken(FormatStringLiteralNode node, StringPart[] values, int valueIndex, int start, int end) {
+        if (start >= end) {
+            raiseInvalidSyntax(node, ERROR_MESSAGE_EMPTY_EXPRESSION);
+        }
+        String value = values[valueIndex].text;
+        boolean onlyWhiteSpaces = true;
+        for (int index = start; index < end; index++) {
+            if (!Character.isWhitespace(value.charAt(index))) {
+                onlyWhiteSpaces = false;
+                break;
+            }
+        }
+        if (onlyWhiteSpaces) {
+            raiseInvalidSyntax(node, ERROR_MESSAGE_EMPTY_EXPRESSION);
+        }
+        return new int[]{TOKEN_TYPE_EXPRESSION, valueIndex, start, end, 0};
     }
 
     private static void raiseInvalidSyntax(FormatStringLiteralNode node, String message) {
