@@ -36,10 +36,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.LinkOption;
 import java.text.MessageFormat;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -145,7 +145,7 @@ public final class PythonContext {
 
     // A thread-local to store the full path to the currently active import statement, for Jython
     // compat
-    private final ThreadLocal<Stack<String>> currentImport = new ThreadLocal<>();
+    private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
@@ -729,10 +729,8 @@ public final class PythonContext {
 
     @TruffleBoundary
     public String getCurrentImport() {
-        Stack<String> ci = currentImport.get();
-        if (ci == null) {
-            return "";
-        } else if (ci.isEmpty()) {
+        ArrayDeque<String> ci = currentImport.get();
+        if (ci == null || ci.isEmpty()) {
             return "";
         } else {
             return ci.peek();
@@ -741,9 +739,9 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void pushCurrentImport(String object) {
-        Stack<String> ci = currentImport.get();
+        ArrayDeque<String> ci = currentImport.get();
         if (ci == null) {
-            ci = new Stack<>();
+            ci = new ArrayDeque<>();
             currentImport.set(ci);
         }
         ci.push(object);
