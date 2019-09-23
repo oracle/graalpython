@@ -53,7 +53,7 @@ SUITE_SULONG = mx.suite("sulong")
 # compatibility between Python versions
 PY3 = sys.version_info[0] == 3
 if PY3:
-    raw_input = input
+    raw_input = input # pylint: disable=redefined-builtin;
 
 
 def _get_core_home():

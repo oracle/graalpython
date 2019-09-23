@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -69,6 +70,7 @@ public abstract class AbstractImportNode extends StatementNode {
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
     @Child private PassCaughtExceptionNode passExceptionNode;
+    @CompilationFinal private Boolean emulateJython;
 
     public AbstractImportNode() {
         super();
@@ -122,7 +124,20 @@ public abstract class AbstractImportNode extends StatementNode {
                 return builtinModule;
             }
         }
-        return __import__(frame, name, globals, fromList, level);
+        if (emulateJython()) {
+            if (fromList.length > 0) {
+                getContext().pushCurrentImport(name + "." + fromList[0]);
+            } else {
+                getContext().pushCurrentImport(name);
+            }
+        }
+        try {
+            return __import__(frame, name, globals, fromList, level);
+        } finally {
+            if (emulateJython()) {
+                getContext().popCurrentImport();
+            }
+        }
     }
 
     Object __import__(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
@@ -136,6 +151,14 @@ public abstract class AbstractImportNode extends StatementNode {
                         new PKeyword("fromlist", factory().createTuple(fromList)),
                         new PKeyword("level", level)
         });
+    }
+
+    private boolean emulateJython() {
+        if (emulateJython == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            emulateJython = PythonOptions.getFlag(getContext(), PythonOptions.EmulateJython);
+        }
+        return emulateJython;
     }
 
     @Override

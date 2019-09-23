@@ -135,4 +135,5 @@ public abstract class BuiltinNames {
     // truffle specific builtins
     public static final String __BUILTIN__ = "__builtin__";
     public static final String __DUMP_TRUFFLE_AST__ = "__dump_truffle_ast__";
+    public static final String __JYTHON_CURRENT_IMPORT__ = "__jython_current_import__";
 }

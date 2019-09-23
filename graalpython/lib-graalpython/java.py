@@ -130,6 +130,16 @@ class JavaImportFinder:
     if sys.graal_python_jython_emulation_enabled:
         @staticmethod
         def find_spec(fullname, path, target=None):
+            # Because of how Jython allows you to import classes that have not
+            # been loaded, yet, we need attempt to load types with the full
+            # string. This will ensure that if there is such a Java class, its
+            # package will have been initialized and thus the is_java_package
+            # check below will work
+            try:
+                type(__jython_current_import__())
+            except KeyError:
+                pass
+            # continue normally with import
             if JavaPackageLoader.is_java_package(fullname):
                 return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
             else:
@@ -151,3 +161,8 @@ class JavaImportFinder:
 sys.meta_path.append(JavaImportFinder)
 if sys.graal_python_jython_emulation_enabled:
     __getattr__ = JavaPackageLoader._make_getattr("java")
+else:
+    # remove __jython_current_import__ function from builtins module
+    import builtins
+    del builtins.__jython_current_import__
+    del builtins

@@ -36,6 +36,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.LinkOption;
 import java.text.MessageFormat;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -141,6 +142,10 @@ public final class PythonContext {
     // The context-local resources
     private final PosixResources resources;
     private final AsyncHandler handler;
+
+    // A thread-local to store the full path to the currently active import statement, for Jython
+    // compat
+    private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
@@ -720,5 +725,31 @@ public final class PythonContext {
         }
         PythonLanguage.getLogger().log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
         return false;
+    }
+
+    @TruffleBoundary
+    public String getCurrentImport() {
+        ArrayDeque<String> ci = currentImport.get();
+        if (ci == null || ci.isEmpty()) {
+            return "";
+        } else {
+            return ci.peek();
+        }
+    }
+
+    @TruffleBoundary
+    public void pushCurrentImport(String object) {
+        ArrayDeque<String> ci = currentImport.get();
+        if (ci == null) {
+            ci = new ArrayDeque<>();
+            currentImport.set(ci);
+        }
+        ci.push(object);
+    }
+
+    @TruffleBoundary
+    public void popCurrentImport() {
+        assert currentImport.get() != null && currentImport.get().peek() != null : "invalid popCurrentImport without push";
+        currentImport.get().pop();
     }
 }
