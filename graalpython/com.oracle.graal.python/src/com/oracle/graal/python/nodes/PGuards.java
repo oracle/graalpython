@@ -84,12 +84,20 @@ import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PGuards {
 
     /**
      * Specialization guards.
      */
+
+    public static boolean stringEquals(String expected, String other, ConditionProfile profile) {
+        if (profile.profile(expected == other)) {
+            return true;
+        }
+        return expected.equals(other);
+    }
 
     public static boolean isSameObject(Object left, Object right) {
         return left == right;
