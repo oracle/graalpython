@@ -39,6 +39,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -141,6 +142,9 @@ public final class PythonContext {
     // The context-local resources
     private final PosixResources resources;
     private final AsyncHandler handler;
+
+    // A thread-local to store the full path to the currently active import statement, for Jython compat
+    private final ThreadLocal<Stack<String>> currentImport = ThreadLocal.withInitial(() -> new Stack<>());
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
@@ -720,5 +724,25 @@ public final class PythonContext {
         }
         PythonLanguage.getLogger().log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
         return false;
+    }
+
+    @TruffleBoundary
+    public String getCurrentImport() {
+        Stack<String> ci = currentImport.get();
+        if (ci.isEmpty()) {
+            return "";
+        } else {
+            return ci.peek();
+        }
+    }
+
+    @TruffleBoundary
+    public void pushCurrentImport(String object) {
+        currentImport.get().push(object);
+    }
+
+    @TruffleBoundary
+    public void popCurrentImport() {
+        currentImport.get().pop();
     }
 }

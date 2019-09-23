@@ -61,6 +61,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTIN__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DUMP_TRUFFLE_AST__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__JYTHON_CURRENT_IMPORT__;
 import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
@@ -1878,6 +1879,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         protected static boolean isFunction(Object callee) {
             return callee instanceof PFunction;
+        }
+    }
+
+    @Builtin(name = __JYTHON_CURRENT_IMPORT__, minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class CurrentImport extends PythonBuiltinNode {
+        @Specialization
+        String doIt() {
+            return getContext().getCurrentImport();
         }
     }
 
