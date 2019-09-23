@@ -506,3 +506,23 @@ def test_wrapped_string_get():
     a = 'test'
     dict = locals()
     assert dict['a']
+
+def test_concat():
+    r = {**{}}
+    assert len(r) == 0
+
+    r = {**{1:2}}
+    assert len(r) == 1
+    assert set(r.keys()) == {1}
+    assert set(r.values()) == {2}
+
+    r = {**{}, 1:2}
+    assert len(r) == 1
+    assert set(r.keys()) == {1}
+    assert set(r.values()) == {2}
+
+    r = {**{1:2}, 3:4, 6:8}
+    assert len(r) == 3
+    assert set(r.keys()) == {1, 3, 6}
+    assert set(r.values()) == {2, 4, 8}
+    
