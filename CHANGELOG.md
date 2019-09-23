@@ -21,7 +21,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Improve performance of our parser
 * Improve performance of catching exceptions when the exception does not leave the handler block and the traceback is not accessed
 * Improve performance of Java interop when Python objects are accessed from Java
-* Add a new `--python.EmulateJython` flag to support importing Java classes using normal Python import syntax when the package is known and to catch Java exceptions from Python code
+* Add a new `--python.EmulateJython` flag to support importing Java classes using normal Python import syntax and to catch Java exceptions from Python code
 * Update standard library to Python 3.7.4
 
 ## Version 19.2.0
