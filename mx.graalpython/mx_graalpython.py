@@ -735,7 +735,24 @@ def update_import(name, rev="origin/master", callback=None):
 
 
 def update_import_cmd(args):
-    """Update our mx imports"""
+    """Update our mx or overlay imports"""
+    if any("overlay" in arg for arg in args):
+        mx.log("Updating overlays")
+        dirs = os.listdir(os.path.join(SUITE.dir, ".."))
+        for d in dirs:
+            if d.startswith("graalpython"):
+                d = os.path.join(SUITE.dir, "..", d)
+                jsonnetfile = os.path.join(d, "ci.jsonnet")
+                if not os.path.exists(jsonnetfile):
+                    continue
+                overlaydir = os.path.join(d, "..", "ci-overlays")
+                if not os.path.exists(overlaydir):
+                    mx.abort("Overlays must be next to repo")
+                vc = mx.VC.get_vc(overlaydir)
+                tip = str(vc.tip(overlaydir)).strip()
+                with open(jsonnetfile, "w") as f:
+                    f.write('{ overlay: "%s" }\n' % tip)
+        return
     if not args:
         args = ["truffle"]
     if "sulong" in args:
