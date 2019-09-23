@@ -269,7 +269,7 @@ import java.util.Arrays;
             // We don't have to have new lines in the source section
             int tokenIndex = token.getTokenIndex();
             Token tmp = token;
-            while(tmp.getType() == NEWLINE && tokenIndex > -1) {
+            while(tmp.getType() == NEWLINE && tokenIndex > 0) {
                 tmp = getTokenStream().get(--tokenIndex);
             }
             stopIndex = tmp.getStopIndex();
@@ -280,17 +280,8 @@ import java.util.Arrays;
 
     /** Get the last offset of the context */
     private int getLastIndex(ParserRuleContext ctx) {
-        if (ctx.getStop() != null) {
-            return getStopIndex(ctx);
-        }
-        ParseTree pt = ctx.getChild(ctx.getChildCount() - 1);
-        if (pt instanceof TerminalNode) {
-	    return getStopIndex(((TerminalNode) pt).getSymbol());
-        }
-        if (pt instanceof RuleNode) {
-            return getStopIndex((RuleNode) pt);
-        }
-        return -1;
+    	// ignores ctx
+        return getStopIndex(this._input.get(this._input.index() - 1));
     }
 }
 
@@ -385,12 +376,12 @@ decorated:
 async_funcdef: ASYNC funcdef;
 funcdef
 :
-	'def' NAME parameters
+	'def' n=NAME parameters
 	(
 		'->' test
 	)? ':' 
 	{ 
-            String name = _localctx.NAME().getText(); 
+            String name = $n.getText(); 
             ScopeInfo enclosingScope = factory.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
             ScopeInfo functionScope = factory.createScope(name, ScopeInfo.ScopeKind.Function); 
@@ -1395,10 +1386,11 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
 				star_expr { push($star_expr.result); }
 			)
 		)*
-		','?
+		{ boolean comma = false; }
+		(',' { comma = true; } )?
 		{ 
                     SSTNode[] items = getArray(start, SSTNode[].class);
-                    if ($type == PythonBuiltinClassType.PTuple && items.length == 1 && !$ctx.getText().endsWith(",")) {
+                    if ($type == PythonBuiltinClassType.PTuple && items.length == 1 && !comma) {
                         $result = items[0];
                     } else {
                         $result = new CollectionSSTNode(items, $type, -1, -1); 
