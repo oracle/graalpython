@@ -357,6 +357,22 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                     "config.run-flags": "".join(arg),
                 }
             ),
+            # secondary metric(s)
+            StdOutRule(
+                r"### WARMUP detected at iteration: (?P<endOfWarmup>[0-9]+$)",
+                {
+                    "benchmark": '{}.{}'.format(self._name, bench_name),
+                    "metric.name": "end-of-warmup",
+                    "metric.iteration": 0,
+                    "metric.type": "numeric",
+                    "metric.value": ("<endOfWarmup>", int),
+                    "metric.unit": "s",
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "config.run-flags": "".join(arg),
+                }
+            ),
+
             # no warmups
             StdOutRule(
                 r"^@@@ name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
