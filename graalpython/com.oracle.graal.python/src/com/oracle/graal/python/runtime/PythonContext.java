@@ -143,7 +143,8 @@ public final class PythonContext {
     private final PosixResources resources;
     private final AsyncHandler handler;
 
-    // A thread-local to store the full path to the currently active import statement, for Jython compat
+    // A thread-local to store the full path to the currently active import statement, for Jython
+    // compat
     private final ThreadLocal<Stack<String>> currentImport = new ThreadLocal<>();
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
