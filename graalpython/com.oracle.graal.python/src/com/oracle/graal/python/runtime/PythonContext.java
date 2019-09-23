@@ -144,7 +144,7 @@ public final class PythonContext {
     private final AsyncHandler handler;
 
     // A thread-local to store the full path to the currently active import statement, for Jython compat
-    private final ThreadLocal<Stack<String>> currentImport = ThreadLocal.withInitial(() -> new Stack<>());
+    private final ThreadLocal<Stack<String>> currentImport = new ThreadLocal<>();
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
@@ -729,7 +729,9 @@ public final class PythonContext {
     @TruffleBoundary
     public String getCurrentImport() {
         Stack<String> ci = currentImport.get();
-        if (ci.isEmpty()) {
+        if (ci == null) {
+            return "";
+        } else if (ci.isEmpty()) {
             return "";
         } else {
             return ci.peek();
@@ -738,11 +740,17 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void pushCurrentImport(String object) {
-        currentImport.get().push(object);
+        Stack<String> ci = currentImport.get();
+        if (ci == null) {
+            ci = new Stack<>();
+            currentImport.set(ci);
+        }
+        ci.push(object);
     }
 
     @TruffleBoundary
     public void popCurrentImport() {
+        assert currentImport.get() != null && currentImport.get().peek() != null : "invalid popCurrentImport without push";
         currentImport.get().pop();
     }
 }
