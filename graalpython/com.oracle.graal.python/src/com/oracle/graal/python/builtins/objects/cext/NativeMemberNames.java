@@ -41,10 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import java.lang.reflect.Field;
+import java.util.HashSet;
 
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.CompilerAsserts;
 
 public final class NativeMemberNames {
     public static final String OB_BASE = "ob_base";
@@ -140,28 +139,23 @@ public final class NativeMemberNames {
     public static final String SET_USED = "used";
     public static final String MMAP_DATA = "data";
 
-    @CompilationFinal(dimensions = 1) private static final String[] values;
+    private static final HashSet<String> values = new HashSet<>();
+
     static {
         Field[] declaredFields = NativeMemberNames.class.getDeclaredFields();
-        values = new String[declaredFields.length - 1]; // omit the values field
         for (int i = 0; i < declaredFields.length; i++) {
             Field s = declaredFields[i];
             if (s.getType() == String.class) {
                 try {
-                    values[i] = (String) s.get(NativeMemberNames.class);
+                    values.add((String) s.get(NativeMemberNames.class));
                 } catch (IllegalArgumentException | IllegalAccessException e) {
                 }
             }
         }
     }
 
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
     public static boolean isValid(String name) {
-        for (int i = 0; i < values.length; i++) {
-            if (name.equals(values[i])) {
-                return true;
-            }
-        }
-        return false;
+        CompilerAsserts.neverPartOfCompilation();
+        return values.contains(name);
     }
 }
