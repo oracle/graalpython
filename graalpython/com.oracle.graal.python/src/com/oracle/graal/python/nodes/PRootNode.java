@@ -48,6 +48,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -64,12 +65,23 @@ public abstract class PRootNode extends RootNode {
      */
     @CompilationFinal private Assumption dontNeedExceptionState = createExceptionStateAssumption();
 
+    private int nodeCount = -1;
+
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
     }
 
     protected PRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor) {
         super(language, frameDescriptor);
+    }
+
+    public final int getNodeCount() {
+        CompilerAsserts.neverPartOfCompilation();
+        int n = nodeCount;
+        if (n != -1) {
+            return n;
+        }
+        return nodeCount = NodeUtil.countNodes(this);
     }
 
     public ConditionProfile getFrameEscapedProfile() {

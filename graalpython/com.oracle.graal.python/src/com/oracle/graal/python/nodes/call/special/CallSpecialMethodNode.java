@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -92,7 +93,8 @@ abstract class CallSpecialMethodNode extends Node {
     private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
         CompilerAsserts.neverPartOfCompilation();
         if (!maxSizeExceeded) {
-            int n = NodeUtil.countNodes(getRootNode());
+            RootNode root = getRootNode();
+            int n = root instanceof PRootNode ? ((PRootNode) root).getNodeCount() : NodeUtil.countNodes(root);
             // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
             // ASTs will only we shared between contexts that have the same value for this option.
             int maxSize = PythonOptions.getOption(lookupContextReference(PythonLanguage.class).get(), PythonOptions.BuiltinsInliningMaxCallerSize);
