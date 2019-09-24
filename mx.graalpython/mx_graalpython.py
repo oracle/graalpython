@@ -21,6 +21,7 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+
 from __future__ import print_function
 
 import contextlib
@@ -44,6 +45,11 @@ from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI
+
+try:
+    import __main__ # workaround for pdb++
+except ImportError:
+    sys.modules["__main__"] = mx
 
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
@@ -100,9 +106,6 @@ def python(args):
     if '--python.WithJavaStacktrace' not in args:
         args.insert(0, '--python.WithJavaStacktrace')
 
-    if not any([x.startswith("--python.CAPI") for x in args]):
-        args.insert(1, mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"))
-
     do_run_python(args)
 
 
@@ -118,7 +121,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             check_vm()
 
     dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
-    env["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -163,14 +165,11 @@ def punittest(ars):
              "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
              "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
     args += ars
-    # ensure that C API was built (we may need on-demand compilation)
-    do_run_python(["-m", "build_capi"], nonZeroIsFatal=True)
-    os.environ["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
     mx_unittest.unittest(args)
 
 
-PYTHON_ARCHIVES = ["PYTHON_USERBASE"]
-PYTHON_NATIVE_PROJECTS = ["python-capi"]
+PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
+PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.cext"]
 
 
 def nativebuild(args):
@@ -185,7 +184,6 @@ def nativeclean(args):
 
 def python3_unittests(args):
     """run the cPython stdlib unittests"""
-    python(["-m", "build_capi"])
     mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
@@ -320,14 +318,9 @@ def _graalpytest_root():
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None):
     args = args or []
     args = ["--experimental-options=true",
-            "--python.CatchAllExceptions=true",
-            mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"),
-            ] + args
+            "--python.CatchAllExceptions=true"] + args
     exclude = exclude or []
     paths = paths or [_graalpytest_root()]
-
-    # ensure that C API was built (we may need on-demand compilation)
-    mx.run([python_binary] + args + ["-m", "build_capi"], nonZeroIsFatal=True)
 
     # list of excluded tests
     if aot_compatible:
@@ -1139,13 +1132,7 @@ def python_build_watch(args):
 
 class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
     def __init__(self, args, project):
-        if hasattr(project, 'max_jobs'):
-            jobs = min(int(project.max_jobs), cpu_count())
-        else:
-            # Cap jobs to maximum of 8 by default. If a project wants more parallelism, it can explicitly set the
-            # "max_jobs" attribute. Setting jobs=cpu_count() would not allow any other tasks in parallel, now matter
-            # how much parallelism the build machine supports.
-            jobs = min(8, mx.cpu_count())
+        jobs = 1 # no point in using more than 1 job
         super(GraalpythonCAPIBuildTask, self).__init__(args, jobs, project)
 
     def __str__(self):
@@ -1153,26 +1140,57 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
 
     def build(self):
         env = os.environ.copy()
-        cwd = os.path.join(self.subject.suite.dir, self.subject.getOutput())
+        cwd = os.path.join(self.subject.get_output_root(), "mxbuild_temp")
+        args = []
+        if mx._opts.verbose:
+            args.append("-v")
+        elif mx._opts.quiet:
+            args.append("-q")
+        args += [os.path.join(self.subject.dir, "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
-        rc = do_run_python(["-m", "build_capi"], env=env, cwd=cwd)
+        rc = do_run_python(args, env=env, cwd=cwd)
+        shutil.rmtree(cwd)
         if mx.suite("sulong-managed", fatalIfMissing=False):
-            rc += do_run_python(["--llvm.managed", "-m", "build_capi"], env=env, cwd=cwd)
+            args = ["--llvm.managed"] + args
+            mx.ensure_dir_exists(cwd)
+            rc += do_run_python(args, env=env, cwd=cwd)
+            shutil.rmtree(cwd)
         return min(rc, 1)
 
-
     def needsBuild(self, newestInput):
-        # We don't know at this point; 'distutils' module has to decide
-        return (True, "rebuild needed")
+        tsNewest = 0
+        newestFile = None
+        for root,dirs,files in os.walk(self.subject.dir):
+            for f in files:
+                ts = os.path.getmtime(os.path.join(root, f))
+                if tsNewest < ts:
+                    tsNewest = ts
+                    newestFile = f
+        tsOldest = sys.maxsize
+        oldestFile = None
+        for root,dirs,files in os.walk(self.subject.get_output_root()):
+            for f in files:
+                ts = os.path.getmtime(os.path.join(root, f))
+                if tsOldest > ts:
+                    tsOldest = ts
+                    oldestFile = f
+        if tsOldest == sys.maxsize:
+            tsOldest = 0
+        if tsOldest < tsNewest:
+            self.clean() # we clean here, because setuptools doesn't check timestamps
+            if newestFile and oldestFile:
+                return (True, "rebuild needed, %s newer than %s" % (newestFile, oldestFile))
+            else:
+                return (True, "build needed")
+        else:
+            return (False, "up to date")
 
     def newestOutput(self):
         return None
 
     def clean(self, forBuild=False):
-        # just clean the output directory because we can't rely on Graalpython being available
         try:
-            output_dir = os.path.join(self.subject.suite.dir, self.subject.getOutput())
-            shutil.rmtree(output_dir)
+            shutil.rmtree(self.subject.get_output_root())
         except BaseException:
             return 1
         return 0
@@ -1186,6 +1204,18 @@ class GraalpythonCAPIProject(mx.Project):
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
         return self.get_output_root()
+
+    def getArchivableResults(self, use_relpath=True, single=False):
+        if single:
+            raise ValueError("single not supported")
+        output = self.getOutput()
+        for root,dirs,files in os.walk(output):
+            for name in files:
+                fullname = os.path.join(root, name)
+                if use_relpath:
+                    yield fullname, os.path.relpath(fullname, output)
+                else:
+                    yield fullname, name
 
     def getBuildTask(self, args):
         return GraalpythonCAPIBuildTask(args, self)

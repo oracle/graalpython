@@ -230,11 +230,11 @@ suite = {
 
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
-            "native": True,
-            "vpath": False,
-            "results": ["graalpython/include"],
-            "output": ".",
+            "vpath": True,
+            "type": "GraalpythonCAPIProject",
+            "platformDependent": False,
             "buildDependencies": [
+                "GRAALPYTHON",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
@@ -256,21 +256,6 @@ suite = {
                 "\/idle_test\/",
             ],
             "license": ["PSF-License"],
-        },
-
-        "python-capi": {
-            "subDir": "graalpython",
-            "vpath": True,
-            "type": "GraalpythonCAPIProject",
-            "platformDependent": False,
-            "buildDependencies": [
-                "GRAALPYTHON",
-                "PYTHON_USERBASE",
-                "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
-            ],
-            "buildEnv": {
-                "PYTHONUSERBASE": "<path:PYTHON_USERBASE>",
-            },
         },
     },
 
@@ -298,7 +283,6 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
-                "PYTHON_USERBASE",
             ],
             "description": "GraalPython launcher",
         },
@@ -359,15 +343,12 @@ suite = {
             "description": "Graal.Python support distribution for the GraalVM",
             "layout": {
                 "./": [
-                    "dependency:com.oracle.graal.python.cext/graalpython/include",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                     "file:graalpython/lib-graalpython",
                 ],
-                "./lib-graalpython/capi/": [
-                    "file:graalpython/com.oracle.graal.python.cext/setup.py",
-                    "file:graalpython/com.oracle.graal.python.cext/src",
-                    "file:graalpython/com.oracle.graal.python.cext/modules",
+                "./lib-graalpython/": [
+                    "dependency:graalpython:com.oracle.graal.python.cext/*",
                 ],
             },
             "maven": False,
@@ -390,16 +371,6 @@ suite = {
             "layout": {
                 "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
                 "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
-            },
-            "maven": False,
-        },
-
-        "PYTHON_USERBASE": {
-            "native": True,
-            "platformDependent": False,
-            "description": "User base directory for development purpose.",
-            "layout": {
-                "./README.md": "string:User base directory for development purpose.",
             },
             "maven": False,
         },

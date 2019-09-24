@@ -175,7 +175,7 @@ class Bzip2Depedency(CAPIDependency):
     def conftest(self):
         src = b'''#include <bzlib.h>
         #include <stdio.h>
-        
+
         int main(void) {
             printf("%.200s", BZ2_bzlibVersion());
             return 0;
@@ -304,8 +304,8 @@ def build_libpython(capi_home):
             ext_modules=[module],
         )
 
-def build_builtin_exts(capi_module_home):
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_module_home, "clean"]
+def build_builtin_exts(capi_home):
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean"]
     for ext in builtin_exts:
         distutil_ext = ext()
         res = setup(
@@ -319,21 +319,10 @@ def build_builtin_exts(capi_module_home):
         logger.debug("Successfully built and installed module %s", ext.name)
 
 
-def build(capi_home, capi_module_home):
+def build(capi_home):
     build_libpython(capi_home)
-    build_builtin_exts(capi_module_home)
-
-
-def clean(capi_home, capi_module_home):
-    libpython_path = os.path.join(capi_home, libpython_name + so_ext)
-    if os.path.exists(libpython_path):
-        logger.info("Cleaning %s", libpython_path)
-        os.unlink(libpython_path)
-    if os.path.exists(capi_module_home):
-        for f in [os.path.join(capi_module_home, f) for f in os.listdir(capi_module_home) if f.endswith(so_ext)]:
-            logger.info("Cleaning %s", f)
-            os.unlink(f)
+    build_builtin_exts(capi_home)
 
 
 if __name__ == "__main__":
-    build()
+    build(sys.argv[1])
