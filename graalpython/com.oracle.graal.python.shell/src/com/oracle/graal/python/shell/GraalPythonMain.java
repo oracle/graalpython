@@ -71,7 +71,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean quietFlag = false;
     private boolean noUserSite = false;
     private boolean noSite = false;
-    private boolean ensureCapi = false;
     private boolean stdinIsInteractive = System.console() != null;
     private boolean runLLI = false;
     private boolean unbufferedIO = false;
@@ -152,13 +151,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "--show-version":
                     versionAction = VersionAction.PrintAndContinue;
                     break;
-                case "-ensure-capi":
-                    if (wantsExperimental) {
-                        ensureCapi = true;
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
                 case "-debug-java":
                     if (wantsExperimental) {
                         if (!isAOT()) {
@@ -236,8 +228,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         }
                     } else {
                         if (arg.startsWith("--llvm.")) {
-                            addRelaunchArg(arg);
-                        } else if (arg.startsWith("--python.CAPI")) {
                             addRelaunchArg(arg);
                         }
                         // possibly a polyglot argument
@@ -394,9 +384,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
                 }
-            }
-            if (ensureCapi) {
-                evalInternal(context, "import build_capi; build_capi.ensure_capi([" + (quietFlag ? "'-q'" : "") + "])\n");
             }
             if (!noSite) {
                 evalInternal(context, "import site\n");

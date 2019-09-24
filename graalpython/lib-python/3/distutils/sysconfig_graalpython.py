@@ -80,7 +80,7 @@ def _init_posix():
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED_LINUX'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
     if darwin_native:
-        from build_capi import capi_home
+        capi_home = sys.graal_python_core_home
         g['LDSHARED'] = g['LDSHARED_LINUX'] + " -L" + capi_home + " -lpython." + so_abi + " -Wl,-rpath," + capi_home
     else:
         g['LDSHARED'] = g['LDSHARED_LINUX']

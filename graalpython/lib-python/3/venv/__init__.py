@@ -322,13 +322,6 @@ class EnvBuilder:
                         shutil.copyfile(src, dst)
                         break
 
-        # Truffle change: we need to ensure that the C API is built
-        import build_capi
-        build_capi.build()
-        # Truffle change end
-            
-    
-
     def _setup_pip(self, context):
         """Installs or upgrades pip in a virtual environment"""
         # We run ensurepip in isolated mode to avoid side effects from

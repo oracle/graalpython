@@ -214,8 +214,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-        String capiSrc = context.getCAPIHome();
-        String capiHome = getCapiHome(env, sys);
 
         Object[] path;
         int pathIdx = 0;
@@ -234,13 +232,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
         path[pathIdx++] = context.getStdlibHome();
         path[pathIdx++] = context.getCoreHome() + env.getFileNameSeparator() + "modules";
-        path[pathIdx++] = capiHome;
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
-        sys.setAttribute("graal_python_cext_src", capiSrc);
         sys.setAttribute("graal_python_platform_id", toolchain.getIdentifier());
-        sys.setAttribute("graal_python_capi_home", capiHome);
-        sys.setAttribute("graal_python_capi_module_home", capiHome);
     }
 
     private static String getScriptPath(Env env, String[] args) {
@@ -264,33 +258,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
             scriptPath = "";
         }
         return scriptPath;
-    }
-
-    private static String getCapiHome(Env env, PythonModule sys) {
-        String pythonSubdir = "python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR;
-        return String.join(env.getFileNameSeparator(), getCapiUserBase(env, sys), "lib", pythonSubdir, "capi");
-    }
-
-    // similar to 'sysconfig._getuserbase()'
-    private static String getCapiUserBase(Env env, PythonModule sys) {
-        String customUserBase = env.getEnvironment().get("PYTHONUSERBASE");
-        if (customUserBase != null) {
-            return customUserBase;
-        }
-
-        Object osName = sys.getAttribute("platform");
-        if (FRAMEWORK != PNone.NONE && PLATFORM_DARWIN.equals(osName)) {
-            String _framework = FRAMEWORK.toString();
-            return String.join(env.getFileNameSeparator(), System.getProperty("user.home"), "Library", _framework, PythonLanguage.MAJOR + "." + PythonLanguage.MINOR);
-        } else if (PLATFORM_WIN32.equals(osName)) {
-            // first try to get 'APPDATA'
-            String appdata = System.getenv("APPDATA");
-            if (appdata != null) {
-                return appdata + env.getFileNameSeparator() + "Python";
-            }
-            return System.getProperty("user.home") + env.getFileNameSeparator() + "Python";
-        }
-        return System.getProperty("user.home") + env.getFileNameSeparator() + ".local";
     }
 
     static String getPythonArch() {

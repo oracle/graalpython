@@ -109,9 +109,15 @@ def python(args):
     do_run_python(args)
 
 
-def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
+def do_run_python(args, home=None, extra_vm_args=None, env=None, jdk=None, **kwargs):
+    if home is None:
+        home = mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output()
+
     if not env:
         env = os.environ
+
+    env = env.copy()
+    env["GRAAL_PYTHONHOME"] = home
 
     check_vm_env = env.get('GRAALPYTHON_MUST_USE_GRAAL', False)
     if check_vm_env:
@@ -1007,18 +1013,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# set our GRAAL_PYTHONHOME if not already set
-#
-# ----------------------------------------------------------------------------------------------------------------------
-if not os.getenv("GRAAL_PYTHONHOME"):
-    home = os.path.join(SUITE.dir, "graalpython")
-    if not os.path.exists(home):
-        home = [d for d in SUITE.dists if d.name == "GRAALPYTHON_GRAALVM_SUPPORT"][0].output
-    os.environ["GRAAL_PYTHONHOME"] = home
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
 # post init
 #
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1146,14 +1140,15 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             args.append("-v")
         elif mx._opts.quiet:
             args.append("-q")
-        args += [os.path.join(self.subject.dir, "setup.py"), self.subject.get_output_root()]
+        args += ["--inspect", "-S", os.path.join(self.subject.dir, "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
-        rc = do_run_python(args, env=env, cwd=cwd)
+        home = os.path.join(SUITE.dir, "graalpython")
+        rc = do_run_python(args, home=home, env=env, cwd=cwd)
         shutil.rmtree(cwd)
         if mx.suite("sulong-managed", fatalIfMissing=False):
             args = ["--llvm.managed"] + args
             mx.ensure_dir_exists(cwd)
-            rc += do_run_python(args, env=env, cwd=cwd)
+            rc += do_run_python(args, home=home, env=env, cwd=cwd)
             shutil.rmtree(cwd)
         return min(rc, 1)
 
