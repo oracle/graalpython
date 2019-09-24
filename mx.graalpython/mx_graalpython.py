@@ -736,7 +736,9 @@ def update_import(name, rev="origin/master", callback=None):
 
 def update_import_cmd(args):
     """Update our mx or overlay imports"""
-    if any("overlay" in arg for arg in args):
+    if not args:
+        args = ["truffle"]
+    if "overlay" in args:
         mx.log("Updating overlays")
         dirs = os.listdir(os.path.join(SUITE.dir, ".."))
         for d in dirs:
@@ -752,9 +754,7 @@ def update_import_cmd(args):
                 tip = str(vc.tip(overlaydir)).strip()
                 with open(jsonnetfile, "w") as f:
                     f.write('{ overlay: "%s" }\n' % tip)
-        return
-    if not args:
-        args = ["truffle"]
+        args.remove("overlay")
     if "sulong" in args:
         args.append("regex")
     if "regex" in args:
