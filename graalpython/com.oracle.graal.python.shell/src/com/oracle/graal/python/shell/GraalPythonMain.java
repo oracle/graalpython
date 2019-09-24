@@ -642,13 +642,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                 continuePrompt = doEcho ? sys.getMember("ps2").asString() : null;
                             }
                             if (e.isIncompleteSource()) {
-                                // read another line of input
+                                // read more input until we get an empty line
                                 consoleHandler.setPrompt(continuePrompt);
                                 String additionalInput = consoleHandler.readLine();
+                                while (additionalInput != null && !additionalInput.isEmpty()) {
+                                    sb.append(additionalInput).append('\n');
+                                    consoleHandler.setPrompt(continuePrompt);
+                                    additionalInput = consoleHandler.readLine();
+                                }
                                 if (additionalInput == null) {
                                     throw new EOFException();
                                 }
-                                sb.append(additionalInput).append('\n');
                                 // The only continuation in the while loop
                                 continue;
                             } else if (e.isExit()) {
@@ -666,16 +670,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         break;
                     }
                 } catch (EOFException e) {
-                    try {
-                        evalInternal(context, "import site; exit()\n");
-                    } catch (PolyglotException e2) {
-                        if (e2.isExit()) {
-                            // don't use the exit code from the PolyglotException
-                            return lastStatus;
-                        } else if (e2.isCancelled()) {
-                            continue;
+                    if (!noSite) {
+                        try {
+                            evalInternal(context, "import site; exit()\n");
+                        } catch (PolyglotException e2) {
+                            if (e2.isExit()) {
+                                // don't use the exit code from the PolyglotException
+                                return lastStatus;
+                            } else if (e2.isCancelled()) {
+                                continue;
+                            }
+                            throw new RuntimeException("error while calling exit", e);
                         }
-                        throw new RuntimeException("error while calling exit", e);
                     }
                     System.out.println();
                     return lastStatus;
