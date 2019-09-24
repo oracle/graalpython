@@ -82,8 +82,9 @@ public final class DictConcatNode extends ExpressionNode {
         }
         HashingStorage dictStorage = dict.getDictStorage();
         for (Object key : other.keys()) {
-            setItemNode.execute(frame, dictStorage, key, getItemNode.execute(frame, other.getDictStorage(), key));
+            dictStorage = setItemNode.execute(frame, dictStorage, key, getItemNode.execute(frame, other.getDictStorage(), key));
         }
+        dict.setDictStorage(dictStorage);
     }
 
     private static PDict expectDict(Object first) {
