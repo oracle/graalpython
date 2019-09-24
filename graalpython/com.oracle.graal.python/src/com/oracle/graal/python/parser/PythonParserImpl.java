@@ -71,6 +71,7 @@ public final class PythonParserImpl implements PythonParser {
         lexer.removeErrorListeners();
         lexer.addErrorListener(Builder.ERROR_LISTENER);
         Python3NewParser parser = new Python3NewParser(new CommonTokenStream(lexer));
+        parser.setBuildParseTree(false);
         parser.factory = new PythonNodeFactory(errors.getLanguage(), source);
         parser.removeErrorListeners();
         parser.addErrorListener(Builder.ERROR_LISTENER);
