@@ -1487,7 +1487,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } else {
                     throw raise(PythonBuiltinClassType.NotImplementedError, "Only 0 or WNOHANG are supported for waitpid");
                 }
-            } catch (ArrayIndexOutOfBoundsException e) {
+            } catch (IndexOutOfBoundsException e) {
                 throw raiseOSError(frame, OSErrorEnum.ESRCH.getNumber());
             } catch (InterruptedException e) {
                 throw raiseOSError(frame, OSErrorEnum.EINTR.getNumber());
@@ -1969,7 +1969,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 if (isNode.execute(signal, value)) {
                     try {
                         context.getResources().sigterm(pid);
-                    } catch (ArrayIndexOutOfBoundsException e) {
+                    } catch (IndexOutOfBoundsException e) {
                         throw raiseOSError(frame, OSErrorEnum.ESRCH.getNumber());
                     }
                     return PNone.NONE;
@@ -1980,7 +1980,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 if (isNode.execute(signal, value)) {
                     try {
                         context.getResources().sigkill(pid);
-                    } catch (ArrayIndexOutOfBoundsException e) {
+                    } catch (IndexOutOfBoundsException e) {
                         throw raiseOSError(frame, OSErrorEnum.ESRCH.getNumber());
                     }
                     return PNone.NONE;
@@ -1990,7 +1990,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (isNode.execute(signal, dfl)) {
                 try {
                     context.getResources().sigdfl(pid);
-                } catch (ArrayIndexOutOfBoundsException e) {
+                } catch (IndexOutOfBoundsException e) {
                     throw raiseOSError(frame, OSErrorEnum.ESRCH.getNumber());
                 }
                 return PNone.NONE;

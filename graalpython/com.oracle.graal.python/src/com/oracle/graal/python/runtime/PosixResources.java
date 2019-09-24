@@ -393,34 +393,42 @@ public class PosixResources {
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public void sigdfl(int pid) throws ArrayIndexOutOfBoundsException {
-        children.get(pid); // just for the side-effect
+    private Process getChild(int pid) throws IndexOutOfBoundsException {
+        if (pid < 0) {
+            return children.get(0); // we do not support process groups
+        } else {
+            return children.get(pid);
+        }
     }
 
     @TruffleBoundary(allowInlining = true)
-    public void sigterm(int pid) throws ArrayIndexOutOfBoundsException {
-        Process process = children.get(pid);
+    public void sigdfl(int pid) throws IndexOutOfBoundsException {
+        getChild(pid); // just for the side-effect
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void sigterm(int pid) throws IndexOutOfBoundsException {
+        Process process = getChild(pid);
         process.destroy();
     }
 
     @TruffleBoundary(allowInlining = true)
-    public void sigkill(int pid) throws ArrayIndexOutOfBoundsException {
-        Process process = children.get(pid);
+    public void sigkill(int pid) throws IndexOutOfBoundsException {
+        Process process = getChild(pid);
         process.destroyForcibly();
     }
 
     @TruffleBoundary(allowInlining = true)
-    public int waitpid(int pid) throws ArrayIndexOutOfBoundsException, InterruptedException {
-        Process process = children.get(pid);
+    public int waitpid(int pid) throws IndexOutOfBoundsException, InterruptedException {
+        Process process = getChild(pid);
         int exitStatus = process.waitFor();
         children.set(pid, null);
         return exitStatus;
     }
 
     @TruffleBoundary(allowInlining = true)
-    public int exitStatus(int pid) throws ArrayIndexOutOfBoundsException {
-        Process process = children.get(pid);
+    public int exitStatus(int pid) throws IndexOutOfBoundsException {
+        Process process = getChild(pid);
         if (process.isAlive()) {
             return Integer.MIN_VALUE;
         } else {
