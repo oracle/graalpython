@@ -145,12 +145,6 @@ suite = {
                 "modules"
             ],
         },
-
-        "ci": {
-            "type": "python",
-            "path": "ci_common",
-            "source": [],
-        },
     },
 
     "projects": {
