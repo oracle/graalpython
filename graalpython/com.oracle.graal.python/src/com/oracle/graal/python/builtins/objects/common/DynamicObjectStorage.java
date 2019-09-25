@@ -41,7 +41,11 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.function.Predicate;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -105,17 +109,20 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         return result;
     }
 
+    protected Iterable<Object> getKeysIterable() {
+        return store.getShape().getKeys();
+    }
+
     @Override
     public Iterable<Object> keys() {
-        return wrapJavaIterable(store.getShape().getKeys());
+        return wrapJavaIterable(getKeysIterable());
     }
 
     @Override
     @TruffleBoundary
     public Iterable<Object> values() {
         ArrayList<Object> entries = new ArrayList<>(store.size());
-        Shape shape = store.getShape();
-        for (Object key : shape.getKeys()) {
+        for (Object key : getKeysIterable()) {
             entries.add(store.get(key));
         }
         return wrapJavaIterable(entries);
@@ -125,8 +132,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
     @TruffleBoundary
     public Iterable<DictEntry> entries() {
         ArrayList<DictEntry> entries = new ArrayList<>(store.size());
-        Shape shape = store.getShape();
-        for (Object key : shape.getKeys()) {
+        for (Object key : getKeysIterable()) {
             entries.add(new DictEntry(key, store.get(key)));
         }
         return wrapJavaIterable(entries);
@@ -141,6 +147,67 @@ public abstract class DynamicObjectStorage extends HashingStorage {
 
     public DynamicObject getStore() {
         return store;
+    }
+
+
+    private static class FilterIterator<T> implements Iterator<T> {
+        private final Iterator<T> iterator;
+        private final Predicate<T> predicate;
+        private T value;
+        private boolean valueIsSet = false;
+
+        private FilterIterator(Iterator<T> iterator, Predicate<T> predicate) {
+            this.iterator = iterator;
+            this.predicate = predicate;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return valueIsSet || consumeUntilNext();
+        }
+
+        @Override
+        public T next() {
+            if (valueIsSet || consumeUntilNext()) {
+                valueIsSet = false;
+                return value;
+            }
+            // no more vals matching were found
+            throw new NoSuchElementException();
+        }
+
+        private boolean consumeUntilNext() {
+            while (iterator.hasNext()) {
+                T next = iterator.next();
+                if (predicate.test(next)) {
+                    value = next;
+                    valueIsSet = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static class NoValuePredicate<T> implements Predicate<T> {
+
+        private final DynamicObject store;
+
+        private NoValuePredicate(DynamicObject store) {
+            this.store = store;
+        }
+
+        @Override
+        public boolean test(T t) {
+            return store.get(t) != PNone.NO_VALUE;
+        }
+    }
+
+    private static class NoValueFilterIterator extends FilterIterator<Object> {
+
+        private NoValueFilterIterator(DynamicObject store) {
+            super(store.getShape().getKeys().iterator(), new NoValuePredicate<>(store));
+        }
     }
 
     public static final class FastDictStorage extends DynamicObjectStorage {
@@ -159,8 +226,58 @@ public abstract class DynamicObjectStorage extends HashingStorage {
     }
 
     public static final class PythonObjectDictStorage extends DynamicObjectStorage {
+        private int size = -1;
+
         public PythonObjectDictStorage(DynamicObject store) {
             super(store);
+        }
+
+        @Override
+        protected Iterable<Object> getKeysIterable() {
+            return new Iterable<Object>() {
+                @Override
+                public Iterator<Object> iterator() {
+                    return new NoValueFilterIterator(getStore());
+                }
+            };
+        }
+
+        @Override
+        public int length() {
+            if (size == -1) {
+                size = 0;
+                for (Object ignored : getKeysIterable()) {
+                    size += 1;
+                }
+            }
+            return size;
+        }
+
+        @Override
+        public void setItem(Object key, Object value, Equivalence eq) {
+            super.setItem(key, value, eq);
+            if (value != PNone.NO_VALUE) {
+                size += 1;
+            }
+        }
+
+        @Override
+        public boolean remove(Object key, Equivalence eq) {
+            if (getStore().get(key) != PNone.NO_VALUE) {
+                size -= 1;
+            }
+            return super.remove(key, eq);
+        }
+
+        @Override
+        public void clear() {
+            super.clear();
+            size = 0;
+        }
+
+        @Override
+        public boolean hasKey(Object key, Equivalence eq) {
+            return super.hasKey(key, eq) && getStore().get(key, PNone.NO_VALUE) != PNone.NO_VALUE;
         }
 
         @Override

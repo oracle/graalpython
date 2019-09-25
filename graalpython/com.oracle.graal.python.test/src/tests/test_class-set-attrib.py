@@ -138,7 +138,8 @@ def test_deepcopy_attribute_removal():
     from copy import deepcopy
 
     class A:
-        a = "a"
+        def __init__(self):
+            self.a = "a"
 
         def add_rem_attr(self):
             self.b = "b"
