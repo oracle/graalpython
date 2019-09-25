@@ -63,7 +63,7 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
 
         String entireMessage = String.format("source: %s, line: %s, index: %s, error message: %s %s",
                         recognizer.getInputStream().getSourceName(), line, charPositionInLine, msg,
-                        e == null ? "<null>" : e.getMessage());
+                        e == null || e.getMessage() == null ? "invalid syntax" : e.getMessage());
 
         if (e != null) {
             PIncompleteSourceException handleRecognitionException = handleRecognitionException(e.getExpectedTokens(), entireMessage, e, line);
