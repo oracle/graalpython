@@ -395,7 +395,7 @@ public class PosixResources {
 
     private Process getChild(int pid) throws IndexOutOfBoundsException {
         if (pid < 0) {
-            return children.get(0); // we do not support process groups
+            throw new IndexOutOfBoundsException("we do not support process groups");
         } else {
             return children.get(pid);
         }
