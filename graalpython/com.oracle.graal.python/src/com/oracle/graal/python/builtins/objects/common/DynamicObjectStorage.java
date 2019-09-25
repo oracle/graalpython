@@ -47,6 +47,7 @@ import java.util.function.Predicate;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Layout;
@@ -175,6 +176,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
             throw new NoSuchElementException();
         }
 
+        @TruffleBoundary
         private boolean consumeUntilNext() {
             while (iterator.hasNext()) {
                 T next = iterator.next();
@@ -244,8 +246,10 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         @Override
         public int length() {
             if (size == -1) {
+                CompilerAsserts.neverPartOfCompilation();
                 size = 0;
-                for (Object ignored : getKeysIterable()) {
+                for (@SuppressWarnings("unused")
+                Object ignored : getKeysIterable()) {
                     size += 1;
                 }
             }
@@ -254,6 +258,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
 
         @Override
         public void setItem(Object key, Object value, Equivalence eq) {
+            CompilerAsserts.neverPartOfCompilation();
             super.setItem(key, value, eq);
             if (value != PNone.NO_VALUE) {
                 size += 1;
@@ -262,6 +267,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
 
         @Override
         public boolean remove(Object key, Equivalence eq) {
+            CompilerAsserts.neverPartOfCompilation();
             if (getStore().get(key) != PNone.NO_VALUE) {
                 size -= 1;
             }
@@ -276,6 +282,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
 
         @Override
         public boolean hasKey(Object key, Equivalence eq) {
+            CompilerAsserts.neverPartOfCompilation();
             return super.hasKey(key, eq) && getStore().get(key, PNone.NO_VALUE) != PNone.NO_VALUE;
         }
 
