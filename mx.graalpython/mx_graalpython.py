@@ -207,6 +207,7 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     unittest_sandboxed = 'python-unittest-sandboxed'
+    unittest_multi = 'python-unittest-multi-context'
     unittest_jython = 'python-unittest-jython'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
@@ -385,6 +386,10 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
             run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+
+    with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
+        if task:
+            run_python_unittests(python_gvm(), args=["-multi-context"])
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
