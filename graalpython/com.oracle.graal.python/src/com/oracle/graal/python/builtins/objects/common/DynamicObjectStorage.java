@@ -228,9 +228,11 @@ public abstract class DynamicObjectStorage extends HashingStorage {
 
     public static final class PythonObjectDictStorage extends DynamicObjectStorage {
         private int size = -1;
+        private Shape shape;
 
         public PythonObjectDictStorage(DynamicObject store) {
             super(store);
+            shape = store.getShape();
         }
 
         @Override
@@ -245,39 +247,16 @@ public abstract class DynamicObjectStorage extends HashingStorage {
 
         @Override
         public int length() {
-            if (size == -1) {
-                CompilerAsserts.neverPartOfCompilation();
+            CompilerAsserts.neverPartOfCompilation();
+            if (shape != getStore().getShape()) {
                 size = 0;
                 for (@SuppressWarnings("unused")
                 Object ignored : getKeysIterable()) {
                     size += 1;
                 }
+                shape = getStore().getShape();
             }
             return size;
-        }
-
-        @Override
-        public void setItem(Object key, Object value, Equivalence eq) {
-            CompilerAsserts.neverPartOfCompilation();
-            super.setItem(key, value, eq);
-            if (value != PNone.NO_VALUE) {
-                size += 1;
-            }
-        }
-
-        @Override
-        public boolean remove(Object key, Equivalence eq) {
-            CompilerAsserts.neverPartOfCompilation();
-            if (getStore().get(key) != PNone.NO_VALUE) {
-                size -= 1;
-            }
-            return super.remove(key, eq);
-        }
-
-        @Override
-        public void clear() {
-            super.clear();
-            size = 0;
         }
 
         @Override
