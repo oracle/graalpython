@@ -664,14 +664,21 @@ public final class Python3Core implements PythonCore {
                 return section;
             }
         };
+        throw raiseInvalidSyntax(location, message, arguments);
+    }
+
+    @Override
+    public RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
         PBaseException instance;
         instance = factory().createBaseException(SyntaxError, message, arguments);
+        SourceSection section = location.getSourceSection();
+        Source source = section.getSource();
         String path = source.getPath();
         instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
-        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : "invalid syntax");
+        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : message != null ? message : "invalid syntax");
         throw PException.fromObject(instance, location);
     }
 }

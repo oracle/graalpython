@@ -106,6 +106,10 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
+    public ExpressionNode[] getArgumentNodes() {
+        return argumentNodes;
+    }
+
     private static class PythonCallUnary extends ExpressionNode {
         @Child CallUnaryMethodNode callUnary = CallUnaryMethodNode.create();
         @Child ExpressionNode getCallable;

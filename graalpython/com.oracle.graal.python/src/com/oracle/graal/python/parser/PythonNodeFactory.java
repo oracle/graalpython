@@ -44,6 +44,7 @@ package com.oracle.graal.python.parser;
 import com.oracle.graal.python.PythonLanguage;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.parser.sst.CollectionSSTNode;
 import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.parser.sst.ForSSTNode;
+import com.oracle.graal.python.parser.sst.GeneratorFactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
 import com.oracle.graal.python.parser.sst.ImportSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
@@ -210,15 +212,26 @@ public final class PythonNodeFactory {
 
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Frame currentFrame) {
         Node result;
-        scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
-        scopeEnvironment.setFreeVarsInRootScope(currentFrame);
+        boolean isGen = false;
+        Frame useFrame = currentFrame;
+        if (useFrame != null && PArguments.getGeneratorFrameSafe(useFrame) != null) {
+            useFrame = PArguments.getGeneratorFrame(useFrame);
+            isGen = true;
+            scopeEnvironment.setCurrentScope(new ScopeInfo("evalgen", ScopeKind.Generator, useFrame.getFrameDescriptor(), scopeEnvironment.getGlobalScope()));
+        } else {
+            scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
+        }
+        scopeEnvironment.setFreeVarsInRootScope(useFrame);
         FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source);
+        if (isGen) {
+            factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source, factoryVisitor);
+        }
         ExpressionNode body = mode == PythonParser.ParserMode.Eval
                         ? (ExpressionNode) parserSSTResult.accept(factoryVisitor)
                         : parserSSTResult instanceof BlockSSTNode
                                         ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
                                         : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
-        FrameDescriptor fd = currentFrame == null ? null : currentFrame.getFrameDescriptor();
+        FrameDescriptor fd = useFrame == null ? null : useFrame.getFrameDescriptor();
         switch (mode) {
             case Eval:
                 scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
@@ -299,35 +312,4 @@ public final class PythonNodeFactory {
         }
     }
 
-    // public static class DocExtractor {
-    //
-    //
-    // public StringLiteralNode extract(StatementNode node) {
-    // if (node instanceof ExpressionNode.ExpressionStatementNode) {
-    // return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
-    // } else if (node instanceof BaseBlockNode) {
-    // StatementNode[] statements = ((BaseBlockNode)node).getStatements();
-    // if (statements != null && statements.length > 0) {
-    // return extract(statements[0]);
-    // }
-    // return null;
-    // }
-    // return null;
-    // }
-    //
-    // public StringLiteralNode extract(ExpressionNode node) {
-    // if (node instanceof StringLiteralNode) {
-    // return (StringLiteralNode) node;
-    // } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
-    // return extract(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
-    // } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
-    // StatementNode[] sideEffects =
-    // ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
-    // if (sideEffects != null && sideEffects.length > 0) {
-    // return extract(sideEffects[0]);
-    // }
-    // }
-    // return null;
-    // }
-    // }
 }

@@ -1,0 +1,9 @@
+ModuleRootNode Name: <module 'moreValues01'> SourceSection: [0,22]`'123' '456' f'789' '...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,22]`'123' '456' f'789' '...`
+    FormatStringLiteralNode SourceSection: [0,22]`'123' '456' f'789' '...`
+      Values: <n>123456, <f>789, <n>0

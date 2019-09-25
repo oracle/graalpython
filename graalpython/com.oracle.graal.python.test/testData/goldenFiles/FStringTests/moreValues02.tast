@@ -1,0 +1,9 @@
+ModuleRootNode Name: <module 'moreValues02'> SourceSection: [0,42]`'1' '2' '3' f'4' f'5...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,42]`'1' '2' '3' f'4' f'5...`
+    FormatStringLiteralNode SourceSection: [0,42]`'1' '2' '3' f'4' f'5...`
+      Values: <n>123, <f>4, <f>5, <n>67, <f>8, <n>90

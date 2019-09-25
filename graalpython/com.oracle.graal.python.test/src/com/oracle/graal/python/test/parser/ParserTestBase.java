@@ -77,6 +77,9 @@ public class ParserTestBase {
      */
     protected boolean correctIssues = true;
 
+    protected boolean printDifferenceDetails = false;
+    protected boolean printFormatStringLiteralValues = false;
+
     protected int printOnlyDiffIfLenIsBigger = 1000;
 
     @Rule public TestName name = new TestName();
@@ -112,7 +115,7 @@ public class ParserTestBase {
         return result;
     }
 
-    protected Node parseNew(String src, String moduleName, PythonParser.ParserMode mode, Frame fd) {
+    public Node parseNew(String src, String moduleName, PythonParser.ParserMode mode, Frame fd) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
         PythonParser parser = context.getCore().getParser();
         Node result = ((PythonParserImpl) parser).parseN(mode, context.getCore(), source, fd);
@@ -120,11 +123,11 @@ public class ParserTestBase {
         return result;
     }
 
-    protected Node parseNew(String src, String moduleName, PythonParser.ParserMode mode) {
+    public Node parseNew(String src, String moduleName, PythonParser.ParserMode mode) {
         return parseNew(src, moduleName, mode, null);
     }
 
-    protected Node parseNew(Source source, PythonParser.ParserMode mode) {
+    public Node parseNew(Source source, PythonParser.ParserMode mode) {
         PythonParser parser = context.getCore().getParser();
         Node result = ((PythonParserImpl) parser).parseN(mode, context.getCore(), source, null);
         lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
@@ -277,8 +280,9 @@ public class ParserTestBase {
         assertDescriptionMatches(scopes.toString(), goldenScopeFile);
     }
 
-    private static String printTreeToString(Node node) {
+    private String printTreeToString(Node node) {
         ParserTreePrinter visitor = new ParserTreePrinter();
+        visitor.printFormatStringLiteralDetail = printFormatStringLiteralValues;
         node.accept(visitor);
         return visitor.getTree();
     }
@@ -357,6 +361,8 @@ public class ParserTestBase {
                     corrected.append(correctDocumentation(oldLine, newLine));
                 } else if (oldLine.contains(" Name:") && newLine.contains(" Name:")) {
                     corrected.append(correctName(oldLine, newLine));
+                } else if (oldLine.contains("StringLiteralNode") && newLine.contains("FormatStringLiteralNode")) {
+                    corrected.append(correctStringLiteral(oldLine, newLine));
                 } else if (oldLine.contains("UnaryArithmeticExpression") &&
                                 (newLine.contains("IntegerLiteralNode") || newLine.contains("LongLiteralNode") || newLine.contains("PIntLiteralNode"))) {
                     // replace unary operation node for negative numbers
@@ -417,6 +423,16 @@ public class ParserTestBase {
             return newLine;
         }
         return oldLine;
+    }
+
+    private static String correctStringLiteral(String oldLine, String newLine) {
+        int oldStart = oldLine.indexOf("StringLiteralNode");
+        int newStart = newLine.indexOf("FormatStringLiteralNode");
+
+        if (oldStart != newStart) {
+            return oldLine;
+        }
+        return newLine;
     }
 
     private static String correctFrame(String oldLine, String newLine) {
@@ -535,7 +551,7 @@ public class ParserTestBase {
 
     private String getContentDifferences(String expected, String actual) {
         StringBuilder sb = new StringBuilder();
-        if (expected.length() < printOnlyDiffIfLenIsBigger && actual.length() < printOnlyDiffIfLenIsBigger) {
+        if (printDifferenceDetails || (expected.length() < printOnlyDiffIfLenIsBigger && actual.length() < printOnlyDiffIfLenIsBigger)) {
             sb.append("Expected content is:").append(lineSeparator(2)).append(expected).append(lineSeparator(2)).append("but actual is:").append(lineSeparator(2)).append(actual).append(
                             lineSeparator(2)).append("It differs in the following things:").append(lineSeparator(2));
         } else {

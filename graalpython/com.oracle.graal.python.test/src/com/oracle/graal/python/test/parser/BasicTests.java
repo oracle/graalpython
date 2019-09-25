@@ -114,7 +114,7 @@ public class BasicTests extends ParserTestBase {
         FrameDescriptor fd = new FrameDescriptor(44);
         fd.addFrameSlot("a");
         fd.addFrameSlot("b");
-        Frame frame = Truffle.getRuntime().createVirtualFrame(new Object[]{2, 3}, fd);
+        Frame frame = Truffle.getRuntime().createVirtualFrame(new Object[]{2, 3, null}, fd);
         checkTreeResult("a + b", PythonParser.ParserMode.InlineEvaluation, frame);
     }
 

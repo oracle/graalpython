@@ -95,6 +95,7 @@ import com.oracle.graal.python.nodes.literal.LongLiteralNode;
 import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
 import com.oracle.graal.python.nodes.literal.SetLiteralNode;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
@@ -246,6 +247,10 @@ public class NodeFactory {
 
     public ExpressionNode createStringLiteral(String value) {
         return new StringLiteralNode(value);
+    }
+
+    public ExpressionNode createFormatStringLiteral(FormatStringLiteralNode.StringPart[] values) {
+        return new FormatStringLiteralNode(values);
     }
 
     public ExpressionNode createBytesLiteral(byte[] value) {
