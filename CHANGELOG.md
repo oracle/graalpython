@@ -23,6 +23,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Improve performance of Java interop when Python objects are accessed from Java
 * Add a new `--python.EmulateJython` flag to support importing Java classes using normal Python import syntax when the package is known and to catch Java exceptions from Python code
 * Update standard library to Python 3.7.4
+* Initial implementatin of PEP 498 -- Literal String Interpolation
 
 ## Version 19.2.0
 
