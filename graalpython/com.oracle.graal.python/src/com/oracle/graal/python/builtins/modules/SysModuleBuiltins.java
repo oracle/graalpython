@@ -185,12 +185,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute(name, base_prefix);
         }
 
+        String coreHome = context.getCoreHome();
+        String stdlibHome = context.getStdlibHome();
+        String capiHome = context.getCAPIHome();
+
         sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
         sys.setAttribute("graal_python_jython_emulation_enabled", PythonOptions.getOption(context, PythonOptions.EmulateJython));
         sys.setAttribute("graal_python_host_import_enabled", context.getEnv().isHostLookupAllowed());
         sys.setAttribute("graal_python_home", context.getLanguage().getHome());
-        sys.setAttribute("graal_python_core_home", context.getCoreHome());
-        sys.setAttribute("graal_python_stdlib_home", context.getStdlibHome());
+        sys.setAttribute("graal_python_core_home", coreHome);
+        sys.setAttribute("graal_python_stdlib_home", stdlibHome);
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
@@ -230,8 +234,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
         if (!doIsolate) {
             path[pathIdx++] = getScriptPath(env, args);
         }
-        path[pathIdx++] = context.getStdlibHome();
-        path[pathIdx++] = context.getCoreHome() + env.getFileNameSeparator() + "modules";
+        path[pathIdx++] = stdlibHome;
+        path[pathIdx++] = coreHome + env.getFileNameSeparator() + "modules";
+        if (!capiHome.equals(coreHome)) {
+            // include our native modules on the path
+            path[pathIdx++] = capiHome + env.getFileNameSeparator() + "modules";
+        }
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
         sys.setAttribute("graal_python_platform_id", toolchain.getIdentifier());

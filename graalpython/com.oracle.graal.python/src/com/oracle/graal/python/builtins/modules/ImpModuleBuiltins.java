@@ -53,7 +53,6 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -259,7 +258,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
 
                 String libPythonName = "libpython" + ExtensionSuffixesNode.getSoAbi(context);
-                TruffleFile homePath = env.getInternalTruffleFile(context.getCoreHomeOrFail());
+                TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
                 TruffleFile capiFile = homePath.resolve(libPythonName);
                 Object capi = null;
                 try {
@@ -286,15 +285,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // immediately
                 callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
             }
-        }
-
-        private String asString(Object object) {
-            if (object instanceof String) {
-                return (String) object;
-            } else if (object instanceof PString) {
-                return ((PString) object).getValue();
-            }
-            throw raise(PythonBuiltinClassType.TypeError, "path entry '%s' is not of type 'str'", object);
         }
 
         private SetItemNode getSetItemNode() {

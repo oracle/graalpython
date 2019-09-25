@@ -87,6 +87,7 @@ public final class PythonContext {
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
+    static final String NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
 
     private final PythonLanguage language;
     private PythonModule mainModule;
@@ -377,20 +378,22 @@ public final class PythonContext {
         isInitialized = true;
     }
 
-    private String sysPrefix, basePrefix, coreHome, stdLibHome;
+    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
         basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
         coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
+        capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
 
         PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
-                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
+                        "\n\tStdLibHome: {4}" +
+                        "\n\tCAPI: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -443,6 +446,10 @@ public final class PythonContext {
                     }
                 } catch (SecurityException | IOException e) {
                 }
+            }
+
+            if (capiHome.isEmpty()) {
+                capiHome = coreHome;
             }
 
             PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
@@ -500,6 +507,15 @@ public final class PythonContext {
             throw new RuntimeException(NO_CORE_FATAL);
         }
         return coreHome;
+    }
+
+    @TruffleBoundary
+    public String getCAPIHome() {
+        if (capiHome.isEmpty()) {
+            writeWarning(NO_CAPI);
+            return coreHome;
+        }
+        return capiHome;
     }
 
     private static void writeWarning(String warning) {
