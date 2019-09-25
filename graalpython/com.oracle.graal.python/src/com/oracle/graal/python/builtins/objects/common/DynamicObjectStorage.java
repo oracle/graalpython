@@ -149,7 +149,6 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         return store;
     }
 
-
     private static class FilterIterator<T> implements Iterator<T> {
         private final Iterator<T> iterator;
         private final Predicate<T> predicate;
