@@ -1181,6 +1181,10 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
                     oldestFile = f
         if tsOldest == sys.maxsize:
             tsOldest = 0
+        if mx.suite("sulong-managed", fatalIfMissing=False):
+            # ensure that we have both libpythons built
+            if len(list(filter(lambda n: n.startswith("libpython"), os.listdir(self.subject.get_output_root())))) < 2:
+                tsOldest = 0
         if tsOldest < tsNewest:
             self.clean() # we clean here, because setuptools doesn't check timestamps
             if newestFile and oldestFile:
