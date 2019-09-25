@@ -671,7 +671,7 @@ public final class Python3Core implements PythonCore {
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
-        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : "invalid syntax");
+        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : message != null ? message : "invalid syntax");
         throw PException.fromObject(instance, location);
     }
 }

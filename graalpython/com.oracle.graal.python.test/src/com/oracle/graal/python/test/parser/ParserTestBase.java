@@ -59,6 +59,7 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.Arrays;
 import java.util.List;
+import org.junit.Assert;
 import static org.junit.Assert.assertTrue;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -141,6 +142,18 @@ public class ParserTestBase {
             parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
         } catch (PException e) {
             thrown = e.isSyntaxError();
+        }
+
+        assertTrue("Expected SyntaxError was not thrown.", thrown);
+    }
+
+    public void checkSyntaxErrorMessage(String source, String expectedMessage) throws Exception {
+        boolean thrown = false;
+        try {
+            parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
+        } catch (PException e) {
+            thrown = e.isSyntaxError();
+            Assert.assertEquals(expectedMessage, e.getMessage());
         }
 
         assertTrue("Expected SyntaxError was not thrown.", thrown);
