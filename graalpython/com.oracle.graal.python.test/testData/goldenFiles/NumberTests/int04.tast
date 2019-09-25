@@ -1,0 +1,14 @@
+ModuleRootNode Name: <module 'int04'> SourceSection: [0,7]`h == -1`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,7]`h == -1`
+    BinaryComparisonNodeGen SourceSection: [0,7]`h == -1`
+      LookupAndCallBinaryNodeGen SourceSection: None
+        Op: __eq__
+      ReadNameNodeGen SourceSection: [0,1]`h`
+        Identifier: h
+      IntegerLiteralNode SourceSection: [5,7]`-1`
+        Value: -1

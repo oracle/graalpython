@@ -1,0 +1,9 @@
+ModuleRootNode Name: <module 'underscore04'> SourceSection: [0,5]`0o1_7`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,5]`0o1_7`
+    IntegerLiteralNode SourceSection: [0,5]`0o1_7`
+      Value: 15
