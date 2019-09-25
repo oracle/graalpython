@@ -39,87 +39,114 @@
 
 counter = 0
 
+
 class Foo:
-  def __setattr__(self, key, value):
-    global counter
-    counter = counter + 1
-    object.__setattr__(self, key, value)
-  def __delattr__(self, key):
-    global counter
-    counter = counter + 10
-    object.__delattr__(self, key)
+    def __setattr__(self, key, value):
+        global counter
+        counter = counter + 1
+        object.__setattr__(self, key, value)
+
+    def __delattr__(self, key):
+        global counter
+        counter = counter + 10
+        object.__delattr__(self, key)
+
 
 def test_call():
-  global counter
-  counter = 0
-  f = Foo()
-  f.a = 1
-  Foo.b = 123
-  assert counter == 1, "setting attrib on class should not call its own __setattr__"
-  del f.a
-  del Foo.b
-  assert counter == 11, "deleting attrib on class should not call its own __delattr__"
+    global counter
+    counter = 0
+    f = Foo()
+    f.a = 1
+    Foo.b = 123
+    assert counter == 1, "setting attrib on class should not call its own __setattr__"
+    del f.a
+    del Foo.b
+    assert counter == 11, "deleting attrib on class should not call its own __delattr__"
+
 
 class AClass:
-  pass
+    pass
+
 
 class BClass(AClass):
-  pass
+    pass
+
 
 class CClass(BClass):
-  pass
+    pass
+
 
 class DClass(BClass):
-  pass
+    pass
+
 
 def custom_set(self, key, value):
-  object.__setattr__(self, key, value + 10 if isinstance(value, int) else value)
+    object.__setattr__(self, key, value + 10 if isinstance(value, int) else value)
+
 
 def custom_get(self, key):
-  value = object.__getattribute__(self, key)
-  return value + 100 if isinstance(value, int) else value
+    value = object.__getattribute__(self, key)
+    return value + 100 if isinstance(value, int) else value
+
 
 def test_assignments():
-  object = CClass()
-  # writing to BClass changes the result, writing to DClass doesn't
-  targets = (AClass, BClass, DClass, CClass, object)
-  results = (0, 1, 1, 3, 4)
-  for i in range(0, len(targets)):
-    targets[i].foo = i
-    assert object.foo == results[i], "normal %d" %i
-  # make sure that a custom __getattribute__ is used
-  BClass.__getattribute__ = custom_get
-  for i in range(0, len(targets)):
-    targets[i].bar = i
-    assert object.bar == results[i] + 100, "custom get %d" % i
-  # check correct lookups when deleting attributes
-  for i in reversed(range(0, len(targets))):
-    assert object.bar == results[i] + 100, "delete %d" % i
-    del targets[i].bar
-  # make sure a custom __setattr__ is used
-  BClass.__setattr__ = custom_set
-  object.baz = 9
-  assert object.baz == 119, "custom set"
+    object = CClass()
+    # writing to BClass changes the result, writing to DClass doesn't
+    targets = (AClass, BClass, DClass, CClass, object)
+    results = (0, 1, 1, 3, 4)
+    for i in range(0, len(targets)):
+        targets[i].foo = i
+        assert object.foo == results[i], "normal %d" % i
+    # make sure that a custom __getattribute__ is used
+    BClass.__getattribute__ = custom_get
+    for i in range(0, len(targets)):
+        targets[i].bar = i
+        assert object.bar == results[i] + 100, "custom get %d" % i
+    # check correct lookups when deleting attributes
+    for i in reversed(range(0, len(targets))):
+        assert object.bar == results[i] + 100, "delete %d" % i
+        del targets[i].bar
+    # make sure a custom __setattr__ is used
+    BClass.__setattr__ = custom_set
+    object.baz = 9
+    assert object.baz == 119, "custom set"
 
 
 def test_setattr_via_decorator():
-  def setdec(func):
-    setattr(func, 'SPECIAL_ATTR', {'a': 1, 'b': 2})
-    return func
+    def setdec(func):
+        setattr(func, 'SPECIAL_ATTR', {'a': 1, 'b': 2})
+        return func
 
-  @setdec
-  def f():
-    return 1
-
-  assert hasattr(f, 'SPECIAL_ATTR')
-  assert getattr(f, 'SPECIAL_ATTR') == {'a': 1, 'b': 2}
-
-
-  class MyClass(object):
     @setdec
-    def f(self):
-      return 1
+    def f():
+        return 1
 
-  m = MyClass()
-  assert hasattr(m.f, 'SPECIAL_ATTR')
-  assert getattr(m.f, 'SPECIAL_ATTR') == {'a': 1, 'b': 2}
+    assert hasattr(f, 'SPECIAL_ATTR')
+    assert getattr(f, 'SPECIAL_ATTR') == {'a': 1, 'b': 2}
+
+    class MyClass(object):
+        @setdec
+        def f(self):
+            return 1
+
+    m = MyClass()
+    assert hasattr(m.f, 'SPECIAL_ATTR')
+    assert getattr(m.f, 'SPECIAL_ATTR') == {'a': 1, 'b': 2}
+
+
+def test_deepcopy_attribute_removal():
+    from copy import deepcopy
+
+    class A:
+        def __init__(self):
+            self.a = "a"
+
+        def add_rem_attr(self):
+            self.b = "b"
+            del self.b
+
+    i1 = A()
+    assert i1.__dict__ == deepcopy(i1).__dict__
+
+    i1.add_rem_attr()
+    assert i1.__dict__ == deepcopy(i1).__dict__
