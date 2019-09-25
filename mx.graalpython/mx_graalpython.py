@@ -207,6 +207,7 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     unittest_sandboxed = 'python-unittest-sandboxed'
+    unittest_multi = 'python-unittest-multi-context'
     unittest_jython = 'python-unittest-jython'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
@@ -385,6 +386,10 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
             run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+
+    with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
+        if task:
+            run_python_unittests(python_gvm(), args=["-multi-context"])
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -735,9 +740,26 @@ def update_import(name, rev="origin/master", callback=None):
 
 
 def update_import_cmd(args):
-    """Update our mx imports"""
+    """Update our mx or overlay imports"""
     if not args:
         args = ["truffle"]
+    if "overlay" in args:
+        mx.log("Updating overlays")
+        dirs = os.listdir(os.path.join(SUITE.dir, ".."))
+        for d in dirs:
+            if d.startswith("graalpython"):
+                d = os.path.join(SUITE.dir, "..", d)
+                jsonnetfile = os.path.join(d, "ci.jsonnet")
+                if not os.path.exists(jsonnetfile):
+                    continue
+                overlaydir = os.path.join(d, "..", "ci-overlays")
+                if not os.path.exists(overlaydir):
+                    mx.abort("Overlays must be next to repo")
+                vc = mx.VC.get_vc(overlaydir)
+                tip = str(vc.tip(overlaydir)).strip()
+                with open(jsonnetfile, "w") as f:
+                    f.write('{ overlay: "%s" }\n' % tip)
+        args.remove("overlay")
     if "sulong" in args:
         args.append("regex")
     if "regex" in args:
