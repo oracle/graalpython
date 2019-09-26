@@ -153,10 +153,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Crc32Node extends PythonBinaryBuiltinNode {
 
-        @Child private SequenceStorageNodes.ToByteArrayNode toArrayNode;
         @Child private CastToIntegerFromIntNode castToIntNode;
-
-        public abstract long execute(Object data, Object value);
 
         // we can't use jdk Crc32 class, if there is done init value of crc
         private static final int[] CRC32_TABLE = {
@@ -224,14 +221,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private SequenceStorageNodes.ToByteArrayNode getToArrayNode() {
-            if (toArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
-            }
-            return toArrayNode;
-        }
-
         private CastToIntegerFromIntNode getCastToIntNode() {
             if (castToIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -243,38 +232,40 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        public long doit(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
+                        @Cached ToBytesNode toBytesNode) {
+            return doCRC32(toBytesNode.execute(frame, data));
+        }
+
         @TruffleBoundary
-        public long doit(PIBytesLike data, @SuppressWarnings("unused") PNone value) {
+        private long doCRC32(byte[] data) {
             CRC32 crc32 = new CRC32();
-            crc32.update(getToArrayNode().execute(data.getSequenceStorage()));
+            crc32.update(data);
             return crc32.getValue();
         }
 
         @Specialization
-        public long doit(PIBytesLike data, long value) {
+        public long doit(VirtualFrame frame, Object data, long value,
+                        @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = (int) value;
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = toBytesNode.execute(frame, data);
             return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
-        public long doPInt(PIBytesLike data, PInt value) {
+        public long doPInt(VirtualFrame frame, Object data, PInt value,
+                        @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = value.intValue();
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = toBytesNode.execute(frame, data);
             return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
-        public long doObject(PIBytesLike data, Object value,
+        public long doObject(VirtualFrame frame, Object data, Object value,
                         @Cached("create()") Crc32Node recursiveNode) {
-            return recursiveNode.execute(data, getCastToIntNode().execute(value));
-        }
-
-        @Fallback
-        public long doObject(Object data, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, "a bytes-like object is required, not '%p'", data);
+            return (long) recursiveNode.execute(frame, data, getCastToIntNode().execute(value));
         }
 
         protected static Crc32Node create() {
