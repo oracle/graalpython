@@ -47,9 +47,8 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI
 
 
-try:
-    import __main__ # workaround for pdb++
-except ImportError:
+if not sys.modules.get("__main__"):
+    # workaround for pdb++
     sys.modules["__main__"] = type(sys)("<empty>")
 
 
@@ -1151,7 +1150,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         # This should only be done for the base task, otherwise we'll duplicate
         # the work. This is a development-time thing, because we need the
         # include directory for the C API to be next to lib-graalpython
-        if type(self) == GraalpythonCAPIBuildTask:
+        if type(self) == GraalpythonCAPIBuildTask: # pylint: disable=unidiomatic-typecheck;
             target_dir = os.path.join(SUITE.dir, "graalpython", "include")
             if os.path.exists(target_dir):
                 shutil.rmtree(target_dir)
@@ -1169,7 +1168,6 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             args.append("-q")
         args += ["-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
-        home = os.path.join(SUITE.dir, "graalpython")
         rc = self.run(args, env=env, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
         return min(rc, 1)
@@ -1180,7 +1178,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
     def needsBuild(self, newestInput):
         tsNewest = 0
         newestFile = None
-        for root,dirs,files in os.walk(self.src_dir()):
+        for root, _, files in os.walk(self.src_dir()):
             for f in files:
                 ts = os.path.getmtime(os.path.join(root, f))
                 if tsNewest < ts:
@@ -1188,7 +1186,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
                     newestFile = f
         tsOldest = sys.maxsize
         oldestFile = None
-        for root,dirs,files in os.walk(self.subject.get_output_root()):
+        for root, _, files in os.walk(self.subject.get_output_root()):
             for f in files:
                 ts = os.path.getmtime(os.path.join(root, f))
                 if tsOldest > ts:
@@ -1229,7 +1227,7 @@ class GraalpythonCAPIProject(mx.Project):
         if single:
             raise ValueError("single not supported")
         output = self.getOutput()
-        for root,dirs,files in os.walk(output):
+        for root, _, files in os.walk(output):
             for name in files:
                 fullname = os.path.join(root, name)
                 if use_relpath:
