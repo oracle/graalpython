@@ -668,6 +668,7 @@ public final class Python3Core implements PythonCore {
     }
 
     @Override
+    @TruffleBoundary
     public RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
         PBaseException instance;
         instance = factory().createBaseException(SyntaxError, message, arguments);
