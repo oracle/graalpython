@@ -46,10 +46,12 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI
 
+
 try:
     import __main__ # workaround for pdb++
 except ImportError:
-    sys.modules["__main__"] = mx
+    sys.modules["__main__"] = type(sys)("<empty>")
+
 
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
@@ -1142,6 +1144,9 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
     def __str__(self):
         return 'Building C API project {} with setuptools'.format(self.subject.name)
 
+    def run(self, args, env, cwd):
+        return do_run_python(args, env=env, cwd=cwd)
+
     def build(self):
         env = os.environ.copy()
         cwd = os.path.join(self.subject.get_output_root(), "mxbuild_temp")
@@ -1153,13 +1158,8 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         args += ["-S", os.path.join(self.subject.dir, "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
         home = os.path.join(SUITE.dir, "graalpython")
-        rc = do_run_python(args, env=env, cwd=cwd)
-        shutil.rmtree(cwd)
-        if mx.suite("sulong-managed", fatalIfMissing=False):
-            args = ["--llvm.managed"] + args
-            mx.ensure_dir_exists(cwd)
-            rc += do_run_python(args, env=env, cwd=cwd)
-            shutil.rmtree(cwd)
+        rc = self.run(args, env=env, cwd=cwd)
+        shutil.rmtree(cwd) # remove the temporary build files
         return min(rc, 1)
 
     def needsBuild(self, newestInput):
@@ -1181,10 +1181,6 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
                     oldestFile = f
         if tsOldest == sys.maxsize:
             tsOldest = 0
-        if mx.suite("sulong-managed", fatalIfMissing=False):
-            # ensure that we have both libpythons built
-            if len(list(filter(lambda n: n.startswith("libpython"), os.listdir(self.subject.get_output_root())))) < 2:
-                tsOldest = 0
         if tsOldest < tsNewest:
             self.clean() # we clean here, because setuptools doesn't check timestamps
             if newestFile and oldestFile:
