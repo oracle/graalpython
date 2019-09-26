@@ -195,6 +195,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         sys.setAttribute("graal_python_core_home", coreHome);
         sys.setAttribute("graal_python_stdlib_home", stdlibHome);
+        sys.setAttribute("graal_python_capi_home", capiHome);
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
