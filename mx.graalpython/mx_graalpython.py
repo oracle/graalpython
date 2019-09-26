@@ -1138,7 +1138,7 @@ def python_build_watch(args):
 
 class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
     def __init__(self, args, project):
-        jobs = 1 # no point in using more than 1 job
+        jobs = min(mx.cpu_count(), 8)
         super(GraalpythonCAPIBuildTask, self).__init__(args, jobs, project)
 
     def __str__(self):
@@ -1155,17 +1155,20 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             args.append("-v")
         elif mx._opts.quiet:
             args.append("-q")
-        args += ["-S", os.path.join(self.subject.dir, "setup.py"), self.subject.get_output_root()]
+        args += ["-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
         home = os.path.join(SUITE.dir, "graalpython")
         rc = self.run(args, env=env, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
         return min(rc, 1)
 
+    def src_dir(self):
+        return self.subject.dir
+
     def needsBuild(self, newestInput):
         tsNewest = 0
         newestFile = None
-        for root,dirs,files in os.walk(self.subject.dir):
+        for root,dirs,files in os.walk(self.src_dir()):
             for f in files:
                 ts = os.path.getmtime(os.path.join(root, f))
                 if tsNewest < ts:
