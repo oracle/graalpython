@@ -151,13 +151,13 @@ public abstract class BytesNodes {
 
         @Specialization
         byte[] doBytes(PBytes bytes,
-                        @Cached("create()") IsBuiltinClassProfile exceptionProfile) {
+                        @Cached IsBuiltinClassProfile exceptionProfile) {
             return doBytesLike(bytes, exceptionProfile);
         }
 
         @Specialization
         byte[] doByteArray(PByteArray byteArray,
-                        @Cached("create()") IsBuiltinClassProfile exceptionProfile) {
+                        @Cached IsBuiltinClassProfile exceptionProfile) {
             return doBytesLike(byteArray, exceptionProfile);
         }
 

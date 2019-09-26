@@ -244,7 +244,7 @@ index 66d8530..8bb2ab6 100644
     def Cython(extra_opts=None, **kwargs):
         if extra_opts is None:
             extra_opts = []
-        install_from_pypi("Cython==0.29.2", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
+        install_from_pypi("Cython==0.29.13", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
 
     @pip_package()
     def setuptools(**kwargs):

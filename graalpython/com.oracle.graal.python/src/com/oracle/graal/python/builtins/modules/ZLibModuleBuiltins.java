@@ -156,7 +156,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.ToByteArrayNode toArrayNode;
         @Child private CastToIntegerFromIntNode castToIntNode;
 
-        public abstract long execute(PIBytesLike data, Object value);
+        public abstract long execute(Object data, Object value);
 
         // we can't use jdk Crc32 class, if there is done init value of crc
         private static final int[] CRC32_TABLE = {
