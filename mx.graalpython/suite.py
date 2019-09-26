@@ -346,6 +346,7 @@ suite = {
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                     "file:graalpython/lib-graalpython",
+                    "file:graalpython/com.oracle.graal.python.cext/include",
                 ],
                 "./lib-graalpython/": [
                     "dependency:graalpython:com.oracle.graal.python.cext/*",
