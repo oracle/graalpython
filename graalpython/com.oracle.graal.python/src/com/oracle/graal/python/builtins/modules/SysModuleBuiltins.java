@@ -223,21 +223,22 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Object[] path;
         int pathIdx = 0;
         boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
-        int defaultPaths = doIsolate ? 3 : 4;
+        boolean capiSeparate = !capiHome.equals(coreHome);
+        int defaultPathsLen = (doIsolate ? 3 : 4) + (capiSeparate ? 1 : 0);
         if (option.length() > 0) {
             String[] split = option.split(context.getEnv().getPathSeparator());
-            path = new Object[split.length + defaultPaths];
+            path = new Object[split.length + defaultPathsLen];
             System.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
         } else {
-            path = new Object[defaultPaths];
+            path = new Object[defaultPathsLen];
         }
         if (!doIsolate) {
             path[pathIdx++] = getScriptPath(env, args);
         }
         path[pathIdx++] = stdlibHome;
         path[pathIdx++] = coreHome + env.getFileNameSeparator() + "modules";
-        if (!capiHome.equals(coreHome)) {
+        if (capiSeparate) {
             // include our native modules on the path
             path[pathIdx++] = capiHome + env.getFileNameSeparator() + "modules";
         }
