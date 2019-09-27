@@ -257,6 +257,14 @@ suite = {
             ],
             "license": ["PSF-License"],
         },
+
+        "python-test-support-lib": {
+            "class": "ArchiveProject",
+            "outputDir": "graalpython/lib-python/3/test/support",
+            "prefix": "lib-python/3/test/support",
+            "ignorePatterns": [],
+            "license": ["PSF-License"],
+        },
     },
 
     "licenses": {
@@ -304,7 +312,7 @@ suite = {
         },
 
         "GRAALPYTHON_PYTHON_LIB": {
-            "dependencies": ["python-lib"],
+            "dependencies": ["python-lib", "python-test-support-lib"],
             "description": "Python 3 lib files",
             "maven": False,
         },
