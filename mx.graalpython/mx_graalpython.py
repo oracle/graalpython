@@ -1162,6 +1162,11 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
 
     def build(self):
         self._prepare_headers()
+
+        # n.b.: we do the following to ensure that there's a directory when the
+        # importlib PathFinder initializes it's directory finders
+        mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
+
         env = os.environ.copy()
         cwd = os.path.join(self.subject.get_output_root(), "mxbuild_temp")
         args = []
