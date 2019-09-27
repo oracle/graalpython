@@ -47,6 +47,7 @@
 #include <polyglot.h>
 
 #include "Python.h"
+#include <truffle.h>
 
 #define SRC_CS "utf-8"
 
