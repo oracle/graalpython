@@ -1146,12 +1146,15 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
     def run(self, args, env, cwd):
         return do_run_python(args, env=env, cwd=cwd)
 
+    def _dev_headers_dir(self):
+        return os.path.join(SUITE.dir, "graalpython", "include")
+
     def _prepare_headers(self):
         # This should only be done for the base task, otherwise we'll duplicate
         # the work. This is a development-time thing, because we need the
         # include directory for the C API to be next to lib-graalpython
         if type(self) == GraalpythonCAPIBuildTask: # pylint: disable=unidiomatic-typecheck;
-            target_dir = os.path.join(SUITE.dir, "graalpython", "include")
+            target_dir = self._dev_headers_dir()
             if os.path.exists(target_dir):
                 shutil.rmtree(target_dir)
             shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir)
@@ -1207,11 +1210,16 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         return None
 
     def clean(self, forBuild=False):
+        result = 0
+        try:
+            shutil.rmtree(self._dev_headers_dir())
+        except BaseException:
+            result = 1
         try:
             shutil.rmtree(self.subject.get_output_root())
         except BaseException:
-            return 1
-        return 0
+            result = 1
+        return result
 
 
 class GraalpythonCAPIProject(mx.Project):
