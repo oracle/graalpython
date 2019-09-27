@@ -42,7 +42,6 @@ import sys
 import os
 import shutil
 import site
-import tempfile
 import logging
 from distutils.core import setup, Extension
 from distutils.sysconfig import get_config_var, get_config_vars
@@ -83,6 +82,7 @@ class CAPIDependency:
         self.url = url
 
     def download(self):
+        import tempfile
         package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", None)
         package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", None)
         tempdir = tempfile.mkdtemp()
@@ -173,6 +173,7 @@ class Bzip2Depedency(CAPIDependency):
         return self.lib_install_dir
 
     def conftest(self):
+        import tempfile
         src = b'''#include <bzlib.h>
         #include <stdio.h>
 
@@ -260,12 +261,13 @@ class NativeBuiltinModule:
 
 
 builtin_exts = (
-    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz")]),
     NativeBuiltinModule("_cpython_sre"),
     NativeBuiltinModule("_cpython_unicodedata"),
     NativeBuiltinModule("_memoryview"),
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_struct"),
+    # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
+    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz")]),
 )
 
 
