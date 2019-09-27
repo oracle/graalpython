@@ -220,11 +220,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
         LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
 
+        boolean isIsolated = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
+        boolean capiSeparate = !capiHome.equals(coreHome);
+
         Object[] path;
         int pathIdx = 0;
-        boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
-        boolean capiSeparate = !capiHome.equals(coreHome);
-        int defaultPathsLen = (doIsolate ? 3 : 4) + (capiSeparate ? 1 : 0);
+        int defaultPathsLen = 2;
+        if (!isIsolated) {
+            defaultPathsLen++;
+        }
+        if (capiSeparate) {
+            defaultPathsLen++;
+        }
         if (option.length() > 0) {
             String[] split = option.split(context.getEnv().getPathSeparator());
             path = new Object[split.length + defaultPathsLen];
@@ -233,7 +240,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         } else {
             path = new Object[defaultPathsLen];
         }
-        if (!doIsolate) {
+        if (!isIsolated) {
             path[pathIdx++] = getScriptPath(env, args);
         }
         path[pathIdx++] = stdlibHome;
