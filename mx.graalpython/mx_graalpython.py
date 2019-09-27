@@ -116,7 +116,8 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         args.insert(0, "--python.CAPI=%s" % capi_home)
 
     if not env:
-        env = os.environ
+        env = os.environ.copy()
+    env.setdefault("GRAAL_PYTHONHOME", _dev_pythonhome())
 
     check_vm_env = env.get('GRAALPYTHON_MUST_USE_GRAAL', False)
     if check_vm_env:
@@ -163,6 +164,19 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
+def _pythonhome_context():
+    return set_env(GRAAL_PYTHONHOME=mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
+
+
+def _dev_pythonhome_context():
+    home = os.environ.get("GRAAL_PYTHONHOME", _dev_pythonhome())
+    return set_env(GRAAL_PYTHONHOME=home)
+
+
+def _dev_pythonhome():
+    return os.path.join(SUITE.dir, "graalpython")
+
+
 def punittest(ars):
     if '--regex' not in ars:
         args = ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
@@ -170,7 +184,7 @@ def punittest(ars):
              "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
              "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
     args += ars
-    with set_env(GRAAL_PYTHONHOME=mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output()):
+    with _pythonhome_context():
         mx_unittest.unittest(args)
 
 
@@ -190,7 +204,7 @@ def nativeclean(args):
 
 def python3_unittests(args):
     """run the cPython stdlib unittests"""
-    mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
+    python(["graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
 def retag_unittests(args):
@@ -619,7 +633,7 @@ def run_shared_lib_test(args=None):
         mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
         mx.run(["ls", "-l", progname])
         mx.run(["ls", "-l", svm_lib_path])
-        run_env = {"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": os.environ["GRAAL_PYTHONHOME"]}
+        run_env = {"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": _dev_pythonhome()}
         mx.log(repr(run_env))
         mx.run([progname], env=run_env)
     finally:
@@ -1013,18 +1027,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# set our GRAAL_PYTHONHOME if not already set
-#
-# ----------------------------------------------------------------------------------------------------------------------
-if not os.getenv("GRAAL_PYTHONHOME"):
-    home = os.path.join(SUITE.dir, "graalpython")
-    if not os.path.exists(home):
-        home = [d for d in SUITE.dists if d.name == "GRAALPYTHON_GRAALVM_SUPPORT"][0].output
-    os.environ["GRAAL_PYTHONHOME"] = home
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
 # post init
 #
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1144,7 +1146,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
     def __str__(self):
         return 'Building C API project {} with setuptools'.format(self.subject.name)
 
-    def run(self, args, env, cwd):
+    def run(self, args, env=None, cwd=None):
         return do_run_python(args, env=env, cwd=cwd)
 
     def _dev_headers_dir(self):
@@ -1168,7 +1170,6 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         # importlib PathFinder initializes it's directory finders
         mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
 
-        env = os.environ.copy()
         cwd = os.path.join(self.subject.get_output_root(), "mxbuild_temp")
         args = []
         if mx._opts.verbose:
@@ -1177,7 +1178,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             args.append("-q")
         args += ["-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
-        rc = self.run(args, env=env, cwd=cwd)
+        rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
         return min(rc, 1)
 
