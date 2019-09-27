@@ -145,7 +145,7 @@ class EnvBuilder:
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
-                sys.graal_python_cext_src,
+                sys.graal_python_capi_home,
             ))
             if sys.platform == "win32":
                 f.write(" %*")
