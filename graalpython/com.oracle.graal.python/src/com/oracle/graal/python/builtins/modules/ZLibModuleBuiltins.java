@@ -404,7 +404,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        Object deflateCompress(VirtualFrame frame, DeflaterWrapper stream, PIBytesLike pb, int mode) {
+        Object deflateCompress(VirtualFrame frame, DeflaterWrapper stream, Object pb, int mode) {
             byte[] data = toBytes.execute(frame, pb);
             byte[] result = new byte[DEF_BUF_SIZE];
 
