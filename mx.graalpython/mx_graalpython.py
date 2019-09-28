@@ -404,8 +404,13 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                run_python_unittests(python_gvm(), args=["--python.WithThread=true"], paths=["test_tagged_unittests.py"])
+            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true", GRAAL_PYTHONHOME=_dev_pythonhome()):
+                # the tagged unittests must ron in the dev_pythonhome and using
+                # the dev CAPI, because that's where the tags are
+                run_python_unittests(python_gvm(),
+                                     args=["--python.WithThread=true",
+                                           "--python.CAPI=" + mx.dependency("com.oracle.graal.python.cext").get_output_root()],
+                                     paths=["test_tagged_unittests.py"])
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
