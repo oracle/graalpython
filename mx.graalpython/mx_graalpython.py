@@ -71,6 +71,10 @@ def _get_stdlib_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-python", "3")
 
 
+def _get_capi_home():
+    return mx.dependency("com.oracle.graal.python.cext").get_output_root()
+
+
 def _extract_graalpython_internal_options(args):
     non_internal = []
     additional_dists = []
@@ -112,7 +116,7 @@ def python(args):
 
 def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     if not any(arg.startswith("--python.CAPI") for arg in args):
-        capi_home = mx.dependency("com.oracle.graal.python.cext").get_output_root()
+        capi_home = _get_capi_home()
         args.insert(0, "--python.CAPI=%s" % capi_home)
 
     if not env:
@@ -412,7 +416,7 @@ def graalpython_gate_runner(args, tasks):
                         python_gvm(),
                         args=["-v",
                               "--python.WithThread=true",
-                              "--python.CAPI=" + mx.dependency("com.oracle.graal.python.cext").get_output_root()],
+                              "--python.CAPI=" + _get_capi_home()],
                         paths=["test_tagged_unittests.py"]
                     )
 
