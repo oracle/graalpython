@@ -295,7 +295,7 @@ def set_env(**environ):
 
 def python_gvm(args=None):
     "Build and run a GraalVM graalpython launcher"
-    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true", SKIP_LIBRARIES="native-image-agent,polyglot"):
         return _python_graalvm_launcher(args or [])
 
 
@@ -1187,6 +1187,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         shutil.rmtree(cwd) # remove the temporary build files
         # TODO: GR-18535
         if mx.suite("sulong-managed", fatalIfMissing=False):
+            mx.log("Building C API project com.oracle.graal.python.cext managed ...")
             mx.ensure_dir_exists(cwd)
             rc = self.run(["--llvm.managed"] + args, cwd=cwd)
             shutil.rmtree(cwd) # remove the temporary build files
