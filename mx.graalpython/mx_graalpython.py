@@ -295,7 +295,7 @@ def set_env(**environ):
 
 def python_gvm(args=None):
     "Build and run a GraalVM graalpython launcher"
-    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true", SKIP_LIBRARIES="native-image-agent,polyglot"):
+    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher(args or [])
 
 
