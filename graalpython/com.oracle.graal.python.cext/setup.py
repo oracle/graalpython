@@ -248,7 +248,7 @@ class NativeBuiltinModule:
                 libs.append(dep.lib_name)
                 library_dirs.append(dep.lib_install_dir)
                 #runtime_library_dirs.append(dep.lib_install_dir)
-                #extra_link_args.append("-Wl,-rpath," + dep.lib_install_dir)
+                extra_link_args.append("-Wl,-rpath," + dep.lib_install_dir)
 
             # If the dependency provides a header file, add the include path
             if dep.include_install_dir:
