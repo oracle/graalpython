@@ -259,6 +259,8 @@ public final class PythonParserImpl implements PythonParser {
 
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
-        throw errors.raiseInvalidSyntax(source, section);
+        // from parser we are getting RuntimeExceptions
+        String message = e instanceof RuntimeException && e.getMessage() != null ? e.getMessage() : "invalid syntax";
+        throw errors.raiseInvalidSyntax(source, section, message);
     }
 }
