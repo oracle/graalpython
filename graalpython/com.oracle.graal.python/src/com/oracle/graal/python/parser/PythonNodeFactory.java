@@ -215,7 +215,7 @@ public final class PythonNodeFactory {
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
     }
 
-    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, PythonParser.ParserErrorCallback errors, Frame currentFrame) {
+    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame) {
         Node result;
         boolean isGen = false;
         Frame useFrame = currentFrame;
