@@ -41,8 +41,6 @@
 
 package com.oracle.graal.python.parser;
 
-import com.oracle.graal.python.PythonLanguage;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -86,9 +84,11 @@ public final class PythonNodeFactory {
     private final NodeFactory nodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
+    private final PythonParser.ParserErrorCallback errors;
 
-    public PythonNodeFactory(PythonLanguage language, Source source) {
-        this.nodeFactory = NodeFactory.create(language);
+    public PythonNodeFactory(PythonParser.ParserErrorCallback errors, Source source) {
+        this.errors = errors;
+        this.nodeFactory = NodeFactory.create(errors.getLanguage());
         this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
         this.source = source;
     }
@@ -135,6 +135,11 @@ public final class PythonNodeFactory {
     public SSTNode registerNonLocal(String[] names, int startOffset, int endOffset) {
         ScopeInfo scopeInfo = scopeEnvironment.getCurrentScope();
         for (String name : names) {
+            if (scopeInfo.findFrameSlot(name) != null) {
+                // the expectation is that in the local context the variable can not have slot yet.
+                // The slot is created by assignment or declaration
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), "name '%s' is assigned to before nonlocal declaration", name);
+            }
             scopeInfo.addExplicitNonlocalVariable(name);
         }
         return new SimpleSSTNode(SimpleSSTNode.Type.EMPTY, startOffset, endOffset);

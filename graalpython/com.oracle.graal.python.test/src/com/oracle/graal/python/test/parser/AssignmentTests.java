@@ -196,4 +196,16 @@ public class AssignmentTests extends ParserTestBase {
     public void assignToKeyword01() throws Exception {
         checkSyntaxErrorMessage("True = 1", "SyntaxError: can't assign to keyword");
     }
+
+    @Test
+    public void nonLocal01() throws Exception {
+        checkSyntaxErrorMessage(
+                        "def outer():\n" +
+                                        "  x = 'local in outer'\n" +
+                                        "  def inner():\n" +
+                                        "    x = 10\n" +
+                                        "    nonlocal x\n" +
+                                        "  inner()\n",
+                        "SyntaxError: name 'x' is assigned to before nonlocal declaration");
+    }
 }

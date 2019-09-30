@@ -149,6 +149,11 @@ debugger or Chromium, respectively.
         graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py \
         -k NAME-OF-CPYTHON-UNITTEST
 
+A tag file can be regenerated with
+
+    mx python graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py \
+        --retag NAME-OF-CPYTHON-UNITTEST
+
 There's also multiple other gates that may fail with changes. One of these is
 our *style* gate, which checks formatting rules and copyrights. To auto-fix most
 issues, run the following command. Anything that's reported as error after this
