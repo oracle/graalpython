@@ -3,7 +3,7 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
-
+import os
 import unittest
 import zlib
 import binascii
@@ -12,6 +12,10 @@ import sys
 
 pintNumber = 98765432109876543210
 longNumber = 9876543210
+GZ_FILE_NAME = 'testgzfile.gz'
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+GZ_PATH = os.path.join(DIR_PATH, GZ_FILE_NAME)
+
 
 class MyIntObject:
     def __init__(self, value):
@@ -241,3 +245,14 @@ LAERTES
 
        Farewell.
 """
+
+
+GZ_DATA = b"01 LINE\n02 LINE\n03 LINE\n04 LINE\n05 LINE\n06 LINE\n07 LINE\n08 LINE\n09 LINE\n10 LINE\n11 LINE\n12 LINE"
+
+
+def test_gzip_decompress():
+    import contextlib
+    import gzip
+    with contextlib.closing(gzip.open(GZ_PATH, 'rb')) as g:
+        data = g.read()
+    assert data == GZ_DATA

@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
 import java.io.ByteArrayOutputStream;
@@ -72,7 +71,6 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -500,7 +498,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
             return factory().createTuple(new Object[]{
                             factory().createBytes(decompressed),
-                            stream.needsInput(),
+                            stream.inflater.finished(),
                             stream.getRemaining()
             });
         }
