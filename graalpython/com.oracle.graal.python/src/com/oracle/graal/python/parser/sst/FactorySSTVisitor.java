@@ -218,7 +218,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AssignmentSSTNode node) {
         ExpressionNode[] lhs = new ExpressionNode[node.lhs.length];
         for (int i = 0; i < node.lhs.length; i++) {
-            lhs[i] = (ExpressionNode) node.lhs[i].accept(this);
+            SSTNode sstLhs = node.lhs[i];
+            if (sstLhs instanceof StringLiteralSSTNode || sstLhs instanceof NumberLiteralSSTNode || sstLhs instanceof FloatLiteralSSTNode) {
+                errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "can't assign to literal");
+            } else if (sstLhs instanceof BooleanLiteralSSTNode) {
+                errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "can't assign to keyword");
+            }
+            lhs[i] = (ExpressionNode) sstLhs.accept(this);
         }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
 
