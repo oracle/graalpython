@@ -56,6 +56,11 @@ verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
 so_ext = get_config_var("EXT_SUFFIX")
 
+
+if darwin_native:
+    get_config_vars()["LDSHARED"] = get_config_vars()['LDSHARED_LINUX'] + " -L" + sys.graal_python_capi_home + " -lpython." + get_config_vars()["SOABI"] + " -rpath '@loader_path/../'"
+
+
 def system(cmd, msg=""):
     logger.debug("Running command: " + cmd)
     status = os.system(cmd)
@@ -243,7 +248,7 @@ class NativeBuiltinModule:
                 libs.append(dep.lib_name)
                 library_dirs.append(dep.lib_install_dir)
                 #runtime_library_dirs.append(dep.lib_install_dir)
-                extra_link_args.append("-Wl,-rpath," + dep.lib_install_dir)
+                #extra_link_args.append("-Wl,-rpath," + dep.lib_install_dir)
 
             # If the dependency provides a header file, add the include path
             if dep.include_install_dir:

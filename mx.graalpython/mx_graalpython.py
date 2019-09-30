@@ -182,8 +182,10 @@ def _dev_pythonhome():
 
 
 def punittest(ars):
-    if '--regex' not in ars:
+    if not ars:
         args = ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
+    else:
+        args = []
     args += ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
              "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
              "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
