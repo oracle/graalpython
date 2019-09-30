@@ -145,6 +145,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -164,6 +165,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
@@ -1281,6 +1283,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
+    @ExportLibrary(ReferenceLibrary.class)
     public static final class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
@@ -1399,6 +1402,24 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected boolean isMemberReadable(String member) {
             return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member);
+        }
+
+        @ExportMessage
+        static class IsSame {
+
+            @Specialization
+            static boolean doPrimitiveWrapper(PrimitiveNativeWrapper receiver, PrimitiveNativeWrapper other) {
+                // This basically emulates singletons for boxed values. However, we need to do so to
+                // preserve the invariant that storing an object into a list and getting it out (in
+                // the same critical region) returns the same object.
+                return other.state == receiver.state && other.value == receiver.value && (other.dvalue == receiver.dvalue || Double.isNaN(receiver.dvalue) && Double.isNaN(other.dvalue));
+            }
+
+            @Fallback
+            @SuppressWarnings("unused")
+            static boolean doGeneric(PrimitiveNativeWrapper receiver, Object other) {
+                return false;
+            }
         }
     }
 

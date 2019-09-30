@@ -630,11 +630,11 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     LookupInheritedAttributeNode SourceSection: None
                                                       LookupAttributeInMRONodeGen SourceSection: None
-                                                        IsSameTypeSlowNodeGen SourceSection: None
+                                                        IsSameTypeNodeGen SourceSection: None
                                                       GetLazyClassNodeGen SourceSection: None
                                                     LookupInheritedAttributeNode SourceSection: None
                                                       LookupAttributeInMRONodeGen SourceSection: None
-                                                        IsSameTypeSlowNodeGen SourceSection: None
+                                                        IsSameTypeNodeGen SourceSection: None
                                                       GetLazyClassNodeGen SourceSection: None
                                                     CachedCallNodeGen SourceSection: None
                                                       CreateArgumentsNodeGen SourceSection: None

@@ -57,11 +57,11 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                       ReadVariableFromFrameNodeGen SourceSection: None
                     LookupInheritedAttributeNode SourceSection: None
                       LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeSlowNodeGen SourceSection: None
+                        IsSameTypeNodeGen SourceSection: None
                       GetLazyClassNodeGen SourceSection: None
                     LookupInheritedAttributeNode SourceSection: None
                       LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeSlowNodeGen SourceSection: None
+                        IsSameTypeNodeGen SourceSection: None
                       GetLazyClassNodeGen SourceSection: None
                     CachedCallNodeGen SourceSection: None
                       CreateArgumentsNodeGen SourceSection: None

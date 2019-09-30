@@ -63,6 +63,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -75,9 +76,11 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
+@ExportLibrary(ReferenceLibrary.class)
+public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final TruffleObject object;
 
@@ -89,6 +92,7 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
         return 0;
     }
 
+    @SuppressWarnings("static-method")
     public Shape getInstanceShape() {
         CompilerDirectives.transferToInterpreter();
         throw new UnsupportedOperationException("native class does not have a shape");
@@ -199,11 +203,12 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
             return cachedClass;
         }
 
-        @Specialization(guards = "cachedObject.equals(object)", limit = "1", assumptions = "singleContextAssumption")
+        @Specialization(guards = "referenceLibrary.isSame(cachedObject.object, object.object)", limit = "1", assumptions = "singleContextAssumption")
         public static PythonAbstractClass getNativeClassCached(PythonAbstractNativeObject object,
                         @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
                         @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
+                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass,
+                        @CachedLibrary("object.object") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
             // TODO same as for 'getNativeClassCachedIdentity'
             return cachedClass;
         }
@@ -221,6 +226,22 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
             // do not convert wrap 'object.object' since that is really the native pointer
             // object
             return getNativeClass(object, PCallCapiFunction.getUncached(), ToJavaNode.getUncached());
+        }
+    }
+
+    @ExportMessage
+    static class IsSame {
+
+        @Specialization
+        static boolean doNativeObject(PythonAbstractNativeObject receiver, PythonAbstractNativeObject other,
+                        @CachedLibrary("receiver.object") ReferenceLibrary referenceLibrary) {
+            return referenceLibrary.isSame(receiver.object, other.object);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean doOther(PythonAbstractNativeObject receiver, Object other) {
+            return false;
         }
     }
 }

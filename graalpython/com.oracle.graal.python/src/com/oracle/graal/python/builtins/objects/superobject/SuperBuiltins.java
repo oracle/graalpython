@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -499,7 +500,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private boolean isSameType(Object execute, PythonAbstractClass abstractPythonClass) {
             if (isSameTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSameTypeNode = insert(IsSameTypeNode.create());
+                isSameTypeNode = insert(IsSameTypeNodeGen.create());
             }
             return isSameTypeNode.execute(execute, abstractPythonClass);
         }

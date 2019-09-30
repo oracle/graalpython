@@ -61,11 +61,11 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         ReadVariableFromFrameNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeSlowNodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeSlowNodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
@@ -100,11 +100,11 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeSlowNodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeSlowNodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
                       CachedCallNodeGen SourceSection: None
                         CreateArgumentsNodeGen SourceSection: None
