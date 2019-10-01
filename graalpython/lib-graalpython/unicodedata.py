@@ -45,9 +45,7 @@ c_unicodedata_module = None
 @__builtin__
 def __get_c_unicodedata():
     if c_unicodedata_module is None:
-        from build_capi import hint
-        with hint("_cpython_unicodedata"):
-            import _cpython_unicodedata
+        import _cpython_unicodedata
         global c_unicodedata_module
         c_unicodedata_module = _cpython_unicodedata
     return c_unicodedata_module

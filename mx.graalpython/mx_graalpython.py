@@ -21,6 +21,7 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+
 from __future__ import print_function
 
 import contextlib
@@ -45,6 +46,12 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI
 
+
+if not sys.modules.get("__main__"):
+    # workaround for pdb++
+    sys.modules["__main__"] = type(sys)("<empty>")
+
+
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
@@ -62,6 +69,10 @@ def _get_core_home():
 
 def _get_stdlib_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-python", "3")
+
+
+def _get_capi_home():
+    return mx.dependency("com.oracle.graal.python.cext").get_output_root()
 
 
 def _extract_graalpython_internal_options(args):
@@ -100,15 +111,17 @@ def python(args):
     if '--python.WithJavaStacktrace' not in args:
         args.insert(0, '--python.WithJavaStacktrace')
 
-    if not any([x.startswith("--python.CAPI") for x in args]):
-        args.insert(1, mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"))
-
     do_run_python(args)
 
 
 def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
+    if not any(arg.startswith("--python.CAPI") for arg in args):
+        capi_home = _get_capi_home()
+        args.insert(0, "--python.CAPI=%s" % capi_home)
+
     if not env:
-        env = os.environ
+        env = os.environ.copy()
+    env.setdefault("GRAAL_PYTHONHOME", _dev_pythonhome())
 
     check_vm_env = env.get('GRAALPYTHON_MUST_USE_GRAAL', False)
     if check_vm_env:
@@ -118,7 +131,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             check_vm()
 
     dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
-    env["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -139,7 +151,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
 
     graalpython_args.insert(0, '--experimental-options=true')
-    graalpython_args.insert(1, '-ensure-capi')
 
     vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk)
 
@@ -157,42 +168,47 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
+def _pythonhome_context():
+    return set_env(GRAAL_PYTHONHOME=mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
+
+
+def _dev_pythonhome_context():
+    home = os.environ.get("GRAAL_PYTHONHOME", _dev_pythonhome())
+    return set_env(GRAAL_PYTHONHOME=home)
+
+
+def _dev_pythonhome():
+    return os.path.join(SUITE.dir, "graalpython")
+
+
 def punittest(ars):
-    if '--regex' not in ars:
-        args = ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
-    args += ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
-             "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
-             "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
+    args = ["-Dgraal.TruffleCompilationExceptionsAreFatal=false",
+            "-Dgraal.TruffleCompilationExceptionsArePrinted=true",
+            "-Dgraal.TrufflePerformanceWarningsAreFatal=false"]
+    if "--regex" not in ars:
+        args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
     args += ars
-    # ensure that C API was built (we may need on-demand compilation)
-    do_run_python(["-m", "build_capi"], nonZeroIsFatal=True)
-    os.environ["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
-    mx_unittest.unittest(args)
+    with _pythonhome_context():
+        mx_unittest.unittest(args)
 
 
-PYTHON_ARCHIVES = ["GRAALPYTHON-LAUNCHER",
-                   "GRAALPYTHON",
-                   "GRAALPYTHON_UNIT_TESTS",
-                   "GRAALPYTHON_GRAALVM_SUPPORT"]
-PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.parser.antlr",
-                          "com.oracle.graal.python.cext"]
+PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
+PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.cext"]
 
 
 def nativebuild(args):
     "Build the non-Java Python projects and archives"
-    mx.build(["--only", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
-    mx.archive(["@" + a for a in PYTHON_ARCHIVES])
+    mx.build(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
 
 def nativeclean(args):
     "Clean the non-Java Python projects"
-    mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS)])
+    mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
 
 def python3_unittests(args):
     """run the cPython stdlib unittests"""
-    python(["-m", "build_capi"])
-    mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
+    python(["graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
 def retag_unittests(args):
@@ -326,14 +342,9 @@ def _graalpytest_root():
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None):
     args = args or []
     args = ["--experimental-options=true",
-            "--python.CatchAllExceptions=true",
-            mx_subst.path_substitutions.substitute("--python.CAPI=<path:com.oracle.graal.python.cext>"),
-            ] + args
+            "--python.CatchAllExceptions=true"] + args
     exclude = exclude or []
     paths = paths or [_graalpytest_root()]
-
-    # ensure that C API was built (we may need on-demand compilation)
-    mx.run([python_binary] + args + ["-m", "build_capi"], nonZeroIsFatal=True)
 
     # list of excluded tests
     if aot_compatible:
@@ -398,7 +409,16 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                run_python_unittests(python_gvm(), args=["--python.WithThread=true"], paths=["test_tagged_unittests.py"])
+                # the tagged unittests must ron in the dev_pythonhome and using
+                # the dev CAPI, because that's where the tags are
+                with _dev_pythonhome_context():
+                    run_python_unittests(
+                        python_gvm(),
+                        args=["-v",
+                              "--python.WithThread=true",
+                              "--python.CAPI=" + _get_capi_home()],
+                        paths=["test_tagged_unittests.py"]
+                    )
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -626,7 +646,7 @@ def run_shared_lib_test(args=None):
         mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
         mx.run(["ls", "-l", progname])
         mx.run(["ls", "-l", svm_lib_path])
-        run_env = {"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": os.environ["GRAAL_PYTHONHOME"]}
+        run_env = {"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": _dev_pythonhome()}
         mx.log(repr(run_env))
         mx.run([progname], env=run_env)
     finally:
@@ -1022,18 +1042,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# set our GRAAL_PYTHONHOME if not already set
-#
-# ----------------------------------------------------------------------------------------------------------------------
-if not os.getenv("GRAAL_PYTHONHOME"):
-    home = os.path.join(SUITE.dir, "graalpython")
-    if not os.path.exists(home):
-        home = [d for d in SUITE.dists if d.name == "GRAALPYTHON_GRAALVM_SUPPORT"][0].output
-    os.environ["GRAAL_PYTHONHOME"] = home
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
 # post init
 #
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1143,6 +1151,132 @@ def python_build_watch(args):
             else:
                 nativebuild([])
             mx.log("Build done.")
+
+
+class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
+    def __init__(self, args, project):
+        jobs = min(mx.cpu_count(), 8)
+        super(GraalpythonCAPIBuildTask, self).__init__(args, jobs, project)
+
+    def __str__(self):
+        return 'Building C API project {} with setuptools'.format(self.subject.name)
+
+    def run(self, args, env=None, cwd=None):
+        return do_run_python(args, env=env, cwd=cwd)
+
+    def _dev_headers_dir(self):
+        return os.path.join(SUITE.dir, "graalpython", "include")
+
+    def _prepare_headers(self):
+        target_dir = self._dev_headers_dir()
+        if os.path.exists(target_dir):
+            shutil.rmtree(target_dir)
+        mx.logv("Preparing header files (dest: {!s})".format(target_dir))
+        shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir)
+        shutil.copy(os.path.join(mx.dependency("SULONG_LEGACY").get_output(), "include", "truffle.h"), target_dir)
+
+    def build(self):
+        self._prepare_headers()
+
+        # n.b.: we do the following to ensure that there's a directory when the
+        # importlib PathFinder initializes it's directory finders
+        mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
+
+        cwd = os.path.join(self.subject.get_output_root(), "mxbuild_temp")
+        args = []
+        if mx._opts.verbose:
+            args.append("-v")
+        elif mx._opts.quiet:
+            args.append("-q")
+        args += ["-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
+        mx.ensure_dir_exists(cwd)
+        rc = self.run(args, cwd=cwd)
+        shutil.rmtree(cwd) # remove the temporary build files
+        # TODO: GR-18535
+        if mx.suite("sulong-managed", fatalIfMissing=False):
+            mx.log("Building C API project com.oracle.graal.python.cext managed ...")
+            mx.ensure_dir_exists(cwd)
+            rc = self.run(["--llvm.managed"] + args, cwd=cwd)
+            shutil.rmtree(cwd) # remove the temporary build files
+        return min(rc, 1)
+
+    def src_dir(self):
+        return self.subject.dir
+
+    def needsBuild(self, newestInput):
+        tsNewest = 0
+        newestFile = None
+        for root, _, files in os.walk(self.src_dir()):
+            for f in files:
+                ts = os.path.getmtime(os.path.join(root, f))
+                if tsNewest < ts:
+                    tsNewest = ts
+                    newestFile = f
+        tsOldest = sys.maxsize
+        oldestFile = None
+        for root, _, files in os.walk(self.subject.get_output_root()):
+            for f in files:
+                ts = os.path.getmtime(os.path.join(root, f))
+                if tsOldest > ts:
+                    tsOldest = ts
+                    oldestFile = f
+        if tsOldest == sys.maxsize:
+            tsOldest = 0
+        if tsOldest < tsNewest:
+            self.clean() # we clean here, because setuptools doesn't check timestamps
+            if newestFile and oldestFile:
+                return (True, "rebuild needed, %s newer than %s" % (newestFile, oldestFile))
+            else:
+                return (True, "build needed")
+        else:
+            return (False, "up to date")
+
+    def newestOutput(self):
+        return None
+
+    def clean(self, forBuild=False):
+        result = 0
+        try:
+            shutil.rmtree(self._dev_headers_dir())
+        except BaseException:
+            result = 1
+        try:
+            shutil.rmtree(self.subject.get_output_root())
+        except BaseException:
+            result = 1
+        return result
+
+
+class GraalpythonCAPIProject(mx.Project):
+    def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
+        context = 'project ' + name
+        self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
+        super(GraalpythonCAPIProject, self).__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
+
+    def getOutput(self, replaceVar=mx_subst.results_substitutions):
+        return self.get_output_root()
+
+    def getArchivableResults(self, use_relpath=True, single=False):
+        if single:
+            raise ValueError("single not supported")
+        output = self.getOutput()
+        for root, _, files in os.walk(output):
+            for name in files:
+                fullname = os.path.join(root, name)
+                if use_relpath:
+                    yield fullname, os.path.relpath(fullname, output)
+                else:
+                    yield fullname, name
+
+    def getBuildTask(self, args):
+        return GraalpythonCAPIBuildTask(args, self)
+
+    def getBuildEnv(self, replaceVar=mx_subst.path_substitutions):
+        ret = {}
+        if hasattr(self, 'buildEnv'):
+            for key, value in self.buildEnv.items():
+                ret[key] = replaceVar.substitute(value, dependency=self)
+        return ret
 
 
 # ----------------------------------------------------------------------------------------------------------------------

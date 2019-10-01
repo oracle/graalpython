@@ -145,7 +145,7 @@ class EnvBuilder:
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
-                sys.graal_python_cext_src,
+                sys.graal_python_capi_home,
             ))
             if sys.platform == "win32":
                 f.write(" %*")
@@ -321,13 +321,6 @@ class EnvBuilder:
                         dst = os.path.join(tcldir, 'init.tcl')
                         shutil.copyfile(src, dst)
                         break
-
-        # Truffle change: we need to ensure that the C API is built
-        import build_capi
-        build_capi.build()
-        # Truffle change end
-            
-    
 
     def _setup_pip(self, context):
         """Installs or upgrades pip in a virtual environment"""

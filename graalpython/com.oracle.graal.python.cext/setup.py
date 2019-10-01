@@ -42,7 +42,6 @@ import sys
 import os
 import shutil
 import site
-import tempfile
 import logging
 from distutils.core import setup, Extension
 from distutils.sysconfig import get_config_var, get_config_vars
@@ -56,6 +55,11 @@ libpython_name = "libpython"
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
 so_ext = get_config_var("EXT_SUFFIX")
+
+
+if darwin_native:
+    get_config_vars()["LDSHARED"] = get_config_vars()['LDSHARED_LINUX'] + " -L" + sys.graal_python_capi_home + " -lpython." + get_config_vars()["SOABI"] + " -rpath '@loader_path/../'"
+
 
 def system(cmd, msg=""):
     logger.debug("Running command: " + cmd)
@@ -83,6 +87,7 @@ class CAPIDependency:
         self.url = url
 
     def download(self):
+        import tempfile
         package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", None)
         package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", None)
         tempdir = tempfile.mkdtemp()
@@ -173,9 +178,10 @@ class Bzip2Depedency(CAPIDependency):
         return self.lib_install_dir
 
     def conftest(self):
+        import tempfile
         src = b'''#include <bzlib.h>
         #include <stdio.h>
-        
+
         int main(void) {
             printf("%.200s", BZ2_bzlibVersion());
             return 0;
@@ -260,12 +266,13 @@ class NativeBuiltinModule:
 
 
 builtin_exts = (
-    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz")]),
     NativeBuiltinModule("_cpython_sre"),
     NativeBuiltinModule("_cpython_unicodedata"),
     NativeBuiltinModule("_memoryview"),
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_struct"),
+    # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
+    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz")]),
 )
 
 
@@ -304,8 +311,8 @@ def build_libpython(capi_home):
             ext_modules=[module],
         )
 
-def build_builtin_exts(capi_module_home):
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_module_home, "clean"]
+def build_builtin_exts(capi_home):
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean"]
     for ext in builtin_exts:
         distutil_ext = ext()
         res = setup(
@@ -319,21 +326,10 @@ def build_builtin_exts(capi_module_home):
         logger.debug("Successfully built and installed module %s", ext.name)
 
 
-def build(capi_home, capi_module_home):
+def build(capi_home):
     build_libpython(capi_home)
-    build_builtin_exts(capi_module_home)
-
-
-def clean(capi_home, capi_module_home):
-    libpython_path = os.path.join(capi_home, libpython_name + so_ext)
-    if os.path.exists(libpython_path):
-        logger.info("Cleaning %s", libpython_path)
-        os.unlink(libpython_path)
-    if os.path.exists(capi_module_home):
-        for f in [os.path.join(capi_module_home, f) for f in os.listdir(capi_module_home) if f.endswith(so_ext)]:
-            logger.info("Cleaning %s", f)
-            os.unlink(f)
+    build_builtin_exts(capi_home)
 
 
 if __name__ == "__main__":
-    build()
+    build(sys.argv[1])

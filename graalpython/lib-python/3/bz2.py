@@ -16,11 +16,7 @@ import warnings
 import _compression
 from threading import RLock
 
-# TRUFFLE CHANGE BEGIN
-from build_capi import hint
-with hint("_bz2"):
-    from _bz2 import BZ2Compressor, BZ2Decompressor
-# TRUFFLE CHANGE END
+from _bz2 import BZ2Compressor, BZ2Decompressor
 
 
 _MODE_CLOSED   = 0

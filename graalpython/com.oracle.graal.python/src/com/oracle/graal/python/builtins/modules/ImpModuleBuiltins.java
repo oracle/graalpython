@@ -53,7 +53,6 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -89,7 +88,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -250,9 +248,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private static final String CAPI_NOT_BUILT_HINT = "Did you forget to build the C API using 'graalpython -m build_capi'?";
-        private static final String CAPI_LOAD_ERROR = "Could not load C API from %s.\n" + CAPI_NOT_BUILT_HINT;
-        private static final String CAPI_LOCATE_ERROR = "Could not locate C API library '%s' in 'sys.path'\n" + CAPI_NOT_BUILT_HINT;
+        private static final String CAPI_LOAD_ERROR = "Could not load C API from %s.\n";
 
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
@@ -262,8 +258,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
 
                 String libPythonName = "libpython" + ExtensionSuffixesNode.getSoAbi(context);
-                String libPythonPath = getCapiHome(context, env, libPythonName);
-                TruffleFile capiFile = env.getInternalTruffleFile(libPythonPath);
+                TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
+                TruffleFile capiFile = homePath.resolve(libPythonName);
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
@@ -289,42 +285,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // immediately
                 callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
             }
-        }
-
-        private String getCapiHome(PythonContext context, Env env, String libPythonName) {
-            CompilerAsserts.neverPartOfCompilation();
-            // look for file 'libPythonName' in the path
-            ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
-            PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
-            String path = tryPathEntry(env, libPythonName, readNode.execute(sysModule, "graal_python_capi_home"));
-            if (path != null) {
-                return path;
-            }
-            PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOCATE_ERROR, libPythonName));
-            throw raise(PythonErrorType.ImportError, CAPI_LOCATE_ERROR, libPythonName);
-        }
-
-        private String tryPathEntry(Env env, String libPythonName, Object entry) {
-            String path = String.join(env.getFileNameSeparator(), asString(entry), libPythonName);
-            PythonLanguage.getLogger().log(Level.FINER, "Looking for " + libPythonName + " in " + path);
-            try {
-                if (env.getPublicTruffleFile(path).exists()) {
-                    PythonLanguage.getLogger().log(Level.FINE, "Found " + libPythonName + " in " + path);
-                    return path;
-                }
-            } catch (SecurityException e) {
-                // ignore
-            }
-            return null;
-        }
-
-        private String asString(Object object) {
-            if (object instanceof String) {
-                return (String) object;
-            } else if (object instanceof PString) {
-                return ((PString) object).getValue();
-            }
-            throw raise(PythonBuiltinClassType.TypeError, "path entry '%s' is not of type 'str'", object);
         }
 
         private SetItemNode getSetItemNode() {
