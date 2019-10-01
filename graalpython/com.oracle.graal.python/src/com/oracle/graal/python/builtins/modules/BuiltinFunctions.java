@@ -845,16 +845,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public abstract Object executeWithArgs(VirtualFrame frame, Object primary, String name, Object defaultValue);
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"name.equals(cachedName)", "isNoValue(defaultValue)"})
+        @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"stringEquals(cachedName, name, stringProfile)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(VirtualFrame frame, Object primary, String name, PNone defaultValue,
+                        @Cached("createBinaryProfile()") ConditionProfile stringProfile,
                         @Cached("name") String cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, primary);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"name.equals(cachedName)", "!isNoValue(defaultValue)"})
+        @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"stringEquals(cachedName, name, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, String name, Object defaultValue,
+                        @Cached("createBinaryProfile()") ConditionProfile stringProfile,
                         @Cached("name") String cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
