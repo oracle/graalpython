@@ -1166,15 +1166,12 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         return os.path.join(SUITE.dir, "graalpython", "include")
 
     def _prepare_headers(self):
-        # This should only be done for the base task, otherwise we'll duplicate
-        # the work. This is a development-time thing, because we need the
-        # include directory for the C API to be next to lib-graalpython
-        if type(self) == GraalpythonCAPIBuildTask: # pylint: disable=unidiomatic-typecheck;
-            target_dir = self._dev_headers_dir()
-            if os.path.exists(target_dir):
-                shutil.rmtree(target_dir)
-            shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir)
-            shutil.copy(os.path.join(mx.dependency("SULONG_LEGACY").get_output(), "include", "truffle.h"), target_dir)
+        target_dir = self._dev_headers_dir()
+        if os.path.exists(target_dir):
+            shutil.rmtree(target_dir)
+        mx.logv("Preparing header files (dest: {!s})".format(target_dir))
+        shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir)
+        shutil.copy(os.path.join(mx.dependency("SULONG_LEGACY").get_output(), "include", "truffle.h"), target_dir)
 
     def build(self):
         self._prepare_headers()
