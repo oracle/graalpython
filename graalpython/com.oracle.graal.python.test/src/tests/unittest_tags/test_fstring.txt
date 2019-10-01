@@ -7,6 +7,7 @@
 *TestCase.test_del
 *TestCase.test_dict
 *TestCase.test_double_braces
+*TestCase.test_empty_format_specifier
 *TestCase.test_if_conditional
 *TestCase.test_invalid_expressions
 *TestCase.test_literal

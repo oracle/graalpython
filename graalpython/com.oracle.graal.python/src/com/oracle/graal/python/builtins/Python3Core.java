@@ -168,6 +168,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -679,7 +680,15 @@ public final class Python3Core implements PythonCore {
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
-        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : message != null ? message : "invalid syntax");
+        String msg;
+        if (section.getCharIndex() == source.getLength()) {
+            msg = "unexpected EOF while parsing";
+        } else if (message != null) {
+            msg = (new ErrorMessageFormatter()).format(message, arguments);
+        } else {
+            msg = "invalid syntax";
+        }
+        instance.setAttribute("msg", msg);
         throw PException.fromObject(instance, location);
     }
 }
