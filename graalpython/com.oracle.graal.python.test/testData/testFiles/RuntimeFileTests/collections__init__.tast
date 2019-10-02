@@ -276,7 +276,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
-                        StringLiteralNode SourceSection: [2189,2237]`f'module {__name__!r...`
+                        FormatStringLiteralNode SourceSection: [2189,2237]`f'module {__name__!r...`
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: AttributeError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3744,7 +3744,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     ReadLocalVariableNode SourceSection: [12678,12683]`index`
                                       Frame: [7,index,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    StringLiteralNode SourceSection: [12687,12698]`f'_{index}'`
+                                    FormatStringLiteralNode SourceSection: [12687,12698]`f'_{index}'`
                                   BlockNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [12711,12725]`seen.add(name)`
                                   PythonCallNodeGen SourceSection: [12711,12725]`seen.add(name)`
@@ -3825,7 +3825,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
-                                  StringLiteralNode SourceSection: [12942,13039]`'Type names and fiel...`
+                                  FormatStringLiteralNode SourceSection: [12942,13039]`'Type names and fiel...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3848,7 +3848,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
-                                  StringLiteralNode SourceSection: [13099,13190]`'Type names and fiel...`
+                                  FormatStringLiteralNode SourceSection: [13099,13190]`'Type names and fiel...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3912,7 +3912,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
-                                  StringLiteralNode SourceSection: [13316,13404]`'Field names cannot ...`
+                                  FormatStringLiteralNode SourceSection: [13316,13404]`'Field names cannot ...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3935,7 +3935,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
-                                  StringLiteralNode SourceSection: [13460,13505]`f'Encountered duplic...`
+                                  FormatStringLiteralNode SourceSection: [13460,13505]`f'Encountered duplic...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4204,7 +4204,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       ExpressionStatementNode SourceSection: [14106,14118]`f'{name}=%r'`
                                         YieldNode SourceSection: [14106,14118]`f'{name}=%r'`
                                           flagSlot: 0
-                                          StringLiteralNode SourceSection: [14106,14118]`f'{name}=%r'`
+                                          FormatStringLiteralNode SourceSection: [14106,14118]`f'{name}=%r'`
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: name
@@ -4318,7 +4318,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       ReadLocalVariableNode SourceSection: [14573,14580]`__new__`
                         Frame: [17,__new__,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                      StringLiteralNode SourceSection: [14591,14639]`f'Create new instanc...`
+                      FormatStringLiteralNode SourceSection: [14591,14639]`f'Create new instanc...`
                     IfNode SourceSection: [14644,14714]`if defaults is not N...`
                       NotNodeGen SourceSection: [14647,14667]`defaults is not None...`
                         IsExpressionNodeGen SourceSection: None
@@ -4427,7 +4427,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           CachedCallNodeGen SourceSection: None
                                             CreateArgumentsNodeGen SourceSection: None
                                             CallDispatchNodeGen SourceSection: None
-                                          StringLiteralNode SourceSection: [14866,14919]`f'Expected {num_fiel...`
+                                          FormatStringLiteralNode SourceSection: [14866,14919]`f'Expected {num_fiel...`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4457,7 +4457,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         ReadLocalVariableNode SourceSection: [14948,14953]`_make`
                           Frame: [18,_make,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                      StringLiteralNode SourceSection: [14974,15066]`f'Make a new {typena...`
+                      FormatStringLiteralNode SourceSection: [14974,15066]`f'Make a new {typena...`
                     WriteLocalVariableNodeGen SourceSection: [15073,15286]`def _replace(_self, ...`
                       Identifier: _replace
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4546,7 +4546,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         CachedCallNodeGen SourceSection: None
                                           CreateArgumentsNodeGen SourceSection: None
                                           CallDispatchNodeGen SourceSection: None
-                                        StringLiteralNode SourceSection: [15212,15257]`f'Got unexpected fie...`
+                                        FormatStringLiteralNode SourceSection: [15212,15257]`f'Got unexpected fie...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: ValueError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4568,7 +4568,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       ReadLocalVariableNode SourceSection: [15286,15294]`_replace`
                         Frame: [19,_replace,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                      StringLiteralNode SourceSection: [15306,15409]`f'Return a new {type...`
+                      FormatStringLiteralNode SourceSection: [15306,15409]`f'Return a new {type...`
                     WriteLocalVariableNodeGen SourceSection: [15416,15556]`def __repr__(self):↵...`
                       Identifier: __repr__
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4767,7 +4767,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             ReadLocalVariableNode SourceSection: [16017,16023]`method`
                               Frame: [23,method,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            StringLiteralNode SourceSection: [16039,16070]`f'{typename}.{method...`
+                            FormatStringLiteralNode SourceSection: [16039,16070]`f'{typename}.{method...`
                         GetIteratorExpressionNodeGen SourceSection: [15918,16007]`(__new__, _make.__fu...`
                           GetIteratorNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [15918,16007]`(__new__, _make.__fu...`
@@ -4812,7 +4812,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         StringLiteralNode SourceSection: [16426,16436]`'__repr__'`
                         StringLiteralNode SourceSection: [16456,16465]`'_asdict'`
                         StringLiteralNode SourceSection: [16484,16500]`'__getnewargs__'`
-                        StringLiteralNode SourceSection: [16208,16233]`f'{typename}({arg_li...`
+                        FormatStringLiteralNode SourceSection: [16208,16233]`f'{typename}({arg_li...`
                         TupleLiteralNode SourceSection: [16256,16258]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [16279,16290]`field_names`
@@ -4928,7 +4928,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Identifier: doc
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [27,doc,Illegal]
-                                      StringLiteralNode SourceSection: [16756,16789]`f'Alias for field nu...`
+                                      FormatStringLiteralNode SourceSection: [16756,16789]`f'Alias for field nu...`
                                     SetItemNodeGen SourceSection: [16802,16839]`cache[index] = itemg...`
                                       ReadLocalVariableNode SourceSection: None
                                         Frame: [25,cache,Illegal]

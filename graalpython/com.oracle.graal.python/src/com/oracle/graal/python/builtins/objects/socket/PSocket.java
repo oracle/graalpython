@@ -50,6 +50,8 @@ import java.util.HashMap;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PSocket extends PythonBuiltinObject implements Channel {
@@ -81,7 +83,15 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     public static final int IPPROTO_TCP = 6;
 
-    private static final InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
+    @CompilationFinal private static InetSocketAddress EPHEMERAL_ADDRESS;
+
+    private static InetSocketAddress getEphemeralAddress() {
+        if (EPHEMERAL_ADDRESS == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            EPHEMERAL_ADDRESS = new InetSocketAddress(0);
+        }
+        return EPHEMERAL_ADDRESS;
+    }
 
     private final int family;
     private final int type;
@@ -94,7 +104,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     private double timeout;
 
-    private InetSocketAddress address = EPHEMERAL_ADDRESS;
+    private InetSocketAddress address = getEphemeralAddress();
 
     private SocketChannel socket;
 

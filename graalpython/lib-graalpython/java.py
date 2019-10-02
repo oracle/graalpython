@@ -127,20 +127,35 @@ class JavaTypeLoader:
 
 
 class JavaImportFinder:
+    def is_type(self, name):
+        try:
+            type(name)
+            return True
+        except KeyError:
+            return False
+
     if sys.graal_python_jython_emulation_enabled:
-        @staticmethod
-        def find_spec(fullname, path, target=None):
-            if JavaPackageLoader.is_java_package(fullname):
-                return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
+        def find_spec(self, fullname, path, target=None):
+            # Because of how Jython allows you to import classes that have not
+            # been loaded, yet, we need attempt to load types very eagerly.
+            if self.is_type(fullname):
+                # the fullname is already a type, let's load it
+                return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
             else:
-                try:
-                    type(fullname)
-                    return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
-                except KeyError:
-                    pass
+                current_import_name = __jython_current_import__()
+                if current_import_name and self.is_type(current_import_name):
+                    # We are currently handling an import that will lead to a
+                    # Java type. The fullname is not a type itself, so it must
+                    # be a package, not an enclosing class.
+                    return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
+                else:
+                    # We are not currently handling an import statement, and the
+                    # fullname is not a type. Thus we can only check if it is a
+                    # known package.
+                    if JavaPackageLoader.is_java_package(fullname):
+                        return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
     else:
-        @staticmethod
-        def find_spec(fullname, path, target=None):
+        def find_spec(self, fullname, path, target=None):
             if path and path == __path__:
                 if fullname.rpartition('.')[2].islower():
                    return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
@@ -148,6 +163,11 @@ class JavaImportFinder:
                     return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
 
 
-sys.meta_path.append(JavaImportFinder)
+sys.meta_path.append(JavaImportFinder())
 if sys.graal_python_jython_emulation_enabled:
     __getattr__ = JavaPackageLoader._make_getattr("java")
+else:
+    # remove __jython_current_import__ function from builtins module
+    import builtins
+    del builtins.__jython_current_import__
+    del builtins

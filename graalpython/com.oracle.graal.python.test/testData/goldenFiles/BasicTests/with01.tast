@@ -22,11 +22,11 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
               Identifier: A
           LookupInheritedAttributeNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
-              IsSameTypeSlowNodeGen SourceSection: None
+              IsSameTypeNodeGen SourceSection: None
             GetLazyClassNodeGen SourceSection: None
           LookupInheritedAttributeNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
-              IsSameTypeSlowNodeGen SourceSection: None
+              IsSameTypeNodeGen SourceSection: None
             GetLazyClassNodeGen SourceSection: None
           CachedCallNodeGen SourceSection: None
             CreateArgumentsNodeGen SourceSection: None

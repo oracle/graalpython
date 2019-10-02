@@ -41,10 +41,6 @@
 
 package com.oracle.graal.python.parser.sst;
 
-/**
- *
- * @author petr
- */
 public class BlockSSTNode extends SSTNode {
     protected final SSTNode[] statements;
 

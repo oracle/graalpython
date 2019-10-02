@@ -129,7 +129,7 @@ To run the JUnit tests, you can use this command:
 To run a subset of the tests, you can use the following. Again, you can use `-d`
 to attach with a Java debugger.
 
-    mx [-d] unittest JAVA-TEST-CLASSNAME
+    mx [-d] punittest JAVA-TEST-CLASSNAME
 
 To run the Python standard library tests, you can use the following:
 
@@ -148,6 +148,11 @@ debugger or Chromium, respectively.
         [-debug-java] [--inspect] \
         graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py \
         -k NAME-OF-CPYTHON-UNITTEST
+
+A tag file can be regenerated with
+
+    mx python graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py \
+        --retag NAME-OF-CPYTHON-UNITTEST
 
 There's also multiple other gates that may fail with changes. One of these is
 our *style* gate, which checks formatting rules and copyrights. To auto-fix most

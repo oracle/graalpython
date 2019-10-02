@@ -145,6 +145,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -164,6 +165,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
@@ -1264,21 +1266,64 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected boolean isMemberReadable(String member,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @Cached GetLazyClassNode getClassNode,
-                        @Cached GetNameNode getNameNode) {
-            return DynamicObjectNativeWrapper.GP_OBJECT.equals(member) || NativeMemberNames.isValid(member) ||
-                            ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(this))));
+        @ImportStatic({PGuards.class, NativeMemberNames.class, DynamicObjectNativeWrapper.class})
+        abstract static class IsMemberReadable {
+
+            @SuppressWarnings("unused")
+            @Specialization(guards = {"stringEquals(cachedName, name, stringProfile)", "isValid(cachedName)"})
+            static boolean isReadableNativeMembers(PythonObjectNativeWrapper receiver, String name,
+                            @Cached("createBinaryProfile()") ConditionProfile stringProfile,
+                            @Cached(value = "name", allowUncached = true) String cachedName) {
+                return true;
+            }
+
+            @SuppressWarnings("unused")
+            @Specialization(guards = "stringEquals(GP_OBJECT, name, stringProfile)")
+            static boolean isReadableCachedGP(PythonObjectNativeWrapper receiver, String name,
+                            @Cached("createBinaryProfile()") ConditionProfile stringProfile) {
+                return true;
+            }
+
+            static boolean isPyTimeMemberReadable(PythonObjectNativeWrapper receiver, PythonNativeWrapperLibrary lib, GetLazyClassNode getClassNode, GetNameNode getNameNode) {
+                return ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(receiver))));
+            }
+
+            @SuppressWarnings("unused")
+            @Specialization(guards = "isPyTimeMemberReadable(receiver, lib, getClassNode, getNameNode)")
+            static boolean isReadablePyTime(PythonObjectNativeWrapper receiver, String name,
+                            @CachedLibrary("receiver") PythonNativeWrapperLibrary lib,
+                            @Cached GetLazyClassNode getClassNode,
+                            @Cached GetNameNode getNameNode) {
+                return true;
+            }
+
+            @Specialization
+            @TruffleBoundary
+            static boolean isReadableFallback(PythonObjectNativeWrapper receiver, String name,
+                            @CachedLibrary("receiver") PythonNativeWrapperLibrary lib,
+                            @Cached GetLazyClassNode getClassNode,
+                            @Cached GetNameNode getNameNode) {
+                return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMemberNames.isValid(name) ||
+                                ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(receiver))));
+            }
         }
 
         @ExportMessage
-        @Override
-        public boolean isMemberModifiable(String member) {
-            return NativeMemberNames.isValid(member);
+        @ImportStatic({PGuards.class, NativeMemberNames.class, DynamicObjectNativeWrapper.class})
+        abstract static class IsMemberModifiable {
+
+            @SuppressWarnings("unused")
+            @Specialization(guards = "stringEquals(cachedName, name, stringProfile)")
+            static boolean isModifiableCached(PythonObjectNativeWrapper receiver, String name,
+                            @Cached("createBinaryProfile()") ConditionProfile stringProfile,
+                            @Cached(value = "name", allowUncached = true) String cachedName,
+                            @Cached(value = "isValid(name)", allowUncached = true) boolean isValid) {
+                return isValid;
+            }
         }
     }
 
+    @ExportLibrary(ReferenceLibrary.class)
     public static final class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
@@ -1393,10 +1438,49 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return new PrimitiveNativeWrapper(val);
         }
 
-        @Override
         @ExportMessage
-        protected boolean isMemberReadable(String member) {
-            return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member);
+        @ImportStatic({PGuards.class, NativeMemberNames.class, DynamicObjectNativeWrapper.class})
+        abstract static class IsMemberReadable {
+
+            @SuppressWarnings("unused")
+            @Specialization(guards = {"stringEquals(cachedName, name, stringProfile)", "isValid(cachedName)"})
+            static boolean isReadableNativeMembers(PrimitiveNativeWrapper receiver, String name,
+                            @Cached("createBinaryProfile()") ConditionProfile stringProfile,
+                            @Cached(value = "name", allowUncached = true) String cachedName) {
+                return true;
+            }
+
+            @SuppressWarnings("unused")
+            @Specialization(guards = "stringEquals(GP_OBJECT, name, stringProfile)")
+            static boolean isReadableCachedGP(PrimitiveNativeWrapper receiver, String name,
+                            @Cached("createBinaryProfile()") ConditionProfile stringProfile) {
+                return true;
+            }
+
+            @Specialization
+            @TruffleBoundary
+            static boolean isReadableFallback(@SuppressWarnings("unused") PrimitiveNativeWrapper receiver, String name) {
+                return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMemberNames.isValid(name);
+            }
+
+        }
+
+        @ExportMessage
+        static class IsSame {
+
+            @Specialization
+            static boolean doPrimitiveWrapper(PrimitiveNativeWrapper receiver, PrimitiveNativeWrapper other) {
+                // This basically emulates singletons for boxed values. However, we need to do so to
+                // preserve the invariant that storing an object into a list and getting it out (in
+                // the same critical region) returns the same object.
+                return other.state == receiver.state && other.value == receiver.value && (other.dvalue == receiver.dvalue || Double.isNaN(receiver.dvalue) && Double.isNaN(other.dvalue));
+            }
+
+            @Fallback
+            @SuppressWarnings("unused")
+            static boolean doGeneric(PrimitiveNativeWrapper receiver, Object other) {
+                return false;
+            }
         }
     }
 

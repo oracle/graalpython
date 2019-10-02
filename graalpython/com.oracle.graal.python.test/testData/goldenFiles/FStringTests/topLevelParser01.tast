@@ -1,0 +1,21 @@
+ModuleRootNode Name: <module 'topLevelParser01'> SourceSection: [0,36]`name = 'Pepa'↵print(...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,36]`name = 'Pepa'↵print(...`
+    ExpressionWithSideEffect SourceSection: [0,36]`name = 'Pepa'↵print(...`
+      Expression:
+        PythonCallNodeGen SourceSection: [14,36]`print(f"hello {name}...`
+          CachedCallNodeGen SourceSection: None
+            CreateArgumentsNodeGen SourceSection: None
+            CallDispatchNodeGen SourceSection: None
+          FormatStringLiteralNode SourceSection: [20,35]`f"hello {name}"`
+            Values: <f>hello {name}
+          ReadNameNodeGen SourceSection: None
+            Identifier: print
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,13]`name = 'Pepa'`
+          Identifier: name
+          StringLiteralNode SourceSection: [7,13]`'Pepa'`

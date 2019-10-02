@@ -57,6 +57,7 @@ public final class BuilderNew {
         lexer.removeErrorListeners();
         lexer.addErrorListener(Builder.ERROR_LISTENER);
         Python3NewParser parser = new Python3NewParser(new CommonTokenStream(lexer));
+        parser.setBuildParseTree(false);
         parser.removeErrorListeners();
         parser.addErrorListener(Builder.ERROR_LISTENER);
         return parser;

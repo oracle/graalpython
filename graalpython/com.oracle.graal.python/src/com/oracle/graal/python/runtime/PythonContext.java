@@ -36,6 +36,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.LinkOption;
 import java.text.MessageFormat;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -86,6 +87,7 @@ public final class PythonContext {
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
+    static final String NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
 
     private final PythonLanguage language;
     private PythonModule mainModule;
@@ -141,6 +143,10 @@ public final class PythonContext {
     // The context-local resources
     private final PosixResources resources;
     private final AsyncHandler handler;
+
+    // A thread-local to store the full path to the currently active import statement, for Jython
+    // compat
+    private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
@@ -387,7 +393,7 @@ public final class PythonContext {
                         "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
                         "\n\tStdLibHome: {4}" +
-                        "\n\tC API: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome)));
+                        "\n\tCAPI: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -443,29 +449,7 @@ public final class PythonContext {
             }
 
             if (capiHome.isEmpty()) {
-                // first, try dev home layout
-                try {
-                    for (TruffleFile f : home.list()) {
-                        if (f.getName().equals("com.oracle.graal.python.cext") && f.isDirectory()) {
-                            capiHome = f.getPath();
-                            break;
-                        }
-                    }
-                } catch (SecurityException | IOException e) {
-                }
-
-                // second, try dist home layout
-                if (capiHome == null) {
-                    try {
-                        for (TruffleFile f : newEnv.getInternalTruffleFile(coreHome).list()) {
-                            if (f.getName().equals("capi") && f.isDirectory()) {
-                                capiHome = f.getPath();
-                                break;
-                            }
-                        }
-                    } catch (SecurityException | IOException e) {
-                    }
-                }
+                capiHome = coreHome;
             }
 
             PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
@@ -474,8 +458,7 @@ public final class PythonContext {
                             "\n\tSysBasePrefix: {2}" +
                             "\n\tCoreHome: {3}" +
                             "\n\tStdLibHome: {4}" +
-                            "\n\tC API: {5}" +
-                            "\n\tExecutable: {6}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, newEnv.getOptions().get(PythonOptions.Executable))));
+                            "\n\tExecutable: {6}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
         }
     }
 
@@ -519,19 +502,20 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public String getCAPIHome() {
-        if (capiHome.isEmpty()) {
-            capiHome = getCoreHome() + CAPI_HOME;
-        }
-        return capiHome;
-    }
-
-    @TruffleBoundary
     public String getCoreHomeOrFail() {
         if (coreHome.isEmpty()) {
             throw new RuntimeException(NO_CORE_FATAL);
         }
         return coreHome;
+    }
+
+    @TruffleBoundary
+    public String getCAPIHome() {
+        if (capiHome.isEmpty()) {
+            writeWarning(NO_CAPI);
+            return coreHome;
+        }
+        return capiHome;
     }
 
     private static void writeWarning(String warning) {
@@ -720,5 +704,31 @@ public final class PythonContext {
         }
         PythonLanguage.getLogger().log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
         return false;
+    }
+
+    @TruffleBoundary
+    public String getCurrentImport() {
+        ArrayDeque<String> ci = currentImport.get();
+        if (ci == null || ci.isEmpty()) {
+            return "";
+        } else {
+            return ci.peek();
+        }
+    }
+
+    @TruffleBoundary
+    public void pushCurrentImport(String object) {
+        ArrayDeque<String> ci = currentImport.get();
+        if (ci == null) {
+            ci = new ArrayDeque<>();
+            currentImport.set(ci);
+        }
+        ci.push(object);
+    }
+
+    @TruffleBoundary
+    public void popCurrentImport() {
+        assert currentImport.get() != null && currentImport.get().peek() != null : "invalid popCurrentImport without push";
+        currentImport.get().pop();
     }
 }

@@ -167,16 +167,19 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         int oldNumOfGeneratorBlockNode = numOfGeneratorBlockNode;
         int oldNumOfGeneratorForNode = numOfGeneratorForNode;
         init();
-        SSTNode sstIterator = node.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode) node.iterator).target : node.iterator;
+        SSTNode sstIterator = node.iterator;
+        if (sstIterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) sstIterator).resultType == PythonBuiltinClassType.PGenerator) {
+            sstIterator = ((ForComprehensionSSTNode) node.iterator).target;
+        }
         ScopeInfo originScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope.getParent());
+        parentVisitor.comprLevel++;
         ExpressionNode iterator = (ExpressionNode) sstIterator.accept(this);
         GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
         scopeEnvironment.setCurrentScope(node.scope);
 
         ExpressionNode targetExpression;
-        parentVisitor.comprLevel++;
         if (node.resultType == PythonBuiltinClassType.PDict) {
             targetExpression = nodeFactory.createTupleLiteral((ExpressionNode) node.name.accept(this), (ExpressionNode) node.target.accept(parentVisitor));
         } else {
@@ -202,7 +205,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         returnTarget.assignSourceSection(body.getSourceSection());
         // int lineNum = ctx.getStart().getLine();
 
-        // createing generator expression
+        // creating generator expression
         FrameDescriptor fd = node.scope.getFrameDescriptor();
         String name = node.scope.getParent().getScopeId() + ".<locals>.<genexp>:" + source.getName() + ":" + node.line;
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
@@ -247,16 +250,17 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             }
         }
         StatementNode body = yield;
-        if (condition != null) {
-            // TODO: Do we have to create empty block in the else branch?
-            body = GeneratorIfNode.create(nodeFactory.createYesNode(condition), body, nodeFactory.createBlock(), numOfActiveFlags++, numOfActiveFlags++);
-        } else if (node.iterator instanceof ForComprehensionSSTNode) {
+        if (node.iterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) node.iterator).resultType == PythonBuiltinClassType.PGenerator) {
             ForComprehensionSSTNode forComp = (ForComprehensionSSTNode) node.iterator;
             SSTNode sstIterator = forComp.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode) forComp.iterator).target : forComp.iterator;
             ExpressionNode exprIterator = (ExpressionNode) sstIterator.accept(this);
             GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(exprIterator);
             getIterator.assignSourceSection(exprIterator.getSourceSection());
             body = createGeneratorExpressionBody(forComp, getIterator, yield);
+        }
+        if (condition != null) {
+            // TODO: Do we have to create empty block in the else branch?
+            body = GeneratorIfNode.create(nodeFactory.createYesNode(condition), body, nodeFactory.createBlock(), numOfActiveFlags++, numOfActiveFlags++);
         }
 
         StatementNode variable;

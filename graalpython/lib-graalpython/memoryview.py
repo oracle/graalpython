@@ -45,9 +45,7 @@ c_memoryview_module = None
 
 
 def __memoryview_init(self, *args, **kwargs):
-    from build_capi import hint
-    with hint("_memoryview"):
-        import _memoryview
+    import _memoryview
     global c_memoryview_module
     c_memoryview_module = _memoryview
     PyTruffle_SetAttr(memoryview, "__init__", __memoryview_init2)

@@ -3170,7 +3170,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       ExpressionStatementNode SourceSection: [10496,10508]`f"{k}={v!r}"`
                                                         YieldNode SourceSection: [10496,10508]`f"{k}={v!r}"`
                                                           flagSlot: 0
-                                                          StringLiteralNode SourceSection: [10496,10508]`f"{k}={v!r}"`
+                                                          FormatStringLiteralNode SourceSection: [10496,10508]`f"{k}={v!r}"`
                                                           GeneratorAccessNode SourceSection: None
                                                       DestructuringAssignmentNodeGen SourceSection: None
                                                         WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -3254,14 +3254,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Identifier: <return_val>
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [4,<return_val>,Illegal]
-                                              StringLiteralNode SourceSection: [10614,10656]`f"functools.{qualnam...`
+                                              FormatStringLiteralNode SourceSection: [10614,10656]`f"functools.{qualnam...`
                                           BlockNode SourceSection: None
                                         FrameReturnNode SourceSection: [10665,10704]`return f"{qualname}(...`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [4,<return_val>,Illegal]
-                                            StringLiteralNode SourceSection: [10672,10704]`f"{qualname}({', '.j...`
+                                            FormatStringLiteralNode SourceSection: [10672,10704]`f"{qualname}({', '.j...`
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3473,7 +3473,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             CachedCallNodeGen SourceSection: None
                                               CreateArgumentsNodeGen SourceSection: None
                                               CallDispatchNodeGen SourceSection: None
-                                            StringLiteralNode SourceSection: [11062,11108]`f"expected 4 items i...`
+                                            FormatStringLiteralNode SourceSection: [11062,11108]`f"expected 4 items i...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: TypeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6408,11 +6408,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadFromCellNodeGen SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeSlowNodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                           GetLazyClassNodeGen SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeSlowNodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                           GetLazyClassNodeGen SourceSection: None
                                         CachedCallNodeGen SourceSection: None
                                           CreateArgumentsNodeGen SourceSection: None
@@ -6729,11 +6729,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadFromCellNodeGen SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeSlowNodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                           GetLazyClassNodeGen SourceSection: None
                                         LookupInheritedAttributeNode SourceSection: None
                                           LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeSlowNodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                           GetLazyClassNodeGen SourceSection: None
                                         CachedCallNodeGen SourceSection: None
                                           CreateArgumentsNodeGen SourceSection: None
@@ -6827,11 +6827,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     ReadFromCellNodeGen SourceSection: None
                                   LookupInheritedAttributeNode SourceSection: None
                                     LookupAttributeInMRONodeGen SourceSection: None
-                                      IsSameTypeSlowNodeGen SourceSection: None
+                                      IsSameTypeNodeGen SourceSection: None
                                     GetLazyClassNodeGen SourceSection: None
                                   LookupInheritedAttributeNode SourceSection: None
                                     LookupAttributeInMRONodeGen SourceSection: None
-                                      IsSameTypeSlowNodeGen SourceSection: None
+                                      IsSameTypeNodeGen SourceSection: None
                                     GetLazyClassNodeGen SourceSection: None
                                   CachedCallNodeGen SourceSection: None
                                     CreateArgumentsNodeGen SourceSection: None
@@ -6948,11 +6948,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       ReadFromCellNodeGen SourceSection: None
                                     LookupInheritedAttributeNode SourceSection: None
                                       LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeSlowNodeGen SourceSection: None
+                                        IsSameTypeNodeGen SourceSection: None
                                       GetLazyClassNodeGen SourceSection: None
                                     LookupInheritedAttributeNode SourceSection: None
                                       LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeSlowNodeGen SourceSection: None
+                                        IsSameTypeNodeGen SourceSection: None
                                       GetLazyClassNodeGen SourceSection: None
                                     CachedCallNodeGen SourceSection: None
                                       CreateArgumentsNodeGen SourceSection: None
@@ -9325,7 +9325,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 CachedCallNodeGen SourceSection: None
                                                   CreateArgumentsNodeGen SourceSection: None
                                                   CallDispatchNodeGen SourceSection: None
-                                                StringLiteralNode SourceSection: [31122,31303]`f"Invalid first argu...`
+                                                FormatStringLiteralNode SourceSection: [31122,31303]`f"Invalid first argu...`
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                   Identifier: TypeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9423,7 +9423,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            StringLiteralNode SourceSection: [31588,31650]`f"Invalid annotation...`
+                                            FormatStringLiteralNode SourceSection: [31588,31650]`f"Invalid annotation...`
                                         BlockNode SourceSection: None
                                       SetItemNodeGen SourceSection: [31673,31693]`registry[cls] = func...`
                                         ReadLocalCellNodeGen SourceSection: None

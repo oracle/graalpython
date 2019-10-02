@@ -71,7 +71,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean quietFlag = false;
     private boolean noUserSite = false;
     private boolean noSite = false;
-    private boolean ensureCapi = false;
     private boolean stdinIsInteractive = System.console() != null;
     private boolean runLLI = false;
     private boolean unbufferedIO = false;
@@ -152,13 +151,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "--show-version":
                     versionAction = VersionAction.PrintAndContinue;
                     break;
-                case "-ensure-capi":
-                    if (wantsExperimental) {
-                        ensureCapi = true;
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
                 case "-debug-java":
                     if (wantsExperimental) {
                         if (!isAOT()) {
@@ -235,9 +227,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             arguments.add(i + 1 + j, "-" + optionChar);
                         }
                     } else {
-                        if (arg.startsWith("--llvm.")) {
-                            addRelaunchArg(arg);
-                        } else if (arg.startsWith("--python.CAPI")) {
+                        if (arg.startsWith("--llvm.") ||
+                                        arg.startsWith("--python.CoreHome") ||
+                                        arg.startsWith("--python.StdLibHome") ||
+                                        arg.startsWith("--python.CAPI")) {
                             addRelaunchArg(arg);
                         }
                         // possibly a polyglot argument
@@ -394,9 +387,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
                 }
-            }
-            if (ensureCapi) {
-                evalInternal(context, "import build_capi; build_capi.ensure_capi([" + (quietFlag ? "'-q'" : "") + "])\n");
             }
             if (!noSite) {
                 evalInternal(context, "import site\n");
@@ -642,13 +632,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                 continuePrompt = doEcho ? sys.getMember("ps2").asString() : null;
                             }
                             if (e.isIncompleteSource()) {
-                                // read another line of input
+                                // read more input until we get an empty line
                                 consoleHandler.setPrompt(continuePrompt);
                                 String additionalInput = consoleHandler.readLine();
+                                while (additionalInput != null && !additionalInput.isEmpty()) {
+                                    sb.append(additionalInput).append('\n');
+                                    consoleHandler.setPrompt(continuePrompt);
+                                    additionalInput = consoleHandler.readLine();
+                                }
                                 if (additionalInput == null) {
                                     throw new EOFException();
                                 }
-                                sb.append(additionalInput).append('\n');
                                 // The only continuation in the while loop
                                 continue;
                             } else if (e.isExit()) {
@@ -666,16 +660,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         break;
                     }
                 } catch (EOFException e) {
-                    try {
-                        evalInternal(context, "import site; exit()\n");
-                    } catch (PolyglotException e2) {
-                        if (e2.isExit()) {
-                            // don't use the exit code from the PolyglotException
-                            return lastStatus;
-                        } else if (e2.isCancelled()) {
-                            continue;
+                    if (!noSite) {
+                        try {
+                            evalInternal(context, "import site; exit()\n");
+                        } catch (PolyglotException e2) {
+                            if (e2.isExit()) {
+                                // don't use the exit code from the PolyglotException
+                                return lastStatus;
+                            } else if (e2.isCancelled()) {
+                                continue;
+                            }
+                            throw new RuntimeException("error while calling exit", e);
                         }
-                        throw new RuntimeException("error while calling exit", e);
                     }
                     System.out.println();
                     return lastStatus;

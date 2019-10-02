@@ -277,9 +277,8 @@ class GraalPythonVm(GuestVm):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
-                extra_polyglot_args += ["--experimental-options"]
-            else:
-                extra_polyglot_args += ["--experimental-options"]
+
+        extra_polyglot_args += ["--experimental-options", "-ensure-capi"]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
@@ -358,6 +357,22 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                     "config.run-flags": "".join(arg),
                 }
             ),
+            # secondary metric(s)
+            StdOutRule(
+                r"### WARMUP detected at iteration: (?P<endOfWarmup>[0-9]+$)",
+                {
+                    "benchmark": '{}.{}'.format(self._name, bench_name),
+                    "metric.name": "end-of-warmup",
+                    "metric.iteration": 0,
+                    "metric.type": "numeric",
+                    "metric.value": ("<endOfWarmup>", int),
+                    "metric.unit": "s",
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "config.run-flags": "".join(arg),
+                }
+            ),
+
             # no warmups
             StdOutRule(
                 r"^@@@ name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
@@ -376,9 +391,9 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         ]
 
     def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
-        # host-vm rewrite rules
         ret_code, out, dims = super(PythonBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
 
+        # host-vm rewrite rules
         def _replace_host_vm(key):
             host_vm = dims.get("host-vm")
             if host_vm and host_vm.startswith(key):
@@ -451,9 +466,19 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
         if "-i" not in run_args:
             run_args += self._benchmarks[benchmark]
+            num_iterations = self.defaultIterations(benchmark) + self.getExtraIterationCount(self.defaultIterations(benchmark))
+            run_args[run_args.index("-i") + 1] = str(num_iterations)
         vm_options, run_args = self.postprocess_run_args(run_args)
         cmd_args.extend(run_args)
         return vm_options + vm_args + cmd_args
+
+    def defaultIterations(self, bm):
+        default_bench_args = self._benchmarks[bm]
+        if "-i" in default_bench_args:
+            bench_idx = default_bench_args.index("-i")
+            if bench_idx + 1 < len(default_bench_args):
+                return int(default_bench_args[bench_idx + 1])
+        return DEFAULT_ITERATIONS
 
     def benchmarkList(self, bm_suite_args):
         return list(self._benchmarks.keys())

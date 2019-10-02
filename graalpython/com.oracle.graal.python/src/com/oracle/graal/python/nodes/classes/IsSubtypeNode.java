@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -164,8 +165,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     boolean isSubtypeOfCached(LazyPythonClass derived, LazyPythonClass cls,
                     @Cached("derived") LazyPythonClass cachedDerived,
                     @Cached("cls") LazyPythonClass cachedCls,
-                    @Cached("createFast()") IsSameTypeNode isSameDerivedNode,
-                    @Cached("createFast()") IsSameTypeNode isSameClsNode,
+                    @Cached IsSameTypeNode isSameDerivedNode,
+                    @Cached IsSameTypeNode isSameClsNode,
                     @Cached("getMro(cachedDerived)") MroSequenceStorage mro,
                     @Cached("isInMro(cachedCls, mro, mro.getInternalClassArray().length)") boolean isInMro) {
         return isInMro;
@@ -186,7 +187,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
                     @Cached("getMro(cachedDerived)") MroSequenceStorage mro,
                     @Cached("mro.getInternalClassArray().length") int sz,
-                    @Cached("createFast()") @SuppressWarnings("unused") IsSameTypeNode isSameDerivedNode) {
+                    @Cached @SuppressWarnings("unused") IsSameTypeNode isSameDerivedNode) {
         return isInMro(cls, mro, sz);
     }
 
@@ -207,7 +208,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     @Cached("cls") @SuppressWarnings("unused") LazyPythonClass cachedCls,
                     @SuppressWarnings("unused") @Cached("getMro(cachedCls)") MroSequenceStorage baseMro,
                     @Cached("baseMro.getInternalClassArray().length") int baseMroLen,
-                    @Cached("createFast()") @SuppressWarnings("unused") IsSameTypeNode isSameClsNode) {
+                    @Cached @SuppressWarnings("unused") IsSameTypeNode isSameClsNode) {
         return isSubMro(cachedCls, getMro(derived), baseMroLen);
     }
 
@@ -256,7 +257,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     private boolean isSameType(LazyPythonClass left, LazyPythonClass right) {
         if (isSameTypeNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            isSameTypeNode = insert(IsSameTypeNode.createFast());
+            isSameTypeNode = insert(IsSameTypeNodeGen.create());
         }
         return isSameTypeNode.execute(left, right);
     }

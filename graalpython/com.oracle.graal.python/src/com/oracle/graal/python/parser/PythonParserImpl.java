@@ -71,7 +71,8 @@ public final class PythonParserImpl implements PythonParser {
         lexer.removeErrorListeners();
         lexer.addErrorListener(Builder.ERROR_LISTENER);
         Python3NewParser parser = new Python3NewParser(new CommonTokenStream(lexer));
-        parser.factory = new PythonNodeFactory(errors.getLanguage(), source);
+        parser.setBuildParseTree(false);
+        parser.factory = new PythonNodeFactory(errors, source);
         parser.removeErrorListeners();
         parser.addErrorListener(Builder.ERROR_LISTENER);
         parser.setErrorHandler(new PythonErrorStrategy());
@@ -144,7 +145,7 @@ public final class PythonParserImpl implements PythonParser {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         // ANTLR parsing
         Python3NewParser parser = getPython3NewParser(source, errors);
-        parser.factory = new PythonNodeFactory(errors.getLanguage(), source);
+        parser.factory = new PythonNodeFactory(errors, source);
         SSTNode parserSSTResult = null;
 
         try {
@@ -180,7 +181,7 @@ public final class PythonParserImpl implements PythonParser {
         }
 
         lastGlobalScope = parser.factory.getScopeEnvironment().getGlobalScope();
-        return parser.factory.createParserResult(parserSSTResult, mode, errors, currentFrame);
+        return parser.factory.createParserResult(parserSSTResult, mode, currentFrame);
 
     }
 
@@ -257,7 +258,12 @@ public final class PythonParserImpl implements PythonParser {
     }
 
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
+        if (e instanceof PException) {
+            return (PException) e;
+        }
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
-        throw errors.raiseInvalidSyntax(source, section);
+        // from parser we are getting RuntimeExceptions
+        String message = e instanceof RuntimeException && e.getMessage() != null ? e.getMessage() : "invalid syntax";
+        throw errors.raiseInvalidSyntax(source, section, message);
     }
 }

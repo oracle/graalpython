@@ -9,14 +9,21 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Implement `charmap_build` function
 * Implement `hexversion` in sys module
 * Implement `_lzma` module
+* Implement enough of `socket.socket` to run `graalpython -m http.server` and download non-encrypted http resources
 * Fix printing of Pandas data frames
 * Fix a bug in `bytes.startswith` for tuple arguments
 * Fix destructuring assignments of arbitrary iterators
 * Fix `dict.__contains__` for dictionaries with only `str` keys for subclasses of `str`
 * Support NumPy 1.16.4 and Pandas 0.25.0
 * Support `timeit` module
-* Improve performance across many Python benchmarks
-* Add a new `--python.EmulateJython` flag to support importing Java classes using normal Python import syntax when the package is known and to catch Java exceptions from Python code
+* Support basic usage of `pytest`
+* Improve performance across many Python and C extension benchmarks
+* Improve performance of our parser
+* Improve performance of catching exceptions when the exception does not leave the handler block and the traceback is not accessed
+* Improve performance of Java interop when Python objects are accessed from Java
+* Add a new `--python.EmulateJython` flag to support importing Java classes using normal Python import syntax and to catch Java exceptions from Python code
+* Update standard library to Python 3.7.4
+* Initial implementatin of PEP 498 -- Literal String Interpolation
 
 ## Version 19.2.0
 
