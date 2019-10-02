@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -136,10 +137,12 @@ public class TopLevelExceptionHandler extends RootNode {
                 }
                 return null;
             } catch (Exception | StackOverflowError e) {
-                if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
-                    boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                    if (!exitException) {
+                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
+                if (!exitException) {
+                    if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
                         printStackTrace(e);
+                    } else {
+                        ExceptionUtils.printPythonLikeStackTrace(e);
                     }
                 }
                 throw e;
