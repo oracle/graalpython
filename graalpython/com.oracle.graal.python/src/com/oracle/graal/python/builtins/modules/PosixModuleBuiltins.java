@@ -49,6 +49,7 @@ import static com.oracle.truffle.api.TruffleFile.UNIX_PERMISSIONS;
 import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -1566,6 +1567,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Env env = context.getEnv();
             try {
                 ProcessBuilder pb = new ProcessBuilder(command);
+                pb.directory(new File(env.getCurrentWorkingDirectory().getPath()));
                 PipePump stdout = null, stderr = null;
                 boolean stdsArePipes = !terminalIsInteractive(context);
                 if (stdsArePipes) {
