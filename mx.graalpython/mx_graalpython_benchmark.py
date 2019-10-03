@@ -278,7 +278,7 @@ class GraalPythonVm(GuestVm):
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
-        extra_polyglot_args += ["--experimental-options", "-ensure-capi"]
+        extra_polyglot_args += ["--experimental-options", "--python.CAPI=%s" % SUITE.extensions._get_capi_home() ]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
@@ -296,7 +296,6 @@ class GraalPythonVm(GuestVm):
         host_vm = self.host_vm()
         if not self._env:
             self._env = dict()
-        self._env["PYTHONUSERBASE"] = mx_subst.path_substitutions.substitute("<path:PYTHON_USERBASE>")
         with environ(self._env):
             if hasattr(host_vm, 'run_lang'):
                 return host_vm.run_lang('graalpython', extra_polyglot_args + args, cwd)
