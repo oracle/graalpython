@@ -82,6 +82,7 @@ def test_json_bytes_re_compile():
     else:
         assert False, "searching a bytes-pattern in a str did not raise"
 
+
 def test_none_value():
     regex_find = re.compile(
         r"(//?| ==?)|([[]]+)").findall
@@ -92,6 +93,37 @@ def test_none_value():
     assert not n[0]
     # GR-17928
     # assert str(n[0]) == 'None'
+
+
+def test_find_all_none():
+    import re
+    pattern = re.compile(
+        r"("
+        r"'[^']*'|\"[^\"]*\"|"
+        r"//?|"
+        r"\(\)|"
+        r"==?|"
+        r"[/.*\[\]()@])|"
+        r"([^/\[\]()@=\s]+)|"
+        r"\s+"
+    ).findall
+
+    text = '//NameNode[not(@name)]'
+    result = [
+        ('//', ''),
+        ('', 'NameNode'),
+        ('[', ''),
+        ('', 'not'),
+        ('(', ''),
+        ('@', ''),
+        ('', 'name'),
+        (')', ''),
+        (']', ''),
+    ]
+
+    for i, r in enumerate(pattern(text)):
+        assert result[i] == r
+
 
 class S(str):
     def __getitem__(self, index):
