@@ -109,6 +109,7 @@ double polyglot_ensure_double(void *obj) {
 }
 
 /* upcall functions for calling into Python */
+void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);

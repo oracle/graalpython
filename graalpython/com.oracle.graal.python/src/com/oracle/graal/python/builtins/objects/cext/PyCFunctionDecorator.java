@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,19 +38,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cext;
 
-typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
+@ExportLibrary(InteropLibrary.class)
+public final class PyCFunctionDecorator implements TruffleObject {
+    public static final int CACHE_SIZE = 10;
 
-PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
-                                               "PyCFunction_NewEx",
-                                               polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
-                                               pytruffle_decorate_function(ml->ml_meth, native_to_java_exported),
-                                               get_method_flags_wrapper(ml->ml_flags),
-                                               self,
-                                               native_to_java(module),
-                                               polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS)));
+    final Object fun0;
+    final Object fun1;
+
+    int pos = 0;
+
+    public PyCFunctionDecorator(Object fun0, Object fun1) {
+        this.fun0 = fun0;
+        this.fun1 = fun1;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isExecutable() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object execute(Object[] arguments,
+                    @CachedLibrary("this.fun0") InteropLibrary interopLib0,
+                    @CachedLibrary("this.fun1") InteropLibrary interopLib1) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+        Object res = interopLib0.execute(fun0, arguments);
+        return interopLib1.execute(fun1, res);
+    }
 }

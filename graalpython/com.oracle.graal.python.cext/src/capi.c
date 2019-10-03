@@ -44,6 +44,7 @@ void *PY_TRUFFLE_CEXT;
 void *PY_BUILTIN;
 void *Py_NoValue;
 
+void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
 
 PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
 void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
@@ -61,6 +62,8 @@ __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
     PY_BUILTIN = (void*)polyglot_eval("python", "import builtins\nbuiltins");
+
+    pytruffle_decorate_function = ((void*(*)(void *fun0, void* fun1))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Decorate_Function", SRC_CS)));
 
     PY_TRUFFLE_LANDING = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)));
     PY_TRUFFLE_LANDING_L = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));

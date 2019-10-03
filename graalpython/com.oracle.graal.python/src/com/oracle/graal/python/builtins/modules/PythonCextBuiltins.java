@@ -119,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
@@ -2157,6 +2158,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object createCache(TruffleObject ptrToResolveHandle) {
             return new HandleCache(ptrToResolveHandle);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Decorate_Function", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleDecorateFunction extends PythonBinaryBuiltinNode {
+        @Specialization
+        PyCFunctionDecorator decorate(Object fun0, Object fun1) {
+            return new PyCFunctionDecorator(fun0, fun1);
         }
     }
 

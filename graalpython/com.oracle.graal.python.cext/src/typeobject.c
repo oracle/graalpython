@@ -174,7 +174,7 @@ static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* nam
                        cls,
                        native_to_java(type_dict),
                        polyglot_from_string(name, SRC_CS),
-                       native_to_java(result_conversion != NULL ? truffle_decorate_function(meth, result_conversion) : meth),
+                       native_to_java(result_conversion != NULL ? pytruffle_decorate_function(meth, result_conversion) : meth),
                        (signature != NULL ? signature : get_method_flags_wrapper(flags)),
                        polyglot_from_string(doc, SRC_CS),
                        (flags) > 0 && ((flags) & METH_CLASS) != 0,
@@ -301,7 +301,7 @@ int PyType_Ready(PyTypeObject* cls) {
                             "AddGetSet",
                             cls,
                             polyglot_from_string(getset.name, SRC_CS),
-                            getter_fun != NULL ? truffle_decorate_function((getter)getter_fun, native_to_java_exported) : to_java(Py_None),
+                            getter_fun != NULL ? pytruffle_decorate_function((getter)getter_fun, native_to_java_exported) : to_java(Py_None),
                             setter_fun != NULL ? (setter)setter_fun : to_java(Py_None),
                             getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : polyglot_from_string("", SRC_CS),
                             // do not convert the closure, it is handed to the
