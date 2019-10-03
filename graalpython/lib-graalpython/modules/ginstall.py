@@ -1193,6 +1193,20 @@ index d527af6..773cfe0 100644
      #define __Pyx_sst_abs(value) abs(value)
  #elif SIZEOF_LONG >= SIZEOF_SIZE_T
      #define __Pyx_sst_abs(value) labs(value)
+@@ -881,13 +881,7 @@ static const char *__pyx_filename;
+ 
+ /* Header.proto */
+ #if !defined(CYTHON_CCOMPLEX)
+-  #if defined(__cplusplus)
+-    #define CYTHON_CCOMPLEX 1
+-  #elif defined(_Complex_I)
+-    #define CYTHON_CCOMPLEX 1
+-  #else
+     #define CYTHON_CCOMPLEX 0
+-  #endif
+ #endif
+ #if CYTHON_CCOMPLEX
+   #ifdef __cplusplus
 diff --git a/pandas/core/window.py b/pandas/core/window.py
 index 8657420..f7b3f08 100644
 --- a/pandas/core/window.py
@@ -1208,7 +1222,7 @@ index 8657420..f7b3f08 100644
  from pandas.util._decorators import Appender, Substitution, cache_readonly
 '''
         # workaround until Sulong toolchain fixes this
-        cflags = "-stdlib=libc++ -lc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
+        cflags = "-stdlib=libc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
 
     return locals()
