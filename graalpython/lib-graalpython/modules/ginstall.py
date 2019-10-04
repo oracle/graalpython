@@ -1126,7 +1126,7 @@ index 8b2ded1..8a9295a 100755
          },
 
 '''
-        install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"})
+        install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"}, **kwargs)
 
     @pip_package()
     def dateutil(**kwargs):
