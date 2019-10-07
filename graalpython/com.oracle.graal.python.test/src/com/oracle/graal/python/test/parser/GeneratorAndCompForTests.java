@@ -316,4 +316,18 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     public void issueGR18309() throws Exception {
         checkScopeAndTree("[ b for a in d1 if d1 for b in d2]");
     }
+
+    @Test
+    public void issueGR16991() throws Exception {
+        checkScopeAndTree(
+                        "def gen(x): \n" +
+                                        "  while x: \n" +
+                                        "    if x == 10: \n" +
+                                        "      break \n" +
+                                        "    x = x - 1 \n" +
+                                        "    yield x \n" +
+                                        "  else: \n" +
+                                        "    yield 100");
+    }
+
 }
