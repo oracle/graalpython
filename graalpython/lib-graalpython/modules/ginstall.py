@@ -1125,8 +1125,22 @@ index 8b2ded1..8a9295a 100755
              'console_scripts': f2py_cmds
          },
 
+diff --git a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
+index 14451fa..85e64cc 100644
+--- a/numpy/distutils/ccompiler.py
++++ b/numpy/distutils/ccompiler.py
+@@ -682,7 +682,7 @@ def CCompiler_cxx_compiler(self):
+         return self
+ 
+     cxx = copy(self)
+-    cxx.compiler_so = [cxx.compiler_cxx[0]] + cxx.compiler_so[1:]
++    cxx.compiler_so = cxx.compiler_cxx + cxx.compiler_so[1:]
+     if sys.platform.startswith('aix') and 'ld_so_aix' in cxx.linker_so[0]:
+         # AIX needs the ld_so_aix script included with Python
+         cxx.linker_so = [cxx.linker_so[0], cxx.compiler_cxx[0]] \
+
 '''
-        install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"})
+        install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"}, **kwargs)
 
     @pip_package()
     def dateutil(**kwargs):
@@ -1193,6 +1207,20 @@ index d527af6..773cfe0 100644
      #define __Pyx_sst_abs(value) abs(value)
  #elif SIZEOF_LONG >= SIZEOF_SIZE_T
      #define __Pyx_sst_abs(value) labs(value)
+@@ -881,13 +881,7 @@ static const char *__pyx_filename;
+ 
+ /* Header.proto */
+ #if !defined(CYTHON_CCOMPLEX)
+-  #if defined(__cplusplus)
+-    #define CYTHON_CCOMPLEX 1
+-  #elif defined(_Complex_I)
+-    #define CYTHON_CCOMPLEX 1
+-  #else
+     #define CYTHON_CCOMPLEX 0
+-  #endif
+ #endif
+ #if CYTHON_CCOMPLEX
+   #ifdef __cplusplus
 diff --git a/pandas/core/window.py b/pandas/core/window.py
 index 8657420..f7b3f08 100644
 --- a/pandas/core/window.py
@@ -1208,7 +1236,7 @@ index 8657420..f7b3f08 100644
  from pandas.util._decorators import Appender, Substitution, cache_readonly
 '''
         # workaround until Sulong toolchain fixes this
-        cflags = "-stdlib=libc++ -lc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
+        cflags = "-stdlib=libc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
 
     return locals()
