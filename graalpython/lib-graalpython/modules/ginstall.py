@@ -1125,6 +1125,20 @@ index 8b2ded1..8a9295a 100755
              'console_scripts': f2py_cmds
          },
 
+diff --git a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
+index 14451fa..85e64cc 100644
+--- a/numpy/distutils/ccompiler.py
++++ b/numpy/distutils/ccompiler.py
+@@ -682,7 +682,7 @@ def CCompiler_cxx_compiler(self):
+         return self
+ 
+     cxx = copy(self)
+-    cxx.compiler_so = [cxx.compiler_cxx[0]] + cxx.compiler_so[1:]
++    cxx.compiler_so = cxx.compiler_cxx + cxx.compiler_so[1:]
+     if sys.platform.startswith('aix') and 'ld_so_aix' in cxx.linker_so[0]:
+         # AIX needs the ld_so_aix script included with Python
+         cxx.linker_so = [cxx.linker_so[0], cxx.compiler_cxx[0]] \
+
 '''
         install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"}, **kwargs)
 
