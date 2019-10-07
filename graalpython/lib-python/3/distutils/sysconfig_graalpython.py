@@ -69,13 +69,15 @@ def _init_posix():
     so_ext = ".so" if not darwin_native else ".dylib"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
 
+    toolchain_cxx = sys.__graal_get_toolchain_path('CXX')
+    have_cxx = toolchain_cxx is not None
 
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
-    g['CXX'] = sys.__graal_get_toolchain_path('CXX')
+    g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++ -stdlib=libc++'
     g['OPT'] = "-DNDEBUG -O1"
     g['CONFINCLUDEPY'] = get_python_inc()
-    g['CPPFLAGS'] = '-I. -I%s' % get_python_inc()
+    g['CPPFLAGS'] = '-I. -I' + get_python_inc()
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED_LINUX'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
