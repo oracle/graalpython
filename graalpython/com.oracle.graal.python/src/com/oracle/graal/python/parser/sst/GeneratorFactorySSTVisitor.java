@@ -415,14 +415,11 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         if (!node.containsBreak) {
             result = nodeFactory.createElse(whileNode, elseBranch);
         } else if (oldNumber == numOfActiveFlags) {
-            // TODO: The old parser doesn't enclude the else branch to the tree. See issue GR-16991
-            // TODO: this is also strange, that we create don't create ElseNode for break target.
-            // At least it seems to be inconsistent.
             result = node.elseStatement == null ?
             // TODO: Do we need to create the empty block here?
                             nodeFactory.createBreakTarget(whileNode, nodeFactory.createBlock(new StatementNode[0])) : nodeFactory.createBreakTarget(whileNode, elseBranch);
         } else {
-            result = whileNode;
+            result = node.elseStatement == null ? whileNode : nodeFactory.createElse(whileNode, elseBranch);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
