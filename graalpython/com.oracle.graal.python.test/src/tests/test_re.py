@@ -91,8 +91,7 @@ def test_none_value():
                     if special or text ])
     n = next(stream)
     assert not n[0]
-    # GR-17928
-    # assert str(n[0]) == 'None'
+    assert str(n[0]) == ''
 
 
 def test_find_all_none():
