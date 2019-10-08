@@ -135,7 +135,8 @@ def test_init2():
         dict([("a", 1), ("b", 2), ("c", 3), ("d", 4), 5])
         assert False, "expected TypeError"
     except TypeError as e:
-        assert "cannot convert dictionary update sequence element #4 to a sequence" == str(e), "invalid error message: %s" % str(e)
+        assert "cannot convert dictionary update sequence element #4 to a sequence" == str(
+            e), "invalid error message: %s" % str(e)
 
 
 def test_init3():
@@ -155,7 +156,7 @@ def test_init4():
 
 
 def test_init5():
-    key_set = { 'a', 'b', 'c', 'd' }
+    key_set = {'a', 'b', 'c', 'd'}
 
     class CustomMappingObject:
         def __init__(self, keys):
@@ -171,17 +172,20 @@ def test_init5():
 
         def __len__(self):
             return len(self.keys)
+
     d = dict(CustomMappingObject(key_set))
     assert len(d) == 4, "invalid length, expected 4 but was %d" % len(d)
     assert set(d.keys()) == key_set, "unexpected keys: %s" % str(d.keys())
-    assert set(d.values()) == { 97, 98, 99, 100 }, "unexpected values: %s" % str(d.values())
+    assert set(d.values()) == {97, 98, 99, 100}, "unexpected values: %s" % str(d.values())
+
 
 def test_init_kwargs():
-    kwargs = {'ONE':'one', 'TWO' : 'two'}
-    d = dict([(1,11),(2,22)], **kwargs)
+    kwargs = {'ONE': 'one', 'TWO': 'two'}
+    d = dict([(1, 11), (2, 22)], **kwargs)
     assert len(d) == 4, "invalid length, expected 4 but was %d" % len(d)
-    assert set(d.keys()) == {1,2,'ONE','TWO'}, "unexpected keys: %s" % str(d.keys())
-    assert set(d.values()) == { 11, 22, 'one', 'two' }, "unexpected values: %s" % str(d.values())
+    assert set(d.keys()) == {1, 2, 'ONE', 'TWO'}, "unexpected keys: %s" % str(d.keys())
+    assert set(d.values()) == {11, 22, 'one', 'two'}, "unexpected values: %s" % str(d.values())
+
 
 def test_custom_key_object0():
     class CollisionKey:
@@ -195,11 +199,12 @@ def test_custom_key_object0():
             if type(other) == type(self):
                 return self.val == other.val
             return False
+
     key0 = CollisionKey(0)
     key1 = CollisionKey(1)
     key1eq = CollisionKey(1)
     key2 = CollisionKey(2)
-    d = { key0: "hello", key1: "world"}
+    d = {key0: "hello", key1: "world"}
     assert key0 in d, "key0 should be contained"
     assert key1 in d, "key1 should be contained"
     assert key1 is not key1eq, "key1 and key1eq are not the same object"
@@ -214,9 +219,9 @@ def test_custom_key_object1():
 
     class LongInt(int):
         def __hash__(self):
-            return 2**32 + int.__hash__(self) - 2**32
+            return 2 ** 32 + int.__hash__(self) - 2 ** 32
 
-    d = { i:r for i,r in enumerate(range(100)) }
+    d = {i: r for i, r in enumerate(range(100))}
     d[MyInt(10)] = "hello"
     d[LongInt(20)] = "world"
     assert MyInt(10) in d, "MyInt(10) should be contained"
@@ -232,10 +237,11 @@ def test_mutable_key():
             assert False, "unhashable key must raise exception"
         except TypeError as e:
             assert "unhashable" in str(e), "invalid exception %s" % str(e)
-    insert_unhashable(dict(), [1,2,3])
-    insert_unhashable(dict(), {"a" : 1, "b" : 2})
+
+    insert_unhashable(dict(), [1, 2, 3])
+    insert_unhashable(dict(), {"a": 1, "b": 2})
     # this should work since tuples are imutable
-    d = { }
+    d = {}
     d[("a", "b")] = "hello"
 
 
@@ -264,6 +270,7 @@ def test_keywords():
         assert kwargs["a"] == 1
         assert kwargs["b"] == 2
         return res
+
     res = reading(a=1, b=2)
     assert res["a"] == 10
     assert res["b"] == 20
@@ -272,6 +279,7 @@ def test_keywords():
 def test_fixed_storage():
     class Foo:
         pass
+
     obj = Foo()
     d = obj.__dict__
     for i in range(200):
@@ -458,6 +466,7 @@ def test_unhashable_key():
     key_tuple_list = (key_list, 2)
     assert_raises(TypeError, lambda: d[key_tuple_list])
 
+
 class EncodedString(str):
     # unicode string subclass to keep track of the original encoding.
     # 'encoding' is None for unicode strings and the source encoding
@@ -488,11 +497,12 @@ class EncodedString(str):
 
 def test_wrapped_string_contains1():
     test_string = EncodedString('something')
-    dict = {'something': (1, 0), 'nothing': (2, 0)}
+    d = {'something': (1, 0), 'nothing': (2, 0)}
     reached = False
-    if test_string in dict:
+    if test_string in d:
         reached = True
     assert reached
+
 
 def test_wrapped_string_contains2():
     test_string = EncodedString('something')
@@ -502,27 +512,50 @@ def test_wrapped_string_contains2():
         reached = True
     assert reached
 
+
 def test_wrapped_string_get():
     a = 'test'
     dict = locals()
     assert dict['a']
 
+
 def test_concat():
     r = {**{}}
     assert len(r) == 0
 
-    r = {**{1:2}}
+    r = {**{1: 2}}
     assert len(r) == 1
     assert set(r.keys()) == {1}
     assert set(r.values()) == {2}
 
-    r = {**{}, 1:2}
+    r = {**{}, 1: 2}
     assert len(r) == 1
     assert set(r.keys()) == {1}
     assert set(r.values()) == {2}
 
-    r = {**{1:2}, 3:4, 6:8}
+    r = {**{1: 2}, 3: 4, 6: 8}
     assert len(r) == 3
     assert set(r.keys()) == {1, 3, 6}
     assert set(r.values()) == {2, 4, 8}
-    
+
+
+def test_custom_ob_with_eq_and_hash():
+    class MyClass(object):
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            return id(self)
+
+        def __eq__(self, other):
+            return isinstance(other, MyClass) and self.x == other.x
+
+    d = {}
+    a = MyClass(10)
+    d[a] = 20
+    b = MyClass(10)
+
+    assert a in d
+    assert b not in d
+    assert d.get(a, -1) == 20
+    assert d.get(b, -1) == -1
