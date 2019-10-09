@@ -74,11 +74,11 @@ def _init_posix():
 
     g = {}
     g['CC'] = sys.__graal_get_toolchain_path('CC')
-    g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++ -stdlib=libc++'
+    g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
     g['OPT'] = "-DNDEBUG -O1"
     g['CONFINCLUDEPY'] = get_python_inc()
     g['CPPFLAGS'] = '-I. -I' + get_python_inc()
-    g['CFLAGS'] = "-DNDEBUG -O1"
+    g['CFLAGS'] = "-Wunused-command-line-argument -stdlib=libc++ -DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED_LINUX'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
     if darwin_native:
