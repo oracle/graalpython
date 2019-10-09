@@ -122,6 +122,7 @@
 #include "weakrefobject.h"
 #include "sysmodule.h"
 #include "fileutils.h"
+#include "pystrtod.h"
 
 // TODO: we must extend the refcounting behavior to support handles to managed objects
 #undef Py_DECREF

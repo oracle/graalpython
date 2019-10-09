@@ -46,6 +46,13 @@ def _reference_importmodule(args):
     return __import__(args[0], fromlist=["*"])
 
 
+def _reference_format_float(args):
+    val, format_spec, prec = args
+    if format_spec == b'r':
+        return repr(val)
+    return float(val).__format__("." + str(prec) + format_spec.decode())
+
+
 class TestMisc(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -210,5 +217,27 @@ class TestMisc(CPyExtTestCase):
         resultspec="O",
         argspec="OO",
         arguments=["PyObject* pyVal", "PyObject* fun"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyOS_double_to_string = CPyExtFunction(
+        _reference_format_float,
+        lambda: (
+            (1.2, b"f", 2),
+            (float('nan'), b"f", 2),
+            (1.23456789, b"f", 2),
+            (123.456789, b"f", 6),
+            (123.456789, b"e", 6),
+            (123.456789, b"r", 0),
+        ),
+        code="""
+        char* wrap_PyOS_double_to_string(double val, char format, int prec) {
+            return PyOS_double_to_string(val, format, prec, 0, NULL);
+        }
+        """,
+        resultspec="s",
+        argspec="dci",
+        arguments=["double val", "char format", "int prec"],
+        callfunction="wrap_PyOS_double_to_string",
         cmpfunc=unhandled_error_compare
     )
