@@ -293,3 +293,13 @@ def test_set_delete():
     assert s == {'a', 'b', 'c'}
     s.discard('c')
     assert s == {'a', 'b'}
+
+
+def test_literal():
+    d = {"a": 1, "b": 2, "c": 3}
+    e = {"uff": "foo"}
+    assert {*d, *e} == {"a", "b", "c", "uff"}
+
+    d = {}
+    assert {*d} == set()
+

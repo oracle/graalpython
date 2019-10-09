@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -68,7 +69,7 @@ public final class TupleLiteralNode extends LiteralNode {
     }
 
     @ExplodeLoop
-    private Object expandingTuple(VirtualFrame frame) {
+    private PTuple expandingTuple(VirtualFrame frame) {
         // we will usually have more than 'values.length' elements
         SequenceStorage storage = new ObjectSequenceStorage(values.length);
         for (ExpressionNode n : values) {
@@ -84,7 +85,7 @@ public final class TupleLiteralNode extends LiteralNode {
     }
 
     @ExplodeLoop
-    private Object directTuple(VirtualFrame frame) {
+    private PTuple directTuple(VirtualFrame frame) {
         final Object[] elements = new Object[values.length];
         for (int i = 0; i < values.length; i++) {
             elements[i] = values[i].execute(frame);
