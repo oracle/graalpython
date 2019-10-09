@@ -270,7 +270,7 @@ public class BytesBuiltins extends PythonBuiltins {
             Object bytesObj = toBytesNode.executeObject(frame, other);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
-                return factory().createByteArray(res);
+                return factory().createBytes(res);
             }
             throw raise(SystemError, "could not get bytes of memoryview");
         }
@@ -511,7 +511,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItem() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.create(), (s, f) -> f.createByteArray(s));
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.create(), (s, f) -> f.createBytes(s));
         }
     }
 
