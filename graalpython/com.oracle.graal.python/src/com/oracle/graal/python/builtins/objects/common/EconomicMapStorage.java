@@ -234,7 +234,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
             return true;
         }
         if (strategy != null) {
-            return strategy.equals(key, entryKey);
+            return strategy.hashCode(key) == strategy.hashCode(entryKey) && strategy.equals(key, entryKey);
         }
         return key.equals(entryKey);
     }
