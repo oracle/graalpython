@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -78,15 +79,15 @@ import com.oracle.truffle.api.nodes.NodeCost;
 
 public abstract class CastToListExpressionNode extends UnaryOpNode {
 
-    public Object[] getArray(VirtualFrame frame) {
+    @Child private GetSequenceStorageNode getSequenceStorageNode;
+
+    public final SequenceStorage getStorage(VirtualFrame frame) {
         Object result = execute(frame);
-        if (result instanceof PTuple) {
-            return ((PTuple) result).getSequenceStorage().getInternalArray();
-        } else if (result instanceof PList) {
-            return ((PList) result).getSequenceStorage().getInternalArray();
-        } else {
-            throw new RuntimeException("Got an unexpected result when casting to a list");
+        if (getSequenceStorageNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getSequenceStorageNode = insert(GetSequenceStorageNode.create());
         }
+        return getSequenceStorageNode.execute(result);
     }
 
     @Specialization
