@@ -44,6 +44,7 @@ import _thread
 capi = capi_to_java = None
 _capi_hooks = []
 
+__builtins_module_dict = None
 
 def register_capi_hook(hook):
     assert callable(hook)
@@ -1555,4 +1556,8 @@ def PyState_FindModule(module_name):
 
 @may_raise
 def PyEval_GetBuiltins():
-    return __builtins__.__dir__
+    global __builtins_module_dict
+    if not __builtins_module_dict:
+        import builtins
+        __builtins_module_dict = builtins.__dict__
+    return __builtins_module_dict

@@ -39,7 +39,10 @@
 
 import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+import builtins
 __dir__ = __file__.rpartition("/")[0]
+
+__global_builtins_dict = builtins.__dict__
 
 
 def _reference_importmodule(args):
@@ -51,6 +54,10 @@ def _reference_format_float(args):
     if format_spec == b'r':
         return repr(val)
     return float(val).__format__("." + str(prec) + format_spec.decode())
+
+
+def _reference_builtins(args):
+    return type(__global_builtins_dict)
 
 
 class TestMisc(CPyExtTestCase):
@@ -239,5 +246,22 @@ class TestMisc(CPyExtTestCase):
         argspec="dci",
         arguments=["double val", "char format", "int prec"],
         callfunction="wrap_PyOS_double_to_string",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyEval_GetBuiltins = CPyExtFunction(
+        _reference_builtins,
+        lambda: (
+            tuple(),
+        ),
+        code="""
+        PyObject* wrap_PyEval_GetBuiltins() {
+            return Py_TYPE(PyEval_GetBuiltins());
+        }
+        """,
+        resultspec="O",
+        argspec="",
+        arguments=[],
+        callfunction="wrap_PyEval_GetBuiltins",
         cmpfunc=unhandled_error_compare
     )
