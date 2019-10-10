@@ -173,15 +173,19 @@ public final class PythonParserImpl implements PythonParser {
                     parser.reset();
                     parserSSTResult = parser.eval_input().result;
                 } catch (Exception e2) {
-                    throw handleParserError(errors, source, e);
+                    throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
                 }
             } else {
-                throw handleParserError(errors, source, e);
+                throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
             }
         }
 
         lastGlobalScope = parser.factory.getScopeEnvironment().getGlobalScope();
-        return parser.factory.createParserResult(parserSSTResult, mode, currentFrame);
+        try {
+            return parser.factory.createParserResult(parserSSTResult, mode, currentFrame);
+        } catch (Exception e) {
+            throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
+        }
 
     }
 
@@ -216,10 +220,10 @@ public final class PythonParserImpl implements PythonParser {
                     parser.reset();
                     input = parser.eval_input();
                 } catch (Exception e2) {
-                    throw handleParserError(errors, source, e);
+                    throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
                 }
             } else {
-                throw handleParserError(errors, source, e);
+                throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
             }
         }
 
@@ -257,11 +261,15 @@ public final class PythonParserImpl implements PythonParser {
         return PythonTreeTranslator.unescapeJavaString(str);
     }
 
-    private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
+    private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e, boolean showBadLine) {
         if (e instanceof PException) {
             return (PException) e;
         }
-        SourceSection section = PythonErrorStrategy.getPosition(source, e);
+        // In cpython shell the line with the error is not displayed, so we should do it in the same
+        // way
+        // This rely on implementation in traceback.py file. See comment in
+        // Python3Core.raiseInvalidSyntax method
+        SourceSection section = showBadLine ? PythonErrorStrategy.getPosition(source, e) : source.createUnavailableSection();
         // from parser we are getting RuntimeExceptions
         String message = e instanceof RuntimeException && e.getMessage() != null ? e.getMessage() : "invalid syntax";
         throw errors.raiseInvalidSyntax(source, section, message);

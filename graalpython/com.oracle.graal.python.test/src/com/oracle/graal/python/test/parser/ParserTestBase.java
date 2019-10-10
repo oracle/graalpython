@@ -150,6 +150,18 @@ public class ParserTestBase {
         assertTrue("Expected SyntaxError was not thrown.", thrown);
     }
 
+    public void checkSyntaxErrorMessageContains(String source, String expectedMessage) throws Exception {
+        boolean thrown = false;
+        try {
+            parseNew(source, name.getMethodName(), PythonParser.ParserMode.File);
+        } catch (PException e) {
+            thrown = e.isSyntaxError();
+            Assert.assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + e.getMessage() + "\"", e.getMessage().contains(expectedMessage));
+        }
+
+        assertTrue("Expected SyntaxError was not thrown.", thrown);
+    }
+
     public void checkSyntaxErrorMessage(String source, String expectedMessage) throws Exception {
         boolean thrown = false;
         try {

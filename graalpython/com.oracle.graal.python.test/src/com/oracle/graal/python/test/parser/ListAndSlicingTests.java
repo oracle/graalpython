@@ -94,4 +94,56 @@ public class ListAndSlicingTests extends ParserTestBase {
     public void slice05() throws Exception {
         checkTreeResult("a()[b():c():d()]");
     }
+
+    @Test
+    public void starExpr01() throws Exception {
+        checkTreeResult("[*[1,2,3]]");
+    }
+
+    @Test
+    public void starExpr02() throws Exception {
+        checkSyntaxErrorMessageContains("*[1,2,3]", "can't use starred expression here");
+    }
+
+    @Test
+    public void starExpr03() throws Exception {
+        checkSyntaxErrorMessageContains("*a = range(5)", "starred assignment target must be in a list or tuple");
+    }
+
+    @Test
+    public void starExpr04() throws Exception {
+        checkTreeResult("*a, = range(5)");
+    }
+
+    @Test
+    public void starExpr05() throws Exception {
+        checkTreeResult("a, *b, c = range(5)");
+    }
+
+    @Test
+    public void starExpr06() throws Exception {
+        checkTreeResult("first, *rest = seq");
+    }
+
+    @Test
+    public void starExpr07() throws Exception {
+        checkTreeResult("[a, *b, c] = seq");
+    }
+
+    @Test
+    public void starExpr08() throws Exception {
+        checkTreeResult("for a, *b in [(1, 2, 3), (4, 5, 6, 7)]:\n" +
+                        "    print(b)");
+    }
+
+    @Test
+    public void starExpr09() throws Exception {
+        checkSyntaxErrorMessageContains("b = *a", "can't use starred expression here");
+    }
+
+    @Test
+    public void starExpr10() throws Exception {
+        checkSyntaxErrorMessageContains("[*item for item in l]", "iterable unpacking cannot be used in comprehension");
+    }
+
 }

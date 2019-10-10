@@ -1,0 +1,32 @@
+ModuleRootNode Name: <module 'starExpr06'> SourceSection: [0,18]`first, *rest = seq`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 2 slots [<>temp0, <>temp1]
+  Documentation: None
+  InnerRootNode SourceSection: [0,18]`first, *rest = seq`
+    ExpressionWithSideEffect SourceSection: [0,18]`first, *rest = seq`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        DestructuringAssignmentNodeGen SourceSection: [0,18]`first, *rest = seq`
+          ReadNameNodeGen SourceSection: [15,18]`seq`
+            Identifier: seq
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp0
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp1
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [1,<>temp1,Illegal]
+          WriteNameNodeGen SourceSection: None
+            Identifier: first
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None
+          WriteNameNodeGen SourceSection: None
+            Identifier: rest
+            ReadLocalVariableNode SourceSection: None
+              Frame: [1,<>temp1,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None

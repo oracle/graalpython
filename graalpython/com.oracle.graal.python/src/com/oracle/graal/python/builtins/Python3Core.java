@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins;
@@ -658,6 +659,7 @@ public final class Python3Core implements PythonCore {
         return pyNaN;
     }
 
+    @Override
     public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
         Node location = new Node() {
             @Override
@@ -677,7 +679,10 @@ public final class Python3Core implements PythonCore {
         Source source = section.getSource();
         String path = source.getPath();
         instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
-        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
+        // Not very nice. This counts on the implementation in traceback.py where if the value of
+        // text attribute
+        // is NONE, then the line is not printed
+        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : PNone.NONE);
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
         String msg;
