@@ -1,0 +1,29 @@
+ModuleRootNode Name: <module 'starExpr04'> SourceSection: [0,14]`*a, = range(5)`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,14]`*a, = range(5)`
+    ExpressionWithSideEffect SourceSection: [0,14]`*a, = range(5)`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        DestructuringAssignmentNodeGen SourceSection: [0,14]`*a, = range(5)`
+          PythonCallNodeGen SourceSection: [6,14]`range(5)`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            IntegerLiteralNode SourceSection: [12,13]`5`
+              Value: 5
+            ReadNameNodeGen SourceSection: None
+              Identifier: range
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp0
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+          WriteNameNodeGen SourceSection: None
+            Identifier: a
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None

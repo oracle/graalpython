@@ -573,7 +573,20 @@ expr_stmt
 				testlist_star_expr { value = $testlist_star_expr.result; rhsStopIndex = getStopIndex($testlist_star_expr.stop);}
 			)
 		)*
-		{ push(start == start() ? new ExpressionStatementSSTNode(value) : factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex($ctx), rhsStopIndex)); }
+		{ 
+                    if (value instanceof StarSSTNode) {
+                        throw new PythonRecognitionException("can't use starred expression here", this, _input, $ctx, $ctx.start);
+                    }
+                    if (start == start()) {
+                        push(new ExpressionStatementSSTNode(value));
+                    } else {
+                        SSTNode[] lhs = getArray(start, SSTNode[].class);
+                        if (lhs.length == 1 && lhs[0] instanceof StarSSTNode) {
+                            throw new PythonRecognitionException("starred assignment target must be in a list or tuple", this, _input, $ctx, $ctx.start);
+                        }
+                        push(factory.createAssignment(lhs, value, getStartIndex(_localctx), rhsStopIndex));
+                    }
+                }
 	)
 ;
 
@@ -1453,7 +1466,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
 	|
                 { String name = getCurrentToken().getText();
                   if (getCurrentToken().getType() != NAME) {
-                    throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+                    throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                   }
                   // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
                   boolean isNameAsVariableInScope = factory.getCurrentScope().getSeenVars() == null ? false : factory.getCurrentScope().getSeenVars().contains(name);
@@ -1461,7 +1474,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
 		n=test 
                 {
                     if (!((((ArgumentContext)_localctx).n).result instanceof VarLookupSSTNode)) {
-                        throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+                        throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                     }
                     if (!isNameAsVariableInScope && factory.getCurrentScope().getSeenVars().contains(name)) {
                         factory.getCurrentScope().getSeenVars().remove(name);
@@ -1497,6 +1510,9 @@ comp_for
 returns [SSTNode result]
 :
 	{ 
+            if (target instanceof StarSSTNode) {
+                throw new PythonRecognitionException("iterable unpacking cannot be used in comprehension", this, _input, $ctx, $ctx.start);
+            }
             boolean scopeCreated = true; 
             boolean async = false; 
         }

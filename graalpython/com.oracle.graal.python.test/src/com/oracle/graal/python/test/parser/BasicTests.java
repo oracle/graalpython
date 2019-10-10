@@ -523,11 +523,6 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
-    public void star01() throws Exception {
-        checkTreeResult("*a");
-    }
-
-    @Test
     public void nonlocal02() throws Exception {
         checkTreeResult("nonlocal x");
     }
