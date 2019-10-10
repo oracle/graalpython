@@ -187,13 +187,23 @@ def test_sub_and_super():
         assert not set('cbs').issuperset('a')
 
 
-def test_superset_list():
-    set = {1, 2, 3, 4}
-    list = [1, 2, 3, 4]
-    visited= False
-    if set.issuperset(list):
-        visited = True
-    assert visited
+def test_superset_subset():
+    l = [1, 2, 3, 4]
+    s = set(l)
+    t = tuple(l)
+    assert s.issuperset(s)
+    assert s.issuperset(l)
+    assert s.issuperset(t)
+    assert s >= s
+    assert_raises(TypeError, lambda: s >= l)
+    assert_raises(TypeError, lambda: s >= t)
+
+    assert s.issubset(s)
+    assert s.issubset(l)
+    assert s.issubset(t)
+    assert s <= s
+    assert_raises(TypeError, lambda: s <= l)
+    assert_raises(TypeError, lambda: s <= t)
 
 
 def test_intersection():
