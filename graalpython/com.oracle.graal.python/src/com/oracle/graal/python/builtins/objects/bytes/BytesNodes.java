@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.ArrayList;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
@@ -131,13 +132,19 @@ public abstract class BytesNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ToBytesNode extends PNodeWithContext {
+        private  static final String DEFAULT_FORMAT = "expected a bytes-like object, %p found";
+
         @Child private PRaiseNode raise = PRaiseNode.create();
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
-        protected final boolean allowRecursive;
+        private final PythonBuiltinClassType errorType;
+        private final String errorMessageFormat;
+        final boolean allowRecursive;
 
-        ToBytesNode(boolean allowRecursive) {
+        ToBytesNode(boolean allowRecursive, PythonBuiltinClassType errorType, String errorMessageFormat) {
             this.allowRecursive = allowRecursive;
+            this.errorType = errorType;
+            this.errorMessageFormat = errorMessageFormat;
         }
 
         public abstract byte[] execute(VirtualFrame frame, Object obj);
@@ -172,7 +179,7 @@ public abstract class BytesNodes {
 
         @Fallback
         byte[] doError(Object obj) {
-            throw raise.raise(TypeError, "expected a bytes-like object, %p found", obj);
+            throw raise.raise(errorType, errorMessageFormat, obj);
         }
 
         private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
@@ -183,7 +190,7 @@ public abstract class BytesNodes {
             return toByteArrayNode;
         }
 
-        protected ToBytesNode createRecursive() {
+        ToBytesNode createRecursive() {
             return ToBytesNode.create(false);
         }
 
@@ -192,7 +199,11 @@ public abstract class BytesNodes {
         }
 
         public static ToBytesNode create(boolean allowRecursive) {
-            return ToBytesNodeGen.create(allowRecursive);
+            return ToBytesNodeGen.create(allowRecursive, TypeError, DEFAULT_FORMAT);
+        }
+
+        public static ToBytesNode create(boolean allowRecursive, PythonBuiltinClassType errorType, String errorMessageFormat) {
+            return ToBytesNodeGen.create(allowRecursive, errorType, errorMessageFormat);
         }
     }
 
