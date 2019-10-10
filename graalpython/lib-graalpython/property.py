@@ -70,7 +70,7 @@ class property(object):
     def __init__(self, fget=None, fset=None, fdel=None, doc=None, name=None):
         self.fget = fget
         self.fset = fset
-        self.__delete = fdel
+        self.fdel = fdel
         self.doc = doc
         self.name = name
         self._owner = None
@@ -91,16 +91,16 @@ class property(object):
         return self.fset(instance, value)
 
     def __delete__(self, instance):
-        if self.__delete is None:
+        if self.fdel is None:
             raise AttributeError("can't delete attribute")
-        return self.__delete(instance)
+        return self.fdel(instance)
 
     def setter(self, func):
         self.fset = func
         return self
 
     def deleter(self, func):
-        self.__delete = func
+        self.fdel = func
         return self
 
     def getter(self, func):
