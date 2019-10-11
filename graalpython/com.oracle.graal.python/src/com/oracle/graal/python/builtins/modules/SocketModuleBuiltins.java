@@ -95,7 +95,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
-// Address families
+    // address families
     private static final int AF_UNSPEC = 0;
     private static final int AF_INET = 2;
     private static final int AF_INET6 = 30;

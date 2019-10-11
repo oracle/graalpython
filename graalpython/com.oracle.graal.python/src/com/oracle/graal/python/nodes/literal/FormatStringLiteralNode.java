@@ -348,7 +348,7 @@ public class FormatStringLiteralNode extends LiteralNode {
                                     boolean triple = false;
                                     boolean inString = true;
                                     index++;
-                                    if (index  < len && startq == text.charAt(index )) {
+                                    if (index < len && startq == text.charAt(index)) {
                                         if (index + 1 < len && startq == text.charAt(index + 1)) {
                                             // we are in ''' or """ string
                                             triple = true;

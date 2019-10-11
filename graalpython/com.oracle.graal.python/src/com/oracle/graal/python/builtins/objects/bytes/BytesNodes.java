@@ -132,7 +132,7 @@ public abstract class BytesNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ToBytesNode extends PNodeWithContext {
-        private  static final String DEFAULT_FORMAT = "expected a bytes-like object, %p found";
+        private static final String DEFAULT_FORMAT = "expected a bytes-like object, %p found";
 
         @Child private PRaiseNode raise = PRaiseNode.create();
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
