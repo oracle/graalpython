@@ -1154,6 +1154,15 @@ def python_build_watch(args):
 
 
 class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
+    class PrefixingOutput():
+        def __init__(self, prefix, printfunc):
+            self.prefix = "[" + prefix + "] "
+            self.printfunc = printfunc
+
+        def __call__(self, line):
+            # n.b.: mx already sends us the output line-by-line
+            self.printfunc(self.prefix + line.rstrip())
+
     def __init__(self, args, project):
         jobs = min(mx.cpu_count(), 8)
         super(GraalpythonCAPIBuildTask, self).__init__(args, jobs, project)
@@ -1162,7 +1171,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         return 'Building C API project {} with setuptools'.format(self.subject.name)
 
     def run(self, args, env=None, cwd=None):
-        return do_run_python(args, env=env, cwd=cwd)
+        return do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error))
 
     def _dev_headers_dir(self):
         return os.path.join(SUITE.dir, "graalpython", "include")
