@@ -139,10 +139,9 @@ public class TopLevelExceptionHandler extends RootNode {
             } catch (Exception | StackOverflowError e) {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
+                    ExceptionUtils.printPythonLikeStackTrace(e);
                     if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
                         printStackTrace(e);
-                    } else {
-                        ExceptionUtils.printPythonLikeStackTrace(e);
                     }
                 }
                 throw e;
