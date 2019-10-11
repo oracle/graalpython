@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,22 @@ class D(object):
         del self._x
 
 
+class X(object):
+    @property
+    def prop_x(self):
+        return self._prop_x
+
+    @prop_x.setter
+    def prop_x(self, new_val):
+        self._prop_x = new_val
+        return new_val
+
+class Y(X):
+    @X.prop_x.setter
+    def prop_x(self, ax):
+        X.prop_x.fset(self, ax)
+
+
 def test_properties():
     c = C(10)
     assert c.prop_x == 10
@@ -96,3 +112,5 @@ def test_properties():
     except AttributeError:
         not_found = True
     assert not_found
+
+    assert X.prop_x is not Y.prop_x

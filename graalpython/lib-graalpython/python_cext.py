@@ -972,17 +972,18 @@ def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
     pclass = to_java_type(primary)
-    member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
         return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8)))
-    member.getter(member_getter)
+    member_fget = member_getter
+    member_fset = None
     if canSet:
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
             setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))
-        member.setter(member_setter)
-    member.__doc__ = doc
+        member_fset = member_setter
+    # nb: do not use member.setter/getter because they create copies of the property
+    member = property(fget=member_fget, fset=member_fset, doc=doc)
     type_dict = to_java(tpDict)
     type_dict[name] = member
 

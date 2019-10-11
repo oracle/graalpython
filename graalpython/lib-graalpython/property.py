@@ -96,16 +96,13 @@ class property(object):
         return self.fdel(instance)
 
     def setter(self, func):
-        self.fset = func
-        return self
+        return self.__copy(fset=func)
 
     def deleter(self, func):
-        self.fdel = func
-        return self
+        return self.__copy(fdel=func)
 
     def getter(self, func):
-        self.fget = func
-        return self
+        return self.__copy(fget=func)
 
     def __repr__(self):
         return "'".join([
@@ -115,3 +112,9 @@ class property(object):
             getattr(self._owner, "__name__", str(self._owner)),
             " objects>"
         ])
+
+    def __copy(self, fget=None, fset=None, fdel=None):
+        _fget = fget if fget is not None else self.fget
+        _fset = fset if fset is not None else self.fset
+        _fdel = fdel if fdel is not None else self.fdel
+        return type(self)(fget=_fget, fset=_fset, fdel=_fdel, doc=self.doc, name=self.name)
