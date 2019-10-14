@@ -101,7 +101,6 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.runtime.PythonParser;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -250,7 +249,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AugAssignmentSSTNode node) {
         ExpressionNode lhs = (ExpressionNode) node.lhs.accept(this);
         if (!(lhs instanceof ReadNode)) {
-            throw errors.raise(SyntaxError, "illegal expression for augmented assignment");
+            throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "illegal expression for augmented assignment");
         }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
         ExpressionNode binOp = nodeFactory.createInplaceOperation(node.operation, lhs, rhs);
@@ -625,7 +624,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             target = targets[0];
             if (!(target instanceof ReadNode || target instanceof TupleLiteralNode || target instanceof ListLiteralNode)) {
                 if (target instanceof StarredExpressionNode) {
-                    throw errors.raise(SyntaxError, "starred assignment target must be in a list or tuple");
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "starred assignment target must be in a list or tuple");
                 } else {
                     // TODO handle this???
                     // String text = ctx.getText();
@@ -633,7 +632,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                     // throw errors.raise(SyntaxError, "no binding for nonlocal variable \"%s\"
                     // found", text);
                     // }
-                    throw errors.raise(SyntaxError, "Cannot assign to %s", target);
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "Cannot assign to %s", target);
                 }
             }
         } else {
@@ -1101,9 +1100,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode result = (PNode) scopeEnvironment.findVariable(node.name);
         if (result == null) {
             if (scopeEnvironment.isNonlocal(node.name)) {
-                throw errors.raise(SyntaxError, "no binding for nonlocal variable \"%s\" found", node.name);
+                throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "no binding for nonlocal variable \"%s\" found", node.name);
             }
-            throw errors.raise(SyntaxError, "Cannot assign to %s", node.name);
+            throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), "Cannot assign to %s", node.name);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         // scopeEnvironment.setCurrentScope(oldScope);
@@ -1213,7 +1212,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             temps[i] = tempRead;
             if (leftHandSides[i] instanceof StarredExpressionNode) {
                 if (starredIndex != -1) {
-                    throw errors.raise(SyntaxError, "two starred expressions in assignment");
+                    SourceSection section = leftHandSides[0].getSourceSection();
+                    if (section == null) {
+                        section = ((StarredExpressionNode) leftHandSides[i]).getValue().getSourceSection();
+                    }
+                    throw errors.raiseInvalidSyntax(source, section, "two starred expressions in assignment");
                 }
                 starredIndex = i;
                 statements[i] = createAssignment(((StarredExpressionNode) leftHandSides[i]).getValue(), (ExpressionNode) tempRead);

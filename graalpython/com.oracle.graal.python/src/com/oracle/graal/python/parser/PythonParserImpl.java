@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.parser;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -39,6 +41,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -164,6 +167,7 @@ public final class PythonParserImpl implements PythonParser {
                 default:
                     throw new RuntimeException("unexpected mode: " + mode);
             }
+
         } catch (Exception e) {
             if ((mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement) && e instanceof PIncompleteSourceException) {
                 ((PIncompleteSourceException) e).setSource(source);
@@ -186,7 +190,6 @@ public final class PythonParserImpl implements PythonParser {
         } catch (Exception e) {
             throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
         }
-
     }
 
     // @Override
@@ -262,13 +265,18 @@ public final class PythonParserImpl implements PythonParser {
     }
 
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e, boolean showBadLine) {
-        if (e instanceof PException) {
+        if (e instanceof TruffleException && ((TruffleException) e).isSyntaxError() && e instanceof PException) {
+            if (!showBadLine) {
+                PBaseException instance = ((PException) e).getExceptionObject();
+                // In cpython shell the line with the error is not displayed, so we should do it in
+                // the same way.
+                // This rely on implementation in traceback.py file. See comment in
+                // Python3Core.raiseInvalidSyntax method
+                instance.setAttribute("text", PNone.NONE);
+            }
             return (PException) e;
         }
-        // In cpython shell the line with the error is not displayed, so we should do it in the same
-        // way
-        // This rely on implementation in traceback.py file. See comment in
-        // Python3Core.raiseInvalidSyntax method
+
         SourceSection section = showBadLine ? PythonErrorStrategy.getPosition(source, e) : source.createUnavailableSection();
         // from parser we are getting RuntimeExceptions
         String message = e instanceof RuntimeException && e.getMessage() != null ? e.getMessage() : "invalid syntax";
