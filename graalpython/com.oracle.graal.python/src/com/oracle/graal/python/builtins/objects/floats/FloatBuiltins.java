@@ -1310,7 +1310,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object[] countIt(double manitssa, int exponent) {
-            for (int i = 0; i < 300 && manitssa != Math.floor(manitssa); i++) {
+            for (int i = 0; i < 300 && Double.compare(manitssa, Math.floor(manitssa)) != 0; i++) {
                 manitssa *= 2.0;
                 exponent--;
             }
