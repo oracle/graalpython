@@ -1148,6 +1148,48 @@ index 14451fa..85e64cc 100644
         install_from_pypi("python-dateutil==2.7.5", **kwargs)
 
     @pip_package()
+    def certifi(**kwargs):
+        install_from_pypi("certifi==2019.9.11", **kwargs)
+
+    @pip_package()
+    def idna(**kwargs):
+        install_from_pypi("idna==2.8", **kwargs)
+
+    @pip_package()
+    def chardet(**kwargs):
+        install_from_pypi("chardet==3.0.4", **kwargs)
+
+    @pip_package()
+    def urllib3(**kwargs):
+        install_from_pypi("urllib3==1.25.6", **kwargs)
+
+    @pip_package()
+    def requests(**kwargs):
+        idna(**kwargs)
+        certifi(**kwargs)
+        chardet(**kwargs)
+        urllib3(**kwargs)
+        install_from_pypi("requests==2.22", **kwargs)
+
+    @pip_package()
+    def lightfm(**kwargs):
+        # pandas(**kwargs)
+        requests(**kwargs)
+        patch = r"""
+--- a/setup.py
++++ b/setup.py
+@@ -147,7 +147,8 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+
+
+ use_openmp = not sys.platform.startswith('darwin') and not sys.platform.startswith('win')
++use_openmp = False
+
+ setup(
+     name='lightfm',
+"""
+        install_from_pypi("lightfm==1.15", patch=patch, **kwargs)
+
+    @pip_package()
     def pytz(**kwargs):
         install_from_pypi("pytz==2018.7", **kwargs)
 
