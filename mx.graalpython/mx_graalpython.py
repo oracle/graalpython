@@ -281,10 +281,6 @@ def find_eclipse():
                 return
 
 
-def python_build_svm(args):
-    return python_svm(args + ["--version"])
-
-
 @contextlib.contextmanager
 def set_env(**environ):
     "Temporarily set the process environment variables"
@@ -319,7 +315,7 @@ def _python_graalvm_launcher(args):
     dy = "/vm,/tools,/substratevm"
     if "sandboxed" in args:
         args.remove("sandboxed")
-        dy += ",/sulong-managed"
+        dy += ",/sulong-managed,/graalpython-enterprise"
     dy = ["--dynamicimports", dy]
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
