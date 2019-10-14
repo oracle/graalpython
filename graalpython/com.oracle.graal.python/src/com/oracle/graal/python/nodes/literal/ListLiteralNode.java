@@ -27,8 +27,11 @@ package com.oracle.graal.python.nodes.literal;
 
 import java.lang.reflect.Array;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -40,6 +43,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -48,20 +52,55 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 public final class ListLiteralNode extends LiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children protected final ExpressionNode[] values;
+    @Child private SequenceStorageNodes.ConcatNode concatStoragesNode;
+    @Child private SequenceStorageNodes.AppendNode appendNode;
+
+    private final boolean hasStarredExpressions;
 
     @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
     public ListLiteralNode(ExpressionNode[] values) {
         this.values = values;
+        for (PNode v : values) {
+            if (v instanceof StarredExpressionNode) {
+                hasStarredExpressions = true;
+                return;
+            }
+        }
+        hasStarredExpressions = false;
     }
 
     public ExpressionNode[] getValues() {
         return values;
     }
 
-    @Override
     @ExplodeLoop
-    public Object execute(VirtualFrame frame) {
+    private PList expandingList(VirtualFrame frame) {
+        // we will usually have more than 'values.length' elements
+        SequenceStorage storage = new ObjectSequenceStorage(values.length);
+        for (ExpressionNode n : values) {
+            if (n instanceof StarredExpressionNode) {
+                SequenceStorage addElements = ((StarredExpressionNode) n).getStorage(frame);
+                storage = ensureConcatStoragesNode().execute(storage, addElements);
+            } else {
+                Object element = n.execute(frame);
+                storage = ensureAppendNode().execute(storage, element, ListGeneralizationNode.SUPPLIER);
+            }
+        }
+        return factory.createList(storage);
+    }
+
+    @Override
+    public PList execute(VirtualFrame frame) {
+        if (!hasStarredExpressions) {
+            return directList(frame);
+        } else {
+            return expandingList(frame);
+        }
+    }
+
+    @ExplodeLoop
+    private PList directList(VirtualFrame frame) {
         SequenceStorage storage;
         if (type == ListStorageType.Uninitialized) {
             try {
@@ -167,6 +206,22 @@ public final class ListLiteralNode extends LiteralNode {
             elements[i] = values[i].execute(frame);
         }
         return new ObjectSequenceStorage(elements);
+    }
+
+    private SequenceStorageNodes.ConcatNode ensureConcatStoragesNode() {
+        if (concatStoragesNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            concatStoragesNode = insert(SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create));
+        }
+        return concatStoragesNode;
+    }
+
+    private SequenceStorageNodes.AppendNode ensureAppendNode() {
+        if (appendNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            appendNode = insert(SequenceStorageNodes.AppendNode.create());
+        }
+        return appendNode;
     }
 
     public static ListLiteralNode create(ExpressionNode[] values) {

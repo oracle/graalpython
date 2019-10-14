@@ -129,6 +129,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
@@ -865,25 +866,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "dup", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DupNode extends PythonFileNode {
         @Specialization
-        int dup(int fd) {
+        int dupInt(int fd) {
             return getResources().dup(fd);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int dupPInt(PInt fd) {
-            return getResources().dup(fd.intValueExact());
-        }
-
-        @Specialization(replaces = "dupPInt")
-        int dupOvf(PInt fd) {
-            try {
-                return dupPInt(fd);
-            } catch (ArithmeticException e) {
-                throw raise(OSError, "invalid fd %r", fd);
-            }
+        @Specialization(replaces = "dupInt")
+        int dupGeneric(Object fd,
+                        @Cached CastToJavaIntNode castToJavaIntNode) {
+            return getResources().dup(castToJavaIntNode.execute(fd));
         }
     }
 
@@ -1026,11 +1018,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lseek(VirtualFrame frame, long fd, long pos, int how,
-                        @Cached PRaiseOSErrorNode raise,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
+                        @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel((int) fd, channelClassProfile);
-            if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {
-                throw raise.raiseOSError(frame, OSErrorEnum.ESPIPE);
+            if (noFile.profile(!(channel instanceof SeekableByteChannel))) {
+                throw raiseOSError(frame, OSErrorEnum.ESPIPE);
             }
             SeekableByteChannel fc = (SeekableByteChannel) channel;
             try {
@@ -1038,8 +1029,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 gotException.enter();
                 // if this happen, we should raise OSError with appropriate errno
-                throw raise.raiseOSError(frame, -1);
+                throw raiseOSError(frame, -1);
             }
+        }
+
+        @Specialization
+        Object lseekGeneric(VirtualFrame frame, Object fd, Object pos, Object how,
+                        @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Cached CastToJavaLongNode castFdNode,
+                        @Cached CastToJavaLongNode castPosNode,
+                        @Cached CastToJavaIntNode castHowNode) {
+
+            return lseek(frame, castFdNode.execute(fd), castPosNode.execute(pos), castHowNode.execute(how), channelClassProfile);
         }
 
         @TruffleBoundary(allowInlining = true)

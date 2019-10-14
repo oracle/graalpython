@@ -70,9 +70,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -153,6 +153,8 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -170,6 +172,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -2685,6 +2688,59 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Number parse(String source) throws ParseException {
             return DecimalFormat.getInstance().parse(source);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_OS_DoubleToString", minNumOfPositionalArgs = 5, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PyTruffle_OS_DoubleToString extends NativeBuiltin {
+
+        /* keep in sync with macro 'TRANSLATE_TYPE' in 'pystrtod.c' */
+        private static final int Py_DTST_FINITE = 0;
+        private static final int Py_DTST_INFINITE = 1;
+        private static final int Py_DTST_NAN = 2;
+
+        @Specialization(guards = "isReprFormatCode(formatCode)")
+        @SuppressWarnings("unused")
+        PTuple doRepr(VirtualFrame frame, Object module, double val, int formatCode, int precision, int flags,
+                        @Cached("create(__REPR__)") LookupAndCallUnaryNode callReprNode,
+                        @Cached CastToStringNode castToStringNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            Object reprString = callReprNode.executeObject(frame, val);
+            return createResult(new CStringWrapper(castToStringNode.execute(frame, reprString)), val);
+        }
+
+        @Specialization(guards = "!isReprFormatCode(formatCode)")
+        Object doGeneric(VirtualFrame frame, Object module, double val, int formatCode, int precision, @SuppressWarnings("unused") int flags,
+                        @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callReprNode,
+                        @Cached CastToStringNode castToStringNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object reprString = callReprNode.executeObject(frame, val, "." + precision + Character.toString((char) formatCode));
+                return createResult(new CStringWrapper(castToStringNode.execute(frame, reprString)), val);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return getNativeNullNode.execute(module);
+            }
+        }
+
+        private PTuple createResult(Object str, double val) {
+            return factory().createTuple(new Object[]{str, getTypeCode(val)});
+        }
+
+        private static int getTypeCode(double val) {
+            if (Double.isInfinite(val)) {
+                return Py_DTST_INFINITE;
+            } else if (Double.isNaN(val)) {
+                return Py_DTST_NAN;
+            }
+            assert Double.isFinite(val);
+            return Py_DTST_FINITE;
+        }
+
+        protected static boolean isReprFormatCode(int formatCode) {
+            return (char) formatCode == 'r';
         }
     }
 

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -53,11 +54,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -68,6 +73,9 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -81,13 +89,17 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
+    // address families
+    private static final int AF_UNSPEC = 0;
+    private static final int AF_INET = 2;
+    private static final int AF_INET6 = 30;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SocketModuleBuiltinsFactory.getFactories();
@@ -201,6 +213,9 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             services = parseServices(core.getContext().getEnv());
             protocols = parseProtocols(core.getContext().getEnv());
         }
+        builtinConstants.put("AF_UNSPEC", AF_UNSPEC);
+        builtinConstants.put("AF_INET", AF_INET);
+        builtinConstants.put("AF_INET6", AF_INET6);
     }
 
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
@@ -635,4 +650,125 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError);
         }
     }
+
+    @Builtin(name = "inet_aton", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class InetAtoNNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PBytes doConvert(VirtualFrame frame, String addr) {
+            return factory().createBytes(aton(addr));
+        }
+
+        @TruffleBoundary
+        private byte[] aton(String s) {
+            try {
+                return Inet4Address.getByName(s).getAddress();
+            } catch (UnknownHostException e) {
+                throw raise(PythonBuiltinClassType.OSError, "illegal IP address string passed to inet_aton");
+            }
+        }
+
+        @Fallback
+        PBytes doError(Object obj) {
+            throw raise(PythonBuiltinClassType.TypeError, "inet_aton() argument 1 must be str, not %p", obj);
+        }
+    }
+
+    @Builtin(name = "inet_ntoa", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
+        @Specialization
+        String doGeneric(VirtualFrame frame, Object obj,
+                        @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
+            return ntoa(toBytesNode.execute(frame, obj));
+        }
+
+        @TruffleBoundary
+        private String ntoa(byte[] bytes) {
+            try {
+                return InetAddress.getByAddress(bytes).toString();
+            } catch (UnknownHostException e) {
+                // the exception will only be thrown if 'bytes' has the wrong length
+                throw raise(PythonBuiltinClassType.OSError, "packed IP wrong length for inet_ntoa");
+            }
+        }
+
+        static BytesNodes.ToBytesNode createToBytes() {
+            return BytesNodes.ToBytesNode.create(true, PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
+        }
+    }
+
+    @Builtin(name = "inet_pton", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class InetPtoNNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PBytes doConvert(VirtualFrame frame, Object addrFamily, String addr,
+                        @Cached CastToJavaIntNode castToJavaIntNode) {
+            return factory().createBytes(aton(castToJavaIntNode.execute(addrFamily), addr));
+        }
+
+        @TruffleBoundary
+        private byte[] aton(int addrFamily, String s) {
+            try {
+                if (addrFamily != AF_INET && addrFamily != AF_INET6) {
+                    throw raise(PythonBuiltinClassType.ValueError, "unknown address family %d", addrFamily);
+                }
+
+                byte[] bytes = InetAddress.getByName(s).getAddress();
+
+                // we also need to check the size otherwise one could parse an IPv4 address even if
+                // he specified AF_INET6 (and vice versa)
+                int ip4Len = Inet4Address.getLoopbackAddress().getAddress().length;
+                int ip6Len = Inet6Address.getLoopbackAddress().getAddress().length;
+                if (addrFamily == AF_INET && bytes.length == ip4Len || addrFamily == AF_INET6 && bytes.length == ip6Len) {
+                    return bytes;
+                }
+            } catch (UnknownHostException e) {
+                // fall through
+            }
+            throw raise(PythonBuiltinClassType.OSError, "illegal IP address string passed to inet_pton");
+        }
+
+        @Fallback
+        PBytes doError(@SuppressWarnings("unused") Object addrFamily, Object obj) {
+            throw raise(PythonBuiltinClassType.TypeError, "inet_aton() argument 1 must be str, not %p", obj);
+        }
+    }
+
+    @Builtin(name = "inet_ntop", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InetNtoPNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        String doGeneric(VirtualFrame frame, int addrFamily, Object obj,
+                        @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
+            return ntoa(addrFamily, toBytesNode.execute(frame, obj));
+        }
+
+        @TruffleBoundary
+        private String ntoa(int addrFamily, byte[] bytes) {
+            if (addrFamily != AF_INET && addrFamily != AF_INET6) {
+                throw raise(PythonBuiltinClassType.ValueError, "unknown address family %d", addrFamily);
+            }
+            // we also need to check the size otherwise one could convert an IPv4 address even if
+            // he specified AF_INET6 (and vice versa)
+            int ip4Len = Inet4Address.getLoopbackAddress().getAddress().length;
+            int ip6Len = Inet6Address.getLoopbackAddress().getAddress().length;
+            if (addrFamily == AF_INET && bytes.length != ip4Len || addrFamily == AF_INET6 && bytes.length != ip6Len) {
+                throw raise(PythonBuiltinClassType.OSError, "packed IP wrong length for inet_ntoa");
+            }
+            try {
+                return InetAddress.getByAddress(bytes).toString();
+            } catch (UnknownHostException e) {
+                // should not be reached
+                throw new IllegalStateException("should not be reached");
+            }
+        }
+
+        static BytesNodes.ToBytesNode createToBytes() {
+            return BytesNodes.ToBytesNode.create(true, PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
+        }
+    }
+
 }

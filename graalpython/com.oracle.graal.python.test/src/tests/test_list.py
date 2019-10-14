@@ -54,6 +54,18 @@ class ListTest(list_tests.CommonTest):
         l[0] = "hello"
         self.assertEqual(l, ["hello", 1, 2, 3, 4])
 
+    def test_literal(self):
+        self.assertEqual([1,2,3], [*[1,2,3]])
+        self.assertEqual([1,2,3], [*(1,2,3)])
+        self.assertEqual([1,2,3,4,5,6], [*(1,2,3), *(4,5,6)])
+
+        # this will certainly create a list where the capacity of the storage is not exhausted, i.e., 'length < cap',
+        # and so the storage contains null elements
+        l = []
+        for c in "abcdefghijk":
+            l.append(c)
+        self.assertEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'], [*l])
+
     def test_truth(self):
         super().test_truth()
         self.assertTrue(not [])

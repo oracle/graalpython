@@ -125,6 +125,9 @@ class count(object):
             _repr += ', {}'.format(self._step)
         return _repr + ')'
 
+    def __iter__(self):
+        return self
+
 
 class permutations():
     """permutations(iterable[, r]) --> permutations object

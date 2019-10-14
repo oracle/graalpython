@@ -22,6 +22,9 @@ class TupleTest(seq_tests.CommonTest):
         self.assertEqual(tuple(''), ())
         self.assertEqual(tuple('spam'), ('s', 'p', 'a', 'm'))
 
+    def test_literal(self):
+        self.assertEqual((1,2,3), (*[1,2,3],))
+
     def test_truth(self):
         super().test_truth()
         self.assertTrue(not ())
