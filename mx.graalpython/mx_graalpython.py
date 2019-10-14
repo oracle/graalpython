@@ -1201,12 +1201,6 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
-        # TODO: GR-18535
-        if mx.suite("sulong-managed", fatalIfMissing=False):
-            mx.log("Building C API project com.oracle.graal.python.cext managed ...")
-            mx.ensure_dir_exists(cwd)
-            rc = self.run(["--llvm.managed"] + args, cwd=cwd)
-            shutil.rmtree(cwd) # remove the temporary build files
         return min(rc, 1)
 
     def src_dir(self):
