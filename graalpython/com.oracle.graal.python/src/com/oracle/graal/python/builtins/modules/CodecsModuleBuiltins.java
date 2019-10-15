@@ -503,7 +503,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             byte[] decoded = getBytes(bytes);
-            String string = decodeBytes(ByteBuffer.wrap(decoded), "utf-8", "strict");
+            String string = decodeBytes(decoded, "utf-8", "strict");
             return factory().createTuple(new Object[]{string, decoded.length});
         }
 
@@ -512,7 +512,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             byte[] decoded = getBytes(bytes);
-            String string = decodeBytes(ByteBuffer.wrap(decoded), profiledEncoding.toString(), "strict");
+            String string = decodeBytesStrict(decoded, profiledEncoding);
             return factory().createTuple(new Object[]{string, decoded.length});
         }
 
@@ -521,7 +521,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledErrors = errorsTypeProfile.profile(errors);
             byte[] decoded = getBytes(bytes);
-            String string = decodeBytes(ByteBuffer.wrap(decoded), "utf-8", profiledErrors.toString());
+            String string = decodeBytesUTF8(decoded, profiledErrors);
             return factory().createTuple(new Object[]{string, decoded.length});
         }
 
@@ -532,7 +532,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             Object profiledErrors = errorsTypeProfile.profile(errors);
             byte[] decoded = getBytes(bytes);
-            String string = decodeBytes(ByteBuffer.wrap(decoded), profiledEncoding.toString(), profiledErrors.toString());
+            String string = decodeBytes(decoded, profiledEncoding, profiledErrors);
             return factory().createTuple(new Object[]{string, decoded.length});
         }
 
@@ -550,14 +550,30 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        String decodeBytes(ByteBuffer bytes, String encoding, String errors) {
+        String decodeBytes(byte[] bytes, Object profiledEncoding, Object profiledErrors) {
+            return decodeBytes(bytes, profiledEncoding.toString(), profiledErrors.toString());
+        }
+
+        @TruffleBoundary
+        String decodeBytesStrict(byte[] bytes, Object profiledEncoding) {
+            return decodeBytes(bytes, profiledEncoding.toString(), "strict");
+        }
+
+        @TruffleBoundary
+        String decodeBytesUTF8(byte[] bytes, Object profiledErrors) {
+            return decodeBytes(bytes, "utf-8", profiledErrors.toString());
+        }
+
+        @TruffleBoundary
+        String decodeBytes(byte[] bytes, String encoding, String errors) {
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = getCharset(encoding);
             if (charset == null) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             }
             try {
-                CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(bytes);
+                CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(byteBuffer);
                 return String.valueOf(decoded);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeDecodeError, e);

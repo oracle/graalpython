@@ -1368,11 +1368,11 @@ public final class StringBuiltins extends PythonBuiltins {
         public String doReplace(String self, String old, String with, int maxsplit) {
             StringBuilder sb = new StringBuilder();
             String[] parts = self.split(old, maxsplit + 1);
-            for (int i = 0; i<parts.length - 1; i++) {
+            for (int i = 0; i < parts.length - 1; i++) {
                 sb.append(parts[i]);
                 sb.append(with);
             }
-            sb.append(parts[parts.length-1]);
+            sb.append(parts[parts.length - 1]);
             return sb.toString();
         }
     }
