@@ -211,7 +211,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected CallTarget parse(ParsingRequest request) {
-        PythonContext context = this.getContextReference().get();
+        PythonContext context = getCurrentContext(PythonLanguage.class);
         PythonCore core = context.getCore();
         Source source = request.getSource();
         CompilerDirectives.transferToInterpreter();
@@ -258,7 +258,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
         final ExecutableNode executableNode = new ExecutableNode(this) {
-            private final ContextReference<PythonContext> contextRef = getContextReference();
+            private final ContextReference<PythonContext> contextRef = getContextRef();
             @CompilationFinal private volatile PythonContext cachedContext;
             @Child private ExpressionNode expression;
 
@@ -334,6 +334,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getCurrentLanguage(PythonLanguage.class);
     }
 
+    @SuppressWarnings("deprecation") // TODO: GR-18870
     public static ContextReference<PythonContext> getContextRef() {
         return getCurrentLanguage(PythonLanguage.class).getContextReference();
     }

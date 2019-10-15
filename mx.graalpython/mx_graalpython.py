@@ -281,10 +281,6 @@ def find_eclipse():
                 return
 
 
-def python_build_svm(args):
-    return python_svm(args + ["--version"])
-
-
 @contextlib.contextmanager
 def set_env(**environ):
     "Temporarily set the process environment variables"
@@ -319,7 +315,7 @@ def _python_graalvm_launcher(args):
     dy = "/vm,/tools,/substratevm"
     if "sandboxed" in args:
         args.remove("sandboxed")
-        dy += ",/sulong-managed"
+        dy += ",/sulong-managed,/graalpython-enterprise"
     dy = ["--dynamicimports", dy]
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
@@ -1201,12 +1197,6 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
-        # TODO: GR-18535
-        if mx.suite("sulong-managed", fatalIfMissing=False):
-            mx.log("Building C API project com.oracle.graal.python.cext managed ...")
-            mx.ensure_dir_exists(cwd)
-            rc = self.run(["--llvm.managed"] + args, cwd=cwd)
-            shutil.rmtree(cwd) # remove the temporary build files
         return min(rc, 1)
 
     def src_dir(self):
