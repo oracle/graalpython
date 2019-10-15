@@ -197,6 +197,11 @@ public abstract class ExecutionContext {
         @CompilationFinal private boolean everEscaped = false;
         @CompilationFinal private boolean firstRequest = true;
 
+        @Override
+        public Node copy() {
+            return new CalleeContext();
+        }
+
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
