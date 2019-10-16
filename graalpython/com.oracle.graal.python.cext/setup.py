@@ -57,10 +57,6 @@ darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "na
 so_ext = get_config_var("EXT_SUFFIX")
 
 
-if darwin_native:
-    get_config_vars()["LDSHARED"] = get_config_vars()['LDSHARED_LINUX'] + " -L" + sys.graal_python_capi_home + " -lpython." + get_config_vars()["SOABI"] + " -rpath '@loader_path/../'"
-
-
 def system(cmd, msg=""):
     logger.debug("Running command: " + cmd)
     status = os.system(cmd)
@@ -230,7 +226,7 @@ class NativeBuiltinModule:
             self.files = [name + ".c"]
 
     def __call__(self):
-        libs = ["polyglot-mock"] if darwin_native else []
+        libs = []
         library_dirs = []
         include_dirs = []
         runtime_library_dirs = []
@@ -247,8 +243,6 @@ class NativeBuiltinModule:
             if dep.lib_install_dir:
                 libs.append(dep.lib_name)
                 library_dirs.append(dep.lib_install_dir)
-                #runtime_library_dirs.append(dep.lib_install_dir)
-                extra_link_args.append("-Wl,-rpath," + dep.lib_install_dir)
 
             # If the dependency provides a header file, add the include path
             if dep.include_install_dir:
@@ -276,40 +270,22 @@ builtin_exts = (
 )
 
 
-class BootstrapContextManager:
-    def __enter__(self):
-        # Very special case on Darwin native: for building 'libpython*.dylib' we must not try to link against i
-        # 'libpython', of course. It is special for Darwin because we don't link against it on Linux.
-        if darwin_native:
-            self.default_link_args = get_config_var("LDSHARED")
-            assert get_config_vars()["LDSHARED"] == get_config_var("LDSHARED")
-            get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_LINUX"]
-
-    def __exit__(self, typ=None, val=None, tb=None):
-        if darwin_native:
-            get_config_vars()["LDSHARED"] = self.default_link_args
-
-
 def build_libpython(capi_home):
     src_dir = os.path.join(__dir__, "src")
     files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
     module = Extension(libpython_name,
                        sources=files,
                        extra_compile_args=cflags_warnings,
-                       # Darwin's linker is pretty pedantic so we need to avoid any unresolved syms. To do so, we use
-                       # 'libpolyglot-mock' that provides definitions for polyglot functions and we define an install name for this lib.
-                       extra_link_args=["-lpolyglot-mock", "-Wl,-install_name,@rpath/" + libpython_name + so_ext] if darwin_native else [],
     )
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
-    with BootstrapContextManager():
-        setup(
-            script_name='setup' + libpython_name,
-            script_args=args,
-            name=libpython_name,
-            version='1.0',
-            description="Graal Python's C API",
-            ext_modules=[module],
-        )
+    setup(
+        script_name='setup' + libpython_name,
+        script_args=args,
+        name=libpython_name,
+        version='1.0',
+        description="Graal Python's C API",
+        ext_modules=[module],
+    )
 
 def build_builtin_exts(capi_home):
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean"]
