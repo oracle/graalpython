@@ -997,7 +997,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 break;
             case NONE:
                 result = nodeFactory.createObjectLiteral(PNone.NONE);
-                result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+                if (node.startOffset < node.endOffset) {
+                    result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+                }
                 break;
             case ELLIPSIS:
                 result = nodeFactory.createObjectLiteral(PEllipsis.INSTANCE);

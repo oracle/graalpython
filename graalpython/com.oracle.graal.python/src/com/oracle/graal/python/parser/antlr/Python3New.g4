@@ -550,9 +550,15 @@ expr_stmt
 	(
 		':' t=test
 		(
-			'=' test { rhs = $test.result; rhsStopIndex = getStopIndex($test.stop);}
+			'=' test { rhs = $test.result;}
 		)?
-		{ push(new AnnAssignmentSSTNode($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); }
+		{ 
+                    rhsStopIndex = getStopIndex($test.stop);
+                    if (rhs == null) {
+                        rhs = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  -1, -1);
+                    }
+                    push(new AnnAssignmentSSTNode($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); 
+                }
 		|
 		augassign
 		(

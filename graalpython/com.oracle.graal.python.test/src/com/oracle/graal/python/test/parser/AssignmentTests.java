@@ -208,4 +208,9 @@ public class AssignmentTests extends ParserTestBase {
                                         "  inner()\n",
                         "SyntaxError: name 'x' is assigned to before nonlocal declaration");
     }
+
+    @Test
+    public void annotationType01() throws Exception {
+        checkTreeResult("j: int");
+    }
 }
