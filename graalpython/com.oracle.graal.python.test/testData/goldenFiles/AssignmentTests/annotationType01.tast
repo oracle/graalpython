@@ -1,0 +1,14 @@
+ModuleRootNode Name: <module 'annotationType01'> SourceSection: [0,6]`j: int`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,6]`j: int`
+    ExpressionWithSideEffect SourceSection: [0,6]`j: int`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,6]`j: int`
+          Identifier: j
+          ObjectLiteralNode SourceSection: None
