@@ -208,14 +208,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
+        builtinConstants.put("AF_UNSPEC", AF_UNSPEC);
+        builtinConstants.put("AF_INET", AF_INET);
+        builtinConstants.put("AF_INET6", AF_INET6);
         if (ImageInfo.inImageBuildtimeCode()) {
             // we do this eagerly for SVM images
             services = parseServices(core.getContext().getEnv());
             protocols = parseProtocols(core.getContext().getEnv());
         }
-        builtinConstants.put("AF_UNSPEC", AF_UNSPEC);
-        builtinConstants.put("AF_INET", AF_INET);
-        builtinConstants.put("AF_INET6", AF_INET6);
     }
 
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
