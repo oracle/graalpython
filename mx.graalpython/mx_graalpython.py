@@ -106,15 +106,15 @@ def get_jdk():
     return mx.get_jdk(tag=tag)
 
 
-def python(args):
+def python(args, **kwargs):
     """run a Python program or shell"""
     if '--python.WithJavaStacktrace' not in args:
         args.insert(0, '--python.WithJavaStacktrace')
 
-    do_run_python(args)
+    do_run_python(args, **kwargs)
 
 
-def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
+def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, **kwargs):
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
         args.insert(0, "--python.CAPI=%s" % capi_home)
@@ -136,8 +136,8 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
     dists += additional_dists
 
-    if mx.suite("sulong-managed", fatalIfMissing=False):
-        dists.append('SULONG_MANAGED')
+    if extra_dists:
+        dists += extra_dists
 
     # Try eagerly to include tools for convenience when running Python
     if not mx.suite("tools", fatalIfMissing=False):
@@ -1166,14 +1166,14 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
     def __str__(self):
         return 'Building C API project {} with setuptools'.format(self.subject.name)
 
-    def run(self, args, env=None, cwd=None):
+    def run(self, args, env=None, cwd=None, **kwargs):
         env = env.copy() if env else os.environ.copy()
 
         # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
         for var in ["CC", "CFLAGS", "LDFLAGS"]:
             env.pop(var, None)
 
-        return do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error))
+        return do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
     def _dev_headers_dir(self):
         return os.path.join(SUITE.dir, "graalpython", "include")
