@@ -84,6 +84,29 @@ def test_backref():
     assert expected_prefix == actual_fnames[:len(expected_prefix)]
 
 
+def test_backref_recursive():
+    def get_frame():
+        return sys._getframe(0)
+
+    def foo(i):
+        if i == 1:
+            f = get_frame()
+            stack = []
+            while f:
+                stack.append(f)
+                f = f.f_back
+            return stack
+        else:
+            # This recursive call will cause
+            return foo(i+1)
+
+    def bar():
+        return foo(0)
+
+    s = bar()
+    print([n.f_code for n in s])
+
+
 def test_code():
     code = sys._getframe().f_code
     assert code.co_filename == test_code.__code__.co_filename

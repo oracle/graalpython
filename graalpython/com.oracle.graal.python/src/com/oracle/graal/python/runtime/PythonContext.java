@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -106,8 +107,11 @@ public final class PythonContext {
 
     // TODO: frame: make these three ThreadLocal
 
-    /* the reference to the last top frame on the Python stack during interop calls */
-    private PFrame.Reference topframeref = null;
+    /*
+     * The reference to the last top frame on the Python stack during interop calls. Initially, this
+     * is EMPTY representing the top frame.
+     */
+    private PFrame.Reference topframeref = Reference.EMPTY;
 
     /* corresponds to 'PyThreadState.curexc_*' */
     private PException currentException;

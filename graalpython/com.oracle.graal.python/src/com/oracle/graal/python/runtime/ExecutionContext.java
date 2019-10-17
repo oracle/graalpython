@@ -195,7 +195,6 @@ public abstract class ExecutionContext {
         @Child private MaterializeFrameNode materializeNode;
 
         @CompilationFinal private boolean everEscaped = false;
-        @CompilationFinal private boolean firstRequest = true;
 
         /**
          * Wrap the execution of a Python callee called from a Python frame.
@@ -230,28 +229,22 @@ public abstract class ExecutionContext {
                 // This assumption acts as our branch profile here
                 PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
                 if (callerInfo == null) {
-                    if (firstRequest) {
-                        // we didn't request the caller frame reference. now we need it.
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        firstRequest = false;
+                    // we didn't request the caller frame reference. now we need it.
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
 
-                        // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
-                        // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
-                        // non-Python frames, even if we do not skip frames of builtin functions.
-                        Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, false, 0);
-                        if (PArguments.isPythonFrame(callerFrame)) {
-                            callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
-                        } else {
-                            // TODO: frames: an assertion should be that this is one of our
-                            // entry point call nodes
-                            callerInfo = PFrame.Reference.EMPTY;
-                        }
+                    // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
+                    // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
+                    // non-Python frames, even if we do not skip frames of builtin functions.
+                    Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, false, 0);
+                    if (PArguments.isPythonFrame(callerFrame)) {
+                        callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
                     } else {
-                        // caller info was requested, it must be here if there is
-                        // any. If it isn't, we're in a top-frame.
-                        assert node.needsCallerFrame();
+                        // TODO: frames: an assertion should be that this is one of our
+                        // entry point call nodes
                         callerInfo = PFrame.Reference.EMPTY;
                     }
+                    // ReadCallerFrameNode.getCallerFrame must have the assumption invalidated
+                    assert node.needsCallerFrame() : "stack walk did not invalidate caller frame assumption";
                 }
 
                 // force the frame so that it can be accessed later
