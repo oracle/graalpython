@@ -30,6 +30,8 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public class PFrozenSet extends PBaseSet {
 
+    private long hash = -1;
+
     public PFrozenSet(LazyPythonClass clazz) {
         super(clazz);
     }
@@ -51,4 +53,11 @@ public class PFrozenSet extends PBaseSet {
         }
     }
 
+    public long getHash() {
+        return hash;
+    }
+
+    public void setHash(long hash) {
+        this.hash = hash;
+    }
 }

@@ -573,8 +573,15 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public long tupleHash(VirtualFrame frame, PTuple self,
+        protected static long HASH_UNSET = -1;
+
+        @Specialization(guards = {"self.getHash() != HASH_UNSET"})
+        public long getHash(VirtualFrame frame, PTuple self) {
+            return self.getHash();
+        }
+
+        @Specialization(guards = {"self.getHash() == HASH_UNSET"})
+        public long computeHash(VirtualFrame frame, PTuple self,
                         @Cached("create()") SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
@@ -584,30 +591,31 @@ public class TupleBuiltins extends PythonBuiltins {
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
             long multiplier = 0xf4243;
-            long x = 0x345678;
-            long y;
+            long hash = 0x345678;
+            long tmp;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(tupleStore, i);
                 Object hashValue = lookupHashAttributeNode.executeObject(frame, item);
                 if (!isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
                     throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
                 }
-                y = castToLongNode.execute(hashValue);
-                if (y == -1) {
+                tmp = castToLongNode.execute(hashValue);
+                if (tmp == -1) {
                     return -1;
                 }
 
-                x = (x ^ y) * multiplier;
+                hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }
 
-            x += 97531;
+            hash += 97531;
 
-            if (x == Long.MAX_VALUE) {
-                x = -2;
+            if (hash == Long.MAX_VALUE) {
+                hash = -2;
             }
 
-            return x;
+            self.setHash(hash);
+            return hash;
         }
 
         @Fallback
