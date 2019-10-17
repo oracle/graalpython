@@ -29,6 +29,7 @@ public abstract class SequenceStorage {
 
     public enum ListStorageType {
         Uninitialized,
+        Empty,
         Boolean,
         Byte,
         Char,

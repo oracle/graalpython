@@ -118,7 +118,7 @@ public abstract class ListNodes {
 
         protected SequenceStorage doIt(VirtualFrame frame, Object iterator, ListStorageType type, T nextNode, IsBuiltinClassProfile errorProfile) {
             SequenceStorage storage;
-            if (type == ListStorageType.Uninitialized) {
+            if (type == ListStorageType.Uninitialized || type == ListStorageType.Empty) {
                 Object[] elements = new Object[START_SIZE];
                 int i = 0;
                 while (true) {

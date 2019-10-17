@@ -34,7 +34,10 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -103,26 +106,17 @@ public final class ListLiteralNode extends LiteralNode {
     private PList directList(VirtualFrame frame) {
         SequenceStorage storage;
         if (type == ListStorageType.Uninitialized) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             try {
                 Object[] elements = new Object[values.length];
                 for (int i = 0; i < values.length; i++) {
                     elements[i] = values[i].execute(frame);
                 }
                 storage = SequenceStorageFactory.createStorage(elements);
-                if (storage instanceof IntSequenceStorage) {
-                    type = ListStorageType.Int;
-                } else if (storage instanceof LongSequenceStorage) {
-                    type = ListStorageType.Long;
-                } else if (storage instanceof DoubleSequenceStorage) {
-                    type = ListStorageType.Double;
-                } else if (storage instanceof ListSequenceStorage) {
-                    type = ListStorageType.List;
-                } else if (storage instanceof TupleSequenceStorage) {
-                    type = ListStorageType.Tuple;
-                } else {
-                    type = ListStorageType.Generic;
-                }
+                type = storage.getElementType();
             } catch (Throwable t) {
+                // we do not want to repeatedly deopt if a value execution
+                // always raises, for example
                 type = ListStorageType.Generic;
                 throw t;
             }
@@ -131,6 +125,43 @@ public final class ListLiteralNode extends LiteralNode {
             Object array = null;
             try {
                 switch (type) {
+                    // Ugh. We want to use primitive arrays during unpacking, so
+                    // we cannot dispatch generically here.
+                    case Empty: {
+                        assert values.length == 0;
+                        storage = EmptySequenceStorage.INSTANCE;
+                        break;
+                    }
+                    case Boolean: {
+                        boolean[] elements = new boolean[values.length];
+                        array = elements;
+                        for (; i < values.length; i++) {
+                            elements[i] = values[i].executeBoolean(frame);
+                        }
+                        storage = new BoolSequenceStorage(elements);
+                        break;
+                    }
+                    case Byte: {
+                        byte[] elements = new byte[values.length];
+                        array = elements;
+                        for (; i < values.length; i++) {
+                            int element = values[i].executeInt(frame);
+                            if (element <= Byte.MAX_VALUE && element >= Byte.MIN_VALUE) {
+                                elements[i] = (byte) element;
+                            } else {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                throw new UnexpectedResultException(element);
+                            }
+                        }
+                        storage = new ByteSequenceStorage(elements);
+                        break;
+                    }
+                    case Char: {
+                        // we don't support this directly, throw and continue
+                        // generically
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new UnexpectedResultException(values[0].execute(frame));
+                    }
                     case Int: {
                         int[] elements = new int[values.length];
                         array = elements;
@@ -188,6 +219,7 @@ public final class ListLiteralNode extends LiteralNode {
                         throw new RuntimeException("unexpected state");
                 }
             } catch (UnexpectedResultException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 storage = genericFallback(frame, array, i, e.getResult());
             }
         }
