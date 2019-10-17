@@ -29,6 +29,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -36,10 +38,14 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = BuiltinNames.BUILTINS)
 public final class BuiltinsLiteralNode extends LiteralNode {
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     @Override
     public Object execute(VirtualFrame frame) {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
         return builtinsLiteral(contextRef.get());
     }
 

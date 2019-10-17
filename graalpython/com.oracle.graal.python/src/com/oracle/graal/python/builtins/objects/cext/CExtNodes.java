@@ -1681,7 +1681,7 @@ public abstract class CExtNodes {
         }
 
         protected static Assumption nativeObjectsAllManagedAssumption() {
-            return PythonLanguage.getContextRef().get().getNativeObjectsAllManagedAssumption();
+            return PythonLanguage.getContext().getNativeObjectsAllManagedAssumption();
         }
 
         public static IsPointerNode create() {
@@ -1792,7 +1792,7 @@ public abstract class CExtNodes {
         }
 
         protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
-            return PythonLanguage.getContextRef().get().getNativeClassStableAssumption(clazz, true).getAssumption();
+            return PythonLanguage.getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
         }
 
         private static boolean isNativeTypeObject(Object self) {

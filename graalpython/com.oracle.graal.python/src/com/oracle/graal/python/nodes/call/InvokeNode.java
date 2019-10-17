@@ -59,7 +59,7 @@ abstract class AbstractInvokeNode extends Node {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected static boolean shouldInlineGenerators() {
-        return PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.ForceInlineGeneratorCalls);
+        return PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceInlineGeneratorCalls);
     }
 
     @TruffleBoundary

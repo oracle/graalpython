@@ -40,6 +40,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -48,7 +49,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public class FunctionDefinitionNode extends ExpressionDefinitionNode {
-    protected final ContextReference<PythonContext> contextRef;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
     protected final String functionName;
     protected final String enclosingClassName;
     protected final RootCallTarget callTarget;
@@ -67,7 +68,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
                     RootCallTarget callTarget,
                     DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
         super(definitionCellSlots, executionCellSlots);
-        this.contextRef = PythonLanguage.getContextRef();
         this.functionName = functionName;
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
@@ -79,6 +79,10 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     }
 
     protected PythonContext getContext() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
         return contextRef.get();
     }
 

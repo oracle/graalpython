@@ -87,9 +87,9 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
     private final ConditionProfile everHandled = ConditionProfile.createBinaryProfile();
 
-    private final boolean shouldCatchAll;
-    private final boolean shouldCatchJavaExceptions;
-    private final ContextReference<PythonContext> contextRef;
+    @CompilationFinal private Boolean shouldCatchAll = null;
+    @CompilationFinal private Boolean shouldCatchJavaExceptions = null;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     @CompilationFinal private CatchesFunction catchesFunction;
 
@@ -98,12 +98,13 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         body.markAsTryBlock();
         this.exceptNodes = exceptNodes;
         this.orelse = orelse;
-        this.contextRef = PythonLanguage.getContextRef();
-        this.shouldCatchAll = PythonOptions.getOption(contextRef.get(), CatchAllExceptions);
-        this.shouldCatchJavaExceptions = PythonOptions.getOption(contextRef.get(), EmulateJython);
     }
 
     protected PythonContext getContext() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
         return contextRef.get();
     }
 
@@ -127,10 +128,18 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             }
             return;
         } catch (Exception e) {
-            if (shouldCatchJavaExceptions && contextRef.get().getEnv().isHostException(e)) {
+            if (shouldCatchJavaExceptions == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                shouldCatchJavaExceptions = PythonOptions.getOption(getContext(), EmulateJython);
+            }
+            if (shouldCatchJavaExceptions && getContext().getEnv().isHostException(e)) {
                 if (catchException(frame, (TruffleException) e, exceptionState)) {
                     return;
                 }
+            }
+            if (shouldCatchAll == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                shouldCatchAll = PythonOptions.getOption(getContext(), CatchAllExceptions);
             }
             if (shouldCatchAll) {
                 if (e instanceof ControlFlowException) {

@@ -89,7 +89,7 @@ public class ParserTestBase {
 
     public ParserTestBase() {
         PythonTests.enterContext();
-        context = PythonLanguage.getContextRef().get();
+        context = PythonLanguage.getContext();
     }
 
     protected Source createSource(File testFile) throws Exception {

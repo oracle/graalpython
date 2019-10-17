@@ -49,11 +49,13 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class PrintExpressionNode extends ExpressionNode {
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child GetAttributeNode getAttribute = GetAttributeNode.create(DISPLAYHOOK);
     @Child CallNode callNode = CallNode.create();
     @Child ExpressionNode valueNode;
@@ -65,6 +67,10 @@ public class PrintExpressionNode extends ExpressionNode {
     @Override
     public Object execute(VirtualFrame frame) {
         Object value = valueNode.execute(frame);
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
         PythonModule sysModule = contextRef.get().getCore().lookupBuiltinModule("sys");
         Object displayhook = getAttribute.executeObject(frame, sysModule);
         callNode.execute(frame, displayhook, value);

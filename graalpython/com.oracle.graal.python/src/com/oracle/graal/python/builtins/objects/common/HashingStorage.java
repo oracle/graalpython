@@ -221,7 +221,7 @@ public abstract class HashingStorage {
         if (key instanceof String) {
             return DEFAULT_EQIVALENCE;
         }
-        return PythonLanguage.getContextRef().get().getSlowPathEquivalence();
+        return PythonLanguage.getContext().getSlowPathEquivalence();
     }
 
     public abstract int length();
