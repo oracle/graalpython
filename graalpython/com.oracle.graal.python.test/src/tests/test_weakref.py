@@ -60,3 +60,16 @@ def cleanup(ref):
     caller_code = sys._getframe(1).f_code
     assert caller_code == test_weakref_finalizer.__code__, "expected: '%s' but was '%s'" % (test_weakref_finalizer.__code__, caller_code)
     cleaned_up = True
+
+
+def test_weakref_hash():
+    from collections import UserString as ustr
+    from weakref import ref
+
+    o1 = ustr('a')
+    o2 = ustr('a')
+    r1 = ref(o1)
+    r2 = ref(o2)
+    assert hash(o1) == hash(r1)
+    assert hash(o2) == hash(r2)
+    assert hash(r1) == hash(r2)
