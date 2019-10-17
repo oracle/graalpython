@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,57 +39,27 @@
 
 import sys
 
+def get_frame():
+    return sys._getframe(0)
 
-# IMPORTANT: DO NOT MOVE!
-# This test checks that lineno works on frames,
-# it MUST stay on this line!
-def test_lineno():
-    assert sys._getframe(0).f_lineno == 47
+def foo():
+    f = get_frame()
+    stack = []
+    while f:
+        stack.append(f)
+        f = f.f_back
+    return stack
 
+def bar():
+    return foo()
 
-def test_read_and_write_locals():
-    a = 1
-    b = ''
-    ls = sys._getframe(0).f_locals
-    assert ls['a'] == 1
-    assert ls['b'] == ''
-    ls['a'] = sys
-    assert ls['a'] == sys
+# NOTE: we need to call it in the module because the test framework will already provide the materialized caller frame
+# and then the test will succeed in any case.
+stack = bar()
 
-
-def test_backref():
-    a = 'test_backref'
-    def foo():
-        a = 'foo'
-        return sys._getframe(0).f_back
-    assert foo().f_locals['a'] == 'test_backref'
-
-    def get_frame():
-        return sys._getframe(0)
-
-    def get_frame_caller():
-        return get_frame()
-
-    def do_stackwalk(f):
-        stack = []
-        while f:
-            stack.append(f)
-            f = f.f_back
-        return stack
-
-    stack = do_stackwalk(get_frame_caller())
+def test_backref_chain():
     actual_fnames = [n.f_code.co_name for n in stack]
-    expected_prefix = ['get_frame', 'get_frame_caller', 'test_backref']
+    expected_prefix = ['get_frame', 'foo', 'bar']
     assert len(stack) >= len(expected_prefix)
     assert expected_prefix == actual_fnames[:len(expected_prefix)]
 
-
-def test_code():
-    code = sys._getframe().f_code
-    assert code.co_filename == test_code.__code__.co_filename
-    assert code.co_firstlineno == test_code.__code__.co_firstlineno
-    assert code.co_name == test_code.__code__.co_name
-
-
-def test_builtins():
-    assert print == sys._getframe().f_builtins["print"]
