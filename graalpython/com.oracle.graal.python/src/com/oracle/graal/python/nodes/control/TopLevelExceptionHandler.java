@@ -94,7 +94,7 @@ public class TopLevelExceptionHandler extends RootNode {
 
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
-    @Child private CallNode callNode = CallNode.create();
+    @Child private CallNode exceptionHookCallNode = CallNode.create();
     @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNodeGen.create();
     @Child private PythonObjectFactory factory;
     @Child private GetTracebackNode getTracebackNode;
@@ -187,7 +187,10 @@ public class TopLevelExceptionHandler extends RootNode {
         if (PythonOptions.getOption(theContext, PythonOptions.AlwaysRunExcepthook)) {
             if (hook != PNone.NO_VALUE) {
                 try {
-                    callNode.execute(frame, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
+                    // Note: it is important to pass frame 'null' because that will cause the
+                    // CallNode to tread the invoke like a foreign call and access the top frame ref
+                    // in the context.
+                    exceptionHookCallNode.execute(null, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
                 } catch (PException internalError) {
                     // More complex handling of errors in exception printing is done in our
                     // Python code, if we get here, we just fall back to the launcher
