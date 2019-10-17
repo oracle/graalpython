@@ -171,6 +171,7 @@ suite = {
             "dependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
+                "sulong:SULONG_TOOLCHAIN_LAUNCHERS",
             ],
             "jacoco": "include",
             "javaCompliance": "8+",
@@ -291,6 +292,9 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
+            ],
+            "overlaps" : [
+                "sulong:SULONG_TOOLCHAIN_LAUNCHERS"
             ],
             "description": "GraalPython launcher",
         },

@@ -1295,41 +1295,41 @@ index 8657420..f7b3f08 100644
 
     @pip_package()
     def scipy(**kwargs):
-        venv_path = os.environ.get("VIRTUAL_ENV", None)
-        if not venv_path:
-            xit("SciPy can only be installed within a virtual env.")
-
-        llvm_path = kwargs.get("llvm", None)
-        if not llvm_path:
-            xit("Please provide path to the LLVM installation to use for building SciPy.")
-        else:
-            del kwargs["llvm"]
-
-        # currently we need 'ar', 'ranlib', and 'ld.lld'
-        llvm_bins = {"llvm-ar": "ar", "llvm-ranlib": "ranlib", "ld.lld": "ld.lld"}
-        for binary in llvm_bins.keys():
-            llvm_bin = os.path.join(llvm_path, "bin", binary)
-            if not os.path.isfile(llvm_bin):
-                xit("Could not locate llvm-ar at '{}'".format(llvm_bin))
-            else:
-                dest = os.path.join(venv_path, "bin", llvm_bins[binary])
-                if os.path.exists(dest):
-                    os.unlink(dest)
-                os.symlink(llvm_bin, dest)
-
-        # locate system's gfortran
-        path_without_venv = os.pathsep.join([x for x in os.environ["PATH"].split(os.pathsep) if venv_path not in x])
-        system_gfortran = shutil.which("gfortran", path=path_without_venv)
-        if not system_gfortran:
-            xit("Could not locate gfortran binary.")
-            
-        # create gfortran wrapper script into venv's bin directory
-        gfortran_wrapper = os.path.join(venv_path, "bin", "gfortran")
-        assert system_gfortran != gfortran_wrapper
-        with open(gfortran_wrapper, "w") as f:
-            f.write('#!/bin/bash\nexec "{}" -fuse-ld=lld $@\n'.format(system_gfortran))
-        # make it executable
-        os.chmod(gfortran_wrapper , 0o775)
+        if sys.implementation.name == "graalpython":
+            venv_path = os.environ.get("VIRTUAL_ENV", None)
+            if not venv_path:
+                xit("SciPy can only be installed within a virtual env.")
+    
+            r = subprocess.check_output(sys.executable + " -llvm-path", shell=True).decode("utf8")
+            llvm_bin_dir = r.splitlines()[-1].strip()
+            if not os.path.isdir(llvm_bin_dir):
+                xit("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
+    
+            # currently we need 'ar', 'ranlib', and 'ld.lld'
+            llvm_bins = {"llvm-ar": "ar", "llvm-ranlib": "ranlib", "ld.lld": "ld.lld"}
+            for binary in llvm_bins.keys():
+                llvm_bin = os.path.join(llvm_bin_dir, binary)
+                if not os.path.isfile(llvm_bin):
+                    xit("Could not locate llvm-ar at '{}'".format(llvm_bin))
+                else:
+                    dest = os.path.join(venv_path, "bin", llvm_bins[binary])
+                    if os.path.exists(dest):
+                        os.unlink(dest)
+                    os.symlink(llvm_bin, dest)
+    
+            # locate system's gfortran
+            path_without_venv = os.pathsep.join([x for x in os.environ["PATH"].split(os.pathsep) if venv_path not in x])
+            system_gfortran = shutil.which("gfortran", path=path_without_venv)
+            if not system_gfortran:
+                xit("Could not locate gfortran binary.")
+                
+            # create gfortran wrapper script into venv's bin directory
+            gfortran_wrapper = os.path.join(venv_path, "bin", "gfortran")
+            assert system_gfortran != gfortran_wrapper
+            with open(gfortran_wrapper, "w") as f:
+                f.write('#!/bin/bash\nexec "{}" -fuse-ld=lld $@\n'.format(system_gfortran))
+            # make it executable
+            os.chmod(gfortran_wrapper , 0o775)
 
         # install dependencies
         numpy(**kwargs)
@@ -1472,10 +1472,6 @@ def main(argv):
         "--prefix",
         help="user-site path prefix"
     )
-    install_parser.add_argument(
-        "--llvm",
-        help="Path to LLVM installation."
-    )
 
     subparsers.add_parser(
         "uninstall",
@@ -1536,7 +1532,7 @@ def main(argv):
                 if args.prefix:
                     KNOWN_PACKAGES[pkg](extra_opts=["--prefix", args.prefix])
                 else:
-                    KNOWN_PACKAGES[pkg](llvm=args.llvm)
+                    KNOWN_PACKAGES[pkg]()
     elif args.command == "pypi":
         for pkg in args.package.split(","):
             install_from_pypi(pkg, ignore_errors=False)
