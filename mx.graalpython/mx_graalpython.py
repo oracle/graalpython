@@ -1167,6 +1167,12 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         return 'Building C API project {} with setuptools'.format(self.subject.name)
 
     def run(self, args, env=None, cwd=None):
+        env = env.copy() if env else os.environ.copy()
+
+        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
+        for var in ["CC", "CFLAGS", "LDFLAGS"]:
+            env.pop(var, None)
+
         return do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error))
 
     def _dev_headers_dir(self):
