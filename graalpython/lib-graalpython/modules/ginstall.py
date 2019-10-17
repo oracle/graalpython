@@ -293,7 +293,9 @@ index 66d8530..8bb2ab6 100644
 
     @pip_package()
     def h5py(**kwargs):
-        patch='''
+        numpy(**kwargs)
+        Cython(**kwargs)
+        patch = '''
 --- a/setup_configure.py
 +++ b/setup_configure.py
 @@ -189,59 +189,71 @@ def autodetect_version(hdf5_dir=None):
