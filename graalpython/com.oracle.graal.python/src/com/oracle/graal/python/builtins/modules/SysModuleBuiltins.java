@@ -94,6 +94,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.LanguageInfo;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "sys")
@@ -350,26 +351,36 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         PFrame first(VirtualFrame frame, @SuppressWarnings("unused") PNone arg,
                         @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
-            return escapeFrame(frame, 0, readCallerNode);
+            PFrame requested = escapeFrame(frame, 0, readCallerNode);
+            // there must always be *the current frame*
+            assert requested != null : "frame must not be null";
+            return requested;
         }
 
         @Specialization
         PFrame counted(VirtualFrame frame, int num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
-            return escapeFrame(frame, num, readCallerNode);
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
+            PFrame requested = escapeFrame(frame, num, readCallerNode);
+            if (callStackDepthProfile.profile(requested == null)) {
+                throw raiseCallStackDepth();
+            }
+            return requested;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         PFrame countedLong(VirtualFrame frame, long num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
-            return counted(frame, PInt.intValueExact(num), readCallerNode);
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
+            return counted(frame, PInt.intValueExact(num), readCallerNode, callStackDepthProfile);
         }
 
         @Specialization
         PFrame countedLongOvf(VirtualFrame frame, long num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
             try {
-                return counted(frame, PInt.intValueExact(num), readCallerNode);
+                return counted(frame, PInt.intValueExact(num), readCallerNode, callStackDepthProfile);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
@@ -377,15 +388,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = ArithmeticException.class)
         PFrame countedPInt(VirtualFrame frame, PInt num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
-            return counted(frame, num.intValueExact(), readCallerNode);
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
+            return counted(frame, num.intValueExact(), readCallerNode, callStackDepthProfile);
         }
 
         @Specialization
         PFrame countedPIntOvf(VirtualFrame frame, PInt num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
+                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
             try {
-                return counted(frame, num.intValueExact(), readCallerNode);
+                return counted(frame, num.intValueExact(), readCallerNode, callStackDepthProfile);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
