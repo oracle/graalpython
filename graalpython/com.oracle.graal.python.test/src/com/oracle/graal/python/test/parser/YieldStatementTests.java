@@ -338,4 +338,29 @@ public class YieldStatementTests extends ParserTestBase {
                                         "  except ValueError:\n" +
                                         "    pass");
     }
+
+    @Test
+    public void syntaxEror01() throws Exception {
+        checkSyntaxErrorMessageContains("yield", "'yield' outside function");
+    }
+
+    @Test
+    public void syntaxEror02() throws Exception {
+        checkSyntaxErrorMessageContains("yield from", "invalid syntax");
+    }
+
+    @Test
+    public void syntaxEror03() throws Exception {
+        checkSyntaxErrorMessageContains("class foo:yield 1", "'yield' outside function");
+    }
+
+    @Test
+    public void syntaxEror04() throws Exception {
+        checkSyntaxErrorMessageContains("class foo:yield from ()", "'yield' outside function");
+    }
+
+    @Test
+    public void syntaxEror05() throws Exception {
+        checkSyntaxErrorMessageContains("def g(a:(yield)): pass", "'yield' outside function");
+    }
 }

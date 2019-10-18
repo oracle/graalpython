@@ -211,6 +211,9 @@ public final class PythonNodeFactory {
     }
 
     public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
+        if (!scopeEnvironment.isInFunctionScope()) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), "'yield' outside function");
+        }
         scopeEnvironment.setToGeneratorScope();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
     }
