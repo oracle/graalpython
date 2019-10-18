@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.list;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
@@ -33,10 +34,18 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public final class PList extends PSequence {
+    private final ListLiteralNode origin;
     private SequenceStorage store;
 
     public PList(LazyPythonClass cls, SequenceStorage store) {
         super(cls);
+        this.origin = null;
+        this.store = store;
+    }
+
+    public PList(LazyPythonClass cls, SequenceStorage store, ListLiteralNode origin) {
+        super(cls);
+        this.origin = origin;
         this.store = store;
     }
 
@@ -103,6 +112,10 @@ public final class PList extends PSequence {
         return super.hashCode();
     }
 
+    public ListLiteralNode getOrigin() {
+        return origin;
+    }
+
     public static PList require(Object value) {
         if (value instanceof PList) {
             return (PList) value;
@@ -117,5 +130,4 @@ public final class PList extends PSequence {
         }
         throw new UnexpectedResultException(value);
     }
-
 }

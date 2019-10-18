@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -48,6 +49,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -58,12 +60,41 @@ public final class ListLiteralNode extends LiteralNode {
     @Child private SequenceStorageNodes.ConcatNode concatStoragesNode;
     @Child private SequenceStorageNodes.AppendNode appendNode;
 
+    /**
+     * This class serves the purpose of updating the size estimate for the lists
+     * constructed here over time. The estimate is updated slowly, it takes
+     * {@link #NUM_DIGITS_POW2} lists to reach a size one larger than the
+     * current estimate to increase the estimate for new lists.
+     */
+    @ValueType
+    private static final class SizeEstimate {
+        private static final int NUM_DIGITS = 3;
+        private static final int NUM_DIGITS_POW2 = 1 << NUM_DIGITS;
+
+        @CompilationFinal private int shiftedStorageSizeEstimate;
+
+        private SizeEstimate(int storageSizeEstimate) {
+            shiftedStorageSizeEstimate = storageSizeEstimate * NUM_DIGITS_POW2;
+        }
+
+        private int estimate() {
+            return shiftedStorageSizeEstimate >> NUM_DIGITS;
+        }
+
+        private int updateFrom(int newSizeEstimate) {
+            shiftedStorageSizeEstimate = shiftedStorageSizeEstimate + newSizeEstimate - estimate();
+            return shiftedStorageSizeEstimate;
+        }
+    }
+
+    @CompilationFinal private SizeEstimate initialCapacity;
     private final boolean hasStarredExpressions;
 
     @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
     public ListLiteralNode(ExpressionNode[] values) {
         this.values = values;
+        this.initialCapacity = new SizeEstimate(values.length);
         for (PNode v : values) {
             if (v instanceof StarredExpressionNode) {
                 hasStarredExpressions = true;
@@ -133,16 +164,16 @@ public final class ListLiteralNode extends LiteralNode {
                         break;
                     }
                     case Boolean: {
-                        boolean[] elements = new boolean[values.length];
+                        boolean[] elements = new boolean[initialCapacity.estimate()];
                         array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = values[i].executeBoolean(frame);
                         }
-                        storage = new BoolSequenceStorage(elements);
+                        storage = new BoolSequenceStorage(elements, values.length);
                         break;
                     }
                     case Byte: {
-                        byte[] elements = new byte[values.length];
+                        byte[] elements = new byte[initialCapacity.estimate()];
                         array = elements;
                         for (; i < values.length; i++) {
                             int element = values[i].executeInt(frame);
@@ -153,7 +184,7 @@ public final class ListLiteralNode extends LiteralNode {
                                 throw new UnexpectedResultException(element);
                             }
                         }
-                        storage = new ByteSequenceStorage(elements);
+                        storage = new ByteSequenceStorage(elements, values.length);
                         break;
                     }
                     case Char: {
@@ -163,56 +194,56 @@ public final class ListLiteralNode extends LiteralNode {
                         throw new UnexpectedResultException(values[0].execute(frame));
                     }
                     case Int: {
-                        int[] elements = new int[values.length];
+                        int[] elements = new int[initialCapacity.estimate()];
                         array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = values[i].executeInt(frame);
                         }
-                        storage = new IntSequenceStorage(elements);
+                        storage = new IntSequenceStorage(elements, values.length);
                         break;
                     }
                     case Long: {
-                        long[] elements = new long[values.length];
+                        long[] elements = new long[initialCapacity.estimate()];
                         array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = values[i].executeLong(frame);
                         }
-                        storage = new LongSequenceStorage(elements);
+                        storage = new LongSequenceStorage(elements, values.length);
                         break;
                     }
                     case Double: {
-                        double[] elements = new double[values.length];
+                        double[] elements = new double[initialCapacity.estimate()];
                         array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = values[i].executeDouble(frame);
                         }
-                        storage = new DoubleSequenceStorage(elements);
+                        storage = new DoubleSequenceStorage(elements, values.length);
                         break;
                     }
                     case List: {
-                        PList[] elements = new PList[values.length];
+                        PList[] elements = new PList[initialCapacity.estimate()];
                         array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = PList.expect(values[i].execute(frame));
                         }
-                        storage = new ListSequenceStorage(elements);
+                        storage = new ListSequenceStorage(elements, values.length);
                         break;
                     }
                     case Tuple: {
-                        PTuple[] elements = new PTuple[values.length];
+                        PTuple[] elements = new PTuple[initialCapacity.estimate()];
                         array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = PTuple.expect(values[i].execute(frame));
                         }
-                        storage = new TupleSequenceStorage(elements);
+                        storage = new TupleSequenceStorage(elements, values.length);
                         break;
                     }
                     case Generic: {
-                        Object[] elements = new Object[values.length];
+                        Object[] elements = new Object[initialCapacity.estimate()];
                         for (; i < values.length; i++) {
                             elements[i] = values[i].execute(frame);
                         }
-                        storage = new ObjectSequenceStorage(elements);
+                        storage = new ObjectSequenceStorage(elements, values.length);
                         break;
                     }
                     default:
@@ -223,12 +254,12 @@ public final class ListLiteralNode extends LiteralNode {
                 storage = genericFallback(frame, array, i, e.getResult());
             }
         }
-        return factory.createList(storage);
+        return factory.createList(storage, this);
     }
 
     private SequenceStorage genericFallback(VirtualFrame frame, Object array, int count, Object result) {
         type = ListStorageType.Generic;
-        Object[] elements = new Object[values.length];
+        Object[] elements = new Object[initialCapacity.estimate()];
         int i = 0;
         for (; i < count; i++) {
             elements[i] = Array.get(array, i);
@@ -237,7 +268,7 @@ public final class ListLiteralNode extends LiteralNode {
         for (; i < values.length; i++) {
             elements[i] = values[i].execute(frame);
         }
-        return new ObjectSequenceStorage(elements);
+        return new ObjectSequenceStorage(elements, values.length);
     }
 
     private SequenceStorageNodes.ConcatNode ensureConcatStoragesNode() {
@@ -254,6 +285,22 @@ public final class ListLiteralNode extends LiteralNode {
             appendNode = insert(SequenceStorageNodes.AppendNode.create());
         }
         return appendNode;
+    }
+
+    public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
+        if (CompilerDirectives.inInterpreter()) {
+            if (newStore.capacity() >= initialCapacity.estimate()) {
+                initialCapacity.updateFrom(newStore.capacity());
+                System.out.println("Updating initial capacity " + initialCapacity.estimate() + " at " + getSourceSection().toString());
+            }
+            if (newStore.getElementType() != type) {
+                System.out.println("Updating initial type: " + type + " -> " + newStore.getElementType());
+                type = newStore.getElementType();
+            }
+        }
+        // n.b.: it's ok that this races when the code is already being compiled
+        // or if we're running on multiple threads. if the update isn't seen, we
+        // are not incorrect, we just don't benefit from the optimization
     }
 
     public static ListLiteralNode create(ExpressionNode[] values) {

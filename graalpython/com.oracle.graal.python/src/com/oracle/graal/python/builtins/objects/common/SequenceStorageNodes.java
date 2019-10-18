@@ -2923,12 +2923,23 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = "s.getClass() == cachedClass")
         SequenceStorage doManaged(BasicSequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
+                        @Cached BranchProfile increaseCapacity,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
                         @Cached("create()") SetItemScalarNode setItemNode,
                         @Exclusive @Cached DoGeneralizationNode doGenNode) {
             BasicSequenceStorage profiled = cachedClass.cast(s);
             int len = profiled.length();
-            profiled.ensureCapacity(len + 1);
+            int newLen = len + 1;
+            int capacity = profiled.capacity();
+            if (newLen > capacity) {
+                if (CompilerDirectives.inCompiledCode()) {
+                    // We want to ignore this branch in the initial compilation,
+                    // because we're propagating list sizes back to the
+                    // allocation position.
+                    increaseCapacity.enter();
+                }
+                profiled.ensureCapacity(len + 1);
+            }
             try {
                 setItemNode.execute(profiled, len, val);
                 profiled.setNewLength(len + 1);

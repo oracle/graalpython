@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -411,6 +412,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     return attrSourceLocation;
                 }
             }
+        } else if (value instanceof PList) {
+            return ((PList) value).getOrigin();
         }
         return null;
     }

@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -675,6 +676,11 @@ public abstract class ListNodes {
             if (list.getSequenceStorage() != newStore) {
                 updateStoreProfile.enter();
                 list.setSequenceStorage(newStore);
+            }
+            if (CompilerDirectives.inInterpreter()) {
+                if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
+                    list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
+                }
             }
         }
 

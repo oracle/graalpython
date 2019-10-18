@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -429,6 +430,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PList createList(SequenceStorage storage) {
         return createList(PythonBuiltinClassType.PList, storage);
+    }
+
+    public PList createList(SequenceStorage storage, ListLiteralNode origin) {
+        return trace(new PList(PythonBuiltinClassType.PList, storage, origin));
     }
 
     public PList createList(LazyPythonClass cls, SequenceStorage storage) {
