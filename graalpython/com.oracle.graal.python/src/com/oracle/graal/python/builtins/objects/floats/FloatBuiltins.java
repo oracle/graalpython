@@ -74,9 +74,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -564,6 +566,56 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = SpecialMethodNames.__HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class HashNode extends PythonUnaryBuiltinNode {
+        protected boolean noDecimals(float num) {
+            return num % 1 == 0;
+        }
+
+        protected boolean noDecimals(double num) {
+            return num % 1 == 0;
+        }
+
+        protected boolean noDecimals(PFloat num) {
+            return num.getValue() % 1 == 0;
+        }
+
+        @Specialization(guards = {"noDecimals(self)"})
+        long hashFloatNoDecimals(float self) {
+            return (long) self;
+        }
+
+        @Specialization(guards = {"!noDecimals(self)"})
+        @TruffleBoundary
+        long hashFloatWithDecimals(float self) {
+            return Float.valueOf(self).hashCode();
+        }
+
+        @Specialization(guards = {"noDecimals(self)"})
+        long hashDoubleNoDecimals(double self) {
+            return (long) self;
+        }
+
+        @Specialization(guards = {"!noDecimals(self)"})
+        @TruffleBoundary
+        long hashDoubleWithDecimals(double self) {
+            return Double.valueOf(self).hashCode();
+        }
+
+        @Specialization(guards = {"noDecimals(self)"})
+        long hashPFloatNoDecimals(PFloat self) {
+            return (long) self.getValue();
+        }
+
+        @Specialization(guards = {"!noDecimals(self)"})
+        @TruffleBoundary
+        long hashPFloatWithDecimals(PFloat self) {
+            return Double.valueOf(self.getValue()).hashCode();
         }
     }
 
