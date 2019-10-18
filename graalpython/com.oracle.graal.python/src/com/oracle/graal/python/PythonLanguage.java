@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -413,7 +414,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 }
             }
         } else if (value instanceof PList) {
-            return ((PList) value).getOrigin();
+            ListLiteralNode node = ((PList) value).getOrigin();
+            if (node != null) {
+                return node.getSourceSection();
+            }
         }
         return null;
     }
