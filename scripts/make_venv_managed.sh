@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,39 +37,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-MAX_WAIT_COUNT = 500
-
-import sys
-
-def test_weakref_finalizer():
-    import gc, weakref
-    class A(): pass
-    for i in range(2):
-        w = weakref.ref(A(), cleanup)
-    i = 0
-    while not cleaned_up and i < MAX_WAIT_COUNT:
-        gc.collect()
-        i += 1
-    assert not w()
-    assert cleaned_up
-
-
-cleaned_up = False
-def cleanup(ref):
-    global cleaned_up
-    caller_code = sys._getframe(1).f_code
-    assert caller_code == test_weakref_finalizer.__code__, "expected: '%s' but was '%s'" % (test_weakref_finalizer.__code__, caller_code)
-    cleaned_up = True
-
-
-def test_weakref_hash():
-    from collections import UserString as ustr
-    from weakref import ref
-
-    o1 = ustr('a')
-    o2 = ustr('a')
-    r1 = ref(o1)
-    r2 = ref(o2)
-    assert hash(o1) == hash(r1)
-    assert hash(o2) == hash(r2)
-    assert hash(r1) == hash(r2)
+#!/usr/bin/env bash
+mx --dy=/sulong-managed,/compiler python3 --llvm.managed -m venv $1

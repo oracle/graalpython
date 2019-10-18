@@ -313,3 +313,13 @@ def test_literal():
     d = {}
     assert {*d} == set()
 
+
+def test_hashable_frozenset():
+    seq = list(range(10)) + list('abcdefg') + ['apple']
+    key1 = frozenset(seq)
+    key2 = frozenset(reversed(seq))
+    assert key1 == key2
+    assert not (id(key1) == id(key2))
+    d = {key1: 42}
+    assert hash(key1) == hash(key2)
+    assert d[key2] == 42

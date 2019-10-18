@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -116,10 +116,6 @@ def frozenset_copy(self):
     return frozenset(self)
 
 
-def frozenset_hash(self):
-    return hash(tuple(self))
-
-
 set.update = update
 set.difference = difference
 set.difference_update = difference_update
@@ -131,4 +127,3 @@ frozenset.difference = frozenset_difference
 frozenset.intersection = frozenset_intersection
 frozenset.__repr__ = frozenset_repr
 frozenset.copy = frozenset_copy
-frozenset.__hash__ = frozenset_hash

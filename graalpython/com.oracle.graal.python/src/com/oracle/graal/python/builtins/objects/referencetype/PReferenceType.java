@@ -69,7 +69,7 @@ public class PReferenceType extends PythonBuiltinObject {
     }
 
     private final WeakRefStorage store;
-    private int hash = -1;
+    private long hash = -1;
 
     @TruffleBoundary
     public PReferenceType(LazyPythonClass cls, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
@@ -98,16 +98,11 @@ public class PReferenceType extends PythonBuiltinObject {
         return (this.getObject() == null) ? 0 : 1;
     }
 
-    @TruffleBoundary
-    public int getHash() {
-        if (this.hash != -1) {
-            return this.hash;
-        }
+    public long getHash() {
+        return hash;
+    }
 
-        Object object = getObject();
-        if (object != null) {
-            this.hash = object.hashCode();
-        }
-        return this.hash;
+    public void setHash(long hash) {
+        this.hash = hash;
     }
 }

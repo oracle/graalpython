@@ -1366,11 +1366,14 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         public String doReplace(String self, String old, String with, int maxsplit) {
-            String newSelf = self;
-            for (int i = 0; i < maxsplit; i++) {
-                newSelf = newSelf.replaceFirst(old, with);
+            StringBuilder sb = new StringBuilder();
+            String[] parts = self.split(old, maxsplit + 1);
+            for (int i = 0; i < parts.length - 1; i++) {
+                sb.append(parts[i]);
+                sb.append(with);
             }
-            return newSelf;
+            sb.append(parts[parts.length - 1]);
+            return sb.toString();
         }
     }
 

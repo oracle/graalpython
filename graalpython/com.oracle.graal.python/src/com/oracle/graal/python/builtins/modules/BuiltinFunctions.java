@@ -502,7 +502,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
                         @Cached("createIfTrueNode()") CastToBooleanNode trueNode,
-                        @Cached("create()") IsInstanceNode isInstanceNode) {
+                        @Cached IsInstanceNode isInstanceNode) {
             if (trueNode.executeBoolean(frame, lookupDirNode.execute(object))) {
                 Object hashValue = dispatchHash.executeObject(frame, object);
                 if (isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
