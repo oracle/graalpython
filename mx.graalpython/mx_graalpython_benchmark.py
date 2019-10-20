@@ -251,7 +251,7 @@ class GraalPythonVm(GuestVm):
         self._cp_suffix = cp_suffix
         self._cp_prefix = cp_prefix
         self._extra_vm_args = extra_vm_args
-        self._extra_polyglot_args = extra_polyglot_args
+        self._extra_polyglot_args = extra_polyglot_args if isinstance(extra_polyglot_args, list) else []
         self._env = env
 
     def hosting_registry(self):
@@ -259,7 +259,7 @@ class GraalPythonVm(GuestVm):
 
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
-        extra_polyglot_args = ["--experimental-options"]
+        extra_polyglot_args = ["--experimental-options"] + self._extra_polyglot_args
 
         host_vm = self.host_vm()
         if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
@@ -277,7 +277,6 @@ class GraalPythonVm(GuestVm):
             assert isinstance(self._distributions, list), "distributions must be either None or a list"
             dists += self._distributions
 
-        extra_polyglot_args = self._extra_polyglot_args if isinstance(self._extra_polyglot_args, list) else []
         if mx.suite("tools", fatalIfMissing=False):
             dists.append('CHROMEINSPECTOR')
         if mx.suite("sulong", fatalIfMissing=False):
