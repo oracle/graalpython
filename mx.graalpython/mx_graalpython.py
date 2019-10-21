@@ -139,16 +139,17 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     if extra_dists:
         dists += extra_dists
 
-    # Try eagerly to include tools for convenience when running Python
-    if not mx.suite("tools", fatalIfMissing=False):
-        SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
-    if mx.suite("tools", fatalIfMissing=False):
-        if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
-            # CHROMEINSPECTOR was built, put it on the classpath
-            dists.append('CHROMEINSPECTOR')
-            graalpython_args.insert(0, "--llvm.enableLVI=true")
-        else:
-            mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
+    if not os.environ.get("CI"):
+        # Try eagerly to include tools for convenience when running Python
+        if not mx.suite("tools", fatalIfMissing=False):
+            SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
+        if mx.suite("tools", fatalIfMissing=False):
+            if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
+                # CHROMEINSPECTOR was built, put it on the classpath
+                dists.append('CHROMEINSPECTOR')
+                graalpython_args.insert(0, "--llvm.enableLVI=true")
+            else:
+                mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
 
     graalpython_args.insert(0, '--experimental-options=true')
 
